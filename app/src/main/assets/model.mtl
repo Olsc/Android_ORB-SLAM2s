@@ -1,0 +1,19 @@
+# MTL file for model.obj
+# Generated for enhanced OBJ loading support
+
+newmtl mat0
+# Ambient color (Ka)
+Ka 0.200000 0.200000 0.200000
+# Diffuse color (Kd)
+Kd 0.800000 0.800000 0.800000
+# Specular color (Ks) 
+Ks 0.500000 0.500000 0.500000
+# Specular exponent (Ns)
+Ns 32.000000
+# Transparency (d)
+d 1.000000
+# Illumination model (illum)
+illum 2
+
+# Diffuse texture map - 使用实际存在的纹理文件
+map_Kd model.jpg

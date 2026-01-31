@@ -1,0 +1,44 @@
+plugins {
+    id 'com.android.library'
+}
+
+android {
+    compileSdk 36
+
+    defaultConfig {
+        minSdk 23
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    buildFeatures {
+        aidl true
+        buildConfig true
+    }
+    namespace 'org.opencv'
+    compileSdkMinor 1
+    buildToolsVersion '36.1.0'
+    ndkVersion '29.0.14206865'
+    lint {
+        targetSdk 36
+    }
+    testOptions {
+        targetSdk 36
+    }
+}
+
+configurations.all {
+    resolutionStrategy {
+        force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.3.0"
+        force "org.jetbrains.kotlin:kotlin-stdlib:2.3.0"
+    }
+}

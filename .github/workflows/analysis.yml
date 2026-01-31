@@ -1,0 +1,46 @@
+name: NativeAOT Binary Analysis
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * 0" #once per week
+
+# The schedule event can be delayed during periods of high loads of GitHub Actions workflow runs
+#
+# ┌───────────── minute (0 - 59)
+# │ ┌───────────── hour (0 - 23)
+# │ │ ┌───────────── day of the month (1 - 31)
+# │ │ │ ┌───────────── month (1 - 12 or JAN-DEC)
+# │ │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
+# │ │ │ │ │
+# │ │ │ │ │
+# │ │ │ │ │
+# * * * * *
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Publish
+        run: ./gradlew build
+        working-directory: .
+
+      - name: List Files
+        shell: bash
+        run: ls -R ./app/build/outputs/
+
+      - name: Upload
+        uses: actions/upload-artifact@v6
+        with:
+          name: Analysis
+          path: |
+            ./app/build/outputs/apk/debug/
+            ./app/build/reports/
+          if-no-files-found: error

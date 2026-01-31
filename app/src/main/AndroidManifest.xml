@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:installLocation="auto">
+
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="merge" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="merge" />
+    <uses-permission android:name="android.permission.CAMERA" tools:node="merge" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <uses-feature android:name="android.hardware.camera" />
+    <uses-feature android:name="android.hardware.camera.autofocus" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        tools:replace="android:icon, android:label"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme"
+        android:name="com.orb.slam2s.App"
+        android:usesCleartextTraffic="true">
+        <activity
+            android:name="com.orb.slam2s.ui.ModelActivity"
+            android:exported="true"
+            android:screenOrientation="fullSensor">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        
+        <activity
+            android:name="com.orb.slam2s.ui.ArCamUIActivity"
+            android:theme="@style/ListTheme"
+            android:screenOrientation="landscape"/>
+    </application>
+
+</manifest>

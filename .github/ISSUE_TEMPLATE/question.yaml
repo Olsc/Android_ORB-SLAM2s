@@ -1,0 +1,24 @@
+name: Question
+description: Ask a question
+title: "[Question]: "
+labels: [Question]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Question
+      description: |
+        Issues are not for asking questions. Please post your inquiry at https://github.com/Olsc/Android_ORB-SLAM2s/discussions instead.
+    validations:
+      required: true
+  - type: dropdown
+    id: areyousure
+    attributes:
+      label: Are you sure you want to clutter the issues section?
+      description: |
+        Issues are not for asking questions. Please post your inquiry at https://github.com/Olsc/Android_ORB-SLAM2s/discussions instead.
+      options:
+        - Yes, I acknowledge that my question may be ignored because I am not following directions.
+        - No, I need to use the discussions tab. I will receive better support there.
+    validations:
+      required: true

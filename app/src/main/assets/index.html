@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <title>ORB-SLAM2s 浏览器端</title>
+    <style>
+        :root {
+            --primary-color: #00bcd4;
+            --danger-color: #ff5252;
+            --bg-dark: rgba(20, 20, 20, 0.85);
+            --text-main: #ffffff;
+            --text-secondary: #aaaaaa;
+            --panel-border: 1px solid rgba(255, 255, 255, 0.1);
+            --radius-md: 8px;
+            --radius-sm: 4px;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #050505;
+            color: var(--text-main);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-size: 14px;
+        }
+
+        /* 布局容器 */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            /* 让点击穿透到Canvas */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        /* 通用面板样式 */
+        .panel {
+            background: var(--bg-dark);
+            backdrop-filter: blur(10px);
+            border: var(--panel-border);
+            border-radius: var(--radius-md);
+            padding: 10px 15px;
+            pointer-events: auto;
+            /* 恢复点击 */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        /* 顶部状态栏 */
+        #status-bar {
+            align-self: flex-end;
+            margin-bottom: auto;
+            /* 推到底部 */
+        }
+
+        #status {
+            font-weight: 500;
+            color: var(--primary-color);
+        }
+
+        /* 左下角相机预览 */
+        #camera-preview {
+            width: 240px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        #camera-header {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        #camera-video {
+            width: 100%;
+            border-radius: var(--radius-sm);
+            background: #000;
+            display: block;
+        }
+
+        /* 右下角控制面板 */
+        #control-panel {
+            align-self: flex-end;
+            min-width: 220px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-group-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 3px;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 5px;
+        }
+
+        /* 按钮样式 */
+        button {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            flex: 1;
+            white-space: nowrap;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        button.danger {
+            background: rgba(255, 82, 82, 0.2);
+            border-color: rgba(255, 82, 82, 0.3);
+            color: #ff8a80;
+        }
+
+        button.danger:hover {
+            background: rgba(255, 82, 82, 0.3);
+        }
+
+        button.primary {
+            background: rgba(0, 188, 212, 0.2);
+            border-color: rgba(0, 188, 212, 0.3);
+            color: #80deea;
+        }
+
+        button.primary:hover {
+            background: rgba(0, 188, 212, 0.3);
+        }
+
+        /* 滑块样式 */
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+        }
+
+        input[type=range] {
+            flex: 1;
+            height: 4px;
+            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        #sizeValue {
+            min-width: 30px;
+            text-align: right;
+            font-family: monospace;
+        }
+    </style>
+    <!-- 引入 Three.js 和 OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+
+<body>
+    <div id="ui-layer">
+        <!-- 顶部状态信息 -->
+        <div id="status-bar" class="panel">
+            <div id="status">系统初始化中...</div>
+        </div>
+
+        <div style="display:flex; justify-content: space-between; align-items: flex-end; width:100%;">
+            <!-- 左下角相机 -->
+            <div id="camera-preview" class="panel">
+                <div id="camera-header">
+                    <span>相机预览</span>
+                    <span id="camera-status-text">OFF</span>
+                </div>
+                <video id="camera-video" autoplay playsinline></video>
+                <canvas id="capture-canvas" style="display:none;"></canvas>
+            </div>
+
+            <!-- 右下角控制面板 -->
+            <div id="control-panel" class="panel">
+
+                <div class="control-group">
+                    <div class="control-group-title">视图控制</div>
+                    <div class="btn-row">
+                        <button onclick="resetCamera()">重置视角</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-group-title">相机源</div>
+                    <div class="btn-row">
+                        <button id="toggleCameraBtn" class="primary" onclick="toggleCamera()">启动相机</button>
+                        <button onclick="document.getElementById('videoInput').click()">导入视频</button>
+                    </div>
+                    <input type="file" id="videoInput" accept="video/*" style="display:none;"
+                        onchange="handleVideoUpload(event)" />
+                    <div class="btn-row" id="videoControls" style="display:none;">
+                        <button id="togglePlayBtn" onclick="togglePlay()">暂停播放</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-group-title">SLAM 控制</div>
+                    <div class="btn-row">
+                        <button onclick="remoteReset()" class="danger">重置 SLAM</button>
+                    </div>
+                </div>
+
+                <div class="control-group" style="margin-top: 5px;">
+                    <div class="slider-container">
+                        <span>粒子:</span>
+                        <input type="range" id="sizeSlider" min="0.01" max="0.3" step="0.01" value="0.05"
+                            oninput="updatePointSize(this.value)">
+                        <span id="sizeValue">0.05</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="slider-container">
+                        <span>相机:</span>
+                        <input type="range" id="camSizeSlider" min="0.5" max="5.0" step="0.1" value="1.0"
+                            oninput="updateCameraSize(this.value)">
+                        <span id="camSizeValue">1.0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="canvas-container"></div>
+    <script>
+        let monitoredPointSize = 0.05; // 全局粒子大小变量
+
+        let scene, camera, renderer, controls;
+        let trackedPointsCloud, mapPointsCloud, arObjects = [];
+        let trackedGeometry, mapGeometry;
+        let slamCameraProxy, slamCameraHelper; // SLAM相机代理和辅助显示
+
+        // 相机相关
+        let video, canvas, ctx;
+        let stream = null;
+        let isCameraRunning = false;
+        let frameInterval;
+
+        function init() {
+            if (typeof THREE === 'undefined') {
+                document.body.innerHTML = '<div style="padding:20px; color:red">错误：Three.js 加载失败。请检查网络连接。</div>';
+                return;
+            }
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x111111);
+
+            // 网格和坐标轴
+            const gridHelper = new THREE.GridHelper(20, 20);
+            scene.add(gridHelper);
+            const axesHelper = new THREE.AxesHelper(2);
+            scene.add(axesHelper);
+
+            // 初始化 SLAM 相机可视化
+            slamCameraProxy = new THREE.PerspectiveCamera(60, 640 / 480, 0.1, 5);
+            slamCameraHelper = new THREE.CameraHelper(slamCameraProxy);
+            slamCameraHelper.visible = false; // 初始隐藏，直到有数据
+            scene.add(slamCameraHelper);
+            // 添加一个更明显的相机模型（绿色锥体）
+            const camGeo = new THREE.ConeGeometry(0.2, 0.5, 4);
+            camGeo.rotateX(Math.PI / 2); // 调整方向
+            slamCameraProxy.add(new THREE.Mesh(camGeo, new THREE.MeshNormalMaterial()));
+            scene.add(slamCameraProxy);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 5, 5);
+            camera.lookAt(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            if (typeof THREE.OrbitControls !== 'undefined') {
+                controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.05;
+            }
+
+            window.addEventListener('resize', onWindowResize, false);
+
+            // 初始化相机捕获
+            initCamera();
+
+            animate();
+            setInterval(fetchData, 200);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function resetCamera() {
+            camera.position.set(0, 5, 5);
+            camera.lookAt(0, 0, 0);
+            if (controls) controls.update();
+        }
+
+        // 初始化浏览器相机
+        async function initCamera() {
+            video = document.getElementById('camera-video');
+            canvas = document.getElementById('capture-canvas');
+            ctx = canvas.getContext('2d');
+            const statusText = document.getElementById('camera-status-text');
+
+            try {
+                // 请求后置相机（移动设备）
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'environment',
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    }
+                });
+
+                video.srcObject = stream;
+                isCameraRunning = true;
+                if (statusText) statusText.innerText = "ON";
+                if (statusText) statusText.style.color = "#00bcd4";
+
+                // 等待视频加载完成
+                video.onloadedmetadata = () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+
+                    // 开始发送帧到安卓端 (每秒约15帧)
+                    frameInterval = setInterval(captureAndSendFrame, 66);
+
+                    updateStatus('相机已启动，正在发送帧到安卓端');
+                };
+
+            } catch (err) {
+                console.error('无法访问相机:', err);
+                updateStatus('错误: 无法访问相机 - ' + err.message);
+                if (statusText) statusText.innerText = "ERROR";
+                if (statusText) statusText.style.color = "#ff5252";
+            }
+        }
+
+        // 捕获并发送帧到安卓端
+        let frameCount = 0;
+        function captureAndSendFrame() {
+            if (!isCameraRunning || !video.videoWidth) {
+                console.log('跳过帧发送: 相机未运行或视频未就绪');
+                return;
+            }
+
+            // 将视频帧绘制到canvas
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // 转换为JPEG blob
+            canvas.toBlob(blob => {
+                if (blob) {
+                    frameCount++;
+                    if (frameCount % 30 === 0) { // 每30帧打印一次日志
+                        console.log(`正在发送第 ${frameCount} 帧，大小: ${blob.size} bytes`);
+                    }
+
+                    // 发送到安卓端
+                    fetch('/upload_frame', {
+                        method: 'POST',
+                        body: blob,
+                        headers: {
+                            'Content-Type': 'image/jpeg'
+                        }
+                    }).then(response => {
+                        if (frameCount % 30 === 0) {
+                            console.log(`第 ${frameCount} 帧发送成功，状态: ${response.status}`);
+                        }
+                    }).catch(err => {
+                        console.error('发送帧失败:', err);
+                    });
+                } else {
+                    console.error('无法生成JPEG blob');
+                }
+            }, 'image/jpeg', 0.8);
+        }
+
+        // 处理视频上传
+        function handleVideoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            console.log('开始导入视频:', file.name);
+
+            // 停止当前的帧发送
+            if (frameInterval) {
+                clearInterval(frameInterval);
+                frameInterval = null;
+                console.log('已停止之前的帧发送');
+            }
+
+            // 停止当前的相机流
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+                console.log('已停止相机流');
+            }
+
+            // 加载视频文件
+            const url = URL.createObjectURL(file);
+            video.srcObject = null; // 清除相机源
+            video.src = url;
+            video.loop = true; // 循环播放
+
+            console.log('视频URL已创建:', url);
+
+            // 等待视频加载完成
+            video.onloadedmetadata = () => {
+                console.log('视频元数据已加载，尺寸:', video.videoWidth, 'x', video.videoHeight);
+
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+
+                // 立即开始发送帧（即使视频还未播放）
+                isCameraRunning = true;
+                frameInterval = setInterval(captureAndSendFrame, 66);
+
+                console.log('开始发送视频帧到安卓端');
+                updateStatus('视频已加载，正在发送帧到安卓端');
+                document.getElementById('toggleCameraBtn').textContent = '停止视频';
+                document.getElementById('togglePlayBtn').style.display = 'inline-block';
+            };
+
+            // 添加错误处理
+            video.onerror = (e) => {
+                console.error('视频加载错误:', e);
+                updateStatus('错误: 无法加载视频文件');
+            };
+
+            // 开始播放视频
+            video.play().then(() => {
+                console.log('视频开始播放');
+            }).catch(err => {
+                console.error('视频播放失败:', err);
+                updateStatus('错误: 视频播放失败 - ' + err.message);
+            });
+        }
+
+        // 切换视频播放/暂停
+        function togglePlay() {
+            if (video.paused) {
+                video.play();
+                updateStatus('视频播放中');
+            } else {
+                video.pause();
+                updateStatus('视频已暂停');
+            }
+        }
+
+        // 切换相机/视频开关
+        function toggleCamera() {
+            const statusText = document.getElementById('camera-status-text');
+            if (isCameraRunning) {
+                // 停止相机或视频
+                if (frameInterval) {
+                    clearInterval(frameInterval);
+                    frameInterval = null;
+                }
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                    stream = null;
+                }
+                video.srcObject = null;
+                video.src = '';
+                video.pause();
+                isCameraRunning = false;
+                document.getElementById('toggleCameraBtn').textContent = '启动相机';
+                document.getElementById('togglePlayBtn').style.display = 'none';
+                updateStatus('相机/视频已停止');
+                if (statusText) {
+                    statusText.innerText = "OFF";
+                    statusText.style.color = "#aaaaaa";
+                }
+            } else {
+                // 重新启动相机
+                initCamera();
+                document.getElementById('toggleCameraBtn').textContent = '停止相机';
+            }
+        }
+
+        function updateStatus(message) {
+            document.getElementById('status').innerText = message;
+        }
+
+        function remoteReset() {
+            if (confirm('确定要重置由于 SLAM 系统吗？这将清除当前所有地图点。')) {
+                fetch('/reset').then(res => {
+                    if (res.ok) {
+                        updateStatus("SLAM 系统已重置");
+                        console.log("SLAM Remote Reset Successful");
+                    } else {
+                        updateStatus("重置失败: " + res.status);
+                    }
+                }).catch(err => {
+                    console.error("Reset failed", err);
+                    updateStatus("重置请求失败");
+                });
+            }
+        }
+
+        function updatePointSize(val) {
+            monitoredPointSize = parseFloat(val);
+            document.getElementById('sizeValue').innerText = val;
+
+            // 立即更新现有材质的大小 (如果有)
+            if (trackedPointsCloud && trackedPointsCloud.material) {
+                trackedPointsCloud.material.size = monitoredPointSize * 1.6;
+                trackedPointsCloud.material.needsUpdate = true;
+            }
+            if (mapPointsCloud && mapPointsCloud.material) {
+                mapPointsCloud.material.size = monitoredPointSize;
+                mapPointsCloud.material.needsUpdate = true;
+            }
+        }
+
+        function updateCameraSize(val) {
+            let scale = parseFloat(val);
+            document.getElementById('camSizeValue').innerText = val;
+
+            if (slamCameraProxy) {
+                // 缩放相机代理对象中的网格 (Cone)
+                let coneMesh = slamCameraProxy.children.find(c => c instanceof THREE.Mesh);
+                if (coneMesh) {
+                    coneMesh.scale.set(scale, scale, scale);
+                }
+            }
+        }
+
+        function fetchData() {
+            fetch('/data').then(r => r.arrayBuffer()).then(buf => {
+                console.log('收到点云数据，大小:', buf.byteLength, '字节');
+
+                let dataView = new DataView(buf);
+                let offset = 0;
+
+                // 1. 跟踪点（当前帧）- 蓝色
+                let numTracked = dataView.getInt32(offset, true);
+                offset += 4;
+                let trackedData = new Float32Array(buf, offset, numTracked * 3);
+                offset += numTracked * 3 * 4;
+                updateTrackedPoints(trackedData);
+
+                // 2. 地图点（全局地图）- 绿色/高度着色
+                let numMap = dataView.getInt32(offset, true);
+                offset += 4;
+                let mapData = new Float32Array(buf, offset, numMap * 3);
+                offset += numMap * 3 * 4;
+                updateMapPoints(mapData);
+
+                // 3. AR 对象
+                let numObjects = dataView.getInt32(offset, true);
+                offset += 4;
+
+                let objectsData = [];
+                let objectsFloatView = new Float32Array(buf, offset, numObjects * 16);
+                for (let i = 0; i < numObjects; i++) {
+                    let mat = objectsFloatView.subarray(i * 16, (i + 1) * 16);
+                    objectsData.push(mat);
+                }
+                updateArObjects(objectsData);
+                offset += numObjects * 16 * 4; // 更新偏移量
+
+                // 4. 读取相机姿态
+                if (offset < buf.byteLength) {
+                    let trackingStatus = dataView.getInt32(offset, true);
+                    offset += 4;
+                    // 读取矩阵 (16个float)
+                    let viewMatrixArr = new Float32Array(buf, offset, 16);
+                    // offset += 16 * 4; // 如果后面还有数据，需要更新
+                    updateCameraPose(trackingStatus, viewMatrixArr);
+                }
+
+                console.log(`点云更新: 跟踪点=${numTracked}, 地图点=${numMap}, AR对象=${numObjects}`);
+                updateStatus(`Tracked: ${numTracked} | Map: ${numMap} | Objects: ${numObjects} | 相机: ${isCameraRunning ? '运行中' : '已停止'}`);
+
+            }).catch(e => {
+                console.error('获取点云数据失败:', e);
+            });
+        }
+
+        function updateTrackedPoints(data) {
+            if (trackedPointsCloud) scene.remove(trackedPointsCloud);
+            if (trackedGeometry) trackedGeometry.dispose();
+
+            trackedGeometry = new THREE.BufferGeometry();
+            trackedGeometry.setAttribute('position', new THREE.BufferAttribute(data, 3));
+
+            // 跟踪点的蓝色
+            let material = new THREE.PointsMaterial({ color: 0x0088ff, size: monitoredPointSize * 1.6, sizeAttenuation: true });
+            trackedPointsCloud = new THREE.Points(trackedGeometry, material);
+            scene.add(trackedPointsCloud);
+        }
+
+        function updateMapPoints(data) {
+            if (mapPointsCloud) scene.remove(mapPointsCloud);
+            if (mapGeometry) mapGeometry.dispose();
+
+            mapGeometry = new THREE.BufferGeometry();
+            mapGeometry.setAttribute('position', new THREE.BufferAttribute(data, 3));
+
+            // 按高度（Y）着色或仅绿色
+            const colors = [];
+            const color = new THREE.Color();
+            for (let i = 0; i < data.length; i += 3) {
+                const y = data[i + 1];
+                // 绿色范围
+                color.setHSL(0.3, 1.0, 0.5 + y * 0.1);
+                colors.push(color.r, color.g, color.b);
+            }
+            mapGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+            let material = new THREE.PointsMaterial({ size: monitoredPointSize, vertexColors: true, sizeAttenuation: true });
+            mapPointsCloud = new THREE.Points(mapGeometry, material);
+            scene.add(mapPointsCloud);
+        }
+
+        function updateArObjects(objectsData) {
+            // 移除旧对象
+            arObjects.forEach(obj => scene.remove(obj));
+            arObjects = [];
+
+            // 添加新对象
+            const boxGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+            const boxMaterial = new THREE.MeshNormalMaterial();
+
+            objectsData.forEach(matData => {
+                let mesh = new THREE.Mesh(boxGeometry, boxMaterial);
+                let matrix = new THREE.Matrix4();
+                matrix.fromArray(matData);
+
+                mesh.matrixAutoUpdate = false;
+                mesh.matrix.copy(matrix);
+                scene.add(mesh);
+                arObjects.push(mesh);
+            });
+        }
+
+        function updateCameraPose(status, matrixArr) {
+            // status: 2 = SLAM_ON (Tracking)
+            let isTracking = (status === 2);
+
+            // 获取附加在 cameraProxy 上的 Cone Mesh
+            let coneMesh = slamCameraProxy.children.find(c => c instanceof THREE.Mesh);
+
+            if (coneMesh) {
+                if (!(coneMesh.material instanceof THREE.MeshBasicMaterial)) {
+                    coneMesh.material = new THREE.MeshBasicMaterial();
+                }
+
+                // 设置颜色: 绿色=跟踪中, 红色=丢失
+                coneMesh.material.color.setHex(isTracking ? 0x00ff00 : 0xff0000);
+            }
+
+            slamCameraHelper.visible = isTracking;
+            slamCameraProxy.visible = true;
+
+            // 更新矩阵
+            // 接收到的是 View Matrix (World -> Camera)
+            // Three.js 需要 World Matrix (Camera -> World)
+            let viewMat = new THREE.Matrix4();
+            viewMat.fromArray(matrixArr);
+
+            // 兼容性修复：C++端为了适配手机AR，返回的是 R*In*R。
+            // 浏览器端查看的是原始SLAM点云(RDF)，需要的是 R*In。
+            // 因此我们需要右乘 R 来还原：(R*In*R) * R = R*In。
+            let R = new THREE.Matrix4().makeRotationX(Math.PI);
+            viewMat.multiply(R);
+
+            // 求逆得到模型矩阵
+            let worldMat = viewMat.invert();
+
+            // OpenGL/Three.js 坐标系: X 右, Y 上, Z 后 (屏幕向外)
+            // OpenCV/ORB-SLAM 坐标系: X 右, Y 下, Z 前
+            // 我们需要绕X轴旋转180度来转换它们
+            // 另外，用户反馈左右反了，这通常是因为X轴镜像问题或特殊的相机坐标定义
+            // 这里我们尝试通过缩放X轴来修正左右镜像问题: Scale(-1, 1, 1) * RotationX(180)
+
+            slamCameraProxy.matrixAutoUpdate = false;
+            slamCameraProxy.matrix.copy(worldMat);
+            slamCameraProxy.updateMatrixWorld(true);
+            slamCameraHelper.update();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (controls) controls.update();
+            renderer.render(scene, camera);
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,279 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#ff000000">
+
+    <com.orb.slam2s.ui.CameraGLView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:id="@+id/my_fake_glsurface_view" />
+
+    <com.orb.slam2s.rendering.gles.GLRootView
+        android:id="@+id/ar_object_view_gles2_obj"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true" />
+    
+    <View
+        android:id="@+id/touch_panel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true" />
+
+    <!-- 顶部信息面板 - 更紧凑的设计 -->
+    <LinearLayout
+        android:id="@+id/info_panel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="12dp"
+        android:orientation="vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:background="#50000000">
+        <TextView
+            android:id="@+id/text_fps"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#00D9FF"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:shadowColor="#000000"
+            android:shadowRadius="2"/>
+        <TextView
+            android:id="@+id/text_map_stats"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#00FF88"
+            android:textSize="11sp"
+            android:layout_marginTop="2dp"
+            android:shadowColor="#000000"
+            android:shadowRadius="2"/>
+    </LinearLayout>
+
+
+
+    <!-- 浮动日志窗口 (默认隐藏) -->
+    <include layout="@layout/floating_log_window"
+        android:id="@+id/floating_log_window"/>
+
+    <!-- 右侧控制面板 - 分类折叠式 -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
+        android:orientation="vertical"
+        android:gravity="end">
+
+        <!-- AR 控制 -->
+        <Button
+            android:id="@+id/btn_group_ar"
+            android:layout_width="76dp"
+            android:layout_height="32dp"
+            android:layout_marginBottom="4dp"
+            android:text="@string/category_ar"
+            android:textSize="10sp"
+            android:textAllCaps="false"
+            android:backgroundTint="#607D8B"
+            android:alpha="0.90"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"/>
+        <LinearLayout
+            android:id="@+id/group_ar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+            <Button
+                android:id="@+id/btn_create_ar_object"
+                android:layout_width="76dp"
+                android:layout_height="32dp"
+                android:layout_marginBottom="4dp"
+                android:text="@string/btn_ar_object"
+                android:textSize="10sp"
+                android:textAllCaps="false"
+                android:alpha="0.85"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"/>
+            <Button
+                android:id="@+id/btn_3dof_cube"
+                android:layout_width="76dp"
+                android:layout_height="32dp"
+                android:layout_marginBottom="4dp"
+                android:text="3DOF"
+                android:textSize="10sp"
+                android:textAllCaps="false"
+                android:backgroundTint="#FF5722"
+                android:textColor="#FFFFFF"
+                android:alpha="0.85"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"/>
+        </LinearLayout>
+
+        <!-- 地图管理 -->
+        <Button
+            android:id="@+id/btn_group_map"
+            android:layout_width="76dp"
+            android:layout_height="32dp"
+            android:layout_marginBottom="4dp"
+            android:text="@string/category_map"
+            android:textSize="10sp"
+            android:textAllCaps="false"
+            android:backgroundTint="#607D8B"
+            android:alpha="0.90"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"/>
+        <LinearLayout
+            android:id="@+id/group_map"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+            <Button
+                android:id="@+id/btn_save_map"
+                android:layout_width="76dp"
+                android:layout_height="32dp"
+                android:layout_marginBottom="4dp"
+                android:text="@string/btn_save"
+                android:textSize="10sp"
+                android:textAllCaps="false"
+                android:alpha="0.85"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"/>
+            <Button
+                android:id="@+id/btn_load_map"
+                android:layout_width="76dp"
+                android:layout_height="32dp"
+                android:layout_marginBottom="4dp"
+                android:text="@string/btn_load"
+                android:textSize="10sp"
+                android:textAllCaps="false"
+                android:alpha="0.85"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"/>
+            <Button
+                android:id="@+id/btn_map_list"
+                android:layout_width="76dp"
+                android:layout_height="32dp"
+                android:layout_marginBottom="4dp"
+                android:text="@string/btn_map"
+                android:textSize="10sp"
+                android:textAllCaps="false"
+                android:alpha="0.85"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"/>
+        </LinearLayout>
+
+        <!-- SLAM 控制 -->
+        <Button
+            android:id="@+id/btn_group_slam"
+            android:layout_width="76dp"
+            android:layout_height="32dp"
+            android:layout_marginBottom="4dp"
+            android:text="@string/category_slam"
+            android:textSize="10sp"
+            android:textAllCaps="false"
+            android:backgroundTint="#607D8B"
+            android:alpha="0.90"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"/>
+        <LinearLayout
+            android:id="@+id/group_slam"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+            <Button
+                android:id="@+id/btn_reset_slam"
+                android:layout_width="76dp"
+                android:layout_height="32dp"
+                android:layout_marginBottom="4dp"
+                android:text="@string/btn_reset"
+                android:textSize="10sp"
+                android:textAllCaps="false"
+                android:alpha="0.85"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"/>
+            <Button
+                android:id="@+id/btn_toggle_slam"
+                android:layout_width="76dp"
+                android:layout_height="32dp"
+                android:layout_marginBottom="4dp"
+                android:text="@string/btn_slam"
+                android:textSize="10sp"
+                android:textAllCaps="false"
+                android:backgroundTint="#4CAF50"
+                android:alpha="0.85"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"/>
+        </LinearLayout>
+
+        <!-- 显示 控制 -->
+        <Button
+            android:id="@+id/btn_group_display"
+            android:layout_width="76dp"
+            android:layout_height="32dp"
+            android:layout_marginBottom="4dp"
+            android:text="@string/category_display"
+            android:textSize="10sp"
+            android:textAllCaps="false"
+            android:backgroundTint="#607D8B"
+            android:alpha="0.90"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"/>
+        <LinearLayout
+            android:id="@+id/group_display"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+            <Button
+                android:id="@+id/btn_toggle_pointcloud"
+                android:layout_width="76dp"
+                android:layout_height="32dp"
+                android:layout_marginBottom="4dp"
+                android:text="@string/btn_point_cloud"
+                android:textSize="10sp"
+                android:textAllCaps="false"
+                android:alpha="0.85"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"/>
+            <Button
+                android:id="@+id/btn_start_web"
+                android:layout_width="76dp"
+                android:layout_height="32dp"
+                android:layout_marginBottom="4dp"
+                android:text="Web端"
+                android:textSize="10sp"
+                android:textAllCaps="false"
+                android:backgroundTint="#2196F3"
+                android:textColor="#FFFFFF"
+                android:alpha="0.85"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"/>
+            <Button
+                android:id="@+id/btn_toggle_debug"
+                android:layout_width="76dp"
+                android:layout_height="32dp"
+                android:layout_marginBottom="4dp"
+                android:text="调试"
+                android:textSize="10sp"
+                android:textAllCaps="false"
+                android:backgroundTint="#9C27B0"
+                android:alpha="0.85"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"/>
+        </LinearLayout>
+
+
+    </LinearLayout>
+
+</RelativeLayout>

@@ -1,0 +1,280 @@
+/**
+ * Created by Ads on 2017/1/15.
+ * 由Olsc于2025/8/25开始进行修改
+ */
+
+ /**
+ * UI工具函数模块实现
+ */
+#include "UIUtils.h"
+#include "Matrix.h"
+
+/**
+ * 绘制当前帧跟踪到的特征点
+ * 颜色编码策略:
+ *   - 青色(31,188,210): 新建的地图点
+ *   - 绿色(0,255,0): 成功匹配到的已加载地图点
+ *   - 红色(0,0,255): 未成功匹配的已加载地图点
+ */
+void drawTrackedPoints(const std::vector<cv::KeyPoint> &vKeys, const std::vector<ORB_SLAM2::MapPoint *> &vMPs, cv::Mat &im)
+{
+    const int N = vKeys.size();
+    for(int i=0; i<N; i++) {
+        if(i>=vMPs.size()) break;
+        ORB_SLAM2::MapPoint* pMP = vMPs[i];
+        if(pMP) {
+            // 根据地图点来源和匹配状态选择颜色
+            cv::Scalar color = cv::Scalar(31,188,210);  // 默认：新建点为青色
+            if(pMP->mbFromLoadedMap){
+                // 已加载地图点：匹配成功为绿色，未匹配为红色
+                color = pMP->mbMatchedInCurrentFrame ? cv::Scalar(0,255,0) : cv::Scalar(0,0,255);
+            }
+            cv::circle(im,vKeys[i].pt*2,2,color,-1);  // pt*2是因为显示分辨率是原始的2倍
+        }
+    }
+}
+
+/**
+ * 使用RANSAC算法从3D地图点中检测平面
+ * 算法流程:
+ *   1. 筛选观测次数>5的稳定地图点
+ *   2. RANSAC迭代: 随机选3个点拟合平面，计算内点距离
+ *   3. 选择中值距离最小的平面作为最佳结果
+ *   4. 提取内点并构建平面对象
+ */
+Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &vMPs, const int iterations)
+{
+    // 提取3D点：仅保留观测次数>5的稳定地图点
+    vector<cv::Mat> vPoints;
+    vPoints.reserve(vMPs.size());
+    vector<ORB_SLAM2::MapPoint*> vPointMP;
+    vPointMP.reserve(vMPs.size());
+
+    for(size_t i=0; i<vMPs.size(); i++)
+    {
+        ORB_SLAM2::MapPoint* pMP=vMPs[i];
+        if(pMP)
+        {
+            if(pMP->Observations()>5)  // 过滤观测次数少的不稳定点
+            {
+                vPoints.push_back(pMP->GetWorldPos());
+                vPointMP.push_back(pMP);
+            }
+        }
+    }
+
+    const int N = vPoints.size();
+
+    if(N<50)  // 点数过少，无法可靠地拟合平面
+        return NULL;
+
+
+    // 准备RANSAC所需的索引数组
+    vector<size_t> vAllIndices;
+    vAllIndices.reserve(N);
+    vector<size_t> vAvailableIndices;
+
+    for(int i=0; i<N; i++)
+    {
+        vAllIndices.push_back(i);
+    }
+
+    float bestDist = 1e10;
+    vector<float> bestvDist;
+
+    // RANSAC迭代: 寻找最佳平面模型
+    for(int n=0; n<iterations; n++)
+    {
+        vAvailableIndices = vAllIndices;
+
+        cv::Mat A(3,4,CV_32F);
+        A.col(3) = cv::Mat::ones(3,1,CV_32F);
+
+        // 随机选择3个点作为最小集合来拟合平面
+        for(short i = 0; i < 3; ++i)
+        {
+            int randi = DUtils::Random::RandomInt(0, vAvailableIndices.size()-1);
+
+            int idx = vAvailableIndices[randi];
+
+            A.row(i).colRange(0,3) = vPoints[idx].t();
+
+            // 移除已选点，避免重复
+            vAvailableIndices[randi] = vAvailableIndices.back();
+            vAvailableIndices.pop_back();
+        }
+
+        // 使用SVD求解平面方程 ax+by+cz+d=0
+        cv::Mat u,w,vt;
+        cv::SVDecomp(A,w,u,vt,cv::SVD::MODIFY_A | cv::SVD::FULL_UV);
+
+        const float a = vt.at<float>(3,0);
+        const float b = vt.at<float>(3,1);
+        const float c = vt.at<float>(3,2);
+        const float d = vt.at<float>(3,3);
+
+        vector<float> vDistances(N,0);
+
+        const float f = 1.0f/sqrt(a*a+b*b+c*c+d*d);  // 归一化系数
+
+        // 计算所有点到平面的距离
+        for(int i=0; i<N; i++)
+        {
+            vDistances[i] = fabs(vPoints[i].at<float>(0)*a+vPoints[i].at<float>(1)*b+vPoints[i].at<float>(2)*c+d)*f;
+        }
+
+        // 对距离排序，计算中值距离（取前20%的点的边界值）
+        vector<float> vSorted = vDistances;
+        sort(vSorted.begin(),vSorted.end());
+
+        int nth = max((int)(0.2*N),20);
+        const float medianDist = vSorted[nth];
+
+        // 保存中值距离最小的模型
+        if(medianDist<bestDist)
+        {
+            bestDist = medianDist;
+            bestvDist = vDistances;
+        }
+    }
+
+    // 使用1.4倍最佳距离作为内点阈值
+    const float th = 1.4*bestDist;
+    vector<bool> vbInliers(N,false);
+    int nInliers = 0;
+    for(int i=0; i<N; i++)
+    {
+        if(bestvDist[i]<th)
+        {
+            nInliers++;
+            vbInliers[i]=true;
+        }
+    }
+
+    // 提取内点，用于构建最终的平面
+    vector<ORB_SLAM2::MapPoint*> vInlierMPs(nInliers,NULL);
+    int nin = 0;
+    for(int i=0; i<N; i++)
+    {
+        if(vbInliers[i])
+        {
+            vInlierMPs[nin] = vPointMP[i];
+            nin++;
+        }
+    }
+
+    return new Plane(vInlierMPs,Tcw);
+}
+
+/**
+ * 将OpenCV的4x4 Mat矩阵转换为OpenGL的列主序矩阵
+ * OpenCV使用行主序，OpenGL使用列主序，需要进行转置
+ */
+void getColMajorMatrixFromMat(float M[],cv::Mat &Tcw){
+    M[0] = Tcw.at<float>(0,0);
+    M[1] = Tcw.at<float>(1,0);
+    M[2] = Tcw.at<float>(2,0);
+    M[3]  = 0.0;
+    M[4] = Tcw.at<float>(0,1);
+    M[5] = Tcw.at<float>(1,1);
+    M[6] = Tcw.at<float>(2,1);
+    M[7]  = 0.0;
+    M[8] = Tcw.at<float>(0,2);
+    M[9] = Tcw.at<float>(1,2);
+    M[10] = Tcw.at<float>(2,2);
+    M[11]  = 0.0;
+    M[12] = Tcw.at<float>(0,3);
+    M[13] = Tcw.at<float>(1,3);
+    M[14] = Tcw.at<float>(2,3);
+    M[15]  = 1.0;
+}
+
+/**
+ * 绘制所有地图点（用于AR重定位时显示完整点云）
+ * 性能优化策略:
+ *   1. 预先提取旋转矩阵元素，避免重复访问
+ *   2. 手动矩阵乘法代替OpenCV，减少函数调用开销
+ *   3. 早期剔除策略：深度检查、边界检查
+ *   4. 限制最大绘制点数为5000
+ */
+void drawAllMapPoints(const cv::Mat &Tcw, const std::vector<ORB_SLAM2::MapPoint*> &allMapPoints, 
+                      cv::Mat &im, float fx, float fy, float cx, float cy, bool drawOnlyLoaded)
+{
+    if(Tcw.empty() || allMapPoints.empty())
+        return;
+    
+    // 确保Tcw是有效的位姿矩阵
+    if(Tcw.rows < 3 || Tcw.cols < 4)
+        return;
+    
+    // 提取旋转矩阵和平移向量（一次性完成，避免重复at<>操作）
+    const float R11 = Tcw.at<float>(0,0), R12 = Tcw.at<float>(0,1), R13 = Tcw.at<float>(0,2);
+    const float R21 = Tcw.at<float>(1,0), R22 = Tcw.at<float>(1,1), R23 = Tcw.at<float>(1,2);
+    const float R31 = Tcw.at<float>(2,0), R32 = Tcw.at<float>(2,1), R33 = Tcw.at<float>(2,2);
+    const float tx = Tcw.at<float>(0,3);
+    const float ty = Tcw.at<float>(1,3);
+    const float tz = Tcw.at<float>(2,3);
+    
+    const int imgWidth = im.cols;
+    const int imgHeight = im.rows;
+    
+    int drawnCount = 0;
+    const int maxDrawPoints = 5000;  // 性能保护：限制最大绘制点数
+    
+    // 预先计算投影参数（因为显示分辨率是原始的2倍）
+    const float fx2 = fx * 2.0f;
+    const float fy2 = fy * 2.0f;
+    const float cx2 = cx * 2.0f;
+    const float cy2 = cy * 2.0f;
+    
+    const cv::Scalar colorLoaded(0, 255, 0);   // 绿色：已加载点
+    const cv::Scalar colorNew(255, 200, 0);    // 青色：新建点
+    
+    for(size_t i = 0; i < allMapPoints.size(); i++)
+    {
+        ORB_SLAM2::MapPoint* pMP = allMapPoints[i];
+        
+        // 快速过滤无效点
+        if(!pMP || pMP->isBad())
+            continue;
+        
+        if(drawOnlyLoaded && !pMP->mbFromLoadedMap)
+            continue;
+        
+        // 获取3D世界坐标
+        cv::Mat Pw = pMP->GetWorldPos();
+        if(Pw.empty() || Pw.rows != 3)
+            continue;
+        
+        const float Xw = Pw.at<float>(0);
+        const float Yw = Pw.at<float>(1);
+        const float Zw = Pw.at<float>(2);
+        
+        // 世界坐标转相机坐标（手动矩阵乘法，避免OpenCV函数调用开销）
+        const float Xc = R11*Xw + R12*Yw + R13*Zw + tx;
+        const float Yc = R21*Xw + R22*Yw + R23*Zw + ty;
+        const float Zc = R31*Xw + R32*Yw + R33*Zw + tz;
+        
+        // 深度检查（早期剔除策略）
+        if(Zc <= 0.01f)  // 点在相机后方或过近
+            continue;
+        
+        // 投影到图像平面
+        const float invZ = 1.0f / Zc;
+        const float u_display = fx2 * Xc * invZ + cx2;
+        const float v_display = fy2 * Yc * invZ + cy2;
+        
+        // 边界检查（早期剔除策略）
+        if(u_display < 0 || u_display >= imgWidth || v_display < 0 || v_display >= imgHeight)
+            continue;
+        
+        // 绘制点
+        cv::circle(im, cv::Point2f(u_display, v_display), 1, 
+                   pMP->mbFromLoadedMap ? colorLoaded : colorNew, -1);
+        
+        drawnCount++;
+        if(drawnCount >= maxDrawPoints)
+            break;  // 达到最大点数限制，保证实时性
+    }
+}
+

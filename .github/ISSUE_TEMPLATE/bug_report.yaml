@@ -1,0 +1,72 @@
+name: Bug Report
+description: File a bug or crash report
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for submitting a bug report; please fill in with as much detail as possible.
+  - type: dropdown
+    id: slam_version
+    attributes:
+      label: Are you on the latest version of Android ORB-SLAM2s?
+      description: If not, you must update first.
+      options:
+        - No, I need to download a newer version and try again.
+        - Yes, I'm on the latest release of Android ORB-SLAM2s.
+        - Yes, I'm on the latest pre-release of Android ORB-SLAM2s.
+        - Yes, I'm on the latest build of Android ORB-SLAM2s.
+    validations:
+      required: true
+  - type: textarea
+    id: device_info
+    attributes:
+      label: Which Android device are you using?
+      description: Please describe your device (model, manufacturer, Android version) for Android ORB-SLAM2s.
+    validations:
+      required: true
+  - type: textarea
+    id: app_name
+    attributes:
+      label: Which SLAM scenario did this occur on?
+      description: (Optional but preferred) Please describe the SLAM scenario where the issue occurred, such as mapping a specific room, relocalization, or AR rendering.
+    validations:
+      required: false
+  - type: textarea
+    id: android_version
+    attributes:
+      label: Which Android version did this occur on?
+      description: Please tell us the Android version and the OS platform (e.g., MIUI, EMUI, ColorOS, OxygenOS, etc.) on your device.
+    validations:
+      required: true
+  - type: dropdown
+    id: slam_backend
+    attributes:
+      label: Which SLAM components are involved?
+      description: Select the SLAM components involved in the issue.
+      options:
+        - Unknown
+        - Tracking
+        - Mapping
+        - Relocalization
+        - AR Rendering
+        - All Components
+    validations:
+      required: true
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: Describe the issue.
+      description: What happened? Should something else have happened instead? Please provide steps to reproduce the issue if possible.
+      placeholder: Tell us what you see! 
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: |
+        Please provide relevant log output from Android Studio or device logs. You can get these through ADB or the Android Studio Logcat. A screenshot is not normally sufficient because they are often hard to read and search.
+    validations:
+      required: false
