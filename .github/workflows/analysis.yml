@@ -28,6 +28,9 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
       - name: Publish
         run: ./gradlew build
         working-directory: .
