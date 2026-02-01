@@ -18,8 +18,8 @@ jobs:
     steps:
       - uses: actions/first-interaction@v3
         with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          issue-message: |
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          issue_message: |
             Thank you for submitting your first issue to the Android ORB-SLAM2s project! Please provide detailed information about your issue, including device specifications and steps to reproduce. :)
             
             感谢您向 Android ORB-SLAM2s 项目提交第一个问题！请提供有关问题的详细信息，包括设备规格和重现步骤。 :)
@@ -29,7 +29,7 @@ jobs:
             Android ORB-SLAM2s 프로젝트에 첫 이슈를 제출해 주셔서 감사합니다! 장치 사양 및 재현 단계를 포함한 문제에 대한 자세한 정보를 제공해 주세요. :)
             
             Android ORB-SLAM2s プロジェクトに最初の issue を提出していただきありがとうございます！デバイスの仕様や再現手順など、問題の詳細情報を提供してください。 :)
-          pr-message: |
+          pr_message: |
             Thank you for making your first pull request to the Android ORB-SLAM2s project! We greatly appreciate your enthusiasm to contribute and will review this as soon as we can.
             
             感谢您向 Android ORB-SLAM2s 项目提交第一个拉取请求！我们非常感谢您的贡献热情，将尽快进行审核。
