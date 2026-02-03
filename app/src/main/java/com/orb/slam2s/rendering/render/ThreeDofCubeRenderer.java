@@ -125,8 +125,24 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
             return;
         }
 
-        int rotation = ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE))
-                .getDefaultDisplay().getRotation();
+        int rotation;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            try {
+                android.view.Display display = context.getDisplay();
+                if (display != null) {
+                    rotation = display.getRotation();
+                } else {
+                    rotation = ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE))
+                            .getDefaultDisplay().getRotation();
+                }
+            } catch (UnsupportedOperationException e) {
+                rotation = ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE))
+                        .getDefaultDisplay().getRotation();
+            }
+        } else {
+            rotation = ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE))
+                    .getDefaultDisplay().getRotation();
+        }
 
         float[] rotationMatrix = orientationSensor.getRotationMatrix();
 

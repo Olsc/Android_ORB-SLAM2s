@@ -143,6 +143,7 @@ public:
     // 当前帧
     Frame mCurrentFrame;
     cv::Mat mImGray;
+    cv::Mat mLastImGray; // 上一帧灰度图，用于光流静止检测
 
     // 初始化变量（单目）
     std::vector<int> mvIniLastMatches;

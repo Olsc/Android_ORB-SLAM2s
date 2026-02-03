@@ -36,6 +36,7 @@
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/features2d/features2d.hpp>
+#include <opencv2/video/video.hpp>
 
 #include "ORBmatcher.h"
 #include "FrameDrawer.h"
@@ -1218,6 +1219,80 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
             cvtColor(mImGray,mImGray,CV_BGRA2GRAY);
     }
 
+    // 黑暗场景处理
+    // 如果图像纯黑且非跟踪状态(LOST/初始化中)，直接跳过处理
+    // 必须更新UI，否则画面会卡死在最后一帧
+    cv::Scalar meanIntensity = cv::mean(mImGray);
+    if (meanIntensity[0] < 5.0 && mState != OK) {
+        // 清空当前帧特征，防止绘制残留
+        mCurrentFrame.mvKeys.clear();
+        mCurrentFrame.mvKeysUn.clear();
+        mCurrentFrame.mvpMapPoints.clear();
+        mCurrentFrame.mvbOutlier.clear();
+        mCurrentFrame.N = 0;
+        mCurrentFrame.mTimeStamp = timestamp;
+        
+        // 关键：更新绘制器，让用户看到黑屏而不是卡死的画面
+        mpFrameDrawer->Update(this);
+        
+        // 更新上一帧图像，避免光流逻辑出错
+        mLastImGray = mImGray.clone();
+        
+        // 返回当前位姿（通常为空或Identity）
+        // 注意：黑暗场景下掉帧通常是因为相机自动曝光时间变长（例如降低快门速度以获取更多光线）导致的物理限制
+        return mCurrentFrame.mTcw.clone();
+    }
+
+    // 静止场景光流优化
+    bool bIsStatic = false;
+    if (mState == OK && !mLastImGray.empty() && mLastFrame.mvKeys.size() > 50) {
+        std::vector<cv::Point2f> prevPts, currPts;
+        std::vector<uchar> status;
+        std::vector<float> err;
+        
+        // 采样之前的特征点 (Stride = 5)
+        for(size_t i=0; i<mLastFrame.mvKeys.size(); i+=5) {
+            prevPts.push_back(mLastFrame.mvKeysUn[i].pt);
+        }
+        
+        if(prevPts.size() > 10) {
+            cv::calcOpticalFlowPyrLK(mLastImGray, mImGray, prevPts, currPts, status, err, cv::Size(21,21), 3);
+            
+            float moveSum = 0;
+            int moveCnt = 0;
+            for(size_t i=0; i<status.size(); i++) {
+                 if(status[i]) {
+                     float dist = std::abs(prevPts[i].x - currPts[i].x) + std::abs(prevPts[i].y - currPts[i].y);
+                     moveSum += dist;
+                     moveCnt++;
+                 }
+            }
+            
+            // 如果平均移动小于 0.5 像素，认为是静止
+            if (moveCnt > 10 && (moveSum/moveCnt) < 0.5f) {
+                 bIsStatic = true;
+            }
+        }
+    }
+
+    if (bIsStatic) {
+        // 复用上一帧数据，跳过ORB提取和匹配
+        mCurrentFrame = Frame(mLastFrame); // 复制上一帧
+        mCurrentFrame.mTimeStamp = timestamp;
+        mCurrentFrame.mnId = Frame::nNextId++; // 更新ID
+        
+        // 更新 UI
+        mpFrameDrawer->Update(this);
+        
+        // 更新 LastFrame
+        mLastFrame = Frame(mCurrentFrame);
+        
+        // 记录时间
+        mLastImGray = mImGray.clone();
+        
+        return mCurrentFrame.mTcw.clone();
+    }
+
     /////////////////////////
     //Martin:大约 40-80% (60-120ms)
     if(mState==NOT_INITIALIZED || mState==NO_IMAGES_YET)
@@ -1232,6 +1307,10 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
     //Martin:大约 1-60% (5-200ms)
     Track();
     ////////////////////////
+    
+    // 保存当前图像用于下一帧光流检查
+    mLastImGray = mImGray.clone();
+
     //logTime();
     return mCurrentFrame.mTcw.clone();
 }
