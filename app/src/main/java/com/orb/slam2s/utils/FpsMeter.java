@@ -1,9 +1,7 @@
 package com.orb.slam2s.utils;
 
 import java.text.DecimalFormat;
-
 import org.opencv.core.Core;
-
 import android.util.Log;
 
 public class FpsMeter {

@@ -144,6 +144,4 @@ public class ShaderUtils {
             throw new RuntimeException(label + ": OpenGL错误 " + lastError);
         }
     }
-
-
 }

@@ -21,7 +21,6 @@
         android:layout_height="wrap_content"
         android:layout_centerInParent="true" />
 
-    <!-- 顶部信息面板 - 更紧凑的设计 -->
     <LinearLayout
         android:id="@+id/info_panel"
         android:layout_width="wrap_content"
@@ -56,13 +55,9 @@
             android:shadowRadius="2"/>
     </LinearLayout>
 
-
-
-    <!-- 浮动日志窗口 (默认隐藏) -->
     <include layout="@layout/floating_log_window"
         android:id="@+id/floating_log_window"/>
 
-    <!-- 右侧控制面板 - 分类折叠式 -->
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -73,7 +68,6 @@
         android:orientation="vertical"
         android:gravity="end">
 
-        <!-- AR 控制 -->
         <Button
             android:id="@+id/btn_group_ar"
             android:layout_width="76dp"
@@ -118,7 +112,6 @@
                 android:paddingEnd="8dp"/>
         </LinearLayout>
 
-        <!-- 地图管理 -->
         <Button
             android:id="@+id/btn_group_map"
             android:layout_width="76dp"
@@ -172,7 +165,6 @@
                 android:paddingEnd="8dp"/>
         </LinearLayout>
 
-        <!-- SLAM 控制 -->
         <Button
             android:id="@+id/btn_group_slam"
             android:layout_width="76dp"
@@ -216,7 +208,6 @@
                 android:paddingEnd="8dp"/>
         </LinearLayout>
 
-        <!-- 显示 控制 -->
         <Button
             android:id="@+id/btn_group_display"
             android:layout_width="76dp"
@@ -272,7 +263,6 @@
                 android:paddingStart="8dp"
                 android:paddingEnd="8dp"/>
         </LinearLayout>
-
 
     </LinearLayout>
 

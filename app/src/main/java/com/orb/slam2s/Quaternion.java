@@ -206,4 +206,3 @@ class Quaternion {
         return String.format("[%.3f, %.3f, %.3f, %.3f]", new Object[]{Float.valueOf(this.x), Float.valueOf(this.y), Float.valueOf(this.z), Float.valueOf(this.w)});
     }
 }
-

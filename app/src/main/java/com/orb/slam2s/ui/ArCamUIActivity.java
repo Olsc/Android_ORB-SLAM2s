@@ -169,7 +169,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
             }
         });
 
-        // Web Server Button
+        // Web服务器按钮
         btnStartWeb = findViewById(R.id.btn_start_web);
         if (btnStartWeb != null) {
             btnStartWeb.setOnClickListener(new View.OnClickListener() {
