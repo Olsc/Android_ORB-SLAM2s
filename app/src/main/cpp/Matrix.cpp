@@ -333,6 +333,43 @@ bool invertM(float mInv[], int mInvOffset, float m[],
     return true;
 }
 
+/**
+ * 刚体变换矩阵快速求逆 (列主序)
+ * 
+ * 针对变换矩阵 [R | t; 0 | 1] 的特殊化求逆：
+ *   [R | t]^-1 = [R^T | -R^T * t]
+ *   [0 | 1]      [0   |    1    ]
+ * 
+ * 相比通用 invertM: 从 ~80 次乘法 + 16 次加法 + 1 次除法
+ *                   减少到 18 次乘法 + 6 次加法，无除法
+ * 
+ * @param mInv 输出逆矩阵 (列主序)
+ * @param m 输入变换矩阵 (列主序)
+ * @return 始终返回 true（刚体变换矩阵始终可逆）
+ */
+bool invertTransformM(float mInv[], const float m[])
+{
+    // 列主序索引: m[col*4 + row]
+    // m[0-3]:   R第0列 + m[3]=0
+    // m[4-7]:   R第1列 + m[7]=0
+    // m[8-11]:  R第2列 + m[11]=0
+    // m[12-15]: t向量  + m[15]=1
+    
+    // R^T: 转置旋转矩阵
+    mInv[0]  = m[0];   mInv[1]  = m[4];   mInv[2]  = m[8];   mInv[3]  = 0.0f;
+    mInv[4]  = m[1];   mInv[5]  = m[5];   mInv[6]  = m[9];   mInv[7]  = 0.0f;
+    mInv[8]  = m[2];   mInv[9]  = m[6];   mInv[10] = m[10];  mInv[11] = 0.0f;
+    
+    // -R^T * t
+    const float tx = m[12], ty = m[13], tz = m[14];
+    mInv[12] = -(mInv[0] * tx + mInv[4] * ty + mInv[8]  * tz);
+    mInv[13] = -(mInv[1] * tx + mInv[5] * ty + mInv[9]  * tz);
+    mInv[14] = -(mInv[2] * tx + mInv[6] * ty + mInv[10] * tz);
+    mInv[15] = 1.0f;
+    
+    return true;
+}
+
 
 void getRUBViewMatrixFromRDF(float inM[],float outM[]){
     // View_GL = Rx(180) * View_CV * Rx(180)

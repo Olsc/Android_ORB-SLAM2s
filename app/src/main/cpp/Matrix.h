@@ -289,6 +289,19 @@ bool invertM(float mInv[], int mInvOffset, float m[],
              int mOffset);
 
 /**
+ * 刚体变换矩阵快速求逆 (列主序)
+ * 针对变换矩阵 [R | t; 0 | 1] 的特殊化求逆
+ * 使用公式: [R | t]^-1 = [R^T | -R^T * t]
+ * 
+ * 相比通用 invertM 减少约 75% 计算量
+ * 
+ * @param mInv 输出逆矩阵 (16个float, 列主序)
+ * @param m 输入变换矩阵 (16个float, 列主序)
+ * @return 始终返回 true（刚体变换矩阵始终可逆）
+ */
+bool invertTransformM(float mInv[], const float m[]);
+
+/**
  * 将RDF坐标系的矩阵转换为RUB坐标系的视图矩阵
  * RDF = Right-Down-Forward（SLAM常用）
  * RUB = Right-Up-Back（OpenGL标准）
