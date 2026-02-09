@@ -28,8 +28,6 @@ android {
     }
 
     packaging {
-
-
         jniLibs {
             useLegacyPackaging true
             excludes += ['lib/x86/**', 'lib/x86_64/**']
@@ -38,6 +36,10 @@ android {
         resources {
             excludes += ['lib/x86/**', 'lib/x86_64/**']
         }
+    }
+
+    aaptOptions {
+        noCompress "tflite", "mindir", "obj", "mtl"
     }
 
     sourceSets {
