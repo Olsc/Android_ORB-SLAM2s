@@ -681,75 +681,39 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
             vToErase.push_back(make_pair(pKFi,pMP));
         }
     }
-    // 将地图更新拆分为小批次，减少锁持有时间
-    // 每批处理一定数量的元素后释放锁，让 Tracking 线程有机会获取锁
-    const size_t BATCH_SIZE = 10;
-    
-    // 批量删除外点观测
+
+    // 获取地图互斥锁
+    unique_lock<mutex> lock(pMap->mMutexMapUpdate);
+
     if(!vToErase.empty())
     {
-        for(size_t batchStart = 0; batchStart < vToErase.size(); batchStart += BATCH_SIZE)
+        for(size_t i=0;i<vToErase.size();i++)
         {
-            size_t batchEnd = std::min(batchStart + BATCH_SIZE, vToErase.size());
-            
-            // 获取锁处理本批次
-            unique_lock<mutex> lock(pMap->mMutexMapUpdate);
-            for(size_t i = batchStart; i < batchEnd; i++)
-            {
-                KeyFrame* pKFi = vToErase[i].first;
-                MapPoint* pMPi = vToErase[i].second;
-                pKFi->EraseMapPointMatch(pMPi);
-                pMPi->EraseObservation(pKFi);
-            }
-            // 释放锁（离开作用域自动释放）
+            KeyFrame* pKFi = vToErase[i].first;
+            MapPoint* pMPi = vToErase[i].second;
+            pKFi->EraseMapPointMatch(pMPi);
+            pMPi->EraseObservation(pKFi);
         }
     }
 
-    // 恢复优化后的数据 - 同样分批处理
+    // 恢复优化后的数据
 
-    // 关键帧位姿更新
+    // 关键帧
+    for(list<KeyFrame*>::iterator lit=lLocalKeyFrames.begin(), lend=lLocalKeyFrames.end(); lit!=lend; lit++)
     {
-        auto lit = lLocalKeyFrames.begin();
-        auto lend = lLocalKeyFrames.end();
-        size_t count = 0;
-        
-        while(lit != lend)
-        {
-            unique_lock<mutex> lock(pMap->mMutexMapUpdate);
-            size_t batchCount = 0;
-            
-            while(lit != lend && batchCount < BATCH_SIZE)
-            {
-                KeyFrame* pKF = *lit;
-                g2o::VertexSE3Expmap* vSE3 = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(pKF->mnId));
-                g2o::SE3Quat SE3quat = vSE3->estimate();
-                pKF->SetPose(Converter::toCvMat(SE3quat));
-                ++lit;
-                ++batchCount;
-            }
-        }
+        KeyFrame* pKF = *lit;
+        g2o::VertexSE3Expmap* vSE3 = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(pKF->mnId));
+        g2o::SE3Quat SE3quat = vSE3->estimate();
+        pKF->SetPose(Converter::toCvMat(SE3quat));
     }
 
-    // 地图点位置更新
+    // 点
+    for(list<MapPoint*>::iterator lit=lLocalMapPoints.begin(), lend=lLocalMapPoints.end(); lit!=lend; lit++)
     {
-        auto lit = lLocalMapPoints.begin();
-        auto lend = lLocalMapPoints.end();
-        
-        while(lit != lend)
-        {
-            unique_lock<mutex> lock(pMap->mMutexMapUpdate);
-            size_t batchCount = 0;
-            
-            while(lit != lend && batchCount < BATCH_SIZE)
-            {
-                MapPoint* pMP = *lit;
-                g2o::VertexSBAPointXYZ* vPoint = static_cast<g2o::VertexSBAPointXYZ*>(optimizer.vertex(pMP->mnId+maxKFid+1));
-                pMP->SetWorldPos(Converter::toCvMat(vPoint->estimate()));
-                pMP->UpdateNormalAndDepth();
-                ++lit;
-                ++batchCount;
-            }
-        }
+        MapPoint* pMP = *lit;
+        g2o::VertexSBAPointXYZ* vPoint = static_cast<g2o::VertexSBAPointXYZ*>(optimizer.vertex(pMP->mnId+maxKFid+1));
+        pMP->SetWorldPos(Converter::toCvMat(vPoint->estimate()));
+        pMP->UpdateNormalAndDepth();
     }
 }
 
