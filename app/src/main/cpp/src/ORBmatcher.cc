@@ -183,8 +183,10 @@ int ORBmatcher::SearchByBoW(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoin
     int nmatches=0;
 
     vector<int> rotHist[HISTO_LENGTH];
+    // 根据实际预期匹配数动态预分配
+    const int expectedMatches = std::min(200, static_cast<int>(F.N) / 4);
     for(int i=0;i<HISTO_LENGTH;i++)
-        rotHist[i].reserve(500);
+        rotHist[i].reserve(expectedMatches / HISTO_LENGTH + 1);
     const float factor = 1.0f/HISTO_LENGTH;
 
     // 我们对属于同一词汇节点（在特定级别）的 ORB 进行匹配

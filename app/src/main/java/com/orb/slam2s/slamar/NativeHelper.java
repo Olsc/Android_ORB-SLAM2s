@@ -29,6 +29,7 @@ public class NativeHelper {
     static {
         System.loadLibrary("c++_shared");      // C++ 运行时
         System.loadLibrary("opencv_java4");    // OpenCV
+        System.loadLibrary("3dof");            // 3DOF
         System.loadLibrary("SLAM_AR");         // 整合后的 SLAM_AR（包含 SLAM + JNI）
     }
 
@@ -149,6 +150,22 @@ public class NativeHelper {
     // 3DOF功能接口
     public native float[] calculate3DofInsertionPoint(float[] rotationMatrix, int rotation, float distance);
     public native float[] compute3DofMVP(float[] rotationMatrix, int rotation, float ratio, float[] objectPos);
+    
+    /**
+     * 从旋转矩阵计算欧拉角
+     * @param rotationMatrix 旋转矩阵（3x3或4x4）
+     * @return 欧拉角数组 [方位角, 俯仰角, 滚转角]（弧度）
+     */
+    public native float[] getOrientationFromRotationMatrix(float[] rotationMatrix);
+    
+    /**
+     * 坐标系重映射
+     * @param inR 输入旋转矩阵
+     * @param X 新的X轴对应的原轴
+     * @param Y 新的Y轴对应的原轴
+     * @return 重映射后的旋转矩阵
+     */
+    public native float[] remapCoordinateSystemNative(float[] inR, int X, int Y);
     
     // AR对象管理（C++端控制）
     public native boolean shouldDrawArObject();

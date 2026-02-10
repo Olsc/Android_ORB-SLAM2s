@@ -285,3 +285,8 @@ target_link_libraries(SLAM_AR
         EGL
         GLESv1_CM
         )
+
+# ========== 3DOF 库 ==========
+add_library(3dof SHARED src/main/cpp/3dof.cpp)
+target_link_libraries(3dof ${log-lib})
+

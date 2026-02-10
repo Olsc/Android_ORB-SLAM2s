@@ -67,7 +67,10 @@ static float IC_Angle(const Mat& image, Point2f pt,  const vector<int> & u_max)
 {
     int m_01 = 0, m_10 = 0;
 
-    const uchar* center = &image.at<uchar> (cvRound(pt.y), cvRound(pt.x));
+    // 快速舍入优化：避免 cvRound 函数调用开销
+    const int py = (int)(pt.y + 0.5f);
+    const int px = (int)(pt.x + 0.5f);
+    const uchar* center = &image.at<uchar>(py, px);
 
     // 利用中心线对称性减少乘法 (v=0)
     for (int u = 1; u <= ORB_HALF_PATCH_SIZE; ++u)
@@ -133,12 +136,16 @@ static void computeOrbDescriptor(const KeyPoint& kpt,
     float a = cosineTable[angleIdx];
     float b = sineTable[angleIdx];
 
-    const uchar* center = &img.at<uchar>(cvRound(kpt.pt.y), cvRound(kpt.pt.x));
+    // 快速舍入优化
+    const int kpy = (int)(kpt.pt.y + 0.5f);
+    const int kpx = (int)(kpt.pt.x + 0.5f);
+    const uchar* center = &img.at<uchar>(kpy, kpx);
     const int step = (int)img.step;
 
+    // 快速舍入优化：使用 int(x + 0.5f) 替代 cvRound
     #define GET_VALUE(idx) \
-        center[cvRound(pattern[idx].x*b + pattern[idx].y*a)*step + \
-               cvRound(pattern[idx].x*a - pattern[idx].y*b)]
+        center[(int)(pattern[idx].x*b + pattern[idx].y*a + 0.5f)*step + \
+               (int)(pattern[idx].x*a - pattern[idx].y*b + 0.5f)]
 
 
     for (int i = 0; i < 32; ++i, pattern += 16)
