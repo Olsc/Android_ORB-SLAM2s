@@ -692,18 +692,15 @@ float KeyFrame::ComputeSceneMedianDepth(const int q)
         if(mvpMapPoints[i])
         {
             MapPoint* pMP = mvpMapPoints[i];
-            // 使用快速Point3f访问器避免cv::Mat::clone()堆分配
-            const cv::Point3f pos = pMP->GetWorldPosAsPoint3f();
-            float z = Rcw2.at<float>(0)*pos.x + Rcw2.at<float>(1)*pos.y + Rcw2.at<float>(2)*pos.z + zcw;
+            cv::Mat x3Dw = pMP->GetWorldPos();
+            float z = Rcw2.dot(x3Dw)+zcw;
             vDepths.push_back(z);
         }
     }
 
-    // 使用 nth_element 而非 sort 找中值: O(N) vs O(N log N)
-    size_t medianIdx = (vDepths.size()-1)/q;
-    std::nth_element(vDepths.begin(), vDepths.begin() + medianIdx, vDepths.end());
+    std::sort(vDepths.begin(),vDepths.end());
 
-    return vDepths[medianIdx];
+    return vDepths[(vDepths.size()-1)/q];
 }
 
 } //namespace ORB_SLAM2

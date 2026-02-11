@@ -122,22 +122,10 @@ cv::Mat MapPoint::GetWorldPos()
     return mWorldPos.clone();
 }
 
-cv::Point3f MapPoint::GetWorldPosAsPoint3f()
-{
-    std::unique_lock<std::mutex> lock(mMutexPos);
-    return cv::Point3f(mWorldPos.at<float>(0), mWorldPos.at<float>(1), mWorldPos.at<float>(2));
-}
-
 cv::Mat MapPoint::GetNormal()
 {
     unique_lock<mutex> lock(mMutexPos);
     return mNormalVector.clone();
-}
-
-cv::Point3f MapPoint::GetNormalAsPoint3f()
-{
-    unique_lock<mutex> lock(mMutexPos);
-    return cv::Point3f(mNormalVector.at<float>(0), mNormalVector.at<float>(1), mNormalVector.at<float>(2));
 }
 
 KeyFrame* MapPoint::GetReferenceKeyFrame()
