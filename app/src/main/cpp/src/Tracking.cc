@@ -87,19 +87,35 @@ static void FilterPnPInputs(const std::vector<cv::Point3f> &in3d,
                             std::vector<cv::Point3f> &out3d,
                             std::vector<cv::Point2f> &out2d)
 {
-    out3d.clear(); out2d.clear();
-    if(in3d.size()!=in2d.size()) return;
-    out3d.reserve(in3d.size()); out2d.reserve(in2d.size());
+    out3d.clear();
+    out2d.clear();
+    
+    if (in3d.size() != in2d.size())
+        return;
+        
+    out3d.reserve(in3d.size());
+    out2d.reserve(in2d.size());
+    
     // const float LIM2D = 1e5f; // 像素坐标合理限制
     // const float LIM3D = 1e6f; // 3D坐标合理限制
-    for(size_t i=0;i<in3d.size();++i){
+    
+    for (size_t i = 0; i < in3d.size(); ++i)
+    {
         const cv::Point3f &P = in3d[i];
         const cv::Point2f &q = in2d[i];
-        auto finite = [](float v){ return std::isfinite(v); };
-        if(!finite(P.x)||!finite(P.y)||!finite(P.z)||!finite(q.x)||!finite(q.y)) continue;
-        if(std::fabs(q.x)>ORB_SLAM2::PNP_LIMIT_2D || std::fabs(q.y)>ORB_SLAM2::PNP_LIMIT_2D) continue;
-        if(std::fabs(P.x)>ORB_SLAM2::PNP_LIMIT_3D || std::fabs(P.y)>ORB_SLAM2::PNP_LIMIT_3D || std::fabs(P.z)>ORB_SLAM2::PNP_LIMIT_3D) continue;
-        out3d.push_back(P); out2d.push_back(q);
+        auto finite = [](float v) { return std::isfinite(v); };
+        
+        if (!finite(P.x) || !finite(P.y) || !finite(P.z) || !finite(q.x) || !finite(q.y))
+            continue;
+            
+        if (std::fabs(q.x) > ORB_SLAM2::PNP_LIMIT_2D || std::fabs(q.y) > ORB_SLAM2::PNP_LIMIT_2D)
+            continue;
+            
+        if (std::fabs(P.x) > ORB_SLAM2::PNP_LIMIT_3D || std::fabs(P.y) > ORB_SLAM2::PNP_LIMIT_3D || std::fabs(P.z) > ORB_SLAM2::PNP_LIMIT_3D)
+            continue;
+            
+        out3d.push_back(P);
+        out2d.push_back(q);
     }
 }
 
@@ -113,17 +129,40 @@ static void FilterPnPInputsSync(const std::vector<cv::Point3f> &in3d,
                                 std::vector<int> &outQIdx,
                                 std::vector<int> &outRefIdx)
 {
-    out3d.clear(); out2d.clear(); outQIdx.clear(); outRefIdx.clear();
-    if(in3d.size()!=in2d.size() || in3d.size()!=inQIdx.size() || in3d.size()!=inRefIdx.size()) return;
-    out3d.reserve(in3d.size()); out2d.reserve(in2d.size()); outQIdx.reserve(inQIdx.size()); outRefIdx.reserve(inRefIdx.size());
+    out3d.clear();
+    out2d.clear();
+    outQIdx.clear();
+    outRefIdx.clear();
+    
+    if (in3d.size() != in2d.size() || in3d.size() != inQIdx.size() || in3d.size() != inRefIdx.size())
+        return;
+        
+    out3d.reserve(in3d.size());
+    out2d.reserve(in2d.size());
+    outQIdx.reserve(inQIdx.size());
+    outRefIdx.reserve(inRefIdx.size());
+    
     // const float LIM2D = 1e5f; const float LIM3D = 1e6f;
-    auto finite = [](float v){ return std::isfinite(v); };
-    for(size_t i=0;i<in3d.size();++i){
-        const cv::Point3f &P = in3d[i]; const cv::Point2f &q = in2d[i];
-        if(!finite(P.x)||!finite(P.y)||!finite(P.z)||!finite(q.x)||!finite(q.y)) continue;
-        if(std::fabs(P.x)>ORB_SLAM2::PNP_LIMIT_3D||std::fabs(P.y)>ORB_SLAM2::PNP_LIMIT_3D||std::fabs(P.z)>ORB_SLAM2::PNP_LIMIT_3D) continue;
-        if(std::fabs(q.x)>ORB_SLAM2::PNP_LIMIT_2D||std::fabs(q.y)>ORB_SLAM2::PNP_LIMIT_2D) continue;
-        out3d.push_back(P); out2d.push_back(q); outQIdx.push_back(inQIdx[i]); outRefIdx.push_back(inRefIdx[i]);
+    auto finite = [](float v) { return std::isfinite(v); };
+    
+    for (size_t i = 0; i < in3d.size(); ++i)
+    {
+        const cv::Point3f &P = in3d[i];
+        const cv::Point2f &q = in2d[i];
+        
+        if (!finite(P.x) || !finite(P.y) || !finite(P.z) || !finite(q.x) || !finite(q.y))
+            continue;
+            
+        if (std::fabs(P.x) > ORB_SLAM2::PNP_LIMIT_3D || std::fabs(P.y) > ORB_SLAM2::PNP_LIMIT_3D || std::fabs(P.z) > ORB_SLAM2::PNP_LIMIT_3D)
+            continue;
+            
+        if (std::fabs(q.x) > ORB_SLAM2::PNP_LIMIT_2D || std::fabs(q.y) > ORB_SLAM2::PNP_LIMIT_2D)
+            continue;
+            
+        out3d.push_back(P);
+        out2d.push_back(q);
+        outQIdx.push_back(inQIdx[i]);
+        outRefIdx.push_back(inRefIdx[i]);
     }
 }
 
@@ -839,15 +878,24 @@ void Tracking::GlobalRelocLoop()
                 
                 // 如果网格搜索结果太少（可能是因为定位漂移太大，导致相机坐标跑出了网格范围），
                 // 尝试全量采样作为最后的保底
-                if(candidateIdx.empty()) {
-                    int step = std::max(1, (int)refSnaps.size()/std::max(1, mCfgMaxCandidates));
-                    for(int i=0;i<(int)refSnaps.size() && (int)candidateIdx.size()<mCfgMaxCandidates;i+=step){ candidateIdx.push_back(i); }
+                if (candidateIdx.empty())
+                {
+                    int step = std::max(1, (int)refSnaps.size() / std::max(1, mCfgMaxCandidates));
+                    for (int i = 0; i < (int)refSnaps.size() && (int)candidateIdx.size() < mCfgMaxCandidates; i += step)
+                    {
+                        candidateIdx.push_back(i);
+                    }
                 }
                 
-            } else {
-                 // 没有位姿先验，只能均匀采样
-                int step = std::max(1, (int)refSnaps.size()/std::max(1, mCfgMaxCandidates));
-                for(int i=0;i<(int)refSnaps.size() && (int)candidateIdx.size()<mCfgMaxCandidates;i+=step){ candidateIdx.push_back(i); }
+            }
+            else
+            {
+                // 没有位姿先验，只能均匀采样
+                int step = std::max(1, (int)refSnaps.size() / std::max(1, mCfgMaxCandidates));
+                for (int i = 0; i < (int)refSnaps.size() && (int)candidateIdx.size() < mCfgMaxCandidates; i += step)
+                {
+                    candidateIdx.push_back(i);
+                }
             }
         }
         //LOGD("RelocBG: 候选数=%d", (int)candidateIdx.size());  // 高频日志，已注释
@@ -908,10 +956,26 @@ void Tracking::GlobalRelocLoop()
             std::vector<std::vector<cv::DMatch>> knnPart;
             matcher.knnMatch(desc, sub, knnPart, 2);
             // 将trainIdx重新映射到全局
-            for(auto &vec : knnPart){
-                if(vec.size()>=1){
-                    if(vec[0].trainIdx>=0 && vec[0].trainIdx<(int)subMap.size()) vec[0].trainIdx = subMap[vec[0].trainIdx]; else vec.resize(0);
-                    if(vec.size()>=2){ if(vec[1].trainIdx>=0 && vec[1].trainIdx<(int)subMap.size()) vec[1].trainIdx = subMap[vec[1].trainIdx]; }
+            for (auto &vec : knnPart)
+            {
+                if (vec.size() >= 1)
+                {
+                    if (vec[0].trainIdx >= 0 && vec[0].trainIdx < (int)subMap.size())
+                    {
+                        vec[0].trainIdx = subMap[vec[0].trainIdx];
+                    }
+                    else
+                    {
+                        vec.resize(0);
+                    }
+                    
+                    if (vec.size() >= 2)
+                    {
+                        if (vec[1].trainIdx >= 0 && vec[1].trainIdx < (int)subMap.size())
+                        {
+                            vec[1].trainIdx = subMap[vec[1].trainIdx];
+                        }
+                    }
                 }
             }
             knn.insert(knn.end(), knnPart.begin(), knnPart.end());
@@ -928,16 +992,25 @@ void Tracking::GlobalRelocLoop()
             const cv::DMatch &m1=knn[i][0];
             if(m1.distance>distMax) continue;
             // 有2个候选时做ratio test；只有1个候选时仅用distMax筛选
-            if(knn[i].size()>=2 && m1.distance>=ratio*knn[i][1].distance) continue;
+            if (knn[i].size() >= 2 && m1.distance >= ratio * knn[i][1].distance)
+                continue;
+                
             {
-                int idx2D=m1.queryIdx, idxRef=m1.trainIdx;
-                if(idx2D<0 || idx2D>=N) continue;
-                if(idxRef<0 || idxRef>=(int)valToRef.size()) continue;
+                int idx2D = m1.queryIdx;
+                int idxRef = m1.trainIdx;
+                
+                if (idx2D < 0 || idx2D >= N) 
+                    continue;
+                    
+                if (idxRef < 0 || idxRef >= (int)valToRef.size()) 
+                    continue;
+                    
                 int rRef = valToRef[idxRef];
                 pts2d.push_back(keys[idx2D].pt);
                 const RefMPSnapshot &s = refSnaps[rRef];
                 pts3d.emplace_back(s.Pw.x, s.Pw.y, s.Pw.z);
-                qIdx.push_back(idx2D); refIdx.push_back(rRef);
+                qIdx.push_back(idx2D);
+                refIdx.push_back(rRef);
                 descDist.push_back((int)m1.distance);
                 keptPairs++;
             }
@@ -987,13 +1060,26 @@ void Tracking::GlobalRelocLoop()
                              [&](size_t a, size_t b){ return descDist[a] < descDist[b]; });
             if(keep.size() > MAX_PNP_SAMPLES) keep.resize(MAX_PNP_SAMPLES);
             // 重排到新的容器
+            // 重排到新的容器
             std::vector<cv::Point2f> n2d; n2d.reserve(keep.size());
             std::vector<cv::Point3f> n3d; n3d.reserve(keep.size());
             std::vector<int> nq; nq.reserve(keep.size());
             std::vector<int> nr; nr.reserve(keep.size());
+            
             std::sort(keep.begin(), keep.end(), [&](size_t a, size_t b){ return descDist[a] < descDist[b]; });
-            for(size_t id : keep){ n2d.push_back(pts2d[id]); n3d.push_back(pts3d[id]); nq.push_back(qIdx[id]); nr.push_back(refIdx[id]); }
-            pts2d.swap(n2d); pts3d.swap(n3d); qIdx.swap(nq); refIdx.swap(nr);
+            
+            for (size_t id : keep)
+            {
+                n2d.push_back(pts2d[id]);
+                n3d.push_back(pts3d[id]);
+                nq.push_back(qIdx[id]);
+                nr.push_back(refIdx[id]);
+            }
+            
+            pts2d.swap(n2d);
+            pts3d.swap(n3d);
+            qIdx.swap(nq);
+            refIdx.swap(nr);
         }
 
         bool alignedNow=false; int inliersCnt=0;
@@ -2039,7 +2125,6 @@ bool Tracking::TrackLocalMap()
             if(!p || p->isBad()) continue;
             if(p->mbFromLoadedMap){ localLoaded++; if(!p->GetDescriptor().empty()) localWithDesc++; }
         }
-        //LOGD("Reloc: localMP size=%d, loaded=%d, loadedWithDesc=%d", localTotal, localLoaded, localWithDesc);
     }
 
     // 先尝试基于已加载参考地图的2D-3D描述符匹配 + PnP-RANSAC 进行全局重定位
@@ -2047,12 +2132,10 @@ bool Tracking::TrackLocalMap()
     if(false)
     {
         const vector<MapPoint*> allMPs = mpMap->GetAllMapPoints();
-        //LOGD("Reloc: mpMap=%p, allMPs.size=%d", (void*)mpMap, (int)allMPs.size());  // 调试日志，已注释
         for(int si=0, printed=0; si<(int)allMPs.size() && printed<5; ++si){
             MapPoint* sp = allMPs[si];
             if(!sp || sp->isBad()) continue;
             cv::Mat d = sp->GetDescriptor();
-            //LOGD("Reloc: sampleMP[%d]=%p loaded=%d descCols=%d", printed, (void*)sp, sp->mbFromLoadedMap?1:0, d.empty()?0:d.cols);  // 调试日志，已注释
             printed++;
         }
         int loadedCnt = 0, loadedWithDescCnt = 0;
@@ -2063,9 +2146,6 @@ bool Tracking::TrackLocalMap()
                 if(!p->GetDescriptor().empty()) loadedWithDescCnt++;
             }
         }
-        //LOGD("Reloc: enter TrackLocalMap, allMPs=%d, loaded=%d, loadedWithDesc=%d, frameKeys=%d, frameDescEmpty=%d",
-        //     (int)allMPs.size(), loadedCnt, loadedWithDescCnt, mCurrentFrame.N,
-        //     mCurrentFrame.mDescriptors.empty()?1:0);  // 调试日志，已注释
         std::vector<MapPoint*> refMPs; refMPs.reserve(allMPs.size());
         for(MapPoint* p : allMPs){
             if(!p || p->isBad()) continue;
@@ -2087,10 +2167,8 @@ bool Tracking::TrackLocalMap()
                 refDesc.push_back(row);
                 valToRef.push_back(r);
             }
-            //LOGD("Reloc: candidates=%d, frameKeys=%d, descCols=%d", (int)refMPs.size(), mCurrentFrame.N, dcols);  // 调试日志，已注释
             if(refDesc.empty()) {
                 // 无有效参考描述符
-                //LOGD("Reloc: no valid reference descriptors (all empty/mismatch)");  // 调试日志，已注释
             } else {
             // KNN + ratio
             cv::BFMatcher matcher(cv::NORM_HAMMING);
@@ -2124,7 +2202,6 @@ bool Tracking::TrackLocalMap()
                     keptKnn++;
                 }
             }
-            //LOGD("Reloc: knnPairs=%d, kept=%d", (int)knn.size(), keptKnn);  // 调试日志，已注释
             // 兜底：若匹配过少，使用单次匹配并截断距离
             if(pts3d.size()<12){
                 std::vector<cv::DMatch> ms;
@@ -2144,7 +2221,6 @@ bool Tracking::TrackLocalMap()
                     refIdx.push_back(rRef);
                     fallbackKept++;
                 }
-                //LOGD("Reloc: fallback=%d, totalCandidates=%d", fallbackKept, (int)pts3d.size());  // 调试日志，已注释
             }
 
             if(pts3d.size() >= 6){
@@ -2152,8 +2228,7 @@ bool Tracking::TrackLocalMap()
                 // 统一要求至少6个点，避免DLT断言路径
                 std::vector<cv::Point3f> f3d; std::vector<cv::Point2f> f2d; std::vector<int> fq, fr;
                 FilterPnPInputsSync(pts3d, pts2d, qIdx, refIdx, f3d, f2d, fq, fr);
-                if(f3d.size() < 6){ 
-                    // LOGD("重定位: 过滤后样本不足6个，跳过PnP (过滤前=%d, 过滤后=%d)", (int)pts3d.size(), (int)f3d.size());
+                if(f3d.size() < 6){
                     // 即使PnP失败，也要尝试绑定一些地图点用于可视化
                     // 使用简单的投影匹配来绑定地图点
                     const int totalKeys = mCurrentFrame.N;
@@ -2180,7 +2255,6 @@ bool Tracking::TrackLocalMap()
                             if(projBinds>=20) break; // 限制数量
                         }
                     }
-                    //LOGD("Reloc: PnP失败，通过投影绑定=%d个点", projBinds);  // 调试日志，已注释
                 } else {
                     cv::Mat K = mCurrentFrame.mK;
                     cv::Mat distCoeffs = cv::Mat::zeros(4,1,CV_32F);
@@ -2188,7 +2262,6 @@ bool Tracking::TrackLocalMap()
                     std::vector<int> inliers;
                     bool ok = false;
                     ok = SolvePnPSafe(f3d, f2d, K, distCoeffs, rvec, tvec, inliers);
-                    //LOGD("Reloc: pnpOk=%d, inliers=%d/%d (过滤后=%d)", ok?1:0, (int)inliers.size(), (int)pts3d.size(), (int)f3d.size());  // 调试日志，已注释
                     if(ok && inliers.size() >= 10){
                     // 设置位姿
                     cv::Mat R; 
@@ -2226,7 +2299,6 @@ bool Tracking::TrackLocalMap()
                             }
                         }
                     }
-                    //LOGD("Reloc: boundInliers=%d", boundInliers);  // 调试日志，已注释
                     // 简化：根据重投影一致性再次将局部点加入mvpMapPoints
                     // 扫描参考点，投影进入视野并关联最近特征
                     const int totalKeys = mCurrentFrame.N;
@@ -2253,7 +2325,6 @@ bool Tracking::TrackLocalMap()
                             if(projBinds>=mCfgMaxProjBinds) break; // configurable limit
                         }
                     }
-                    //LOGD("Reloc: projBinds=%d", projBinds);  // 调试日志，已注释
 
                     // 自举关键帧：当地图中还没有关键帧或参考关键帧为空时，
                     // 在PnP成功后创建一个关键帧，建立与现有地图点的观测关系，
@@ -2334,7 +2405,11 @@ bool Tracking::TrackLocalMap()
         const int nKFs = mpMap->KeyFramesInMap();
         if((nKFs==0 || mpReferenceKF==nullptr)){
             int validMatches = 0;
-            for(int i=0;i<mCurrentFrame.N;i++){ if(mCurrentFrame.mvpMapPoints[i] && !mCurrentFrame.mvbOutlier[i]) validMatches++; }
+            for(int i=0; i<mCurrentFrame.N; i++)
+            {
+                if(mCurrentFrame.mvpMapPoints[i] && !mCurrentFrame.mvbOutlier[i])
+                    validMatches++;
+            }
             if(validMatches>=20){
                 // 确保mCurrentFrame有有效的位姿才能创建KeyFrame
                 // Reset后或LoadMap后，mTcw可能为空或无效，必须检查
@@ -2421,7 +2496,11 @@ bool Tracking::TrackLocalMap()
                                 const cv::KeyPoint &kp = mCurrentFrame.mvKeysUn[j];
                                 float du = kp.pt.x - u, dv = kp.pt.y - v;
                                 float d2 = du*du+dv*dv;
-                                if(d2 < bestDist2){ bestDist2=d2; bestIdx=(int)j; }
+                                if(d2 < bestDist2)
+                                {
+                                    bestDist2 = d2;
+                                    bestIdx = (int)j;
+                                }
                             }
 
                             if(bestIdx>=0){
@@ -2438,7 +2517,6 @@ bool Tracking::TrackLocalMap()
                                 }
                             }
                         }
-                        //LOGD("重定位主函数: 高精度绑定 strongBinds=%d", strongBinds);
                     }
                 };
 
@@ -2468,14 +2546,10 @@ bool Tracking::TrackLocalMap()
                             const int confirmInliers = mPendingAlign.inliers;
                             applyAlign(mPendingAlign);
                             mMapSwitchCooldownFrames = 20;
-                            // LOGD("重定位主函数: 地图切换确认 map=%d -> %d (count=%d inliers=%d)",
-                            //      curMapId, newMapId, confirmCount, confirmInliers);
                         }
                     }
                 }
             } else {
-                // LOGD("重定位主函数: 拒绝低质量对齐结果 内点数=%d 置信度=%.2f (要求>=%d,>=%.2f)", 
-                //     res.inliers, res.confidence, minInliers, minConfidence);
                 // 不清除已有对齐状态，但拒绝新的低质量对齐
             }
         }
@@ -2493,16 +2567,22 @@ bool Tracking::TrackLocalMap()
     // 利用快照进行快速绑定，避免只匹配一帧后就中断
     BindLoadedMapPointsUsingSnapshots();
     {
-        int bindCnt=0; for(auto *p : mCurrentFrame.mvpMapPoints){ if(p && !p->isBad()) bindCnt++; }
-        //LOGD("RelocMain: 帧内已绑定点数=%d 有对齐=%d", bindCnt, mbHaveMapAlign?1:0);  // 高频日志，已注释
+        int bindCnt = 0;
+        for(auto *p : mCurrentFrame.mvpMapPoints)
+        {
+            if(p && !p->isBad())
+                bindCnt++;
+        }
     }
     // 对齐存在时，连续失败的宽限策略：如果上帧成功，这一帧边缘内点稍低允许通过一次
     if(mbHaveMapAlign){
-        if(mnMatchesInliers>=20) mConsecutiveFail=0; else mConsecutiveFail++;
+        if(mnMatchesInliers >= 20)
+            mConsecutiveFail = 0;
+        else
+            mConsecutiveFail++;
     } else {
         mConsecutiveFail=0;
     }
-    //LOGD("RelocMain: mnMatchesInliers=%d consecutiveFail=%d", mnMatchesInliers, mConsecutiveFail);  // 高频日志，已注释
     mnMatchesInliers = 0;
 
     // 统计匹配到加载点的数量，作为置信度来源
@@ -2785,8 +2865,6 @@ void Tracking::SearchLocalPoints()
                 additionalMatches++;
             }
         }
-        
-        //LOGD("SearchLocalPoints: 额外加载点匹配=%d", additionalMatches);  // 调试日志，已注释
     }
 }
 
@@ -2818,9 +2896,6 @@ void Tracking::UpdateLocalPoints()
                 continue;
             if(!pMP->isBad())
             {
-                // 载入地图后，已加载点往往缺少关键帧观测，
-                // 为了提升召回，不再按 Observations 进行过滤
-                
                 mvpLocalMapPoints.push_back(pMP);
                 pMP->mnTrackReferenceForFrame=mCurrentFrame.mnId;
             }
@@ -2829,7 +2904,7 @@ void Tracking::UpdateLocalPoints()
     
     // 限制局部地图点数量，避免过多低质量点影响性能
     // 大幅提升上限以支持加载地图的重定位和持续跟踪
-    if(mvpLocalMapPoints.size() > 5000)
+    if(mvpLocalMapPoints.size() > TRACKING_MAX_LOCAL_MAP_POINTS)
     {
         // 按观测次数排序，保留高质量点（但优先保留已加载的点）
         std::sort(mvpLocalMapPoints.begin(), mvpLocalMapPoints.end(), 
@@ -2839,10 +2914,8 @@ void Tracking::UpdateLocalPoints()
                           return a->mbFromLoadedMap > b->mbFromLoadedMap;
                       return a->Observations() > b->Observations();
                   });
-        mvpLocalMapPoints.resize(5000);
+        mvpLocalMapPoints.resize(TRACKING_MAX_LOCAL_MAP_POINTS);
     }
-    
-    //LOGD("UpdateLocalPoints: 局部地图点数量=%d", (int)mvpLocalMapPoints.size());  // 高频日志，已注释
 }
 
 
@@ -3158,19 +3231,13 @@ void Tracking::Reset()
     LOGD("跟踪::重置 地图=%p", (void*)mpMap);
 
     // Reset Local Mapping
-    // cout << "重置局部建图...";
     mpLocalMapper->RequestReset();
-    // cout << " 完成" << endl;
 
     // Reset Loop Closing
-    // cout << "重置回环闭合...";
     mpLoopClosing->RequestReset();
-    // cout << " 完成" << endl;
 
     // Clear BoW Database
-    // cout << "重置数据库...";
     mpKeyFrameDB->clear();
-    // cout << " 完成" << endl;
 
     // 在清除地图之前停止后台重定位线程，以避免MapPoint互斥锁上的竞争
     StopGlobalRelocThread();
@@ -3229,7 +3296,12 @@ void Tracking::Reset()
     {
         // 统计将丢失多少加载的点
         int total=(int)mpMap->MapPointsInMap();
-        int loaded=0; for(MapPoint* p : mpMap->GetAllMapPoints()){ if(p && !p->isBad() && p->mbFromLoadedMap) loaded++; }
+        int loaded = 0;
+        for(MapPoint* p : mpMap->GetAllMapPoints())
+        {
+            if(p && !p->isBad() && p->mbFromLoadedMap)
+                loaded++;
+        }
         LOGD("跟踪::清理地图 点数=%d 已加载=%d", total, loaded);
         mpMap->clear();
     }
@@ -3279,15 +3351,10 @@ void Tracking::ClearTrackingState()
     mlFrameTimes.clear();
     mlbLost.clear();
     
-    // 重置帧ID
-    //KeyFrame::nNextId = 0;
-    //Frame::nNextId = 0;
     // 如果地图中有关键帧，绝对不能重置ID，否则会导致G2O中ID冲突
     if(!mpMap || mpMap->KeyFramesInMap() == 0) {
         KeyFrame::nNextId = 0;
         Frame::nNextId = 0;
-    } else {
-       // LOGD("ClearTrackingState: 地图非空 (KFs=%lu)，跳过ID重置以防止冲突", mpMap->KeyFramesInMap());
     }
     
     // 清除关键帧引用以防止访问已删除的对象

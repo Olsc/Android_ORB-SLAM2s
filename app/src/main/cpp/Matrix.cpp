@@ -132,7 +132,14 @@ void rotateM(float rm[], float m[],
     // 使用局部变量确保线程安全（避免多线程竞争）
     float sTemp[16];
     setRotateM(sTemp, 0, a, x, y, z);
-    multiplyMM(rm, m, sTemp);
+    
+    if (rm == m) {
+        float tmpResult[16];
+        multiplyMM(tmpResult, m, sTemp);
+        memcpy(rm, tmpResult, 16 * sizeof(float));
+    } else {
+        multiplyMM(rm, m, sTemp);
+    }
 }
 
 /**

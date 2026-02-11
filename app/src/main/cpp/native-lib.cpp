@@ -293,7 +293,6 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
     else
     {
         // SLAM 正常运行
-        // LOGD("已启动");  // 注释掉避免刷屏
         
         cv::Mat imgSmall;
         cv::resize(image, imgSmall, cv::Size(image.cols / 2, image.rows / 2));
@@ -540,7 +539,6 @@ Java_com_orb_slam2s_slamar_NativeHelper_initSLAM(JNIEnv* env, jobject instance, 
     
     slamInited = true;
     modelPath = path;
-    // LOGD("SLAM初始化：使用SO中的嵌入资源");
     
     env->ReleaseStringUTFChars(path_, path);
     
@@ -549,17 +547,14 @@ Java_com_orb_slam2s_slamar_NativeHelper_initSLAM(JNIEnv* env, jobject instance, 
     fy = ORB_SLAM2::CAMERA_FY;
     cx = ORB_SLAM2::CAMERA_CX;
     cy = ORB_SLAM2::CAMERA_CY;
-    // LOGD("相机参数：fx=%.2f fy=%.2f cx=%.2f cy=%.2f", fx, fy, cx, cy);
     
     timeStamp = 0.0;
     
     // 预计算投影矩阵（相机内参固定，只需计算一次）
     // 使用640x360分辨率（1280/2, 720/2 - 因为输入图像被缩放）
     frustumM_RUB(640, 360, fx, fy, cx, cy, 0.1, 1000, gCurrentProjectionMatrix);
-    // LOGD("投影矩阵已预计算");
     
     // 初始化SLAM系统
-    // LOGD("正在使用嵌入词汇表初始化SLAM系统...");
     // 传递空字符串作为YAML参数，因为相机参数现在在Config.h中
     slamSys = new ORB_SLAM2::System(":embedded:", "", ORB_SLAM2::System::MONOCULAR);
 }
@@ -571,7 +566,6 @@ Java_com_orb_slam2s_slamar_NativeHelper_saveMap(JNIEnv* env, jobject instance, j
     
     if (slamSys)
     {
-        // LOGD("JNI保存地图开始：%s", path);
         
         double t0 = static_cast<double>(cv::getTickCount());
         slamSys->SaveMap(std::string(path));
@@ -579,9 +573,6 @@ Java_com_orb_slam2s_slamar_NativeHelper_saveMap(JNIEnv* env, jobject instance, j
         
         double t1 = static_cast<double>(cv::getTickCount());
         double ms = (t1 - t0) * 1000.0 / cv::getTickFrequency();
-        
-        // LOGD("JNI保存地图结束：%s，耗时%.1f毫秒，当前关键帧=%d 地图点=%d", path, ms,
-        //     slamSys->GetNumKeyFrames(), slamSys->GetNumMapPoints());
     }
     
     env->ReleaseStringUTFChars(path_, path);
@@ -617,11 +608,6 @@ Java_com_orb_slam2s_slamar_NativeHelper_loadMap(JNIEnv* env, jobject instance, j
                 gLoadedMapPointCount++;
             }
         }
-        
-        // LOGD("JNI加载地图结束：%s，耗时%.1f毫秒，内存中关键帧=%d 地图点=%d (加载=%d)", path, ms,
-        //     slamSys->GetNumKeyFrames(), slamSys->GetNumMapPoints(), gLoadedMapPointCount);
-        
-        // LOGD("AR模式：将在构建%d个新地图点后可用以确保稳定性", MIN_NEW_POINTS_BEFORE_AR);
     }
     
     env->ReleaseStringUTFChars(path_, path);
@@ -635,7 +621,6 @@ Java_com_orb_slam2s_slamar_NativeHelper_loadMapWithId(JNIEnv *env, jobject insta
         // 在加载地图时锁定SLAM状态，阻止processImage进行跟踪
         std::lock_guard<std::mutex> lock(gSlamStateMutex);
 
-        // LOGD("JNI加载地图ID开始：%s，ID=%d，追加=%d", path, mapId, append);
         double t0 = (double)cv::getTickCount();
         
         // 如果不是追加模式，清理旧的全局数据
@@ -656,8 +641,6 @@ Java_com_orb_slam2s_slamar_NativeHelper_loadMapWithId(JNIEnv *env, jobject insta
         
         double t1 = (double)cv::getTickCount();
         double ms = (t1 - t0) * 1000.0 / cv::getTickFrequency();
-        
-        // LOGD("JNI加载地图ID结束：%s，耗时%.1f毫秒", path, ms);
     }
     env->ReleaseStringUTFChars(path_, path);
 }
@@ -711,8 +694,6 @@ Java_com_orb_slam2s_slamar_NativeHelper_detect(JNIEnv *env, jobject instance,
             
             // 更新模型矩阵（投影矩阵已在SLAM初始化时预计算）
             getRUBModelMatrixFromRDF(pPlane->glTpw, gCurrentModelMatrix);
-            
-            // LOGD("检测到平面，AR对象矩阵已更新（如有对齐）");
         }
     }
     env->ReleaseIntArrayElements(statusBuf_, statusBuf, 0);

@@ -277,12 +277,6 @@ void LocalMapping::CreateNewMapPoints()
         cv::Mat vBaseline = Ow2-Ow1;
         const float baseline = cv::norm(vBaseline);
 
-        // if(!mbMonocular)
-        // {
-        //     if(baseline<pKF2->mb)
-        //     continue;
-        // }
-        // else
         {
             const float medianDepthKF2 = pKF2->ComputeSceneMedianDepth(2);
             const float ratioBaselineDepth = baseline/medianDepthKF2;
@@ -345,12 +339,6 @@ void LocalMapping::CreateNewMapPoints()
             float cosParallaxStereo = cosParallaxRays+1;
             float cosParallaxStereo1 = cosParallaxStereo;
             float cosParallaxStereo2 = cosParallaxStereo;
-
-            // 单目模式下跳过双目视差计算
-            // if(bStereo1)
-            //     cosParallaxStereo1 = cos(2*atan2(mpCurrentKeyFrame->mb/2,mpCurrentKeyFrame->mvDepth[idx1]));
-            // else if(bStereo2)
-            //     cosParallaxStereo2 = cos(2*atan2(pKF2->mb/2,pKF2->mvDepth[idx2]));
 
             cosParallaxStereo = min(cosParallaxStereo1,cosParallaxStereo2);
 
@@ -438,8 +426,6 @@ void LocalMapping::CreateNewMapPoints()
             const float ratioDist = dist2/dist1;
             const float ratioOctave = mpCurrentKeyFrame->mvScaleFactors[kp1.octave]/pKF2->mvScaleFactors[kp2.octave];
 
-            /*if(fabs(ratioDist-ratioOctave)>ratioFactor)
-                continue;*/
             if(ratioDist*ratioFactor<ratioOctave || ratioDist>ratioOctave*ratioFactor)
                 continue;
 
@@ -598,7 +584,6 @@ bool LocalMapping::Stop()
     if(mbStopRequested && !mbNotStop)
     {
         mbStopped = true;
-        // cout << "局部建图停止 (Local Mapping STOP)" << endl;
         return true;
     }
 
@@ -628,8 +613,6 @@ void LocalMapping::Release()
     for(list<KeyFrame*>::iterator lit = mlNewKeyFrames.begin(), lend=mlNewKeyFrames.end(); lit!=lend; lit++)
         delete *lit;
     mlNewKeyFrames.clear();
-
-    // cout << "局部建图释放 (Local Mapping RELEASE)" << endl;
 }
 
 bool LocalMapping::AcceptKeyFrames()
@@ -686,13 +669,6 @@ void LocalMapping::KeyFrameCulling()
             {
                 if(!pMP->isBad())
                 {
-                    // 单目模式下跳过深度检查
-                    // if(!mbMonocular)
-                    // {
-                    //     if(pKF->mvDepth[i]>pKF->mThDepth || pKF->mvDepth[i]<0)
-                    //         continue;
-                    // }
-
                     nMPs++;
                     if(pMP->Observations()>thObs)
                     {

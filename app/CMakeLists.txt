@@ -287,6 +287,6 @@ target_link_libraries(SLAM_AR
         )
 
 # ========== 3DOF 库 ==========
-add_library(3dof SHARED src/main/cpp/3dof.cpp)
+add_library(3dof SHARED src/main/cpp/3dof.cpp src/main/cpp/Matrix.cpp)
 target_link_libraries(3dof ${log-lib})
 
