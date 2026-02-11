@@ -638,14 +638,14 @@ std::vector<size_t> KeyFrame::GetFeaturesInArea(const float &x, const float &y, 
     {
         for(int iy = nMinCellY; iy<=nMaxCellY; iy++)
         {
-            const std::vector<size_t> vCell = mGrid[ix][iy];
+            const std::vector<size_t>& vCell = mGrid[ix][iy];
+            const float rSq = r*r;
             for(size_t j=0, jend=vCell.size(); j<jend; j++)
             {
                 const cv::KeyPoint &kpUn = mvKeysUn[vCell[j]];
                 const float distx = kpUn.pt.x-x;
                 const float disty = kpUn.pt.y-y;
                 const float distSq = distx*distx + disty*disty;
-                const float rSq = r*r;
 
                 if(distSq < rSq)
                     vIndices.push_back(vCell[j]);
@@ -692,15 +692,18 @@ float KeyFrame::ComputeSceneMedianDepth(const int q)
         if(mvpMapPoints[i])
         {
             MapPoint* pMP = mvpMapPoints[i];
-            cv::Mat x3Dw = pMP->GetWorldPos();
-            float z = Rcw2.dot(x3Dw)+zcw;
+            // 使用快速Point3f访问器避免cv::Mat::clone()堆分配
+            const cv::Point3f pos = pMP->GetWorldPosAsPoint3f();
+            float z = Rcw2.at<float>(0)*pos.x + Rcw2.at<float>(1)*pos.y + Rcw2.at<float>(2)*pos.z + zcw;
             vDepths.push_back(z);
         }
     }
 
-    std::sort(vDepths.begin(),vDepths.end());
+    // 使用 nth_element 而非 sort 找中值: O(N) vs O(N log N)
+    size_t medianIdx = (vDepths.size()-1)/q;
+    std::nth_element(vDepths.begin(), vDepths.begin() + medianIdx, vDepths.end());
 
-    return vDepths[(vDepths.size()-1)/q];
+    return vDepths[medianIdx];
 }
 
 } //namespace ORB_SLAM2

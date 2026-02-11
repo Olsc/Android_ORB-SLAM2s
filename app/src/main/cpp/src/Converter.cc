@@ -75,49 +75,45 @@ cv::Mat Converter::toCvMat(const g2o::Sim3 &Sim3)
 
 cv::Mat Converter::toCvMat(const Eigen::Matrix<double,4,4> &m)
 {
+    // 使用Eigen::Map进行内存映射转换，避免逐元素at<float>()开销
     cv::Mat cvMat(4,4,CV_32F);
-    for(int i=0;i<4;i++)
-        for(int j=0; j<4; j++)
-            cvMat.at<float>(i,j)=m(i,j);
-
-    return cvMat.clone();
+    Eigen::Map<Eigen::Matrix<float,4,4,Eigen::RowMajor>>(cvMat.ptr<float>()) = m.cast<float>();
+    return cvMat;
 }
 
 cv::Mat Converter::toCvMat(const Eigen::Matrix3d &m)
 {
+    // 使用Eigen::Map进行内存映射转换
     cv::Mat cvMat(3,3,CV_32F);
-    for(int i=0;i<3;i++)
-        for(int j=0; j<3; j++)
-            cvMat.at<float>(i,j)=m(i,j);
-
-    return cvMat.clone();
+    Eigen::Map<Eigen::Matrix<float,3,3,Eigen::RowMajor>>(cvMat.ptr<float>()) = m.cast<float>();
+    return cvMat;
 }
 
 cv::Mat Converter::toCvMat(const Eigen::Matrix<double,3,1> &m)
 {
     cv::Mat cvMat(3,1,CV_32F);
-    for(int i=0;i<3;i++)
-            cvMat.at<float>(i)=m(i);
-
-    return cvMat.clone();
+    float* p = cvMat.ptr<float>();
+    p[0] = (float)m(0);
+    p[1] = (float)m(1);
+    p[2] = (float)m(2);
+    return cvMat;
 }
 
 cv::Mat Converter::toCvSE3(const Eigen::Matrix<double,3,3> &R, const Eigen::Matrix<double,3,1> &t)
 {
     cv::Mat cvMat = cv::Mat::eye(4,4,CV_32F);
+    // 使用Eigen::Map批量写入3x3旋转部分
+    // 注意: cv::Mat 4x4 的 step 是 4*sizeof(float)，需要逐行写入
     for(int i=0;i<3;i++)
     {
-        for(int j=0;j<3;j++)
-        {
-            cvMat.at<float>(i,j)=R(i,j);
-        }
-    }
-    for(int i=0;i<3;i++)
-    {
-        cvMat.at<float>(i,3)=t(i);
+        float* row = cvMat.ptr<float>(i);
+        row[0] = (float)R(i,0);
+        row[1] = (float)R(i,1);
+        row[2] = (float)R(i,2);
+        row[3] = (float)t(i);
     }
 
-    return cvMat.clone();
+    return cvMat;
 }
 
 Eigen::Matrix<double,3,1> Converter::toVector3d(const cv::Mat &cvVector)

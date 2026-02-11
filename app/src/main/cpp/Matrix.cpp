@@ -405,10 +405,23 @@ void getRUBViewMatrixFromRDF(float inM[],float outM[]){
 }
 
 void getRUBModelMatrixFromRDF(float inM[],float outM[]){
-    float tmpM[16],tmpVM[16];
-    setIdentityM(tmpM);
-    rotateM(tmpVM,tmpM, +180.0f, 1.0f, 0.0f, 0.0f);
-    multiplyMM(outM,tmpVM,inM);
+    // Rx(180) * M: 对列主序矩阵，取反第1行和第2行的元素
+    // 等价于原来的 setIdentityM -> rotateM(180,1,0,0) -> multiplyMM
+    // 但避免了两次矩阵乘法和临时数组分配
+    if(inM != outM) {
+        memcpy(outM, inM, 16 * sizeof(float));
+    }
+    // Row 0 (indices 0, 4, 8, 12) 不变
+    // Row 1 (indices 1, 5, 9, 13) 取反
+    outM[1] = -outM[1];
+    outM[5] = -outM[5];
+    outM[9] = -outM[9];
+    outM[13] = -outM[13];
+    // Row 2 (indices 2, 6, 10, 14) 取反
+    outM[2] = -outM[2];
+    outM[6] = -outM[6];
+    outM[10] = -outM[10];
+    outM[14] = -outM[14];
 }
 
 
@@ -484,27 +497,31 @@ void matrixToQuaternion(float M[],Quaternion &q){
 
     if (tr > 0) {
         float S = (float) (sqrt(tr+1) * 2); // S=4*qw
+        float invS = 1.0f / S;
         qw = 0.25f * S;
-        qx = (m21 - m12) / S;
-        qy = (m02 - m20) / S;
-        qz = (m10 - m01) / S;
-    } else if ((m00 > m11)&(m00 > m22)) {
+        qx = (m21 - m12) * invS;
+        qy = (m02 - m20) * invS;
+        qz = (m10 - m01) * invS;
+    } else if ((m00 > m11) && (m00 > m22)) {  // 修复: & -> && (逻辑与)
         float S = (float) (sqrt(1.0 + m00 - m11 - m22) * 2); // S=4*qx
-        qw = (m21 - m12) / S;
+        float invS = 1.0f / S;
+        qw = (m21 - m12) * invS;
         qx = 0.25f * S;
-        qy = (m01 + m10) / S;
-        qz = (m02 + m20) / S;
+        qy = (m01 + m10) * invS;
+        qz = (m02 + m20) * invS;
     } else if (m11 > m22) {
         float S = (float) (sqrt(1.0 + m11 - m00 - m22) * 2); // S=4*qy
-        qw = (m02 - m20) / S;
-        qx = (m01 + m10) / S;
+        float invS = 1.0f / S;
+        qw = (m02 - m20) * invS;
+        qx = (m01 + m10) * invS;
         qy = 0.25f * S;
-        qz = (m12 + m21) / S;
+        qz = (m12 + m21) * invS;
     } else {
         float S = (float) (sqrt(1.0 + m22 - m00 - m11) * 2); // S=4*qz
-        qw = (m10 - m01) / S;
-        qx = (m02 + m20) / S;
-        qy = (m12 + m21) / S;
+        float invS = 1.0f / S;
+        qw = (m10 - m01) * invS;
+        qx = (m02 + m20) * invS;
+        qy = (m12 + m21) * invS;
         qz = 0.25f * S;
     }
     q.x=qx;

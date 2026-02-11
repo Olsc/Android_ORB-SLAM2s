@@ -61,8 +61,13 @@ public:
 
     void SetWorldPos(const cv::Mat &Pos);
     cv::Mat GetWorldPos();
+    // 快速只读路径：返回轻量 cv::Point3f（12字节值类型），避免 cv::Mat::clone() 的堆分配
+    // 在 isInFrustum / SearchLocalPoints 等每帧数千次调用的热路径中使用
+    cv::Point3f GetWorldPosAsPoint3f();
 
     cv::Mat GetNormal();
+    // 快速只读路径
+    cv::Point3f GetNormalAsPoint3f();
     KeyFrame* GetReferenceKeyFrame();
 
     std::map<KeyFrame*,size_t> GetObservations();

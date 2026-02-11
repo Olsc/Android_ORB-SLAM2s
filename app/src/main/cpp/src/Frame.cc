@@ -203,14 +203,13 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
 {
     pMP->mbTrackInView = false;
 
-    // 3D绝对坐标
-    cv::Mat P = pMP->GetWorldPos(); 
+    // 使用快速 Point3f 访问器避免 cv::Mat::clone() 堆分配
+    const cv::Point3f Pw = pMP->GetWorldPosAsPoint3f();
 
-    // 相机坐标系中的3D坐标
-    const cv::Mat Pc = mRcw*P+mtcw;
-    const float &PcX = Pc.at<float>(0);
-    const float &PcY= Pc.at<float>(1);
-    const float &PcZ = Pc.at<float>(2);
+    // 相机坐标系中的3D坐标 - 直接用标量计算避免cv::Mat乘法临时对象
+    const float PcX = mRcw.at<float>(0,0)*Pw.x + mRcw.at<float>(0,1)*Pw.y + mRcw.at<float>(0,2)*Pw.z + mtcw.at<float>(0);
+    const float PcY = mRcw.at<float>(1,0)*Pw.x + mRcw.at<float>(1,1)*Pw.y + mRcw.at<float>(1,2)*Pw.z + mtcw.at<float>(1);
+    const float PcZ = mRcw.at<float>(2,0)*Pw.x + mRcw.at<float>(2,1)*Pw.y + mRcw.at<float>(2,2)*Pw.z + mtcw.at<float>(2);
 
     // 检查正深度
     if(PcZ<0.0f)
@@ -228,7 +227,9 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
 
     // 检查常规点的距离不变性和视角。
     // 对于没有描述子的加载点，放宽约束以允许基于投影的匹配。
-    const cv::Mat PO = P-mOw;
+    const float POx = Pw.x - mOw.at<float>(0);
+    const float POy = Pw.y - mOw.at<float>(1);
+    const float POz = Pw.z - mOw.at<float>(2);
     // 使用平方距离进行范围检查，避免sqrt计算
     float dist = 0.0f;
     float viewCos = 1.0f;
@@ -239,10 +240,7 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
         const float minDistance = pMP->GetMinDistanceInvariance();
         
         // 先使用平方距离进行快速范围检查
-        const float dx = PO.at<float>(0);
-        const float dy = PO.at<float>(1);
-        const float dz = PO.at<float>(2);
-        const float distSq = dx*dx + dy*dy + dz*dz;
+        const float distSq = POx*POx + POy*POy + POz*POz;
         const float maxDistSq = maxDistance * maxDistance;
         const float minDistSq = minDistance * minDistance;
         
@@ -252,9 +250,9 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
         // 只在需要时才计算实际距离（用于视角计算和尺度预测）
         dist = sqrt(distSq);
 
-        // 检查视角
-        cv::Mat Pn = pMP->GetNormal();
-        viewCos = PO.dot(Pn)/dist;
+        // 检查视角 - 使用Point3f快速访问器避免clone
+        const cv::Point3f Pn = pMP->GetNormalAsPoint3f();
+        viewCos = (POx*Pn.x + POy*Pn.y + POz*Pn.z) / dist;
         if(viewCos<viewingCosLimit)
             return false;
 
@@ -305,9 +303,11 @@ std::vector<size_t> Frame::GetFeaturesInArea(const float &x, const float  &y, co
     {
         for(int iy = nMinCellY; iy<=nMaxCellY; iy++)
         {
-            const std::vector<size_t> vCell = mGrid[ix][iy];
+            const std::vector<size_t>& vCell = mGrid[ix][iy];
             if(vCell.empty())
                 continue;
+
+            const float rSq = r*r;
 
             for(size_t j=0, jend=vCell.size(); j<jend; j++)
             {
@@ -324,7 +324,6 @@ std::vector<size_t> Frame::GetFeaturesInArea(const float &x, const float  &y, co
                 const float distx = kpUn.pt.x-x;
                 const float disty = kpUn.pt.y-y;
                 const float distSq = distx*distx + disty*disty;
-                const float rSq = r*r;
 
                 if(distSq < rSq)
                     vIndices.push_back(vCell[j]);

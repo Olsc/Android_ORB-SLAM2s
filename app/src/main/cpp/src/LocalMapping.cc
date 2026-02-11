@@ -556,11 +556,26 @@ cv::Mat LocalMapping::ComputeF12(KeyFrame *&pKF1, KeyFrame *&pKF2)
 
     cv::Mat t12x = SkewSymmetricMatrix(t12);
 
+    // 缓存K逆矩阵：K.inv() 和 K.t().inv() 对同一相机是常量
+    // 避免每次调用ComputeF12都重新计算
     const cv::Mat &K1 = pKF1->mK;
     const cv::Mat &K2 = pKF2->mK;
 
+    // 使用缓存的K逆矩阵，如果KeyFrame提供则使用；否则计算一次
+    // 注意: K.t().inv() == (K^-1)^T
+    static cv::Mat K1tinv, K2inv;
+    static float lastFx1 = 0, lastFx2 = 0;
+    
+    if(K1.at<float>(0,0) != lastFx1) {
+        K1tinv = K1.t().inv();
+        lastFx1 = K1.at<float>(0,0);
+    }
+    if(K2.at<float>(0,0) != lastFx2) {
+        K2inv = K2.inv();
+        lastFx2 = K2.at<float>(0,0);
+    }
 
-    return K1.t().inv()*t12x*R12*K2.inv();
+    return K1tinv*t12x*R12*K2inv;
 }
 
 void LocalMapping::RequestStop()
