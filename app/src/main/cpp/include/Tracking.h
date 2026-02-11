@@ -365,6 +365,12 @@ protected:
     std::atomic<int> mLastTrackingInliers{0};
     // 最近一次跟踪状态（供后台线程判断是否需要运行）
     std::atomic<bool> mTrackingOK{false};
+    
+    // 稳定跟踪计数器：连续OK且内点充足的帧数
+    // 只有当此计数器 >= STABLE_TRACK_THRESHOLD 时才启用光流静止检测
+    int mStableTrackCount = 0;
+    static constexpr int STABLE_TRACK_THRESHOLD = 5;    // 连续5帧稳定跟踪后才启用光流
+    static constexpr int STABLE_INLIER_THRESHOLD = 30;  // 内点数需>30才认为稳定
     // 后台线程上次运行时间戳
     std::chrono::steady_clock::time_point mLastBgRunTime;
     // 连续重定位成功帧计数

@@ -1219,76 +1219,101 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
             cvtColor(mImGray,mImGray,CV_BGRA2GRAY);
     }
 
-    // 黑暗场景处理
-    // 如果图像纯黑且非跟踪状态(LOST/初始化中)，直接跳过处理
-    // 必须更新UI，否则画面会卡死在最后一帧
-    cv::Scalar meanIntensity = cv::mean(mImGray);
-    if (meanIntensity[0] < 5.0 && mState != OK) {
-        // 清空当前帧特征，防止绘制残留
-        mCurrentFrame.mvKeys.clear();
-        mCurrentFrame.mvKeysUn.clear();
-        mCurrentFrame.mvpMapPoints.clear();
-        mCurrentFrame.mvbOutlier.clear();
-        mCurrentFrame.N = 0;
-        mCurrentFrame.mTimeStamp = timestamp;
+    // 黑暗场景处理，每隔16行×16列取一个像素
+    if (mState != OK) {
+        const int step = 16;
+        const int rows = mImGray.rows;
+        const int cols = mImGray.cols;
+        int sampleSum = 0;
+        int sampleCnt = 0;
+        for (int r = 0; r < rows; r += step) {
+            const uchar* row = mImGray.ptr<uchar>(r);
+            for (int c = 0; c < cols; c += step) {
+                sampleSum += row[c];
+                sampleCnt++;
+            }
+        }
+        float meanApprox = sampleCnt > 0 ? (float)sampleSum / sampleCnt : 128.0f;
         
-        // 关键：更新绘制器，让用户看到黑屏而不是卡死的画面
-        mpFrameDrawer->Update(this);
-        
-        // 更新上一帧图像，避免光流逻辑出错
-        mLastImGray = mImGray.clone();
-        
-        // 返回当前位姿（通常为空或Identity）
-        // 注意：黑暗场景下掉帧通常是因为相机自动曝光时间变长（例如降低快门速度以获取更多光线）导致的物理限制
-        return mCurrentFrame.mTcw.clone();
+        if (meanApprox < 5.0f) {
+            // 清空当前帧特征，防止绘制残留
+            mCurrentFrame.mvKeys.clear();
+            mCurrentFrame.mvKeysUn.clear();
+            mCurrentFrame.mvpMapPoints.clear();
+            mCurrentFrame.mvbOutlier.clear();
+            mCurrentFrame.N = 0;
+            mCurrentFrame.mTimeStamp = timestamp;
+            
+            // 关键：更新绘制器，让用户看到黑屏而不是卡死的画面
+            mpFrameDrawer->Update(this);
+            
+            // 清除光流缓存，避免恢复后使用过期的旧帧
+            mLastImGray.release();
+            
+            // 返回当前位姿（通常为空或Identity）
+            return mCurrentFrame.mTcw.clone();
+        }
     }
 
     // 静止场景光流优化
+    // 条件：
+    //   1. mStableTrackCount >= STABLE_TRACK_THRESHOLD（连续稳定跟踪N帧）
+    //   2. 上一帧灰度图有效
+    //   3. 上一帧特征点足够
+    // 这样避免了跟踪刚恢复（内点少、运动模型不可靠）时
+    // 浪费带宽去做光流检测
     bool bIsStatic = false;
-    if (mState == OK && !mLastImGray.empty() && mLastFrame.mvKeys.size() > 50) {
+    const bool bOpticalFlowEnabled = (mStableTrackCount >= STABLE_TRACK_THRESHOLD)
+                                     && !mLastImGray.empty()
+                                     && (int)mLastFrame.mvKeys.size() > 50;
+    
+    if (bOpticalFlowEnabled) {
         std::vector<cv::Point2f> prevPts, currPts;
         std::vector<uchar> status;
         std::vector<float> err;
         
-        // 采样之前的特征点 (Stride = 5)
-        for(size_t i=0; i<mLastFrame.mvKeys.size(); i+=5) {
+        const int stride = 8;
+        const int maxPts = 40; // 最多追踪40个点，足够判断静止
+        prevPts.reserve(maxPts);
+        for(size_t i = 0; i < mLastFrame.mvKeysUn.size() && (int)prevPts.size() < maxPts; i += stride) {
             prevPts.push_back(mLastFrame.mvKeysUn[i].pt);
         }
         
-        if(prevPts.size() > 10) {
-            cv::calcOpticalFlowPyrLK(mLastImGray, mImGray, prevPts, currPts, status, err, cv::Size(21,21), 3);
+        if((int)prevPts.size() > 8) {
+            cv::calcOpticalFlowPyrLK(mLastImGray, mImGray, prevPts, currPts,
+                                     status, err, cv::Size(15,15), 2);
             
             float moveSum = 0;
             int moveCnt = 0;
-            for(size_t i=0; i<status.size(); i++) {
-                 if(status[i]) {
-                     float dist = std::abs(prevPts[i].x - currPts[i].x) + std::abs(prevPts[i].y - currPts[i].y);
-                     moveSum += dist;
-                     moveCnt++;
-                 }
+            for(size_t i = 0; i < status.size(); i++) {
+                if(status[i]) {
+                    float dx = prevPts[i].x - currPts[i].x;
+                    float dy = prevPts[i].y - currPts[i].y;
+                    // 使用曼哈顿距离，避免sqrt
+                    moveSum += std::abs(dx) + std::abs(dy);
+                    moveCnt++;
+                }
             }
             
             // 如果平均移动小于 0.5 像素，认为是静止
-            if (moveCnt > 10 && (moveSum/moveCnt) < 0.5f) {
-                 bIsStatic = true;
+            if (moveCnt > 8 && (moveSum / moveCnt) < 0.5f) {
+                bIsStatic = true;
             }
         }
     }
 
     if (bIsStatic) {
         // 复用上一帧数据，跳过ORB提取和匹配
-        mCurrentFrame = Frame(mLastFrame); // 复制上一帧
+        mCurrentFrame = Frame(mLastFrame);
         mCurrentFrame.mTimeStamp = timestamp;
-        mCurrentFrame.mnId = Frame::nNextId++; // 更新ID
+        mCurrentFrame.mnId = Frame::nNextId++;
         
         // 更新 UI
         mpFrameDrawer->Update(this);
         
-        // 更新 LastFrame
-        mLastFrame = Frame(mCurrentFrame);
-        
-        // 记录时间
-        mLastImGray = mImGray.clone();
+        // 直接更新 mLastFrame 的时间戳和ID
+        mLastFrame.mTimeStamp = timestamp;
+        mLastFrame.mnId = mCurrentFrame.mnId;
         
         return mCurrentFrame.mTcw.clone();
     }
@@ -1308,8 +1333,11 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
     Track();
     ////////////////////////
     
-    // 保存当前图像用于下一帧光流检查
-    mLastImGray = mImGray.clone();
+    // 仅在光流可能启用时才保存当前图像
+    // 这样在跟踪不稳定（mStableTrackCount低）时完全避免了这次拷贝
+    if (mStableTrackCount >= STABLE_TRACK_THRESHOLD - 1) {
+        mImGray.copyTo(mLastImGray); // copyTo复用已分配内存，避免每帧malloc
+    }
 
     //logTime();
     return mCurrentFrame.mTcw.clone();
@@ -1525,6 +1553,18 @@ void Tracking::Track()
 
         // 更新智能调度状态，供后台重定位线程读取
         mTrackingOK.store(mState == OK);
+        
+        // 更新稳定跟踪计数器（控制光流静止检测的启用）
+        // 只有跟踪OK且内点数充足时才递增，否则立即归零
+        if(mState == OK && mLastTrackingInliers.load() >= STABLE_INLIER_THRESHOLD) {
+            if(mStableTrackCount < STABLE_TRACK_THRESHOLD + 10) // 防止无限增长
+                mStableTrackCount++;
+        } else {
+            mStableTrackCount = 0;
+            // 跟踪不稳定时释放光流缓存，释放内存带宽
+            if(!mLastImGray.empty())
+                mLastImGray.release();
+        }
 
         // 如果相机在初始化后不久丢失，则重置
         if(mState==LOST)
@@ -3197,6 +3237,10 @@ void Tracking::Reset()
     //KeyFrame::nNextId = 0;
     //Frame::nNextId = 0;
     mState = NO_IMAGES_YET;
+    
+    // 重置光流相关状态
+    mStableTrackCount = 0;
+    mLastImGray.release();
 
     if(mpInitializer)
     {
@@ -3322,6 +3366,9 @@ void Tracking::ClearTrackingState()
     mRelocMatchScore.store(0.0f);
     mRelocCooldownFrames = 0;
     mConsecutiveFail = 0;
+    // 重置光流相关状态
+    mStableTrackCount = 0;
+    mLastImGray.release();
     
     LOGD("跟踪::清除跟踪状态: 运行时状态已清除，地图点已保留");
 }
