@@ -328,13 +328,15 @@ void MapPoint::ComputeDistinctiveDescriptors()
     }
 
     // 取与其余部分中值距离最小的描述符
+    // 使用 nth_element 替代 sort 找中值: O(N) vs O(N log N)
     int BestMedian = INT_MAX;
     int BestIdx = 0;
     for(size_t i=0;i<N;i++)
     {
         vector<int> vDists(Distances[i],Distances[i]+N);
-        sort(vDists.begin(),vDists.end());
-        int median = vDists[0.5*(N-1)];
+        size_t medianIdx = (N-1) / 2;
+        nth_element(vDists.begin(), vDists.begin() + medianIdx, vDists.end());
+        int median = vDists[medianIdx];
 
         if(median<BestMedian)
         {

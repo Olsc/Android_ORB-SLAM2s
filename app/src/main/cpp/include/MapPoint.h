@@ -60,9 +60,10 @@ public:
     MapPoint(const cv::Mat &Pos, Map* pMap);
 
     void SetWorldPos(const cv::Mat &Pos);
+    
     cv::Mat GetWorldPos();
-
     cv::Mat GetNormal();
+
     KeyFrame* GetReferenceKeyFrame();
 
     std::map<KeyFrame*,size_t> GetObservations();

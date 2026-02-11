@@ -430,8 +430,6 @@ bool LoopClosing::ComputeSim3()
 
 void LoopClosing::CorrectLoop()
 {
-    // cout << "检测到闭环!" << endl;
-
     // 向局部建图线程发送停止信号
     // 避免在纠正闭环时插入新的关键帧
     mpLocalMapper->RequestStop();
@@ -684,8 +682,6 @@ void LoopClosing::ResetIfRequested()
 
 void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
 {
-    // cout << "开始全局 Bundle Adjustment" << endl;
-
     int idx =  mnFullBAIdx;
     Optimizer::GlobalBundleAdjustemnt(mpMap,10,&mbStopGBA,nLoopKF,false);
 
@@ -700,8 +696,6 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
 
         if(!mbStopGBA)
         {
-            // cout << "全局 Bundle Adjustment 完成" << endl;
-            // cout << "正在更新地图 ..." << endl;
             mpLocalMapper->RequestStop();
             // 等待局部建图线程有效停止
             
@@ -792,8 +786,6 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
             mpMap->InformNewBigChange();
 
             mpLocalMapper->Release();
-
-            // cout << "地图已更新!" << endl;
         }
 
         mbFinishedGBA = true;

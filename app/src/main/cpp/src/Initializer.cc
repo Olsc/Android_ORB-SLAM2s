@@ -249,25 +249,28 @@ cv::Mat Initializer::ComputeH21(const vector<cv::Point2f> &vP1, const vector<cv:
         const float u2 = vP2[i].x;
         const float v2 = vP2[i].y;
 
-        A.at<float>(2*i,0) = 0.0;
-        A.at<float>(2*i,1) = 0.0;
-        A.at<float>(2*i,2) = 0.0;
-        A.at<float>(2*i,3) = -u1;
-        A.at<float>(2*i,4) = -v1;
-        A.at<float>(2*i,5) = -1;
-        A.at<float>(2*i,6) = v2*u1;
-        A.at<float>(2*i,7) = v2*v1;
-        A.at<float>(2*i,8) = v2;
+        // 使用行指针替代 at<float>(row,col) 避免重复计算行地址
+        float* pRow0 = A.ptr<float>(2*i);
+        pRow0[0] = 0.0f;
+        pRow0[1] = 0.0f;
+        pRow0[2] = 0.0f;
+        pRow0[3] = -u1;
+        pRow0[4] = -v1;
+        pRow0[5] = -1;
+        pRow0[6] = v2*u1;
+        pRow0[7] = v2*v1;
+        pRow0[8] = v2;
 
-        A.at<float>(2*i+1,0) = u1;
-        A.at<float>(2*i+1,1) = v1;
-        A.at<float>(2*i+1,2) = 1;
-        A.at<float>(2*i+1,3) = 0.0;
-        A.at<float>(2*i+1,4) = 0.0;
-        A.at<float>(2*i+1,5) = 0.0;
-        A.at<float>(2*i+1,6) = -u2*u1;
-        A.at<float>(2*i+1,7) = -u2*v1;
-        A.at<float>(2*i+1,8) = -u2;
+        float* pRow1 = A.ptr<float>(2*i+1);
+        pRow1[0] = u1;
+        pRow1[1] = v1;
+        pRow1[2] = 1;
+        pRow1[3] = 0.0f;
+        pRow1[4] = 0.0f;
+        pRow1[5] = 0.0f;
+        pRow1[6] = -u2*u1;
+        pRow1[7] = -u2*v1;
+        pRow1[8] = -u2;
 
     }
 
@@ -291,15 +294,17 @@ cv::Mat Initializer::ComputeF21(const vector<cv::Point2f> &vP1,const vector<cv::
         const float u2 = vP2[i].x;
         const float v2 = vP2[i].y;
 
-        A.at<float>(i,0) = u2*u1;
-        A.at<float>(i,1) = u2*v1;
-        A.at<float>(i,2) = u2;
-        A.at<float>(i,3) = v2*u1;
-        A.at<float>(i,4) = v2*v1;
-        A.at<float>(i,5) = v2;
-        A.at<float>(i,6) = u1;
-        A.at<float>(i,7) = v1;
-        A.at<float>(i,8) = 1;
+        // 使用行指针替代 at<float>(row,col) 避免重复计算行地址
+        float* pRow = A.ptr<float>(i);
+        pRow[0] = u2*u1;
+        pRow[1] = u2*v1;
+        pRow[2] = u2;
+        pRow[3] = v2*u1;
+        pRow[4] = v2*v1;
+        pRow[5] = v2;
+        pRow[6] = u1;
+        pRow[7] = v1;
+        pRow[8] = 1;
     }
 
     cv::Mat u,w,vt;
@@ -614,21 +619,27 @@ bool Initializer::ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv:
         return false;
     }
 
+    // 预计算平方值和公共子表达式，避免重复乘法
+    const float d1sq = d1*d1;
+    const float d2sq = d2*d2;
+    const float d3sq = d3*d3;
+    const float d1sq_m_d3sq = d1sq - d3sq;  // d1²-d3² 在多处使用
+
     vector<cv::Mat> vR, vt, vn;
     vR.reserve(8);
     vt.reserve(8);
     vn.reserve(8);
 
     //n'=[x1 0 x3] 4种可能性 e1=e3=1, e1=1 e3=-1, e1=-1 e3=1, e1=e3=-1
-    float aux1 = sqrt((d1*d1-d2*d2)/(d1*d1-d3*d3));
-    float aux3 = sqrt((d2*d2-d3*d3)/(d1*d1-d3*d3));
+    float aux1 = sqrt((d1sq-d2sq)/d1sq_m_d3sq);
+    float aux3 = sqrt((d2sq-d3sq)/d1sq_m_d3sq);
     float x1[] = {aux1,aux1,-aux1,-aux1};
     float x3[] = {aux3,-aux3,aux3,-aux3};
 
     //情况 d'=d2
-    float aux_stheta = sqrt((d1*d1-d2*d2)*(d2*d2-d3*d3))/((d1+d3)*d2);
+    float aux_stheta = sqrt((d1sq-d2sq)*(d2sq-d3sq))/((d1+d3)*d2);
 
-    float ctheta = (d2*d2+d1*d3)/((d1+d3)*d2);
+    float ctheta = (d2sq+d1*d3)/((d1+d3)*d2);
     float stheta[] = {aux_stheta, -aux_stheta, -aux_stheta, aux_stheta};
 
     for(int i=0; i<4; i++)
@@ -663,9 +674,9 @@ bool Initializer::ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv:
     }
 
     //情况 d'=-d2
-    float aux_sphi = sqrt((d1*d1-d2*d2)*(d2*d2-d3*d3))/((d1-d3)*d2);
+    float aux_sphi = sqrt((d1sq-d2sq)*(d2sq-d3sq))/((d1-d3)*d2);
 
-    float cphi = (d1*d3-d2*d2)/((d1-d3)*d2);
+    float cphi = (d1*d3-d2sq)/((d1-d3)*d2);
     float sphi[] = {aux_sphi, -aux_sphi, -aux_sphi, aux_sphi};
 
     for(int i=0; i<4; i++)
@@ -708,7 +719,6 @@ bool Initializer::ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv:
     vector<cv::Point3f> bestP3D;
     vector<bool> bestTriangulated;
 
-    // 我们重构所有假设并通过三角测量点和视差进行检查，而不是应用Faugeras论文中提出的可见性约束（对于低视差点可能失败）
     for(size_t i=0; i<8; i++)
     {
         float parallaxi;
