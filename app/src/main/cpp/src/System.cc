@@ -68,6 +68,18 @@ System::System(const std::string &strVocFile, const std::string &strSettingsFile
     bool useEmbedded = (strVocFile == ":embedded:");
 
 
+    // 加载 ORB LUT (优先尝试从嵌入资源加载)
+    {
+        const unsigned char* lutData = nullptr;
+        size_t lutSize = 0;
+        if(EmbeddedResources::Get("ORB_LUT.bin", lutData, lutSize)) {
+            LOGD("正在从嵌入资源加载 ORB LUT (大小: %zu)", lutSize);
+            ORBextractor::LoadLUT(lutData, lutSize);
+        } else {
+            LOGD("警告: 未找到嵌入的 ORB LUT，将回退到运行时计算");
+        }
+    }
+
     //加载ORB词汇表
     LOGD("正在加载ORB词汇表...");
 
