@@ -67,6 +67,9 @@ public:
 
     ~ORBextractor(){}
 
+    // 加载预计算的描述子LUT (从内存)
+    static void LoadLUT(const unsigned char* buffer, size_t size);
+
     // 计算图像上的ORB特征和描述子
     // ORB特征使用八叉树在图像上分散分布
     // 当前实现中忽略掩码

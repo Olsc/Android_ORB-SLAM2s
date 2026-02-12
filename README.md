@@ -181,4 +181,6 @@ Reference: https://github.com/Olsc/Android_3dof <br>
 Reference: https://github.com/ZUXTUO/Android_6dof <br>
 This project has not yet completed research and integration.
 
-![visual_causal_flow](docs/aesthetic_visual_causal_flow.png)
+<p align="center">
+  <img src="docs/aesthetic_visual_causal_flow_en.svg" alt="visual_causal_flow">
+</p>

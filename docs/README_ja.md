@@ -181,3 +181,7 @@ g2oに必要です（下記参照）。ダウンロードおよびインスト�
 参考：https://github.com/Olsc/Android_3dof <br>
 参考：https://github.com/ZUXTUO/Android_6dof <br>
 本プロジェクトはまだ研究統合が完了していません。
+
+<p align="center">
+  <img src="./aesthetic_visual_causal_flow_en.svg" alt="visual_causal_flow">
+</p>

@@ -411,6 +411,8 @@ void Sim3Solver::Project(const vector<cv::Mat> &vP3Dw, vector<cv::Mat> &vP2D, cv
     vP2D.clear();
     vP2D.reserve(vP3Dw.size());
 
+    cv::Mat point2D(2, 1, CV_32F);  // 复用的 2D 点容器
+
     for(size_t i=0, iend=vP3Dw.size(); i<iend; i++)
     {
         // cv::Mat P3Dc = Rcw*vP3Dw[i]+tcw;
@@ -426,7 +428,10 @@ void Sim3Solver::Project(const vector<cv::Mat> &vP3Dw, vector<cv::Mat> &vP2D, cv
         const float u = fx*Xc*invz+cx;
         const float v = fy*Yc*invz+cy;
 
-        vP2D.push_back((cv::Mat_<float>(2,1) << u, v));
+        // 复用 Mat 容器而非每次创建新的
+        point2D.at<float>(0) = u;
+        point2D.at<float>(1) = v;
+        vP2D.push_back(point2D.clone());  // clone 确保数据独立
     }
 }
 
@@ -440,13 +445,18 @@ void Sim3Solver::FromCameraToImage(const vector<cv::Mat> &vP3Dc, vector<cv::Mat>
     vP2D.clear();
     vP2D.reserve(vP3Dc.size());
 
+    // 复用 Mat 容器，避免循环内频繁堆分配
+    cv::Mat point2D(2, 1, CV_32F);
+
     for(size_t i=0, iend=vP3Dc.size(); i<iend; i++)
     {
         const float invz = 1.0f/(vP3Dc[i].at<float>(2));
         const float x = vP3Dc[i].at<float>(0)*invz;
         const float y = vP3Dc[i].at<float>(1)*invz;
 
-        vP2D.push_back((cv::Mat_<float>(2,1) << fx*x+cx, fy*y+cy));
+        point2D.at<float>(0) = fx*x+cx;
+        point2D.at<float>(1) = fy*y+cy;
+        vP2D.push_back(point2D.clone());
     }
 }
 
