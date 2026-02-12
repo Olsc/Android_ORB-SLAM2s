@@ -1094,13 +1094,18 @@ public class ArCamUIActivity extends AppCompatActivity implements
 
     // 切换 SLAM 开关状态
     private void toggleSLAM() {
+        if (nativeHelper != null) {
+            setSLAMEnabled(!nativeHelper.isEnableSLAM());
+        }
+    }
+
+    // 设置 SLAM 开关状态
+    private void setSLAMEnabled(boolean enable) {
         if (nativeHelper != null && btnToggleSlam != null) {
-            boolean currentState = nativeHelper.isEnableSLAM();
-            boolean newState = !currentState;
-            nativeHelper.setEnableSLAM(newState);
+            nativeHelper.setEnableSLAM(enable);
 
             // 更新按钮文字和UI反馈
-            if (newState) {
+            if (enable) {
                 btnToggleSlam.setText(getString(R.string.btn_slam));
                 showHint(getString(R.string.hint_slam_enabled));
                 Log.d(TAG, "SLAM已启用");
@@ -1110,7 +1115,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
                 Log.d(TAG, "SLAM已关闭");
             }
         } else {
-            Log.e(TAG, "无法切换SLAM：NativeHelper为null");
+            Log.e(TAG, "无法设置SLAM：NativeHelper为null");
         }
     }
 
@@ -1169,6 +1174,9 @@ public class ArCamUIActivity extends AppCompatActivity implements
 
         if (!is3DofMode) {
             // 启动3DOF模式
+            // 关闭SLAM
+            setSLAMEnabled(false);
+
             is3DofMode = true;
             orientationSensor.start(this);
             threeDofGLView.setVisibility(View.VISIBLE);
@@ -1181,7 +1189,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
                 btn3DofCube.setText(getString(R.string.btn_3dof_close));
             }
             showHint(getString(R.string.hint_3dof_spawned));
-            Log.d(TAG, "3DOF模式已启动");
+            Log.d(TAG, "3DOF模式已启动，SLAM已关闭");
         } else {
             // 关闭3DOF模式
             is3DofMode = false;
@@ -1193,8 +1201,12 @@ public class ArCamUIActivity extends AppCompatActivity implements
             if (btn3DofCube != null) {
                 btn3DofCube.setText(getString(R.string.btn_3dof));
             }
+            
+            // 重新开启SLAM
+            setSLAMEnabled(true);
+            
             showHint(getString(R.string.hint_3dof_closed));
-            Log.d(TAG, "3DOF模式已关闭");
+            Log.d(TAG, "3DOF模式已关闭，SLAM已重新开启");
         }
     }
 
