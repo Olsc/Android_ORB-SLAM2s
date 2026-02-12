@@ -18,6 +18,20 @@
 * along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
 */
 
+/*
+ * This project is based on ORB-SLAM2.
+ *
+ * The ORB-SLAM2 project was ported to the Android platform by Ads
+ * under the GitHub account Martin20150405 in 2017.
+ *
+ * Starting from August 25, 2025, Olsc began modifying this project.
+ * On the basis of the original project, functions such as map saving,
+ * map loading, and relocalization were added.
+ *
+ * This project is distributed under the GNU General Public License
+ * version 3, together with ORB-SLAM2.
+ */
+
 #include "Optimizer.h"
 
 #include "Thirdparty/g2o/g2o/core/block_solver.h"

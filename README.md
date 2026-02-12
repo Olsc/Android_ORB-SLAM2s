@@ -180,3 +180,5 @@ Multilingual translation of this project is provided by Qwen3. Please excuse any
 Reference: https://github.com/Olsc/Android_3dof <br>
 Reference: https://github.com/ZUXTUO/Android_6dof <br>
 This project has not yet completed research and integration.
+
+![visual_causal_flow](docs/aesthetic_visual_causal_flow.png)

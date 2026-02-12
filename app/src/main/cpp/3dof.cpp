@@ -11,8 +11,6 @@ extern "C" {
 
 // 3DOF坐标系重映射（Java层已处理横屏重映射，这里直接使用）
 static void getRemappedMatrix_3dof(float* outMatrix, float* inMatrix, int rotation) {
-    // 传感器坐标系已在Java层通过SensorManager.remapCoordinateSystem重映射为横屏坐标系
-    // 这里直接复制即可
     memcpy(outMatrix, inMatrix, 16 * sizeof(float));
 }
 
