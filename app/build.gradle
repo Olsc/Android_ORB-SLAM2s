@@ -87,7 +87,7 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
     namespace 'com.orb.slam2s'
-    buildToolsVersion '36.1.0'
+    buildToolsVersion '37.0.0 rc1'
     compileSdkMinor 1
 
     //dynamicFeatures = [":slam"]
