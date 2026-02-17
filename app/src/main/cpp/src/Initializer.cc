@@ -614,21 +614,27 @@ bool Initializer::ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv:
         return false;
     }
 
+    // 预计算平方值和公共子表达式，避免重复乘法
+    const float d1sq = d1*d1;
+    const float d2sq = d2*d2;
+    const float d3sq = d3*d3;
+    const float d1sq_m_d3sq = d1sq - d3sq;  // d1²-d3² 在多处使用
+
     vector<cv::Mat> vR, vt, vn;
     vR.reserve(8);
     vt.reserve(8);
     vn.reserve(8);
 
     //n'=[x1 0 x3] 4种可能性 e1=e3=1, e1=1 e3=-1, e1=-1 e3=1, e1=e3=-1
-    float aux1 = sqrt((d1*d1-d2*d2)/(d1*d1-d3*d3));
-    float aux3 = sqrt((d2*d2-d3*d3)/(d1*d1-d3*d3));
+    float aux1 = sqrt((d1sq-d2sq)/d1sq_m_d3sq);
+    float aux3 = sqrt((d2sq-d3sq)/d1sq_m_d3sq);
     float x1[] = {aux1,aux1,-aux1,-aux1};
     float x3[] = {aux3,-aux3,aux3,-aux3};
 
     //情况 d'=d2
-    float aux_stheta = sqrt((d1*d1-d2*d2)*(d2*d2-d3*d3))/((d1+d3)*d2);
+    float aux_stheta = sqrt((d1sq-d2sq)*(d2sq-d3sq))/((d1+d3)*d2);
 
-    float ctheta = (d2*d2+d1*d3)/((d1+d3)*d2);
+    float ctheta = (d2sq+d1*d3)/((d1+d3)*d2);
     float stheta[] = {aux_stheta, -aux_stheta, -aux_stheta, aux_stheta};
 
     for(int i=0; i<4; i++)
@@ -663,9 +669,9 @@ bool Initializer::ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv:
     }
 
     //情况 d'=-d2
-    float aux_sphi = sqrt((d1*d1-d2*d2)*(d2*d2-d3*d3))/((d1-d3)*d2);
+    float aux_sphi = sqrt((d1sq-d2sq)*(d2sq-d3sq))/((d1-d3)*d2);
 
-    float cphi = (d1*d3-d2*d2)/((d1-d3)*d2);
+    float cphi = (d1*d3-d2sq)/((d1-d3)*d2);
     float sphi[] = {aux_sphi, -aux_sphi, -aux_sphi, aux_sphi};
 
     for(int i=0; i<4; i++)

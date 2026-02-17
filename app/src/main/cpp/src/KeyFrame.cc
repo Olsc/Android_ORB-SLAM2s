@@ -638,14 +638,14 @@ std::vector<size_t> KeyFrame::GetFeaturesInArea(const float &x, const float &y, 
     {
         for(int iy = nMinCellY; iy<=nMaxCellY; iy++)
         {
-            const std::vector<size_t> vCell = mGrid[ix][iy];
+            const std::vector<size_t>& vCell = mGrid[ix][iy];
+            const float rSq = r*r;
             for(size_t j=0, jend=vCell.size(); j<jend; j++)
             {
                 const cv::KeyPoint &kpUn = mvKeysUn[vCell[j]];
                 const float distx = kpUn.pt.x-x;
                 const float disty = kpUn.pt.y-y;
                 const float distSq = distx*distx + disty*disty;
-                const float rSq = r*r;
 
                 if(distSq < rSq)
                     vIndices.push_back(vCell[j]);
