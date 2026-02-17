@@ -100,6 +100,15 @@ const float TRACKING_SEARCH_RADIUS_UNALIGNED = 8.0f;
 // 全局重定位搜索半径（米）
 const float TRACKING_RELOC_SEARCH_RADIUS = 50.0f;
 
+// 跟踪对齐平滑更新参数
+const int TRACKING_ALIGN_MIN_INLIERS_UPDATE = 20;
+const float TRACKING_ALIGN_MIN_CONFIDENCE_UPDATE = 0.3f;
+const int TRACKING_ALIGN_SMOOTH_SKIP_FRAMES = 3;
+
+// 参考缓存限制
+const int TRACKING_MAX_REF_CACHE_RETRIES = 5;
+const int TRACKING_REF_CACHE_LIMIT = 30000;
+
 
 // ==========================================
 // ORB特征提取参数
@@ -148,6 +157,7 @@ const float OPTIMIZER_HUBER_TH_3D = 2.79553215f; // sqrt(7.815)
 // 卡方阈值
 const float OPTIMIZER_CHI2_TH_2D = 5.991f;
 const float OPTIMIZER_CHI2_TH_3D = 7.815f;
+const float OPTIMIZER_CHI2_TH_1D = 3.841f;
 
 // Sim3求解器参数
 const float SIM3_CHI2_TH = 9.210f; // 卡方 2DoF 99%
@@ -190,6 +200,7 @@ const float MAPPOINT_MAX_DIST_INVARIANCE_FACTOR = 1.2f;
 const float MAPPOINT_DEFAULT_MIN_DIST = 0.1f;
 const float MAPPOINT_DEFAULT_MAX_DIST = 100.0f;
 const int MAPPOINT_MIN_OBS_FOR_BAD = 2;
+const float MAPPOINT_MIN_FOUND_RATIO = 0.25f;
 
 // 系统参数
 const int SYSTEM_MAX_KFS_LOAD = 10000;
@@ -229,6 +240,32 @@ const float RELOC_MIN_CONFIDENCE_FOR_ALIGN = 0.4f;
 
 // 连续丢失多少帧后创建新子地图（30帧 @ 30fps = 1秒）
 const int TRACKING_LOST_FRAMES_FOR_NEW_MAP = 30;
+
+
+// ==========================================
+// 局部建图参数
+// ==========================================
+
+// 三角化邻近关键帧数量
+const int LOCAL_MAPPING_TRIANGULATION_NEIGHBORS = 20;
+// 三角化最小基线/中值深度比
+const float LOCAL_MAPPING_TRIANGULATION_BASELINE_RATIO = 0.01f;
+// 三角化最小视差阈值 (cos值)
+const float LOCAL_MAPPING_TRIANGULATION_PARALLAX_TH = 0.9998f;
+// 三角化尺度因子阈值
+const float LOCAL_MAPPING_TRIANGULATION_RATIO_FACTOR = 1.5f;
+
+// 邻域关键帧搜索限制
+const int LOCAL_MAPPING_NEIGHBOR_KFS = 20;
+const int LOCAL_MAPPING_SECOND_NEIGHBOR_KFS = 5;
+
+// 关键帧修剪保护范围
+const int LOCAL_MAPPING_CULL_PROTECT_FRAMES = 5;
+
+// ==========================================
+// 基础图优化参数
+// ==========================================
+const int OPTIMIZER_ESSENTIAL_GRAPH_MIN_FEAT = 100;
 
 }
 

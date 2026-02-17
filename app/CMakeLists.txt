@@ -180,11 +180,13 @@ endfunction()
 # 嵌入资源文件
 set(EMBEDDED_OBJS
     ${EMBEDDED_DIR}/ORBvoc.o
+    ${EMBEDDED_DIR}/ORB_LUT.o
 )
 
 # 使用符号基础名称，函数会生成 _binary_<symbol_base>_start/end 符号
 # 这些符号名称必须与 EmbeddedResources.cpp 中声明的符号匹配
 embed_resource(${RESOURCE_DIR}/ORBvoc.txt.arm.bin ORBvoc_txt_arm_bin ${EMBEDDED_DIR}/ORBvoc.o)
+embed_resource(${RESOURCE_DIR}/ORB_LUT.bin ORB_LUT_bin ${EMBEDDED_DIR}/ORB_LUT.o)
 
 # 创建自定义目标以确保在链接前生成所有对象文件
 add_custom_target(generate_embedded_resources DEPENDS ${EMBEDDED_OBJS})
@@ -278,6 +280,7 @@ find_library(log-lib log)
 # 确保在编译前生成嵌入的资源对象文件
 add_dependencies(SLAM_AR generate_embedded_resources)
 
+
 target_link_libraries(SLAM_AR
         libopencv_java4
         g2o
@@ -285,3 +288,7 @@ target_link_libraries(SLAM_AR
         EGL
         GLESv1_CM
         )
+
+# ========== 3DOF 独立库 ==========
+add_library(3dof SHARED src/main/cpp/3dof.cpp)
+target_link_libraries(3dof ${log-lib})

@@ -220,7 +220,7 @@ void LocalMapping::MapPointCulling()
         {
             lit = mlpRecentAddedMapPoints.erase(lit); // 从"最近添加"列表移除，但不标记为bad
         }
-        else if(pMP->GetFoundRatio()<0.25f )
+        else if(pMP->GetFoundRatio()<MAPPOINT_MIN_FOUND_RATIO )
         {
             pMP->SetBadFlag();
             lit = mlpRecentAddedMapPoints.erase(lit);
@@ -240,7 +240,7 @@ void LocalMapping::MapPointCulling()
 void LocalMapping::CreateNewMapPoints()
 {
     // 在共视图中检索邻近关键帧
-    int nn = 20;
+    int nn = LOCAL_MAPPING_TRIANGULATION_NEIGHBORS;
     const vector<KeyFrame*> vpNeighKFs = mpCurrentKeyFrame->GetBestCovisibilityKeyFrames(nn);
 
     ORBmatcher matcher(0.6,false);
@@ -260,7 +260,7 @@ void LocalMapping::CreateNewMapPoints()
     const float &invfx1 = mpCurrentKeyFrame->invfx;
     const float &invfy1 = mpCurrentKeyFrame->invfy;
 
-    const float ratioFactor = 1.5f*mpCurrentKeyFrame->mfScaleFactor;
+    const float ratioFactor = LOCAL_MAPPING_TRIANGULATION_RATIO_FACTOR*mpCurrentKeyFrame->mfScaleFactor;
 
     int nnew=0;
 
@@ -287,7 +287,7 @@ void LocalMapping::CreateNewMapPoints()
             const float medianDepthKF2 = pKF2->ComputeSceneMedianDepth(2);
             const float ratioBaselineDepth = baseline/medianDepthKF2;
 
-            if(ratioBaselineDepth<0.01)
+            if(ratioBaselineDepth<LOCAL_MAPPING_TRIANGULATION_BASELINE_RATIO)
                 continue;
         }
 
@@ -355,7 +355,7 @@ void LocalMapping::CreateNewMapPoints()
             cosParallaxStereo = min(cosParallaxStereo1,cosParallaxStereo2);
 
             cv::Mat x3D;
-            if(cosParallaxRays<cosParallaxStereo && cosParallaxRays>0 && (bStereo1 || bStereo2 || cosParallaxRays<0.9998))
+            if(cosParallaxRays<cosParallaxStereo && cosParallaxRays>0 && (bStereo1 || bStereo2 || cosParallaxRays<LOCAL_MAPPING_TRIANGULATION_PARALLAX_TH))
             {
                 // 线性三角化方法
                 cv::Mat A(4,4,CV_32F);
@@ -401,7 +401,7 @@ void LocalMapping::CreateNewMapPoints()
                 float v1 = fy1*y1*invz1+cy1;
                 float errX1 = u1 - kp1.pt.x;
                 float errY1 = v1 - kp1.pt.y;
-                if((errX1*errX1+errY1*errY1)>5.991*sigmaSquare1)
+                if((errX1*errX1+errY1*errY1)>OPTIMIZER_CHI2_TH_2D*sigmaSquare1)
                     continue;
             }
 
@@ -415,7 +415,7 @@ void LocalMapping::CreateNewMapPoints()
                 float v2 = fy2*y2*invz2+cy2;
                 float errX2 = u2 - kp2.pt.x;
                 float errY2 = v2 - kp2.pt.y;
-                if((errX2*errX2+errY2*errY2)>5.991*sigmaSquare2)
+                if((errX2*errX2+errY2*errY2)>OPTIMIZER_CHI2_TH_2D*sigmaSquare2)
                     continue;
             }
 
@@ -467,7 +467,7 @@ void LocalMapping::CreateNewMapPoints()
 void LocalMapping::SearchInNeighbors()
 {
     // 检索邻近关键帧
-    int nn = 20;
+    int nn = LOCAL_MAPPING_NEIGHBOR_KFS;
     const vector<KeyFrame*> vpNeighKFs = mpCurrentKeyFrame->GetBestCovisibilityKeyFrames(nn);
     vector<KeyFrame*> vpTargetKFs;
     for(vector<KeyFrame*>::const_iterator vit=vpNeighKFs.begin(), vend=vpNeighKFs.end(); vit!=vend; vit++)
@@ -479,7 +479,7 @@ void LocalMapping::SearchInNeighbors()
         pKFi->mnFuseTargetForKF = mpCurrentKeyFrame->mnId;
 
         // 扩展到一些二级邻居
-        const vector<KeyFrame*> vpSecondNeighKFs = pKFi->GetBestCovisibilityKeyFrames(5);
+        const vector<KeyFrame*> vpSecondNeighKFs = pKFi->GetBestCovisibilityKeyFrames(LOCAL_MAPPING_SECOND_NEIGHBOR_KFS);
         for(vector<KeyFrame*>::const_iterator vit2=vpSecondNeighKFs.begin(), vend2=vpSecondNeighKFs.end(); vit2!=vend2; vit2++)
         {
             KeyFrame* pKFi2 = *vit2;
@@ -842,8 +842,8 @@ void LocalMapping::CheckLimits()
              // 保护当前关键帧看到的点
              if(spLocalMPs.count(pMP)) continue;
              
-             // 保护最近看到的点（在最近 5 帧内）
-             if(pMP->mnLastFrameSeen >= mpCurrentKeyFrame->mnFrameId - 5) continue; 
+             // 保护最近看到的点（在最近 N 帧内）
+             if(pMP->mnLastFrameSeen >= mpCurrentKeyFrame->mnFrameId - LOCAL_MAPPING_CULL_PROTECT_FRAMES) continue; 
 
              pMP->SetBadFlag();
              nErasedMP++;

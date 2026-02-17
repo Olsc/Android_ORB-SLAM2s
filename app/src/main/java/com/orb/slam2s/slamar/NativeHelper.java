@@ -29,7 +29,8 @@ public class NativeHelper {
     static {
         System.loadLibrary("c++_shared");      // C++ 运行时
         System.loadLibrary("opencv_java4");    // OpenCV
-        System.loadLibrary("SLAM_AR");         // 整合后的 SLAM_AR（包含 SLAM + JNI）
+        System.loadLibrary("SLAM_AR");         // 整合后的 SLAM_AR
+        System.loadLibrary("3dof");            // 独立出来的 3DOF 库
     }
 
     private static final String TAG = "NativeHelper";

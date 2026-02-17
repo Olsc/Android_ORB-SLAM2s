@@ -381,7 +381,7 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
         cv::Mat d = p->GetDescriptor();
         if(d.empty()) continue;
         validCount++;
-        if(validCount >= 30000) break;  // 限制最大数量
+        if(validCount >= TRACKING_REF_CACHE_LIMIT) break;  // 限制最大数量
     }
     
     // 一次性预分配所有需要的空间
@@ -456,7 +456,7 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
         
         highQuality++;
         rowIdx++;
-        if(rowIdx >= 30000) break;
+        if(rowIdx >= TRACKING_REF_CACHE_LIMIT) break;
     }
     
     // 如果实际数量少于预分配,调整矩阵大小
@@ -519,15 +519,15 @@ bool ORB_SLAM2::Tracking::TryConsumeRelocAlignment(RelocAlignResult &out)
 void ORB_SLAM2::Tracking::UpdateAlignmentSmooth(const cv::Mat &T_new, int inliers, float confidence, double ts)
 {
     // 质量检查：只接受高质量的对齐结果
-    const int minInliersForUpdate = 20;
-    const float minConfidenceForUpdate = 0.3f;
+    const int minInliersForUpdate = TRACKING_ALIGN_MIN_INLIERS_UPDATE;
+    const float minConfidenceForUpdate = TRACKING_ALIGN_MIN_CONFIDENCE_UPDATE;
     
     if(inliers < minInliersForUpdate || confidence < minConfidenceForUpdate) {
         return;  // 质量不足，不更新
     }
     
     // 降低更新频率：每3帧更新一次
-    if(++mAlignSkipCounter % 3 != 0) {
+    if(++mAlignSkipCounter % TRACKING_ALIGN_SMOOTH_SKIP_FRAMES != 0) {
         return;
     }
     
@@ -649,14 +649,14 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
     StartGlobalRelocThread();
     
     // 设置合理的重定位配置，确保后台线程不会干扰SLAM主流程
-    // 参数含义: 
+        // 参数含义: 
     // topKWords=20: BoW词典中选择前20个最相关的单词用于候选关键帧检索
     // maxCandidates=3000: 最大候选关键帧数量，限制参与匹配的关键帧数
     // matchChunk=500: 特征匹配分块大小，每批次处理500个候选关键帧
     // bgSleepUs=100000: 后台线程休眠时间(微秒)，控制CPU占用(100ms)
     // maxBindInliers=80: PnP求解所需的最小内点数
     // maxProjBinds=30: 3D点投影匹配的最大数量
-    SetRelocConfig(20, 3000, 500, 100000, 80, 30);
+    SetRelocConfig(SYSTEM_RELOC_CONFIG_TOP_K, SYSTEM_RELOC_CONFIG_MAX_CANDIDATES, SYSTEM_RELOC_CONFIG_MATCH_CHUNK, SYSTEM_RELOC_CONFIG_BG_SLEEP_US, SYSTEM_RELOC_CONFIG_MAX_BIND_INLIERS, SYSTEM_RELOC_CONFIG_MAX_PROJ_BINDS);
 }
 
 void Tracking::GlobalRelocLoop()
@@ -708,8 +708,8 @@ void Tracking::GlobalRelocLoop()
             // 否则 Reset() 调用 StopGlobalRelocThread() 时，如果此处在死循环重试，主线程会卡死在 join()
             if(mbRelocThreadStop) break;
             
-            // 检查重试次数，防止死循环
-            if(mRefCacheRetryCount >= MAX_REF_CACHE_RETRIES) {
+            // 检查重retry次数，防止死循环
+            if(mRefCacheRetryCount >= TRACKING_MAX_REF_CACHE_RETRIES) {
                 LOGD("GlobalRelocLoop: 缓存重建连续失败%d次，跳过本次处理", mRefCacheRetryCount);
                 mRefCacheRetryCount = 0;
                 // 消费快照，继续等待下一次机会

@@ -49,25 +49,66 @@ using namespace std;
 namespace ORB_SLAM2
 {
 
-static float sineTable[361];
-static float cosineTable[361];
-static bool bTrigTableInit = false;
 
-static void InitTrigTable() {
-    if(bTrigTableInit) return;
-    for(int i=0; i<=360; i++) {
-        float rad = i * (float)CV_PI / 180.0f;
-        sineTable[i] = sin(rad);
-        cosineTable[i] = cos(rad);
+
+// 描述子旋转偏移量查找表 (LUT)
+struct DescriptorOffset {
+    int dy;  // y方向偏移 (行偏移)
+    int dx;  // x方向偏移 (列偏移)
+};
+// [360个角度][512个采样点] = 184320 个预计算偏移量
+static DescriptorOffset descriptorOffsetLUT[360][512];
+static bool bDescriptorLUTInit = false;
+
+// 从内存缓冲区加载 LUT
+void ORBextractor::LoadLUT(const unsigned char* buffer, size_t size) {
+    if(bDescriptorLUTInit) return;
+    
+    // 检查大小: 360 * 512 * 8 bytes = 1474560
+    if (size != sizeof(descriptorOffsetLUT)) {
+        return; 
     }
-    bTrigTableInit = true;
+    
+    memcpy(descriptorOffsetLUT, buffer, size);
+    bDescriptorLUTInit = true;
+}
+
+
+
+// 初始化描述子偏移量查找表 (如果未加载，则计算)
+static void InitDescriptorLUT(const Point* pattern) {
+    if(bDescriptorLUTInit) return;
+    
+    LOGD("InitDescriptorLUT: 未检测到预加载 LUT，开始运行时计算...");
+    // 对每个角度 (0-359度)
+    for(int angle = 0; angle < 360; angle++) {
+        const float rad = angle * (float)CV_PI / 180.0f;
+        const float a = cos(rad);
+        const float b = sin(rad);
+        
+        // 对每个采样点 (512个点)
+        for(int i = 0; i < 512; i++) {
+            const float x = (float)pattern[i].x;
+            const float y = (float)pattern[i].y;
+            
+            // 预计算旋转后的坐标偏移
+            // 原始公式: x' = x*a - y*b, y' = x*b + y*a
+            descriptorOffsetLUT[angle][i].dy = (int)(x * b + y * a + 0.5f);
+            descriptorOffsetLUT[angle][i].dx = (int)(x * a - y * b + 0.5f);
+        }
+    }
+    
+    bDescriptorLUTInit = true;
 }
 
 static float IC_Angle(const Mat& image, Point2f pt,  const vector<int> & u_max)
 {
     int m_01 = 0, m_10 = 0;
 
-    const uchar* center = &image.at<uchar> (cvRound(pt.y), cvRound(pt.x));
+    // 快速舍入优化：避免 cvRound 函数调用开销
+    const int py = (int)(pt.y + 0.5f);
+    const int px = (int)(pt.x + 0.5f);
+    const uchar* center = &image.at<uchar>(py, px);
 
     // 利用中心线对称性减少乘法 (v=0)
     for (int u = 1; u <= ORB_HALF_PATCH_SIZE; ++u)
@@ -128,20 +169,20 @@ static void computeOrbDescriptor(const KeyPoint& kpt,
     if(angleIdx < 0) angleIdx += 360;
     if(angleIdx >= 360) angleIdx -= 360;
     
-    // float angle = (float)kpt.angle*factorPI;
-    // float a = (float)cos(angle), b = (float)sin(angle);
-    float a = cosineTable[angleIdx];
-    float b = sineTable[angleIdx];
-
-    const uchar* center = &img.at<uchar>(cvRound(kpt.pt.y), cvRound(kpt.pt.x));
+    // 快速舍入优化
+    const int kpy = (int)(kpt.pt.y + 0.5f);
+    const int kpx = (int)(kpt.pt.x + 0.5f);
+    const uchar* center = &img.at<uchar>(kpy, kpx);
     const int step = (int)img.step;
 
+    // 获取当前角度对应的 LUT 行指针
+    const DescriptorOffset* lut_ptr = descriptorOffsetLUT[angleIdx];
+
     #define GET_VALUE(idx) \
-        center[cvRound(pattern[idx].x*b + pattern[idx].y*a)*step + \
-               cvRound(pattern[idx].x*a - pattern[idx].y*b)]
+        center[lut_ptr[idx].dy * step + lut_ptr[idx].dx]
 
 
-    for (int i = 0; i < 32; ++i, pattern += 16)
+    for (int i = 0; i < 32; ++i, lut_ptr += 16)
     {
         int t0, t1, val;
         t0 = GET_VALUE(0); t1 = GET_VALUE(1);
@@ -433,9 +474,6 @@ ORBextractor::ORBextractor(int _nfeatures, float _scaleFactor, int _nlevels,
     nfeatures(_nfeatures), scaleFactor(_scaleFactor), nlevels(_nlevels),
     iniThFAST(_iniThFAST), minThFAST(_minThFAST)
 {
-    // 初始化三角函数表
-    InitTrigTable();
-
     mvScaleFactor.resize(nlevels);
     mvLevelSigma2.resize(nlevels);
     mvScaleFactor[0]=1.0f;
@@ -472,6 +510,9 @@ ORBextractor::ORBextractor(int _nfeatures, float _scaleFactor, int _nlevels,
     const int npoints = 512;
     const Point* pattern0 = (const Point*)bit_pattern_31_;
     std::copy(pattern0, pattern0 + npoints, std::back_inserter(pattern));
+
+    // 初始化描述子偏移量查找表 (如果 LoadLUT 已调用则跳过，否则计算)
+    InitDescriptorLUT(pattern0);
 
     // 用于计算方向
     // 预先计算圆形补丁中每一行的结束位置

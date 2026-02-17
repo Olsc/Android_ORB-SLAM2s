@@ -18,6 +18,20 @@
 * along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
 */
 
+/*
+ * This project is based on ORB-SLAM2.
+ *
+ * The ORB-SLAM2 project was ported to the Android platform by Ads
+ * under the GitHub account Martin20150405 in 2017.
+ *
+ * Starting from August 25, 2025, Olsc began modifying this project.
+ * On the basis of the original project, functions such as map saving,
+ * map loading, and relocalization were added.
+ *
+ * This project is distributed under the GNU General Public License
+ * version 3, together with ORB-SLAM2.
+ */
+
 #include "Optimizer.h"
 
 #include "Thirdparty/g2o/g2o/core/block_solver.h"
@@ -743,7 +757,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
     vector<g2o::Sim3,Eigen::aligned_allocator<g2o::Sim3> > vCorrectedSwc(nMaxKFid+1);
     vector<g2o::VertexSim3Expmap*> vpVertices(nMaxKFid+1, nullptr);  // 初始化为nullptr
 
-    const int minFeat = 100;
+    const int minFeat = OPTIMIZER_ESSENTIAL_GRAPH_MIN_FEAT;
 
     // 设置关键帧顶点
     for(size_t i=0, iend=vpKFs.size(); i<iend;i++)

@@ -343,7 +343,7 @@ float Initializer::CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vecto
 
     float score = 0;
 
-    const float th = 5.991;
+    const float th = OPTIMIZER_CHI2_TH_2D;
 
     const float invSigmaSquare = 1.0/(sigma*sigma);
 
@@ -416,8 +416,8 @@ float Initializer::CheckFundamental(const cv::Mat &F21, vector<bool> &vbMatchesI
 
     float score = 0;
 
-    const float th = 3.841;
-    const float thScore = 5.991;
+    const float th = OPTIMIZER_CHI2_TH_1D;
+    const float thScore = OPTIMIZER_CHI2_TH_2D;
 
     const float invSigmaSquare = 1.0/(sigma*sigma);
 
