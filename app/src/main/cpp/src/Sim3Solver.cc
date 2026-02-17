@@ -354,14 +354,11 @@ void Sim3Solver::CheckInliers()
 
     for(size_t i=0; i<mvP1im1.size(); i++)
     {
-        // 使用标量运算替代cv::Mat减法和dot，避免每次迭代的临时Mat分配
-        const float dx1 = mvP1im1[i].at<float>(0) - vP2im1[i].at<float>(0);
-        const float dy1 = mvP1im1[i].at<float>(1) - vP2im1[i].at<float>(1);
-        const float err1 = dx1*dx1 + dy1*dy1;
+        cv::Mat dist1 = mvP1im1[i]-vP2im1[i];
+        cv::Mat dist2 = vP1im2[i]-mvP2im2[i];
 
-        const float dx2 = vP1im2[i].at<float>(0) - mvP2im2[i].at<float>(0);
-        const float dy2 = vP1im2[i].at<float>(1) - mvP2im2[i].at<float>(1);
-        const float err2 = dx2*dx2 + dy2*dy2;
+        const float err1 = dist1.dot(dist1);
+        const float err2 = dist2.dot(dist2);
 
         if(err1<mvnMaxError1[i] && err2<mvnMaxError2[i])
         {
@@ -411,8 +408,6 @@ void Sim3Solver::Project(const vector<cv::Mat> &vP3Dw, vector<cv::Mat> &vP2D, cv
     vP2D.clear();
     vP2D.reserve(vP3Dw.size());
 
-    cv::Mat point2D(2, 1, CV_32F);  // 复用的 2D 点容器
-
     for(size_t i=0, iend=vP3Dw.size(); i<iend; i++)
     {
         // cv::Mat P3Dc = Rcw*vP3Dw[i]+tcw;
@@ -428,10 +423,7 @@ void Sim3Solver::Project(const vector<cv::Mat> &vP3Dw, vector<cv::Mat> &vP2D, cv
         const float u = fx*Xc*invz+cx;
         const float v = fy*Yc*invz+cy;
 
-        // 复用 Mat 容器而非每次创建新的
-        point2D.at<float>(0) = u;
-        point2D.at<float>(1) = v;
-        vP2D.push_back(point2D.clone());  // clone 确保数据独立
+        vP2D.push_back((cv::Mat_<float>(2,1) << u, v));
     }
 }
 
@@ -445,18 +437,13 @@ void Sim3Solver::FromCameraToImage(const vector<cv::Mat> &vP3Dc, vector<cv::Mat>
     vP2D.clear();
     vP2D.reserve(vP3Dc.size());
 
-    // 复用 Mat 容器，避免循环内频繁堆分配
-    cv::Mat point2D(2, 1, CV_32F);
-
     for(size_t i=0, iend=vP3Dc.size(); i<iend; i++)
     {
         const float invz = 1.0f/(vP3Dc[i].at<float>(2));
         const float x = vP3Dc[i].at<float>(0)*invz;
         const float y = vP3Dc[i].at<float>(1)*invz;
 
-        point2D.at<float>(0) = fx*x+cx;
-        point2D.at<float>(1) = fy*y+cy;
-        vP2D.push_back(point2D.clone());
+        vP2D.push_back((cv::Mat_<float>(2,1) << fx*x+cx, fy*y+cy));
     }
 }
 

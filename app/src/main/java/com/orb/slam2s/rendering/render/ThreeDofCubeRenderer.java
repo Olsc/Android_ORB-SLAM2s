@@ -5,8 +5,6 @@ import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.util.Log;
 import android.view.WindowManager;
-import android.view.Display;
-import android.hardware.display.DisplayManager;
 
 import com.orb.slam2s.sensors.OrientationSensor;
 import com.orb.slam2s.slamar.NativeHelper;
@@ -127,32 +125,8 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
             return;
         }
 
-        int rotation;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-            Display display = null;
-            try {
-                display = context.getDisplay();
-            } catch (UnsupportedOperationException e) {
-            }
-
-            if (display == null) {
-                DisplayManager dm = (DisplayManager) context.getSystemService(Context.DISPLAY_SERVICE);
-                if (dm != null) {
-                    display = dm.getDisplay(Display.DEFAULT_DISPLAY);
-                }
-            }
-
-            if (display != null) {
-                rotation = display.getRotation();
-            } else {
-                rotation = android.view.Surface.ROTATION_0;
-            }
-        } else {
-            @SuppressWarnings("deprecation")
-            int r = ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE))
-                    .getDefaultDisplay().getRotation();
-            rotation = r;
-        }
+        int rotation = ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE))
+                .getDefaultDisplay().getRotation();
 
         float[] rotationMatrix = orientationSensor.getRotationMatrix();
 

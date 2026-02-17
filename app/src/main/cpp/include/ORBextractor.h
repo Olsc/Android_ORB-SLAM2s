@@ -1,36 +1,20 @@
 /**
-* This file is part of ORB-SLAM2.
+* 本文件是 ORB-SLAM2 的一部分。
 *
-* Copyright (C) 2014-2016 Raúl Mur-Artal <raulmur at unizar dot es> (University of Zaragoza)
-* For more information see <https://github.com/raulmur/ORB_SLAM2>
+* 版权所有 (C) 2014-2016 Raúl Mur-Artal <raulmur at unizar dot es>（萨拉戈萨大学）
+* 更多信息请参见 [https://github.com/raulmur/ORB_SLAM2](https://github.com/raulmur/ORB_SLAM2)
 *
-* ORB-SLAM2 is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
+* ORB-SLAM2 是自由软件：您可以依据自由软件基金会发布的 GNU 通用公共许可证（第3版，或您可选择的更高版本）来重新分发和修改本软件。
 *
-* ORB-SLAM2 is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
+* ORB-SLAM2 的发布目的是希望它能发挥作用，
+* 但**不附带任何保证**；甚至没有适销性或适用于特定用途的隐含保证。
+* 更多细节请参阅 GNU 通用公共许可证。
 *
-* You should have received a copy of the GNU General Public License
-* along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
+* 您应该已经随 ORB-SLAM2 一同收到了 GNU 通用公共许可证的副本。
+* 如果没有，请参见 [http://www.gnu.org/licenses/](http://www.gnu.org/licenses/)。
+*
+* 本项目由 Olsc 于 2025/8/25 开始进行修改，在原项目基础上增加了地图存储、读取和重定位等功能。随 ORB-SLAM2 一同采取 GNU 通用公共许可证（第3版）。
 */
-
-/*
- * This project is based on ORB-SLAM2.
- *
- * The ORB-SLAM2 project was ported to the Android platform by Ads
- * under the GitHub account Martin20150405 in 2017.
- *
- * Starting from August 25, 2025, Olsc began modifying this project.
- * On the basis of the original project, functions such as map saving,
- * map loading, and relocalization were added.
- *
- * This project is distributed under the GNU General Public License
- * version 3, together with ORB-SLAM2.
- */
 
 #ifndef ORBEXTRACTOR_H
 #define ORBEXTRACTOR_H
@@ -66,9 +50,6 @@ public:
                  int iniThFAST, int minThFAST);
 
     ~ORBextractor(){}
-
-    // 加载预计算的描述子LUT (从内存)
-    static void LoadLUT(const unsigned char* buffer, size_t size);
 
     // 计算图像上的ORB特征和描述子
     // ORB特征使用八叉树在图像上分散分布

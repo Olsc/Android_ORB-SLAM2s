@@ -9,6 +9,7 @@ import android.view.ScaleGestureDetector;
 
 import java.util.ArrayList;
 
+
 /**
  * Created by Ads on 2016/11/7.
  * 由Olsc于2025/8/25开始进行修改
@@ -59,6 +60,7 @@ public class TouchHelper {
 
             @Override
             public boolean onScaleBegin(ScaleGestureDetector detector) {
+                //return true to enter onScale()
                 return true;
             }
 

@@ -132,14 +132,7 @@ void rotateM(float rm[], float m[],
     // 使用局部变量确保线程安全（避免多线程竞争）
     float sTemp[16];
     setRotateM(sTemp, 0, a, x, y, z);
-    
-    if (rm == m) {
-        float tmpResult[16];
-        multiplyMM(tmpResult, m, sTemp);
-        memcpy(rm, tmpResult, 16 * sizeof(float));
-    } else {
-        multiplyMM(rm, m, sTemp);
-    }
+    multiplyMM(rm, m, sTemp);
 }
 
 /**
@@ -340,43 +333,6 @@ bool invertM(float mInv[], int mInvOffset, float m[],
     return true;
 }
 
-/**
- * 刚体变换矩阵快速求逆 (列主序)
- * 
- * 针对变换矩阵 [R | t; 0 | 1] 的特殊化求逆：
- *   [R | t]^-1 = [R^T | -R^T * t]
- *   [0 | 1]      [0   |    1    ]
- * 
- * 相比通用 invertM: 从 ~80 次乘法 + 16 次加法 + 1 次除法
- *                   减少到 18 次乘法 + 6 次加法，无除法
- * 
- * @param mInv 输出逆矩阵 (列主序)
- * @param m 输入变换矩阵 (列主序)
- * @return 始终返回 true（刚体变换矩阵始终可逆）
- */
-bool invertTransformM(float mInv[], const float m[])
-{
-    // 列主序索引: m[col*4 + row]
-    // m[0-3]:   R第0列 + m[3]=0
-    // m[4-7]:   R第1列 + m[7]=0
-    // m[8-11]:  R第2列 + m[11]=0
-    // m[12-15]: t向量  + m[15]=1
-    
-    // R^T: 转置旋转矩阵
-    mInv[0]  = m[0];   mInv[1]  = m[4];   mInv[2]  = m[8];   mInv[3]  = 0.0f;
-    mInv[4]  = m[1];   mInv[5]  = m[5];   mInv[6]  = m[9];   mInv[7]  = 0.0f;
-    mInv[8]  = m[2];   mInv[9]  = m[6];   mInv[10] = m[10];  mInv[11] = 0.0f;
-    
-    // -R^T * t
-    const float tx = m[12], ty = m[13], tz = m[14];
-    mInv[12] = -(mInv[0] * tx + mInv[4] * ty + mInv[8]  * tz);
-    mInv[13] = -(mInv[1] * tx + mInv[5] * ty + mInv[9]  * tz);
-    mInv[14] = -(mInv[2] * tx + mInv[6] * ty + mInv[10] * tz);
-    mInv[15] = 1.0f;
-    
-    return true;
-}
-
 
 void getRUBViewMatrixFromRDF(float inM[],float outM[]){
     // View_GL = Rx(180) * View_CV * Rx(180)
@@ -412,23 +368,10 @@ void getRUBViewMatrixFromRDF(float inM[],float outM[]){
 }
 
 void getRUBModelMatrixFromRDF(float inM[],float outM[]){
-    // Rx(180) * M: 对列主序矩阵，取反第1行和第2行的元素
-    // 等价于原来的 setIdentityM -> rotateM(180,1,0,0) -> multiplyMM
-    // 但避免了两次矩阵乘法和临时数组分配
-    if(inM != outM) {
-        memcpy(outM, inM, 16 * sizeof(float));
-    }
-    // Row 0 (indices 0, 4, 8, 12) 不变
-    // Row 1 (indices 1, 5, 9, 13) 取反
-    outM[1] = -outM[1];
-    outM[5] = -outM[5];
-    outM[9] = -outM[9];
-    outM[13] = -outM[13];
-    // Row 2 (indices 2, 6, 10, 14) 取反
-    outM[2] = -outM[2];
-    outM[6] = -outM[6];
-    outM[10] = -outM[10];
-    outM[14] = -outM[14];
+    float tmpM[16],tmpVM[16];
+    setIdentityM(tmpM);
+    rotateM(tmpVM,tmpM, +180.0f, 1.0f, 0.0f, 0.0f);
+    multiplyMM(outM,tmpVM,inM);
 }
 
 
@@ -504,31 +447,27 @@ void matrixToQuaternion(float M[],Quaternion &q){
 
     if (tr > 0) {
         float S = (float) (sqrt(tr+1) * 2); // S=4*qw
-        float invS = 1.0f / S;
         qw = 0.25f * S;
-        qx = (m21 - m12) * invS;
-        qy = (m02 - m20) * invS;
-        qz = (m10 - m01) * invS;
-    } else if ((m00 > m11) && (m00 > m22)) {  // 修复: & -> && (逻辑与)
+        qx = (m21 - m12) / S;
+        qy = (m02 - m20) / S;
+        qz = (m10 - m01) / S;
+    } else if ((m00 > m11)&(m00 > m22)) {
         float S = (float) (sqrt(1.0 + m00 - m11 - m22) * 2); // S=4*qx
-        float invS = 1.0f / S;
-        qw = (m21 - m12) * invS;
+        qw = (m21 - m12) / S;
         qx = 0.25f * S;
-        qy = (m01 + m10) * invS;
-        qz = (m02 + m20) * invS;
+        qy = (m01 + m10) / S;
+        qz = (m02 + m20) / S;
     } else if (m11 > m22) {
         float S = (float) (sqrt(1.0 + m11 - m00 - m22) * 2); // S=4*qy
-        float invS = 1.0f / S;
-        qw = (m02 - m20) * invS;
-        qx = (m01 + m10) * invS;
+        qw = (m02 - m20) / S;
+        qx = (m01 + m10) / S;
         qy = 0.25f * S;
-        qz = (m12 + m21) * invS;
+        qz = (m12 + m21) / S;
     } else {
         float S = (float) (sqrt(1.0 + m22 - m00 - m11) * 2); // S=4*qz
-        float invS = 1.0f / S;
-        qw = (m10 - m01) * invS;
-        qx = (m02 + m20) * invS;
-        qy = (m12 + m21) * invS;
+        qw = (m10 - m01) / S;
+        qx = (m02 + m20) / S;
+        qy = (m12 + m21) / S;
         qz = 0.25f * S;
     }
     q.x=qx;

@@ -28,14 +28,10 @@ cv::Mat Plane::ExpSO3(const float& x, const float& y, const float& z)
                                           z,  0, -x,
                                          -y,  x,  0);
     
-    // 提高小角度阈值到 1e-2，使用二阶泰勒展开
-    // 二阶展开: sin(d)/d ≈ 1 - d²/6, (1-cos(d))/d² ≈ 0.5 - d²/24
-    // 精度误差 < 1e-12，性能有效提升
-    if (d < 1e-2f)
+    // 当旋转角度很小时，使用泰勒展开的前两项
+    if (d < 1e-4)
     {
-        const float d2_6 = d2 / 6.0f;
-        const float d2_24 = d2 / 24.0f;
-        return (I + W * (1.0f - d2_6) + W * W * (0.5f - d2_24));
+        return (I + W + 0.5f * W * W);
     }
     else
     {

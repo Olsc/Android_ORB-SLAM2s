@@ -59,26 +59,20 @@ System::System(const std::string &strVocFile, const std::string &strSettingsFile
         // "This is free software, and you are welcome to redistribute it" << std::endl <<
         // "under certain conditions. See LICENSE.txt." << std::endl << std::endl;
 
-    if(mSensor!=MONOCULAR)
+    // std::cout << "输入传感器设置为: ";
+
+    if(mSensor==MONOCULAR)
+        // std::cout << "单目" << std::endl;
+        ;
+    else
     {
+        // std::cerr << "错误：不支持的传感器类型" << std::endl;
         exit(-1);
     }
 
     // 检测是否使用嵌入资源（strVocFile为":embedded:"时）
     bool useEmbedded = (strVocFile == ":embedded:");
 
-
-    // 加载 ORB LUT (优先尝试从嵌入资源加载)
-    {
-        const unsigned char* lutData = nullptr;
-        size_t lutSize = 0;
-        if(EmbeddedResources::Get("ORB_LUT.bin", lutData, lutSize)) {
-            LOGD("正在从嵌入资源加载 ORB LUT (大小: %zu)", lutSize);
-            ORBextractor::LoadLUT(lutData, lutSize);
-        } else {
-            LOGD("警告: 未找到嵌入的 ORB LUT，将回退到运行时计算");
-        }
-    }
 
     //加载ORB词汇表
     LOGD("正在加载ORB词汇表...");
@@ -96,6 +90,7 @@ System::System(const std::string &strVocFile, const std::string &strSettingsFile
             LOGD("嵌入词汇表大小：%zu", vocSize);
             bVocLoad = mpVocabulary->loadFromMemoryBin(vocData, vocSize);
         } else {
+            // std::cerr << "无法获取嵌入的词汇表资源" << std::endl;
             exit(-1);
         }
     } else {
@@ -109,6 +104,8 @@ System::System(const std::string &strVocFile, const std::string &strSettingsFile
     //mpVocabulary->saveToTextFile(strVocFile+".min.txt");
     if(!bVocLoad)
     {
+        // std::cerr << "词汇表路径错误。 " << std::endl;
+        // std::cerr << "无法打开: " << strVocFile << std::endl;
         exit(-1);
     }
     LOGD("词汇表加载完成！");
@@ -153,6 +150,7 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
     recordTime();
     if(mSensor!=MONOCULAR)
     {
+        // std::cerr << "错误：您调用了TrackMonocular但输入传感器未设置为单目。" << std::endl;
         exit(-1);
     }
 
@@ -257,6 +255,8 @@ void System::Shutdown()
 
 void System::SaveKeyFrameTrajectoryTUM(const std::string &filename)
 {
+    // std::cout << std::endl << "Saving keyframe trajectory to " << filename << " ..." << std::endl;
+
     std::vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();
     std::sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);
 
@@ -286,6 +286,7 @@ void System::SaveKeyFrameTrajectoryTUM(const std::string &filename)
     }
 
     f.close();
+    // std::cout << std::endl << "trajectory saved!" << std::endl;
 }
 
 int System::GetTrackingState()

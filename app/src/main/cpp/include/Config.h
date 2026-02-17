@@ -82,9 +82,6 @@ const int MAPPOINT_MIN_OBSERVATIONS_STEREO = 3;
 // 跟踪参数
 // ==========================================
 
-// 局部地图点最大数量限制
-const int TRACKING_MAX_LOCAL_MAP_POINTS = 5000;
-
 // PnP 的 2D 像素坐标限制（检查合理范围）
 const float PNP_LIMIT_2D = 1e5f;
 

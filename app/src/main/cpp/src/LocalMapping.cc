@@ -277,6 +277,12 @@ void LocalMapping::CreateNewMapPoints()
         cv::Mat vBaseline = Ow2-Ow1;
         const float baseline = cv::norm(vBaseline);
 
+        // if(!mbMonocular)
+        // {
+        //     if(baseline<pKF2->mb)
+        //     continue;
+        // }
+        // else
         {
             const float medianDepthKF2 = pKF2->ComputeSceneMedianDepth(2);
             const float ratioBaselineDepth = baseline/medianDepthKF2;
@@ -339,6 +345,12 @@ void LocalMapping::CreateNewMapPoints()
             float cosParallaxStereo = cosParallaxRays+1;
             float cosParallaxStereo1 = cosParallaxStereo;
             float cosParallaxStereo2 = cosParallaxStereo;
+
+            // 单目模式下跳过双目视差计算
+            // if(bStereo1)
+            //     cosParallaxStereo1 = cos(2*atan2(mpCurrentKeyFrame->mb/2,mpCurrentKeyFrame->mvDepth[idx1]));
+            // else if(bStereo2)
+            //     cosParallaxStereo2 = cos(2*atan2(pKF2->mb/2,pKF2->mvDepth[idx2]));
 
             cosParallaxStereo = min(cosParallaxStereo1,cosParallaxStereo2);
 
@@ -426,6 +438,8 @@ void LocalMapping::CreateNewMapPoints()
             const float ratioDist = dist2/dist1;
             const float ratioOctave = mpCurrentKeyFrame->mvScaleFactors[kp1.octave]/pKF2->mvScaleFactors[kp2.octave];
 
+            /*if(fabs(ratioDist-ratioOctave)>ratioFactor)
+                continue;*/
             if(ratioDist*ratioFactor<ratioOctave || ratioDist>ratioOctave*ratioFactor)
                 continue;
 
@@ -542,26 +556,11 @@ cv::Mat LocalMapping::ComputeF12(KeyFrame *&pKF1, KeyFrame *&pKF2)
 
     cv::Mat t12x = SkewSymmetricMatrix(t12);
 
-    // 缓存K逆矩阵：K.inv() 和 K.t().inv() 对同一相机是常量
-    // 避免每次调用ComputeF12都重新计算
     const cv::Mat &K1 = pKF1->mK;
     const cv::Mat &K2 = pKF2->mK;
 
-    // 使用缓存的K逆矩阵，如果KeyFrame提供则使用；否则计算一次
-    // 注意: K.t().inv() == (K^-1)^T
-    static cv::Mat K1tinv, K2inv;
-    static float lastFx1 = 0, lastFx2 = 0;
-    
-    if(K1.at<float>(0,0) != lastFx1) {
-        K1tinv = K1.t().inv();
-        lastFx1 = K1.at<float>(0,0);
-    }
-    if(K2.at<float>(0,0) != lastFx2) {
-        K2inv = K2.inv();
-        lastFx2 = K2.at<float>(0,0);
-    }
 
-    return K1tinv*t12x*R12*K2inv;
+    return K1.t().inv()*t12x*R12*K2.inv();
 }
 
 void LocalMapping::RequestStop()
@@ -584,6 +583,7 @@ bool LocalMapping::Stop()
     if(mbStopRequested && !mbNotStop)
     {
         mbStopped = true;
+        // cout << "局部建图停止 (Local Mapping STOP)" << endl;
         return true;
     }
 
@@ -613,6 +613,8 @@ void LocalMapping::Release()
     for(list<KeyFrame*>::iterator lit = mlNewKeyFrames.begin(), lend=mlNewKeyFrames.end(); lit!=lend; lit++)
         delete *lit;
     mlNewKeyFrames.clear();
+
+    // cout << "局部建图释放 (Local Mapping RELEASE)" << endl;
 }
 
 bool LocalMapping::AcceptKeyFrames()
@@ -669,6 +671,13 @@ void LocalMapping::KeyFrameCulling()
             {
                 if(!pMP->isBad())
                 {
+                    // 单目模式下跳过深度检查
+                    // if(!mbMonocular)
+                    // {
+                    //     if(pKF->mvDepth[i]>pKF->mThDepth || pKF->mvDepth[i]<0)
+                    //         continue;
+                    // }
+
                     nMPs++;
                     if(pMP->Observations()>thObs)
                     {

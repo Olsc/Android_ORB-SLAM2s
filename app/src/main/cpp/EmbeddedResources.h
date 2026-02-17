@@ -12,7 +12,6 @@ namespace EmbeddedResources {
 // 返回是否存在指定资源；如存在，设置 data/size 为只读内存视图
 // 资源名称约定：
 // - "ORBvoc.txt.arm.bin"
-// - "ORB_LUT.bin"
 bool Get(const char* name, const unsigned char*& data, size_t& size);
 
 }
