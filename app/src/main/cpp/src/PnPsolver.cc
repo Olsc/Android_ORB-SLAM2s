@@ -809,6 +809,13 @@ void PnPsolver::compute_rho(double * rho)
 void PnPsolver::compute_A_and_b_gauss_newton(const double * l_6x10, const double * rho,
 					double betas[4], CvMat * A, CvMat * b)
 {
+  // 预计算10个beta乘积，避免循环中重复计算
+  const double b00 = betas[0]*betas[0], b01 = betas[0]*betas[1];
+  const double b02 = betas[0]*betas[2], b03 = betas[0]*betas[3];
+  const double b11 = betas[1]*betas[1], b12 = betas[1]*betas[2];
+  const double b13 = betas[1]*betas[3], b22 = betas[2]*betas[2];
+  const double b23 = betas[2]*betas[3], b33 = betas[3]*betas[3];
+
   for(int i = 0; i < 6; i++) {
     const double * rowL = l_6x10 + i * 10;
     double * rowA = A->data.db + i * 4;
@@ -820,16 +827,16 @@ void PnPsolver::compute_A_and_b_gauss_newton(const double * l_6x10, const double
 
     cvmSet(b, i, 0, rho[i] -
 	   (
-	    rowL[0] * betas[0] * betas[0] +
-	    rowL[1] * betas[0] * betas[1] +
-	    rowL[2] * betas[1] * betas[1] +
-	    rowL[3] * betas[0] * betas[2] +
-	    rowL[4] * betas[1] * betas[2] +
-	    rowL[5] * betas[2] * betas[2] +
-	    rowL[6] * betas[0] * betas[3] +
-	    rowL[7] * betas[1] * betas[3] +
-	    rowL[8] * betas[2] * betas[3] +
-	    rowL[9] * betas[3] * betas[3]
+	    rowL[0] * b00 +
+	    rowL[1] * b01 +
+	    rowL[2] * b11 +
+	    rowL[3] * b02 +
+	    rowL[4] * b12 +
+	    rowL[5] * b22 +
+	    rowL[6] * b03 +
+	    rowL[7] * b13 +
+	    rowL[8] * b23 +
+	    rowL[9] * b33
 	    ));
   }
 }
@@ -856,21 +863,10 @@ void PnPsolver::gauss_newton(const CvMat * L_6x10, const CvMat * Rho,
 
 void PnPsolver::qr_solve(CvMat * A, CvMat * b, CvMat * X)
 {
-  static int max_nr = 0;
-  static double * A1, * A2;
-
-  const int nr = A->rows;
-  const int nc = A->cols;
-
-  if (max_nr != 0 && max_nr < nr) {
-    delete [] A1;
-    delete [] A2;
-  }
-  if (max_nr < nr) {
-    max_nr = nr;
-    A1 = new double[nr];
-    A2 = new double[nr];
-  }
+  const int nr = A->rows;  // 最大6
+  const int nc = A->cols;  // 最大4
+  // 使用固定大小栈分配，避免静态变量的线程安全问题和内存泄漏
+  double A1[6], A2[6];
 
   double * pA = A->data.db, * ppAkk = pA;
   for(int k = 0; k < nc; k++) {
@@ -957,25 +953,27 @@ void PnPsolver::relative_error(double & rot_err, double & transl_err,
   mat_to_quat(Rtrue, qtrue);
   mat_to_quat(Rest, qest);
 
-  double rot_err1 = sqrt((qtrue[0] - qest[0]) * (qtrue[0] - qest[0]) +
-			 (qtrue[1] - qest[1]) * (qtrue[1] - qest[1]) +
-			 (qtrue[2] - qest[2]) * (qtrue[2] - qest[2]) +
-			 (qtrue[3] - qest[3]) * (qtrue[3] - qest[3]) ) /
-    sqrt(qtrue[0] * qtrue[0] + qtrue[1] * qtrue[1] + qtrue[2] * qtrue[2] + qtrue[3] * qtrue[3]);
+  // 预计算分母平方和，从4次sqrt减少到1次
+  double norm_true_sq = qtrue[0]*qtrue[0] + qtrue[1]*qtrue[1] + qtrue[2]*qtrue[2] + qtrue[3]*qtrue[3];
 
-  double rot_err2 = sqrt((qtrue[0] + qest[0]) * (qtrue[0] + qest[0]) +
-			 (qtrue[1] + qest[1]) * (qtrue[1] + qest[1]) +
-			 (qtrue[2] + qest[2]) * (qtrue[2] + qest[2]) +
-			 (qtrue[3] + qest[3]) * (qtrue[3] + qest[3]) ) /
-    sqrt(qtrue[0] * qtrue[0] + qtrue[1] * qtrue[1] + qtrue[2] * qtrue[2] + qtrue[3] * qtrue[3]);
+  double diff1_sq = (qtrue[0]-qest[0])*(qtrue[0]-qest[0]) +
+                    (qtrue[1]-qest[1])*(qtrue[1]-qest[1]) +
+                    (qtrue[2]-qest[2])*(qtrue[2]-qest[2]) +
+                    (qtrue[3]-qest[3])*(qtrue[3]-qest[3]);
 
-  rot_err = min(rot_err1, rot_err2);
+  double diff2_sq = (qtrue[0]+qest[0])*(qtrue[0]+qest[0]) +
+                    (qtrue[1]+qest[1])*(qtrue[1]+qest[1]) +
+                    (qtrue[2]+qest[2])*(qtrue[2]+qest[2]) +
+                    (qtrue[3]+qest[3])*(qtrue[3]+qest[3]);
 
-  transl_err =
-    sqrt((ttrue[0] - test[0]) * (ttrue[0] - test[0]) +
-	 (ttrue[1] - test[1]) * (ttrue[1] - test[1]) +
-	 (ttrue[2] - test[2]) * (ttrue[2] - test[2])) /
-    sqrt(ttrue[0] * ttrue[0] + ttrue[1] * ttrue[1] + ttrue[2] * ttrue[2]);
+  // 比较平方值后只用一次sqrt
+  rot_err = sqrt(min(diff1_sq, diff2_sq) / norm_true_sq);
+
+  double norm_t_sq = ttrue[0]*ttrue[0] + ttrue[1]*ttrue[1] + ttrue[2]*ttrue[2];
+  double diff_t_sq = (ttrue[0]-test[0])*(ttrue[0]-test[0]) +
+                     (ttrue[1]-test[1])*(ttrue[1]-test[1]) +
+                     (ttrue[2]-test[2])*(ttrue[2]-test[2]);
+  transl_err = sqrt(diff_t_sq / norm_t_sq);
 }
 
 void PnPsolver::mat_to_quat(const double R[3][3], double q[4])
