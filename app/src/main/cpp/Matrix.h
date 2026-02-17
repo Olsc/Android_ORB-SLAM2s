@@ -218,6 +218,37 @@ void quatRotateVector(const Quaternion& q, const float in[3], float out[3]);
 void multiplyMM(float* r, const float* lhs, const float* rhs);
 
 /**
+ * 矩阵向量乘法 (result = lhs * rhs)
+ * @param resultVec 结果向量 (4个float)
+ * @param resultVecOffset 结果向量偏移
+ * @param lhsMat 左操作数矩阵 (16个float)
+ * @param lhsMatOffset 矩阵偏移
+ * @param rhsVec 右操作数向量 (4个float)
+ * @param rhsVecOffset 向量偏移
+ */
+void multiplyMV(float* resultVec, int resultVecOffset, const float* lhsMat, int lhsMatOffset,
+                const float* rhsVec, int rhsVecOffset);
+
+/**
+ * 矩阵转置
+ * @param mTrans 输出转置矩阵 (16个float)
+ * @param mTransOffset 输出偏移
+ * @param m 输入矩阵 (16个float)
+ * @param mOffset 输入偏移
+ */
+void transposeM(float* mTrans, int mTransOffset, const float* m, int mOffset);
+
+/**
+ * 矩阵平移 (m = m * T)
+ * @param m 输入/输出矩阵 (16个float)
+ * @param mOffset 矩阵偏移
+ * @param x 平移X
+ * @param y 平移Y
+ * @param z 平移Z
+ */
+void translateM(float* m, int mOffset, float x, float y, float z);
+
+/**
  * 创建绕任意轴的旋转矩阵
  * @param rm 输出矩阵（16个float）
  * @param rmOffset 输出矩阵的偏移量

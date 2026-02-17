@@ -43,6 +43,34 @@ void multiplyMM(float* r, const float* lhs, const float* rhs) {
     }
 }
 
+void multiplyMV(float* resultVec, int resultVecOffset, const float* lhsMat, int lhsMatOffset,
+                const float* rhsVec, int rhsVecOffset) {
+    float x = rhsVec[rhsVecOffset + 0];
+    float y = rhsVec[rhsVecOffset + 1];
+    float z = rhsVec[rhsVecOffset + 2];
+    float w = rhsVec[rhsVecOffset + 3];
+    
+    resultVec[resultVecOffset + 0] = lhsMat[lhsMatOffset + 0]*x + lhsMat[lhsMatOffset + 4]*y + lhsMat[lhsMatOffset + 8]*z + lhsMat[lhsMatOffset + 12]*w;
+    resultVec[resultVecOffset + 1] = lhsMat[lhsMatOffset + 1]*x + lhsMat[lhsMatOffset + 5]*y + lhsMat[lhsMatOffset + 9]*z + lhsMat[lhsMatOffset + 13]*w;
+    resultVec[resultVecOffset + 2] = lhsMat[lhsMatOffset + 2]*x + lhsMat[lhsMatOffset + 6]*y + lhsMat[lhsMatOffset + 10]*z + lhsMat[lhsMatOffset + 14]*w;
+    resultVec[resultVecOffset + 3] = lhsMat[lhsMatOffset + 3]*x + lhsMat[lhsMatOffset + 7]*y + lhsMat[lhsMatOffset + 11]*z + lhsMat[lhsMatOffset + 15]*w;
+}
+
+void transposeM(float* mTrans, int mTransOffset, const float* m, int mOffset) {
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            mTrans[mTransOffset + i * 4 + j] = m[mOffset + j * 4 + i];
+        }
+    }
+}
+
+void translateM(float* m, int mOffset, float x, float y, float z) {
+    for (int i=0 ; i<4 ; i++) {
+        int mi = mOffset + i;
+        m[12 + mi] += m[mi] * x + m[4 + mi] * y + m[8 + mi] * z;
+    }
+}
+
 /**
  * 计算3D向量的长度
  */
@@ -132,7 +160,15 @@ void rotateM(float rm[], float m[],
     // 使用局部变量确保线程安全（避免多线程竞争）
     float sTemp[16];
     setRotateM(sTemp, 0, a, x, y, z);
-    multiplyMM(rm, m, sTemp);
+    
+    // 检查原地操作
+    if (rm == m) {
+        float tmpResult[16];
+        multiplyMM(tmpResult, m, sTemp);
+        memcpy(rm, tmpResult, 16 * sizeof(float));
+    } else {
+        multiplyMM(rm, m, sTemp);
+    }
 }
 
 /**
