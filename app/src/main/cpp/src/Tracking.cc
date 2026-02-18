@@ -2710,7 +2710,7 @@ void Tracking::UpdateLocalPoints()
     
     // 限制局部地图点数量，避免过多低质量点影响性能
     // 大幅提升上限以支持加载地图的重定位和持续跟踪
-    if(mvpLocalMapPoints.size() > 5000)
+    if((int)mvpLocalMapPoints.size() > TRACKING_MAX_LOCAL_MAP_POINTS)
     {
         // 按观测次数排序，保留高质量点（但优先保留已加载的点）
         std::sort(mvpLocalMapPoints.begin(), mvpLocalMapPoints.end(), 
@@ -2720,7 +2720,7 @@ void Tracking::UpdateLocalPoints()
                           return a->mbFromLoadedMap > b->mbFromLoadedMap;
                       return a->Observations() > b->Observations();
                   });
-        mvpLocalMapPoints.resize(5000);
+        mvpLocalMapPoints.resize(TRACKING_MAX_LOCAL_MAP_POINTS);
     }
     
     //LOGD("UpdateLocalPoints: 局部地图点数量=%d", (int)mvpLocalMapPoints.size());  // 高频日志，已注释
