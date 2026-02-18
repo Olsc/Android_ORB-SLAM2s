@@ -270,6 +270,48 @@ const int LOCAL_MAPPING_CULL_PROTECT_FRAMES = 5;
 // ==========================================
 const int OPTIMIZER_ESSENTIAL_GRAPH_MIN_FEAT = 100;
 
+
+// ==========================================
+// AR 与平面检测参数
+// ==========================================
+
+// 平面检测状态常量
+const int PLANE_DETECTED = 233;
+const int PLANE_NOT_DETECTED = 1234;
+
+// 启用AR模式所需的最小新建地图点数（确保SLAM稳定）
+const int MIN_NEW_POINTS_BEFORE_AR = 50;
+
+// AR对象默认缩放系数
+const float AR_OBJECT_SCALE_DEFAULT = 0.20f;
+
+// ==========================================
+// SLAM 状态控制参数
+// ==========================================
+
+// SLAM丢失状态自动重置超时时间（秒）
+const double LOST_RESET_TIMEOUT = 3.0;
+
+// 地图切换确认阈值（连续帧数）
+const int MAP_SWITCH_THRESHOLD = 3;
+
+// ==========================================
+// 重定位优化参数
+// ==========================================
+
+// 关键帧早期剪枝：最小共享词数阈值
+const int RELOC_MIN_SHARED_WORDS = 10;
+
+// 重定位候选关键帧最大数量（Top-K）
+const int RELOC_MAX_CANDIDATES = 20;
+
+// ==========================================
+// 视图渲染参数
+// ==========================================
+
+// 视图平滑插值系数
+const float VIEW_SMOOTH_ALPHA = 0.05f;
+
 }
 
 #endif // CONFIG_H

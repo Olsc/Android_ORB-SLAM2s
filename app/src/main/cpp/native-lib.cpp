@@ -21,6 +21,7 @@
 #include "Matrix.h"
 #include "MapPoint.h"
 #include "EmbeddedResources.h"
+#include "include/Config.h"
 
 extern "C" {
 
@@ -42,14 +43,13 @@ cv::Mat Tcw;
 // 用于vMPs和vKeys线程安全访问的互斥锁
 std::mutex gMapPointsMutex;
 
-// 平面检测状态常量
-const int PLANE_DETECTED = 233;
-const int PLANE_NOT_DETECTED = 1234;
+// 平面检测状态常量引用 Config.h
+// const int PLANE_DETECTED = ORB_SLAM2::PLANE_DETECTED;
 
 // AR重定位点云显示控制
 bool gEnableFullMapDisplay = true;       // 默认启用完整地图点云显示
 int gLoadedMapPointCount = 0;            // 加载的地图点数量
-const int MIN_NEW_POINTS_BEFORE_AR = 50; // 至少需要新建50个地图点才启用AR模式（确保SLAM已稳定建图）
+const int MIN_NEW_POINTS_BEFORE_AR = ORB_SLAM2::MIN_NEW_POINTS_BEFORE_AR; // 至少需要新建50个地图点才启用AR模式
 
 // 点云显示开关（同时控制绿色和蓝色点云）
 bool gEnablePointCloudDisplay = true;  // 默认启用点云显示
@@ -60,7 +60,7 @@ bool gEnableSLAM = true;  // 默认启用 SLAM
 // SLAM丢失自动重置相关变量
 double lastOkTime = 0.0;            // 上次SLAM正常工作的时间
 bool wasLost = false;                // 上一帧是否处于LOST状态
-const double LOST_RESET_TIMEOUT = 3.0; // LOST状态持续3秒后重置
+const double LOST_RESET_TIMEOUT = ORB_SLAM2::LOST_RESET_TIMEOUT; // LOST状态持续3秒后重置
 
 // AR对象存储
 struct ArObjectInfo {
@@ -80,11 +80,11 @@ std::map<int, std::vector<ArObjectInfo>> gMapArObjects;
 int gActiveMapId = 0;
 bool gMapSwitching = false;
 int gMapSwitchCounter = 0;
-const int MAP_SWITCH_THRESHOLD = 3; // 至少连续3帧识别到新地图才切换
+const int MAP_SWITCH_THRESHOLD = ORB_SLAM2::MAP_SWITCH_THRESHOLD; // 至少连续3帧识别到新地图才切换
 
 // AR对象渲染状态
 bool gShouldDrawArObject = false;
-float gArObjectScale = 0.20f;  // 默认缩放
+float gArObjectScale = ORB_SLAM2::AR_OBJECT_SCALE_DEFAULT;  // 默认缩放
 float gCurrentModelMatrix[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
 float gCurrentViewMatrix[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
 float gCurrentProjectionMatrix[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
@@ -95,7 +95,7 @@ float gCurrentProjectionMatrix[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
 float gViewMatrixOffset[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 // EKFQuat gViewOffsetQuat(1, 0, 0, 0); // 用于平滑插值
 bool gOffsetInited = false;
-float gOffsetAlpha = 0.05f; // 平滑系数
+float gOffsetAlpha = ORB_SLAM2::VIEW_SMOOTH_ALPHA; // 平滑系数
 
 // 记录SLAM最后有效的世界坐标（Twc平移），用于3DOF/6DOF回退保持位置
 float gLastTwcPosX = 0.0f, gLastTwcPosY = 0.0f, gLastTwcPosZ = 0.0f;
@@ -689,7 +689,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_detect(JNIEnv *env, jobject instance,
     std::unique_lock<std::mutex> slamLock(gSlamStateMutex, std::try_to_lock);
     std::unique_lock<std::mutex> dataLock(gMapDataMutex, std::try_to_lock);
     if(!slamLock.owns_lock() || !dataLock.owns_lock() || Tcw.empty()){
-        statusBuf[1] = PLANE_NOT_DETECTED;
+        statusBuf[1] = ORB_SLAM2::PLANE_NOT_DETECTED;
         env->ReleaseIntArrayElements(statusBuf_, statusBuf, 0);
         return;
     }
@@ -703,7 +703,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_detect(JNIEnv *env, jobject instance,
         pPlane=detectPlane(TcwForPlane,vMPs,50);
         if(pPlane && slamSys->MapChanged())
             pPlane->Recompute();
-        statusBuf[1]=pPlane? PLANE_DETECTED:PLANE_NOT_DETECTED;
+        statusBuf[1]=pPlane? ORB_SLAM2::PLANE_DETECTED : ORB_SLAM2::PLANE_NOT_DETECTED;
         
         // 检测到平面时更新AR对象矩阵
         if(pPlane) {

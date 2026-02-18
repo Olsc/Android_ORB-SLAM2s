@@ -35,6 +35,7 @@
 #include "KeyFrameDatabase.h"
 
 #include "KeyFrame.h"
+#include "Config.h"
 #include "Thirdparty/DBoW2/DBoW2/BowVector.h"
 
 #include<mutex>
@@ -240,7 +241,6 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
 
     // 早期剪枝 - 过滤共享词数过少的关键帧
     // 设置最小共享词数阈值,避免处理明显不相关的关键帧
-    const int MIN_SHARED_WORDS = 10;  // 至少共享10个词
     
     // 只与共享足够单词的关键帧进行比较
     int maxCommonWords=0;
@@ -250,7 +250,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
             maxCommonWords=(*lit)->mnRelocWords;
     }
 
-    int minCommonWords = max(MIN_SHARED_WORDS, (int)(maxCommonWords*0.8f));
+    int minCommonWords = max(RELOC_MIN_SHARED_WORDS, (int)(maxCommonWords*0.8f));
 
     list<pair<float,KeyFrame*> > lScoreAndMatch;
 
@@ -325,12 +325,11 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
 
     // Top-K截断 - 只保留得分最高的K个候选
     // 避免返回过多候选导致后续匹配耗时过长
-    const int MAX_RELOC_CANDIDATES = 20;  // 最多保留20个候选
-    if(vpRelocCandidates.size() > MAX_RELOC_CANDIDATES)
+    if(vpRelocCandidates.size() > RELOC_MAX_CANDIDATES)
     {
         // 按得分排序(已经按得分筛选,但可能有多个得分相近的)
         // 这里简单截断,因为候选已经按质量排序
-        vpRelocCandidates.resize(MAX_RELOC_CANDIDATES);
+        vpRelocCandidates.resize(RELOC_MAX_CANDIDATES);
     }
 
     return vpRelocCandidates;
