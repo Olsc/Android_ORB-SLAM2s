@@ -226,8 +226,8 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
     if(v<mnMinY || v>mnMaxY)
         return false;
 
-    // Check distance invariance and viewing angle for regular points.
-    // For loaded points without descriptors, relax constraints to allow projection-based matching.
+    // 检查常规点的距离不变性和视角。
+    // 对于没有描述符的已加载点，放宽约束以允许基于投影的匹配。
     const cv::Mat PO = P-mOw;
     const float dist = cv::norm(PO);
     float viewCos = 1.0f;
@@ -239,22 +239,22 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
         if(dist<minDistance || dist>maxDistance)
             return false;
 
-        // Check viewing angle
+        // 检查视角
         cv::Mat Pn = pMP->GetNormal();
         viewCos = PO.dot(Pn)/dist;
         if(viewCos<viewingCosLimit)
             return false;
 
-        // Predict scale in the image
+        // 预测图像中的尺度
         nPredictedLevel = pMP->PredictScale(dist,this);
     }
     else
     {
-        // Relaxed path: keep within image bounds only; pick a reasonable octave
+        // 宽松路径：仅保持在图像边界内；选择一个合理的层级
         nPredictedLevel = std::min(std::max(0, mnScaleLevels/2), mnScaleLevels-1);
     }
 
-    // Data used by the tracking
+    // 跟踪使用的数据
     pMP->mbTrackInView = true;
     pMP->mTrackProjX = u;
     pMP->mTrackProjXR = u - mbf*invz;
