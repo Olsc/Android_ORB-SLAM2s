@@ -110,41 +110,32 @@ void EdgeSE3ProjectXYZ::linearizeOplus() {
   double x = xyz_trans[0];
   double y = xyz_trans[1];
   double z = xyz_trans[2];
-  
-  // 预计算倒数，减少除法运算
-  // 除法比乘法慢3-10倍，通过预计算倒数可以将除法转换为乘法
-  double invz = 1.0 / z;
-  double invz_2 = invz * invz;
-  
-  // 预计算常用的中间变量
-  double x_invz_2 = x * invz_2;
-  double y_invz_2 = y * invz_2;
+  double z_2 = z*z;
 
   Matrix<double,2,3> tmp;
   tmp(0,0) = fx;
   tmp(0,1) = 0;
-  tmp(0,2) = -x*invz*fx;  // 使用乘法替代除法
+  tmp(0,2) = -x/z*fx;
 
   tmp(1,0) = 0;
   tmp(1,1) = fy;
-  tmp(1,2) = -y*invz*fy;  // 使用乘法替代除法
+  tmp(1,2) = -y/z*fy;
 
-  _jacobianOplusXi =  -invz * tmp * T.rotation().toRotationMatrix();  // 使用乘法替代除法
+  _jacobianOplusXi =  -1./z * tmp * T.rotation().toRotationMatrix();
 
-  // 使用预计算的中间变量，减少重复计算
-  _jacobianOplusXj(0,0) =  x*y_invz_2 *fx;
-  _jacobianOplusXj(0,1) = -(1+(x*x_invz_2)) *fx;
-  _jacobianOplusXj(0,2) = y*invz *fx;
-  _jacobianOplusXj(0,3) = -invz *fx;
+  _jacobianOplusXj(0,0) =  x*y/z_2 *fx;
+  _jacobianOplusXj(0,1) = -(1+(x*x/z_2)) *fx;
+  _jacobianOplusXj(0,2) = y/z *fx;
+  _jacobianOplusXj(0,3) = -1./z *fx;
   _jacobianOplusXj(0,4) = 0;
-  _jacobianOplusXj(0,5) = x_invz_2 *fx;
+  _jacobianOplusXj(0,5) = x/z_2 *fx;
 
-  _jacobianOplusXj(1,0) = (1+y*y_invz_2) *fy;
-  _jacobianOplusXj(1,1) = -x*y_invz_2 *fy;
-  _jacobianOplusXj(1,2) = -x*invz *fy;
+  _jacobianOplusXj(1,0) = (1+y*y/z_2) *fy;
+  _jacobianOplusXj(1,1) = -x*y/z_2 *fy;
+  _jacobianOplusXj(1,2) = -x/z *fy;
   _jacobianOplusXj(1,3) = 0;
-  _jacobianOplusXj(1,4) = -invz *fy;
-  _jacobianOplusXj(1,5) = y_invz_2 *fy;
+  _jacobianOplusXj(1,4) = -1./z *fy;
+  _jacobianOplusXj(1,5) = y/z_2 *fy;
 }
 
 Vector2d EdgeSE3ProjectXYZ::cam_project(const Vector3d & trans_xyz) const{
@@ -206,52 +197,40 @@ void EdgeStereoSE3ProjectXYZ::linearizeOplus() {
   double x = xyz_trans[0];
   double y = xyz_trans[1];
   double z = xyz_trans[2];
-  
-  // 预计算倒数，减少除法运算
-  double invz = 1.0 / z;
-  double invz_2 = invz * invz;
-  
-  // 预计算常用的中间变量
-  double x_invz_2 = x * invz_2;
-  double y_invz_2 = y * invz_2;
-  double fx_invz = fx * invz;
-  double fy_invz = fy * invz;
-  double fx_invz_2 = fx * invz_2;
-  double fy_invz_2 = fy * invz_2;
-  double bf_invz_2 = bf * invz_2;
+  double z_2 = z*z;
 
-  _jacobianOplusXi(0,0) = -fx_invz*R(0,0)+fx*x_invz_2*R(2,0);
-  _jacobianOplusXi(0,1) = -fx_invz*R(0,1)+fx*x_invz_2*R(2,1);
-  _jacobianOplusXi(0,2) = -fx_invz*R(0,2)+fx*x_invz_2*R(2,2);
+  _jacobianOplusXi(0,0) = -fx*R(0,0)/z+fx*x*R(2,0)/z_2;
+  _jacobianOplusXi(0,1) = -fx*R(0,1)/z+fx*x*R(2,1)/z_2;
+  _jacobianOplusXi(0,2) = -fx*R(0,2)/z+fx*x*R(2,2)/z_2;
 
-  _jacobianOplusXi(1,0) = -fy_invz*R(1,0)+fy*y_invz_2*R(2,0);
-  _jacobianOplusXi(1,1) = -fy_invz*R(1,1)+fy*y_invz_2*R(2,1);
-  _jacobianOplusXi(1,2) = -fy_invz*R(1,2)+fy*y_invz_2*R(2,2);
+  _jacobianOplusXi(1,0) = -fy*R(1,0)/z+fy*y*R(2,0)/z_2;
+  _jacobianOplusXi(1,1) = -fy*R(1,1)/z+fy*y*R(2,1)/z_2;
+  _jacobianOplusXi(1,2) = -fy*R(1,2)/z+fy*y*R(2,2)/z_2;
 
-  _jacobianOplusXi(2,0) = _jacobianOplusXi(0,0)-bf_invz_2*R(2,0);
-  _jacobianOplusXi(2,1) = _jacobianOplusXi(0,1)-bf_invz_2*R(2,1);
-  _jacobianOplusXi(2,2) = _jacobianOplusXi(0,2)-bf_invz_2*R(2,2);
+  _jacobianOplusXi(2,0) = _jacobianOplusXi(0,0)-bf*R(2,0)/z_2;
+  _jacobianOplusXi(2,1) = _jacobianOplusXi(0,1)-bf*R(2,1)/z_2;
+  _jacobianOplusXi(2,2) = _jacobianOplusXi(0,2)-bf*R(2,2)/z_2;
 
-  _jacobianOplusXj(0,0) =  x*y_invz_2 *fx;
-  _jacobianOplusXj(0,1) = -(1+(x*x_invz_2)) *fx;
-  _jacobianOplusXj(0,2) = y*invz *fx;
-  _jacobianOplusXj(0,3) = -invz *fx;
+  _jacobianOplusXj(0,0) =  x*y/z_2 *fx;
+  _jacobianOplusXj(0,1) = -(1+(x*x/z_2)) *fx;
+  _jacobianOplusXj(0,2) = y/z *fx;
+  _jacobianOplusXj(0,3) = -1./z *fx;
   _jacobianOplusXj(0,4) = 0;
-  _jacobianOplusXj(0,5) = x_invz_2 *fx;
+  _jacobianOplusXj(0,5) = x/z_2 *fx;
 
-  _jacobianOplusXj(1,0) = (1+y*y_invz_2) *fy;
-  _jacobianOplusXj(1,1) = -x*y_invz_2 *fy;
-  _jacobianOplusXj(1,2) = -x*invz *fy;
+  _jacobianOplusXj(1,0) = (1+y*y/z_2) *fy;
+  _jacobianOplusXj(1,1) = -x*y/z_2 *fy;
+  _jacobianOplusXj(1,2) = -x/z *fy;
   _jacobianOplusXj(1,3) = 0;
-  _jacobianOplusXj(1,4) = -invz *fy;
-  _jacobianOplusXj(1,5) = y_invz_2 *fy;
+  _jacobianOplusXj(1,4) = -1./z *fy;
+  _jacobianOplusXj(1,5) = y/z_2 *fy;
 
-  _jacobianOplusXj(2,0) = _jacobianOplusXj(0,0)-bf*y_invz_2;
-  _jacobianOplusXj(2,1) = _jacobianOplusXj(0,1)+bf*x_invz_2;
+  _jacobianOplusXj(2,0) = _jacobianOplusXj(0,0)-bf*y/z_2;
+  _jacobianOplusXj(2,1) = _jacobianOplusXj(0,1)+bf*x/z_2;
   _jacobianOplusXj(2,2) = _jacobianOplusXj(0,2);
   _jacobianOplusXj(2,3) = _jacobianOplusXj(0,3);
   _jacobianOplusXj(2,4) = 0;
-  _jacobianOplusXj(2,5) = _jacobianOplusXj(0,5)-bf_invz_2;
+  _jacobianOplusXj(2,5) = _jacobianOplusXj(0,5)-bf/z_2;
 }
 
 

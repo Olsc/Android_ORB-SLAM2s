@@ -226,48 +226,35 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
     if(v<mnMinY || v>mnMaxY)
         return false;
 
-    // 检查常规点的距离不变性和视角。
-    // 对于没有描述子的加载点，放宽约束以允许基于投影的匹配。
+    // Check distance invariance and viewing angle for regular points.
+    // For loaded points without descriptors, relax constraints to allow projection-based matching.
     const cv::Mat PO = P-mOw;
-    // 使用平方距离进行范围检查，避免sqrt计算
-    float dist = 0.0f;
+    const float dist = cv::norm(PO);
     float viewCos = 1.0f;
     int nPredictedLevel = 0;
     if(!(pMP->mbFromLoadedMap && pMP->GetDescriptor().empty()))
     {
         const float maxDistance = pMP->GetMaxDistanceInvariance();
         const float minDistance = pMP->GetMinDistanceInvariance();
-        
-        // 先使用平方距离进行快速范围检查
-        const float dx = PO.at<float>(0);
-        const float dy = PO.at<float>(1);
-        const float dz = PO.at<float>(2);
-        const float distSq = dx*dx + dy*dy + dz*dz;
-        const float maxDistSq = maxDistance * maxDistance;
-        const float minDistSq = minDistance * minDistance;
-        
-        if(distSq < minDistSq || distSq > maxDistSq)
+        if(dist<minDistance || dist>maxDistance)
             return false;
-        
-        // 只在需要时才计算实际距离（用于视角计算和尺度预测）
-        dist = sqrt(distSq);
 
-        // 检查视角
+        // Check viewing angle
         cv::Mat Pn = pMP->GetNormal();
         viewCos = PO.dot(Pn)/dist;
         if(viewCos<viewingCosLimit)
             return false;
 
-        // 预测图像中的尺度
+        // Predict scale in the image
         nPredictedLevel = pMP->PredictScale(dist,this);
     }
     else
     {
-        // 宽松路径：仅保持在图像边界内；选择合理的八度
+        // Relaxed path: keep within image bounds only; pick a reasonable octave
         nPredictedLevel = std::min(std::max(0, mnScaleLevels/2), mnScaleLevels-1);
     }
 
-    // 跟踪使用的数据
+    // Data used by the tracking
     pMP->mbTrackInView = true;
     pMP->mTrackProjX = u;
     pMP->mTrackProjXR = u - mbf*invz;
@@ -305,11 +292,9 @@ std::vector<size_t> Frame::GetFeaturesInArea(const float &x, const float  &y, co
     {
         for(int iy = nMinCellY; iy<=nMaxCellY; iy++)
         {
-            const std::vector<size_t>& vCell = mGrid[ix][iy];
+            const std::vector<size_t> vCell = mGrid[ix][iy];
             if(vCell.empty())
                 continue;
-
-            const float rSq = r*r;
 
             for(size_t j=0, jend=vCell.size(); j<jend; j++)
             {
@@ -325,9 +310,8 @@ std::vector<size_t> Frame::GetFeaturesInArea(const float &x, const float  &y, co
 
                 const float distx = kpUn.pt.x-x;
                 const float disty = kpUn.pt.y-y;
-                const float distSq = distx*distx + disty*disty;
 
-                if(distSq < rSq)
+                if(fabs(distx)<r && fabs(disty)<r)
                     vIndices.push_back(vCell[j]);
             }
         }

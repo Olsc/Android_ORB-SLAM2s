@@ -187,13 +187,7 @@ void FrameDrawer::DrawTextInfo(cv::Mat &im, int nState, cv::Mat &imText)
 
 void FrameDrawer::Update(Tracking *pTracker)
 {
-    // 使用 try_lock 尝试获取锁
-    // 如果无法获取锁（说明主线程/UI正在读取/绘制），则直接跳过本次更新
-    // 这样可以彻底将SLAM线程与可视化解耦，防止 UI 卡顿导致 SLAM 跟踪线程被阻塞
-    unique_lock<mutex> lock(mMutex, std::try_to_lock);
-    if(!lock.owns_lock())
-        return;
-
+    unique_lock<mutex> lock(mMutex);
     pTracker->mImGray.copyTo(mIm);
     mvCurrentKeys=pTracker->mCurrentFrame.mvKeys;
     N = mvCurrentKeys.size();
