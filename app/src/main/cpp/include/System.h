@@ -249,6 +249,12 @@ public:
      * @param pMap 目标地图指针
      */
     void SwitchToMap(Map* pMap);
+    
+    /**
+     * 设置是否启用光流
+     * @param enable true-启用, false-关闭
+     */
+    void SetOpticalFlow(bool enable);
 
 //public:
 private:

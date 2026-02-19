@@ -119,7 +119,14 @@ public:
     // 获取当前激活的地图ID
     int GetCurrentMapId() const { return mnCurrentMapId; }
 
+    // 设置是否启用光流
+    void SetOpticalFlow(bool enable);
+
 public:
+    // 光流相关变量
+    bool mbOpticalFlowEnabled;
+    int mStableTrackCount;
+
 
     // 跟踪状态
     enum eTrackingState{
@@ -143,6 +150,7 @@ public:
     // 当前帧
     Frame mCurrentFrame;
     cv::Mat mImGray;
+    cv::Mat mLastImGray;
 
     // 初始化变量（单目）
     std::vector<int> mvIniLastMatches;

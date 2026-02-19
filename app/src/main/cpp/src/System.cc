@@ -688,9 +688,13 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
          mpMap->KeyFramesInMap(), mpMap->MapPointsInMap());
 }
 
-int System::GetCurrentMapId()
-{
+int System::GetCurrentMapId() {
     return mpTracker ? mpTracker->GetCurrentMapId() : 0;
+}
+
+void System::SetOpticalFlow(bool enable) {
+    if(mpTracker)
+        mpTracker->SetOpticalFlow(enable);
 }
 
 } //namespace ORB_SLAM2

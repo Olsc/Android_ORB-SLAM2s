@@ -312,6 +312,34 @@ const int RELOC_MAX_CANDIDATES = 20;
 // 视图平滑插值系数
 const float VIEW_SMOOTH_ALPHA = 0.05f;
 
+// ==========================================
+// 光流跟踪参数
+// ==========================================
+
+// 进入静止状态所需的连续稳定跟踪帧数
+const int OPTICAL_FLOW_STABLE_TRACK_THRESHOLD = 20;
+
+// 光流计算时的特征点采样步长
+const int OPTICAL_FLOW_SAMPLE_STRIDE = 8;
+
+// 光流用于判断静止的最大特征点数
+const int OPTICAL_FLOW_MAX_POINTS = 40;
+
+// 判断为静止的平均移动距离阈值 (像素)
+const float OPTICAL_FLOW_STATIC_MOVE_TH = 0.5f;
+
+// 光流计算用的窗口大小
+const int OPTICAL_FLOW_WIN_SIZE = 15;
+
+// 金字塔层数
+const int OPTICAL_FLOW_PYRAMID_LEVELS = 2;
+
+// 启用光流所需的最少特征点数
+const int OPTICAL_FLOW_MIN_FEATURES = 50;
+
+// 最小有效光流点数
+const int OPTICAL_FLOW_MIN_VALID_POINTS = 8;
+
 }
 
 #endif // CONFIG_H

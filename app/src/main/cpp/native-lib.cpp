@@ -1084,4 +1084,14 @@ JNIEXPORT jboolean JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_isEnableSLAM(JNIEnv *env, jobject instance) {
     return (jboolean)gEnableSLAM;
 }
+
+// 启用/禁用 光流
+JNIEXPORT void JNICALL
+Java_com_orb_slam2s_slamar_NativeHelper_setOpticalFlowEnabled(JNIEnv *env, jobject instance, jboolean enable) {
+    if(slamSys) {
+        slamSys->SetOpticalFlow((bool)enable);
+        LOGD("光流状态已更新: %s", enable ? "开启" : "关闭");
+    }
+}
+
 }

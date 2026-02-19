@@ -102,7 +102,7 @@
                 android:layout_width="76dp"
                 android:layout_height="32dp"
                 android:layout_marginBottom="4dp"
-                android:text="3DOF"
+                android:text="@string/btn_3dof"
                 android:textSize="10sp"
                 android:textAllCaps="false"
                 android:backgroundTint="#FF5722"
@@ -206,6 +206,18 @@
                 android:alpha="0.85"
                 android:paddingStart="8dp"
                 android:paddingEnd="8dp"/>
+            <Button
+                android:id="@+id/btn_toggle_optical_flow"
+                android:layout_width="76dp"
+                android:layout_height="32dp"
+                android:layout_marginBottom="4dp"
+                android:text="@string/btn_optical_flow_default"
+                android:textSize="10sp"
+                android:textAllCaps="false"
+                android:backgroundTint="#757575"
+                android:alpha="0.85"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"/>
         </LinearLayout>
 
         <Button
@@ -242,7 +254,7 @@
                 android:layout_width="76dp"
                 android:layout_height="32dp"
                 android:layout_marginBottom="4dp"
-                android:text="Web端"
+                android:text="@string/btn_web_server"
                 android:textSize="10sp"
                 android:textAllCaps="false"
                 android:backgroundTint="#2196F3"
@@ -255,7 +267,7 @@
                 android:layout_width="76dp"
                 android:layout_height="32dp"
                 android:layout_marginBottom="4dp"
-                android:text="调试"
+                android:text="@string/btn_debug"
                 android:textSize="10sp"
                 android:textAllCaps="false"
                 android:backgroundTint="#9C27B0"

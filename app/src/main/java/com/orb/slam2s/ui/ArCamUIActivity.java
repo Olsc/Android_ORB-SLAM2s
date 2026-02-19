@@ -74,10 +74,12 @@ public class ArCamUIActivity extends AppCompatActivity implements
     private Button btnResetSlam;
     private Button btnTogglePointCloud;
     private Button btnToggleSlam;
+    private Button btnToggleOpticalFlow;
     private Button btn3DofCube;
     private android.os.Handler uiHandler = new android.os.Handler();
     private androidx.appcompat.app.AlertDialog loadingDialog;
     private boolean slamInitialized = false;
+    private boolean isOpticalFlowEnabled = false;
 
     // 调试界面相关
     private View floatingLogWindow;
@@ -363,6 +365,17 @@ public class ArCamUIActivity extends AppCompatActivity implements
                 @Override
                 public void onClick(View v) {
                     toggleSLAM();
+                }
+            });
+        }
+
+        // 添加 光流开关控制按钮
+        btnToggleOpticalFlow = findViewById(R.id.btn_toggle_optical_flow);
+        if (btnToggleOpticalFlow != null) {
+            btnToggleOpticalFlow.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    toggleOpticalFlow();
                 }
             });
         }
@@ -1000,13 +1013,13 @@ public class ArCamUIActivity extends AppCompatActivity implements
             if (floatingLogWindow != null)
                 floatingLogWindow.setVisibility(View.VISIBLE);
             if (btnToggleDebug != null)
-                btnToggleDebug.setText("关闭调试");
+                btnToggleDebug.setText(getString(R.string.btn_close_debug));
             startLogCatReader();
         } else {
             if (floatingLogWindow != null)
                 floatingLogWindow.setVisibility(View.GONE);
             if (btnToggleDebug != null)
-                btnToggleDebug.setText("调试");
+                btnToggleDebug.setText(getString(R.string.btn_debug));
             stopLogCatReader();
         }
     }
@@ -1268,5 +1281,31 @@ public class ArCamUIActivity extends AppCompatActivity implements
             showHint(getString(R.string.hint_web_server_closed));
             Log.d(TAG, "Web服务器已关闭，本地相机已恢复正常处理");
         }
+    }
+
+    private void toggleOpticalFlow() {
+        if (nativeHelper != null) {
+            isOpticalFlowEnabled = !isOpticalFlowEnabled;
+            nativeHelper.setOpticalFlowEnabled(isOpticalFlowEnabled);
+            updateOpticalFlowButton();
+            showHint(getString(isOpticalFlowEnabled ? R.string.hint_optical_flow_enabled : R.string.hint_optical_flow_disabled));
+        }
+    }
+
+    private void updateOpticalFlowButton() {
+        if (btnToggleOpticalFlow == null) return;
+        
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (isOpticalFlowEnabled) {
+                    btnToggleOpticalFlow.setText(getString(R.string.btn_optical_flow_on));
+                    btnToggleOpticalFlow.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF4CAF50)); // Green
+                } else {
+                    btnToggleOpticalFlow.setText(getString(R.string.btn_optical_flow_off));
+                    btnToggleOpticalFlow.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF757575)); // Grey
+                }
+            }
+        });
     }
 }

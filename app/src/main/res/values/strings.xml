@@ -80,4 +80,16 @@
     <string name="btn_web_server_open">Open Web Server</string>
     <string name="hint_web_server_closed">Web server closed</string>
 
+    <string name="btn_close_debug">Close Debug</string>
+    <string name="btn_web_server">Web Server</string>
+    <string name="btn_debug">Debug</string>
+    <string name="btn_optical_flow_on">OpFlow ON</string>
+    <string name="btn_optical_flow_off">OpFlow OFF</string>
+    <string name="btn_optical_flow_default">OpFlow OFF</string>
+    <string name="hint_optical_flow_enabled">Optical Flow enabled</string>
+    <string name="hint_optical_flow_disabled">Optical Flow disabled</string>
+    <string name="status_enabled">enabled</string>
+    <string name="status_disabled">disabled</string>
+    <string name="hint_optical_flow_toggled">Optical Flow %1$s</string>
+
 </resources>

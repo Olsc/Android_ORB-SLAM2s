@@ -146,6 +146,9 @@ public class NativeHelper {
     // SLAM 开关控制
     public native void setEnableSLAM(boolean enable);
     public native boolean isEnableSLAM();
+
+    // 光流开关控制
+    public native void setOpticalFlowEnabled(boolean enable);
     
     // 3DOF功能接口
     public native float[] calculate3DofInsertionPoint(float[] rotationMatrix, int rotation, float distance);
