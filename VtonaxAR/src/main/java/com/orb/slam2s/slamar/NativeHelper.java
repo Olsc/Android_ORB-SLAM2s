@@ -7,7 +7,7 @@ package com.orb.slam2s.slamar;
 import android.content.Context;
 import android.util.Log;
 
-import com.orb.slam2s.R;
+import com.vtonax.ar.R;
 import com.orb.slam2s.constant.GlobalConstant;
 
 import org.json.JSONArray;

@@ -1,0 +1,11 @@
+<resources>
+    <string name="hint_map_saved">Map saved: %1$s</string>
+    <string name="hint_map_save_failed">Save failed: %1$s</string>
+    <string name="hint_map_file_not_found">Map file not found</string>
+    <string name="hint_map_loaded">Map loaded: %1$s</string>
+    <string name="hint_maps_loaded">Loaded %1$d maps</string>
+    <string name="hint_map_load_failed">Load failed: %1$s</string>
+    <string name="hint_map_load_requested">Map load requested</string>
+    <string name="hint_map_deleted">Map deleted</string>
+    <string name="hint_map_delete_failed">Delete failed</string>
+</resources>

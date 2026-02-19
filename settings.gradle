@@ -1,2 +1,3 @@
 include ':OpenCVLibrary'
 include ':app'
+include ':VtonaxAR'

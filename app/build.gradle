@@ -11,20 +11,10 @@ android {
         minSdk 23
         targetSdk 36
         versionCode 1
-        versionName "0.0.2"
+        versionName "0.0.3"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
         multiDexEnabled true
-
-        externalNativeBuild {
-            cmake {
-                cppFlags "-std=c++11 -frtti -fexceptions"
-                arguments "-DANDROID_ARM_NEON=TRUE",
-                        "-DANDROID_TOOLCHAIN=clang",
-                        "-DBUILD_FAT_JAVA_LIBS=ON",
-                        "-DANDROID_STL=c++_shared"
-            }
-        }
     }
 
     packaging {
@@ -43,9 +33,7 @@ android {
     }
 
     sourceSets {
-        main {
-            jniLibs.srcDirs = ['src/main/jniLibs']
-        }
+
     }
 
     buildTypes {
@@ -62,15 +50,6 @@ android {
 
     buildFeatures {
         buildConfig = true
-    }
-
-
-
-    externalNativeBuild {
-        cmake {
-            path "CMakeLists.txt"
-            version '4.1.2'
-        }
     }
 
     splits {
@@ -103,6 +82,7 @@ dependencies {
     implementation 'de.javagl:obj:0.4.0'
     testImplementation 'junit:junit:4.13.2'
     implementation project(':OpenCVLibrary')
+    implementation project(':VtonaxAR')
 
     // CameraX
     implementation 'androidx.camera:camera-core:1.5.3'
