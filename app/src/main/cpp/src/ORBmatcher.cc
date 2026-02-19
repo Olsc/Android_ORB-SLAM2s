@@ -187,6 +187,16 @@ int ORBmatcher::SearchByBoW(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoin
         rotHist[i].reserve(500);
     const float factor = 1.0f/HISTO_LENGTH;
 
+    // 安全检查：确保描述子矩阵有效
+    if(pKF->mDescriptors.empty() || F.mDescriptors.empty())
+        return 0;
+    
+    const int nKFDescriptors = pKF->mDescriptors.rows;
+    const int nFDescriptors = F.mDescriptors.rows;
+    const size_t nKFMapPoints = vpMapPointsKF.size();
+    const size_t nKFKeys = pKF->mvKeysUn.size();
+    const size_t nFKeys = F.mvKeys.size();
+
     // 我们对属于同一词汇节点（在特定级别）的 ORB 进行匹配
     DBoW2::FeatureVector::const_iterator KFit = vFeatVecKF.begin();
     DBoW2::FeatureVector::const_iterator Fit = F.mFeatVec.begin();
@@ -203,6 +213,10 @@ int ORBmatcher::SearchByBoW(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoin
             for(size_t iKF=0; iKF<vIndicesKF.size(); iKF++)
             {
                 const unsigned int realIdxKF = vIndicesKF[iKF];
+
+                // 边界检查：确保索引在有效范围内
+                if(realIdxKF >= nKFMapPoints || realIdxKF >= (unsigned int)nKFDescriptors || realIdxKF >= nKFKeys)
+                    continue;
 
                 MapPoint* pMP = vpMapPointsKF[realIdxKF];
 
@@ -221,6 +235,10 @@ int ORBmatcher::SearchByBoW(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoin
                 for(size_t iF=0; iF<vIndicesF.size(); iF++)
                 {
                     const unsigned int realIdxF = vIndicesF[iF];
+
+                    // 边界检查：确保索引在有效范围内
+                    if(realIdxF >= (unsigned int)F.N || realIdxF >= (unsigned int)nFDescriptors || realIdxF >= nFKeys)
+                        continue;
 
                     if(vpMapPointMatches[realIdxF])
                         continue;
@@ -566,6 +584,17 @@ int ORBmatcher::SearchByBoW(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
 
     const float factor = 1.0f/HISTO_LENGTH;
 
+    // 安全检查：确保描述子矩阵有效
+    if(Descriptors1.empty() || Descriptors2.empty())
+        return 0;
+    
+    const int nDescriptors1 = Descriptors1.rows;
+    const int nDescriptors2 = Descriptors2.rows;
+    const size_t nMapPoints1 = vpMapPoints1.size();
+    const size_t nMapPoints2 = vpMapPoints2.size();
+    const size_t nKeys1 = vKeysUn1.size();
+    const size_t nKeys2 = vKeysUn2.size();
+
     int nmatches = 0;
 
     DBoW2::FeatureVector::const_iterator f1it = vFeatVec1.begin();
@@ -580,6 +609,10 @@ int ORBmatcher::SearchByBoW(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
             for(size_t i1=0, iend1=f1it->second.size(); i1<iend1; i1++)
             {
                 const size_t idx1 = f1it->second[i1];
+
+                // 边界检查：确保索引在有效范围内
+                if(idx1 >= nMapPoints1 || idx1 >= (size_t)nDescriptors1 || idx1 >= nKeys1)
+                    continue;
 
                 MapPoint* pMP1 = vpMapPoints1[idx1];
                 if(!pMP1)
@@ -596,6 +629,10 @@ int ORBmatcher::SearchByBoW(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
                 for(size_t i2=0, iend2=f2it->second.size(); i2<iend2; i2++)
                 {
                     const size_t idx2 = f2it->second[i2];
+
+                    // 边界检查：确保索引在有效范围内
+                    if(idx2 >= nMapPoints2 || idx2 >= (size_t)nDescriptors2 || idx2 >= nKeys2)
+                        continue;
 
                     MapPoint* pMP2 = vpMapPoints2[idx2];
 
