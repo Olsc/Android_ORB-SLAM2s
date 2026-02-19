@@ -125,8 +125,7 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
             return;
         }
 
-        int rotation = ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE))
-                .getDefaultDisplay().getRotation();
+        int rotation = getDisplayRotation();
 
         float[] rotationMatrix = orientationSensor.getRotationMatrix();
 
@@ -243,5 +242,30 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
         GLES20.glShaderSource(shader, shaderCode);
         GLES20.glCompileShader(shader);
         return shader;
+    }
+
+    private int getDisplayRotation() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            try {
+                android.view.Display display = context.getDisplay();
+                if (display != null) {
+                    return display.getRotation();
+                }
+            } catch (Exception e) {
+                // Fallback
+            } catch (NoSuchMethodError e) {
+                // Fallback
+            }
+        }
+        return getLegacyRotation();
+    }
+
+    @SuppressWarnings("deprecation")
+    private int getLegacyRotation() {
+        WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        if (wm != null) {
+            return wm.getDefaultDisplay().getRotation();
+        }
+        return 0;
     }
 }
