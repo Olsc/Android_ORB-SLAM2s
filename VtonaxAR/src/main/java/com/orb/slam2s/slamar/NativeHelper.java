@@ -150,6 +150,10 @@ public class NativeHelper {
     // 光流开关控制
     public native void setOpticalFlowEnabled(boolean enable);
     
+    // 回环检测控制
+    public native void setLoopClosingEnabled(boolean enable);
+    public native boolean isLoopClosingEnabled();
+    
     // 3DOF功能接口
     public native float[] calculate3DofInsertionPoint(float[] rotationMatrix, int rotation, float distance);
     public native float[] compute3DofMVP(float[] rotationMatrix, int rotation, float ratio, float[] objectPos);

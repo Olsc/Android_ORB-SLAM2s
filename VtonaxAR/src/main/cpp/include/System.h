@@ -256,6 +256,12 @@ public:
      */
     void SetOpticalFlow(bool enable);
 
+    /**
+     * 设置是否启用回环检测
+     * @param enable true-启用, false-关闭
+     */
+    void SetLoopClosing(bool enable);
+
 //public:
 private:
     // 多地图容器

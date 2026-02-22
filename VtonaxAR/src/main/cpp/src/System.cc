@@ -697,4 +697,9 @@ void System::SetOpticalFlow(bool enable) {
         mpTracker->SetOpticalFlow(enable);
 }
 
+void System::SetLoopClosing(bool enable) {
+    if(mpLoopCloser)
+        mpLoopCloser->SetLoopClosingEnabled(enable);
+}
+
 } //namespace ORB_SLAM2

@@ -91,5 +91,9 @@
     <string name="status_enabled">enabled</string>
     <string name="status_disabled">disabled</string>
     <string name="hint_optical_flow_toggled">Optical Flow %1$s</string>
+    <string name="btn_loop_closing_on">Loop ON</string>
+    <string name="btn_loop_closing_off">Loop OFF</string>
+    <string name="hint_loop_closing_enabled">Loop closing enabled</string>
+    <string name="hint_loop_closing_disabled">Loop closing disabled</string>
 
 </resources>
