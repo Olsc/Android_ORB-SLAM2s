@@ -185,3 +185,11 @@ ORB-SLAM2 основная библиотека выпущена под [GPLv3 �
 <p align="center">
   <img src="./aesthetic_visual_causal_flow_en.svg" alt="visual_causal_flow">
 </p>
+
+---
+<br>
+<br>
+
+# ♥ Участники
+
+[![Contributors](https://contrib.rocks/image?repo=Olsc/Android_ORB-SLAM2s)](https://github.com/Olsc/Android_ORB-SLAM2s/graphs/contributors)

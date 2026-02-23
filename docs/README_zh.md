@@ -185,3 +185,11 @@ g2o所需（见下文）。下载和安装说明可在以下网址找到：http:
 <p align="center">
   <img src="./aesthetic_visual_causal_flow_zh.svg" alt="visual_causal_flow">
 </p>
+
+---
+<br>
+<br>
+
+# ♥ 贡献者
+
+[![Contributors](https://contrib.rocks/image?repo=Olsc/Android_ORB-SLAM2s)](https://github.com/Olsc/Android_ORB-SLAM2s/graphs/contributors)
