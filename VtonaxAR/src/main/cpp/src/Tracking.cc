@@ -589,7 +589,7 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
     mpKeyFrameDB(pKFDB), mpInitializer(static_cast<Initializer*>(NULL)), mLastInitAttemptTime(0.0), mpSystem(pSys),
     mpFrameDrawer(pFrameDrawer),  mpMap(pMap), mnLastRelocFrameId(0), mnCurrentMapId(0),
     mCfgTopKWords(20), mCfgMaxCandidates(5000), mCfgMatchChunk(1000), mCfgBgSleepUs(100000),
-    mCfgMaxBindInliers(100), mCfgMaxProjBinds(50), mConsecutiveLostFrames(0), mbOpticalFlowEnabled(false), mStableTrackCount(0)
+    mCfgMaxBindInliers(100), mCfgMaxProjBinds(50), mConsecutiveLostFrames(0)
 {
     // 设置OpenCV的错误处理为非致命，防止硬崩
     cv::redirectError(CvErrorSilentHandler);
@@ -1199,15 +1199,7 @@ void Tracking::SetMap(Map *pMap)
     mpMap = pMap;
 }
 
-void Tracking::SetOpticalFlow(bool enable)
-{
-    mbOpticalFlowEnabled = enable;
-    if(!enable)
-    {
-        mLastImGray.release(); 
-        mStableTrackCount = 0;
-    }
-}
+
 
 cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
 {
@@ -1231,88 +1223,14 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
     /////////////////////////
     //Martin:大约 40-80% (60-120ms)
 
-    if (mbOpticalFlowEnabled) {
-        // 静止场景光流优化
-        bool bIsStatic = false;
-        const bool bOpticalFlowCondition = (mStableTrackCount >= OPTICAL_FLOW_STABLE_TRACK_THRESHOLD)
-                                         && !mLastImGray.empty()
-                                         && (int)mLastFrame.mvKeys.size() > OPTICAL_FLOW_MIN_FEATURES;
-        
-        if (bOpticalFlowCondition) {
-            std::vector<cv::Point2f> prevPts, currPts;
-            std::vector<uchar> status;
-            std::vector<float> err;
-            
-            const int stride = OPTICAL_FLOW_SAMPLE_STRIDE;
-            const int maxPts = OPTICAL_FLOW_MAX_POINTS; // 最多追踪40个点，足够判断静止
-            prevPts.reserve(maxPts);
-            for(size_t i = 0; i < mLastFrame.mvKeysUn.size() && (int)prevPts.size() < maxPts; i += stride) {
-                prevPts.push_back(mLastFrame.mvKeysUn[i].pt);
-            }
-            
-            if((int)prevPts.size() > OPTICAL_FLOW_MIN_VALID_POINTS) {
-                cv::calcOpticalFlowPyrLK(mLastImGray, mImGray, prevPts, currPts,
-                                         status, err, cv::Size(OPTICAL_FLOW_WIN_SIZE,OPTICAL_FLOW_WIN_SIZE), OPTICAL_FLOW_PYRAMID_LEVELS);
-                
-                float moveSum = 0;
-                int moveCnt = 0;
-                for(size_t i = 0; i < status.size(); i++) {
-                    if(status[i]) {
-                        float dx = prevPts[i].x - currPts[i].x;
-                        float dy = prevPts[i].y - currPts[i].y;
-                        // 使用曼哈顿距离，避免sqrt
-                        moveSum += std::abs(dx) + std::abs(dy);
-                        moveCnt++;
-                    }
-                }
-                
-                // 如果平均移动小于阈值，认为是静止
-                if (moveCnt > OPTICAL_FLOW_MIN_VALID_POINTS && (moveSum / moveCnt) < OPTICAL_FLOW_STATIC_MOVE_TH) {
-                    bIsStatic = true;
-                }
-            }
-        }
-
-        if (bIsStatic) {
-            // 复用上一帧数据，跳过ORB提取和匹配
-            mCurrentFrame = Frame(mLastFrame);
-            mCurrentFrame.mTimeStamp = timestamp;
-            mCurrentFrame.mnId = Frame::nNextId++;
-            
-            // 更新 UI
-            mpFrameDrawer->Update(this);
-            
-            // 直接更新 mLastFrame 的时间戳和ID
-            mLastFrame.mTimeStamp = timestamp;
-            mLastFrame.mnId = mCurrentFrame.mnId;
-            
-            // 仍然维持稳定计数增加 (既然静止，说明没丢)
-            if(mState == OK) mStableTrackCount++;
-
-            return mCurrentFrame.mTcw.clone();
-        }
-    }
-
     if(mState==NOT_INITIALIZED || mState==NO_IMAGES_YET)
         mCurrentFrame = Frame(mImGray,timestamp,mpIniORBextractor,mpORBVocabulary,mK,mDistCoef,mbf);
     else
         mCurrentFrame = Frame(mImGray,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf);
-    /////////////////////////
- 
-    recordTime();
- 
-    ////////////////////////
-    //Martin:大约 1-60% (5-200ms)
-    Track();
-    ////////////////////////
-    
-    // 仅在光流可能启用时才保存当前图像
-    // 这样在跟踪不稳定（mStableTrackCount低）时完全避免了这次拷贝
-    if (mbOpticalFlowEnabled && mStableTrackCount >= OPTICAL_FLOW_STABLE_TRACK_THRESHOLD - 1) {
-        mImGray.copyTo(mLastImGray); // copyTo复用已分配内存，避免每帧malloc
-    }
 
-    //logTime();
+    recordTime();
+    Track();
+
     return mCurrentFrame.mTcw.clone();
 }
 
@@ -1457,11 +1375,9 @@ void Tracking::Track()
 
         if(bOK) {
             mState = OK;
-            mStableTrackCount++;
         }
         else {
             mState=LOST;
-            mStableTrackCount=0;
         }
 
         // 更新绘制器
@@ -2591,7 +2507,18 @@ bool Tracking::NeedNewKeyFrame()
     // 条件2：与参考关键帧相比跟踪点较少。与地图匹配相比有很多视觉里程计。
     const bool c2 = ((mnMatchesInliers<nRefMatches*thRefRatio|| bNeedToInsertClose) && mnMatchesInliers>15);
 
-    if ((c1a || c1b || c1c) && c2)
+    // 如果相对于参考关键帧移动距离过小，则不插入关键帧，这对保持手机运行平滑至关重要
+    cv::Mat Ow = mCurrentFrame.GetCameraCenter();
+    cv::Mat OwRef = mpReferenceKF->GetCameraCenter();
+    cv::Mat vDist = Ow - OwRef;
+    float distSq = vDist.at<float>(0)*vDist.at<float>(0) + 
+                    vDist.at<float>(1)*vDist.at<float>(1) + 
+                    vDist.at<float>(2)*vDist.at<float>(2);
+    
+    // 空间阈值设置为 0.05m (5cm)，防止在静态场景下产生冗余关键帧
+    const float minSpatialThresholdSq = 0.0025f; 
+
+    if ((c1a || c1b || c1c) && c2 && (distSq > minSpatialThresholdSq))
     {
         // 如果建图接受关键帧，则插入关键帧。
         // 否则发送信号中断BA

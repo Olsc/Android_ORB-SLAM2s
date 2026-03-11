@@ -84,14 +84,7 @@
     <string name="btn_close_debug">关闭调试</string>
     <string name="btn_web_server">Web端</string>
     <string name="btn_debug">调试</string>
-    <string name="btn_optical_flow_on">光流 ON</string>
-    <string name="btn_optical_flow_off">光流 OFF</string>
-    <string name="btn_optical_flow_default">光流 OFF</string>
-    <string name="hint_optical_flow_enabled">光流优化已开启</string>
-    <string name="hint_optical_flow_disabled">光流优化已关闭</string>
-    <string name="status_enabled">开启</string>
-    <string name="status_disabled">关闭</string>
-    <string name="hint_optical_flow_toggled">光流优化已%1$s</string>
+
     <string name="btn_loop_closing_on">回环 ON</string>
     <string name="btn_loop_closing_off">回环 OFF</string>
     <string name="hint_loop_closing_enabled">回环检测已开启</string>

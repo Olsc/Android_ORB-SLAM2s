@@ -74,13 +74,13 @@ public class ArCamUIActivity extends AppCompatActivity implements
     private Button btnResetSlam;
     private Button btnTogglePointCloud;
     private Button btnToggleSlam;
-    private Button btnToggleOpticalFlow;
+
     private Button btnToggleLoopClosing;
     private Button btn3DofCube;
     private android.os.Handler uiHandler = new android.os.Handler();
     private androidx.appcompat.app.AlertDialog loadingDialog;
     private boolean slamInitialized = false;
-    private boolean isOpticalFlowEnabled = false;
+
     private boolean isLoopClosingEnabled = false;
 
     // 调试界面相关
@@ -371,16 +371,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
             });
         }
 
-        // 添加 光流开关控制按钮
-        btnToggleOpticalFlow = findViewById(R.id.btn_toggle_optical_flow);
-        if (btnToggleOpticalFlow != null) {
-            btnToggleOpticalFlow.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    toggleOpticalFlow();
-                }
-            });
-        }
+
 
         // 添加 回环开关控制按钮
         btnToggleLoopClosing = findViewById(R.id.btn_toggle_loop_closing);
@@ -1296,31 +1287,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
         }
     }
 
-    private void toggleOpticalFlow() {
-        if (nativeHelper != null) {
-            isOpticalFlowEnabled = !isOpticalFlowEnabled;
-            nativeHelper.setOpticalFlowEnabled(isOpticalFlowEnabled);
-            updateOpticalFlowButton();
-            showHint(getString(isOpticalFlowEnabled ? R.string.hint_optical_flow_enabled : R.string.hint_optical_flow_disabled));
-        }
-    }
 
-    private void updateOpticalFlowButton() {
-        if (btnToggleOpticalFlow == null) return;
-        
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (isOpticalFlowEnabled) {
-                    btnToggleOpticalFlow.setText(getString(R.string.btn_optical_flow_on));
-                    btnToggleOpticalFlow.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF4CAF50)); // Green
-                } else {
-                    btnToggleOpticalFlow.setText(getString(R.string.btn_optical_flow_off));
-                    btnToggleOpticalFlow.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF757575)); // Grey
-                }
-            }
-        });
-    }
 
     private void toggleLoopClosing() {
         if (nativeHelper != null) {
