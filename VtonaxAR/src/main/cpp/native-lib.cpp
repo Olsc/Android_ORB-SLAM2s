@@ -57,8 +57,6 @@ bool gEnablePointCloudDisplay = true;  // 默认启用点云显示
 // SLAM 开关控制
 bool gEnableSLAM = true;  // 默认启用 SLAM
 
-// 闭环检测开关控制
-bool gEnableLoopClosing = false; // 默认关闭闭环检测
 
 // SLAM丢失自动重置相关变量
 double lastOkTime = 0.0;            // 上次SLAM正常工作的时间
@@ -300,62 +298,32 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
         
         cv::Mat imgSmall;
         cv::resize(image, imgSmall, cv::Size(image.cols / 2, image.rows / 2));
-        bool isDark = false;
-        
-        if (imgSmall.channels() == 4)
-        {
-            cv::Mat gray;
-            cv::cvtColor(imgSmall, gray, cv::COLOR_RGBA2GRAY);
-            isDark = cv::mean(gray)[0] < 8.0;
-        }
-        else if (imgSmall.channels() == 1)
-        {
-            isDark = cv::mean(imgSmall)[0] < 8.0;
-        }
-        else
-        {
-            cv::Mat gray;
-            cv::cvtColor(imgSmall, gray, cv::COLOR_BGR2GRAY);
-            isDark = cv::mean(gray)[0] < 8.0;
-        }
-        
-        if (!isDark)
-        {
-            // SLAM跟踪线程拥有最高优先级，绝不能因为拿不到锁而丢弃帧（会导致跟踪丢失）
-            // 如果UI线程持有锁，SLAM线程等待几毫秒是完全可以接受的
-            std::unique_lock<std::mutex> lock(gSlamStateMutex);
-            
-            if(slamSys) {
-                // 执行跟踪
-                Tcw = slamSys->TrackMonocular(imgSmall, timeStamp);
-                status = slamSys->GetTrackingState();
-                
-                // 必须全程持有锁保护 slamSys 的访问！
-                // 不能提前释放，否则在获取地图点时 slamSys 可能被 Reset 线程修改或销毁
-                
-                // 更新缓存
-                {
-                    std::lock_guard<std::mutex> lock2(gMapPointsMutex);
-                    if(slamSys) { 
-                        vMPs = slamSys->GetTrackedMapPoints();
-                        vKeys = slamSys->GetTrackedKeyPointsUn();
-                    }
+
+        // SLAM跟踪线程拥有最高优先级，绝不能因为拿不到锁而丢弃帧（会导致跟踪丢失）
+        // 如果UI线程持有锁，SLAM线程等待几毫秒是完全可以接受的
+        std::unique_lock<std::mutex> lock(gSlamStateMutex);
+
+        if(slamSys) {
+            // 执行跟踪
+            Tcw = slamSys->TrackMonocular(imgSmall, timeStamp);
+            status = slamSys->GetTrackingState();
+
+            // 必须全程持有锁保护 slamSys 的访问！
+            // 不能提前释放，否则在获取地图点时 slamSys 可能被 Reset 线程修改或销毁
+
+            // 更新缓存
+            {
+                std::lock_guard<std::mutex> lock2(gMapPointsMutex);
+                if(slamSys) { 
+                    vMPs = slamSys->GetTrackedMapPoints();
+                    vKeys = slamSys->GetTrackedKeyPointsUn();
                 }
-            } else {
-                Tcw = cv::Mat();
-                status = 0;
             }
-            // 锁在这里自动释放（超出作用域）
         } else {
-            // 黑暗状态
             Tcw = cv::Mat();
-            std::unique_lock<std::mutex> lock(gSlamStateMutex);
-            if(slamSys) {
-                status = slamSys->GetTrackingState();
-            } else {
-                status = 0;
-            }
+            status = 0;
         }
+        // 锁在这里自动释放（超出作用域）
         
         // 确保 vMPs 在任何情况下都处于安全状态
         
@@ -565,9 +533,6 @@ Java_com_orb_slam2s_slamar_NativeHelper_initSLAM(JNIEnv* env, jobject instance, 
     // LOGD("正在使用嵌入词汇表初始化SLAM系统...");
     // 传递空字符串作为YAML参数，因为相机参数现在在Config.h中
     slamSys = new ORB_SLAM2::System(":embedded:", "", ORB_SLAM2::System::MONOCULAR);
-    
-    // 应用初始配置
-    slamSys->SetLoopClosing(gEnableLoopClosing);
 }
 
 JNIEXPORT void JNICALL
@@ -1089,31 +1054,6 @@ Java_com_orb_slam2s_slamar_NativeHelper_setEnableSLAM(JNIEnv *env, jobject insta
 JNIEXPORT jboolean JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_isEnableSLAM(JNIEnv *env, jobject instance) {
     return (jboolean)gEnableSLAM;
-}
-
-// 启用/禁用 光流
-JNIEXPORT void JNICALL
-Java_com_orb_slam2s_slamar_NativeHelper_setOpticalFlowEnabled(JNIEnv *env, jobject instance, jboolean enable) {
-    if(slamSys) {
-        slamSys->SetOpticalFlow((bool)enable);
-        LOGD("光流状态已更新: %s", enable ? "开启" : "关闭");
-    }
-}
-
-// 启用/禁用 回环
-JNIEXPORT void JNICALL
-Java_com_orb_slam2s_slamar_NativeHelper_setLoopClosingEnabled(JNIEnv *env, jobject instance, jboolean enable) {
-    gEnableLoopClosing = enable;
-    if(slamSys) {
-        slamSys->SetLoopClosing((bool)enable);
-        LOGD("回环状态已更新: %s", enable ? "开启" : "关闭");
-    }
-}
-
-// 获取 回环启用状态
-JNIEXPORT jboolean JNICALL
-Java_com_orb_slam2s_slamar_NativeHelper_isLoopClosingEnabled(JNIEnv *env, jobject instance) {
-    return (jboolean)gEnableLoopClosing;
 }
 
 }

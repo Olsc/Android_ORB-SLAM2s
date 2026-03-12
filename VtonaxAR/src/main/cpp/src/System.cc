@@ -692,14 +692,4 @@ int System::GetCurrentMapId() {
     return mpTracker ? mpTracker->GetCurrentMapId() : 0;
 }
 
-void System::SetOpticalFlow(bool enable) {
-    if(mpTracker)
-        mpTracker->SetOpticalFlow(enable);
-}
-
-void System::SetLoopClosing(bool enable) {
-    if(mpLoopCloser)
-        mpLoopCloser->SetLoopClosingEnabled(enable);
-}
-
 } //namespace ORB_SLAM2

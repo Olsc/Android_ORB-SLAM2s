@@ -724,6 +724,7 @@ void LocalMapping::RequestReset()
     {
         unique_lock<mutex> lock(mMutexReset);
         mbResetRequested = true;
+        mbAbortBA = true; // 立即中断正在进行的BA，确保Reset能被快速处理
     }
 
     while(1)

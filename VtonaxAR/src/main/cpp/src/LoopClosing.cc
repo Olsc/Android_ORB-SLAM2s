@@ -53,7 +53,7 @@ namespace ORB_SLAM2
 LoopClosing::LoopClosing(Map *pMap, KeyFrameDatabase *pDB, ORBVocabulary *pVoc):
     mbResetRequested(false), mbFinishRequested(false), mbFinished(true), mpMap(pMap),
     mpKeyFrameDB(pDB), mpORBVocabulary(pVoc), mpMatchedKF(NULL), mLastLoopKFid(0), mbRunningGBA(false), mbFinishedGBA(true),
-    mbStopGBA(false), mpThreadGBA(NULL), mnFullBAIdx(0), mbLoopClosingEnabled(false)
+    mbStopGBA(false), mpThreadGBA(NULL), mnFullBAIdx(0)
 {
     mnCovisibilityConsistencyTh = LOOP_COVISIBILITY_CONSISTENCY_TH;
 }
@@ -73,38 +73,12 @@ void LoopClosing::SetMap(Map* pMap)
     mpMap = pMap;
 }
 
-void LoopClosing::SetLoopClosingEnabled(bool bEnable)
-{
-    unique_lock<mutex> lock(mMutexLoopSwitch);
-    mbLoopClosingEnabled = bEnable;
-    if(!bEnable)
-    {
-        unique_lock<mutex> lockQ(mMutexLoopQueue);
-        mlpLoopKeyFrameQueue.clear();
-    }
-}
-
-bool LoopClosing::IsLoopClosingEnabled()
-{
-    unique_lock<mutex> lock(mMutexLoopSwitch);
-    return mbLoopClosingEnabled;
-}
-
 void LoopClosing::Run()
 {
     mbFinished =false;
 
     while(1)
     {
-        if(!IsLoopClosingEnabled())
-        {
-            ResetIfRequested();
-            if(CheckFinish())
-                break;
-            usleep(5000);
-            continue;
-        }
-
         // 检查队列中是否有关键帧
         if(CheckNewKeyFrames())
         {
@@ -134,9 +108,6 @@ void LoopClosing::Run()
 
 void LoopClosing::InsertKeyFrame(KeyFrame *pKF)
 {
-    if(!IsLoopClosingEnabled())
-        return;
-
     unique_lock<mutex> lock(mMutexLoopQueue);
     if(pKF->mnId!=0)
         mlpLoopKeyFrameQueue.push_back(pKF);
