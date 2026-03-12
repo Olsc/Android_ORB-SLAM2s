@@ -75,13 +75,10 @@ public class ArCamUIActivity extends AppCompatActivity implements
     private Button btnTogglePointCloud;
     private Button btnToggleSlam;
 
-    private Button btnToggleLoopClosing;
     private Button btn3DofCube;
     private android.os.Handler uiHandler = new android.os.Handler();
     private androidx.appcompat.app.AlertDialog loadingDialog;
     private boolean slamInitialized = false;
-
-    private boolean isLoopClosingEnabled = false;
 
     // 调试界面相关
     private View floatingLogWindow;
@@ -367,19 +364,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
                 @Override
                 public void onClick(View v) {
                     toggleSLAM();
-                }
-            });
-        }
-
-
-
-        // 添加 回环开关控制按钮
-        btnToggleLoopClosing = findViewById(R.id.btn_toggle_loop_closing);
-        if (btnToggleLoopClosing != null) {
-            btnToggleLoopClosing.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    toggleLoopClosing();
                 }
             });
         }
@@ -1287,31 +1271,4 @@ public class ArCamUIActivity extends AppCompatActivity implements
         }
     }
 
-
-
-    private void toggleLoopClosing() {
-        if (nativeHelper != null) {
-            isLoopClosingEnabled = !isLoopClosingEnabled;
-            nativeHelper.setLoopClosingEnabled(isLoopClosingEnabled);
-            updateLoopClosingButton();
-            showHint(getString(isLoopClosingEnabled ? R.string.hint_loop_closing_enabled : R.string.hint_loop_closing_disabled));
-        }
-    }
-
-    private void updateLoopClosingButton() {
-        if (btnToggleLoopClosing == null) return;
-        
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (isLoopClosingEnabled) {
-                    btnToggleLoopClosing.setText(getString(R.string.btn_loop_closing_on));
-                    btnToggleLoopClosing.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF4CAF50)); // Green
-                } else {
-                    btnToggleLoopClosing.setText(getString(R.string.btn_loop_closing_off));
-                    btnToggleLoopClosing.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF757575)); // Grey
-                }
-            }
-        });
-    }
 }

@@ -147,11 +147,6 @@ public class NativeHelper {
     public native void setEnableSLAM(boolean enable);
     public native boolean isEnableSLAM();
 
-
-    
-    // 回环检测控制
-    public native void setLoopClosingEnabled(boolean enable);
-    public native boolean isLoopClosingEnabled();
     
     // 3DOF功能接口
     public native float[] calculate3DofInsertionPoint(float[] rotationMatrix, int rotation, float distance);

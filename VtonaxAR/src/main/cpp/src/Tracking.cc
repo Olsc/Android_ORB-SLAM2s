@@ -391,7 +391,7 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
         newRefInverted.reserve(10000);  // 预估词汇数量
         
         // 预分配描述子矩阵,避免逐行push_back的拷贝开销
-        // 假设描述子维度为32
+        // 先假设 descriptor（特征描述子）的列数是 32，之后再通过实际数据去确认
         int descCols = 32;
         
         // 先获取第一个有效描述子来确定维度

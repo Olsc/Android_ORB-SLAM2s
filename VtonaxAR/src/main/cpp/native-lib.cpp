@@ -57,8 +57,6 @@ bool gEnablePointCloudDisplay = true;  // 默认启用点云显示
 // SLAM 开关控制
 bool gEnableSLAM = true;  // 默认启用 SLAM
 
-// 闭环检测开关控制
-bool gEnableLoopClosing = false; // 默认关闭闭环检测
 
 // SLAM丢失自动重置相关变量
 double lastOkTime = 0.0;            // 上次SLAM正常工作的时间
@@ -535,9 +533,6 @@ Java_com_orb_slam2s_slamar_NativeHelper_initSLAM(JNIEnv* env, jobject instance, 
     // LOGD("正在使用嵌入词汇表初始化SLAM系统...");
     // 传递空字符串作为YAML参数，因为相机参数现在在Config.h中
     slamSys = new ORB_SLAM2::System(":embedded:", "", ORB_SLAM2::System::MONOCULAR);
-    
-    // 应用初始配置
-    slamSys->SetLoopClosing(gEnableLoopClosing);
 }
 
 JNIEXPORT void JNICALL
@@ -1059,24 +1054,6 @@ Java_com_orb_slam2s_slamar_NativeHelper_setEnableSLAM(JNIEnv *env, jobject insta
 JNIEXPORT jboolean JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_isEnableSLAM(JNIEnv *env, jobject instance) {
     return (jboolean)gEnableSLAM;
-}
-
-
-
-// 启用/禁用 回环
-JNIEXPORT void JNICALL
-Java_com_orb_slam2s_slamar_NativeHelper_setLoopClosingEnabled(JNIEnv *env, jobject instance, jboolean enable) {
-    gEnableLoopClosing = enable;
-    if(slamSys) {
-        slamSys->SetLoopClosing((bool)enable);
-        LOGD("回环状态已更新: %s", enable ? "开启" : "关闭");
-    }
-}
-
-// 获取 回环启用状态
-JNIEXPORT jboolean JNICALL
-Java_com_orb_slam2s_slamar_NativeHelper_isLoopClosingEnabled(JNIEnv *env, jobject instance) {
-    return (jboolean)gEnableLoopClosing;
 }
 
 }

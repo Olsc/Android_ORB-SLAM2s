@@ -96,14 +96,7 @@ public:
 
     bool isFinished();
 
-    // 回环开关
-    void SetLoopClosingEnabled(bool bEnable);
-    bool IsLoopClosingEnabled();
-
 protected:
-
-    bool mbLoopClosingEnabled;
-    std::mutex mMutexLoopSwitch;
 
     bool CheckNewKeyFrames();
 
