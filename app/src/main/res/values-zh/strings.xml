@@ -84,6 +84,8 @@
     <string name="btn_close_debug">关闭调试</string>
     <string name="btn_web_server">Web端</string>
     <string name="btn_debug">调试</string>
+    <string name="status_enabled">已启用</string>
+    <string name="status_disabled">已关闭</string>
 
     <string name="btn_loop_closing_on">回环 ON</string>
     <string name="btn_loop_closing_off">回环 OFF</string>
