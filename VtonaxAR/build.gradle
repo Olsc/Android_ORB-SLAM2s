@@ -5,7 +5,7 @@ plugins {
 android {
     namespace 'com.vtonax.ar'
     compileSdk 36
-    ndkVersion "29.0.14206865"
+    ndkVersion "30.0.14904198"
 
     defaultConfig {
         minSdk 23
@@ -26,6 +26,7 @@ android {
         ndk {
             abiFilters 'armeabi-v7a', 'arm64-v8a'
         }
+        targetSdk 37
     }
 
     buildTypes {
@@ -54,6 +55,7 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+    buildToolsVersion '37.0.0'
     compileSdkMinor 1
 }
 

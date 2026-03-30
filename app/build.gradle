@@ -4,12 +4,12 @@ plugins {
 
 android {
     compileSdk 36
-    ndkVersion "29.0.14206865"
+    ndkVersion "30.0.14904198"
 
     defaultConfig {
         applicationId "com.orb.slam2s"
         minSdk 23
-        targetSdk 36
+        targetSdk 37
         versionCode 1
         versionName "0.0.3"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -66,7 +66,7 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
     namespace 'com.orb.slam2s'
-    buildToolsVersion '36.1.0'
+    buildToolsVersion '37.0.0'
     compileSdkMinor 1
 
     //dynamicFeatures = [":slam"]

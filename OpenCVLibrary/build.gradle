@@ -7,6 +7,7 @@ android {
 
     defaultConfig {
         minSdk 23
+        targetSdk 37
     }
 
     buildTypes {
@@ -25,15 +26,15 @@ android {
         buildConfig true
     }
     namespace 'org.opencv'
-    compileSdkMinor 1
-    buildToolsVersion '36.1.0'
-    ndkVersion '29.0.14206865'
+    buildToolsVersion '37.0.0'
+    ndkVersion '30.0.14904198'
     lint {
         targetSdk 36
     }
     testOptions {
         targetSdk 36
     }
+    compileSdkMinor 1
 }
 
 configurations.all {
