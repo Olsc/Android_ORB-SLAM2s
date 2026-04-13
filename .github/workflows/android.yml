@@ -22,12 +22,11 @@ jobs:
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v4
     - name: Accept Android SDK licenses
       run: |
         yes | sdkmanager --licenses || true
-    - name: Install Android NDK
-      run: |
-        yes | sdkmanager "ndk;30.0.14904198"
     - name: Build Debug APK
       run: ./gradlew assembleDebug
 
