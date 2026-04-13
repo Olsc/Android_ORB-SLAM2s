@@ -24,7 +24,10 @@ jobs:
       run: chmod +x gradlew
     - name: Accept Android SDK licenses
       run: |
-        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+        yes | sdkmanager --licenses || true
+    - name: Install Android NDK
+      run: |
+        yes | sdkmanager "ndk;30.0.14904198"
     - name: Build Debug APK
       run: ./gradlew assembleDebug
 
