@@ -1243,13 +1243,14 @@ void Tracking::Track()
 
     mLastProcessedState=mState;
 
-    // 获取地图互斥量 -> 地图在此期间不能被修改
-    std::unique_lock<std::mutex> lock(mpMap->mMutexMapUpdate);
-
     if (mState == NOT_INITIALIZED)
     {
         // 仅支持单目初始化
-        MonocularInitialization();
+        // 初始化过程会创建KF和MapPoint并写入地图，需短暂持锁
+        {
+            std::unique_lock<std::mutex> lock(mpMap->mMutexMapUpdate);
+            MonocularInitialization();
+        }
 
         mpFrameDrawer->Update(this);
 
@@ -1264,12 +1265,13 @@ void Tracking::Track()
         // 使用运动模型或重定位进行初始相机位姿估计（如果跟踪丢失）
         if(!mbOnlyTracking)
         {
-            // 局部建图已激活。这是正常行为，除非
-            // 你显式激活了"仅跟踪"模式。
-
             if(mState==OK)
             {
-                CheckReplacedInLastFrame();
+                // CheckReplacedInLastFrame 访问 MapPoint::GetReplaced()，需短暂持锁防止并发替换
+                {
+                    std::unique_lock<std::mutex> lock(mpMap->mMutexMapUpdate);
+                    CheckReplacedInLastFrame();
+                }
 
                 if(mVelocity.empty() || mCurrentFrame.mnId<mnLastRelocFrameId+2)
                 {
@@ -1419,13 +1421,11 @@ void Tracking::Track()
             // 检查是否需要插入新关键帧
             if(NeedNewKeyFrame())
             {
+                // CreateNewKeyFrame 修改地图结构，需短暂持锁
+                std::unique_lock<std::mutex> lock(mpMap->mMutexMapUpdate);
                 CreateNewKeyFrame();
             }
 
-            // 允许具有高创新性的点（被Huber函数视为离群值）
-            // 传递到新的关键帧，这样光束法平差最终会决定
-            // 它们是否为离群值。我们不希望下一帧用这些点来估计其位置
-            // 所以我们在帧中丢弃它们。
             for(int i=0; i<mCurrentFrame.N;i++)
             {
                 if(mCurrentFrame.mvpMapPoints[i] && mCurrentFrame.mvbOutlier[i])
@@ -1591,6 +1591,22 @@ void Tracking::MonocularInitialization()
             delete mpInitializer;
             mpInitializer = static_cast<Initializer*>(NULL);
             return;
+        }
+
+        {
+            float distSum = 0.0f;
+            int validCount = 0;
+            for(size_t i=0, iend=mvIniMatches.size(); i<iend; i++) {
+                if(mvIniMatches[i]>=0) {
+                    const cv::KeyPoint &kp1 = mInitialFrame.mvKeysUn[i];
+                    const cv::KeyPoint &kp2 = mCurrentFrame.mvKeysUn[mvIniMatches[i]];
+                    distSum += std::abs(kp1.pt.x - kp2.pt.x) + std::abs(kp1.pt.y - kp2.pt.y);
+                    validCount++;
+                }
+            }
+            if(validCount > 0 && (distSum / validCount) < 15.0f) {
+                return; // 视差不足，等待相机移动充足基线再初始化
+            }
         }
 
         mLastInitAttemptTime = mCurrentFrame.mTimeStamp;
