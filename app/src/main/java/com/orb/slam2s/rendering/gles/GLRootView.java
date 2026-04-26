@@ -3,8 +3,6 @@ package com.orb.slam2s.rendering.gles;
 import android.content.Context;
 import android.opengl.GLSurfaceView;
 import android.util.AttributeSet;
-import android.view.ViewGroup;
-import android.widget.RelativeLayout;
 
 public class GLRootView extends GLSurfaceView {
     private int surfaceWidth;

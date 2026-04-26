@@ -5,28 +5,22 @@ package com.orb.slam2s.ui;
  * 由Olsc于2025/8/25开始进行修改
  */
 
-import android.app.ActivityManager;
-import android.content.pm.PackageManager;
 import android.opengl.GLSurfaceView;
-import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.Button;
-import android.webkit.WebView;
 import android.graphics.Bitmap;
-import java.io.ByteArrayOutputStream;
+
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.util.Enumeration;
 import com.orb.slam2s.server.WebServer;
-import org.opencv.android.Utils;
 
 import com.orb.slam2s.constant.GlobalConstant;
 import com.orb.slam2s.rendering.render.ObjRendererWrapper;
@@ -45,6 +39,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.activity.OnBackPressedCallback;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.MultiFormatWriter;
+import com.google.zxing.WriterException;
+import com.google.zxing.common.BitMatrix;
 
 @SuppressWarnings("deprecation")
 public class ArCamUIActivity extends AppCompatActivity implements
@@ -90,6 +89,12 @@ public class ArCamUIActivity extends AppCompatActivity implements
 
     // 拖动相关变量
     private float dX, dY;
+    private float qrDX, qrDY;
+
+    // Web Server 相关 UI
+    private View floatingQrWindow;
+    private android.widget.ImageView ivQrCode;
+    private android.widget.TextView tvWebUrl;
 
     private WebServer webServer;
     private Button btnStartWeb;
@@ -102,7 +107,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
     private ThreeDofCubeRenderer threeDofRenderer;
     private boolean is3DofMode = false;
 
-    // 浏览器图像帧相关
+    // 浏览器图像帧相关 (Web 服务器使用)
     private volatile byte[] browserFrameData = null;
     private final Object browserFrameLock = new Object();
     private boolean useWebCamera = false; // Web模式：使用浏览器相机而不是本地相机
@@ -315,6 +320,52 @@ public class ArCamUIActivity extends AppCompatActivity implements
                 @Override
                 public void onClick(View v) {
                     toggleDebugMode();
+                }
+            });
+        }
+
+        // Web QR Window 初始化
+        floatingQrWindow = findViewById(R.id.floating_qr_window);
+        ivQrCode = findViewById(R.id.iv_qr_code);
+        tvWebUrl = findViewById(R.id.tv_web_url);
+        View qrHeader = findViewById(R.id.qr_window_header);
+        View btnCloseQr = findViewById(R.id.btn_close_qr);
+
+        if (btnCloseQr != null) {
+            btnCloseQr.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (isWebRunning) {
+                        toggleWebServer();
+                    } else {
+                        if (floatingQrWindow != null)
+                            floatingQrWindow.setVisibility(View.GONE);
+                    }
+                }
+            });
+        }
+
+        // QR 窗口拖动功能
+        if (qrHeader != null && floatingQrWindow != null) {
+            qrHeader.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View view, MotionEvent event) {
+                    switch (event.getAction()) {
+                        case MotionEvent.ACTION_DOWN:
+                            qrDX = floatingQrWindow.getX() - event.getRawX();
+                            qrDY = floatingQrWindow.getY() - event.getRawY();
+                            break;
+                        case MotionEvent.ACTION_MOVE:
+                            floatingQrWindow.animate()
+                                    .x(event.getRawX() + qrDX)
+                                    .y(event.getRawY() + qrDY)
+                                    .setDuration(0)
+                                    .start();
+                            break;
+                        default:
+                            return false;
+                    }
+                    return true;
                 }
             });
         }
@@ -854,7 +905,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
 
                                 // 更新FPS
                                 mFpsMeter.measure();
-                                final String fpsTextStr = mFpsMeter.getText() + " (Web)";
+                                final String fpsTextStr = mFpsMeter.getText() + getString(R.string.web_fps_label);
                                 runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
@@ -869,7 +920,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
                                 Log.w(TAG, "Web线程：等待SLAM初始化...");
                             }
                             // 没有数据时等待
-                            final String waitText = "等待浏览器图像...";
+                            final String waitText = getString(R.string.hint_waiting_browser_frame);
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
@@ -1065,7 +1116,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
                     }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.e(TAG, "读取日志发生异常", e);
             } finally {
                 if (logProcess != null)
                     logProcess.destroy();
@@ -1223,6 +1274,31 @@ public class ArCamUIActivity extends AppCompatActivity implements
         return "127.0.0.1";
     }
 
+    /**
+     * 生成二维码位图
+     */
+    private Bitmap generateQrCode(String content) {
+        try {
+            int size = 512;
+            BitMatrix bitMatrix = new MultiFormatWriter().encode(content, BarcodeFormat.QR_CODE, size, size);
+            int width = bitMatrix.getWidth();
+            int height = bitMatrix.getHeight();
+            int[] pixels = new int[width * height];
+            for (int y = 0; y < height; y++) {
+                int offset = y * width;
+                for (int x = 0; x < width; x++) {
+                    pixels[offset + x] = bitMatrix.get(x, y) ? 0xFF000000 : 0xFFFFFFFF;
+                }
+            }
+            Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            bitmap.setPixels(pixels, 0, width, 0, 0, width, height);
+            return bitmap;
+        } catch (WriterException e) {
+            Log.e(TAG, "生成二维码失败", e);
+            return null;
+        }
+    }
+
     private void toggleWebServer() {
         if (!isWebRunning) {
             webServer = new WebServer(8080, nativeHelper, this);
@@ -1248,7 +1324,23 @@ public class ArCamUIActivity extends AppCompatActivity implements
             btnStartWeb.setText(getString(R.string.btn_web_server_close));
 
             String ipAddress = getDeviceIpAddress();
-            showHint("https://" + ipAddress + ":8080");
+            String url = "https://" + ipAddress + ":8080"; 
+            showHint(getString(R.string.hint_web_server_started, url));
+            
+            // 显示二维码窗口
+            if (floatingQrWindow != null) {
+                floatingQrWindow.setVisibility(View.VISIBLE);
+                if (tvWebUrl != null) {
+                    tvWebUrl.setText(url);
+                }
+                if (ivQrCode != null) {
+                    Bitmap qrBitmap = generateQrCode(url);
+                    if (qrBitmap != null) {
+                        ivQrCode.setImageBitmap(qrBitmap);
+                    }
+                }
+            }
+            
             Log.d(TAG, "Web服务器已启动，本地处理已停止，仅处理浏览器图像");
         } else {
             // 停止Web图像处理线程
@@ -1263,6 +1355,11 @@ public class ArCamUIActivity extends AppCompatActivity implements
             // 清空浏览器图像数据
             synchronized (browserFrameLock) {
                 browserFrameData = null;
+            }
+
+            // 隐藏二维码窗口
+            if (floatingQrWindow != null) {
+                floatingQrWindow.setVisibility(View.GONE);
             }
 
             btnStartWeb.setText(getString(R.string.btn_web_server_open));

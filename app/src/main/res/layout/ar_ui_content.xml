@@ -58,6 +58,9 @@
     <include layout="@layout/floating_log_window"
         android:id="@+id/floating_log_window"/>
 
+    <include layout="@layout/floating_qr_window"
+        android:id="@+id/floating_qr_window"/>
+
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

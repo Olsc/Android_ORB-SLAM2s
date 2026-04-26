@@ -92,4 +92,10 @@
     <string name="hint_loop_closing_enabled">Loop closing enabled</string>
     <string name="hint_loop_closing_disabled">Loop closing disabled</string>
 
+    <string name="title_system_logs">System Logs</string>
+    <string name="title_web_server">Web Server</string>
+    <string name="web_fps_label"> (Web)</string>
+    <string name="hint_waiting_browser_frame">Waiting for browser image…</string>
+    <string name="hint_web_server_started">Web server started: %1$s</string>
+
 </resources>

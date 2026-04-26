@@ -92,5 +92,11 @@
     <string name="hint_loop_closing_enabled">回环检测已开启</string>
     <string name="hint_loop_closing_disabled">回环检测已关闭</string>
 
+    <string name="title_system_logs">系统日志</string>
+    <string name="title_web_server">Web服务器</string>
+    <string name="web_fps_label"> (Web端)</string>
+    <string name="hint_waiting_browser_frame">正在等待浏览器图像…</string>
+    <string name="hint_web_server_started">Web服务器已启动: %1$s</string>
+
 </resources>
 

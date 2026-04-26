@@ -3,7 +3,6 @@ package com.orb.slam2s.ui;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.PixelFormat;
-import android.graphics.SurfaceTexture;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.os.Build;
@@ -23,13 +22,10 @@ import com.orb.slam2s.constant.GlobalConstant;
 import com.orb.slam2s.rendering.gles.OrthoFilter;
 import com.orb.slam2s.utils.TextureUtils;
 
-import org.opencv.BuildConfig;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -85,7 +81,7 @@ public class CameraGLView extends CameraGLViewBase {
         ortho=new OrthoFilter(context);
     }
     protected boolean initializeCamera(int width, int height) {
-        Log.d(TAG, "Initialize CameraX");
+        Log.d(TAG, "初始化 CameraX");
         try {
             com.google.common.util.concurrent.ListenableFuture<ProcessCameraProvider> future = ProcessCameraProvider.getInstance(getContext());
             future.addListener(() -> {
@@ -141,7 +137,7 @@ public class CameraGLView extends CameraGLViewBase {
 
                                     deliverAndDrawFrame(new XCameraFrame(rgbaMatCache, grayMatCache));
                                 } catch (Throwable e) {
-                                    Log.e(TAG, "analyze error: "+e.getMessage());
+                                    Log.e(TAG, "分析错误: " + e.getMessage());
                                     // 确保发生异常时也能关闭image (如果还没关闭)
                                     try { image.close(); } catch (Exception ignored) {}
                                 }
@@ -156,11 +152,11 @@ public class CameraGLView extends CameraGLViewBase {
                     cameraProvider.unbindAll();
                     cameraX = cameraProvider.bindToLifecycle((LifecycleOwner) getContext(), selector, imageAnalysis);
                 } catch (Exception e) {
-                    Log.e(TAG, "CameraX init failed: "+e.getMessage());
+                    Log.e(TAG, "CameraX 初始化失败: " + e.getMessage());
                 }
             }, ContextCompat.getMainExecutor(getContext()));
         } catch (Exception ex) {
-            Log.e(TAG, "Initialize CameraX exception: "+ex.getMessage());
+            Log.e(TAG, "初始化 CameraX 异常: " + ex.getMessage());
             return false;
         }
         return true;
@@ -168,7 +164,7 @@ public class CameraGLView extends CameraGLViewBase {
 
     @Override
     protected boolean connectCamera(int width, int height) {
-        Log.d(TAG, "Connecting CameraX");
+        Log.d(TAG, "正在连接 CameraX");
         if (!initializeCamera(width, height)) return false;
         return true;
     }
@@ -178,7 +174,7 @@ public class CameraGLView extends CameraGLViewBase {
         /* 1. 我们需要停止更新帧的线程
          * 2. 停止相机并释放它
          */
-        Log.d(TAG, "Disconnecting CameraX");
+        Log.d(TAG, "正在断开 CameraX");
         if (cameraProvider != null) {
             cameraProvider.unbindAll();
         }
@@ -201,7 +197,7 @@ public class CameraGLView extends CameraGLViewBase {
             androidx.camera.core.FocusMeteringAction action = new androidx.camera.core.FocusMeteringAction.Builder(point).setAutoCancelDuration(3, java.util.concurrent.TimeUnit.SECONDS).build();
             cameraX.getCameraControl().startFocusAndMetering(action);
         } catch (Exception e) {
-            Log.e(TAG, "autoFocusCenter error: "+e.getMessage());
+            Log.e(TAG, "居中心自动对焦错误: " + e.getMessage());
         }
     }
 
@@ -226,7 +222,7 @@ public class CameraGLView extends CameraGLViewBase {
 
         @Override
         public void onSurfaceChanged(GL10 gl, int width, int height) {
-            Log.d(TAG, "call surfaceChanged event");
+            Log.d(TAG, "触发 surfaceChanged 事件");
             synchronized(mSyncObject) {
                 if (!mSurfaceExist) {
                     mSurfaceExist = true;

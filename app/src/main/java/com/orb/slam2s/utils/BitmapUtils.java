@@ -3,26 +3,9 @@ package com.orb.slam2s.utils;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.Matrix;
-import android.graphics.Paint;
-import android.opengl.GLES20;
-import android.os.AsyncTask;
-import android.os.Environment;
-import android.util.Log;
-import android.widget.Toast;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.Buffer;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.IntBuffer;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 /**
  * Created by Ads on 2016/11/8.
