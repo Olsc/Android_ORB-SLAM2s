@@ -1243,14 +1243,13 @@ void Tracking::Track()
 
     mLastProcessedState=mState;
 
+    // 获取地图互斥量 -> 地图在此期间不能被修改
+    std::unique_lock<std::mutex> lock(mpMap->mMutexMapUpdate);
 
     if (mState == NOT_INITIALIZED)
     {
         // 仅支持单目初始化
-        {
-            std::unique_lock<std::mutex> lock(mpMap->mMutexMapUpdate);
-            MonocularInitialization();
-        }
+        MonocularInitialization();
 
         mpFrameDrawer->Update(this);
 
@@ -1270,10 +1269,7 @@ void Tracking::Track()
 
             if(mState==OK)
             {
-                {
-                    std::unique_lock<std::mutex> lock(mpMap->mMutexMapUpdate);
-                    CheckReplacedInLastFrame();
-                }
+                CheckReplacedInLastFrame();
 
                 if(mVelocity.empty() || mCurrentFrame.mnId<mnLastRelocFrameId+2)
                 {
@@ -1423,7 +1419,6 @@ void Tracking::Track()
             // 检查是否需要插入新关键帧
             if(NeedNewKeyFrame())
             {
-                std::unique_lock<std::mutex> lock(mpMap->mMutexMapUpdate);
                 CreateNewKeyFrame();
             }
 
@@ -1458,8 +1453,8 @@ void Tracking::Track()
             }
             
             // 多地图模式：如果丢失时间过长，创建新地图（子地图）
-            // 替代原本的无限等待或硬重置
-            if (mConsecutiveLostFrames > TRACKING_LOST_FRAMES_FOR_NEW_MAP)
+            // 必须保证地图有足够关键帧，防止初始扫描阶段点云被意外清空
+            if (mConsecutiveLostFrames > TRACKING_LOST_FRAMES_FOR_NEW_MAP && mpMap->KeyFramesInMap() > 10)
             {
                 // LOGD("跟踪: 丢失 %d 帧 (>%d)。正在创建新子地图。", 
                 //      mConsecutiveLostFrames, TRACKING_LOST_FRAMES_FOR_NEW_MAP);
@@ -1598,24 +1593,6 @@ void Tracking::MonocularInitialization()
             return;
         }
 
-        // 计算平均光流（像素移动距离）
-        // 如果相机几乎未移动（平均视差 < 30像素），则跳过昂贵的RANSAC初始化
-        float distSum = 0.0f;
-        int validCount = 0;
-        for(size_t i=0, iend=mvIniMatches.size(); i<iend; i++) {
-            if(mvIniMatches[i]>=0) {
-                const cv::KeyPoint &kp1 = mInitialFrame.mvKeysUn[i];
-                const cv::KeyPoint &kp2 = mCurrentFrame.mvKeysUn[mvIniMatches[i]];
-                distSum += std::abs(kp1.pt.x - kp2.pt.x) + std::abs(kp1.pt.y - kp2.pt.y);
-                validCount++;
-            }
-        }
-        
-        // 视差阈值设为30像素 (略微降低以更快响应，同时保持稳定性)
-        if(validCount > 0 && (distSum / validCount) < 30.0f) {
-            return; 
-        }
-
         mLastInitAttemptTime = mCurrentFrame.mTimeStamp;
 
         cv::Mat Rcw; // 当前相机旋转
@@ -1700,9 +1677,8 @@ void Tracking::CreateInitialMapMonocular()
     pKFini->UpdateConnections();
     pKFcur->UpdateConnections();
 
-    // 初始化BA优化：8次迭代足以获得稳定的初始结构，同时大幅减少阻塞时间
-    // 后续的LocalBA会继续精化地图，所以这里不需要过多迭代
-    Optimizer::GlobalBundleAdjustemnt(mpMap, 8);
+    // 初始化BA优化：恢复20次迭代，确保初始地图精度，提高后续帧跟踪稳定性
+    Optimizer::GlobalBundleAdjustemnt(mpMap, 20);
 
     // 设置中位深度为1
     float medianDepth = pKFini->ComputeSceneMedianDepth(2);
@@ -2194,10 +2170,6 @@ bool Tracking::TrackLocalMap()
                 if (p->mnTrackReferenceForFrame == mCurrentFrame.mnId)
                     continue;
 
-                // 双重保护：即使能进入循环，如果点来自加载的地图且关键帧过少，也不使用
-                if (p->mbFromLoadedMap && mpMap->KeyFramesInMap() < 20)
-                    continue;
-
                 mvpLocalMapPoints.push_back(p);
                 p->mnTrackReferenceForFrame = mCurrentFrame.mnId;
                 added++;
@@ -2507,18 +2479,7 @@ bool Tracking::NeedNewKeyFrame()
     // 条件2：与参考关键帧相比跟踪点较少。与地图匹配相比有很多视觉里程计。
     const bool c2 = ((mnMatchesInliers<nRefMatches*thRefRatio|| bNeedToInsertClose) && mnMatchesInliers>15);
 
-    // 如果相对于参考关键帧移动距离过小，则不插入关键帧，这对保持手机运行平滑至关重要
-    cv::Mat Ow = mCurrentFrame.GetCameraCenter();
-    cv::Mat OwRef = mpReferenceKF->GetCameraCenter();
-    cv::Mat vDist = Ow - OwRef;
-    float distSq = vDist.at<float>(0)*vDist.at<float>(0) + 
-                    vDist.at<float>(1)*vDist.at<float>(1) + 
-                    vDist.at<float>(2)*vDist.at<float>(2);
-    
-    // 空间阈值设置为 0.05m (5cm)，防止在静态场景下产生冗余关键帧
-    const float minSpatialThresholdSq = 0.0025f; 
-
-    if ((c1a || c1b || c1c) && c2 && (distSq > minSpatialThresholdSq))
+    if ((c1a || c1b || c1c) && c2)
     {
         // 如果建图接受关键帧，则插入关键帧。
         // 否则发送信号中断BA

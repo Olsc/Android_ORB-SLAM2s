@@ -3,14 +3,20 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:installLocation="auto">
 
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="merge" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="merge" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32"
+        tools:node="merge" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32"
+        tools:node="merge"
+        tools:ignore="ScopedStorage" />
     <uses-permission android:name="android.permission.CAMERA" tools:node="merge" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <uses-feature android:name="android.hardware.camera" />
-    <uses-feature android:name="android.hardware.camera.autofocus" />
+    <uses-feature android:name="android.hardware.camera.autofocus"
+        android:required="false" />
 
     <application
         android:allowBackup="true"
@@ -33,7 +39,8 @@
         <activity
             android:name="com.orb.slam2s.ui.ArCamUIActivity"
             android:theme="@style/ListTheme"
-            android:screenOrientation="landscape"/>
+            android:screenOrientation="landscape"
+            tools:ignore="Instantiatable" />
     </application>
 
 </manifest>
