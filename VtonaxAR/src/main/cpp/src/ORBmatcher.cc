@@ -187,7 +187,7 @@ int ORBmatcher::SearchByBoW(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoin
         rotHist[i].reserve(500);
     const float factor = 1.0f/HISTO_LENGTH;
 
-    // 安全检查：确保描述子矩阵有效
+    // 确保描述子矩阵有效
     if(pKF->mDescriptors.empty() || F.mDescriptors.empty())
         return 0;
     
@@ -584,7 +584,7 @@ int ORBmatcher::SearchByBoW(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
 
     const float factor = 1.0f/HISTO_LENGTH;
 
-    // 安全检查：确保描述子矩阵有效
+    // 确保描述子矩阵有效
     if(Descriptors1.empty() || Descriptors2.empty())
         return 0;
     

@@ -87,11 +87,6 @@
     <string name="status_enabled">已启用</string>
     <string name="status_disabled">已关闭</string>
 
-    <string name="btn_loop_closing_on">回环 ON</string>
-    <string name="btn_loop_closing_off">回环 OFF</string>
-    <string name="hint_loop_closing_enabled">回环检测已开启</string>
-    <string name="hint_loop_closing_disabled">回环检测已关闭</string>
-
     <string name="title_system_logs">系统日志</string>
     <string name="title_web_server">Web服务器</string>
     <string name="web_fps_label"> (Web端)</string>

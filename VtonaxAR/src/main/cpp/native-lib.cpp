@@ -327,7 +327,7 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
         
         // 确保 vMPs 在任何情况下都处于安全状态
         
-        // 安全检查：确保slamSys仍然有效
+        // 确保slamSys仍然有效
         if(!slamSys) {
             // slamSys已失效，提前返回
             // 此情况罕见（仅在系统销毁时），但需要保护
