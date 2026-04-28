@@ -127,7 +127,7 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
 
     mb = mbf/fx;
 
-    // 安全检查：确保网格元素宽度和高度倒数已初始化
+    // 确保网格元素宽度和高度倒数已初始化
     if(mfGridElementWidthInv <= 0 || mfGridElementHeightInv <= 0)
     {
         //LOGE("Grid element dimensions not properly initialized");
@@ -139,7 +139,7 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
 
 void Frame::AssignFeaturesToGrid()
 {
-    // 安全检查：确保N和mvKeysUn有效
+    // 确保N和mvKeysUn有效
     if(N <= 0 || mvKeysUn.empty())
     {
         //LOGE("Invalid keypoints data in AssignFeaturesToGrid");
@@ -153,7 +153,7 @@ void Frame::AssignFeaturesToGrid()
 
     for(int i=0;i<N;i++)
     {
-        // 安全检查：确保索引在有效范围内
+        // 确保索引在有效范围内
         if(i >= (int)mvKeysUn.size())
         {
             //LOGE("Index out of bounds in AssignFeaturesToGrid: %d >= %zu", i, mvKeysUn.size());
@@ -165,7 +165,7 @@ void Frame::AssignFeaturesToGrid()
         int nGridPosX, nGridPosY;
         if(PosInGrid(kp,nGridPosX,nGridPosY))
         {
-            // 安全检查：确保网格位置在有效范围内
+            // 确保网格位置在有效范围内
             if(nGridPosX >= 0 && nGridPosX < FRAME_GRID_COLS && 
                nGridPosY >= 0 && nGridPosY < FRAME_GRID_ROWS)
             {
@@ -322,7 +322,7 @@ std::vector<size_t> Frame::GetFeaturesInArea(const float &x, const float  &y, co
 
 bool Frame::PosInGrid(const cv::KeyPoint &kp, int &posX, int &posY)
 {
-    // 安全检查：确保网格元素尺寸已初始化
+    // 确保网格元素尺寸已初始化
     if(mfGridElementWidthInv <= 0 || mfGridElementHeightInv <= 0)
     {
         //LOGE("Grid element dimensions not initialized in PosInGrid");

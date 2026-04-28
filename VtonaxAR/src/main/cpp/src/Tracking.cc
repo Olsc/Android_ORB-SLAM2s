@@ -411,7 +411,11 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
     int totalLoaded = 0, withDesc = 0, highQuality = 0;
     int rowIdx = 0;  // 当前写入行
     
+    int loopCnt = 0;
     for(MapPoint* p : allMPs){
+        // 定期检查退出标记，避免Reset时因大规模循环导致 join() 阻塞
+        if(++loopCnt % 100 == 0 && mbRelocThreadStop) break;
+
         if(!p || p->isBad()) continue;
         if(!p->mbFromLoadedMap) continue;
         totalLoaded++;
@@ -550,7 +554,7 @@ void ORB_SLAM2::Tracking::UpdateAlignmentSmooth(const cv::Mat &T_new, int inlier
     // 直接在原矩阵上更新，避免克隆（关键优化点）
     cv::Mat& smoothed = mSmoothedT_map_from_slam;
     
-    // 平滑更新：smoothed = (1-alpha)*smoothed + alpha*T_new
+    // smoothed = (1-alpha)*smoothed + alpha*T_new
     // 只更新旋转和平移部分（前3行4列），避免处理底部的[0 0 0 1]
     float oneMinusAlpha = 1.0f - alpha;
     for(int i = 0; i < 3; i++) {
@@ -649,7 +653,7 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
     StartGlobalRelocThread();
     
     // 设置合理的重定位配置，确保后台线程不会干扰SLAM主流程
-        // 参数含义: 
+    // 参数含义: 
     // topKWords=20: BoW词典中选择前20个最相关的单词用于候选关键帧检索
     // maxCandidates=3000: 最大候选关键帧数量，限制参与匹配的关键帧数
     // matchChunk=500: 特征匹配分块大小，每批次处理500个候选关键帧
@@ -661,8 +665,7 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
 
 void Tracking::GlobalRelocLoop()
 {
-    // 后台循环：定期尝试使用2D-3D匹配+PnP将SLAM与加载的地图对齐
-    // 智能调度，只在需要时积极运行
+    // 定期尝试使用2D-3D匹配+PnP将SLAM与加载的地图对齐
     mLastBgRunTime = std::chrono::steady_clock::now();
     
     while(true){
@@ -1041,7 +1044,6 @@ void Tracking::GlobalRelocLoop()
             }
             // 提高对齐阈值，要求至少30个inliers且置信度>=0.5，避免错误匹配
             // Reset后如果立即匹配到少量点（比如10-20个），很可能是错误匹配，不应该接受
-            // 还原阈值：至少10个内点即可尝试重定位
             const int minInliers = 10;
             if(ok && inliersCnt>=minInliers){
                 cv::Mat R; 
@@ -1199,8 +1201,6 @@ void Tracking::SetMap(Map *pMap)
     mpMap = pMap;
 }
 
-
-
 cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
 {
     mImGray = im;
@@ -1219,9 +1219,6 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
         else
             cvtColor(mImGray,mImGray,CV_BGRA2GRAY);
     }
-
-    /////////////////////////
-    //Martin:大约 40-80% (60-120ms)
 
     if(mState==NOT_INITIALIZED || mState==NO_IMAGES_YET)
         mCurrentFrame = Frame(mImGray,timestamp,mpIniORBextractor,mpORBVocabulary,mK,mDistCoef,mbf);
@@ -1242,11 +1239,10 @@ void Tracking::Track()
     }
 
     mLastProcessedState=mState;
-
-
     if (mState == NOT_INITIALIZED)
     {
         // 仅支持单目初始化
+        // 初始化过程会创建KF和MapPoint并写入地图，需短暂持锁
         {
             std::unique_lock<std::mutex> lock(mpMap->mMutexMapUpdate);
             MonocularInitialization();
@@ -1265,11 +1261,9 @@ void Tracking::Track()
         // 使用运动模型或重定位进行初始相机位姿估计（如果跟踪丢失）
         if(!mbOnlyTracking)
         {
-            // 局部建图已激活。这是正常行为，除非
-            // 你显式激活了"仅跟踪"模式。
-
             if(mState==OK)
             {
+                // CheckReplacedInLastFrame 访问 MapPoint::GetReplaced()，需短暂持锁防止并发替换
                 {
                     std::unique_lock<std::mutex> lock(mpMap->mMutexMapUpdate);
                     CheckReplacedInLastFrame();
@@ -1294,7 +1288,6 @@ void Tracking::Track()
         else
         {
             // 定位模式：局部建图已停用
-
             if(mState==LOST)
             {
                 bOK = Relocalization();
@@ -1304,7 +1297,6 @@ void Tracking::Track()
                 if(!mbVO)
                 {
                     // 在上一帧中，我们在地图中跟踪了足够的地图点
-
                     if(!mVelocity.empty())
                     {
                         bOK = TrackWithMotionModel();
@@ -1328,7 +1320,11 @@ void Tracking::Track()
                         vbOutMM = mCurrentFrame.mvbOutlier;
                         TcwMM = mCurrentFrame.mTcw.clone();
                     }
-                    bOKReloc = Relocalization();
+                    // 跟踪丢失且不是VO模式时，尝试重定位
+                    if(mCurrentFrame.mnId % 2 == 0)
+                        bOKReloc = Relocalization();
+                    else 
+                        bOKReloc = false;
 
                     if(bOKMM && !bOKReloc)
                     {
@@ -1423,14 +1419,11 @@ void Tracking::Track()
             // 检查是否需要插入新关键帧
             if(NeedNewKeyFrame())
             {
+                // CreateNewKeyFrame 修改地图结构，需短暂持锁
                 std::unique_lock<std::mutex> lock(mpMap->mMutexMapUpdate);
                 CreateNewKeyFrame();
             }
 
-            // 允许具有高创新性的点（被Huber函数视为离群值）
-            // 传递到新的关键帧，这样光束法平差最终会决定
-            // 它们是否为离群值。我们不希望下一帧用这些点来估计其位置
-            // 所以我们在帧中丢弃它们。
             for(int i=0; i<mCurrentFrame.N;i++)
             {
                 if(mCurrentFrame.mvpMapPoints[i] && mCurrentFrame.mvbOutlier[i])
@@ -1450,7 +1443,8 @@ void Tracking::Track()
         // 如果相机在初始化后不久丢失，则重置
         if(mState==LOST)
         {
-            if(mpMap->KeyFramesInMap()<=5)
+            // 初始化后的前20帧内，即使丢失也不立即重置，给予重定位及加载点绑定的机会
+            if(mpMap->KeyFramesInMap()<=5 && mCurrentFrame.mnId > mnLastKeyFrameId + 20)
             {
                 // cout << "初始化后不久丢失跟踪，正在重置..." << endl;
                 mpSystem->Reset();
@@ -1458,8 +1452,8 @@ void Tracking::Track()
             }
             
             // 多地图模式：如果丢失时间过长，创建新地图（子地图）
-            // 替代原本的无限等待或硬重置
-            if (mConsecutiveLostFrames > TRACKING_LOST_FRAMES_FOR_NEW_MAP)
+            // 必须保证地图有足够关键帧，防止初始扫描阶段点云被意外清空
+            if (mConsecutiveLostFrames > TRACKING_LOST_FRAMES_FOR_NEW_MAP && mpMap->KeyFramesInMap() > 10)
             {
                 // LOGD("跟踪: 丢失 %d 帧 (>%d)。正在创建新子地图。", 
                 //      mConsecutiveLostFrames, TRACKING_LOST_FRAMES_FOR_NEW_MAP);
@@ -1530,7 +1524,7 @@ void Tracking::Track()
     else
     {
         // 如果跟踪丢失，这可能发生
-        // 安全检查：确保列表非空再访问 back()，防止 ClearTrackingState 后崩溃
+        // 确保列表非空再访问 back()，防止 ClearTrackingState 后崩溃
         if(!mlRelativeFramePoses.empty()) {
             mlRelativeFramePoses.push_back(mlRelativeFramePoses.back());
         } else {
@@ -1598,22 +1592,20 @@ void Tracking::MonocularInitialization()
             return;
         }
 
-        // 计算平均光流（像素移动距离）
-        // 如果相机几乎未移动（平均视差 < 30像素），则跳过昂贵的RANSAC初始化
-        float distSum = 0.0f;
-        int validCount = 0;
-        for(size_t i=0, iend=mvIniMatches.size(); i<iend; i++) {
-            if(mvIniMatches[i]>=0) {
-                const cv::KeyPoint &kp1 = mInitialFrame.mvKeysUn[i];
-                const cv::KeyPoint &kp2 = mCurrentFrame.mvKeysUn[mvIniMatches[i]];
-                distSum += std::abs(kp1.pt.x - kp2.pt.x) + std::abs(kp1.pt.y - kp2.pt.y);
-                validCount++;
+        {
+            float distSum = 0.0f;
+            int validCount = 0;
+            for(size_t i=0, iend=mvIniMatches.size(); i<iend; i++) {
+                if(mvIniMatches[i]>=0) {
+                    const cv::KeyPoint &kp1 = mInitialFrame.mvKeysUn[i];
+                    const cv::KeyPoint &kp2 = mCurrentFrame.mvKeysUn[mvIniMatches[i]];
+                    distSum += std::abs(kp1.pt.x - kp2.pt.x) + std::abs(kp1.pt.y - kp2.pt.y);
+                    validCount++;
+                }
             }
-        }
-        
-        // 视差阈值设为30像素 (略微降低以更快响应，同时保持稳定性)
-        if(validCount > 0 && (distSum / validCount) < 30.0f) {
-            return; 
+            if(validCount > 0 && (distSum / validCount) < 15.0f) {
+                return; // 视差不足，等待相机移动充足基线再初始化
+            }
         }
 
         mLastInitAttemptTime = mCurrentFrame.mTimeStamp;
@@ -1700,9 +1692,8 @@ void Tracking::CreateInitialMapMonocular()
     pKFini->UpdateConnections();
     pKFcur->UpdateConnections();
 
-    // 初始化BA优化：8次迭代足以获得稳定的初始结构，同时大幅减少阻塞时间
-    // 后续的LocalBA会继续精化地图，所以这里不需要过多迭代
-    Optimizer::GlobalBundleAdjustemnt(mpMap, 8);
+    // 初始化BA优化：恢复20次迭代，确保初始地图精度，提高后续帧跟踪稳定性
+    Optimizer::GlobalBundleAdjustemnt(mpMap, 20);
 
     // 设置中位深度为1
     float medianDepth = pKFini->ComputeSceneMedianDepth(2);
@@ -1826,7 +1817,7 @@ void Tracking::UpdateLastFrame()
     // 根据参考关键帧更新位姿
     KeyFrame* pRef = mLastFrame.mpReferenceKF;
     
-    // 安全检查：确保列表非空再访问 back()，防止 ClearTrackingState 后崩溃
+    // 确保列表非空再访问 back()，防止 ClearTrackingState 后崩溃
     cv::Mat Tlr;
     if(!mlRelativeFramePoses.empty()) {
         Tlr = mlRelativeFramePoses.back();
@@ -1834,7 +1825,7 @@ void Tracking::UpdateLastFrame()
         Tlr = cv::Mat::eye(4,4,CV_32F);
     }
     
-    // 安全检查：确保参考关键帧有效
+    // 确保参考关键帧有效
     if(!pRef || pRef->isBad()) {
         // 如果参考关键帧无效，跳过位姿更新
         return;
@@ -2108,7 +2099,7 @@ bool Tracking::TrackLocalMap()
                         }
                     }
                     //LOGD("Reloc: boundInliers=%d", boundInliers);  // 调试日志，已注释
-                    // 简化：根据重投影一致性再次将局部点加入mvpMapPoints
+                    // 根据重投影一致性再次将局部点加入mvpMapPoints
                     // 扫描参考点，投影进入视野并关联最近特征
                     const int totalKeys = mCurrentFrame.N;
                     int projBinds = 0;
@@ -2178,7 +2169,6 @@ bool Tracking::TrackLocalMap()
     // 必须等待SLAM建立一定规模的新地图（稳定）后，再尝试混合已加载的地图点。
     if((int)mvpLocalMapPoints.size()<50)
     {
-        // 阈值：若地图点超过5000且关键帧少于20，认为是"加载了地图但尚未稳定"的状态
         // 此时跳过全局搜索，不仅节省性能，也符合"先建图稳了再匹配"的逻辑
         bool bSkipGlobalWithLoadedMap = (mpMap->MapPointsInMap() > 5000 && mpMap->KeyFramesInMap() < 20);
         
@@ -2192,10 +2182,6 @@ bool Tracking::TrackLocalMap()
                 if (!p || p->isBad())
                     continue;
                 if (p->mnTrackReferenceForFrame == mCurrentFrame.mnId)
-                    continue;
-
-                // 双重保护：即使能进入循环，如果点来自加载的地图且关键帧过少，也不使用
-                if (p->mbFromLoadedMap && mpMap->KeyFramesInMap() < 20)
                     continue;
 
                 mvpLocalMapPoints.push_back(p);
@@ -2366,9 +2352,6 @@ bool Tracking::TrackLocalMap()
         std::unique_lock<std::mutex> lk(mMutexReloc);
         if(!mT_map_from_slam.empty()){
             cv::Mat Tcw_map = mT_map_from_slam * mCurrentFrame.mTcw;
-            // 不要覆盖SLAM状态；仅作为辅助存储用于可视化/消费者
-            // 还保留参考用于下一帧运动平滑通过已在SLAM空间中的mVelocity
-            // 如果需要我们可以存储在帧绘制器中；这里我们仅通过GetMapAlignedPose保持可用
         }
     }
     // 利用快照进行快速绑定，避免只匹配一帧后就中断
@@ -2502,23 +2485,12 @@ bool Tracking::NeedNewKeyFrame()
     const bool c1a = mCurrentFrame.mnId>=mnLastKeyFrameId+mMaxFrames;
     // 条件1b：已过去超过"MinFrames"且局部建图空闲
     const bool c1b = (mCurrentFrame.mnId>=mnLastKeyFrameId+mMinFrames && bLocalMappingIdle);
-    //条件1c：跟踪较弱（单目模式不适用）
+    // 条件1c：跟踪较弱（单目模式不适用）
     const bool c1c = false;
     // 条件2：与参考关键帧相比跟踪点较少。与地图匹配相比有很多视觉里程计。
     const bool c2 = ((mnMatchesInliers<nRefMatches*thRefRatio|| bNeedToInsertClose) && mnMatchesInliers>15);
 
-    // 如果相对于参考关键帧移动距离过小，则不插入关键帧，这对保持手机运行平滑至关重要
-    cv::Mat Ow = mCurrentFrame.GetCameraCenter();
-    cv::Mat OwRef = mpReferenceKF->GetCameraCenter();
-    cv::Mat vDist = Ow - OwRef;
-    float distSq = vDist.at<float>(0)*vDist.at<float>(0) + 
-                    vDist.at<float>(1)*vDist.at<float>(1) + 
-                    vDist.at<float>(2)*vDist.at<float>(2);
-    
-    // 空间阈值设置为 0.05m (5cm)，防止在静态场景下产生冗余关键帧
-    const float minSpatialThresholdSq = 0.0025f; 
-
-    if ((c1a || c1b || c1c) && c2 && (distSq > minSpatialThresholdSq))
+    if ((c1a || c1b || c1c) && c2)
     {
         // 如果建图接受关键帧，则插入关键帧。
         // 否则发送信号中断BA
@@ -2880,8 +2852,7 @@ bool Tracking::Relocalization()
 
 
     // 限制最大候选数量，防止计算量过大导致卡死
-    // 恢复限制但适当放宽到40，兼顾鲁棒性与性能
-    const int MAX_RELOC_CANDIDATES = 40;
+    const int MAX_RELOC_CANDIDATES = 25;
     if(nKFs > MAX_RELOC_CANDIDATES) {
         // 简单截断，因为候选帧通常按BoW分数排序
         const_cast<int&>(nKFs) = MAX_RELOC_CANDIDATES; 
@@ -2891,8 +2862,6 @@ bool Tracking::Relocalization()
         vbDiscarded.resize(MAX_RELOC_CANDIDATES);
     }
 
-    // 改回串行处理，避免频繁创建线程带来的系统开销和潜在卡顿
-    // 对于~40个候选，串行处理通常比不可控的线程调度更平滑
     for(int i=0; i<nKFs; i++)
     {
         try {
@@ -2945,7 +2914,7 @@ bool Tracking::Relocalization()
 
             PnPsolver* pSolver = vpPnPsolvers[i];
             
-            // 安全检查：防止空指针解引用
+            // 防止空指针解引用
             if(!pSolver) {
                 vbDiscarded[i] = true;
                 nCandidates--;
@@ -3029,6 +2998,13 @@ bool Tracking::Relocalization()
                 }
             }
         }
+    }
+
+    // 清理 PnP 求解器，防止内存泄漏。由于 Relocalization 每帧都可能调用，此处泄露会导致内存迅速耗尽。
+    for(int i=0; i<nKFs; i++)
+    {
+        if(vpPnPsolvers[i])
+            delete vpPnPsolvers[i];
     }
 
     if(!bMatch)

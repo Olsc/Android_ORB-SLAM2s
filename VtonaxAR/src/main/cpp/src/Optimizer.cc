@@ -1097,62 +1097,43 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
     optimizer.initializeOptimization();
     optimizer.optimize(20);
 
-    unique_lock<mutex> lock(pMap->mMutexMapUpdate);
-
-    // SE3 位姿恢复。Sim3:[sR t;0 1] -> SE3:[R t/s;0 1]
-    for(size_t i=0;i<vpKFs.size();i++)
+    // SE3 位姿恢复 并 缓存相机中心以加速后续点更新
+    std::map<KeyFrame*, cv::Mat> mapCameraCenters;
     {
-        KeyFrame* pKFi = vpKFs[i];
-        
-        // 安全检查：确保关键帧指针有效且未被删除
-        if(!pKFi)
-            continue;
-        if(pKFi->isBad())
-            continue;
-
-        const int nIDi = pKFi->mnId;
-        
-        // 边界检查
-        if(nIDi < 0 || nIDi > (int)nMaxKFid)
-            continue;
-
-        g2o::VertexSim3Expmap* VSim3 = static_cast<g2o::VertexSim3Expmap*>(optimizer.vertex(nIDi));
-        
-        // 添加空指针检查，避免崩溃
-        if(!VSim3)
+        unique_lock<mutex> lock(pMap->mMutexMapUpdate);
+        for(size_t i=0;i<vpKFs.size();i++)
         {
-            // cerr << "Warning: VSim3 vertex is null for KeyFrame ID: " << nIDi << endl;
-            continue;
+            KeyFrame* pKFi = vpKFs[i];
+            if(!pKFi || pKFi->isBad()) continue;
+
+            const int nIDi = pKFi->mnId;
+            if(nIDi < 0 || nIDi > (int)nMaxKFid) continue;
+
+            g2o::VertexSim3Expmap* VSim3 = static_cast<g2o::VertexSim3Expmap*>(optimizer.vertex(nIDi));
+            if(!VSim3) continue;
+            
+            g2o::Sim3 CorrectedSiw =  VSim3->estimate();
+            vCorrectedSwc[nIDi]=CorrectedSiw.inverse();
+            Eigen::Matrix3d eigR = CorrectedSiw.rotation().toRotationMatrix();
+            Eigen::Vector3d eigt = CorrectedSiw.translation();
+            double s = CorrectedSiw.scale();
+            
+            if(std::abs(s) < 1e-10) continue;
+            eigt *=(1./s); //[R t/s;0 1]
+            cv::Mat Tiw = Converter::toCvSE3(eigR,eigt);
+            pKFi->SetPose(Tiw);
+            
+            // 缓存更新后的相机中心
+            mapCameraCenters[pKFi] = pKFi->GetCameraCenter();
         }
-        
-        g2o::Sim3 CorrectedSiw =  VSim3->estimate();
-        vCorrectedSwc[nIDi]=CorrectedSiw.inverse();
-        Eigen::Matrix3d eigR = CorrectedSiw.rotation().toRotationMatrix();
-        Eigen::Vector3d eigt = CorrectedSiw.translation();
-        double s = CorrectedSiw.scale();
-        
-        // 安全检查：避免除以零
-        if(std::abs(s) < 1e-10)
-            continue;
-
-        eigt *=(1./s); //[R t/s;0 1]
-
-        cv::Mat Tiw = Converter::toCvSE3(eigR,eigt);
-
-        pKFi->SetPose(Tiw);
     }
 
     // 校正点。变换到"未优化"的参考关键帧位姿，然后用优化后的位姿变换回来
+    // 为减少锁竞争，分批次或在必要时锁点
     for(size_t i=0, iend=vpMPs.size(); i<iend; i++)
     {
         MapPoint* pMP = vpMPs[i];
-        
-        // 安全检查：确保地图点指针有效
-        if(!pMP)
-            continue;
-
-        if(pMP->isBad())
-            continue;
+        if(!pMP || pMP->isBad()) continue;
 
         int nIDr;
         if(pMP->mnCorrectedByKF==pCurKF->mnId)
@@ -1162,39 +1143,28 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
         else
         {
             KeyFrame* pRefKF = pMP->GetReferenceKeyFrame();
-            // 安全检查：确保参考关键帧有效
-            if(!pRefKF)
-                continue;
-            
-            // 逻辑修正：如果参考帧是 Bad（意味着它没有参与优化，也没有计算出正确的 CorrectedSwc），
-            // 那么这个地图点也不能被正确校正。跳过它，防止坐标乱飞。
-            if(pRefKF->isBad())
-                continue;
-
+            if(!pRefKF || pRefKF->isBad()) continue;
             nIDr = pRefKF->mnId;
         }
 
-        // 边界检查
-        if(nIDr < 0 || nIDr > (int)nMaxKFid)
-        {
-            // cerr << "Warning: Reference KeyFrame ID " << nIDr << " out of bounds " << nMaxKFid << endl;
-            continue;
-        }
+        if(nIDr < 0 || nIDr > (int)nMaxKFid) continue;
 
         g2o::Sim3 Srw = vScw[nIDr];
         g2o::Sim3 correctedSwr = vCorrectedSwc[nIDr];
 
         cv::Mat P3Dw = pMP->GetWorldPos();
-        if(P3Dw.empty())
-            continue;
+        if(P3Dw.empty()) continue;
             
         Eigen::Matrix<double,3,1> eigP3Dw = Converter::toVector3d(P3Dw);
         Eigen::Matrix<double,3,1> eigCorrectedP3Dw = correctedSwr.map(Srw.map(eigP3Dw));
 
         cv::Mat cvCorrectedP3Dw = Converter::toCvMat(eigCorrectedP3Dw);
-        pMP->SetWorldPos(cvCorrectedP3Dw);
-
-        pMP->UpdateNormalAndDepth();
+        
+        {
+            // 对于单个点的更新，使用点自身的锁，减少全局锁占用
+            pMP->SetWorldPos(cvCorrectedP3Dw);
+            pMP->UpdateNormalAndDepth();
+        }
     }
 }
 

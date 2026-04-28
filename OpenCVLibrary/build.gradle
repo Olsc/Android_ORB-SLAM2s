@@ -6,7 +6,7 @@ android {
     compileSdk 36
 
     defaultConfig {
-        minSdk 23
+        minSdk 21
         targetSdk 37
     }
 
@@ -18,8 +18,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
     buildFeatures {
         aidl true
@@ -27,13 +27,14 @@ android {
     }
     namespace 'org.opencv'
     buildToolsVersion '37.0.0'
-    ndkVersion '30.0.14904198'
+    ndkVersion "26.3.11579264"
     lint {
         targetSdk 36
     }
     testOptions {
         targetSdk 36
     }
+    compileSdkMinor 1
     compileSdkMinor 1
 }
 

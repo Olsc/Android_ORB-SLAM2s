@@ -4,8 +4,6 @@ import java.text.DecimalFormat;
 
 import org.opencv.core.Core;
 
-import android.util.Log;
-
 public class FpsMeter {
     private static final String TAG               = "FpsMeter";
     private static final int    STEP              = 20;

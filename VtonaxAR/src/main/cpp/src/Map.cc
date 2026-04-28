@@ -150,47 +150,34 @@ long unsigned int Map::GetMaxKFid()
 
 void Map::clear()
 {
-    // 必须加锁，防止多线程访问冲突（特别是Tracking线程可能正在访问地图）
-    unique_lock<mutex> lock(mMutexMap);
+    // 使用临时集合将数据移出锁外进行删除，极大减少持锁时间，解决Reset时的卡顿
+    std::set<MapPoint*> spMP;
+    std::set<KeyFrame*> spKF;
+    std::set<MapPoint*> spMPTrash;
+    std::set<KeyFrame*> spKFTrash;
 
-    // 恢复原始逻辑：强制清空所有地图点和关键帧
-    // 这确保Reset是真正的重置，而不是保留可能损坏的状态
-    
-    // 删除所有地图点
-    for(set<MapPoint*>::iterator sit=mspMapPoints.begin(), send=mspMapPoints.end(); sit!=send; sit++)
     {
-        if(*sit)
-            delete *sit;
-    }
-    mspMapPoints.clear();
+        unique_lock<mutex> lock(mMutexMap);
+        
+        // 使用交换(swap)而非逐个拷贝，时间复杂度 O(1)
+        mspMapPoints.swap(spMP);
+        mspKeyFrames.swap(spKF);
+        mspMapPointsTrash.swap(spMPTrash);
+        mspKeyFramesTrash.swap(spKFTrash);
 
-    // 删除所有关键帧
-    for(set<KeyFrame*>::iterator sit=mspKeyFrames.begin(), send=mspKeyFrames.end(); sit!=send; sit++)
-    {
-        if(*sit)
-            delete *sit;
-    }
-    mspKeyFrames.clear();
+        mnMaxKFid = 0;
+        mvpReferenceMapPoints.clear();
+        mvpKeyFrameOrigins.clear();
 
-    mnMaxKFid = 0;
-    mvpReferenceMapPoints.clear();
-    mvpKeyFrameOrigins.clear();
-
-    // 清空回收站 (垃圾回收)
-    for(set<MapPoint*>::iterator sit = mspMapPointsTrash.begin(), send = mspMapPointsTrash.end(); sit != send; sit++)
-    {
-        if(*sit) delete *sit;
+        // 增加变化索引
+        mnBigChangeIdx++;
     }
-    mspMapPointsTrash.clear();
 
-    for(set<KeyFrame*>::iterator sit = mspKeyFramesTrash.begin(), send = mspKeyFramesTrash.end(); sit != send; sit++)
-    {
-        if(*sit) delete *sit;
-    }
-    mspKeyFramesTrash.clear();
-    
-    // Increment change index
-    mnBigChangeIdx++;
+    // 在锁外逐个释放内存
+    for(auto p : spMP) if(p) delete p;
+    for(auto p : spKF) if(p) delete p;
+    for(auto p : spMPTrash) if(p) delete p;
+    for(auto p : spKFTrash) if(p) delete p;
 }
 
 } //namespace ORB_SLAM2

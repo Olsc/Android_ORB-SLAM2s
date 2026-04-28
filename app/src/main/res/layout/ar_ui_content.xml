@@ -58,6 +58,9 @@
     <include layout="@layout/floating_log_window"
         android:id="@+id/floating_log_window"/>
 
+    <include layout="@layout/floating_qr_window"
+        android:id="@+id/floating_qr_window"/>
+
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -203,19 +206,6 @@
                 android:textSize="10sp"
                 android:textAllCaps="false"
                 android:backgroundTint="#4CAF50"
-                android:alpha="0.85"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"/>
-
-            <Button
-                android:id="@+id/btn_toggle_loop_closing"
-                android:layout_width="76dp"
-                android:layout_height="32dp"
-                android:layout_marginBottom="4dp"
-                android:text="@string/btn_loop_closing_off"
-                android:textSize="10sp"
-                android:textAllCaps="false"
-                android:backgroundTint="#757575"
                 android:alpha="0.85"
                 android:paddingStart="8dp"
                 android:paddingEnd="8dp"/>

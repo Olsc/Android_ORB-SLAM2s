@@ -1,6 +1,5 @@
 package com.orb.slam2s.ui;
 
-import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,11 +12,15 @@ import com.orb.slam2s.R;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
+/**
+ * 日志适配器，用于在界面上的 RecyclerView 中显示系统日志
+ */
 public class LogAdapter extends RecyclerView.Adapter<LogAdapter.LogViewHolder> {
 
+    /**
+     * 单条日志信息的数据结构
+     */
     public static class LogItem {
         public String originalLine;
         public String timestamp;
@@ -26,7 +29,7 @@ public class LogAdapter extends RecyclerView.Adapter<LogAdapter.LogViewHolder> {
         public String content;
         public int count = 1;
 
-        // For fuzzy matching
+        // 用于模糊匹配（合并相似日志）
         private String fuzzySignature;
 
         public LogItem(String line) {
@@ -36,39 +39,16 @@ public class LogAdapter extends RecyclerView.Adapter<LogAdapter.LogViewHolder> {
         }
 
         private void parseLine(String line) {
-            // Typical format: 12-16 14:14:36.123 V/Tag( 1234): Message
-            // Or: 12-16 14:14:36.123 V/Tag: Message
-
-            // Regex to capture timestamp and level
-            // Group 1: Timestamp (MM-DD HH:MM:SS.mmm)
-            // Group 2: Level (V, D, I, W, E, A)
-            // Group 3: Tag
-            // Group 4: PID (Optional)
-            // Group 5: Message
-
-            // Simple robust parsing:
-            // 1. Extract Time (first 18 chars usually)
-            // 2. Look for LEVEL/TAG
-
             try {
                 if (line.length() > 18 && line.charAt(18) == ' ') {
-                    this.timestamp = line.substring(6, 18); // HH:MM:SS.mmm, ignoring MM-DD
+                    this.timestamp = line.substring(6, 18); // 分:秒.毫秒，忽略月-日
                 } else {
                     this.timestamp = "";
                 }
 
-                // Find Level marker
-                // Search for " V/" or " D/" or just start scanning
-                // logcat -v time puts level after time + space
-
                 int levelIdx = -1;
                 char[] levels = { 'V', 'D', 'I', 'W', 'E', 'F', 'A' };
 
-                // Assuming standard "MM-DD HH:MM:SS.mmm L/Tag: msg"
-                // The level char is usually at index 19 or 20 depends on spacing
-                // Regex might be cleaner
-
-                // Let's use simple logic: find the first '/' after the timestamp
                 int slashIdx = line.indexOf('/', 18);
                 if (slashIdx > 0 && slashIdx > 18) {
                     char l = line.charAt(slashIdx - 1);
@@ -84,21 +64,21 @@ public class LogAdapter extends RecyclerView.Adapter<LogAdapter.LogViewHolder> {
                         int colonIdx = line.indexOf(':', slashIdx);
                         if (colonIdx > slashIdx) {
                             this.tag = line.substring(slashIdx + 1, colonIdx).trim();
-                            // Remove PID if present in tag e.g. "Tag( 123)"
+                            // 如果 Tag 中包含 PID 则移除，例如 "Tag( 123)"
                             int pidStart = this.tag.indexOf('(');
                             if (pidStart > 0) {
                                 this.tag = this.tag.substring(0, pidStart).trim();
                             }
                             this.content = line.substring(colonIdx + 1).trim();
                         } else {
-                            // Fallback
+                            // 回退处理
                             this.content = line.substring(slashIdx + 1).trim();
                         }
                     }
                 }
 
                 if (this.level == null) {
-                    this.level = "V"; // Default
+                    this.level = "V"; // 默认级别
                     this.content = line;
                     if (this.timestamp.length() > 0 && line.length() > 19) {
                         this.content = line.substring(19);
@@ -113,14 +93,14 @@ public class LogAdapter extends RecyclerView.Adapter<LogAdapter.LogViewHolder> {
         private String generateFuzzySignature(String content) {
             if (content == null)
                 return "";
-            // Replace numbers with # to match "Frame 1 processed" and "Frame 2 processed"
+            // 将数字替换为 #，以便匹配类似 "已处理第 1 帧" 和 "已处理第 2 帧" 的日志
             return content.replaceAll("\\d+", "#");
         }
 
         public boolean isSimilar(LogItem other) {
             if (other == null)
                 return false;
-            // Must match level and fuzzy content
+            // 必须级别相同且模糊处理后的内容相同
             return this.level.equals(other.level) &&
                     this.fuzzySignature.equals(other.fuzzySignature);
         }
@@ -143,7 +123,7 @@ public class LogAdapter extends RecyclerView.Adapter<LogAdapter.LogViewHolder> {
         holder.timeText.setText(item.timestamp);
         holder.contentText.setText(item.content);
 
-        // Color based on level
+        // 根据级别设置颜色
         int color;
         switch (item.level) {
             case "E":
@@ -188,24 +168,24 @@ public class LogAdapter extends RecyclerView.Adapter<LogAdapter.LogViewHolder> {
     public void addLog(String line) {
         LogItem newItem = new LogItem(line);
 
-        // Check filtering (ignore simple noise strings if needed)
+        // 检查过滤（如果内容为空则忽略）
         if (newItem.content.isEmpty())
             return;
 
-        // Try fuzzy merge with last item
+        // 尝试与最后一条日志进行模糊合并
         if (!logList.isEmpty()) {
             LogItem lastItem = logList.get(logList.size() - 1);
             if (lastItem.isSimilar(newItem)) {
                 lastItem.count++;
-                lastItem.timestamp = newItem.timestamp; // Update time to latest
-                lastItem.content = newItem.content; // Update content (showing latest numbers)
+                lastItem.timestamp = newItem.timestamp; // 更新时间为最新
+                lastItem.content = newItem.content; // 更新内容（显示最新的数值）
                 notifyItemChanged(logList.size() - 1);
                 return;
             }
         }
 
         logList.add(newItem);
-        // Limit size
+        // 限制日志列表大小，防止内存溢出
         if (logList.size() > 1000) {
             logList.remove(0);
             notifyItemRemoved(0);
@@ -213,7 +193,7 @@ public class LogAdapter extends RecyclerView.Adapter<LogAdapter.LogViewHolder> {
             notifyItemInserted(logList.size() - 1);
         }
 
-        // Auto scroll
+        // 自动滚动到底部
         if (recyclerView != null) {
             recyclerView.scrollToPosition(logList.size() - 1);
         }

@@ -819,12 +819,13 @@ void LocalMapping::CheckLimits()
     {
         vector<MapPoint*> vpMPs = mpMap->GetAllMapPoints();
         
-        // 按 ID 排序（最旧的在前）
-        sort(vpMPs.begin(), vpMPs.end(), [](MapPoint* a, MapPoint* b){
+        // 使用 nth_element 代替 sort，将最旧的 nToEraseMP 个点放到前面
+        int nToEraseMP = nMPs - MAX_MAPPOINTS + MAPPOINT_CULL_BATCH_SIZE;
+        if(nToEraseMP > (int)vpMPs.size()) nToEraseMP = vpMPs.size();
+        
+        std::nth_element(vpMPs.begin(), vpMPs.begin() + nToEraseMP, vpMPs.end(), [](MapPoint* a, MapPoint* b){
             return a->mnId < b->mnId;
         });
-        
-        int nToEraseMP = nMPs - MAX_MAPPOINTS + MAPPOINT_CULL_BATCH_SIZE;
         int nErasedMP = 0;
         
         // 获取当前帧观测到的地图点以保护它们

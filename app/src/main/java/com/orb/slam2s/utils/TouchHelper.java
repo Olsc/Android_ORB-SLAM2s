@@ -2,7 +2,6 @@ package com.orb.slam2s.utils;
 
 import android.content.Context;
 import android.content.res.Resources;
-import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
