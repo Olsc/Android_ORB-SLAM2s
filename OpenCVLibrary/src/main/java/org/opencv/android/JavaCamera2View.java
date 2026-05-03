@@ -25,6 +25,7 @@ import android.util.Log;
 import android.view.Surface;
 import android.view.ViewGroup.LayoutParams;
 import android.content.pm.PackageManager;
+import android.os.Build;
 
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
@@ -114,9 +115,11 @@ public class JavaCamera2View extends CameraBridgeViewBase {
                 }
             }
             if (mCameraID != null) {
-                if (getContext().checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-                    Log.e(LOGTAG, "Camera permission not granted, aborting initializeCamera");
-                    return false;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    if (getContext().checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                        Log.e(LOGTAG, "Camera permission not granted, aborting initializeCamera");
+                        return false;
+                    }
                 }
                 Log.i(LOGTAG, "Opening camera: " + mCameraID);
                 manager.openCamera(mCameraID, mStateCallback, mBackgroundHandler);
@@ -124,9 +127,11 @@ public class JavaCamera2View extends CameraBridgeViewBase {
                 Log.i(LOGTAG, "Trying to open camera with the value (" + mCameraIndex + ")");
                 if (mCameraIndex < camList.length) {
                     mCameraID = camList[mCameraIndex];
-                    if (getContext().checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-                        Log.e(LOGTAG, "Camera permission not granted, aborting initializeCamera");
-                        return false;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        if (getContext().checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                            Log.e(LOGTAG, "Camera permission not granted, aborting initializeCamera");
+                            return false;
+                        }
                     }
                     manager.openCamera(mCameraID, mStateCallback, mBackgroundHandler);
                 } else {

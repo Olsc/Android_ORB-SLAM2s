@@ -40,9 +40,11 @@ public class CameraRenderer extends CameraGLRendererBase {
     @SuppressLint("MissingPermission")
     protected synchronized void openCamera(int id) {
         Log.i(LOGTAG, "openCamera");
-        if (mView.getContext().checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            Log.e(LOGTAG, "Camera permission not granted, aborting openCamera");
-            return;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (mView.getContext().checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                Log.e(LOGTAG, "Camera permission not granted, aborting openCamera");
+                return;
+            }
         }
         closeCamera();
         if (id == CameraBridgeViewBase.CAMERA_ID_ANY) {
