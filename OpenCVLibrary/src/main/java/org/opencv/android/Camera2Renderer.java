@@ -21,6 +21,7 @@ import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 import android.content.pm.PackageManager;
+import android.os.Build;
 
 @TargetApi(21)
 public class Camera2Renderer extends CameraGLRendererBase {
@@ -125,9 +126,11 @@ public class Camera2Renderer extends CameraGLRendererBase {
                 }
             }
             if(mCameraID != null) {
-                if (mView.getContext().checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-                    Log.e(LOGTAG, "Camera permission not granted, aborting openCamera");
-                    return;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    if (mView.getContext().checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                        Log.e(LOGTAG, "Camera permission not granted, aborting openCamera");
+                        return;
+                    }
                 }
                 if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
                     throw new RuntimeException(
