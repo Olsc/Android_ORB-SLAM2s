@@ -52,23 +52,12 @@ namespace ORB_SLAM2
 System::System(const std::string &strVocFile, const std::string &strSettingsFile, const eSensor sensor):mSensor(sensor),  mbReset(false),mbResetKeepMap(false),mbActivateLocalizationMode(false),
         mbDeactivateLocalizationMode(false)
 {
-    // 输出欢迎消息-此处虽注释掉但要保留！
+        // 输出欢迎消息-此处虽注释掉但要保留！
         // std::cout << std::endl <<
         // "ORB-SLAM2 Copyright (C) 2014-2016 Raul Mur-Artal, University of Zaragoza." << std::endl <<
         // "This program comes with ABSOLUTELY NO WARRANTY;" << std::endl  <<
         // "This is free software, and you are welcome to redistribute it" << std::endl <<
         // "under certain conditions. See LICENSE.txt." << std::endl << std::endl;
-
-    // std::cout << "输入传感器设置为: ";
-
-    if(mSensor==MONOCULAR)
-        // std::cout << "单目" << std::endl;
-        ;
-    else
-    {
-        // std::cerr << "错误：不支持的传感器类型" << std::endl;
-        exit(-1);
-    }
 
     // 检测是否使用嵌入资源（strVocFile为":embedded:"时）
     bool useEmbedded = (strVocFile == ":embedded:");
@@ -101,22 +90,18 @@ System::System(const std::string &strVocFile, const std::string &strSettingsFile
             LOGD("嵌入词汇表大小：%zu", vocSize);
             bVocLoad = mpVocabulary->loadFromMemoryBin(vocData, vocSize);
         } else {
-            // std::cerr << "无法获取嵌入的词汇表资源" << std::endl;
+            LOGE("无法获取嵌入的词汇表资源");
             exit(-1);
         }
     } else {
-        // 传统方式：从文件加载
         if(USE_BINARY) bVocLoad=mpVocabulary->loadFromBinFile(strVocFile+".arm.bin");
         else
             bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
     }
 
-    //mpVocabulary->saveToBinFile(strVocFile+".arm.bin");
-    //mpVocabulary->saveToTextFile(strVocFile+".min.txt");
     if(!bVocLoad)
     {
-        // std::cerr << "词汇表路径错误。 " << std::endl;
-        // std::cerr << "无法打开: " << strVocFile << std::endl;
+        LOGE("词汇表加载失败: %s", strVocFile.c_str());
         exit(-1);
     }
     LOGD("词汇表加载完成！");
@@ -161,7 +146,7 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
     recordTime();
     if(mSensor!=MONOCULAR)
     {
-        // std::cerr << "错误：您调用了TrackMonocular但输入传感器未设置为单目。" << std::endl;
+        LOGE("TrackMonocular: 传感器未设置为单目");
         exit(-1);
     }
 
@@ -191,17 +176,17 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
 
     // 检查重置
     {
-    std::unique_lock<std::mutex> lock(mMutexReset);
-    if(mbReset)
-    {
-        if(mbResetKeepMap) {
-            mpTracker->ClearTrackingState();  // 只清除跟踪状态，保留地图
-        } else {
-            mpTracker->Reset();  // 完全重置
+        std::unique_lock<std::mutex> lock(mMutexReset);
+        if(mbReset)
+        {
+            if(mbResetKeepMap) {
+                mpTracker->ClearTrackingState();
+            } else {
+                mpTracker->Reset();
+            }
+            mbReset = false;
+            mbResetKeepMap = false;
         }
-        mbReset = false;
-        mbResetKeepMap = false;
-    }
     }
 
     /////////////
@@ -266,14 +251,8 @@ void System::Shutdown()
 
 void System::SaveKeyFrameTrajectoryTUM(const std::string &filename)
 {
-    // std::cout << std::endl << "Saving keyframe trajectory to " << filename << " ..." << std::endl;
-
     std::vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();
     std::sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);
-
-    // 变换所有关键帧，使第一个关键帧位于原点。
-    // 闭环后，第一个关键帧可能不在原点。
-    //cv::Mat Two = vpKFs[0]->GetPoseInverse();
 
     std::ofstream f;
     f.open(filename.c_str());
@@ -283,8 +262,6 @@ void System::SaveKeyFrameTrajectoryTUM(const std::string &filename)
     {
         KeyFrame* pKF = vpKFs[i];
 
-       // pKF->SetPose(pKF->GetPose()*Two);
-
         if(pKF->isBad())
             continue;
 
@@ -293,11 +270,9 @@ void System::SaveKeyFrameTrajectoryTUM(const std::string &filename)
         cv::Mat t = pKF->GetCameraCenter();
         f << std::setprecision(6) << pKF->mTimeStamp << std::setprecision(7) << " " << t.at<float>(0) << " " << t.at<float>(1) << " " << t.at<float>(2)
           << " " << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << std::endl;
-
     }
 
     f.close();
-    // std::cout << std::endl << "trajectory saved!" << std::endl;
 }
 
 int System::GetTrackingState()

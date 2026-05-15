@@ -1446,7 +1446,6 @@ void Tracking::Track()
             // 初始化后的前20帧内，即使丢失也不立即重置，给予重定位及加载点绑定的机会
             if(mpMap->KeyFramesInMap()<=5 && mCurrentFrame.mnId > mnLastKeyFrameId + 20)
             {
-                // cout << "初始化后不久丢失跟踪，正在重置..." << endl;
                 mpSystem->Reset();
                 return;
             }
@@ -1716,7 +1715,6 @@ void Tracking::CreateInitialMapMonocular()
 
     if(medianDepth<0 || pKFcur->TrackedMapPoints(1)<100)
     {
-        // cout << "初始化错误，正在重置..." << endl; // 错误初始化，重置...
         Reset();
         return;
     }
@@ -3036,24 +3034,11 @@ bool Tracking::Relocalization()
 
 void Tracking::Reset()
 {
-
-    // cout << "系统重置中" << endl;
     LOGD("跟踪::重置 地图=%p", (void*)mpMap);
 
-    // Reset Local Mapping
-    // cout << "重置局部建图...";
     mpLocalMapper->RequestReset();
-    // cout << " 完成" << endl;
-
-    // Reset Loop Closing
-    // cout << "重置回环闭合...";
     mpLoopClosing->RequestReset();
-    // cout << " 完成" << endl;
-
-    // Clear BoW Database
-    // cout << "重置数据库...";
     mpKeyFrameDB->clear();
-    // cout << " 完成" << endl;
 
     // 在清除地图之前停止后台重定位线程，以避免MapPoint互斥锁上的竞争
     StopGlobalRelocThread();
