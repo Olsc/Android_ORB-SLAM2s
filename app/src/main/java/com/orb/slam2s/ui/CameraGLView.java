@@ -8,6 +8,7 @@ import android.opengl.GLSurfaceView;
 import android.os.Build;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 
 import androidx.camera.core.Camera;
@@ -119,7 +120,7 @@ public class CameraGLView extends CameraGLViewBase {
                                         rgbaBuffer = new byte[size];
                                     }
                                     buf.get(rgbaBuffer);
-                                    
+
                                     // 数据复制完成后立即关闭Image，释放缓冲区，防止ImageReader卡死
                                     image.close();
 
@@ -134,6 +135,12 @@ public class CameraGLView extends CameraGLViewBase {
                                         grayMatCache = new Mat(h, w, CvType.CV_8UC1);
                                     }
                                     Imgproc.cvtColor(rgbaMatCache, grayMatCache, Imgproc.COLOR_RGBA2GRAY);
+
+                                    // 如果是右横屏 (ROTATION_270)，需要旋转180度补偿
+                                    if (GlobalConstant.DISPLAY_ROTATION == Surface.ROTATION_270) {
+                                        org.opencv.core.Core.rotate(rgbaMatCache, rgbaMatCache, org.opencv.core.Core.ROTATE_180);
+                                        org.opencv.core.Core.rotate(grayMatCache, grayMatCache, org.opencv.core.Core.ROTATE_180);
+                                    }
 
                                     deliverAndDrawFrame(new XCameraFrame(rgbaMatCache, grayMatCache));
                                 } catch (Throwable e) {
@@ -223,6 +230,8 @@ public class CameraGLView extends CameraGLViewBase {
         @Override
         public void onSurfaceChanged(GL10 gl, int width, int height) {
             Log.d(TAG, "触发 surfaceChanged 事件");
+            // 更新正交投影以处理可能的旋转
+            ortho.onSurfaceChanged(gl,width,height);
             synchronized(mSyncObject) {
                 if (!mSurfaceExist) {
                     mSurfaceExist = true;
@@ -236,7 +245,6 @@ public class CameraGLView extends CameraGLViewBase {
                     checkCurrentState();
                 }
             }
-            ortho.onSurfaceChanged(gl,width,height);
         }
 
         @Override

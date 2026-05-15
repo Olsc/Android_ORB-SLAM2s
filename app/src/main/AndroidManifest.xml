@@ -39,7 +39,8 @@
         <activity
             android:name="com.orb.slam2s.ui.ArCamUIActivity"
             android:theme="@style/ListTheme"
-            android:screenOrientation="landscape"
+            android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|screenSize"
             tools:ignore="Instantiatable" />
     </application>
 

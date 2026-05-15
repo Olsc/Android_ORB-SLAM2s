@@ -5,10 +5,16 @@ package com.orb.slam2s.ui;
  * 由Olsc于2025/8/25开始进行修改
  */
 
+import android.content.Context;
+import android.content.pm.ActivityInfo;
+import android.graphics.Point;
 import android.opengl.GLSurfaceView;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Display;
 import android.view.MotionEvent;
+import android.view.Surface;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.TextView;
@@ -118,6 +124,13 @@ public class ArCamUIActivity extends AppCompatActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.d(TAG, "onCreate: 初始化Activity");
+
+        // 锁定为当前进入时的横屏方向，不再动态旋转
+        lockCurrentOrientation();
+
+        // 根据屏幕尺寸计算最佳分辨率
+        computeScreenResolution();
+
         setContentView(R.layout.ar_ui_content);
         initView();
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
@@ -127,6 +140,69 @@ public class ArCamUIActivity extends AppCompatActivity implements
                 finish();
             }
         });
+    }
+
+    /**
+     * 根据屏幕实际分辨率计算最优相机处理分辨率
+     */
+    private void computeScreenResolution() {
+        WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+        if (wm != null) {
+            Point size = new Point();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                Display display = getDisplay();
+                if (display != null) {
+                    Point realSize = new Point();
+                    display.getRealSize(realSize);
+                    size.x = realSize.x;
+                    size.y = realSize.y;
+                }
+            } else {
+                wm.getDefaultDisplay().getRealSize(size);
+            }
+
+            int screenWidth = size.x;
+            int screenHeight = size.y;
+            Log.d(TAG, "屏幕分辨率: " + screenWidth + "x" + screenHeight);
+
+            // 计算最佳相机处理分辨率
+            GlobalConstant.computeOptimalResolution(screenWidth, screenHeight);
+            Log.d(TAG, "选择相机分辨率: " + GlobalConstant.RESOLUTION_WIDTH + "x" + GlobalConstant.RESOLUTION_HEIGHT);
+        }
+    }
+
+    /**
+     * 锁定当前横屏方向：检测设备进入时的横屏方向（左/右），
+     * 然后锁定该方向，防止后续旋转切换
+     */
+    private void lockCurrentOrientation() {
+        try {
+            WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+            if (wm != null) {
+                int rotation;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    Display display = getDisplay();
+                    rotation = (display != null) ? display.getRotation() : Surface.ROTATION_90;
+                } else {
+                    rotation = wm.getDefaultDisplay().getRotation();
+                }
+
+                // 同步更新相机管道中的旋转标志
+                GlobalConstant.setDisplayRotation(rotation);
+
+                if (rotation == Surface.ROTATION_270) {
+                    // 右横屏 (reverse landscape)
+                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+                    Log.d(TAG, "锁定为右横屏方向 (REVERSE_LANDSCAPE)");
+                } else {
+                    // 默认为左横屏
+                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                    Log.d(TAG, "锁定为左横屏方向 (LANDSCAPE)");
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "锁定方向失败: " + e.getMessage());
+        }
     }
 
     private void initView() {
@@ -799,6 +875,10 @@ public class ArCamUIActivity extends AppCompatActivity implements
         Log.d(TAG, "onCameraViewStarted: 摄像头视图启动，宽度=" + width + " 高度=" + height);
         mRgba = new Mat(height, width, CvType.CV_8UC4);
         mGray = new Mat(height, width, CvType.CV_8UC1);
+        // 通知native层更新内参和投影矩阵
+        if (nativeHelper != null) {
+            nativeHelper.updateResolution(width, height);
+        }
     }
 
     @Override

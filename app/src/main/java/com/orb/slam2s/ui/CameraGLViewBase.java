@@ -399,7 +399,10 @@ public abstract class CameraGLViewBase extends GLRootView{
                 }
             }
         }
-        return new Size(GlobalConstant.RESOLUTION_WIDTH,GlobalConstant.RESOLUTION_HEIGHT);
-        //return new Size(calcWidth, calcHeight);
+        // 使用动态计算的分辨率
+        if (calcWidth > 0 && calcHeight > 0) {
+            return new Size(calcWidth, calcHeight);
+        }
+        return new Size(GlobalConstant.RESOLUTION_WIDTH, GlobalConstant.RESOLUTION_HEIGHT);
     }
 }
