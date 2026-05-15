@@ -100,6 +100,7 @@ public:
     }
 
     std::vector<cv::Mat> mvImagePyramid;
+    std::vector<cv::Mat> mvImagePyramidPadded;  // 带边界的临时 Mat，复用避免每帧每层堆分配
 
 protected:
 

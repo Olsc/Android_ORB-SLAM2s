@@ -37,6 +37,8 @@
 
 #include<string>
 #include<thread>
+#include<mutex>
+#include<chrono>
 #include<opencv2/core/core.hpp>
 
 #include "Tracking.h"
@@ -309,6 +311,10 @@ private:
     std::vector<MapPoint*> mTrackedMapPoints;
     std::vector<cv::KeyPoint> mTrackedKeyPointsUn;
     std::mutex mMutexState;
+
+    // CreateNewMap 限频保护：防止高性能机器上频繁丢失导致连续触发新建子地图
+    std::mutex mMutexNewMap;
+    std::chrono::steady_clock::time_point mLastNewMapTime;
 
         const bool USE_BINARY=true;
 };

@@ -141,53 +141,52 @@ static float IC_Angle(const Mat& image, Point2f pt,  const vector<int> & u_max)
 {
     int m_01 = 0, m_10 = 0;
 
-    // 快速舍入优化：避免 cvRound 函数调用开销
+    // 快速舍入
     const int py = (int)(pt.y + 0.5f);
     const int px = (int)(pt.x + 0.5f);
     const uchar* center = &image.at<uchar>(py, px);
 
-    // 利用中心线对称性减少乘法 (v=0)
-    for (int u = 1; u <= ORB_HALF_PATCH_SIZE; ++u)
-        m_10 += u * (center[u] - center[-u]);
+    // v=0 中心线：用后缀和消除 u * f(u) 中的乘法
+    // 数学等价：sum_{u=1}^{d} u·f(u) == sum_{u=1}^{d} (sum_{k=u}^{d} f(k))
+    // 实现：从右向左扫描，累加 f(k)，每次 m_10 += 累加器
+    {
+        int suffix = 0;
+        for (int u = ORB_HALF_PATCH_SIZE; u >= 1; --u) {
+            suffix += (center[u] - center[-u]);
+            m_10 += suffix;
+        }
+    }
 
-    // 在圆形补丁中逐行扫描
     int step = (int)image.step1();
-    
-    // 预计算 v*step 虽然编译器可能做，但显式写出更清晰
-    // 更好的优化是利用 u 的对称性:
-    // sum(u * val) = sum_{u>0} (u * val[u] + (-u) * val[-u]) = sum_{u>0} u * (val[u] - val[-u])
+
     for (int v = 1; v <= ORB_HALF_PATCH_SIZE; ++v)
     {
-        // 处理两条线 (v 和 -v)
         int v_sum = 0;
         int d = u_max[v];
-        
-        // 预计算行指针偏移
+
         int offset = v * step;
         const uchar* ptr_plus = center + offset;
         const uchar* ptr_minus = center - offset;
-        
+
         // 中心列 (u=0)
         v_sum += (ptr_plus[0] - ptr_minus[0]);
-        // m_10 在 u=0 时为 0，无需计算
-        
-        for (int u = 1; u <= d; ++u)
+
+        // 后缀和消除 m_10 内层乘法：sum_{u=1}^{d} u·f(u) = 后缀和累加
+        int suffix = 0;
+        for (int u = d; u >= 1; --u)
         {
             int val_plus_pos = ptr_plus[u];
             int val_plus_neg = ptr_plus[-u];
             int val_minus_pos = ptr_minus[u];
             int val_minus_neg = ptr_minus[-u];
-            
-            // m_01 计算: v * sum(val_plus - val_minus)
+
             v_sum += (val_plus_pos - val_minus_pos) + (val_plus_neg - val_minus_neg);
-            
-            // m_10 计算: u * (val_plus + val_minus)
-            // 对称性: u * (val_pos_sum) + (-u) * (val_neg_sum)
-            //       = u * (val_pos_sum - val_neg_sum)
+
             int val_u_sum = (val_plus_pos + val_minus_pos);
             int val_neg_u_sum = (val_plus_neg + val_minus_neg);
-            
-            m_10 += u * (val_u_sum - val_neg_u_sum);
+
+            suffix += (val_u_sum - val_neg_u_sum);
+            m_10 += suffix;
         }
         m_01 += v * v_sum;
     }
@@ -1209,12 +1208,19 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
 
 void ORBextractor::ComputePyramid(cv::Mat image)
 {
+    // 确保 padded 存储与金字塔层数匹配，首次或层数变化时 resize
+    if (mvImagePyramidPadded.size() != (size_t)nlevels)
+        mvImagePyramidPadded.resize(nlevels);
+
     for (int level = 0; level < nlevels; ++level)
     {
         float scale = mvInvScaleFactor[level];
         Size sz(cvRound((float)image.cols*scale), cvRound((float)image.rows*scale));
         Size wholeSize(sz.width + ORB_EDGE_THRESHOLD*2, sz.height + ORB_EDGE_THRESHOLD*2);
-        Mat temp(wholeSize, image.type()), masktemp;
+
+        // 复用 padded mat：create() 在 size/type 不变时不会重新分配内存
+        mvImagePyramidPadded[level].create(wholeSize, image.type());
+        cv::Mat& temp = mvImagePyramidPadded[level];
         mvImagePyramid[level] = temp(Rect(ORB_EDGE_THRESHOLD, ORB_EDGE_THRESHOLD, sz.width, sz.height));
 
         // 计算调整大小后的图像
@@ -1223,12 +1229,12 @@ void ORBextractor::ComputePyramid(cv::Mat image)
             resize(mvImagePyramid[level-1], mvImagePyramid[level], sz, 0, 0, INTER_LINEAR);
 
             copyMakeBorder(mvImagePyramid[level], temp, ORB_EDGE_THRESHOLD, ORB_EDGE_THRESHOLD, ORB_EDGE_THRESHOLD, ORB_EDGE_THRESHOLD,
-                           BORDER_REFLECT_101+BORDER_ISOLATED);            
+                           BORDER_REFLECT_101+BORDER_ISOLATED);
         }
         else
         {
             copyMakeBorder(image, temp, ORB_EDGE_THRESHOLD, ORB_EDGE_THRESHOLD, ORB_EDGE_THRESHOLD, ORB_EDGE_THRESHOLD,
-                           BORDER_REFLECT_101);            
+                           BORDER_REFLECT_101);
         }
     }
 

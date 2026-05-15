@@ -653,6 +653,12 @@ void LoopClosing::SearchAndFuse(const KeyFrameAndPose &CorrectedPosesMap)
 }
 
 
+void LoopClosing::ClearQueue()
+{
+    unique_lock<mutex> lock(mMutexLoopQueue);
+    mlpLoopKeyFrameQueue.clear();
+}
+
 void LoopClosing::RequestReset()
 {
     {

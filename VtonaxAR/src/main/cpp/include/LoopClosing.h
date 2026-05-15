@@ -80,6 +80,10 @@ public:
 
     void RequestReset();
 
+    // 轻量级清空回环关键帧队列，不阻塞等待 Reset 完成。
+    // 用于 CreateNewMap 流程：避免旧 KF 在切到新地图后被 LoopClosing 处理。
+    void ClearQueue();
+
     // 此函数将在单独的线程中运行
     void RunGlobalBundleAdjustment(unsigned long nLoopKF);
 

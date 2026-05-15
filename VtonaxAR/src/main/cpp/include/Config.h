@@ -244,6 +244,15 @@ const float RELOC_MIN_CONFIDENCE_FOR_ALIGN = 0.4f;
 // 连续丢失多少帧后创建新子地图（30帧 @ 30fps = 1秒）
 const int TRACKING_LOST_FRAMES_FOR_NEW_MAP = 30;
 
+// 创建新子地图后的冷却帧数：在该帧数内不允许再次创建新子地图。
+// 避免高性能机器在连续丢失/找回时高频触发，造成主跟踪线程被反复阻塞。
+// 150 帧 @ 30fps = 5 秒
+const int TRACKING_NEW_MAP_COOLDOWN_FRAMES = 150;
+
+// 子地图最大数量限制。超出此数量时，最旧的子地图将被删除以释放内存。
+// 每个子地图可能包含数千个关键帧和数万个地图点。
+const int MAX_SUBMAP_COUNT = 10;
+
 
 // ==========================================
 // 局部建图参数

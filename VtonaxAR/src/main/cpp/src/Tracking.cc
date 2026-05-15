@@ -1455,11 +1455,26 @@ void Tracking::Track()
             // 必须保证地图有足够关键帧，防止初始扫描阶段点云被意外清空
             if (mConsecutiveLostFrames > TRACKING_LOST_FRAMES_FOR_NEW_MAP && mpMap->KeyFramesInMap() > 10)
             {
-                // LOGD("跟踪: 丢失 %d 帧 (>%d)。正在创建新子地图。", 
-                //      mConsecutiveLostFrames, TRACKING_LOST_FRAMES_FOR_NEW_MAP);
-                mpSystem->CreateNewMap();
-                mConsecutiveLostFrames = 0;
-                return;
+                // 冷却保护：高性能机器丢失/找回切换极快，若不限频会反复触发 CreateNewMap，
+                // 每次都会阻塞主跟踪线程几十到几百毫秒（含 RequestReset、StopGlobalRelocThread::join 等），
+                // 导致整体扫描画面卡死。低性能机器因每帧间隔大反而不容易触发。
+                if (mLastNewMapFrameId > 0 &&
+                    mCurrentFrame.mnId < mLastNewMapFrameId + TRACKING_NEW_MAP_COOLDOWN_FRAMES)
+                {
+                    // 仍在冷却期内，不触发 CreateNewMap；让丢失计数继续累积，
+                    // 等本次相机视野稳定后或冷却结束后再做处理。
+                    LOGD("跟踪: 处于子地图冷却期 (距上次创建 %u 帧 < %d)，跳过 CreateNewMap",
+                         mCurrentFrame.mnId - mLastNewMapFrameId, TRACKING_NEW_MAP_COOLDOWN_FRAMES);
+                }
+                else
+                {
+                    // LOGD("跟踪: 丢失 %d 帧 (>%d)。正在创建新子地图。",
+                    //      mConsecutiveLostFrames, TRACKING_LOST_FRAMES_FOR_NEW_MAP);
+                    mpSystem->CreateNewMap();
+                    mLastNewMapFrameId = mCurrentFrame.mnId;
+                    mConsecutiveLostFrames = 0;
+                    return;
+                }
             }
         }
 
@@ -3232,6 +3247,100 @@ void Tracking::ClearTrackingState()
     mConsecutiveFail = 0;
     
     LOGD("跟踪::清除跟踪状态: 运行时状态已清除，地图点已保留");
+}
+
+void Tracking::PrepareForNewMap()
+{
+    // 仅清除运行时状态：
+    //   - 不调用 RequestReset(LocalMapping/LoopClosing) —— 由 System::CreateNewMap 的外层流程统一管理；
+    //   - 不调用 mpMap->clear() —— 旧地图已切换走，新地图本来就是空的；
+    //   - 不调用 StopGlobalRelocThread() —— 由外层先停后调用本函数，避免重复 join。
+    // 设计目标：让本函数在主跟踪线程上下文中执行的耗时控制在毫秒级，
+    // 杜绝高频丢失场景下主跟踪线程被反复阻塞数十~数百毫秒导致的"画面卡死"。
+    LOGD("跟踪::PrepareForNewMap (轻量切图，仅清运行时状态)");
+
+    mState = NO_IMAGES_YET;
+    mpLastKeyFrame = nullptr;
+    mpReferenceKF = nullptr;
+    mvpLocalKeyFrames.clear();
+    mvpLocalMapPoints.clear();
+    mlRelativeFramePoses.clear();
+    mlpReferences.clear();
+    mlFrameTimes.clear();
+    mlbLost.clear();
+    mConsecutiveLostFrames = 0;
+    mConsecutiveFail = 0;
+    mnLastRelocFrameId = 0;
+    mLastInitAttemptTime = 0.0;
+    mlpTemporalPoints.clear();
+    mVelocity = cv::Mat();
+
+    if (mpInitializer)
+    {
+        delete mpInitializer;
+        mpInitializer = static_cast<Initializer*>(NULL);
+    }
+
+    mTrackingOK.store(false);
+    mLastTrackingInliers.store(0);
+    mRelocMatchScore.store(0.0f);
+    mRelocCooldownFrames = 30;  // 给一段冷却，避免立即触发重定位匹配到错误区域
+    mRefCacheRetryCount = 0;
+}
+
+void Tracking::ClearRelocCacheForMapSwitch()
+{
+    // 仅清空与"加载/旧地图"相关的重定位缓存与对齐状态。
+    // 不释放 Map、不停后台线程、不接触 mlNewKeyFrames 等队列。
+    // 调用语义：先 StopGlobalRelocThread()，再 ClearRelocCacheForMapSwitch()，
+    //           再 SwitchToMap()，最后 PrepareForNewMap() + StartGlobalRelocThread()。
+    LOGD("跟踪::ClearRelocCacheForMapSwitch (仅清重定位缓存)");
+
+    {
+        std::unique_lock<std::mutex> lk(mMutexReloc);
+
+        mRefDesc.release();
+        mRefIdxToMP.clear();
+        mRefSnapshots.clear();
+        mRefInverted.clear();
+        mRefGrid.Clear();
+        mRefCachedMPCount = 0;
+        mRefLastBuildTs = 0.0;
+
+        mLastDesc.release();
+        mLastKeysUn.clear();
+        mLastN = 0;
+        mLastTimestamp = 0.0;
+        mLastTcwSlam.release();
+        mSnapSeqProduced.store(0ULL);
+        mSnapSeqConsumed.store(0ULL);
+
+        mbHaveMapAlign = false;
+        mAlignConfidence = 0.0f;
+        mLastAlignTs = 0.0;
+        mT_map_from_slam.release();
+        mSmoothedT_map_from_slam.release();
+        mAlignUpdateCount = 0;
+        mAlignSkipCounter = 0;
+    }
+
+    {
+        std::unique_lock<std::mutex> lk(mMutexRelocBuf);
+        mRelocBuf.T_map_from_slam.release();
+        mRelocBuf.inliers = 0;
+        mRelocBuf.confidence = 0.0f;
+        mRelocBuf.ts = 0.0;
+        mRelocSeqProduced = 0ULL;
+        mRelocSeqConsumed = 0ULL;
+    }
+
+    mPendingMapId = -1;
+    mPendingMapCount = 0;
+    mPendingAlign = RelocAlignResult();
+    mPendingT_map_from_slam.release();
+    mPendingConfidence = 0.0f;
+    mPendingInliers = 0;
+    mLastAcceptedAlignInliers = 0;
 }
 
 void Tracking::ClearRelocCache()
