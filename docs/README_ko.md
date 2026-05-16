@@ -75,6 +75,7 @@ keywords: {Visualization;Simultaneous localization and mapping;Cameras;Real-time
 * [x] 어두운 프레임 건너뛰기 로직
 * [x] 3D AR 오브젝트 관리
 * [x] 다중 지도 파일의 동시 로드 및 매칭
+* [x] **Unity3D** 통합.
 
 ## 향후 로드맵
 
@@ -82,13 +83,12 @@ keywords: {Visualization;Simultaneous localization and mapping;Cameras;Real-time
 * [ ] AR 안정성 및 6DoF 강건성 향상.
 * [ ] 더 높은 프레임 속도를 위한 렌더링 파이프라인 최적화.
 * [ ] 센서 퓨전 심화(VIO - 시각 관성 주행 거리 측정).
-* [ ] **Unity3D** 통합.
 * [ ] SLAM 주파수 다운샘플링 및 적응형 노이즈 처리.
 * [ ] 정밀 센서 게이팅 로직.
 
----
 
-## 감사의 말
+
+## 감사의 글
 
 이 프로젝트는 다음과 같은 훌륭한 오픈 소스 라이브러리들을 기반으로 구축되었습니다:
 

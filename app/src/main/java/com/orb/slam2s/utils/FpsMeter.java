@@ -34,11 +34,11 @@ public class FpsMeter {
                 long time = Core.getTickCount();
                 double fps = STEP * mFrequency / (time - mprevFrameTime);
                 mprevFrameTime = time;
-                //if (mWidth != 0 && mHeight != 0)
+                //if (mWidth != 0 && mHeight != 0) 已注释
                 //    mStrfps = FPS_FORMAT.format(fps) + " FPS@" + Integer.valueOf(mWidth) + "x" + Integer.valueOf(mHeight);
                 //else
                     mStrfps = FPS_FORMAT.format(fps) + " FPS";
-                //Log.i(TAG, mStrfps);
+                //Log.i(TAG, mStrfps); 已注释
             }
         }
     }

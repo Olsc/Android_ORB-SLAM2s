@@ -10,12 +10,12 @@
 // 注意：文件路径中的 '.' 和 '/' 会被替换为 '_'
 
 
-// ORBvoc.txt.arm.bin
+// ORBvoc.txt.arm.bin 词汇表文件
 extern "C" {
     extern const unsigned char _binary_ORBvoc_txt_arm_bin_start[];
     extern const unsigned char _binary_ORBvoc_txt_arm_bin_end[];
     
-    // ORB LUT
+    // ORB 查找表
     extern const unsigned char _binary_ORB_LUT_bin_start[];
     extern const unsigned char _binary_ORB_LUT_bin_end[];
 }

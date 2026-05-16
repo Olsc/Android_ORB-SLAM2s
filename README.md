@@ -75,6 +75,7 @@ To ensure a smooth user experience, the system monitors exposure levels. When th
 * [x] Dark Frame Skip Logic
 * [x] 3D AR Object Management
 * [x] Simultaneous loading and matching of multiple map files
+* [x] Integration with **Unity3D**.
 
 ## Future Roadmap
 
@@ -82,11 +83,10 @@ To ensure a smooth user experience, the system monitors exposure levels. When th
 * [ ] Enhance AR stability and 6DoF robustness.
 * [ ] Optimize rendering pipeline for higher frame rates.
 * [ ] Deepen sensor fusion (VIO - Visual Inertial Odometry).
-* [ ] Integration with **Unity3D**.
 * [ ] SLAM frequency downsampling and adaptive noise handling.
 * [ ] Refined sensor gating logic.
 
----
+
 
 ## Acknowledgments
 

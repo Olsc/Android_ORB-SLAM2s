@@ -75,6 +75,7 @@ keywords: {Visualization;Simultaneous localization and mapping;Cameras;Real-time
 * [x] 暗帧跳过逻辑
 * [x] 3D AR对象管理
 * [x] 多个地图文件的同时加载和匹配
+* [x] 与**Unity3D**集成。
 
 ## 未来路线图
 
@@ -82,11 +83,10 @@ keywords: {Visualization;Simultaneous localization and mapping;Cameras;Real-time
 * [ ] 增强AR稳定性和6DoF鲁棒性。
 * [ ] 优化渲染管道以获得更高的帧率。
 * [ ] 加深传感器融合（VIO - 视觉惯性测程）。
-* [ ] 与**Unity3D**集成。
 * [ ] SLAM频率降采样和自适应噪声处理。
 * [ ] 精细的传感器门控逻辑。
 
----
+
 
 ## 致谢
 

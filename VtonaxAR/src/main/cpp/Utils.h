@@ -26,6 +26,6 @@ void recordTime();
 /**
  * 输出从recordTime()调用至今经过的时间
  */
-// void logTime();
+// void logTime(); 已注释
 
 #endif //ORB_SLAM2_AR_PLANE_H
