@@ -267,18 +267,18 @@ public abstract class CameraGLViewBase extends GLRootView{
     }
 
     private void onEnterStoppedState() {
-        /* nothing to do */
+        /* 无需操作 */
     }
 
     private void onExitStoppedState() {
-        /* nothing to do */
+        /* 无需操作 */
     }
 
     // 注意：在Android 4.1.x上，bitmap构造函数和相机连接的顺序很重要
     // Bitmap必须在surface之前构造
     private void onEnterStartedState() {
         Log.d(TAG, "调用onEnterStartedState");
-        /* Connect camera */
+        /* 连接相机 */
         if (!connectCamera(getWidth(), getHeight())) {
             Log.d(TAG, "onEnterStartedState: 连接相机失败。");
         }
@@ -324,7 +324,7 @@ public abstract class CameraGLViewBase extends GLRootView{
             }
         }
 
-        //Log.d("JNI_", "finished converting.");
+        //Log.d("JNI_", "转换完成");
         if (bmpValid && mCacheBitmap != null) {
             //将mCacheBitmap发送到纹理。
 
@@ -333,7 +333,7 @@ public abstract class CameraGLViewBase extends GLRootView{
                 public void run() {
                     synchronized (mSyncObject) {
                         if (mCacheBitmap != null && !mCacheBitmap.isRecycled()) {
-                            //Log.d("JNI_", "sending image: textureId "+imageTextureId);
+                            //Log.d("JNI_", "发送图像：textureId "+imageTextureId);
                             TextureUtils.loadTexture(mCacheBitmap, imageTextureId);
                         }
                     }
@@ -342,7 +342,7 @@ public abstract class CameraGLViewBase extends GLRootView{
         }
 
         //Martin: 使用画布绘制位图大约需要40-50毫秒
-        //Log.d("JNI_", "finished drawing");
+        //Log.d("JNI_", "绘制完成");
 
     }
 
@@ -400,6 +400,6 @@ public abstract class CameraGLViewBase extends GLRootView{
             }
         }
         return new Size(GlobalConstant.RESOLUTION_WIDTH,GlobalConstant.RESOLUTION_HEIGHT);
-        //return new Size(calcWidth, calcHeight);
+        //return new Size(计算宽度, 计算高度);
     }
 }
