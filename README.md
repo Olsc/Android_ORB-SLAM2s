@@ -88,6 +88,16 @@ To ensure a smooth user experience, the system monitors exposure levels. When th
 
 ---
 
+## Auxiliary Tools
+
+The project includes several Python tools to assist with development and optimization:
+
+*   **Vtonax Profiler Viewer (`docs/profiler_tools/vtonax_viewer.py`)**: Converts binary profile logs from the device into Chrome Tracing JSON format. Drag the resulting file into `chrome://tracing` for detailed performance analysis.
+*   **ORB LUT Generator (`docs/generate_tools/generate_orb_lut.py`)**: Pre-calculates the ORB descriptor rotation lookup table. This reduces runtime CPU overhead on mobile devices.
+*   **Aesthetic Flowchart Generator (`docs/generate_tools/generate_aesthetic_flowchart.py`)**: Generates professional SVG flowcharts (like the ones used in this documentation) using Python.
+
+---
+
 ## Acknowledgments
 
 This project is built upon the following excellent open-source libraries:

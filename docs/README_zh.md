@@ -88,6 +88,16 @@ keywords: {Visualization;Simultaneous localization and mapping;Cameras;Real-time
 
 ---
 
+## 辅助工具
+
+本项目包含多个 Python 工具，用于辅助开发和性能优化：
+
+*   **Vtonax 分析器查看器 (`docs/profiler_tools/vtonax_viewer.py`)**：将设备导出的二进制性能日志转换为 Chrome Tracing JSON 格式。将生成的 JSON 文件拖入 `chrome://tracing` 即可进行详细的性能瓶颈分析。
+*   **ORB 查找表生成器 (`docs/generate_tools/generate_orb_lut.py`)**：预计算 ORB 描述子的旋转偏移查找表 (LUT)。这能有效降低移动设备在运行时的 CPU 开销。
+*   **美观流程图生成器 (`docs/generate_tools/generate_aesthetic_flowchart.py`)**：使用 Python 生成专业的项目流程图（如本篇文档中使用的 SVG 图表）。
+
+---
+
 ## 致谢
 
 本项目基于以下优秀的开源库构建：

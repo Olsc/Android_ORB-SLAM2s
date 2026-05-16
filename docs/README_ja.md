@@ -88,6 +88,16 @@ keywords: {Visualization;Simultaneous localization and mapping;Cameras;Real-time
 
 ---
 
+## 補助ツール
+
+プロジェクトには、開発と最適化を支援するためのいくつかの Python ツールが含まれています：
+
+*   **Vtonax プロファイラービューアー (`docs/profiler_tools/vtonax_viewer.py`)**: デバイスからエクスポートされたバイナリパフォーマンスログを Chrome Tracing JSON 形式に変換します。生成された JSON ファイルを `chrome://tracing` にドラッグして、詳細なパフォーマンス分析を行うことができます。
+*   **ORB LUT ジェネレーター (`docs/generate_tools/generate_orb_lut.py`)**: ORB 記述子の旋转オフセットルックアップテーブル (LUT) を事前計算します。これにより、モバイルデバイスでの実行時の CPU オーバーヘッドを削減できます。
+*   **美観フローチャートジェネレーター (`docs/generate_tools/generate_aesthetic_flowchart.py`)**: Python を使用して、プロジェクトのプロフェッショナルな SVG フローチャート（このドキュメントで使用されているものなど）を生成します。
+
+---
+
 ## 謝辞
 
 このプロジェクトは、以下の優れたオープンソースライブラリに基づいて構築されています:

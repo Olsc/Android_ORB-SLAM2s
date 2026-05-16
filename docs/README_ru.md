@@ -88,6 +88,16 @@ keywords: {Visualization;Simultaneous localization and mapping;Cameras;Real-time
 
 ---
 
+## Вспомогательные инструменты
+
+Проект включает несколько инструментов на Python для помощи в разработке и оптимизации:
+
+*   **Vtonax Profiler Viewer (`docs/profiler_tools/vtonax_viewer.py`)**: Преобразует бинарные журналы производительности с устройства в формат Chrome Tracing JSON. Перетащите полученный файл в `chrome://tracing` для детального анализа производительности.
+*   **ORB LUT Generator (`docs/generate_tools/generate_orb_lut.py`)**: Предварительно рассчитывает таблицу поиска вращения (LUT) для дескрипторов ORB. Это снижает нагрузку на процессор при работе на мобильных устройствах.
+*   **Aesthetic Flowchart Generator (`docs/generate_tools/generate_aesthetic_flowchart.py`)**: Генерирует профессиональные блок-схемы в формате SVG (подобные используемым в этой документации) с помощью Python.
+
+---
+
 ## Благодарности
 
 Этот проект построен на следующих превосходных библиотеках с открытым исходным кодом:

@@ -292,3 +292,27 @@ target_link_libraries(SLAM_AR
 # ========== 3DOF 独立库 ==========
 add_library(3dof SHARED src/main/cpp/3dof.cpp src/main/cpp/Matrix.cpp)
 target_link_libraries(3dof ${log-lib})
+
+# ========== Vtonax 性能分析器 ==========
+set(VTONAX_DEVELOP_MODE OFF) # <--- 修改这里：ON 开启，OFF 关闭
+
+message(STATUS "Vtonax 分析器状态: ${VTONAX_DEVELOP_MODE}")
+
+# 始终包含此目录，以便编译器在 OFF 模式下也能找到头文件并展开空宏
+include_directories(src/main/cpp/profiler)
+
+if(VTONAX_DEVELOP_MODE)
+    # 仅在开启时添加分析器库
+    add_library(vtonax_profiler SHARED
+            src/main/cpp/profiler/VtonaxProfiler.cpp
+            src/main/cpp/profiler/VtonaxProfiler.h
+    )
+    
+    # 使用 PUBLIC 确保宏定义传播给所有链接到此库的目标（如 SLAM_AR）
+    target_compile_definitions(vtonax_profiler PUBLIC VTONAX_DEVELOP_MODE)
+    
+    target_link_libraries(vtonax_profiler ${log-lib})
+    
+    # 链接分析器库
+    target_link_libraries(SLAM_AR vtonax_profiler)
+endif()
