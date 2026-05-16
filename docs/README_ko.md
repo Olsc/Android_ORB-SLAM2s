@@ -75,6 +75,7 @@ keywords: {Visualization;Simultaneous localization and mapping;Cameras;Real-time
 * [x] 어두운 프레임 건너뛰기 로직
 * [x] 3D AR 오브젝트 관리
 * [x] 다중 지도 파일의 동시 로드 및 매칭
+* [x] **Unity3D** 통합.
 
 ## 향후 로드맵
 
@@ -82,21 +83,10 @@ keywords: {Visualization;Simultaneous localization and mapping;Cameras;Real-time
 * [ ] AR 안정성 및 6DoF 강건성 향상.
 * [ ] 더 높은 프레임 속도를 위한 렌더링 파이프라인 최적화.
 * [ ] 센서 퓨전 심화(VIO - 시각 관성 주행 거리 측정).
-* [ ] **Unity3D** 통합.
 * [ ] SLAM 주파수 다운샘플링 및 적응형 노이즈 처리.
 * [ ] 정밀 센서 게이팅 로직.
 
----
 
-## 보조 도구
-
-프로젝트에는 개발 및 최적화를 지원하는 여러 Python 도구가 포함되어 있습니다:
-
-*   **Vtonax 프로파일러 뷰어 (`docs/profiler_tools/vtonax_viewer.py`)**: 장치에서 내보낸 바이너리 성능 로그를 Chrome Tracing JSON 형식으로 변환합니다. 생성된 JSON 파일을 `chrome://tracing`에 드래그하여 상세한 성능 분석을 수행할 수 있습니다.
-*   **ORB LUT 생성기 (`docs/generate_tools/generate_orb_lut.py`)**: ORB 기술자의 회전 오프셋 조회 테이블(LUT)을 사전 계산합니다. 이는 모바일 장치에서의 런타임 CPU 오버헤드를 줄여줍니다.
-*   **심미적 순서도 생성기 (`docs/generate_tools/generate_aesthetic_flowchart.py`)**: Python을 사용하여 프로젝트를 위한 전문가 수준의 SVG 순서도(이 문서에서 사용된 것과 같은)를 생성합니다.
-
----
 
 ## 감사의 글
 

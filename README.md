@@ -75,6 +75,7 @@ To ensure a smooth user experience, the system monitors exposure levels. When th
 * [x] Dark Frame Skip Logic
 * [x] 3D AR Object Management
 * [x] Simultaneous loading and matching of multiple map files
+* [x] Integration with **Unity3D**.
 
 ## Future Roadmap
 
@@ -82,21 +83,10 @@ To ensure a smooth user experience, the system monitors exposure levels. When th
 * [ ] Enhance AR stability and 6DoF robustness.
 * [ ] Optimize rendering pipeline for higher frame rates.
 * [ ] Deepen sensor fusion (VIO - Visual Inertial Odometry).
-* [ ] Integration with **Unity3D**.
 * [ ] SLAM frequency downsampling and adaptive noise handling.
 * [ ] Refined sensor gating logic.
 
----
 
-## Auxiliary Tools
-
-The project includes several Python tools to assist with development and optimization:
-
-*   **Vtonax Profiler Viewer (`docs/profiler_tools/vtonax_viewer.py`)**: Converts binary profile logs from the device into Chrome Tracing JSON format. Drag the resulting file into `chrome://tracing` for detailed performance analysis.
-*   **ORB LUT Generator (`docs/generate_tools/generate_orb_lut.py`)**: Pre-calculates the ORB descriptor rotation lookup table. This reduces runtime CPU overhead on mobile devices.
-*   **Aesthetic Flowchart Generator (`docs/generate_tools/generate_aesthetic_flowchart.py`)**: Generates professional SVG flowcharts (like the ones used in this documentation) using Python.
-
----
 
 ## Acknowledgments
 
