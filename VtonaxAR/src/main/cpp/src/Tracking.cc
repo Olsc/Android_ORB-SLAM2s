@@ -56,6 +56,7 @@
 #include <numeric>
 #include <thread>
 #include <chrono>
+#include "VtonaxProfiler.h" // 性能分析器
 
 // 轻量级投影工具：避免在热点循环中频繁创建小矩阵，减少分配和复制开销
 static inline void ProjectPwWithRTK(const float R[9], const float t[3],
@@ -1203,6 +1204,7 @@ void Tracking::SetMap(Map *pMap)
 
 cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
 {
+    VT_PROFILE_FUNCTION();
     mImGray = im;
 
     if(mImGray.channels()==3)
@@ -1233,6 +1235,7 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
 
 void Tracking::Track()
 {
+    VT_PROFILE_FUNCTION();
     if(mState==NO_IMAGES_YET)
     {
         mState = NOT_INITIALIZED;

@@ -40,6 +40,7 @@
 
 #include<mutex>
 #include<algorithm>
+#include "VtonaxProfiler.h" // 性能分析器
 
 namespace ORB_SLAM2
 {
@@ -76,6 +77,7 @@ void LocalMapping::ClearQueues()
 
 void LocalMapping::Run()
 {
+    VT_PROFILE_FUNCTION();
     mbFinished = false;
 
     while(1)

@@ -32,6 +32,7 @@
  * version 3, together with ORB-SLAM2.
  */
 
+#include "Common.h"
 #include "FrameDrawer.h"
 #include "Tracking.h"
 

@@ -371,7 +371,7 @@ bool invertM(float mInv[], int mInvOffset, float m[],
 
 
 void getRUBViewMatrixFromRDF(float inM[],float outM[]){
-    // View_GL = Rx(180) * View_CV * Rx(180)
+    // OpenGL 视图矩阵 = Rx(180) * OpenCV 视图矩阵 * Rx(180)
     // Rx(180) 翻转 Y 和 Z 轴。
     // 手机AR渲染需要双重变换：不仅相机坐标系变换(左乘)，世界坐标系也变换(右乘)。
     // 这样可以确保AR物体(RUB模型)在RUB世界中被RUB相机正确观察。
@@ -387,11 +387,11 @@ void getRUBViewMatrixFromRDF(float inM[],float outM[]){
     // Col 2 (indices 8, 9, 10, 11) 被右乘取反
     
     // 重叠部分(Row 1/2 AND Col 1/2)被取反两次 -> 保持不变
-    // Overlap indices: 5, 9, 6, 10.
+    // 重叠索引：5, 9, 6, 10
     
     // 最终需要取反的索引列表：
-    // Row only: 1, 13, 2, 14
-    // Col only: 4, 7, 8, 11
+    // 仅行：1, 13, 2, 14
+    // 仅列：4, 7, 8, 11
     
     outM[1] = -outM[1];
     outM[2] = -outM[2];

@@ -15,7 +15,9 @@
 #include <opencv2/opencv.hpp>
 #include "include/System.h"
 #include "Plane.h"
+#ifdef ANDROID
 #include <GLES/gl.h>
+#endif
 
 /**
  * 绘制当前帧跟踪到的特征点

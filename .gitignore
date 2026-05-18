@@ -49,3 +49,4 @@ freeline_project_description.json
 
 Temp/
 diff_report.md
+.claude/settings.local.json

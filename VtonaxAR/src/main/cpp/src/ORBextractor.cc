@@ -77,6 +77,7 @@
 
 #include "ORBextractor.h"
 #include "Config.h"
+#include "VtonaxProfiler.h" // 性能分析器
 
 
 using namespace cv;
@@ -963,6 +964,7 @@ static void computeDescriptors(const Mat& image, vector<KeyPoint>& keypoints, Ma
 void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPoint>& _keypoints,
                       OutputArray _descriptors)
 { 
+    VT_PROFILE_FUNCTION();
     if(_image.empty())
         return;
 
@@ -1028,10 +1030,10 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
 
 void ORBextractor::ComputePyramid(cv::Mat image)
 {
+    VT_PROFILE_FUNCTION();
     // 确保 padded 存储与金字塔层数匹配，首次或层数变化时 resize
     if (mvImagePyramidPadded.size() != (size_t)nlevels)
         mvImagePyramidPadded.resize(nlevels);
-
     for (int level = 0; level < nlevels; ++level)
     {
         float scale = mvInvScaleFactor[level];

@@ -59,7 +59,7 @@ public class TouchHelper {
 
             @Override
             public boolean onScaleBegin(ScaleGestureDetector detector) {
-                //return true to enter onScale()
+                //返回 true 以进入 onScale()
                 return true;
             }
 
@@ -71,7 +71,7 @@ public class TouchHelper {
     }
 
     public boolean handleTouchEvent(MotionEvent event) {
-        //int action = event.getActionMasked();
+        //int action = event.getActionMasked(); 已注释
         //也可以通过event.getPointerCount()来判断是双指缩放还是单指触控
         boolean ret=scaleGestureDetector.onTouchEvent(event);
         if (!scaleGestureDetector.isInProgress()){

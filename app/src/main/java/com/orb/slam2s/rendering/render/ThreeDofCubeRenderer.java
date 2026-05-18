@@ -252,9 +252,9 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
                     return display.getRotation();
                 }
             } catch (Exception e) {
-                // Fallback
+                // 回退方案
             } catch (NoSuchMethodError e) {
-                // Fallback
+                // 回退方案
             }
         }
         return getLegacyRotation();

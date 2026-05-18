@@ -25,7 +25,7 @@ public class Plain {
             1.0f, 1.0f, 0f
     };
 
-    //ABCD
+    //ABCD（占位文本）
     public static final float TEXTURE_NO_ROTATION[] = {
             0.0f, 1.0f,
             1.0f, 1.0f,

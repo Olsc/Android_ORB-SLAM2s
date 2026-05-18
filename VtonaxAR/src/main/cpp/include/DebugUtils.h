@@ -1,7 +1,11 @@
 #ifndef DEBUG_UTILS_H
 #define DEBUG_UTILS_H
 
+#ifdef ANDROID
 #include <android/log.h>
+#else
+#include <stdio.h>
+#endif
 #include <string>
 #include <chrono>
 
@@ -25,7 +29,11 @@ public:
 
         // 极端情况：耗时超过50ms才打印
         if (duration > 50) {
+#ifdef ANDROID
             __android_log_print(ANDROID_LOG_WARN, LOG_TAG, "Extreme Case - Slow Function: %s took %lld ms", mName, (long long)duration);
+#else
+            printf("[WARN] [%s] Extreme Case - Slow Function: %s took %lld ms\n", LOG_TAG, mName, (long long)duration);
+#endif
         }
     }
 

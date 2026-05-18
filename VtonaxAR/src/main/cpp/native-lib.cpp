@@ -22,6 +22,7 @@
 #include "MapPoint.h"
 #include "EmbeddedResources.h"
 #include "include/Config.h"
+#include "VtonaxProfiler.h"
 
 extern "C" {
 
@@ -275,6 +276,7 @@ void LoadPlaneAndArInfo(const std::string& filename, int mapId)
 
 int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
 {
+    VT_PROFILE_FUNCTION(); // 跟踪主图像处理循环
     FUNCTION_TRACE;
     timeStamp += 1.0 / 30.0;
     
@@ -541,9 +543,9 @@ Java_com_orb_slam2s_slamar_NativeHelper_initSLAM(JNIEnv* env, jobject instance, 
     // 预计算投影矩阵（基于缩放后的内参）
     frustumM_RUB(640, 360, gScaledFx, gScaledFy, gScaledCx, gScaledCy, 0.1, 1000, gCurrentProjectionMatrix);
     
-    // 初始化SLAM系统
-    // LOGD("正在使用嵌入词汇表初始化SLAM系统...");
-    // 传递空字符串作为YAML参数，因为相机参数现在在Config.h中
+    // 初始化分析器 (仅在开发模式下生效)
+    VT_PROFILE_INITIALIZE(std::string(path) + "/vtonax_profile.bin");
+    
     slamSys = new ORB_SLAM2::System(":embedded:", "", ORB_SLAM2::System::MONOCULAR);
 }
 

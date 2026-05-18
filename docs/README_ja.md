@@ -75,6 +75,7 @@ keywords: {Visualization;Simultaneous localization and mapping;Cameras;Real-time
 * [x] 暗所フレームスキップロジック
 * [x] 3D ARオブジェクト管理
 * [x] 複数マップファイルの同時読み込みとマッチング
+* [x] **Unity3D**との統合。
 
 ## 今後のロードマップ
 
@@ -82,11 +83,10 @@ keywords: {Visualization;Simultaneous localization and mapping;Cameras;Real-time
 * [ ] ARの安定性と6DoFの堅牢性の強化。
 * [ ] より高いフレームレートのためのレンダリングパイプラインの最適化。
 * [ ] センサーフュージョンの深化（VIO - Visual Inertial Odometry）。
-* [ ] **Unity3D**との統合。
 * [ ] SLAM周波数のダウンサンプリングと適応ノイズ処理。
 * [ ] 精密なセンサーチェッキングロジック。
 
----
+
 
 ## 謝辞
 

@@ -45,6 +45,7 @@
 #include <iomanip>
 #include <sstream>
 #include <Utils.h>
+#include "VtonaxProfiler.h" // 性能分析器
 
 namespace ORB_SLAM2
 {
@@ -143,6 +144,7 @@ System::System(const std::string &strVocFile, const std::string &strSettingsFile
 
 cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
 {
+    VT_PROFILE_FUNCTION();
     recordTime();
     if(mSensor!=MONOCULAR)
     {
