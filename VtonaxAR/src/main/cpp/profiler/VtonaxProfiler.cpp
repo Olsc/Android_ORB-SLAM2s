@@ -11,6 +11,7 @@
 
 namespace Vtonax {
 
+#pragma pack(push, 1)
 // 事件记录结构体
 struct EventRecord {
     uint32_t nameId;    // 函数名称ID
@@ -18,6 +19,7 @@ struct EventRecord {
     uint64_t timestamp; // 纳秒时间戳
     EventType type;     // 事件类型 (开始/结束)
 };
+#pragma pack(pop)
 
 struct Profiler::Impl {
     std::ofstream outFile; // 输出文件流

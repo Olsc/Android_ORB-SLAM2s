@@ -603,6 +603,11 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeUpdateResolution(JNIEnv* env, jobj
     frustumM_RUB(slamWidth, slamHeight, gScaledFx, gScaledFy,
                  gScaledCx, gScaledCy, 0.1, 1000, gCurrentProjectionMatrix);
 
+    // 动态同步更新SLAM核心模块内的焦距与投影内参，防止尺度不匹配引发跟踪丢失
+    if (slamSys) {
+        slamSys->UpdateCalibration(gScaledFx, gScaledFy, gScaledCx, gScaledCy);
+    }
+
     // LOGD("分辨率更新: 相机=%dx%d, SLAM=%dx%d, 内参: fx=%.1f fy=%.1f cx=%.1f cy=%.1f",
     //      cameraWidth, cameraHeight, slamWidth, slamHeight,
     //      gScaledFx, gScaledFy, gScaledCx, gScaledCy);

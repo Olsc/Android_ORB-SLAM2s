@@ -666,15 +666,16 @@ void LoopClosing::RequestReset()
         mbResetRequested = true;
     }
 
-    while(1)
-    {
-        {
-        unique_lock<mutex> lock2(mMutexReset);
-        if(!mbResetRequested)
-            break;
-        }
-        usleep(5000);
-    }
+    // 移除阻塞的自旋锁，让主线程立刻返回
+    // while(1)
+    // {
+    //     {
+    //     unique_lock<mutex> lock2(mMutexReset);
+    //     if(!mbResetRequested)
+    //         break;
+    //     }
+    //     usleep(5000);
+    // }
 }
 
 void LoopClosing::ResetIfRequested()

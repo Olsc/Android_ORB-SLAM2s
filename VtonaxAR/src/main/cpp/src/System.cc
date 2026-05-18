@@ -142,6 +142,12 @@ System::System(const std::string &strVocFile, const std::string &strSettingsFile
     mpLoopCloser->SetLocalMapper(mpLocalMapper);
 }
 
+void System::UpdateCalibration(float fx, float fy, float cx, float cy)
+{
+    if(mpTracker)
+        mpTracker->UpdateCalibration(fx, fy, cx, cy);
+}
+
 cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
 {
     VT_PROFILE_FUNCTION();

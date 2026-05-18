@@ -102,6 +102,16 @@ public:
     cv::Mat TrackMonocular(const cv::Mat &im, const double &timestamp);
 
     /**
+     * 动态更新相机内参（当分辨率改变时由JNI层调用）
+     * 
+     * @param fx x轴焦距
+     * @param fy y轴焦距
+     * @param cx x轴中心点
+     * @param cy y轴中心点
+     */
+    void UpdateCalibration(float fx, float fy, float cx, float cy);
+
+    /**
      * 激活纯定位模式
      * 停止局部建图线程，仅执行相机跟踪
      * 适用于已有完整地图、只需定位的场景

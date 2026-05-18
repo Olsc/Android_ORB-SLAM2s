@@ -726,15 +726,16 @@ void LocalMapping::RequestReset()
         mbAbortBA = true; // 立即中断正在进行的BA，确保Reset能被快速处理
     }
 
-    while(1)
-    {
-        {
-            unique_lock<mutex> lock2(mMutexReset);
-            if(!mbResetRequested)
-                break;
-        }
-        usleep(3000);
-    }
+    // 移除阻塞的自旋锁，让主线程立刻返回
+    // while(1)
+    // {
+    //     {
+    //         unique_lock<mutex> lock2(mMutexReset);
+    //         if(!mbResetRequested)
+    //             break;
+    //     }
+    //     usleep(3000);
+    // }
 }
 
 void LocalMapping::ResetIfRequested()

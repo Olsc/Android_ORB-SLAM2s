@@ -84,6 +84,7 @@ public:
     // 焦距应该相似，否则在投影点时尺度预测会失败
     // TODO: 修改MapPoint::PredictScale以考虑焦距
     void ChangeCalibration(const string &strSettingPath);
+    void UpdateCalibration(float fx, float fy, float cx, float cy);
 
     // 如果您已停用局部建图并且只想定位相机，请使用此函数。
     void InformOnlyTracking(const bool &flag);
@@ -208,7 +209,7 @@ protected:
     void CreateNewKeyFrame();
 
     // 与实时SLAM解耦的重型全局匹配循环
-    void GlobalRelocLoop();
+    void GlobalRelocLoop(int sessionId);
     // 从快照投影加载的地图点并绑定到当前帧
     void BindLoadedMapPointsUsingSnapshots();
 
@@ -277,6 +278,7 @@ protected:
     // 后台全局重定位状态
     std::thread* mptGlobalReloc = nullptr;
     std::atomic<bool> mbRelocThreadStop{false};
+    std::atomic<int> mRelocThreadSessionId{0};
     mutable std::mutex mMutexReloc;
     std::condition_variable mCvReloc; // 生命周期事件驱动的唤醒，避免使用延时
     cv::Mat mLastDesc; // 描述符快照
