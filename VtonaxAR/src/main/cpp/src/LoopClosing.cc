@@ -452,9 +452,8 @@ void LoopClosing::CorrectLoop()
     }
 
     // 等待局部建图线程有效停止
-    int nTimeOut = 5000;
     int nWaited = 0;
-    while(!mpLocalMapper->isStopped() && nWaited < nTimeOut)
+    while(!mpLocalMapper->isStopped() && nWaited < LOOP_LOCALMAPPER_TIMEOUT_MS)
     {
         usleep(1000);
         nWaited++;
@@ -464,7 +463,7 @@ void LoopClosing::CorrectLoop()
     {
         // 超时，中止 Sim3 校正
         mpLocalMapper->CancelStopRequest();
-        
+
         // 仔细检查它是否在我们取消时停止了
         if(mpLocalMapper->isStopped())
         {
@@ -665,17 +664,6 @@ void LoopClosing::RequestReset()
         unique_lock<mutex> lock(mMutexReset);
         mbResetRequested = true;
     }
-
-    // 移除阻塞的自旋锁，让主线程立刻返回
-    // while(1)
-    // {
-    //     {
-    //     unique_lock<mutex> lock2(mMutexReset);
-    //     if(!mbResetRequested)
-    //         break;
-    //     }
-    //     usleep(5000);
-    // }
 }
 
 void LoopClosing::ResetIfRequested()
@@ -711,15 +699,14 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
             // cout << "正在更新地图 ..." << endl;
             mpLocalMapper->RequestStop();
             // 等待局部建图线程有效停止
-            
-            int nTimeOut = 5000;
+
             int nWaited = 0;
-            while(!mpLocalMapper->isStopped() && !mpLocalMapper->isFinished() && nWaited < nTimeOut)
+            while(!mpLocalMapper->isStopped() && !mpLocalMapper->isFinished() && nWaited < LOOP_LOCALMAPPER_TIMEOUT_MS)
             {
                 usleep(1000);
                 nWaited++;
             }
-            
+
             if(!mpLocalMapper->isStopped() && !mpLocalMapper->isFinished())
             {
                  mpLocalMapper->CancelStopRequest();

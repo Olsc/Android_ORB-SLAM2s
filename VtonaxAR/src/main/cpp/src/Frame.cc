@@ -36,7 +36,6 @@
 #include "Converter.h"
 #include "ORBmatcher.h"
 #include <thread>
-#include <Utils.h>
 #include "Config.h"
 
 namespace ORB_SLAM2
@@ -89,8 +88,6 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
     mvLevelSigma2 = mpORBextractorLeft->GetScaleSigmaSquares();
     mvInvLevelSigma2 = mpORBextractorLeft->GetInverseScaleSigmaSquares();
 
-    // logTime();
-    recordTime();
     // ORB提取
     ExtractORB(0,imGray);
 

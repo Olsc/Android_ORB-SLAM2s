@@ -47,10 +47,6 @@
 
 #include <unistd.h>
 
-// 启用函数跟踪
-#define ENABLE_FUNCTION_TRACE
-#include "DebugUtils.h"
-
 // OpenCV 3/4 桌面向后兼容头文件 (解决 CvMat 和 CV_BGRA2GRAY 等遗留符号报错问题)
 #include <opencv2/core/core_c.h>
 #include <opencv2/core/types_c.h>

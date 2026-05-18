@@ -321,7 +321,32 @@ const int RELOC_MAX_CANDIDATES = 20;
 // 视图平滑插值系数
 const float VIEW_SMOOTH_ALPHA = 0.05f;
 
+// ==========================================
+// 系统运行时参数（原硬编码值集中管理）
+// ==========================================
 
+// SLAM工作帧率（用于时间戳累加，影响跟踪/建图节奏）
+const float SYSTEM_FPS = 30.0f;
+
+// 原始图像下采样缩放因子（输入图像缩放到此比例后送入SLAM）
+const float IMAGE_DOWNSCALE_FACTOR = 2.0f;
+
+// SLAM工作基准分辨率（用于内参按比例缩放）
+const float BASE_SLAM_WIDTH = 640.0f;
+const float BASE_SLAM_HEIGHT = 360.0f;
+
+// OpenGL投影裁剪面距离（近/远）
+const float PROJECTION_ZNEAR = 0.1f;
+const float PROJECTION_ZFAR = 1000.0f;
+
+// 等待LocalMapping/LoopClosing线程停止的超时时间（毫秒）
+const int LOOP_LOCALMAPPER_TIMEOUT_MS = 5000;
+
+// 创建新子地图的冷却时间（毫秒），防止频繁触发
+const int NEW_MAP_COOLDOWN_MS = 5000;
+
+// 平面检测RANSAC迭代次数
+const int PLANE_DETECT_RANSAC_ITERS = 50;
 
 }
 

@@ -1495,15 +1495,6 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
                         if(CurrentFrame.mvpMapPoints[i2]->Observations()>0)
                             continue;
 
-                    // 单目模式不需要双目约束检查
-                    // if(CurrentFrame.mvuRight[i2]>0)
-                    // {
-                    //     const float ur = u - CurrentFrame.mbf*invzc;
-                    //     const float er = fabs(ur - CurrentFrame.mvuRight[i2]);
-                    //     if(er>radius)
-                    //         continue;
-                    // }
-
                     const cv::Mat &d = CurrentFrame.mDescriptors.row(i2);
 
                     const int dist = DescriptorDistance(dMP,d);
@@ -1750,10 +1741,7 @@ void ORBmatcher::ComputeThreeMaxima(vector<int>* histo, const int L, int &ind1, 
 int ORBmatcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)
 {
     // 256 位 BRIEF 描述子 = 32 字节 = 4 × uint64_t。
-    // 使用 SWAR (SIMD Within A Register) 64 位 popcount，
-    //   - 不依赖 NEON / SSE，纯标量整数指令，对所有 ARMv7/ARMv8 CPU 兼容；
-    //   - 与 cv::norm(NORM_HAMMING) 结果完全位精确（已验证 1000+ 随机用例一致）；
-    //   - 单次调用约 4-8 ns（vs 之前 cv::norm 函数调用 50-80 ns）。
+    // 使用 SWAR (SIMD Within A Register) 64 位 popcount
     const uint8_t* pa = a.ptr<uint8_t>();
     const uint8_t* pb = b.ptr<uint8_t>();
 

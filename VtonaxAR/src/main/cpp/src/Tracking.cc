@@ -46,10 +46,10 @@
 #include "Optimizer.h"
 #include "PnPsolver.h"
 #include "Config.h"
+#include "Common.h"
 
 #include <iostream>
 #include <mutex>
-#include <Utils.h>
 #include <unistd.h>
 #include <future>
 #include <unordered_map>
@@ -1230,7 +1230,6 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
     else
         mCurrentFrame = Frame(mImGray,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf);
 
-    recordTime();
     Track();
 
     return mCurrentFrame.mTcw.clone();

@@ -207,8 +207,6 @@ struct Quaternion
     }
 };
 
-void quatRotateVector(const Quaternion& q, const float in[3], float out[3]);
-
 /**
  * 4x4矩阵乘法 (r = lhs * rhs)
  * @param r 结果矩阵（16个float）
@@ -336,14 +334,6 @@ void getRUBViewMatrixFromRDF(float inM[],float outM[]);
 void getRUBModelMatrixFromRDF(float inM[],float outM[]);
 
 /**
- * 从旋转矩阵提取欧拉角
- * @param M 输入旋转矩阵（16个float）
- * @param outM 输出欧拉角数组（roll, pitch, yaw，单位：度）
- * @param offset 输出数组的偏移量
- */
-void getEulerAnglesFromMatrix(float M[],float outM[],int offset);
-
-/**
  * 四元数转旋转矩阵
  * @param M 输出旋转矩阵（16个float）
  * @param q 输入四元数
@@ -356,31 +346,5 @@ void quaternionToMatrix(float M[],Quaternion &q);
  * @param q 输出四元数
  */
 void matrixToQuaternion(float M[],Quaternion &q);
-
-/**
- * 旋转矩阵转四元数（Unity3D风格）
- * 参考: http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/
- * @param M 输入旋转矩阵（16个float）
- * @param q 输出四元数
- */
-void quaternionU3DFromMatrix(float M[],Quaternion &q);
-
-/**
- * 准备AR对象的模型矩阵
- * 包含坐标系转换和平移缩放
- * @param inM 输入基础矩阵（16个float）
- * @param outM 输出模型矩阵（16个float）
- * @param size 对象缩放大小
- * @param x X轴偏移（默认0）
- * @param y Y轴偏移（默认0）
- * @param z Z轴偏移（默认0）
- */
-void prepareModelM(float inM[],float outM[],const float size, const float x=0, const float y=0, const float z=0);
-
-/**
- * 打印矩阵到日志（调试用）
- * @param f 要打印的矩阵（16个float）
- */
-void logMatrix(float f[]);
 
 #endif //ORB_SLAM2_AR_MATRIX_H
