@@ -1225,10 +1225,13 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
             cvtColor(mImGray,mImGray,CV_BGRA2GRAY);
     }
 
-    if(mState==NOT_INITIALIZED || mState==NO_IMAGES_YET)
-        mCurrentFrame = Frame(mImGray,timestamp,mpIniORBextractor,mpORBVocabulary,mK,mDistCoef,mbf);
-    else
-        mCurrentFrame = Frame(mImGray,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf);
+    {
+        VT_PROFILE_SCOPE("Tracking::FrameConstruction");
+        if(mState==NOT_INITIALIZED || mState==NO_IMAGES_YET)
+            mCurrentFrame = Frame(mImGray,timestamp,mpIniORBextractor,mpORBVocabulary,mK,mDistCoef,mbf);
+        else
+            mCurrentFrame = Frame(mImGray,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf);
+    }
 
     Track();
 
@@ -1246,6 +1249,7 @@ void Tracking::Track()
     mLastProcessedState=mState;
     if (mState == NOT_INITIALIZED)
     {
+        VT_PROFILE_SCOPE("Tracking::MonocularInitialization");
         // 仅支持单目初始化
         // 初始化过程会创建KF和MapPoint并写入地图，需短暂持锁
         {
@@ -1276,17 +1280,23 @@ void Tracking::Track()
 
                 if(mVelocity.empty() || mCurrentFrame.mnId<mnLastRelocFrameId+2)
                 {
+                    VT_PROFILE_SCOPE("Tracking::TrackReferenceKeyFrame");
                     bOK = TrackReferenceKeyFrame();
                 }
                 else
                 {
+                    VT_PROFILE_SCOPE("Tracking::TrackWithMotionModel");
                     bOK = TrackWithMotionModel();
                     if(!bOK)
+                    {
+                        VT_PROFILE_SCOPE("Tracking::TrackRefKF_Fallback");
                         bOK = TrackReferenceKeyFrame();
+                    }
                 }
             }
             else
             {
+                VT_PROFILE_SCOPE("Tracking::Relocalization");
                 bOK = Relocalization();
             }
         }
@@ -1364,14 +1374,20 @@ void Tracking::Track()
         if(!mbOnlyTracking)
         {
             if(bOK)
+            {
+                VT_PROFILE_SCOPE("Tracking::TrackLocalMap");
                 bOK = TrackLocalMap();
+            }
         }
         else
         {
             // mbVO 为 true 表示地图中很少有与地图点匹配的点。我们无法检索
             // 局部地图，因此不执行 TrackLocalMap()。一旦系统重新定位相机，我们将再次使用局部地图。
             if(bOK && !mbVO)
+            {
+                VT_PROFILE_SCOPE("Tracking::TrackLocalMap_VO");
                 bOK = TrackLocalMap();
+            }
         }
 
         if(bOK) {
@@ -1424,6 +1440,7 @@ void Tracking::Track()
             // 检查是否需要插入新关键帧
             if(NeedNewKeyFrame())
             {
+                VT_PROFILE_SCOPE("Tracking::CreateNewKeyFrame");
                 // CreateNewKeyFrame 修改地图结构，需短暂持锁
                 std::unique_lock<std::mutex> lock(mpMap->mMutexMapUpdate);
                 CreateNewKeyFrame();

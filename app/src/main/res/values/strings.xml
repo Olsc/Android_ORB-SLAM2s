@@ -80,14 +80,11 @@
     <string name="btn_web_server_open">Open Web Server</string>
     <string name="hint_web_server_closed">Web server closed</string>
 
-    <string name="btn_close_debug">Close Debug</string>
     <string name="btn_web_server">Web Server</string>
-    <string name="btn_debug">Debug</string>
 
     <string name="status_enabled">enabled</string>
     <string name="status_disabled">disabled</string>
 
-    <string name="title_system_logs">System Logs</string>
     <string name="title_web_server">Web Server</string>
     <string name="web_fps_label"> (Web)</string>
     <string name="hint_waiting_browser_frame">Waiting for browser image…</string>

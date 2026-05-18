@@ -81,14 +81,7 @@
     <string name="btn_web_server_open">开启Web端</string>
     <string name="hint_web_server_closed">Web服务已关闭</string>
 
-    <string name="btn_close_debug">关闭调试</string>
     <string name="btn_web_server">Web端</string>
-    <string name="btn_debug">调试</string>
-    <string name="status_enabled">已启用</string>
-    <string name="status_disabled">已关闭</string>
-
-    <string name="title_system_logs">系统日志</string>
-    <string name="title_web_server">Web服务器</string>
     <string name="web_fps_label"> (Web端)</string>
     <string name="hint_waiting_browser_frame">正在等待浏览器图像…</string>
     <string name="hint_web_server_started">Web服务器已启动: %1$s</string>

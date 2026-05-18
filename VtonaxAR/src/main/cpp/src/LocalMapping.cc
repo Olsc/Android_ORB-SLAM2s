@@ -88,17 +88,27 @@ void LocalMapping::Run()
         // 检查队列中是否有关键帧
         if(CheckNewKeyFrames())
         {
-            // BoW 转换并插入地图
-            ProcessNewKeyFrame();
+            {
+                VT_PROFILE_SCOPE("LocalMapping::ProcessNewKeyFrame");
+                // BoW 转换并插入地图
+                ProcessNewKeyFrame();
+            }
 
-            // 检查最近的地图点
-            MapPointCulling();
+            {
+                VT_PROFILE_SCOPE("LocalMapping::MapPointCulling");
+                // 检查最近的地图点
+                MapPointCulling();
+            }
 
-            // 三角化新的地图点
-            CreateNewMapPoints();
+            {
+                VT_PROFILE_SCOPE("LocalMapping::CreateNewMapPoints");
+                // 三角化新的地图点
+                CreateNewMapPoints();
+            }
 
             if(!CheckNewKeyFrames())
             {
+                VT_PROFILE_SCOPE("LocalMapping::SearchInNeighbors");
                 // 在邻近关键帧中寻找更多匹配并融合重复点
                 SearchInNeighbors();
             }
@@ -109,20 +119,33 @@ void LocalMapping::Run()
             {
                 // 局部 BA
                 if(mpMap->KeyFramesInMap()>2)
+                {
+                    VT_PROFILE_SCOPE("LocalMapping::LocalBundleAdjustment");
                     Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame,&mbAbortBA, mpMap);
+                }
 
-                // 检查冗余的局部关键帧
-                KeyFrameCulling();
-                
-                // 检查地图限制（统一管理）
-                CheckLimits();
+                {
+                    VT_PROFILE_SCOPE("LocalMapping::KeyFrameCulling");
+                    // 检查冗余的局部关键帧
+                    KeyFrameCulling();
+                }
+
+                {
+                    VT_PROFILE_SCOPE("LocalMapping::CheckLimits");
+                    // 检查地图限制（统一管理）
+                    CheckLimits();
+                }
             }
 
-            mpLoopCloser->InsertKeyFrame(mpCurrentKeyFrame);
+            {
+                VT_PROFILE_SCOPE("LocalMapping::InsertLoopKF");
+                mpLoopCloser->InsertKeyFrame(mpCurrentKeyFrame);
+            }
         }
         else if(Stop())
         {
             // 安全停止区域
+            VT_PROFILE_SCOPE("LocalMapping::Stopped");
             while(isStopped() && !CheckFinish())
             {
                 usleep(3000);
