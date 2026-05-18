@@ -19,6 +19,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LifecycleOwner;
 
+import com.orb.slam2s.compat.DeviceCompat_RokidGlass3;
 import com.orb.slam2s.constant.GlobalConstant;
 import com.orb.slam2s.rendering.gles.OrthoFilter;
 import com.orb.slam2s.utils.TextureUtils;
@@ -141,6 +142,10 @@ public class CameraGLView extends CameraGLViewBase {
                                         org.opencv.core.Core.rotate(rgbaMatCache, rgbaMatCache, org.opencv.core.Core.ROTATE_180);
                                         org.opencv.core.Core.rotate(grayMatCache, grayMatCache, org.opencv.core.Core.ROTATE_180);
                                     }
+
+                                    // 针对特定设备的兼容性处理
+                                    DeviceCompat_RokidGlass3.checkAndFlipFrame(rgbaMatCache);
+                                    DeviceCompat_RokidGlass3.checkAndFlipFrame(grayMatCache);
 
                                     deliverAndDrawFrame(new XCameraFrame(rgbaMatCache, grayMatCache));
                                 } catch (Throwable e) {
