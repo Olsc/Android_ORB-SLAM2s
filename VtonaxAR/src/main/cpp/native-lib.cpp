@@ -34,6 +34,9 @@ Plane* pPlane;
 bool planeLoadedFromMap = false;  // 标记平面是否从地图加载
 
 float fx, fy, cx, cy;
+float gBaseFx, gBaseFy, gBaseCx, gBaseCy;  // 基准内参 (640x360校准值)
+float gScaledFx, gScaledFy, gScaledCx, gScaledCy;  // 缩放后的内参
+int gCameraWidth = 0, gCameraHeight = 0;  // 相机实际输出分辨率
 double timeStamp;
 bool slamInited = false;
 
@@ -517,24 +520,97 @@ Java_com_orb_slam2s_slamar_NativeHelper_initSLAM(JNIEnv* env, jobject instance, 
     
     env->ReleaseStringUTFChars(path_, path);
     
-    // 从Config.h加载相机参数
+    // 从Config.h加载相机参数 (基准值: 640x360校准)
     fx = ORB_SLAM2::CAMERA_FX;
     fy = ORB_SLAM2::CAMERA_FY;
     cx = ORB_SLAM2::CAMERA_CX;
     cy = ORB_SLAM2::CAMERA_CY;
-    // LOGD("相机参数：fx=%.2f fy=%.2f cx=%.2f cy=%.2f", fx, fy, cx, cy);
-    
+    gBaseFx = fx;
+    gBaseFy = fy;
+    gBaseCx = cx;
+    gBaseCy = cy;
+
+    // 默认使用640x360 (初始未设置相机分辨率时)
+    gCameraWidth = 640;
+    gCameraHeight = 360;
+    gScaledFx = fx;
+    gScaledFy = fy;
+    gScaledCx = cx;
+    gScaledCy = cy;
+
     timeStamp = 0.0;
-    
-    // 预计算投影矩阵（相机内参固定，只需计算一次）
-    // 使用640x360分辨率（1280/2, 720/2 - 因为输入图像被缩放）
-    frustumM_RUB(640, 360, fx, fy, cx, cy, 0.1, 1000, gCurrentProjectionMatrix);
-    // LOGD("投影矩阵已预计算");
+
+    // 预计算投影矩阵（基于缩放后的内参）
+    frustumM_RUB(640, 360, gScaledFx, gScaledFy, gScaledCx, gScaledCy, 0.1, 1000, gCurrentProjectionMatrix);
     
     // 初始化分析器 (仅在开发模式下生效)
     VT_PROFILE_INITIALIZE(std::string(path) + "/vtonax_profile.bin");
     
     slamSys = new ORB_SLAM2::System(":embedded:", "", ORB_SLAM2::System::MONOCULAR);
+}
+
+/**
+ * 根据相机实际分辨率缩放内参
+ * 基准内参在640x360下标定，按比例缩放到当前工作分辨率
+ */
+void updateScaledIntrinsics(int cameraWidth, int cameraHeight) {
+    if (cameraWidth <= 0 || cameraHeight <= 0) return;
+
+    gCameraWidth = cameraWidth;
+    gCameraHeight = cameraHeight;
+
+    // 内部SLAM工作分辨率 = 相机分辨率的一半
+    int slamWidth = cameraWidth / 2;
+    int slamHeight = cameraHeight / 2;
+    if (slamWidth < 1) slamWidth = 1;
+    if (slamHeight < 1) slamHeight = 1;
+
+    // 基准工作分辨率 640x360
+    const float BASE_SLAM_W = 640.0f;
+    const float BASE_SLAM_H = 360.0f;
+
+    // 按比例缩放内参
+    float scaleX = (float)slamWidth / BASE_SLAM_W;
+    float scaleY = (float)slamHeight / BASE_SLAM_H;
+
+    gScaledFx = gBaseFx * scaleX;
+    gScaledFy = gBaseFy * scaleY;
+    gScaledCx = gBaseCx * scaleX;
+    gScaledCy = gBaseCy * scaleY;
+
+    // 更新当前使用的内参
+    fx = gScaledFx;
+    fy = gScaledFy;
+    cx = gScaledCx;
+    cy = gScaledCy;
+}
+
+/**
+ * JNI: 更新相机分辨率并重新计算内参和投影矩阵
+ * 在相机启动或屏幕旋转时由Java层调用
+ */
+JNIEXPORT void JNICALL
+Java_com_orb_slam2s_slamar_NativeHelper_nativeUpdateResolution(JNIEnv* env, jobject instance,
+                                                               jint cameraWidth, jint cameraHeight) {
+    updateScaledIntrinsics(cameraWidth, cameraHeight);
+
+    int slamWidth = cameraWidth / 2;
+    int slamHeight = cameraHeight / 2;
+    if (slamWidth < 1) slamWidth = 1;
+    if (slamHeight < 1) slamHeight = 1;
+
+    // 重新计算投影矩阵
+    frustumM_RUB(slamWidth, slamHeight, gScaledFx, gScaledFy,
+                 gScaledCx, gScaledCy, 0.1, 1000, gCurrentProjectionMatrix);
+
+    // 动态同步更新SLAM核心模块内的焦距与投影内参，防止尺度不匹配引发跟踪丢失
+    if (slamSys) {
+        slamSys->UpdateCalibration(gScaledFx, gScaledFy, gScaledCx, gScaledCy);
+    }
+
+    // LOGD("分辨率更新: 相机=%dx%d, SLAM=%dx%d, 内参: fx=%.1f fy=%.1f cx=%.1f cy=%.1f",
+    //      cameraWidth, cameraHeight, slamWidth, slamHeight,
+    //      gScaledFx, gScaledFy, gScaledCx, gScaledCy);
 }
 
 JNIEXPORT void JNICALL

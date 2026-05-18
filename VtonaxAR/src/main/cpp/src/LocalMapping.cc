@@ -585,7 +585,6 @@ bool LocalMapping::Stop()
     if(mbStopRequested && !mbNotStop)
     {
         mbStopped = true;
-        // cout << "局部建图停止 (Local Mapping STOP)" << endl;
         return true;
     }
 
@@ -615,8 +614,6 @@ void LocalMapping::Release()
     for(list<KeyFrame*>::iterator lit = mlNewKeyFrames.begin(), lend=mlNewKeyFrames.end(); lit!=lend; lit++)
         delete *lit;
     mlNewKeyFrames.clear();
-
-    // cout << "局部建图释放 (Local Mapping RELEASE)" << endl;
 }
 
 bool LocalMapping::AcceptKeyFrames()
@@ -729,15 +726,16 @@ void LocalMapping::RequestReset()
         mbAbortBA = true; // 立即中断正在进行的BA，确保Reset能被快速处理
     }
 
-    while(1)
-    {
-        {
-            unique_lock<mutex> lock2(mMutexReset);
-            if(!mbResetRequested)
-                break;
-        }
-        usleep(3000);
-    }
+    // 移除阻塞的自旋锁，让主线程立刻返回
+    // while(1)
+    // {
+    //     {
+    //         unique_lock<mutex> lock2(mMutexReset);
+    //         if(!mbResetRequested)
+    //             break;
+    //     }
+    //     usleep(3000);
+    // }
 }
 
 void LocalMapping::ResetIfRequested()

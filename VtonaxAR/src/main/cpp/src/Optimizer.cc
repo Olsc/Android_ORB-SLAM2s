@@ -772,7 +772,6 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
         // 检查ID是否在有效范围内
         if(nIDi > nMaxKFid)
         {
-            // cerr << "Error: KeyFrame ID " << nIDi << " exceeds max ID " << nMaxKFid << endl;
             delete VSim3;
             continue;
         }
@@ -824,7 +823,6 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
         // 边界检查
         if(nIDi > nMaxKFid)
         {
-            // cerr << "Warning: Loop edge KeyFrame ID " << nIDi << " exceeds max " << nMaxKFid << endl;
             continue;
         }
         
@@ -847,7 +845,6 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
             // 边界检查
             if(nIDj > nMaxKFid)
             {
-                // cerr << "Warning: Loop edge KeyFrame ID " << nIDj << " exceeds max " << nMaxKFid << endl;
                 continue;
             }
             
@@ -902,7 +899,6 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
         // 边界检查
         if(nIDi > nMaxKFid)
         {
-            // cerr << "Warning: Normal edge KeyFrame ID " << nIDi << " exceeds max " << nMaxKFid << endl;
             continue;
         }
 
@@ -925,7 +921,6 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
             // 边界检查
             if(nIDj > nMaxKFid)
             {
-                // cerr << "Warning: Parent KeyFrame ID " << nIDj << " exceeds max " << nMaxKFid << endl;
                 continue;
             }
 
@@ -984,7 +979,6 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
                 // 边界检查
                 if(pLKF->mnId > nMaxKFid)
                 {
-                    // cerr << "Warning: Loop KeyFrame ID " << pLKF->mnId << " exceeds max " << nMaxKFid << endl;
                     continue;
                 }
                 
@@ -1045,7 +1039,6 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
                     // 边界检查
                     if(pKFn->mnId > nMaxKFid)
                     {
-                        // cerr << "Warning: Covisibility KeyFrame ID " << pKFn->mnId << " exceeds max " << nMaxKFid << endl;
                         continue;
                     }
                     

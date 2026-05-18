@@ -122,21 +122,39 @@ public class OrientationSensor implements SensorEventListener {
     
     /**
      * 将传感器坐标系重映射为横屏坐标系
-     * 
+     *
      * 竖屏时传感器坐标系：X向右，Y向上，Z向外（屏幕朝向用户）
-     * 横屏（左横屏，手机逆时针旋转90度）时：
-     *   - 屏幕X轴 = 设备Y轴
-     *   - 屏幕Y轴 = 设备-X轴
+     * 根据当前显示旋转，选择正确的重映射方式：
+     * - 左横屏 (ROTATION_90) : AXIS_Y → 新X, AXIS_MINUS_X → 新Y
+     * - 右横屏 (ROTATION_270): AXIS_MINUS_Y → 新X, AXIS_X → 新Y
      */
     private void remapForLandscape() {
-        // 使用SensorManager的标准重映射方法
-        // AXIS_Y -> 新的X轴，AXIS_MINUS_X -> 新的Y轴
-        SensorManager.remapCoordinateSystem(
-            rawRotationMatrix,
-            SensorManager.AXIS_Y,        // 新X轴 = 旧Y轴
-            SensorManager.AXIS_MINUS_X,  // 新Y轴 = 旧-X轴
-            rotationMatrix
-        );
+        // 获取当前显示旋转
+        int displayRotation = android.view.Surface.ROTATION_90; // 默认左横屏
+        try {
+            // 通过静态方式获取当前旋转
+            displayRotation = com.orb.slam2s.constant.GlobalConstant.DISPLAY_ROTATION;
+        } catch (Exception e) {
+            // 默认左横屏
+        }
+
+        if (displayRotation == android.view.Surface.ROTATION_270) {
+            // 右横屏 (reverse landscape)
+            SensorManager.remapCoordinateSystem(
+                rawRotationMatrix,
+                SensorManager.AXIS_MINUS_Y,  // 新X轴 = 旧-Y轴
+                SensorManager.AXIS_X,        // 新Y轴 = 旧X轴
+                rotationMatrix
+            );
+        } else {
+            // 左横屏 (landscape, 默认)
+            SensorManager.remapCoordinateSystem(
+                rawRotationMatrix,
+                SensorManager.AXIS_Y,        // 新X轴 = 旧Y轴
+                SensorManager.AXIS_MINUS_X,  // 新Y轴 = 旧-X轴
+                rotationMatrix
+            );
+        }
     }
 
     @Override

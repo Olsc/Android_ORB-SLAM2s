@@ -664,7 +664,7 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
     SetRelocConfig(SYSTEM_RELOC_CONFIG_TOP_K, SYSTEM_RELOC_CONFIG_MAX_CANDIDATES, SYSTEM_RELOC_CONFIG_MATCH_CHUNK, SYSTEM_RELOC_CONFIG_BG_SLEEP_US, SYSTEM_RELOC_CONFIG_MAX_BIND_INLIERS, SYSTEM_RELOC_CONFIG_MAX_PROJ_BINDS);
 }
 
-void Tracking::GlobalRelocLoop()
+void Tracking::GlobalRelocLoop(int sessionId)
 {
     // 定期尝试使用2D-3D匹配+PnP将SLAM与加载的地图对齐
     mLastBgRunTime = std::chrono::steady_clock::now();
@@ -673,8 +673,8 @@ void Tracking::GlobalRelocLoop()
         // 等待事件：新快照或停止信号
         {
             std::unique_lock<std::mutex> lk(mMutexReloc);
-            mCvReloc.wait(lk, [this]{ return mbRelocThreadStop || mSnapSeqProduced!=mSnapSeqConsumed; });
-            if(mbRelocThreadStop) break;
+            mCvReloc.wait(lk, [this, sessionId]{ return mbRelocThreadStop || mRelocThreadSessionId.load() != sessionId || mSnapSeqProduced!=mSnapSeqConsumed; });
+            if(mbRelocThreadStop || mRelocThreadSessionId.load() != sessionId) break;
         }
         
 
@@ -710,7 +710,7 @@ void Tracking::GlobalRelocLoop()
             
             // 在内部重试循环中检查退出标志
             // 否则 Reset() 调用 StopGlobalRelocThread() 时，如果此处在死循环重试，主线程会卡死在 join()
-            if(mbRelocThreadStop) break;
+            if(mbRelocThreadStop || mRelocThreadSessionId.load() != sessionId) break;
             
             // 检查重retry次数，防止死循环
             if(mRefCacheRetryCount >= TRACKING_MAX_REF_CACHE_RETRIES) {
@@ -1116,7 +1116,8 @@ void Tracking::StartGlobalRelocThread()
     std::unique_lock<std::mutex> lk(mMutexReloc);
     if(mptGlobalReloc) return;
     mbRelocThreadStop = false;
-    mptGlobalReloc = new std::thread(&Tracking::GlobalRelocLoop, this);
+    mRelocThreadSessionId++;  // 递增会话ID，使旧线程安全退出
+    mptGlobalReloc = new std::thread(&Tracking::GlobalRelocLoop, this, mRelocThreadSessionId.load());
 }
 
 void Tracking::StopGlobalRelocThread()
@@ -1125,10 +1126,12 @@ void Tracking::StopGlobalRelocThread()
         std::unique_lock<std::mutex> lk(mMutexReloc);
         if(!mptGlobalReloc) return;
         mbRelocThreadStop = true;
+        mRelocThreadSessionId++;  // 递增会话ID，强制任何被分离的旧线程立即退出
     }
     if(mptGlobalReloc){
         mCvReloc.notify_all();
-        mptGlobalReloc->join();
+        // 替换 join() 为 detach()，避免主线程在此阻塞
+        mptGlobalReloc->detach();
         delete mptGlobalReloc;
         mptGlobalReloc = nullptr;
     }
@@ -1449,7 +1452,6 @@ void Tracking::Track()
             // 初始化后的前20帧内，即使丢失也不立即重置，给予重定位及加载点绑定的机会
             if(mpMap->KeyFramesInMap()<=5 && mCurrentFrame.mnId > mnLastKeyFrameId + 20)
             {
-                // cout << "初始化后不久丢失跟踪，正在重置..." << endl;
                 mpSystem->Reset();
                 return;
             }
@@ -1458,11 +1460,26 @@ void Tracking::Track()
             // 必须保证地图有足够关键帧，防止初始扫描阶段点云被意外清空
             if (mConsecutiveLostFrames > TRACKING_LOST_FRAMES_FOR_NEW_MAP && mpMap->KeyFramesInMap() > 10)
             {
-                // LOGD("跟踪: 丢失 %d 帧 (>%d)。正在创建新子地图。", 
-                //      mConsecutiveLostFrames, TRACKING_LOST_FRAMES_FOR_NEW_MAP);
-                mpSystem->CreateNewMap();
-                mConsecutiveLostFrames = 0;
-                return;
+                // 冷却保护：高性能机器丢失/找回切换极快，若不限频会反复触发 CreateNewMap，
+                // 每次都会阻塞主跟踪线程几十到几百毫秒（含 RequestReset、StopGlobalRelocThread::join 等），
+                // 导致整体扫描画面卡死。低性能机器因每帧间隔大反而不容易触发。
+                if (mLastNewMapFrameId > 0 &&
+                    mCurrentFrame.mnId < mLastNewMapFrameId + TRACKING_NEW_MAP_COOLDOWN_FRAMES)
+                {
+                    // 仍在冷却期内，不触发 CreateNewMap；让丢失计数继续累积，
+                    // 等本次相机视野稳定后或冷却结束后再做处理。
+                    LOGD("跟踪: 处于子地图冷却期 (距上次创建 %u 帧 < %d)，跳过 CreateNewMap",
+                         mCurrentFrame.mnId - mLastNewMapFrameId, TRACKING_NEW_MAP_COOLDOWN_FRAMES);
+                }
+                else
+                {
+                    // LOGD("跟踪: 丢失 %d 帧 (>%d)。正在创建新子地图。",
+                    //      mConsecutiveLostFrames, TRACKING_LOST_FRAMES_FOR_NEW_MAP);
+                    mpSystem->CreateNewMap();
+                    mLastNewMapFrameId = mCurrentFrame.mnId;
+                    mConsecutiveLostFrames = 0;
+                    return;
+                }
             }
         }
 
@@ -1704,7 +1721,6 @@ void Tracking::CreateInitialMapMonocular()
 
     if(medianDepth<0 || pKFcur->TrackedMapPoints(1)<100)
     {
-        // cout << "初始化错误，正在重置..." << endl; // 错误初始化，重置...
         Reset();
         return;
     }
@@ -2855,7 +2871,7 @@ bool Tracking::Relocalization()
 
 
     // 限制最大候选数量，防止计算量过大导致卡死
-    const int MAX_RELOC_CANDIDATES = 25;
+    const int MAX_RELOC_CANDIDATES = 3;
     if(nKFs > MAX_RELOC_CANDIDATES) {
         // 简单截断，因为候选帧通常按BoW分数排序
         const_cast<int&>(nKFs) = MAX_RELOC_CANDIDATES; 
@@ -3024,24 +3040,11 @@ bool Tracking::Relocalization()
 
 void Tracking::Reset()
 {
-
-    // cout << "系统重置中" << endl;
     LOGD("跟踪::重置 地图=%p", (void*)mpMap);
 
-    // Reset Local Mapping
-    // cout << "重置局部建图...";
     mpLocalMapper->RequestReset();
-    // cout << " 完成" << endl;
-
-    // Reset Loop Closing
-    // cout << "重置回环闭合...";
     mpLoopClosing->RequestReset();
-    // cout << " 完成" << endl;
-
-    // Clear BoW Database
-    // cout << "重置数据库...";
     mpKeyFrameDB->clear();
-    // cout << " 完成" << endl;
 
     // 在清除地图之前停止后台重定位线程，以避免MapPoint互斥锁上的竞争
     StopGlobalRelocThread();
@@ -3237,6 +3240,100 @@ void Tracking::ClearTrackingState()
     LOGD("跟踪::清除跟踪状态: 运行时状态已清除，地图点已保留");
 }
 
+void Tracking::PrepareForNewMap()
+{
+    // 仅清除运行时状态：
+    //   - 不调用 RequestReset(LocalMapping/LoopClosing) —— 由 System::CreateNewMap 的外层流程统一管理；
+    //   - 不调用 mpMap->clear() —— 旧地图已切换走，新地图本来就是空的；
+    //   - 不调用 StopGlobalRelocThread() —— 由外层先停后调用本函数，避免重复 join。
+    // 设计目标：让本函数在主跟踪线程上下文中执行的耗时控制在毫秒级，
+    // 杜绝高频丢失场景下主跟踪线程被反复阻塞数十~数百毫秒导致的"画面卡死"。
+    LOGD("跟踪::PrepareForNewMap (轻量切图，仅清运行时状态)");
+
+    mState = NO_IMAGES_YET;
+    mpLastKeyFrame = nullptr;
+    mpReferenceKF = nullptr;
+    mvpLocalKeyFrames.clear();
+    mvpLocalMapPoints.clear();
+    mlRelativeFramePoses.clear();
+    mlpReferences.clear();
+    mlFrameTimes.clear();
+    mlbLost.clear();
+    mConsecutiveLostFrames = 0;
+    mConsecutiveFail = 0;
+    mnLastRelocFrameId = 0;
+    mLastInitAttemptTime = 0.0;
+    mlpTemporalPoints.clear();
+    mVelocity = cv::Mat();
+
+    if (mpInitializer)
+    {
+        delete mpInitializer;
+        mpInitializer = static_cast<Initializer*>(NULL);
+    }
+
+    mTrackingOK.store(false);
+    mLastTrackingInliers.store(0);
+    mRelocMatchScore.store(0.0f);
+    mRelocCooldownFrames = 30;  // 给一段冷却，避免立即触发重定位匹配到错误区域
+    mRefCacheRetryCount = 0;
+}
+
+void Tracking::ClearRelocCacheForMapSwitch()
+{
+    // 仅清空与"加载/旧地图"相关的重定位缓存与对齐状态。
+    // 不释放 Map、不停后台线程、不接触 mlNewKeyFrames 等队列。
+    // 调用语义：先 StopGlobalRelocThread()，再 ClearRelocCacheForMapSwitch()，
+    //           再 SwitchToMap()，最后 PrepareForNewMap() + StartGlobalRelocThread()。
+    LOGD("跟踪::ClearRelocCacheForMapSwitch (仅清重定位缓存)");
+
+    {
+        std::unique_lock<std::mutex> lk(mMutexReloc);
+
+        mRefDesc.release();
+        mRefIdxToMP.clear();
+        mRefSnapshots.clear();
+        mRefInverted.clear();
+        mRefGrid.Clear();
+        mRefCachedMPCount = 0;
+        mRefLastBuildTs = 0.0;
+
+        mLastDesc.release();
+        mLastKeysUn.clear();
+        mLastN = 0;
+        mLastTimestamp = 0.0;
+        mLastTcwSlam.release();
+        mSnapSeqProduced.store(0ULL);
+        mSnapSeqConsumed.store(0ULL);
+
+        mbHaveMapAlign = false;
+        mAlignConfidence = 0.0f;
+        mLastAlignTs = 0.0;
+        mT_map_from_slam.release();
+        mSmoothedT_map_from_slam.release();
+        mAlignUpdateCount = 0;
+        mAlignSkipCounter = 0;
+    }
+
+    {
+        std::unique_lock<std::mutex> lk(mMutexRelocBuf);
+        mRelocBuf.T_map_from_slam.release();
+        mRelocBuf.inliers = 0;
+        mRelocBuf.confidence = 0.0f;
+        mRelocBuf.ts = 0.0;
+        mRelocSeqProduced = 0ULL;
+        mRelocSeqConsumed = 0ULL;
+    }
+
+    mPendingMapId = -1;
+    mPendingMapCount = 0;
+    mPendingAlign = RelocAlignResult();
+    mPendingT_map_from_slam.release();
+    mPendingConfidence = 0.0f;
+    mPendingInliers = 0;
+    mLastAcceptedAlignInliers = 0;
+}
+
 void Tracking::ClearRelocCache()
 {
     LOGD("跟踪::清除重定位缓存: 仅清除重定位相关缓存，保持跟踪状态");
@@ -3317,6 +3414,26 @@ void Tracking::ChangeCalibration(const string &strSettingPath)
 
     mbf = 0; // bf 参数在单目相机中不使用
 
+    Frame::mbInitialComputations = true;
+}
+
+void Tracking::UpdateCalibration(float fx, float fy, float cx, float cy)
+{
+    std::unique_lock<std::mutex> lock(mMutexReloc);
+    mK.at<float>(0,0) = fx;
+    mK.at<float>(1,1) = fy;
+    mK.at<float>(0,2) = cx;
+    mK.at<float>(1,2) = cy;
+    
+    // 如果当前帧已实例化，更新其持有的内参K的副本
+    if(!mCurrentFrame.mK.empty()) {
+        mCurrentFrame.mK.at<float>(0,0) = fx;
+        mCurrentFrame.mK.at<float>(1,1) = fy;
+        mCurrentFrame.mK.at<float>(0,2) = cx;
+        mCurrentFrame.mK.at<float>(1,2) = cy;
+    }
+    
+    // 将静态初始计算标志设为true，强制下一帧的构造函数重新计算invfx, invfy, cx, cy以及网格宽高
     Frame::mbInitialComputations = true;
 }
 

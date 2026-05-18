@@ -84,6 +84,7 @@ public:
     // 焦距应该相似，否则在投影点时尺度预测会失败
     // TODO: 修改MapPoint::PredictScale以考虑焦距
     void ChangeCalibration(const string &strSettingPath);
+    void UpdateCalibration(float fx, float fy, float cx, float cy);
 
     // 如果您已停用局部建图并且只想定位相机，请使用此函数。
     void InformOnlyTracking(const bool &flag);
@@ -171,6 +172,16 @@ public:
     // 仅清除跟踪状态而不清除地图
     void ClearTrackingState();
 
+    // 在创建新子地图前调用：仅清除跟踪线程内部运行时状态，
+    // 不调用 RequestReset 链、不停止后台线程、不清空 mpMap。
+    // 设计目的：避免 System::CreateNewMap 被高频触发时反复阻塞主跟踪线程几十~几百毫秒。
+    void PrepareForNewMap();
+
+    // 在 SwitchToMap 切换地图前调用：仅清空与旧地图相关的重定位/对齐缓存，
+    // 不清空地图本身、不重启后台线程。需在 StopGlobalRelocThread() 之后、
+    // SwitchToMap 之前调用，确保后台线程不会再访问旧 Map 的 MapPoint*。
+    void ClearRelocCacheForMapSwitch();
+
 protected:
 
     // 主跟踪函数。它与输入传感器无关。
@@ -198,7 +209,7 @@ protected:
     void CreateNewKeyFrame();
 
     // 与实时SLAM解耦的重型全局匹配循环
-    void GlobalRelocLoop();
+    void GlobalRelocLoop(int sessionId);
     // 从快照投影加载的地图点并绑定到当前帧
     void BindLoadedMapPointsUsingSnapshots();
 
@@ -267,6 +278,7 @@ protected:
     // 后台全局重定位状态
     std::thread* mptGlobalReloc = nullptr;
     std::atomic<bool> mbRelocThreadStop{false};
+    std::atomic<int> mRelocThreadSessionId{0};
     mutable std::mutex mMutexReloc;
     std::condition_variable mCvReloc; // 生命周期事件驱动的唤醒，避免使用延时
     cv::Mat mLastDesc; // 描述符快照
@@ -380,6 +392,10 @@ protected:
     // 重试计数器，防止GlobalRelocLoop死循环
     int mRefCacheRetryCount = 0;
     static constexpr int MAX_REF_CACHE_RETRIES = 10;
+
+    // 最近一次成功触发 CreateNewMap 时的当前帧 id，用于做冷却限频。
+    // 配合 TRACKING_NEW_MAP_COOLDOWN_FRAMES 使用，避免高频丢失导致连续触发新建子地图。
+    unsigned int mLastNewMapFrameId = 0;
 };
 
 } //namespace ORB_SLAM2

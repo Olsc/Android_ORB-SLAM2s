@@ -24,6 +24,7 @@
 #ifndef ORB_SLAM2_AR_COMMON_H
 #define ORB_SLAM2_AR_COMMON_H
 
+#ifdef ANDROID
 #include <android/log.h>
 
 // Android日志标签
@@ -35,11 +36,24 @@
 #define LOGW(...)  __android_log_print(ANDROID_LOG_WARN,LOG_TAG, __VA_ARGS__)   // 警告日志
 #define LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG, __VA_ARGS__)  // 错误日志
 #define LOGF(...)  __android_log_print(ANDROID_LOG_FATAL,LOG_TAG, __VA_ARGS__)  // 致命错误日志
+#else
+#include <stdio.h>
+#define LOGI(...) do { printf("[INFO] "); printf(__VA_ARGS__); printf("\n"); } while(0)
+#define LOGD(...) do { printf("[DEBUG] "); printf(__VA_ARGS__); printf("\n"); } while(0)
+#define LOGW(...) do { printf("[WARN] "); printf(__VA_ARGS__); printf("\n"); } while(0)
+#define LOGE(...) do { fprintf(stderr, "[ERROR] "); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); } while(0)
+#define LOGF(...) do { fprintf(stderr, "[FATAL] "); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); } while(0)
+#endif
 
 #include <unistd.h>
 
 // 启用函数跟踪
 #define ENABLE_FUNCTION_TRACE
 #include "DebugUtils.h"
+
+// OpenCV 3/4 桌面向后兼容头文件 (解决 CvMat 和 CV_BGRA2GRAY 等遗留符号报错问题)
+#include <opencv2/core/core_c.h>
+#include <opencv2/core/types_c.h>
+#include <opencv2/imgproc/imgproc_c.h>
 
 #endif //ORB_SLAM2_AR_COMMON_H

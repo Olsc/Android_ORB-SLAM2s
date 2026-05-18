@@ -125,6 +125,19 @@ public class NativeHelper {
     // 本地方法：初始化SLAM
     public native void initSLAM(String path);
 
+    // 本地方法：更新相机分辨率并重新计算内参
+    public native void nativeUpdateResolution(int cameraWidth, int cameraHeight);
+
+    /**
+     * 通知native层相机分辨率已更新
+     * 在相机启动或旋转变化时调用
+     */
+    public void updateResolution(int width, int height) {
+        if (width > 0 && height > 0) {
+            nativeUpdateResolution(width, height);
+        }
+    }
+
     // 本地方法：保存/加载地图
     public native void saveMap(String path);
     public native void loadMap(String path);

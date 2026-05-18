@@ -37,6 +37,8 @@
 
 #include<string>
 #include<thread>
+#include<mutex>
+#include<chrono>
 #include<opencv2/core/core.hpp>
 
 #include "Tracking.h"
@@ -98,6 +100,16 @@ public:
      * @return 相机位姿矩阵Tcw（世界到相机的变换），跟踪失败时返回空矩阵
      */
     cv::Mat TrackMonocular(const cv::Mat &im, const double &timestamp);
+
+    /**
+     * 动态更新相机内参（当分辨率改变时由JNI层调用）
+     * 
+     * @param fx x轴焦距
+     * @param fy y轴焦距
+     * @param cx x轴中心点
+     * @param cy y轴中心点
+     */
+    void UpdateCalibration(float fx, float fy, float cx, float cy);
 
     /**
      * 激活纯定位模式
@@ -309,6 +321,10 @@ private:
     std::vector<MapPoint*> mTrackedMapPoints;
     std::vector<cv::KeyPoint> mTrackedKeyPointsUn;
     std::mutex mMutexState;
+
+    // CreateNewMap 限频保护：防止高性能机器上频繁丢失导致连续触发新建子地图
+    std::mutex mMutexNewMap;
+    std::chrono::steady_clock::time_point mLastNewMapTime;
 
         const bool USE_BINARY=true;
 };

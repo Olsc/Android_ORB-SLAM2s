@@ -53,23 +53,12 @@ namespace ORB_SLAM2
 System::System(const std::string &strVocFile, const std::string &strSettingsFile, const eSensor sensor):mSensor(sensor),  mbReset(false),mbResetKeepMap(false),mbActivateLocalizationMode(false),
         mbDeactivateLocalizationMode(false)
 {
-    // 输出欢迎消息-此处虽注释掉但要保留！
+        // 输出欢迎消息-此处虽注释掉但要保留！
         // std::cout << std::endl <<
         // "ORB-SLAM2 Copyright (C) 2014-2016 Raul Mur-Artal, University of Zaragoza." << std::endl <<
         // "This program comes with ABSOLUTELY NO WARRANTY;" << std::endl  <<
         // "This is free software, and you are welcome to redistribute it" << std::endl <<
         // "under certain conditions. See LICENSE.txt." << std::endl << std::endl;
-
-    // std::cout << "输入传感器设置为: ";
-
-    if(mSensor==MONOCULAR)
-        // std::cout << "单目" << std::endl;
-        ;
-    else
-    {
-        // std::cerr << "错误：不支持的传感器类型" << std::endl;
-        exit(-1);
-    }
 
     // 检测是否使用嵌入资源（strVocFile为":embedded:"时）
     bool useEmbedded = (strVocFile == ":embedded:");
@@ -102,22 +91,18 @@ System::System(const std::string &strVocFile, const std::string &strSettingsFile
             LOGD("嵌入词汇表大小：%zu", vocSize);
             bVocLoad = mpVocabulary->loadFromMemoryBin(vocData, vocSize);
         } else {
-            // std::cerr << "无法获取嵌入的词汇表资源" << std::endl;
+            LOGE("无法获取嵌入的词汇表资源");
             exit(-1);
         }
     } else {
-        // 传统方式：从文件加载
         if(USE_BINARY) bVocLoad=mpVocabulary->loadFromBinFile(strVocFile+".arm.bin");
         else
             bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
     }
 
-    //mpVocabulary->saveToBinFile(strVocFile+".arm.bin");
-    //mpVocabulary->saveToTextFile(strVocFile+".min.txt");
     if(!bVocLoad)
     {
-        // std::cerr << "词汇表路径错误。 " << std::endl;
-        // std::cerr << "无法打开: " << strVocFile << std::endl;
+        LOGE("词汇表加载失败: %s", strVocFile.c_str());
         exit(-1);
     }
     LOGD("词汇表加载完成！");
@@ -157,13 +142,19 @@ System::System(const std::string &strVocFile, const std::string &strSettingsFile
     mpLoopCloser->SetLocalMapper(mpLocalMapper);
 }
 
+void System::UpdateCalibration(float fx, float fy, float cx, float cy)
+{
+    if(mpTracker)
+        mpTracker->UpdateCalibration(fx, fy, cx, cy);
+}
+
 cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
 {
     VT_PROFILE_FUNCTION();
     recordTime();
     if(mSensor!=MONOCULAR)
     {
-        // std::cerr << "错误：您调用了TrackMonocular但输入传感器未设置为单目。" << std::endl;
+        LOGE("TrackMonocular: 传感器未设置为单目");
         exit(-1);
     }
 
@@ -193,17 +184,17 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
 
     // 检查重置
     {
-    std::unique_lock<std::mutex> lock(mMutexReset);
-    if(mbReset)
-    {
-        if(mbResetKeepMap) {
-            mpTracker->ClearTrackingState();  // 只清除跟踪状态，保留地图
-        } else {
-            mpTracker->Reset();  // 完全重置
+        std::unique_lock<std::mutex> lock(mMutexReset);
+        if(mbReset)
+        {
+            if(mbResetKeepMap) {
+                mpTracker->ClearTrackingState();
+            } else {
+                mpTracker->Reset();
+            }
+            mbReset = false;
+            mbResetKeepMap = false;
         }
-        mbReset = false;
-        mbResetKeepMap = false;
-    }
     }
 
     /////////////
@@ -268,14 +259,8 @@ void System::Shutdown()
 
 void System::SaveKeyFrameTrajectoryTUM(const std::string &filename)
 {
-    // std::cout << std::endl << "Saving keyframe trajectory to " << filename << " ..." << std::endl;
-
     std::vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();
     std::sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);
-
-    // 变换所有关键帧，使第一个关键帧位于原点。
-    // 闭环后，第一个关键帧可能不在原点。
-    //cv::Mat Two = vpKFs[0]->GetPoseInverse();
 
     std::ofstream f;
     f.open(filename.c_str());
@@ -285,8 +270,6 @@ void System::SaveKeyFrameTrajectoryTUM(const std::string &filename)
     {
         KeyFrame* pKF = vpKFs[i];
 
-       // pKF->SetPose(pKF->GetPose()*Two);
-
         if(pKF->isBad())
             continue;
 
@@ -295,11 +278,9 @@ void System::SaveKeyFrameTrajectoryTUM(const std::string &filename)
         cv::Mat t = pKF->GetCameraCenter();
         f << std::setprecision(6) << pKF->mTimeStamp << std::setprecision(7) << " " << t.at<float>(0) << " " << t.at<float>(1) << " " << t.at<float>(2)
           << " " << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << std::endl;
-
     }
 
     f.close();
-    // std::cout << std::endl << "trajectory saved!" << std::endl;
 }
 
 int System::GetTrackingState()
@@ -343,31 +324,101 @@ bool System::HasLoadedMap()
 
 void System::CreateNewMap()
 {
-    // 暂停LocalMapping接受新关键帧
-    if(mpLocalMapper)
+    // ===== 限频保护 =====
+    // 高性能机器上每帧间隔短（10–20 ms），若频繁在丢失/找回之间切换，会连续触发 CreateNewMap。
+    // 旧实现调用 mpTracker->Reset()，内部含 RequestReset(LocalMapper)、RequestReset(LoopCloser)、
+    // StopGlobalRelocThread::join 等阻塞操作，每次可阻塞主跟踪线程 50–800 ms，导致画面卡死。
+    // 低性能机器每帧间隔大，触发频率低，反而不容易卡死 —— 典型的"频率倒置"问题。
+    // 此处加 5 秒冷却期，与 Tracking.cc 中的帧计数冷却形成双保险。
     {
+        std::unique_lock<std::mutex> lock(mMutexNewMap);
+        auto now = std::chrono::steady_clock::now();
+        if (mLastNewMapTime.time_since_epoch().count() != 0) {
+            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - mLastNewMapTime).count();
+            if (elapsed < 5000) {
+                LOGD("System::CreateNewMap 距上次仅 %lld ms (< 5000 ms)，跳过以防抖动",
+                     (long long)elapsed);
+                return;
+            }
+        }
+        mLastNewMapTime = now;
+    }
+
+    LOGD("System::CreateNewMap 开始创建新子地图");
+
+    // ===== 1. 暂停 LocalMapping/LoopClosing 接收新数据 =====
+    if (mpLocalMapper) {
         mpLocalMapper->SetAcceptKeyFrames(false);
         mpLocalMapper->InterruptBA();
         mpLocalMapper->ClearQueues();
     }
 
-    // 创建新地图
+    // 清空 LoopClosing 的回环关键帧队列。这些 KF 属于旧 Map，
+    // 若在切到新空 Map 后被 LoopClosing 处理，会留下陈旧状态（对空 Map 做 CorrectLoop）。
+    // 与 RequestReset 不同：ClearQueue 不阻塞等待，耗时 O(1)。
+    if (mpLoopCloser) {
+        mpLoopCloser->ClearQueue();
+    }
+
+    // ===== 2. 停止后台重定位线程 =====
+    // 必须在 SwitchToMap 前停掉，防止后台线程在切 Map 期间访问到悬空的 MapPoint*。
+    // StopGlobalRelocThread 内部先设停止标志 → notify_all 唤醒 → join 等待退出。
+    if (mpTracker) {
+        mpTracker->StopGlobalRelocThread();
+    }
+
+    // ===== 3. 清空与旧 Map 绑定的重定位/对齐缓存 =====
+    // 此时后台线程已停止，无竞争。不清 Map 本身，旧 Map 继续保留在 mvpMaps 中。
+    if (mpTracker) {
+        mpTracker->ClearRelocCacheForMapSwitch();
+    }
+
+    // ===== 4. 创建新 Map 并切换 =====
+    // 限制子地图总数，超出时删除最旧的地图（id=0 的初始地图不删）
+    if ((int)mvpMaps.size() >= MAX_SUBMAP_COUNT) {
+        // 找出最旧的非 id=0 地图并释放
+        for (size_t i = 1; i < mvpMaps.size(); ++i) {
+            if (mvpMaps[i] && mvpMaps[i] != mpMap) {
+                LOGD("System::CreateNewMap 子地图数=%zu 达上限=%d，释放旧地图 id=%lu",
+                     mvpMaps.size(), MAX_SUBMAP_COUNT, mvpMaps[i]->mnId);
+                Map* pOldMap = mvpMaps[i];
+                mvpMaps.erase(mvpMaps.begin() + i);
+                delete pOldMap;
+                break;
+            }
+        }
+    }
+
     Map* pNewMap = new Map();
     pNewMap->mnId = mvpMaps.size();
     mvpMaps.push_back(pNewMap);
-    
-    LOGD("系统: 创建新地图 ID: %lu", pNewMap->mnId);
 
-    // 切换所有模块到新地图
+    LOGD("System::CreateNewMap 新地图 ID=%lu (旧地图保留为子地图，共 %zu 个)",
+         pNewMap->mnId, mvpMaps.size());
+
     SwitchToMap(pNewMap);
-    
-    // 重置跟踪状态（进入初始化模式）
-    if(mpTracker)
-        mpTracker->Reset();
-    
-    // 恢复LocalMapping
-    if(mpLocalMapper)
+
+    // ===== 5. 轻量重置跟踪运行时状态 =====
+    // 使用 PrepareForNewMap 而非 Reset()：
+    //   - 不调 RequestReset(LocalMapper/LoopCloser) → 不阻塞等 spin
+    //   - 不调 mpMap->clear()               → 新 Map 本就是空的，旧 Map 不碰
+    //   - 不调 StopGlobalRelocThread         → 已在上方停止
+    // 全程耗时 < 1 ms，杜绝高频创建子地图时主线程被阻塞数十~数百毫秒。
+    if (mpTracker) {
+        mpTracker->PrepareForNewMap();
+    }
+
+    // ===== 6. 重启后台重定位线程 =====
+    if (mpTracker) {
+        mpTracker->StartGlobalRelocThread();
+    }
+
+    // ===== 7. 恢复 LocalMapping =====
+    if (mpLocalMapper) {
         mpLocalMapper->SetAcceptKeyFrames(true);
+    }
+
+    LOGD("System::CreateNewMap 完成");
 }
 
 void System::SwitchToMap(Map* pMap)
