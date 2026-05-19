@@ -73,10 +73,10 @@
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <vector>
-#include <Utils.h>
 
 #include "ORBextractor.h"
 #include "Config.h"
+#include "Common.h"
 #include "VtonaxProfiler.h" // 性能分析器
 
 
@@ -663,11 +663,15 @@ vector<cv::KeyPoint> ORBextractor::DistributeOctTree(const vector<cv::KeyPoint>&
         vpIniNodes[i] = &lNodes.back();
     }
 
-    // 将点关联到子节点
+    // 将点关联到子节点 (使用乘法代替除法优化性能)
+    const float inv_hX = 1.0f / hX;
     for(size_t i=0;i<vToDistributeKeys.size();i++)
     {
         const cv::KeyPoint &kp = vToDistributeKeys[i];
-        vpIniNodes[kp.pt.x/hX]->vKeys.push_back(kp);
+        int idx = (int)(kp.pt.x * inv_hX);
+        if(idx >= nIni) idx = nIni - 1;
+        if(idx < 0) idx = 0;
+        vpIniNodes[idx]->vKeys.push_back(kp);
     }
 
     list<ExtractorNode>::iterator lit = lNodes.begin();
@@ -868,88 +872,94 @@ void ORBextractor::ComputeKeyPointsOctTree(vector<vector<KeyPoint> >& allKeypoin
 
     const float W = 30;
 
-    for (int level = 0; level < nlevels; ++level)
-    {
-        const int minBorderX = ORB_EDGE_THRESHOLD-3;
-        const int minBorderY = minBorderX;
-        const int maxBorderX = mvImagePyramid[level].cols-ORB_EDGE_THRESHOLD+3;
-        const int maxBorderY = mvImagePyramid[level].rows-ORB_EDGE_THRESHOLD+3;
-
-        vector<cv::KeyPoint> vToDistributeKeys;
-        vToDistributeKeys.reserve(nfeatures*10);
-
-        const float width = (maxBorderX-minBorderX);
-        const float height = (maxBorderY-minBorderY);
-
-        const int nCols = width/W;
-        const int nRows = height/W;
-        const int wCell = ceil(width/nCols);
-        const int hCell = ceil(height/nRows);
-
-        for(int i=0; i<nRows; i++)
+    // 使用 OpenCV parallel_for_ 进行多层级并行的特征提取
+    cv::parallel_for_(cv::Range(0, nlevels), [&](const cv::Range& range) {
+        for (int level = range.start; level < range.end; ++level)
         {
-            const float iniY =minBorderY+i*hCell;
-            float maxY = iniY+hCell+6;
+            const int minBorderX = ORB_EDGE_THRESHOLD-3;
+            const int minBorderY = minBorderX;
+            const int maxBorderX = mvImagePyramid[level].cols-ORB_EDGE_THRESHOLD+3;
+            const int maxBorderY = mvImagePyramid[level].rows-ORB_EDGE_THRESHOLD+3;
 
-            if(iniY>=maxBorderY-3)
-                continue;
-            if(maxY>maxBorderY)
-                maxY = maxBorderY;
+            vector<cv::KeyPoint> vToDistributeKeys;
+            vToDistributeKeys.reserve(nfeatures*10);
 
-            for(int j=0; j<nCols; j++)
+            const float width = (maxBorderX-minBorderX);
+            const float height = (maxBorderY-minBorderY);
+
+            const int nCols = width/W;
+            const int nRows = height/W;
+            const int wCell = ceil(width/nCols);
+            const int hCell = ceil(height/nRows);
+
+            for(int i=0; i<nRows; i++)
             {
-                const float iniX =minBorderX+j*wCell;
-                float maxX = iniX+wCell+6;
-                if(iniX>=maxBorderX-6)
+                const float iniY =minBorderY+i*hCell;
+                float maxY = iniY+hCell+6;
+
+                if(iniY>=maxBorderY-3)
                     continue;
-                if(maxX>maxBorderX)
-                    maxX = maxBorderX;
+                if(maxY>maxBorderY)
+                    maxY = maxBorderY;
 
-                vector<cv::KeyPoint> vKeysCell;
-                FAST(mvImagePyramid[level].rowRange(iniY,maxY).colRange(iniX,maxX),
-                     vKeysCell,iniThFAST,true);
-
-                if(vKeysCell.empty())
+                for(int j=0; j<nCols; j++)
                 {
+                    const float iniX =minBorderX+j*wCell;
+                    float maxX = iniX+wCell+6;
+                    if(iniX>=maxBorderX-6)
+                        continue;
+                    if(maxX>maxBorderX)
+                        maxX = maxBorderX;
+
+                    vector<cv::KeyPoint> vKeysCell;
                     FAST(mvImagePyramid[level].rowRange(iniY,maxY).colRange(iniX,maxX),
-                         vKeysCell,minThFAST,true);
-                }
+                         vKeysCell,iniThFAST,true);
 
-                if(!vKeysCell.empty())
-                {
-                    for(vector<cv::KeyPoint>::iterator vit=vKeysCell.begin(); vit!=vKeysCell.end();vit++)
+                    if(vKeysCell.empty())
                     {
-                        (*vit).pt.x+=j*wCell;
-                        (*vit).pt.y+=i*hCell;
-                        vToDistributeKeys.push_back(*vit);
+                        FAST(mvImagePyramid[level].rowRange(iniY,maxY).colRange(iniX,maxX),
+                             vKeysCell,minThFAST,true);
+                    }
+
+                    if(!vKeysCell.empty())
+                    {
+                        for(vector<cv::KeyPoint>::iterator vit=vKeysCell.begin(); vit!=vKeysCell.end();vit++)
+                        {
+                            (*vit).pt.x+=j*wCell;
+                            (*vit).pt.y+=i*hCell;
+                            vToDistributeKeys.push_back(*vit);
+                        }
                     }
                 }
+            }
 
+            vector<KeyPoint> & keypoints = allKeypoints[level];
+            keypoints.reserve(nfeatures);
+
+            keypoints = DistributeOctTree(vToDistributeKeys, minBorderX, maxBorderX,
+                                          minBorderY, maxBorderY,mnFeaturesPerLevel[level], level);
+
+            const int scaledPatchSize = ORB_PATCH_SIZE*mvScaleFactor[level];
+
+            // 添加边界到坐标和缩放信息
+            const int nkps = keypoints.size();
+            for(int i=0; i<nkps ; i++)
+            {
+                keypoints[i].pt.x+=minBorderX;
+                keypoints[i].pt.y+=minBorderY;
+                keypoints[i].octave=level;
+                keypoints[i].size = scaledPatchSize;
             }
         }
+    });
 
-        vector<KeyPoint> & keypoints = allKeypoints[level];
-        keypoints.reserve(nfeatures);
-
-        keypoints = DistributeOctTree(vToDistributeKeys, minBorderX, maxBorderX,
-                                      minBorderY, maxBorderY,mnFeaturesPerLevel[level], level);
-
-        const int scaledPatchSize = ORB_PATCH_SIZE*mvScaleFactor[level];
-
-        // 添加边界到坐标和缩放信息
-        const int nkps = keypoints.size();
-        for(int i=0; i<nkps ; i++)
+    // 多层级并行的计算特征点方向
+    cv::parallel_for_(cv::Range(0, nlevels), [&](const cv::Range& range) {
+        for (int level = range.start; level < range.end; ++level)
         {
-            keypoints[i].pt.x+=minBorderX;
-            keypoints[i].pt.y+=minBorderY;
-            keypoints[i].octave=level;
-            keypoints[i].size = scaledPatchSize;
+            computeOrientation(mvImagePyramid[level], allKeypoints[level], umax);
         }
-    }
-
-    // 计算方向
-    for (int level = 0; level < nlevels; ++level)
-        computeOrientation(mvImagePyramid[level], allKeypoints[level], umax);
+    });
 }
 
 static void computeDescriptors(const Mat& image, vector<KeyPoint>& keypoints, Mat& descriptors,
@@ -993,38 +1003,55 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
         descriptors = _descriptors.getMat();
     }
 
+    // 预计算每层特征点在输出描述子矩阵中的起始偏移量，以便多线程安全地并行写入
+    vector<int> levelOffsets(nlevels, 0);
+    int sum = 0;
+    for (int level = 0; level < nlevels; ++level)
+    {
+        levelOffsets[level] = sum;
+        sum += (int)allKeypoints[level].size();
+    }
+
+    // 使用 OpenCV parallel_for_ 对每一层的模糊和描述子计算进行并行化
+    cv::parallel_for_(cv::Range(0, nlevels), [&](const cv::Range& range) {
+        for (int level = range.start; level < range.end; ++level)
+        {
+            vector<KeyPoint>& keypoints = allKeypoints[level];
+            int nkeypointsLevel = (int)keypoints.size();
+
+            if(nkeypointsLevel==0)
+                continue;
+
+            // 在当前金字塔层级图像上做高斯模糊，用于描述子计算
+            Mat workingMat = mvImagePyramid[level];
+            GaussianBlur(workingMat, workingMat, Size(7, 7), 2, 2, BORDER_REFLECT_101);
+
+            // 计算描述符
+            int offset = levelOffsets[level];
+            Mat desc = descriptors.rowRange(offset, offset + nkeypointsLevel);
+            computeDescriptors(workingMat, keypoints, desc, pattern);
+
+            // 缩放关键点坐标
+            if (level != 0)
+            {
+                float scale = mvScaleFactor[level];
+                for (vector<KeyPoint>::iterator keypoint = keypoints.begin(),
+                     keypointEnd = keypoints.end(); keypoint != keypointEnd; ++keypoint)
+                    keypoint->pt *= scale;
+            }
+        }
+    });
+
+    // 顺序地将结果收集并插入到主关键点向量中
     _keypoints.clear();
     _keypoints.reserve(nkeypoints);
-
-    int offset = 0;
     for (int level = 0; level < nlevels; ++level)
     {
         vector<KeyPoint>& keypoints = allKeypoints[level];
-        int nkeypointsLevel = (int)keypoints.size();
-
-        if(nkeypointsLevel==0)
-            continue;
-
-        // 在当前金字塔层级图像上做高斯模糊，用于描述子计算
-        Mat workingMat = mvImagePyramid[level];
-        GaussianBlur(workingMat, workingMat, Size(7, 7), 2, 2, BORDER_REFLECT_101);
-
-        // 计算描述符
-        Mat desc = descriptors.rowRange(offset, offset + nkeypointsLevel);
-        computeDescriptors(workingMat, keypoints, desc, pattern);
-
-        offset += nkeypointsLevel;
-
-        // 缩放关键点坐标
-        if (level != 0)
+        if(!keypoints.empty())
         {
-            float scale = mvScaleFactor[level]; //getScale(level, firstLevel, scaleFactor);
-            for (vector<KeyPoint>::iterator keypoint = keypoints.begin(),
-                 keypointEnd = keypoints.end(); keypoint != keypointEnd; ++keypoint)
-                keypoint->pt *= scale;
+            _keypoints.insert(_keypoints.end(), keypoints.begin(), keypoints.end());
         }
-        // 并将关键点添加到输出
-        _keypoints.insert(_keypoints.end(), keypoints.begin(), keypoints.end());
     }
 }
 

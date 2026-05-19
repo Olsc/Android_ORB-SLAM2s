@@ -893,14 +893,19 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
 {
     cv::Mat Rcw = pKF->GetRotation();
     cv::Mat tcw = pKF->GetTranslation();
+    cv::Mat Ow = pKF->GetCameraCenter();
 
     const float &fx = pKF->fx;
     const float &fy = pKF->fy;
     const float &cx = pKF->cx;
     const float &cy = pKF->cy;
-    const float &bf = pKF->mbf;
 
-    cv::Mat Ow = pKF->GetCameraCenter();
+    // 预先提取位姿与相机中心的标量值，在循环中以 O(1) 免锁且免分配执行 3D 变换
+    const float R00 = Rcw.at<float>(0,0), R01 = Rcw.at<float>(0,1), R02 = Rcw.at<float>(0,2);
+    const float R10 = Rcw.at<float>(1,0), R11 = Rcw.at<float>(1,1), R12 = Rcw.at<float>(1,2);
+    const float R20 = Rcw.at<float>(2,0), R21 = Rcw.at<float>(2,1), R22 = Rcw.at<float>(2,2);
+    const float tx = tcw.at<float>(0), ty = tcw.at<float>(1), tz = tcw.at<float>(2);
+    const float Ox = Ow.at<float>(0), Oy = Ow.at<float>(1), Oz = Ow.at<float>(2);
 
     int nFused=0;
 
@@ -916,16 +921,22 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
         if(pMP->isBad() || pMP->IsInKeyFrame(pKF))
             continue;
 
-        cv::Mat p3Dw = pMP->GetWorldPos();
-        cv::Mat p3Dc = Rcw*p3Dw + tcw;
+        // 使用栈分配的 Point3f 替代 cv::Mat 获取 3D 坐标，消除堆分配
+        cv::Point3f p3Dw;
+        pMP->GetWorldPos(p3Dw);
+
+        // 标量级 3D 旋转与平移变换，替代 cv::Mat 矩阵乘法
+        const float p3DcX = R00*p3Dw.x + R01*p3Dw.y + R02*p3Dw.z + tx;
+        const float p3DcY = R10*p3Dw.x + R11*p3Dw.y + R12*p3Dw.z + ty;
+        const float p3DcZ = R20*p3Dw.x + R21*p3Dw.y + R22*p3Dw.z + tz;
 
         // 深度必须为正
-        if(p3Dc.at<float>(2)<0.0f)
+        if(p3DcZ<0.0f)
             continue;
 
-        const float invz = 1/p3Dc.at<float>(2);
-        const float x = p3Dc.at<float>(0)*invz;
-        const float y = p3Dc.at<float>(1)*invz;
+        const float invz = 1.0f/p3DcZ;
+        const float x = p3DcX*invz;
+        const float y = p3DcY*invz;
 
         const float u = fx*x+cx;
         const float v = fy*y+cy;
@@ -934,17 +945,16 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
         if(!pKF->IsInImage(u,v))
             continue;
 
-        const float ur = u-bf*invz;
-
         const float maxDistance = pMP->GetMaxDistanceInvariance();
         const float minDistance = pMP->GetMinDistanceInvariance();
-        cv::Mat PO = p3Dw-Ow;
+        
+        // PO = p3Dw - Ow (使用纯标量减法)
+        const float POx = p3Dw.x - Ox;
+        const float POy = p3Dw.y - Oy;
+        const float POz = p3Dw.z - Oz;
         
         // 使用平方距离进行快速范围检查
-        const float dx = PO.at<float>(0);
-        const float dy = PO.at<float>(1);
-        const float dz = PO.at<float>(2);
-        const float dist3DSq = dx*dx + dy*dy + dz*dz;
+        const float dist3DSq = POx*POx + POy*POy + POz*POz;
         const float maxDistSq = maxDistance * maxDistance;
         const float minDistSq = minDistance * minDistance;
 
@@ -955,10 +965,13 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
         // 只在需要时计算实际距离
         const float dist3D = sqrt(dist3DSq);
 
-        // 观察角度必须小于60度
-        cv::Mat Pn = pMP->GetNormal();
+        // 使用栈分配的 Point3f 替代 cv::Mat 获取法向量
+        cv::Point3f Pn;
+        pMP->GetNormal(Pn);
 
-        if(PO.dot(Pn)<0.5*dist3D)
+        // 使用纯标量点乘
+        const float dotProd = POx*Pn.x + POy*Pn.y + POz*Pn.z;
+        if(dotProd < 0.5f*dist3D)
             continue;
 
         int nPredictedLevel = pMP->PredictScale(dist3D,pKF);
@@ -1495,15 +1508,6 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
                         if(CurrentFrame.mvpMapPoints[i2]->Observations()>0)
                             continue;
 
-                    // 单目模式不需要双目约束检查
-                    // if(CurrentFrame.mvuRight[i2]>0)
-                    // {
-                    //     const float ur = u - CurrentFrame.mbf*invzc;
-                    //     const float er = fabs(ur - CurrentFrame.mvuRight[i2]);
-                    //     if(er>radius)
-                    //         continue;
-                    // }
-
                     const cv::Mat &d = CurrentFrame.mDescriptors.row(i2);
 
                     const int dist = DescriptorDistance(dMP,d);
@@ -1747,28 +1751,42 @@ void ORBmatcher::ComputeThreeMaxima(vector<int>* histo, const int L, int &ind1, 
 
 // 位集计数操作来自
 // http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
+// 此方案适合更新的现代处理器
 int ORBmatcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)
 {
-    // 256 位 BRIEF 描述子 = 32 字节 = 4 × uint64_t。
-    // 使用 SWAR (SIMD Within A Register) 64 位 popcount，
-    //   - 不依赖 NEON / SSE，纯标量整数指令，对所有 ARMv7/ARMv8 CPU 兼容；
-    //   - 与 cv::norm(NORM_HAMMING) 结果完全位精确（已验证 1000+ 随机用例一致）；
-    //   - 单次调用约 4-8 ns（vs 之前 cv::norm 函数调用 50-80 ns）。
     const uint8_t* pa = a.ptr<uint8_t>();
     const uint8_t* pb = b.ptr<uint8_t>();
 
-    int dist = 0;
-    for (int k = 0; k < 4; ++k) {
-        uint64_t va, vb;
-        std::memcpy(&va, pa + k * 8, 8);
-        std::memcpy(&vb, pb + k * 8, 8);
-        uint64_t v = va ^ vb;
-        v = v - ((v >> 1) & 0x5555555555555555ULL);
-        v = (v & 0x3333333333333333ULL) + ((v >> 2) & 0x3333333333333333ULL);
-        v = (v + (v >> 4)) & 0x0F0F0F0F0F0F0F0FULL;
-        dist += (int)((v * 0x0101010101010101ULL) >> 56);
-    }
-    return dist;
+    uint64_t va[4], vb[4];
+    std::memcpy(va, pa, 32);
+    std::memcpy(vb, pb, 32);
+
+    return __builtin_popcountll(va[0] ^ vb[0]) +
+           __builtin_popcountll(va[1] ^ vb[1]) +
+           __builtin_popcountll(va[2] ^ vb[2]) +
+           __builtin_popcountll(va[3] ^ vb[3]);
 }
+
+// // 预留一个兼容性更好的方案
+// int ORBmatcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)
+// {
+//     // 256 位 BRIEF 描述子 = 32 字节 = 4 × uint64_t。
+//     // 使用 SWAR (SIMD Within A Register) 64 位 popcount
+//     const uint8_t* pa = a.ptr<uint8_t>();
+//     const uint8_t* pb = b.ptr<uint8_t>();
+
+//     int dist = 0;
+//     for (int k = 0; k < 4; ++k) {
+//         uint64_t va, vb;
+//         std::memcpy(&va, pa + k * 8, 8);
+//         std::memcpy(&vb, pb + k * 8, 8);
+//         uint64_t v = va ^ vb;
+//         v = v - ((v >> 1) & 0x5555555555555555ULL);
+//         v = (v & 0x3333333333333333ULL) + ((v >> 2) & 0x3333333333333333ULL);
+//         v = (v + (v >> 4)) & 0x0F0F0F0F0F0F0F0FULL;
+//         dist += (int)((v * 0x0101010101010101ULL) >> 56);
+//     }
+//     return dist;
+// }
 
 } //namespace ORB_SLAM2

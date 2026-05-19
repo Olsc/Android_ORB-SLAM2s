@@ -43,8 +43,6 @@ import org.opencv.core.Mat;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.activity.OnBackPressedCallback;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.MultiFormatWriter;
@@ -85,16 +83,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
     private androidx.appcompat.app.AlertDialog loadingDialog;
     private boolean slamInitialized = false;
 
-    // 调试界面相关
-    private View floatingLogWindow;
-    private RecyclerView logRecyclerView;
-    private LogAdapter logAdapter;
-    private Button btnToggleDebug;
-    private LogCatReaderThread logCatThread;
-    private boolean isDebugMode = false;
-
     // 拖动相关变量
-    private float dX, dY;
     private float qrDX, qrDY;
 
     // Web Server 相关 UI
@@ -329,73 +318,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
                 @Override
                 public void onClick(View v) {
                     togglePointCloudDisplay();
-                }
-            });
-        }
-
-        // 调试按钮与浮动窗口初始化
-        floatingLogWindow = findViewById(R.id.floating_log_window);
-        logRecyclerView = findViewById(R.id.log_recycler_view);
-        View logHeader = findViewById(R.id.log_window_header);
-        View btnCloseLogs = findViewById(R.id.btn_close_logs);
-        View btnClearLogs = findViewById(R.id.btn_clear_logs);
-
-        if (logRecyclerView != null) {
-            logRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-            logAdapter = new LogAdapter();
-            logRecyclerView.setAdapter(logAdapter);
-        }
-
-        if (btnCloseLogs != null) {
-            btnCloseLogs.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    toggleDebugMode();
-                }
-            });
-        }
-
-        if (btnClearLogs != null) {
-            btnClearLogs.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (logAdapter != null)
-                        logAdapter.clear();
-                }
-            });
-        }
-
-        // 实现拖动功能
-        if (logHeader != null && floatingLogWindow != null) {
-            logHeader.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View view, MotionEvent event) {
-                    switch (event.getAction()) {
-                        case MotionEvent.ACTION_DOWN:
-                            dX = floatingLogWindow.getX() - event.getRawX();
-                            dY = floatingLogWindow.getY() - event.getRawY();
-                            break;
-                        case MotionEvent.ACTION_MOVE:
-                            floatingLogWindow.animate()
-                                    .x(event.getRawX() + dX)
-                                    .y(event.getRawY() + dY)
-                                    .setDuration(0)
-                                    .start();
-                            break;
-                        default:
-                            return false;
-                    }
-                    return true;
-                }
-            });
-        }
-
-        btnToggleDebug = findViewById(R.id.btn_toggle_debug);
-        if (btnToggleDebug != null) {
-            btnToggleDebug.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    toggleDebugMode();
                 }
             });
         }
@@ -1122,105 +1044,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
 
         } else {
             Log.e(TAG, "无法切换点云显示：NativeHelper为null");
-        }
-    }
-
-    // 切换调试模式
-    private void toggleDebugMode() {
-        isDebugMode = !isDebugMode;
-        if (isDebugMode) {
-            if (floatingLogWindow != null)
-                floatingLogWindow.setVisibility(View.VISIBLE);
-            if (btnToggleDebug != null)
-                btnToggleDebug.setText(getString(R.string.btn_close_debug));
-            startLogCatReader();
-        } else {
-            if (floatingLogWindow != null)
-                floatingLogWindow.setVisibility(View.GONE);
-            if (btnToggleDebug != null)
-                btnToggleDebug.setText(getString(R.string.btn_debug));
-            stopLogCatReader();
-        }
-    }
-
-    private void startLogCatReader() {
-        if (logCatThread == null) {
-            logCatThread = new LogCatReaderThread();
-            logCatThread.start();
-        }
-    }
-
-    private void stopLogCatReader() {
-        if (logCatThread != null) {
-            logCatThread.stopReading();
-            logCatThread = null;
-        }
-    }
-
-    // 内部类：读取LogCat日志
-    private class LogCatReaderThread extends Thread {
-        private volatile boolean running = true;
-        private Process logProcess;
-        private java.io.BufferedReader reader;
-        private final int myPid = android.os.Process.myPid();
-        private final String pidStr = String.valueOf(myPid);
-
-        @Override
-        public void run() {
-            try {
-                // 清除之前的日志
-                Runtime.getRuntime().exec("logcat -c");
-
-                // 读取当前进程的日志
-                // 尝试根据 PID 过滤以减少开销，但为了兼容性保留 Java 层过滤
-                String cmd = "logcat -v time";
-                logProcess = Runtime.getRuntime().exec(cmd);
-                reader = new java.io.BufferedReader(new java.io.InputStreamReader(logProcess.getInputStream()));
-
-                String line;
-                while (running && (line = reader.readLine()) != null) {
-                    if (!running)
-                        break;
-
-                    final String finalLine = line;
-                    // 检查是否包含当前 PID，确保不过滤掉关键信息
-                    // 许多设备上的 logcat -v time 输出格式为: MM-DD HH:MM:SS.mmm L/Tag(PID): Msg
-                    // 因此检查 "(PID)" 或 " PID " 更加准确，但简单的 contains 也通常足够
-                    if (finalLine.contains(pidStr)) {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                updateLogView(finalLine);
-                            }
-                        });
-                    }
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "读取日志发生异常", e);
-            } finally {
-                if (logProcess != null)
-                    logProcess.destroy();
-            }
-        }
-
-        public void stopReading() {
-            running = false;
-            if (logProcess != null)
-                logProcess.destroy();
-            interrupt();
-        }
-    }
-
-    // 预编译正则模式，避免重复编译
-    // 匹配 logcat -v time 的时间戳头部: "12-16 14:14:36.123 "
-    // 格式: MM-DD HH:MM:SS.mmm (可能后面有空格)
-    private static final java.util.regex.Pattern LOG_HEAD_PATTERN = java.util.regex.Pattern
-            .compile("^\\d{2}-\\d{2}\\s+\\d{2}:\\d{2}:\\d{2}\\.\\d{3}\\s+");
-
-    // 更新日志视图
-    private void updateLogView(String line) {
-        if (logAdapter != null) {
-            logAdapter.addLog(line);
         }
     }
 

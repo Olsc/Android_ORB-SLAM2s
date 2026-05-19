@@ -44,8 +44,8 @@ void drawTrackedPoints(const std::vector<cv::KeyPoint> &vKeys, const std::vector
  */
 Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &vMPs, const int iterations)
 {
-    // 提取3D点：仅保留观测次数>5的稳定地图点
-    vector<cv::Mat> vPoints;
+    // 提取3D点：仅保留观测次数>5的稳定地图点 (使用栈分配和零拷贝接口，彻底消除堆开销)
+    vector<cv::Point3f> vPoints;
     vPoints.reserve(vMPs.size());
     vector<ORB_SLAM2::MapPoint*> vPointMP;
     vPointMP.reserve(vMPs.size());
@@ -57,7 +57,9 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
         {
             if(pMP->Observations()>5)  // 过滤观测次数少的不稳定点
             {
-                vPoints.push_back(pMP->GetWorldPos());
+                cv::Point3f Pw;
+                pMP->GetWorldPos(Pw);
+                vPoints.push_back(Pw);
                 vPointMP.push_back(pMP);
             }
         }
@@ -97,7 +99,9 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
 
             int idx = vAvailableIndices[randi];
 
-            A.row(i).colRange(0,3) = vPoints[idx].t();
+            A.at<float>(i,0) = vPoints[idx].x;
+            A.at<float>(i,1) = vPoints[idx].y;
+            A.at<float>(i,2) = vPoints[idx].z;
 
             // 移除已选点，避免重复
             vAvailableIndices[randi] = vAvailableIndices.back();
@@ -120,7 +124,7 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
         // 计算所有点到平面的距离
         for(int i=0; i<N; i++)
         {
-            vDistances[i] = fabs(vPoints[i].at<float>(0)*a+vPoints[i].at<float>(1)*b+vPoints[i].at<float>(2)*c+d)*f;
+            vDistances[i] = fabs(vPoints[i].x*a + vPoints[i].y*b + vPoints[i].z*c + d)*f;
         }
 
         // 对距离排序，计算中值距离（取前20%的点的边界值）
@@ -241,14 +245,13 @@ void drawAllMapPoints(const cv::Mat &Tcw, const std::vector<ORB_SLAM2::MapPoint*
         if(drawOnlyLoaded && !pMP->mbFromLoadedMap)
             continue;
         
-        // 获取3D世界坐标
-        cv::Mat Pw = pMP->GetWorldPos();
-        if(Pw.empty() || Pw.rows != 3)
-            continue;
+        // 获取3D世界坐标 (使用栈分配和零拷贝接口，彻底消除堆开销)
+        cv::Point3f Pw;
+        pMP->GetWorldPos(Pw);
         
-        const float Xw = Pw.at<float>(0);
-        const float Yw = Pw.at<float>(1);
-        const float Zw = Pw.at<float>(2);
+        const float Xw = Pw.x;
+        const float Yw = Pw.y;
+        const float Zw = Pw.z;
         
         // 世界坐标转相机坐标（手动矩阵乘法，避免OpenCV函数调用开销）
         const float Xc = R11*Xw + R12*Yw + R13*Zw + tx;

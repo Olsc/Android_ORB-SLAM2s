@@ -8,8 +8,8 @@
  */
 
 #include "Plane.h"
-#include "UIUtils.h"
 #include "Matrix.h"
+#include "UIUtils.h"
 
 /**
  * SO(3)李代数的指数映射
@@ -99,16 +99,6 @@ Plane::Plane(const float& nx, const float& ny, const float& nz,
     // 转换为OpenGL格式的列主序矩阵
     setIdentityM(glTpw);
     getColMajorMatrixFromMat(glTpw, Tpw);
-}
-
-/**
- * 转置旋转矩阵的3x3部分（未使用）
- */
-void transposeR(float R[])
-{
-    std::swap(R[1], R[4]);
-    std::swap(R[2], R[8]);
-    std::swap(R[6], R[9]);
 }
 
 /**

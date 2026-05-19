@@ -411,12 +411,6 @@ void getRUBModelMatrixFromRDF(float inM[],float outM[]){
 }
 
 
-void getEulerAnglesFromMatrix(float M[],float outM[],int offset){
-    outM[offset+0] =180.0f/PI*atan2(M[1], M[5]);
-    outM[offset+1] =180.0f/PI*asin(-M[9]);
-    outM[offset+2] =180.0f/PI*atan2(-M[8], M[10]);
-}
-
 void quaternionToMatrix(float M[],Quaternion &q){
     float m00;
     float m10;
@@ -517,53 +511,3 @@ inline float sign(float f){
     return 1.0f;
 }
 
-void quaternionU3DFromMatrix(float M[],Quaternion &q)
-{
-    // 改编自: http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/index.htm
-    float m00=M[0],m10=M[1],m20=M[2];
-    float m01=M[4],m11=M[5],m21=M[6];
-    float m02=M[8],m12=M[9],m22=M[10];
-    q.w = sqrt(std::max(0.0f, 1 + m00 + m11 + m22)) / 2;
-    q.x = sqrt(std::max(0.0f, 1 + m00 - m11 - m22)) / 2;
-    q.y = sqrt(std::max(0.0f, 1 - m00 + m11 - m22)) / 2;
-    q.z = sqrt(std::max(0.0f, 1 - m00 - m11 + m22)) / 2;
-    q.x *= sign(q.x * (m21 - m12));
-    q.y *= sign(q.y * (m02 - m20));
-    q.z *= sign(q.z * (m10 - m01));
-}
-
-void prepareModelM(float inM[],float outM[],const float size, const float x, const float y, const float z){
-    float M[16],tmpM[16];
-    setIdentityM(M);
-    rotateM(tmpM,M,180,1,0,0);
-    tmpM[12] = -x;
-    tmpM[13] = -size-y;
-    tmpM[14] = -z;
-    multiplyMM(outM,inM,tmpM);
-}
-
-void logMatrix(float f[]){
-    LOGD("矩阵为:");
-    std::string str;
-    char buf[255];
-    for(int i=0;i<4;i++){
-        str="";
-        for(int j=i;j<16;j+=4){
-            sprintf(buf," %.3lf ",f[j]);
-            str+=buf;
-        }
-        LOGD("%s",str.c_str());
-    }
-}
-
-void quatRotateVector(const Quaternion &q, const float in[3], float out[3]){
-    float ux=q.x, uy=q.y, uz=q.z, s=q.w;
-    float dot_u_u = ux*ux + uy*uy + uz*uz;
-    float dot_u_v = ux*in[0] + uy*in[1] + uz*in[2];
-    float cx = uy*in[2] - uz*in[1];
-    float cy = uz*in[0] - ux*in[2];
-    float cz = ux*in[1] - uy*in[0];
-    out[0] = 2.0f*dot_u_v*ux + (s*s - dot_u_u)*in[0] + 2.0f*s*cx;
-    out[1] = 2.0f*dot_u_v*uy + (s*s - dot_u_u)*in[1] + 2.0f*s*cy;
-    out[2] = 2.0f*dot_u_v*uz + (s*s - dot_u_u)*in[2] + 2.0f*s*cz;
-}

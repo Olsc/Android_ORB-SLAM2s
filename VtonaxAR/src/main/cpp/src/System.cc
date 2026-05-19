@@ -44,7 +44,6 @@
 #include <thread>
 #include <iomanip>
 #include <sstream>
-#include <Utils.h>
 #include "VtonaxProfiler.h" // 性能分析器
 
 namespace ORB_SLAM2
@@ -151,7 +150,6 @@ void System::UpdateCalibration(float fx, float fy, float cx, float cy)
 cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
 {
     VT_PROFILE_FUNCTION();
-    recordTime();
     if(mSensor!=MONOCULAR)
     {
         LOGE("TrackMonocular: 传感器未设置为单目");
@@ -335,8 +333,8 @@ void System::CreateNewMap()
         auto now = std::chrono::steady_clock::now();
         if (mLastNewMapTime.time_since_epoch().count() != 0) {
             auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - mLastNewMapTime).count();
-            if (elapsed < 5000) {
-                LOGD("System::CreateNewMap 距上次仅 %lld ms (< 5000 ms)，跳过以防抖动",
+            if (elapsed < NEW_MAP_COOLDOWN_MS) {
+                LOGD("System::CreateNewMap 距上次仅 %lld ms (< %d ms)，跳过以防抖动", NEW_MAP_COOLDOWN_MS,
                      (long long)elapsed);
                 return;
             }

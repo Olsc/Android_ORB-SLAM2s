@@ -46,10 +46,10 @@
 #include "Optimizer.h"
 #include "PnPsolver.h"
 #include "Config.h"
+#include "Common.h"
 
 #include <iostream>
 #include <mutex>
-#include <Utils.h>
 #include <unistd.h>
 #include <future>
 #include <unordered_map>
@@ -1225,12 +1225,14 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
             cvtColor(mImGray,mImGray,CV_BGRA2GRAY);
     }
 
-    if(mState==NOT_INITIALIZED || mState==NO_IMAGES_YET)
-        mCurrentFrame = Frame(mImGray,timestamp,mpIniORBextractor,mpORBVocabulary,mK,mDistCoef,mbf);
-    else
-        mCurrentFrame = Frame(mImGray,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf);
+    {
+        VT_PROFILE_SCOPE("Tracking::FrameConstruction");
+        if(mState==NOT_INITIALIZED || mState==NO_IMAGES_YET)
+            mCurrentFrame = Frame(mImGray,timestamp,mpIniORBextractor,mpORBVocabulary,mK,mDistCoef,mbf);
+        else
+            mCurrentFrame = Frame(mImGray,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf);
+    }
 
-    recordTime();
     Track();
 
     return mCurrentFrame.mTcw.clone();
@@ -1247,6 +1249,7 @@ void Tracking::Track()
     mLastProcessedState=mState;
     if (mState == NOT_INITIALIZED)
     {
+        VT_PROFILE_SCOPE("Tracking::MonocularInitialization");
         // 仅支持单目初始化
         // 初始化过程会创建KF和MapPoint并写入地图，需短暂持锁
         {
@@ -1277,17 +1280,23 @@ void Tracking::Track()
 
                 if(mVelocity.empty() || mCurrentFrame.mnId<mnLastRelocFrameId+2)
                 {
+                    VT_PROFILE_SCOPE("Tracking::TrackReferenceKeyFrame");
                     bOK = TrackReferenceKeyFrame();
                 }
                 else
                 {
+                    VT_PROFILE_SCOPE("Tracking::TrackWithMotionModel");
                     bOK = TrackWithMotionModel();
                     if(!bOK)
+                    {
+                        VT_PROFILE_SCOPE("Tracking::TrackRefKF_Fallback");
                         bOK = TrackReferenceKeyFrame();
+                    }
                 }
             }
             else
             {
+                VT_PROFILE_SCOPE("Tracking::Relocalization");
                 bOK = Relocalization();
             }
         }
@@ -1365,14 +1374,20 @@ void Tracking::Track()
         if(!mbOnlyTracking)
         {
             if(bOK)
+            {
+                VT_PROFILE_SCOPE("Tracking::TrackLocalMap");
                 bOK = TrackLocalMap();
+            }
         }
         else
         {
             // mbVO 为 true 表示地图中很少有与地图点匹配的点。我们无法检索
             // 局部地图，因此不执行 TrackLocalMap()。一旦系统重新定位相机，我们将再次使用局部地图。
             if(bOK && !mbVO)
+            {
+                VT_PROFILE_SCOPE("Tracking::TrackLocalMap_VO");
                 bOK = TrackLocalMap();
+            }
         }
 
         if(bOK) {
@@ -1425,6 +1440,7 @@ void Tracking::Track()
             // 检查是否需要插入新关键帧
             if(NeedNewKeyFrame())
             {
+                VT_PROFILE_SCOPE("Tracking::CreateNewKeyFrame");
                 // CreateNewKeyFrame 修改地图结构，需短暂持锁
                 std::unique_lock<std::mutex> lock(mpMap->mMutexMapUpdate);
                 CreateNewKeyFrame();
@@ -2714,14 +2730,21 @@ void Tracking::UpdateLocalPoints()
     // 大幅提升上限以支持加载地图的重定位和持续跟踪
     if((int)mvpLocalMapPoints.size() > TRACKING_MAX_LOCAL_MAP_POINTS)
     {
-        // 按观测次数排序，保留高质量点（但优先保留已加载的点）
-        std::sort(mvpLocalMapPoints.begin(), mvpLocalMapPoints.end(), 
-                  [](const MapPoint* a, const MapPoint* b) {
-                      // 优先保留加载的点，其次按观测次数排序
-                      if(a->mbFromLoadedMap != b->mbFromLoadedMap)
-                          return a->mbFromLoadedMap > b->mbFromLoadedMap;
-                      return a->Observations() > b->Observations();
-                  });
+        // 1. 快速分区：已加载的地图点 mbFromLoadedMap 优先（无需完整排序），O(N)
+        auto pivot = std::partition(mvpLocalMapPoints.begin(), mvpLocalMapPoints.end(),
+                                    [](const MapPoint* p) { return p->mbFromLoadedMap; });
+
+        // 2. 判断已加载点数量是否已经超限
+        int numLoaded = std::distance(mvpLocalMapPoints.begin(), pivot);
+        if(numLoaded < TRACKING_MAX_LOCAL_MAP_POINTS)
+        {
+            // 如果已加载点少于限制，则对于普通点进行 O(N) 的 partial selection
+            std::nth_element(pivot, mvpLocalMapPoints.begin() + TRACKING_MAX_LOCAL_MAP_POINTS, mvpLocalMapPoints.end(),
+                             [](const MapPoint* a, const MapPoint* b) {
+                                 // nObs 是原子变量，直接通过 Observations() 获取，零锁开销且极快
+                                 return a->Observations() > b->Observations();
+                             });
+        }
         mvpLocalMapPoints.resize(TRACKING_MAX_LOCAL_MAP_POINTS);
     }
     
@@ -2779,14 +2802,15 @@ void Tracking::UpdateLocalKeyFrames()
     }
 
 
-    // 还包括一些尚未包含的关键帧，它们是已包含关键帧的邻居
-    for(vector<KeyFrame*>::const_iterator itKF=mvpLocalKeyFrames.begin(), itEndKF=mvpLocalKeyFrames.end(); itKF!=itEndKF; itKF++)
+    // 还包括一些尚未包含的关键帧，它们是已包含关键帧的邻居 (使用安全的索引迭代以防止 vector 重分配导致迭代器失效崩溃)
+    const size_t nMaxLocalKFs = 80;
+    for(size_t i=0; i<mvpLocalKeyFrames.size(); i++)
     {
         // 限制关键帧数量
-        if(mvpLocalKeyFrames.size()>80)
+        if(mvpLocalKeyFrames.size() > nMaxLocalKFs)
             break;
 
-        KeyFrame* pKF = *itKF;
+        KeyFrame* pKF = mvpLocalKeyFrames[i];
 
         const vector<KeyFrame*> vNeighs = pKF->GetBestCovisibilityKeyFrames(10);
 
@@ -2826,7 +2850,9 @@ void Tracking::UpdateLocalKeyFrames()
             {
                 mvpLocalKeyFrames.push_back(pParent);
                 pParent->mnTrackReferenceForFrame=mCurrentFrame.mnId;
-                break;
+                // 注意：父节点只有一个，处理后自然进入外循环下一次迭代
+                // 此处不能 break，否则会提前终止整个外层 for 循环，
+                // 导致其余关键帧的邻居/孩子/父节点全部无法加入局部地图
             }
         }
 
@@ -2851,7 +2877,7 @@ bool Tracking::Relocalization()
     if(vpCandidateKFs.empty())
         return false;
 
-    const int nKFs = vpCandidateKFs.size();
+    int nKFs = vpCandidateKFs.size();
 
     // 我们首先对每个候选帧进行ORB匹配
     // 如果找到足够多的匹配点，我们就设置PnP求解器
@@ -2874,7 +2900,7 @@ bool Tracking::Relocalization()
     const int MAX_RELOC_CANDIDATES = 3;
     if(nKFs > MAX_RELOC_CANDIDATES) {
         // 简单截断，因为候选帧通常按BoW分数排序
-        const_cast<int&>(nKFs) = MAX_RELOC_CANDIDATES; 
+        nKFs = MAX_RELOC_CANDIDATES; 
         vpCandidateKFs.resize(MAX_RELOC_CANDIDATES);
         vpPnPsolvers.resize(MAX_RELOC_CANDIDATES);
         vvpMapPointMatches.resize(MAX_RELOC_CANDIDATES);

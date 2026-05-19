@@ -47,11 +47,6 @@ cv::Mat Tcw;
 // 用于vMPs和vKeys线程安全访问的互斥锁
 std::mutex gMapPointsMutex;
 
-// 平面检测状态常量引用 Config.h
-// const int PLANE_DETECTED = ORB_SLAM2::PLANE_DETECTED;
-
-// AR重定位点云显示控制
-bool gEnableFullMapDisplay = true;       // 默认启用完整地图点云显示
 int gLoadedMapPointCount = 0;            // 加载的地图点数量
 const int MIN_NEW_POINTS_BEFORE_AR = ORB_SLAM2::MIN_NEW_POINTS_BEFORE_AR; // 至少需要新建50个地图点才启用AR模式
 
@@ -123,7 +118,6 @@ bool gHasLastTwcPos = false;
  */
 void SavePlaneAndArInfo(const std::string& filename)
 {
-    FUNCTION_TRACE;
     std::lock_guard<std::mutex> lock(gMapDataMutex);
     
     std::string infoFile = filename + ".arinfo";
@@ -176,7 +170,6 @@ void SavePlaneAndArInfo(const std::string& filename)
 // 从文件加载平面和AR对象信息
 void LoadPlaneAndArInfo(const std::string& filename, int mapId)
 {
-    FUNCTION_TRACE;
     
     std::string infoFile = filename + ".arinfo";
     std::ifstream ifs(infoFile, std::ios::binary);
@@ -277,8 +270,7 @@ void LoadPlaneAndArInfo(const std::string& filename, int mapId)
 int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
 {
     VT_PROFILE_FUNCTION(); // 跟踪主图像处理循环
-    FUNCTION_TRACE;
-    timeStamp += 1.0 / 30.0;
+    timeStamp += 1.0 / ORB_SLAM2::SYSTEM_FPS;
     
     // SLAM 开关控制：如果 SLAM 被关闭，跳过 SLAM 处理
     int status = 0;  // 默认状态：NO_IMAGES_YET
@@ -301,8 +293,9 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
         // SLAM 正常运行
         // LOGD("已启动");  // 注释掉避免刷屏
         
+        const float DOWNSCALE = ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR;
         cv::Mat imgSmall;
-        cv::resize(image, imgSmall, cv::Size(image.cols / 2, image.rows / 2));
+        cv::resize(image, imgSmall, cv::Size(cvRound(image.cols / DOWNSCALE), cvRound(image.rows / DOWNSCALE)));
 
         // SLAM跟踪线程拥有最高优先级，绝不能因为拿不到锁而丢弃帧（会导致跟踪丢失）
         // 如果UI线程持有锁，SLAM线程等待几毫秒是完全可以接受的
@@ -464,27 +457,9 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
 
     // AR模式：显示完整地图点云（绿色）
     if(status==2) {
-        // 统计当前所有地图点（每10帧统计一次以减少开销）
-        // 注意：这个统计主要用于日志和监控，不影响点云显示
-        static int currentNewPoints = 0;
-        static int frameCounter = 0;
-        if(frameCounter++ % 10 == 0) {
-            currentNewPoints = 0;
-            vector<ORB_SLAM2::MapPoint*> allMapPoints = slamSys->GetAllMapPoints();
-            for(auto pMP : allMapPoints) {
-                if(pMP && !pMP->isBad()) {
-                    if(!pMP->mbFromLoadedMap) {
-                        currentNewPoints++;  // 新建的地图点
-                    }
-                }
-            }
-        }
-        
         // 一旦对齐成功，立即显示完整地图点云，无需等待新点数量
-        // MIN_NEW_POINTS_BEFORE_AR 仍然影响后台对齐线程何时开始尝试对齐（在Tracking.cc中），
-        // 但对齐成功后就应该立即展示结果，提供即时的视觉反馈
         bool hasAlignment = slamSys->HasMapAlignment();
-        
+
         if(hasAlignment)
         {
             // 获取对齐后的相机位姿（在地图坐标系下）
@@ -541,7 +516,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_initSLAM(JNIEnv* env, jobject instance, 
     timeStamp = 0.0;
 
     // 预计算投影矩阵（基于缩放后的内参）
-    frustumM_RUB(640, 360, gScaledFx, gScaledFy, gScaledCx, gScaledCy, 0.1, 1000, gCurrentProjectionMatrix);
+    frustumM_RUB(640, 360, gScaledFx, gScaledFy, gScaledCx, gScaledCy, ORB_SLAM2::PROJECTION_ZNEAR, ORB_SLAM2::PROJECTION_ZFAR, gCurrentProjectionMatrix);
     
     // 初始化分析器 (仅在开发模式下生效)
     VT_PROFILE_INITIALIZE(std::string(path) + "/vtonax_profile.bin");
@@ -565,13 +540,9 @@ void updateScaledIntrinsics(int cameraWidth, int cameraHeight) {
     if (slamWidth < 1) slamWidth = 1;
     if (slamHeight < 1) slamHeight = 1;
 
-    // 基准工作分辨率 640x360
-    const float BASE_SLAM_W = 640.0f;
-    const float BASE_SLAM_H = 360.0f;
-
     // 按比例缩放内参
-    float scaleX = (float)slamWidth / BASE_SLAM_W;
-    float scaleY = (float)slamHeight / BASE_SLAM_H;
+    float scaleX = (float)slamWidth / ORB_SLAM2::BASE_SLAM_WIDTH;
+    float scaleY = (float)slamHeight / ORB_SLAM2::BASE_SLAM_HEIGHT;
 
     gScaledFx = gBaseFx * scaleX;
     gScaledFy = gBaseFy * scaleY;
@@ -601,7 +572,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeUpdateResolution(JNIEnv* env, jobj
 
     // 重新计算投影矩阵
     frustumM_RUB(slamWidth, slamHeight, gScaledFx, gScaledFy,
-                 gScaledCx, gScaledCy, 0.1, 1000, gCurrentProjectionMatrix);
+                 gScaledCx, gScaledCy, ORB_SLAM2::PROJECTION_ZNEAR, ORB_SLAM2::PROJECTION_ZFAR, gCurrentProjectionMatrix);
 
     // 动态同步更新SLAM核心模块内的焦距与投影内参，防止尺度不匹配引发跟踪丢失
     if (slamSys) {
@@ -749,7 +720,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_detect(JNIEnv *env, jobject instance,
             TcwForPlane = slamSys->GetMapAlignedPose(Tcw);
         }
         
-        pPlane=detectPlane(TcwForPlane,vMPs,50);
+        pPlane=detectPlane(TcwForPlane,vMPs,ORB_SLAM2::PLANE_DETECT_RANSAC_ITERS);
         if(pPlane && slamSys->MapChanged())
             pPlane->Recompute();
         statusBuf[1]=pPlane? ORB_SLAM2::PLANE_DETECTED : ORB_SLAM2::PLANE_NOT_DETECTED;
@@ -809,7 +780,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_getP(JNIEnv *env, jobject instance, jint
     jfloat *projectionM = env->GetFloatArrayElements(projectionM_, NULL);
 
     //TODO:/2
-    frustumM_RUB(imageWidth/2,imageHeight/2,fx,fy,cx,cy,0.1,1000,projectionM);
+    frustumM_RUB(imageWidth/2,imageHeight/2,fx,fy,cx,cy,ORB_SLAM2::PROJECTION_ZNEAR,ORB_SLAM2::PROJECTION_ZFAR,projectionM);
 
     env->ReleaseFloatArrayElements(projectionM_, projectionM, 0);
 }
@@ -921,11 +892,11 @@ Java_com_orb_slam2s_slamar_NativeHelper_getTrackedPoints(JNIEnv *env, jobject in
         // 访问前再次检查指针有效性
         if(!p) continue;
         if(p->isBad()) continue;
-        cv::Mat P = p->GetWorldPos();
-        if(P.empty()) continue;  // 检查空矩阵的安全性检查
-        out.push_back(P.at<float>(0));
-        out.push_back(P.at<float>(1));
-        out.push_back(P.at<float>(2));
+        cv::Point3f Pw;
+        p->GetWorldPos(Pw);
+        out.push_back(Pw.x);
+        out.push_back(Pw.y);
+        out.push_back(Pw.z);
     }
  
     jfloatArray arr = env->NewFloatArray((jsize)out.size());
@@ -1023,19 +994,6 @@ Java_com_orb_slam2s_slamar_NativeHelper_resetSLAM(JNIEnv *env, jobject instance)
     } else {
         LOGD("警告：SLAM系统尚未初始化");
     }
-}
-
-// 启用/禁用完整地图显示（AR重定位模式）
-JNIEXPORT void JNICALL
-Java_com_orb_slam2s_slamar_NativeHelper_setFullMapDisplay(JNIEnv *env, jobject instance, jboolean enable) {
-    gEnableFullMapDisplay = (bool)enable;
-    // LOGD("完整地图显示模式：%s", gEnableFullMapDisplay ? "启用" : "禁用");
-}
-
-// 获取完整地图显示状态
-JNIEXPORT jboolean JNICALL
-Java_com_orb_slam2s_slamar_NativeHelper_isFullMapDisplayEnabled(JNIEnv *env, jobject instance) {
-    return (jboolean)gEnableFullMapDisplay;
 }
 
 // ========== AR对象管理（C++端） ==========

@@ -55,9 +55,6 @@
             android:shadowRadius="2"/>
     </LinearLayout>
 
-    <include layout="@layout/floating_log_window"
-        android:id="@+id/floating_log_window"/>
-
     <include layout="@layout/floating_qr_window"
         android:id="@+id/floating_qr_window"/>
 
@@ -250,18 +247,6 @@
                 android:textAllCaps="false"
                 android:backgroundTint="#2196F3"
                 android:textColor="#FFFFFF"
-                android:alpha="0.85"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"/>
-            <Button
-                android:id="@+id/btn_toggle_debug"
-                android:layout_width="76dp"
-                android:layout_height="32dp"
-                android:layout_marginBottom="4dp"
-                android:text="@string/btn_debug"
-                android:textSize="10sp"
-                android:textAllCaps="false"
-                android:backgroundTint="#9C27B0"
                 android:alpha="0.85"
                 android:paddingStart="8dp"
                 android:paddingEnd="8dp"/>

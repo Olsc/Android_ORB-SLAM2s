@@ -36,7 +36,6 @@
 #include "Converter.h"
 #include "ORBmatcher.h"
 #include <thread>
-#include <Utils.h>
 #include "Config.h"
 
 namespace ORB_SLAM2
@@ -89,8 +88,6 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
     mvLevelSigma2 = mpORBextractorLeft->GetScaleSigmaSquares();
     mvInvLevelSigma2 = mpORBextractorLeft->GetInverseScaleSigmaSquares();
 
-    // logTime();
-    recordTime();
     // ORB提取
     ExtractORB(0,imGray);
 
@@ -203,14 +200,14 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
 {
     pMP->mbTrackInView = false;
 
-    // 3D绝对坐标
-    cv::Mat P = pMP->GetWorldPos(); 
+    // 3D绝对坐标 (免分配获取)
+    cv::Point3f p3f;
+    pMP->GetWorldPos(p3f);
 
-    // 相机坐标系中的3D坐标
-    const cv::Mat Pc = mRcw*P+mtcw;
-    const float &PcX = Pc.at<float>(0);
-    const float &PcY= Pc.at<float>(1);
-    const float &PcZ = Pc.at<float>(2);
+    // 相机坐标系中的3D坐标 (手动展开消除cv::Mat乘法分配开销)
+    const float PcX = mRcw.at<float>(0,0)*p3f.x + mRcw.at<float>(0,1)*p3f.y + mRcw.at<float>(0,2)*p3f.z + mtcw.at<float>(0);
+    const float PcY = mRcw.at<float>(1,0)*p3f.x + mRcw.at<float>(1,1)*p3f.y + mRcw.at<float>(1,2)*p3f.z + mtcw.at<float>(1);
+    const float PcZ = mRcw.at<float>(2,0)*p3f.x + mRcw.at<float>(2,1)*p3f.y + mRcw.at<float>(2,2)*p3f.z + mtcw.at<float>(2);
 
     // 检查正深度
     if(PcZ<0.0f)
@@ -228,8 +225,11 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
 
     // 检查常规点的距离不变性和视角。
     // 对于没有描述符的已加载点，放宽约束以允许基于投影的匹配。
-    const cv::Mat PO = P-mOw;
-    const float dist = cv::norm(PO);
+    const float POx = p3f.x - mOw.at<float>(0);
+    const float POy = p3f.y - mOw.at<float>(1);
+    const float POz = p3f.z - mOw.at<float>(2);
+    const float dist = std::sqrt(POx*POx + POy*POy + POz*POz);
+
     float viewCos = 1.0f;
     int nPredictedLevel = 0;
     if(!(pMP->mbFromLoadedMap && pMP->GetDescriptor().empty()))
@@ -240,8 +240,9 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
             return false;
 
         // 检查视角
-        cv::Mat Pn = pMP->GetNormal();
-        viewCos = PO.dot(Pn)/dist;
+        cv::Point3f normal;
+        pMP->GetNormal(normal);
+        viewCos = (POx*normal.x + POy*normal.y + POz*normal.z)/dist;
         if(viewCos<viewingCosLimit)
             return false;
 
@@ -268,7 +269,12 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
 std::vector<size_t> Frame::GetFeaturesInArea(const float &x, const float  &y, const float  &r, const int minLevel, const int maxLevel) const
 {
     std::vector<size_t> vIndices;
-    vIndices.reserve(N);
+    // 典型的半径搜索结果远少于 N 个，预留 16 个槽位足以避免大多数重分配
+    // 原来 reserve(N≈1000) 在 SearchLocalPoints 中被每个地图点调用一次，
+    // 导致每帧产生 ~500万 个无用槽位的初始化开销
+
+    // TODO: 临时数值，待测试和优化
+    vIndices.reserve(16);
 
     const int nMinCellX = max(0,(int)floor((x-mnMinX-r)*mfGridElementWidthInv));
     if(nMinCellX>=FRAME_GRID_COLS)
@@ -292,7 +298,8 @@ std::vector<size_t> Frame::GetFeaturesInArea(const float &x, const float  &y, co
     {
         for(int iy = nMinCellY; iy<=nMaxCellY; iy++)
         {
-            const std::vector<size_t> vCell = mGrid[ix][iy];
+            // 使用 const 引用，避免对每个 grid cell 触发 vector 深拷贝
+            const std::vector<size_t>& vCell = mGrid[ix][iy];
             if(vCell.empty())
                 continue;
 

@@ -107,7 +107,9 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
         if(pMP->isBad())
             continue;
         g2o::VertexSBAPointXYZ* vPoint = new g2o::VertexSBAPointXYZ();
-        vPoint->setEstimate(Converter::toVector3d(pMP->GetWorldPos()));
+        cv::Point3f p3f;
+        pMP->GetWorldPos(p3f);
+        vPoint->setEstimate(Converter::toVector3d(p3f));
         const int id = pMP->mnId+maxKFid+1;
         vPoint->setId(id);
         vPoint->setMarginalized(true);
@@ -311,10 +313,11 @@ int Optimizer::PoseOptimization(Frame *pFrame)
                     e->fy = pFrame->fy;
                     e->cx = pFrame->cx;
                     e->cy = pFrame->cy;
-                    cv::Mat Xw = pMP->GetWorldPos();
-                    e->Xw[0] = Xw.at<float>(0);
-                    e->Xw[1] = Xw.at<float>(1);
-                    e->Xw[2] = Xw.at<float>(2);
+                    cv::Point3f p3f;
+                    pMP->GetWorldPos(p3f);
+                    e->Xw[0] = p3f.x;
+                    e->Xw[1] = p3f.y;
+                    e->Xw[2] = p3f.z;
 
                     optimizer.addEdge(e);
                 } catch (...) {
@@ -541,7 +544,9 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
     {
         MapPoint* pMP = *lit;
         g2o::VertexSBAPointXYZ* vPoint = new g2o::VertexSBAPointXYZ();
-        vPoint->setEstimate(Converter::toVector3d(pMP->GetWorldPos()));
+        cv::Point3f p3f;
+        pMP->GetWorldPos(p3f);
+        vPoint->setEstimate(Converter::toVector3d(p3f));
         int id = pMP->mnId+maxKFid+1;
         vPoint->setId(id);
         vPoint->setMarginalized(true);

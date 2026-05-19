@@ -88,17 +88,27 @@ void LocalMapping::Run()
         // 检查队列中是否有关键帧
         if(CheckNewKeyFrames())
         {
-            // BoW 转换并插入地图
-            ProcessNewKeyFrame();
+            {
+                VT_PROFILE_SCOPE("LocalMapping::ProcessNewKeyFrame");
+                // BoW 转换并插入地图
+                ProcessNewKeyFrame();
+            }
 
-            // 检查最近的地图点
-            MapPointCulling();
+            {
+                VT_PROFILE_SCOPE("LocalMapping::MapPointCulling");
+                // 检查最近的地图点
+                MapPointCulling();
+            }
 
-            // 三角化新的地图点
-            CreateNewMapPoints();
+            {
+                VT_PROFILE_SCOPE("LocalMapping::CreateNewMapPoints");
+                // 三角化新的地图点
+                CreateNewMapPoints();
+            }
 
             if(!CheckNewKeyFrames())
             {
+                VT_PROFILE_SCOPE("LocalMapping::SearchInNeighbors");
                 // 在邻近关键帧中寻找更多匹配并融合重复点
                 SearchInNeighbors();
             }
@@ -109,20 +119,33 @@ void LocalMapping::Run()
             {
                 // 局部 BA
                 if(mpMap->KeyFramesInMap()>2)
+                {
+                    VT_PROFILE_SCOPE("LocalMapping::LocalBundleAdjustment");
                     Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame,&mbAbortBA, mpMap);
+                }
 
-                // 检查冗余的局部关键帧
-                KeyFrameCulling();
-                
-                // 检查地图限制（统一管理）
-                CheckLimits();
+                {
+                    VT_PROFILE_SCOPE("LocalMapping::KeyFrameCulling");
+                    // 检查冗余的局部关键帧
+                    KeyFrameCulling();
+                }
+
+                {
+                    VT_PROFILE_SCOPE("LocalMapping::CheckLimits");
+                    // 检查地图限制（统一管理）
+                    CheckLimits();
+                }
             }
 
-            mpLoopCloser->InsertKeyFrame(mpCurrentKeyFrame);
+            {
+                VT_PROFILE_SCOPE("LocalMapping::InsertLoopKF");
+                mpLoopCloser->InsertKeyFrame(mpCurrentKeyFrame);
+            }
         }
         else if(Stop())
         {
             // 安全停止区域
+            VT_PROFILE_SCOPE("LocalMapping::Stopped");
             while(isStopped() && !CheckFinish())
             {
                 usleep(3000);
@@ -331,14 +354,21 @@ void LocalMapping::CreateNewMapPoints()
             bool bStereo2 = false;
 
             // 检查光线之间的视差
-            cv::Mat xn1 = (cv::Mat_<float>(3,1) << (kp1.pt.x-cx1)*invfx1, (kp1.pt.y-cy1)*invfy1, 1.0);
-            cv::Mat xn2 = (cv::Mat_<float>(3,1) << (kp2.pt.x-cx2)*invfx2, (kp2.pt.y-cy2)*invfy2, 1.0);
-
-            cv::Mat ray1 = Rwc1*xn1;
-            cv::Mat ray2 = Rwc2*xn2;
-            // 内联计算向量范数平方，避免两次cv::norm调用
-            const float r1x = ray1.at<float>(0), r1y = ray1.at<float>(1), r1z = ray1.at<float>(2);
-            const float r2x = ray2.at<float>(0), r2y = ray2.at<float>(1), r2z = ray2.at<float>(2);
+            // 用标量替换 xn1/xn2/ray1/ray2 四个 cv::Mat，消除内层循环的 4 次堆分配
+            // xn1 = [(kp1.pt.x-cx1)*invfx1, (kp1.pt.y-cy1)*invfy1, 1]
+            const float xn1x = (kp1.pt.x-cx1)*invfx1;
+            const float xn1y = (kp1.pt.y-cy1)*invfy1;
+            // xn2 = [(kp2.pt.x-cx2)*invfx2, (kp2.pt.y-cy2)*invfy2, 1]
+            const float xn2x = (kp2.pt.x-cx2)*invfx2;
+            const float xn2y = (kp2.pt.y-cy2)*invfy2;
+            // ray1 = Rwc1 * [xn1x, xn1y, 1]  (z 分量为常数 1，直接取 Rwc 第三列)
+            const float r1x = Rwc1.at<float>(0,0)*xn1x + Rwc1.at<float>(0,1)*xn1y + Rwc1.at<float>(0,2);
+            const float r1y = Rwc1.at<float>(1,0)*xn1x + Rwc1.at<float>(1,1)*xn1y + Rwc1.at<float>(1,2);
+            const float r1z = Rwc1.at<float>(2,0)*xn1x + Rwc1.at<float>(2,1)*xn1y + Rwc1.at<float>(2,2);
+            // ray2 = Rwc2 * [xn2x, xn2y, 1]
+            const float r2x = Rwc2.at<float>(0,0)*xn2x + Rwc2.at<float>(0,1)*xn2y + Rwc2.at<float>(0,2);
+            const float r2y = Rwc2.at<float>(1,0)*xn2x + Rwc2.at<float>(1,1)*xn2y + Rwc2.at<float>(1,2);
+            const float r2z = Rwc2.at<float>(2,0)*xn2x + Rwc2.at<float>(2,1)*xn2y + Rwc2.at<float>(2,2);
             const float dotProduct = r1x*r2x + r1y*r2y + r1z*r2z;
             const float norm1Sq = r1x*r1x + r1y*r1y + r1z*r1z;
             const float norm2Sq = r2x*r2x + r2y*r2y + r2z*r2z;
@@ -360,11 +390,12 @@ void LocalMapping::CreateNewMapPoints()
             if(cosParallaxRays<cosParallaxStereo && cosParallaxRays>0 && (bStereo1 || bStereo2 || cosParallaxRays<LOCAL_MAPPING_TRIANGULATION_PARALLAX_TH))
             {
                 // 线性三角化方法
+                // 用标量 xn1x/xn1y/xn2x/xn2y 直接填充 A，避免额外的 xn1/xn2 cv::Mat 分配
                 cv::Mat A(4,4,CV_32F);
-                A.row(0) = xn1.at<float>(0)*Tcw1.row(2)-Tcw1.row(0);
-                A.row(1) = xn1.at<float>(1)*Tcw1.row(2)-Tcw1.row(1);
-                A.row(2) = xn2.at<float>(0)*Tcw2.row(2)-Tcw2.row(0);
-                A.row(3) = xn2.at<float>(1)*Tcw2.row(2)-Tcw2.row(1);
+                A.row(0) = xn1x*Tcw1.row(2)-Tcw1.row(0);
+                A.row(1) = xn1y*Tcw1.row(2)-Tcw1.row(1);
+                A.row(2) = xn2x*Tcw2.row(2)-Tcw2.row(0);
+                A.row(3) = xn2y*Tcw2.row(2)-Tcw2.row(1);
 
                 cv::Mat w,u,vt;
                 cv::SVD::compute(A,w,u,vt,cv::SVD::MODIFY_A| cv::SVD::FULL_UV);
@@ -619,7 +650,12 @@ void LocalMapping::Release()
 bool LocalMapping::AcceptKeyFrames()
 {
     unique_lock<mutex> lock(mMutexAccept);
-    return mbAcceptKeyFrames;
+    if(mbAcceptKeyFrames)
+        return true;
+        
+    // 即使建图线程正忙，如果队列中积压的关键帧较少（少于3帧），也允许继续插入，以极大地提升跟踪稳定性，避免运动卡顿
+    unique_lock<mutex> lockQueue(mMutexNewKFs);
+    return mlNewKeyFrames.size() < 3;
 }
 
 void LocalMapping::SetAcceptKeyFrames(bool flag)
@@ -725,17 +761,6 @@ void LocalMapping::RequestReset()
         mbResetRequested = true;
         mbAbortBA = true; // 立即中断正在进行的BA，确保Reset能被快速处理
     }
-
-    // 移除阻塞的自旋锁，让主线程立刻返回
-    // while(1)
-    // {
-    //     {
-    //         unique_lock<mutex> lock2(mMutexReset);
-    //         if(!mbResetRequested)
-    //             break;
-    //     }
-    //     usleep(3000);
-    // }
 }
 
 void LocalMapping::ResetIfRequested()

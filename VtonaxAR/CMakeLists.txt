@@ -244,9 +244,7 @@ add_library(SLAM_AR SHARED
         src/main/cpp/Thirdparty/DBoW2/DBoW2/FeatureVector.cpp
         src/main/cpp/Thirdparty/DBoW2/DBoW2/ScoringObject.cpp
         src/main/cpp/Thirdparty/DBoW2/DUtils/Random.cpp
-        
-        # 工具类
-        src/main/cpp/Utils.cpp
+
         src/main/cpp/EmbeddedResources.cpp
         
         # JNI 接口层

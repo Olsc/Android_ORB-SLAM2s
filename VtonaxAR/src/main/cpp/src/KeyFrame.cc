@@ -37,7 +37,7 @@
 #include "ORBmatcher.h"
 #include "Config.h"
 #include <mutex>
-#include <Utils.h>
+#include "Common.h"
 
 namespace ORB_SLAM2
 {
@@ -88,10 +88,10 @@ void KeyFrame::SetPose(const cv::Mat &Tcw_)
     
     // 验证输入位姿的有效性，防止崩溃
     if(Tcw_.empty() || Tcw_.rows < 4 || Tcw_.cols < 4){
-        LOGE("关键帧::设置位姿: 无效的位姿输入 (空=%d, 行数=%d, 列数=%d)", 
-             Tcw_.empty()?1:0,
-             Tcw_.empty()?0:Tcw_.rows,
-             Tcw_.empty()?0:Tcw_.cols);
+        //LOGE("关键帧::设置位姿: 无效的位姿输入 (空=%d, 行数=%d, 列数=%d)",
+        //     Tcw_.empty()?1:0,
+        //     Tcw_.empty()?0:Tcw_.rows,
+        //     Tcw_.empty()?0:Tcw_.cols);
         // 设置为单位矩阵作为默认值，避免后续崩溃
         Tcw = cv::Mat::eye(4,4,CV_32F);
         // 继续后续处理，使用单位矩阵
@@ -133,9 +133,6 @@ cv::Mat KeyFrame::GetCameraCenter()
     std::unique_lock<std::mutex> lock(mMutexPose);
     return Ow.clone();
 }
-
-
-
 
 cv::Mat KeyFrame::GetRotation()
 {
@@ -254,7 +251,6 @@ void KeyFrame::EraseMapPointMatch(MapPoint* pMP)
     if(idx>=0)
         mvpMapPoints[idx]=static_cast<MapPoint*>(NULL);
 }
-
 
 void KeyFrame::ReplaceMapPointMatch(const size_t &idx, MapPoint* pMP)
 {
@@ -421,8 +417,10 @@ void KeyFrame::EraseChild(KeyFrame *pKF)
 
 void KeyFrame::ChangeParent(KeyFrame *pKF)
 {
-    unique_lock<mutex> lockCon(mMutexConnections);
-    mpParent = pKF;
+    {
+        unique_lock<mutex> lockCon(mMutexConnections);
+        mpParent = pKF;
+    }
     pKF->AddChild(this);
 }
 
@@ -517,72 +515,88 @@ void KeyFrame::SetBadFlag()
             mapPointsCopy[i]->EraseObservation(this);
     }
 
+    set<KeyFrame*> mspChildrensCopy;
+    KeyFrame* pParentCopy = nullptr;
+
     {
         unique_lock<mutex> lock(mMutexConnections);
         
-        // mConnectedKeyFrameWeights.clear(); // 已在上面清空
         mvpOrderedConnectedKeyFrames.clear();
+        mspChildrensCopy = mspChildrens;
+        pParentCopy = mpParent;
+        
+        mspChildrens.clear();
+    }
 
-        // 更新生成树
-        set<KeyFrame*> sParentCandidates;
-        sParentCandidates.insert(mpParent);
+    // 更新生成树 (在锁外安全执行，彻底根治与 ChangeParent 的死锁)
+    set<KeyFrame*> sParentCandidates;
+    sParentCandidates.insert(pParentCopy);
 
-        // 在每次迭代中，为子节点分配一个父节点（共视权重最高的那对）
-        // 将该子节点作为其余节点的新父节点候选
-        while(!mspChildrens.empty())
+    // 在每次迭代中，为子节点分配一个父节点（共视权重最高的那对）
+    // 将该子节点作为其余节点的新父节点候选
+    while(!mspChildrensCopy.empty())
+    {
+        bool bContinue = false;
+
+        int max = -1;
+        KeyFrame* pC = nullptr;
+        KeyFrame* pP = nullptr;
+
+        for(set<KeyFrame*>::iterator sit=mspChildrensCopy.begin(), send=mspChildrensCopy.end(); sit!=send; sit++)
         {
-            bool bContinue = false;
+            KeyFrame* pKF = *sit;
+            if(pKF->isBad())
+                continue;
 
-            int max = -1;
-            KeyFrame* pC;
-            KeyFrame* pP;
-
-            for(set<KeyFrame*>::iterator sit=mspChildrens.begin(), send=mspChildrens.end(); sit!=send; sit++)
+            // 检查父节点候选是否连接到关键帧
+            vector<KeyFrame*> vpConnected = pKF->GetVectorCovisibleKeyFrames();
+            for(size_t i=0, iend=vpConnected.size(); i<iend; i++)
             {
-                KeyFrame* pKF = *sit;
-                if(pKF->isBad())
-                    continue;
-
-                // 检查父节点候选是否连接到关键帧
-                vector<KeyFrame*> vpConnected = pKF->GetVectorCovisibleKeyFrames();
-                for(size_t i=0, iend=vpConnected.size(); i<iend; i++)
+                for(set<KeyFrame*>::iterator spcit=sParentCandidates.begin(), spcend=sParentCandidates.end(); spcit!=spcend; spcit++)
                 {
-                    for(set<KeyFrame*>::iterator spcit=sParentCandidates.begin(), spcend=sParentCandidates.end(); spcit!=spcend; spcit++)
+                    if(vpConnected[i]->mnId == (*spcit)->mnId)
                     {
-                        if(vpConnected[i]->mnId == (*spcit)->mnId)
+                        int w = pKF->GetWeight(vpConnected[i]);
+                        if(w>max)
                         {
-                            int w = pKF->GetWeight(vpConnected[i]);
-                            if(w>max)
-                            {
-                                pC = pKF;
-                                pP = vpConnected[i];
-                                max = w;
-                                bContinue = true;
-                            }
+                            pC = pKF;
+                            pP = vpConnected[i];
+                            max = w;
+                            bContinue = true;
                         }
                     }
                 }
             }
-
-            if(bContinue)
-            {
-                pC->ChangeParent(pP);
-                sParentCandidates.insert(pC);
-                mspChildrens.erase(pC);
-            }
-            else
-                break;
         }
 
-        // 如果子节点与任何父节点候选没有共视链接，则将其分配给此KF的原始父节点
-        if(!mspChildrens.empty())
-            for(set<KeyFrame*>::iterator sit=mspChildrens.begin(); sit!=mspChildrens.end(); sit++)
-            {
-                (*sit)->ChangeParent(mpParent);
-            }
+        if(bContinue)
+        {
+            pC->ChangeParent(pP);
+            sParentCandidates.insert(pC);
+            mspChildrensCopy.erase(pC);
+        }
+        else
+            break;
+    }
 
-        mpParent->EraseChild(this);
-        mTcp = Tcw*mpParent->GetPoseInverse();
+    // 如果子节点与任何父节点候选没有共视链接，则将其分配给此KF的原始父节点
+    if(!mspChildrensCopy.empty())
+    {
+        for(set<KeyFrame*>::iterator sit=mspChildrensCopy.begin(); sit!=mspChildrensCopy.end(); sit++)
+        {
+            (*sit)->ChangeParent(pParentCopy);
+        }
+    }
+
+    if(pParentCopy)
+    {
+        pParentCopy->EraseChild(this);
+    }
+
+    {
+        unique_lock<mutex> lock(mMutexConnections);
+        if(pParentCopy)
+            mTcp = Tcw * pParentCopy->GetPoseInverse();
         mbBad = true;
     }
 
