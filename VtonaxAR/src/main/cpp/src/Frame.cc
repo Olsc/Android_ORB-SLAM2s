@@ -200,14 +200,14 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
 {
     pMP->mbTrackInView = false;
 
-    // 3D绝对坐标
-    cv::Mat P = pMP->GetWorldPos(); 
+    // 3D绝对坐标 (免分配获取)
+    cv::Point3f p3f;
+    pMP->GetWorldPos(p3f);
 
-    // 相机坐标系中的3D坐标
-    const cv::Mat Pc = mRcw*P+mtcw;
-    const float &PcX = Pc.at<float>(0);
-    const float &PcY= Pc.at<float>(1);
-    const float &PcZ = Pc.at<float>(2);
+    // 相机坐标系中的3D坐标 (手动展开消除cv::Mat乘法分配开销)
+    const float PcX = mRcw.at<float>(0,0)*p3f.x + mRcw.at<float>(0,1)*p3f.y + mRcw.at<float>(0,2)*p3f.z + mtcw.at<float>(0);
+    const float PcY = mRcw.at<float>(1,0)*p3f.x + mRcw.at<float>(1,1)*p3f.y + mRcw.at<float>(1,2)*p3f.z + mtcw.at<float>(1);
+    const float PcZ = mRcw.at<float>(2,0)*p3f.x + mRcw.at<float>(2,1)*p3f.y + mRcw.at<float>(2,2)*p3f.z + mtcw.at<float>(2);
 
     // 检查正深度
     if(PcZ<0.0f)
@@ -225,8 +225,11 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
 
     // 检查常规点的距离不变性和视角。
     // 对于没有描述符的已加载点，放宽约束以允许基于投影的匹配。
-    const cv::Mat PO = P-mOw;
-    const float dist = cv::norm(PO);
+    const float POx = p3f.x - mOw.at<float>(0);
+    const float POy = p3f.y - mOw.at<float>(1);
+    const float POz = p3f.z - mOw.at<float>(2);
+    const float dist = std::sqrt(POx*POx + POy*POy + POz*POz);
+
     float viewCos = 1.0f;
     int nPredictedLevel = 0;
     if(!(pMP->mbFromLoadedMap && pMP->GetDescriptor().empty()))
@@ -237,8 +240,9 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
             return false;
 
         // 检查视角
-        cv::Mat Pn = pMP->GetNormal();
-        viewCos = PO.dot(Pn)/dist;
+        cv::Point3f normal;
+        pMP->GetNormal(normal);
+        viewCos = (POx*normal.x + POy*normal.y + POz*normal.z)/dist;
         if(viewCos<viewingCosLimit)
             return false;
 

@@ -122,10 +122,26 @@ cv::Mat MapPoint::GetWorldPos()
     return mWorldPos.clone();
 }
 
+void MapPoint::GetWorldPos(cv::Point3f& out)
+{
+    std::unique_lock<std::mutex> lock(mMutexPos);
+    out.x = mWorldPos.at<float>(0);
+    out.y = mWorldPos.at<float>(1);
+    out.z = mWorldPos.at<float>(2);
+}
+
 cv::Mat MapPoint::GetNormal()
 {
     unique_lock<mutex> lock(mMutexPos);
     return mNormalVector.clone();
+}
+
+void MapPoint::GetNormal(cv::Point3f& out)
+{
+    std::unique_lock<std::mutex> lock(mMutexPos);
+    out.x = mNormalVector.at<float>(0);
+    out.y = mNormalVector.at<float>(1);
+    out.z = mNormalVector.at<float>(2);
 }
 
 KeyFrame* MapPoint::GetReferenceKeyFrame()
@@ -188,8 +204,8 @@ map<KeyFrame*, size_t> MapPoint::GetObservations()
 
 int MapPoint::Observations() const
 {
-    std::unique_lock<std::mutex> lock(mMutexFeatures);
-    return nObs;
+    // nObs 已改为原子变量，无需加锁，零锁开销
+    return nObs.load(std::memory_order_relaxed);
 }
 
 void MapPoint::SetBadFlag()
@@ -260,8 +276,8 @@ void MapPoint::Replace(MapPoint* pMP)
 
 bool MapPoint::isBad()
 {
-    // mbBad已改为原子变量，无需加锁，极大减少高频调用的锁开销
-    return mbBad;
+    // mbBad已改为原子变量，无需加锁，极大减少高频调用的锁开销，使用 memory_order_relaxed 以获得最佳性能
+    return mbBad.load(std::memory_order_relaxed);
 }
 
 void MapPoint::IncreaseVisible(int n)

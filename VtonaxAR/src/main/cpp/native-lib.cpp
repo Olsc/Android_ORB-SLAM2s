@@ -892,11 +892,11 @@ Java_com_orb_slam2s_slamar_NativeHelper_getTrackedPoints(JNIEnv *env, jobject in
         // 访问前再次检查指针有效性
         if(!p) continue;
         if(p->isBad()) continue;
-        cv::Mat P = p->GetWorldPos();
-        if(P.empty()) continue;  // 检查空矩阵的安全性检查
-        out.push_back(P.at<float>(0));
-        out.push_back(P.at<float>(1));
-        out.push_back(P.at<float>(2));
+        cv::Point3f Pw;
+        p->GetWorldPos(Pw);
+        out.push_back(Pw.x);
+        out.push_back(Pw.y);
+        out.push_back(Pw.z);
     }
  
     jfloatArray arr = env->NewFloatArray((jsize)out.size());

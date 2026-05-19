@@ -663,11 +663,15 @@ vector<cv::KeyPoint> ORBextractor::DistributeOctTree(const vector<cv::KeyPoint>&
         vpIniNodes[i] = &lNodes.back();
     }
 
-    // 将点关联到子节点
+    // 将点关联到子节点 (使用乘法代替除法优化性能)
+    const float inv_hX = 1.0f / hX;
     for(size_t i=0;i<vToDistributeKeys.size();i++)
     {
         const cv::KeyPoint &kp = vToDistributeKeys[i];
-        vpIniNodes[kp.pt.x/hX]->vKeys.push_back(kp);
+        int idx = (int)(kp.pt.x * inv_hX);
+        if(idx >= nIni) idx = nIni - 1;
+        if(idx < 0) idx = 0;
+        vpIniNodes[idx]->vKeys.push_back(kp);
     }
 
     list<ExtractorNode>::iterator lit = lNodes.begin();

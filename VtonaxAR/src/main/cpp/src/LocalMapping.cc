@@ -642,7 +642,12 @@ void LocalMapping::Release()
 bool LocalMapping::AcceptKeyFrames()
 {
     unique_lock<mutex> lock(mMutexAccept);
-    return mbAcceptKeyFrames;
+    if(mbAcceptKeyFrames)
+        return true;
+        
+    // 即使建图线程正忙，如果队列中积压的关键帧较少（少于3帧），也允许继续插入，以极大地提升跟踪稳定性，避免运动卡顿
+    unique_lock<mutex> lockQueue(mMutexNewKFs);
+    return mlNewKeyFrames.size() < 3;
 }
 
 void LocalMapping::SetAcceptKeyFrames(bool flag)

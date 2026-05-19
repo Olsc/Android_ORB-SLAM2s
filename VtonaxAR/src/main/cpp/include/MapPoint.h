@@ -61,8 +61,10 @@ public:
 
     void SetWorldPos(const cv::Mat &Pos);
     cv::Mat GetWorldPos();
+    void GetWorldPos(cv::Point3f& out);
 
     cv::Mat GetNormal();
+    void GetNormal(cv::Point3f& out);
     KeyFrame* GetReferenceKeyFrame();
 
     std::map<KeyFrame*,size_t> GetObservations();
@@ -114,7 +116,7 @@ public:
     static long unsigned int nNextId;
     long int mnFirstKFid;
     long int mnFirstFrame;
-    int nObs;
+    std::atomic<int> nObs;
 
     // 地图ID，用于多地图支持
     int mnMapId;

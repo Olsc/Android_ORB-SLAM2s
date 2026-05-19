@@ -1738,25 +1738,42 @@ void ORBmatcher::ComputeThreeMaxima(vector<int>* histo, const int L, int &ind1, 
 
 // 位集计数操作来自
 // http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
+// 此方案适合更新的现代处理器
 int ORBmatcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)
 {
-    // 256 位 BRIEF 描述子 = 32 字节 = 4 × uint64_t。
-    // 使用 SWAR (SIMD Within A Register) 64 位 popcount
     const uint8_t* pa = a.ptr<uint8_t>();
     const uint8_t* pb = b.ptr<uint8_t>();
 
-    int dist = 0;
-    for (int k = 0; k < 4; ++k) {
-        uint64_t va, vb;
-        std::memcpy(&va, pa + k * 8, 8);
-        std::memcpy(&vb, pb + k * 8, 8);
-        uint64_t v = va ^ vb;
-        v = v - ((v >> 1) & 0x5555555555555555ULL);
-        v = (v & 0x3333333333333333ULL) + ((v >> 2) & 0x3333333333333333ULL);
-        v = (v + (v >> 4)) & 0x0F0F0F0F0F0F0F0FULL;
-        dist += (int)((v * 0x0101010101010101ULL) >> 56);
-    }
-    return dist;
+    uint64_t va[4], vb[4];
+    std::memcpy(va, pa, 32);
+    std::memcpy(vb, pb, 32);
+
+    return __builtin_popcountll(va[0] ^ vb[0]) +
+           __builtin_popcountll(va[1] ^ vb[1]) +
+           __builtin_popcountll(va[2] ^ vb[2]) +
+           __builtin_popcountll(va[3] ^ vb[3]);
 }
+
+// // 预留一个兼容性更好的方案
+// int ORBmatcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)
+// {
+//     // 256 位 BRIEF 描述子 = 32 字节 = 4 × uint64_t。
+//     // 使用 SWAR (SIMD Within A Register) 64 位 popcount
+//     const uint8_t* pa = a.ptr<uint8_t>();
+//     const uint8_t* pb = b.ptr<uint8_t>();
+
+//     int dist = 0;
+//     for (int k = 0; k < 4; ++k) {
+//         uint64_t va, vb;
+//         std::memcpy(&va, pa + k * 8, 8);
+//         std::memcpy(&vb, pb + k * 8, 8);
+//         uint64_t v = va ^ vb;
+//         v = v - ((v >> 1) & 0x5555555555555555ULL);
+//         v = (v & 0x3333333333333333ULL) + ((v >> 2) & 0x3333333333333333ULL);
+//         v = (v + (v >> 4)) & 0x0F0F0F0F0F0F0F0FULL;
+//         dist += (int)((v * 0x0101010101010101ULL) >> 56);
+//     }
+//     return dist;
+// }
 
 } //namespace ORB_SLAM2

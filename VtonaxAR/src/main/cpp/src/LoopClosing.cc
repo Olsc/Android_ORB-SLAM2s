@@ -248,13 +248,8 @@ bool LoopClosing::DetectLoop()
         mpCurrentKF->SetErase();
         return false;
     }
-    else
-    {
-        return true;
-    }
 
-    mpCurrentKF->SetErase();
-    return false;
+    return true;
 }
 
 bool LoopClosing::ComputeSim3()
@@ -469,6 +464,7 @@ void LoopClosing::CorrectLoop()
         {
             mpLocalMapper->Release();
         }
+        mpCurrentKF->SetErase();
         return;
     }
 
@@ -482,33 +478,45 @@ void LoopClosing::CorrectLoop()
     KeyFrameAndPose CorrectedSim3, NonCorrectedSim3;
     CorrectedSim3[mpCurrentKF]=mg2oScw;
     cv::Mat Twc = mpCurrentKF->GetPoseInverse();
+
+    // 1. 锁外计算位姿与校正 Sim3 矩阵（纯数学计算，无共享状态修改）
+    for(vector<KeyFrame*>::iterator vit=mvpCurrentConnectedKFs.begin(), vend=mvpCurrentConnectedKFs.end(); vit!=vend; vit++)
+    {
+        KeyFrame* pKFi = *vit;
+        cv::Mat Tiw = pKFi->GetPose();
+
+        if(pKFi!=mpCurrentKF)
+        {
+            cv::Mat Tic = Tiw*Twc;
+            cv::Mat Ric = Tic.rowRange(0,3).colRange(0,3);
+            cv::Mat tic = Tic.rowRange(0,3).col(3);
+            g2o::Sim3 g2oSic(Converter::toMatrix3d(Ric),Converter::toVector3d(tic),1.0);
+            g2o::Sim3 g2oCorrectedSiw = g2oSic*mg2oScw;
+            CorrectedSim3[pKFi]=g2oCorrectedSiw;
+        }
+
+        cv::Mat Riw = Tiw.rowRange(0,3).colRange(0,3);
+        cv::Mat tiw = Tiw.rowRange(0,3).col(3);
+        g2o::Sim3 g2oSiw(Converter::toMatrix3d(Riw),Converter::toVector3d(tiw),1.0);
+        NonCorrectedSim3[pKFi]=g2oSiw;
+    }
+
+    // 2. 锁外预计算 SE3 矩阵以极大地减少持锁时间
+    std::map<KeyFrame*, cv::Mat> mapCorrectedPoses;
+    for(vector<KeyFrame*>::iterator vit=mvpCurrentConnectedKFs.begin(), vend=mvpCurrentConnectedKFs.end(); vit!=vend; vit++)
+    {
+        KeyFrame* pKFi = *vit;
+        g2o::Sim3 g2oCorrectedSiw = CorrectedSim3[pKFi];
+        Eigen::Matrix3d eigR = g2oCorrectedSiw.rotation().toRotationMatrix();
+        Eigen::Vector3d eigt = g2oCorrectedSiw.translation();
+        double s = g2oCorrectedSiw.scale();
+        eigt *=(1./s); //[R t/s;0 1]
+        mapCorrectedPoses[pKFi] = Converter::toCvSE3(eigR,eigt);
+    }
+
     {
         // 获取地图互斥锁
         unique_lock<mutex> lock(mpMap->mMutexMapUpdate);
-
-        for(vector<KeyFrame*>::iterator vit=mvpCurrentConnectedKFs.begin(), vend=mvpCurrentConnectedKFs.end(); vit!=vend; vit++)
-        {
-            KeyFrame* pKFi = *vit;
-
-            cv::Mat Tiw = pKFi->GetPose();
-
-            if(pKFi!=mpCurrentKF)
-            {
-                cv::Mat Tic = Tiw*Twc;
-                cv::Mat Ric = Tic.rowRange(0,3).colRange(0,3);
-                cv::Mat tic = Tic.rowRange(0,3).col(3);
-                g2o::Sim3 g2oSic(Converter::toMatrix3d(Ric),Converter::toVector3d(tic),1.0);
-                g2o::Sim3 g2oCorrectedSiw = g2oSic*mg2oScw;
-                // 使用闭环的 Sim3 校正位姿
-                CorrectedSim3[pKFi]=g2oCorrectedSiw;
-            }
-
-            cv::Mat Riw = Tiw.rowRange(0,3).colRange(0,3);
-            cv::Mat tiw = Tiw.rowRange(0,3).col(3);
-            g2o::Sim3 g2oSiw(Converter::toMatrix3d(Riw),Converter::toVector3d(tiw),1.0);
-            // 未经校正的位姿
-            NonCorrectedSim3[pKFi]=g2oSiw;
-        }
 
         // 校正当前关键帧及其邻居观测到的所有地图点，使它们与闭环的另一侧对齐
         for(KeyFrameAndPose::iterator mit=CorrectedSim3.begin(), mend=CorrectedSim3.end(); mit!=mend; mit++)
@@ -516,18 +524,13 @@ void LoopClosing::CorrectLoop()
             KeyFrame* pKFi = mit->first;
             g2o::Sim3 g2oCorrectedSiw = mit->second;
             g2o::Sim3 g2oCorrectedSwi = g2oCorrectedSiw.inverse();
-
-            g2o::Sim3 g2oSiw =NonCorrectedSim3[pKFi];
+            g2o::Sim3 g2oSiw = NonCorrectedSim3[pKFi];
 
             vector<MapPoint*> vpMPsi = pKFi->GetMapPointMatches();
             for(size_t iMP=0, endMPi = vpMPsi.size(); iMP<endMPi; iMP++)
             {
                 MapPoint* pMPi = vpMPsi[iMP];
-                if(!pMPi)
-                    continue;
-                if(pMPi->isBad())
-                    continue;
-                if(pMPi->mnCorrectedByKF==mpCurrentKF->mnId)
+                if(!pMPi || pMPi->isBad() || pMPi->mnCorrectedByKF==mpCurrentKF->mnId)
                     continue;
 
                 // 使用未校正的位姿投影，并使用校正后的位姿反向投影
@@ -535,26 +538,16 @@ void LoopClosing::CorrectLoop()
                 Eigen::Matrix<double,3,1> eigP3Dw = Converter::toVector3d(P3Dw);
                 Eigen::Matrix<double,3,1> eigCorrectedP3Dw = g2oCorrectedSwi.map(g2oSiw.map(eigP3Dw));
 
-                cv::Mat cvCorrectedP3Dw = Converter::toCvMat(eigCorrectedP3Dw);
-                pMPi->SetWorldPos(cvCorrectedP3Dw);
+                pMPi->SetWorldPos(Converter::toCvMat(eigCorrectedP3Dw));
                 pMPi->mnCorrectedByKF = mpCurrentKF->mnId;
                 pMPi->mnCorrectedReference = pKFi->mnId;
                 pMPi->UpdateNormalAndDepth();
             }
 
-            // 使用校正后的 Sim3 更新关键帧位姿。首先将 Sim3 转换为 SE3（缩放平移）
-            Eigen::Matrix3d eigR = g2oCorrectedSiw.rotation().toRotationMatrix();
-            Eigen::Vector3d eigt = g2oCorrectedSiw.translation();
-            double s = g2oCorrectedSiw.scale();
+            // 更新关键帧位姿，使用我们已经在锁外预计算好的矩阵
+            pKFi->SetPose(mapCorrectedPoses[pKFi]);
 
-            eigt *=(1./s); //[R t/s;0 1]
-
-            cv::Mat correctedTiw = Converter::toCvSE3(eigR,eigt);
-
-            pKFi->SetPose(correctedTiw);
-
-            // 确保连接已更新
-            pKFi->UpdateConnections();
+            // 注意：UpdateConnections() 已被移至锁外，以极大地减少持锁时间并避免死锁
         }
 
         // 开始闭环融合
@@ -575,7 +568,6 @@ void LoopClosing::CorrectLoop()
                 }
             }
         }
-
     }
 
     // 将闭环关键帧邻域内观测到的地图点投影到当前关键帧和邻居关键帧中，并融合重复点
@@ -621,6 +613,7 @@ void LoopClosing::CorrectLoop()
     mpLocalMapper->Release();    
 
     mLastLoopKFid = mpCurrentKF->mnId;   
+    mpCurrentKF->SetErase(); // 闭环完成，平衡最初的 SetNotErase()
 }
 
 void LoopClosing::SearchAndFuse(const KeyFrameAndPose &CorrectedPosesMap)
