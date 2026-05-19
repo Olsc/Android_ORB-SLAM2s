@@ -893,14 +893,19 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
 {
     cv::Mat Rcw = pKF->GetRotation();
     cv::Mat tcw = pKF->GetTranslation();
+    cv::Mat Ow = pKF->GetCameraCenter();
 
     const float &fx = pKF->fx;
     const float &fy = pKF->fy;
     const float &cx = pKF->cx;
     const float &cy = pKF->cy;
-    const float &bf = pKF->mbf;
 
-    cv::Mat Ow = pKF->GetCameraCenter();
+    // 预先提取位姿与相机中心的标量值，在循环中以 O(1) 免锁且免分配执行 3D 变换
+    const float R00 = Rcw.at<float>(0,0), R01 = Rcw.at<float>(0,1), R02 = Rcw.at<float>(0,2);
+    const float R10 = Rcw.at<float>(1,0), R11 = Rcw.at<float>(1,1), R12 = Rcw.at<float>(1,2);
+    const float R20 = Rcw.at<float>(2,0), R21 = Rcw.at<float>(2,1), R22 = Rcw.at<float>(2,2);
+    const float tx = tcw.at<float>(0), ty = tcw.at<float>(1), tz = tcw.at<float>(2);
+    const float Ox = Ow.at<float>(0), Oy = Ow.at<float>(1), Oz = Ow.at<float>(2);
 
     int nFused=0;
 
@@ -916,16 +921,22 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
         if(pMP->isBad() || pMP->IsInKeyFrame(pKF))
             continue;
 
-        cv::Mat p3Dw = pMP->GetWorldPos();
-        cv::Mat p3Dc = Rcw*p3Dw + tcw;
+        // 使用栈分配的 Point3f 替代 cv::Mat 获取 3D 坐标，消除堆分配
+        cv::Point3f p3Dw;
+        pMP->GetWorldPos(p3Dw);
+
+        // 标量级 3D 旋转与平移变换，替代 cv::Mat 矩阵乘法
+        const float p3DcX = R00*p3Dw.x + R01*p3Dw.y + R02*p3Dw.z + tx;
+        const float p3DcY = R10*p3Dw.x + R11*p3Dw.y + R12*p3Dw.z + ty;
+        const float p3DcZ = R20*p3Dw.x + R21*p3Dw.y + R22*p3Dw.z + tz;
 
         // 深度必须为正
-        if(p3Dc.at<float>(2)<0.0f)
+        if(p3DcZ<0.0f)
             continue;
 
-        const float invz = 1/p3Dc.at<float>(2);
-        const float x = p3Dc.at<float>(0)*invz;
-        const float y = p3Dc.at<float>(1)*invz;
+        const float invz = 1.0f/p3DcZ;
+        const float x = p3DcX*invz;
+        const float y = p3DcY*invz;
 
         const float u = fx*x+cx;
         const float v = fy*y+cy;
@@ -934,17 +945,16 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
         if(!pKF->IsInImage(u,v))
             continue;
 
-        const float ur = u-bf*invz;
-
         const float maxDistance = pMP->GetMaxDistanceInvariance();
         const float minDistance = pMP->GetMinDistanceInvariance();
-        cv::Mat PO = p3Dw-Ow;
+        
+        // PO = p3Dw - Ow (使用纯标量减法)
+        const float POx = p3Dw.x - Ox;
+        const float POy = p3Dw.y - Oy;
+        const float POz = p3Dw.z - Oz;
         
         // 使用平方距离进行快速范围检查
-        const float dx = PO.at<float>(0);
-        const float dy = PO.at<float>(1);
-        const float dz = PO.at<float>(2);
-        const float dist3DSq = dx*dx + dy*dy + dz*dz;
+        const float dist3DSq = POx*POx + POy*POy + POz*POz;
         const float maxDistSq = maxDistance * maxDistance;
         const float minDistSq = minDistance * minDistance;
 
@@ -955,10 +965,13 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
         // 只在需要时计算实际距离
         const float dist3D = sqrt(dist3DSq);
 
-        // 观察角度必须小于60度
-        cv::Mat Pn = pMP->GetNormal();
+        // 使用栈分配的 Point3f 替代 cv::Mat 获取法向量
+        cv::Point3f Pn;
+        pMP->GetNormal(Pn);
 
-        if(PO.dot(Pn)<0.5*dist3D)
+        // 使用纯标量点乘
+        const float dotProd = POx*Pn.x + POy*Pn.y + POz*Pn.z;
+        if(dotProd < 0.5f*dist3D)
             continue;
 
         int nPredictedLevel = pMP->PredictScale(dist3D,pKF);

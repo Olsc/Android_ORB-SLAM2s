@@ -269,7 +269,12 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
 std::vector<size_t> Frame::GetFeaturesInArea(const float &x, const float  &y, const float  &r, const int minLevel, const int maxLevel) const
 {
     std::vector<size_t> vIndices;
-    vIndices.reserve(N);
+    // 典型的半径搜索结果远少于 N 个，预留 16 个槽位足以避免大多数重分配
+    // 原来 reserve(N≈1000) 在 SearchLocalPoints 中被每个地图点调用一次，
+    // 导致每帧产生 ~500万 个无用槽位的初始化开销
+
+    // TODO: 临时数值，待测试和优化
+    vIndices.reserve(16);
 
     const int nMinCellX = max(0,(int)floor((x-mnMinX-r)*mfGridElementWidthInv));
     if(nMinCellX>=FRAME_GRID_COLS)
@@ -293,7 +298,8 @@ std::vector<size_t> Frame::GetFeaturesInArea(const float &x, const float  &y, co
     {
         for(int iy = nMinCellY; iy<=nMaxCellY; iy++)
         {
-            const std::vector<size_t> vCell = mGrid[ix][iy];
+            // 使用 const 引用，避免对每个 grid cell 触发 vector 深拷贝
+            const std::vector<size_t>& vCell = mGrid[ix][iy];
             if(vCell.empty())
                 continue;
 

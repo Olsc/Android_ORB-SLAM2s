@@ -2850,7 +2850,9 @@ void Tracking::UpdateLocalKeyFrames()
             {
                 mvpLocalKeyFrames.push_back(pParent);
                 pParent->mnTrackReferenceForFrame=mCurrentFrame.mnId;
-                break;
+                // 注意：父节点只有一个，处理后自然进入外循环下一次迭代
+                // 此处不能 break，否则会提前终止整个外层 for 循环，
+                // 导致其余关键帧的邻居/孩子/父节点全部无法加入局部地图
             }
         }
 

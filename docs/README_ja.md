@@ -12,13 +12,15 @@ https://github.com/Martin20150405/SLAM_AR_Android.git
 
 # ORB-SLAM2s: Android Spatial Computing & Lightweight AR Demo
 
-*ORB-SLAM2sの小文字の's'は**Smart · Swift · Small**（スマート・迅速・小型）を意味し、元のORB-SLAM2と比較して強化された知能性、より高速なパフォーマンス、より軽量なサイズを強調しています。*
+_ORB-SLAM2sの小文字の's'は**Smart · Swift · Small**（スマート・迅速・小型）を意味し、元のORB-SLAM2と比較して強化された知能性、より高速なパフォーマンス、より軽量なサイズを強調しています。_
 
 このプロジェクトでは小文字の's'を使用しています。大文字の'S'を持つ別の論文ORB-SLAM2S：
+
 ```
 （Y. Diao, R. Cen, F. Xue and X. Su, "ORB-SLAM2S: A Fast ORB-SLAM2 System with Sparse Optical Flow Tracking," 2021 13th International Conference on Advanced Computational Intelligence (ICACI), Wanzhou, China, 2021, pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.
 keywords: {Visualization;Simultaneous localization and mapping;Cameras;Real-time systems;Aircraft navigation;Central Processing Unit;Trajectory;visual SLAM;real-time performance;trajectory accuracy},）
 ```
+
 は、このプロジェクトと同様の性能最適化のコンセプトを持っていますが、その手法はまだこのプロジェクトに統合されていません。しかし、この論文は今後の最適化方向性に対する貴重な参考資料となるでしょう。研究者の皆様の貢献と共有に心より感謝いたします。
 
 ## プロジェクト概要
@@ -27,25 +29,25 @@ keywords: {Visualization;Simultaneous localization and mapping;Cameras;Real-time
 
 ### なぜORB-SLAM3ではなくORB-SLAM2なのか？
 
-* **軽量設計**: 依存関係が少なく、コードが簡素化されているため、モバイルプラットフォームでのコンパイルと展開が容易です。
-* **IMUとVIOのサポートについて**:
-    * **ORB-SLAM3の高いハードル**: 公式実装のVIOは**密結合**であり、高品質なIMUと厳密な**カメラ-IMU間のタイムスタンプ同期**が必要です。これはロボット工学では一般的ですが、Android携帯電話の標準APIでは「すぐに使える」状態にするのは困難です。
-    * **Androidの現状**: ほとんどの既存のAndroidデバイスはカメラとIMUの取得が非同期であり、統一されたハードウェア同期フレームワークが不足しており、民生グレードのIMUはノイズやドリフトが大きいです。厳密なキャリブレーションと同期がない場合、VIOは純粋なVisual SLAMよりも発散しやすくなります。Android 11以降のバージョンでのみSENSOR_TIMESTAMPメソッドが利用可能です。
-* **低リソース消費**: ORB-SLAM3と比較してCPUおよびRAMの要求が低いです。
-* **実用的な効率**: 単眼カメラのみのシナリオでは、標準的なモバイル用途においてORB-SLAM3と同等のパフォーマンスを発揮します。
+- **軽量設計**: 依存関係が少なく、コードが簡素化されているため、モバイルプラットフォームでのコンパイルと展開が容易です。
+- **IMUとVIOのサポートについて**:
+  - **ORB-SLAM3の高いハードル**: 公式実装のVIOは**密結合**であり、高品質なIMUと厳密な**カメラ-IMU間のタイムスタンプ同期**が必要です。これはロボット工学では一般的ですが、Android携帯電話の標準APIでは「すぐに使える」状態にするのは困難です。
+  - **Androidの現状**: ほとんどの既存のAndroidデバイスはカメラとIMUの取得が非同期であり、統一されたハードウェア同期フレームワークが不足しており、民生グレードのIMUはノイズやドリフトが大きいです。厳密なキャリブレーションと同期がない場合、VIOは純粋なVisual SLAMよりも発散しやすくなります。Android 11以降のバージョンでのみSENSOR_TIMESTAMPメソッドが利用可能です。
+- **低リソース消費**: ORB-SLAM3と比較してCPUおよびRAMの要求が低いです。
+- **実用的な効率**: 単眼カメラのみのシナリオでは、標準的なモバイル用途においてORB-SLAM3と同等のパフォーマンスを発揮します。
 
 ---
 
 ## 主要機能
 
-* **ポイントクラウドSLAMマッピング**: 単眼カメラ入力に基づくリアルタイムスパースマッピング。
-* **マップ永続化**: マップをローカルストレージに保存し、将来のセッションで再読み込みする機能をサポート。
-* **再ローカライゼーションとマッチング**: 既存マップ読み込み時のポーズ推定と特徴マッチング。
-* **信頼度の可視化**: キーポイントの視覚的追跡と、現在のフレームと読み込まれたマップ間のマッチング統計。
-* **平面検出**: 現在のポーズとポイントクラウドデータに基づいたインテリジェントな床/表面検出。
-* **ネイティブARレンダリング**: OpenGL ESを使用した基本的なAR実装。
-* **暗所フレーム検出**: SLAMスレッドのブロックを防ぐために、暗いまたは低品質のフレームを自動的にスキップ。
-* **ARオブジェクト管理**: 検出された平面上に3Dオブジェクトを配置および操作する機能。
+- **ポイントクラウドSLAMマッピング**: 単眼カメラ入力に基づくリアルタイムスパースマッピング。
+- **マップ永続化**: マップをローカルストレージに保存し、将来のセッションで再読み込みする機能をサポート。
+- **再ローカライゼーションとマッチング**: 既存マップ読み込み時のポーズ推定と特徴マッチング。
+- **信頼度の可視化**: キーポイントの視覚的追跡と、現在のフレームと読み込まれたマップ間のマッチング統計。
+- **平面検出**: 現在のポーズとポイントクラウドデータに基づいたインテリジェントな床/表面検出。
+- **ネイティブARレンダリング**: OpenGL ESを使用した基本的なAR実装。
+- **暗所フレーム検出**: SLAMスレッドのブロックを防ぐために、暗いまたは低品質のフレームを自動的にスキップ。
+- **ARオブジェクト管理**: 検出された平面上に3Dオブジェクトを配置および操作する機能。
 
 ---
 
@@ -53,12 +55,13 @@ keywords: {Visualization;Simultaneous localization and mapping;Cameras;Real-time
 
 現在主にQualcomm SnapdragonプラットフォームCPUでテストしています:
 
-| SoC | デバイス | パフォーマンス |
-|-----|--------|-------------|
-| Snapdragon 8 Elite | Xiaomi 15 | 30 FPS |
-| Snapdragon 8+ Gen1 | Redmi K60 | 30 FPS |
-| Snapdragon 870 | Xiaomi 10S | 30 FPS |
-| Snapdragon 835 | Xiaomi 6 | 15-20 FPS |
+| SoC                  | デバイス      | パフォーマンス |
+| -------------------- | ------------- | -------------- |
+| Snapdragon 8 Elite   | Xiaomi 15     | 30 FPS         |
+| Snapdragon 8+ Gen1   | Redmi K60     | 30 FPS         |
+| Snapdragon 870       | Xiaomi 10S    | 30 FPS         |
+| Snapdragon 835       | Xiaomi 6      | 15-20 FPS      |
+| Snapdragon AR1 Gen 1 | Rokid Glasses | 10-15 FPS      |
 
 ### 暗所フレーム検出
 
@@ -68,39 +71,38 @@ keywords: {Visualization;Simultaneous localization and mapping;Cameras;Real-time
 
 ## 進捗トラッカー
 
-* [x] スパースポイントクラウドSLAMマッピング
-* [x] マップ保存/読み込み機能
-* [x] 再ローカライゼーションマッチング
-* [x] 基本ARレンダリングエンジン
-* [x] 暗所フレームスキップロジック
-* [x] 3D ARオブジェクト管理
-* [x] 複数マップファイルの同時読み込みとマッチング
-* [x] **Unity3D**との統合。
+- [x] スパースポイントクラウドSLAMマッピング
+- [x] マップ保存/読み込み機能
+- [x] 再ローカライゼーションマッチング
+- [x] 基本ARレンダリングエンジン
+- [x] 暗所フレームスキップロジック
+- [x] 3D ARオブジェクト管理
+- [x] 複数マップファイルの同時読み込みとマッチング
+- [x] **Unity3D**との統合。
 
 ## 今後のロードマップ
 
-* [ ] マッピング速度と初期化の改善。
-* [ ] ARの安定性と6DoFの堅牢性の強化。
-* [ ] より高いフレームレートのためのレンダリングパイプラインの最適化。
-* [ ] センサーフュージョンの深化（VIO - Visual Inertial Odometry）。
-* [ ] SLAM周波数のダウンサンプリングと適応ノイズ処理。
-* [ ] 精密なセンサーチェッキングロジック。
-
-
+- [ ] マッピング速度と初期化の改善。
+- [ ] ARの安定性と6DoFの堅牢性の強化。
+- [ ] より高いフレームレートのためのレンダリングパイプラインの最適化。
+- [ ] センサーフュージョンの深化（VIO - Visual Inertial Odometry）。
+- [ ] SLAM周波数のダウンサンプリングと適応ノイズ処理。
+- [ ] 精密なセンサーチェッキングロジック。
 
 ## 謝辞
 
 このプロジェクトは、以下の優れたオープンソースライブラリに基づいて構築されています:
 
-* [ORB-SLAM2](https://github.com/raulmur/ORB_SLAM2)
-* [DBoW2](https://github.com/dorian3d/DBoW2)
-* [g2o](https://github.com/RainerKuemmerle/g2o)
-* [Eigen](http://eigen.tuxfamily.org/)
-* [OpenCV](https://opencv.org/)
+- [ORB-SLAM2](https://github.com/raulmur/ORB_SLAM2)
+- [DBoW2](https://github.com/dorian3d/DBoW2)
+- [g2o](https://github.com/RainerKuemmerle/g2o)
+- [Eigen](http://eigen.tuxfamily.org/)
+- [OpenCV](https://opencv.org/)
 
 ---
 
 # ORB-SLAM2
+
 **著者:** [Raul Mur-Artal](http://webdiis.unizar.es/~raulmur/), [Juan D. Tardos](http://webdiis.unizar.es/~jdtardos/), [J. M. M. Montiel](http://webdiis.unizar.es/~josemari/) および [Dorian Galvez-Lopez](http://doriangalvez.com/) ([DBoW2](https://github.com/dorian3d/DBoW2))
 
 ORB-SLAM2は、**単眼**、**ステレオ**、および**RGB-D**カメラ用のリアルタイムSLAMライブラリであり、カメラの軌跡とスパース3D再構成（ステレオおよびRGB-Dでは真のスケールで）を計算します。ループを検出し、リアルタイムでカメラを再ローカライズできます。[KITTIデータセット](http://www.cvlibs.net/datasets/kitti/eval_odometry.php)でステレオまたは単眼として、[TUMデータセット](http://vision.in.tum.de/data/datasets/rgbd-dataset)でRGB-Dまたは単眼として、[EuRoCデータセット](http://projects.asl.ethz.ch/datasets/doku.php?id=kmavvisualinertialdatasets)でステレオまたは単眼としてSLAMシステムを実行する例を提供しています。
@@ -112,14 +114,13 @@ alt="ORB-SLAM2" width="240" height="180" border="10" /></a>
 <a href="https://www.youtube.com/embed/kPwy8yA4CKM" target="_blank"><img src="http://img.youtube.com/vi/kPwy8yA4CKM/0.jpg" 
 alt="ORB-SLAM2" width="240" height="180" border="10" /></a>
 
-
 ### 関連出版物:
 
-[単眼] Raúl Mur-Artal, J. M. M. Montiel and Juan D. Tardós. **ORB-SLAM: A Versatile and Accurate Monocular SLAM System**. *IEEE Transactions on Robotics,* vol. 31, no. 5, pp. 1147-1163, 2015. (**2015 IEEE Transactions on Robotics Best Paper Award**). **[PDF](http://webdiis.unizar.es/~raulmur/MurMontielTardosTRO15.pdf)**.
+[単眼] Raúl Mur-Artal, J. M. M. Montiel and Juan D. Tardós. **ORB-SLAM: A Versatile and Accurate Monocular SLAM System**. _IEEE Transactions on Robotics,_ vol. 31, no. 5, pp. 1147-1163, 2015. (**2015 IEEE Transactions on Robotics Best Paper Award**). **[PDF](http://webdiis.unizar.es/~raulmur/MurMontielTardosTRO15.pdf)**.
 
-[ステレオおよびRGB-D] Raúl Mur-Artal and Juan D. Tardós. **ORB-SLAM2: an Open-Source SLAM System for Monocular, Stereo and RGB-D Cameras**. *IEEE Transactions on Robotics,* vol. 33, no. 5, pp. 1255-1262, 2017. **[PDF](https://128.84.21.199/pdf/1610.06475.pdf)**.
+[ステレオおよびRGB-D] Raúl Mur-Artal and Juan D. Tardós. **ORB-SLAM2: an Open-Source SLAM System for Monocular, Stereo and RGB-D Cameras**. _IEEE Transactions on Robotics,_ vol. 33, no. 5, pp. 1255-1262, 2017. **[PDF](https://128.84.21.199/pdf/1610.06475.pdf)**.
 
-[DBoW2 Place Recognizer] Dorian Gálvez-López and Juan D. Tardós. **Bags of Binary Words for Fast Place Recognition in Image Sequences**. *IEEE Transactions on Robotics,* vol. 28, no. 5, pp.  1188-1197, 2012. **[PDF](http://doriangalvez.com/php/dl.php?dlp=GalvezTRO12.pdf)**
+[DBoW2 Place Recognizer] Dorian Gálvez-López and Juan D. Tardós. **Bags of Binary Words for Fast Place Recognition in Image Sequences**. _IEEE Transactions on Robotics,_ vol. 28, no. 5, pp. 1188-1197, 2012. **[PDF](http://doriangalvez.com/php/dl.php?dlp=GalvezTRO12.pdf)**
 
 # 1. ライセンス
 
@@ -167,17 +168,21 @@ ORB-SLAM2コアライブラリは[GPLv3ライセンス](https://github.com/raulm
 # 2. 事前条件
 
 ## OpenCV
+
 画像と特徴の操作には[OpenCV](http://opencv.org)を使用しています。ダウンロードおよびインストール手順は以下にあります: http://opencv.org。**最低4.5.0以上が必要です**。
 
 ## Eigen3
+
 g2oに必要です（下記参照）。ダウンロードおよびインストール手順は以下にあります: http://eigen.tuxfamily.org。
 
 ## DBoW2およびg2o（Thirdpartyフォルダに含まれています）
+
 [DBoW2](https://github.com/dorian3d/DBoW2)および[g2o](https://github.com/RainerKuemmerle/g2o)ライブラリをアルゴリズム参照として使用しています。両方のライブラリ（ライセンスを含む）は*Thirdparty*フォルダに含まれています。
 
 多言語翻訳はQwen3によって提供されています。誤りがあってもご容赦ください。誤りが見つかった場合は問題を提出してください。
 
 # 慣性航法（IMU）について
+
 参考：https://github.com/Olsc/Android_3dof <br>
 参考：https://github.com/ZUXTUO/Android_6dof <br>
 本プロジェクトはまだ研究統合が完了していません。
@@ -187,6 +192,7 @@ g2oに必要です（下記参照）。ダウンロードおよびインスト�
 </p>
 
 ---
+
 <br>
 <br>
 

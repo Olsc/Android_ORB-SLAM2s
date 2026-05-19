@@ -30,9 +30,8 @@ def generate_flowchart(lang='en'):
     dot.attr(concentrate='true') # 合并连线
     
     # 字体设置
-    # 中文使用 文泉驿微米黑 (WenQuanYi Micro Hei) 以确保正确渲染
-    # 英文使用 Helvetica 以获得简洁外观
-    font_name = 'WenQuanYi Micro Hei' if lang == 'zh' else 'Helvetica'
+    # 中文和英文使用支持度最广的字体列表，确保在 Windows (微软雅黑) 和 Linux (文泉驿微米黑) 均能完美渲染
+    font_name = 'Microsoft YaHei, SimHei, WenQuanYi Micro Hei, Noto Sans CJK SC, sans-serif' if lang == 'zh' else 'Helvetica, Arial, sans-serif'
     dot.attr(fontname=font_name, fontsize='12')
     
     # 默认节点样式
