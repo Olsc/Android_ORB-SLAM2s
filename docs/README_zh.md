@@ -169,12 +169,11 @@ ORB-SLAM2核心库以[GPLv3许可证](https://github.com/raulmur/ORB_SLAM2/blob/
 
 ## OpenCV
 
-我们使用[OpenCV](http://opencv.org)来操作图像和特征。下载和安装说明可在以下网址找到：http://opencv.org <br>
-**至少需要4.5.0版本**。
+我们使用[OpenCV](http://opencv.org)来操作图像和特征。下载和安装说明可在以下网址找到：http://opencv.org **至少需要4.5.0版本**。
 
 ## Eigen3
 
-g2o所需（见下文）。下载和安装说明可在以下网址找到：http://eigen.tuxfamily.org。
+g2o所需（见下文）。下载和安装说明可在以下网址找到：http://eigen.tuxfamily.org 。
 
 ## DBoW2和g2o（包含在Thirdparty文件夹中）
 

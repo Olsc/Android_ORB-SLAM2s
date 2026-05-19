@@ -169,12 +169,11 @@ ORB-SLAM2コアライブラリは[GPLv3ライセンス](https://github.com/raulm
 
 ## OpenCV
 
-画像と特徴の操作には[OpenCV](http://opencv.org)を使用しています。ダウンロードおよびインストール手順は以下にあります: http://opencv.org <br>
-**最低4.5.0以上が必要です**。
+画像と特徴の操作には[OpenCV](http://opencv.org)を使用しています。ダウンロードおよびインストール手順は以下にあります: http://opencv.org **最低4.5.0以上が必要です**。
 
 ## Eigen3
 
-g2oに必要です（下記参照）。ダウンロードおよびインストール手順は以下にあります: http://eigen.tuxfamily.org。
+g2oに必要です（下記参照）。ダウンロードおよびインストール手順は以下にあります: http://eigen.tuxfamily.org 。
 
 ## DBoW2およびg2o（Thirdpartyフォルダに含まれています）
 
