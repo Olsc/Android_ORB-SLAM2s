@@ -90,4 +90,11 @@
     <string name="hint_waiting_browser_frame">Waiting for browser image…</string>
     <string name="hint_web_server_started">Web server started: %1$s</string>
 
+    <string name="privacy_title">Privacy Policy &amp; Terms of Use</string>
+    <string name="privacy_scroll_hint">↓ Please scroll to the bottom to read the full agreement</string>
+    <string name="privacy_scroll_done">✓ You have read the full agreement</string>
+    <string name="privacy_agree">Agree &amp; Continue</string>
+    <string name="privacy_disagree_notice">If you do not agree, please exit the application</string>
+    <string name="privacy_load_error">Failed to load privacy policy. Please try again.</string>
+
 </resources>

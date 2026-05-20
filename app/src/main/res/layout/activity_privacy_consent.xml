@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FF1A1A2E"
+    android:keepScreenOn="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- Markdown content area -->
+        <ScrollView
+            android:id="@+id/scroll_view_privacy"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:scrollbarStyle="insideOverlay"
+            android:scrollbars="vertical"
+            android:fadeScrollbars="false">
+
+            <TextView
+                android:id="@+id/tv_privacy_content"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                android:paddingStart="64dp"
+                android:paddingEnd="64dp"
+                android:paddingTop="24dp"
+                android:paddingBottom="24dp"
+                android:textColor="#FFE0E0E0"
+                android:textSize="16sp"
+                android:lineSpacingExtra="6dp" />
+
+        </ScrollView>
+
+        <!-- Scroll hint and agree button area -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#FF16213E"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp">
+
+            <TextView
+                android:id="@+id/tv_scroll_hint"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="12dp"
+                android:text="@string/privacy_scroll_hint"
+                android:textColor="#FFFFA726"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btn_agree"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:enabled="false"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:text="@string/privacy_agree"
+                android:textAllCaps="false"
+                android:textColor="#88FFFFFF"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:backgroundTint="#FF666666" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+</RelativeLayout>

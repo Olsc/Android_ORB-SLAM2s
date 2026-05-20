@@ -23,7 +23,15 @@ android {
             pickFirsts += ['lib/armeabi-v7a/libopencv_java4.so', 'lib/arm64-v8a/libopencv_java4.so', 'lib/**/libc++_shared.so']
         }
         resources {
-            excludes += ['lib/x86/**', 'lib/x86_64/**']
+            excludes += [
+                'lib/x86/**', 
+                'lib/x86_64/**', 
+                '**/DebugProbesKt.bin',
+                '**/kotlin/**',
+                '**/*.kotlin_metadata',
+                '**/*.kotlin_builtins',
+                'META-INF/*.kotlin_module'
+            ]
         }
     }
 
@@ -87,6 +95,7 @@ dependencies {
     implementation 'androidx.camera:camera-view:1.6.1'
     implementation 'com.google.guava:guava:33.6.0-android'
     implementation 'com.google.zxing:core:3.5.4'
+    implementation 'io.noties.markwon:core:4.6.2'
 }
 
 configurations.all {
