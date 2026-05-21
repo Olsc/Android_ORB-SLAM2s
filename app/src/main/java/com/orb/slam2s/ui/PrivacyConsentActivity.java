@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ScrollView;
@@ -20,23 +19,36 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
 import io.noties.markwon.Markwon;
+import io.noties.markwon.ext.tables.TablePlugin;
 
 public class PrivacyConsentActivity extends AppCompatActivity {
+
+    /**
+     * 隐私协议开关。true = 启动时展示隐私协议（阅读到底部后方可同意）；
+     * false = 跳过隐私协议，直接进入应用。
+     */
+    public static final boolean ENABLE_PRIVACY = true;
 
     private static final String TAG = "PrivacyConsent";
     private static final String PREF_NAME = "privacy_prefs";
     private static final String KEY_AGREED = "privacy_agreed";
 
-    private ScrollView scrollView;
     private Button btnAgree;
     private TextView tvScrollHint;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // 如果隐私协议开关关闭，直接跳过隐私页面进入应用
+        if (!ENABLE_PRIVACY) {
+            startNextActivity();
+            return;
+        }
 
         // 如果已经同意过，直接跳转
         if (hasAgreed()) {
@@ -51,7 +63,7 @@ public class PrivacyConsentActivity extends AppCompatActivity {
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        scrollView = findViewById(R.id.scroll_view_privacy);
+        ScrollView scrollView = findViewById(R.id.scroll_view_privacy);
         btnAgree = findViewById(R.id.btn_agree);
         tvScrollHint = findViewById(R.id.tv_scroll_hint);
 
@@ -63,9 +75,11 @@ public class PrivacyConsentActivity extends AppCompatActivity {
             return;
         }
 
-        // 使用 Markwon 渲染 markdown
+        // 使用 Markwon 渲染 markdown（启用表格插件支持 GFM 表格）
         TextView tvContent = findViewById(R.id.tv_privacy_content);
-        Markwon markwon = Markwon.create(this);
+        Markwon markwon = Markwon.builder(this)
+                .usePlugin(TablePlugin.create(this))
+                .build();
         markwon.setMarkdown(tvContent, markdownContent);
 
         // 设置滚动监听：滑到底部才启用同意按钮
@@ -103,7 +117,7 @@ public class PrivacyConsentActivity extends AppCompatActivity {
 
         try {
             InputStream is = getAssets().open(fileName);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
             StringBuilder sb = new StringBuilder();
             String line;
             while ((line = reader.readLine()) != null) {

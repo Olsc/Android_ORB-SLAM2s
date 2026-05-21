@@ -71,57 +71,47 @@ The following permissions are declared in AndroidManifest.xml. Each permission s
 
 ### 3.1 `android.permission.CAMERA`
 
-| Item | Description |
-|------|-------------|
-| **Purpose** | Access the device rear camera to capture real-time video frames |
-| **Usage Location** | `CameraGLView.java` → `CameraX` framework → `ImageAnalysis.Analyzer` |
-| **Necessity** | **Core required permission**. SLAM system operation depends on real-time camera image acquisition for ORB feature extraction, camera trajectory estimation, and 3D point cloud map construction. Without this permission, SLAM and AR functionality cannot function. |
-| **Data Scope** | Only real-time video frames are acquired for image processing (grayscale and RGBA). No recording, uploading, or persistent storage of video streams occurs. Frame data exists temporarily in memory and is released immediately after processing. |
-| **Usage Scenario** | Throughout SLAM initialization, real-time tracking, plane detection, and AR rendering. |
-| **Rear Camera Only** | Uses only `CameraSelector.LENS_FACING_BACK` (rear camera); does not access the front camera. |
+- **Purpose**: Access the device rear camera to capture real-time video frames
+- **Usage Location**: `CameraGLView.java` → `CameraX` framework → `ImageAnalysis.Analyzer`
+- **Necessity**: **Core required permission**. SLAM system operation depends on real-time camera image acquisition for ORB feature extraction, camera trajectory estimation, and 3D point cloud map construction. Without this permission, SLAM and AR functionality cannot function.
+- **Data Scope**: Only real-time video frames are acquired for image processing (grayscale and RGBA). No recording, uploading, or persistent storage of video streams occurs. Frame data exists temporarily in memory and is released immediately after processing.
+- **Usage Scenario**: Throughout SLAM initialization, real-time tracking, plane detection, and AR rendering.
+- **Rear Camera Only**: Uses only `CameraSelector.LENS_FACING_BACK` (rear camera); does not access the front camera.
 
 ### 3.2 `android.permission.READ_EXTERNAL_STORAGE`
 
-| Item | Description |
-|------|-------------|
-| **Purpose** | Read saved SLAM map files, vocabulary files, and camera configuration files |
-| **Usage Location** | `NativeHelper.java` — `initSLAM()`, `loadMap()`, `loadMapWithId()`; `ZipHelper.java` |
-| **Necessity** | **Functionally required**. The app needs to read the ORB vocabulary file (`ORBvoc.txt.arm.bin`) and camera parameter configuration (`CameraSettings.yaml`) at startup; loading previously saved maps requires reading `.bin` and `.json` files. |
-| **Limitation** | `android:maxSdkVersion="32"` — Android 13+ (API 33+) will no longer grant this permission; the app will use scoped storage (`getExternalFilesDir()`) instead. |
-| **Storage Path** | Only accesses files under `getExternalFilesDir("SLAM")`; does not read other user private files. |
+- **Purpose**: Read saved SLAM map files, vocabulary files, and camera configuration files
+- **Usage Location**: `NativeHelper.java` — `initSLAM()`, `loadMap()`, `loadMapWithId()`; `ZipHelper.java`
+- **Necessity**: **Functionally required**. The app needs to read the ORB vocabulary file (`ORBvoc.txt.arm.bin`) and camera parameter configuration (`CameraSettings.yaml`) at startup; loading previously saved maps requires reading `.bin` and `.json` files.
+- **Limitation**: `android:maxSdkVersion="32"` — Android 13+ (API 33+) will no longer grant this permission; the app will use scoped storage (`getExternalFilesDir()`) instead.
+- **Storage Path**: Only accesses files under `getExternalFilesDir("SLAM")`; does not read other user private files.
 
 ### 3.3 `android.permission.WRITE_EXTERNAL_STORAGE`
 
-| Item | Description |
-|------|-------------|
-| **Purpose** | Save SLAM map files (.bin) and metadata files (.json) to external storage |
-| **Usage Location** | `NativeHelper.MapManager.saveMap()` |
-| **Necessity** | **Functionally required**. When the user triggers "Save Map", the currently constructed sparse point cloud map is serialized and written to storage along with metadata (keyframe count, map point count, creation time, etc.). |
-| **Limitation** | `android:maxSdkVersion="32"` — Same as read permission; higher Android versions use scoped storage. |
-| **Written Content** | Only `.bin` (serialized map data) and `.json` (metadata description) file types. |
-| **Storage Path** | Only writes to the `getExternalFilesDir("SLAM/maps")` directory; does not modify other user files. |
+- **Purpose**: Save SLAM map files (.bin) and metadata files (.json) to external storage
+- **Usage Location**: `NativeHelper.MapManager.saveMap()`
+- **Necessity**: **Functionally required**. When the user triggers "Save Map", the currently constructed sparse point cloud map is serialized and written to storage along with metadata (keyframe count, map point count, creation time, etc.).
+- **Limitation**: `android:maxSdkVersion="32"` — Same as read permission; higher Android versions use scoped storage.
+- **Written Content**: Only `.bin` (serialized map data) and `.json` (metadata description) file types.
+- **Storage Path**: Only writes to the `getExternalFilesDir("SLAM/maps")` directory; does not modify other user files.
 
 ### 3.4 `android.permission.INTERNET`
 
-| Item | Description |
-|------|-------------|
-| **Purpose** | Start an HTTP Web server on the device for remote viewing of camera feeds and SLAM data via a browser |
-| **Usage Location** | `WebServer.java` — built-in SSL-encrypted Web server |
-| **Necessity** | **Optional permission**. Used only when the user manually activates the "Start Web Server" button. Functions:
-1. Real-time viewing of SLAM point clouds and camera feeds in a browser over LAN;
-2. Support for browser-based image frame upload for SLAM processing (Web mode).
-This feature is fully user-initiated and controllable. |
-| **Non-Internet Use** | This project **does not** actively connect to any internet server, send data to remote servers, or contain any remote analytics, statistics, or telemetry functionality. |
-| **Explanation** | This permission is solely for local (including LAN) Web service; it does not constitute data transmission to the cloud. |
+- **Purpose**: Start an HTTP Web server on the device for remote viewing of camera feeds and SLAM data via a browser
+- **Usage Location**: `WebServer.java` — built-in SSL-encrypted Web server
+- **Necessity**: **Optional permission**. Used only when the user manually activates the "Start Web Server" button. Functions:
+  1. Real-time viewing of SLAM point clouds and camera feeds in a browser over LAN;
+  2. Support for browser-based image frame upload for SLAM processing (Web mode).
+  This feature is fully user-initiated and controllable.
+- **Non-Internet Use**: This project **does not** actively connect to any internet server, send data to remote servers, or contain any remote analytics, statistics, or telemetry functionality.
+- **Explanation**: This permission is solely for local (including LAN) Web service; it does not constitute data transmission to the cloud.
 
 ### 3.5 `android.permission.ACCESS_NETWORK_STATE`
 
-| Item | Description |
-|------|-------------|
-| **Purpose** | Obtain the device's local LAN IP address for the Web server URL display and QR code generation |
-| **Usage Location** | `ArCamUIActivity.java` — `getDeviceIpAddress()` method |
-| **Necessity** | **Optional permission**. Used only when the Web server is enabled, to display the LAN access address to the user. |
-| **Usage Method** | Enumerates `NetworkInterface` to obtain a non-loopback IPv4 address; does not track network behavior or read specific network content. |
+- **Purpose**: Obtain the device's local LAN IP address for the Web server URL display and QR code generation
+- **Usage Location**: `ArCamUIActivity.java` — `getDeviceIpAddress()` method
+- **Necessity**: **Optional permission**. Used only when the Web server is enabled, to display the LAN access address to the user.
+- **Usage Method**: Enumerates `NetworkInterface` to obtain a non-loopback IPv4 address; does not track network behavior or read specific network content.
 
 ---
 

@@ -71,57 +71,47 @@ ORB-SLAM2s（本 Android 适配与增强项目）采用 **GNU General Public Lic
 
 ### 3.1 `android.permission.CAMERA`（相机）
 
-| 项目 | 说明 |
-|------|------|
-| **用途** | 调用设备后置摄像头实时捕捉视频帧 |
-| **使用位置** | `CameraGLView.java` → `CameraX` 框架 → `ImageAnalysis.Analyzer` |
-| **必要性** | **核心必需权限**。SLAM 系统的运行依赖摄像头实时采集环境图像，从中提取 ORB 特征点，估计相机运动轨迹，构建三维点云地图。无此权限，SLAM 和 AR 功能完全无法工作。 |
-| **数据范围** | 仅获取实时视频帧用于图像处理（灰度图和 RGBA 图），不录制、不上传、不持久化存储视频流。帧数据仅在内存中临时存在，处理完毕后即时释放。 |
-| **使用场景** | SLAM 初始化、实时跟踪、平面检测、AR 渲染全过程。 |
-| **后置摄像头** | 仅使用 `CameraSelector.LENS_FACING_BACK`（后置摄像头），不调用前置摄像头。 |
+- **用途**: 调用设备后置摄像头实时捕捉视频帧
+- **使用位置**: `CameraGLView.java` → `CameraX` 框架 → `ImageAnalysis.Analyzer`
+- **必要性**: **核心必需权限**。SLAM 系统的运行依赖摄像头实时采集环境图像，从中提取 ORB 特征点，估计相机运动轨迹，构建三维点云地图。无此权限，SLAM 和 AR 功能完全无法工作。
+- **数据范围**: 仅获取实时视频帧用于图像处理（灰度图和 RGBA 图），不录制、不上传、不持久化存储视频流。帧数据仅在内存中临时存在，处理完毕后即时释放。
+- **使用场景**: SLAM 初始化、实时跟踪、平面检测、AR 渲染全过程。
+- **后置摄像头**: 仅使用 `CameraSelector.LENS_FACING_BACK`（后置摄像头），不调用前置摄像头。
 
 ### 3.2 `android.permission.READ_EXTERNAL_STORAGE`（读取外部存储）
 
-| 项目 | 说明 |
-|------|------|
-| **用途** | 读取已保存的 SLAM 地图文件、词汇表文件、相机配置文件 |
-| **使用位置** | `NativeHelper.java` 中的 `initSLAM()`、`loadMap()`、`loadMapWithId()`；`ZipHelper.java` |
-| **必要性** | **功能必需**。启动时需读取 ORB 词汇表（`ORBvoc.txt.arm.bin`）和相机参数配置（`CameraSettings.yaml`）；加载以前保存的地图时需要读取 `.bin` 和 `.json` 文件。 |
-| **限制** | `android:maxSdkVersion="32"` —— Android 13+（API 33+）系统将不再授予此权限，应用会使用 `getExternalFilesDir()` 等更安全的作用域存储方式。 |
-| **存储路径** | 仅操作 `getExternalFilesDir("SLAM")` 目录下的文件，不会读取用户的其他私人文件。 |
+- **用途**: 读取已保存的 SLAM 地图文件、词汇表文件、相机配置文件
+- **使用位置**: `NativeHelper.java` 中的 `initSLAM()`、`loadMap()`、`loadMapWithId()`；`ZipHelper.java`
+- **必要性**: **功能必需**。启动时需读取 ORB 词汇表（`ORBvoc.txt.arm.bin`）和相机参数配置（`CameraSettings.yaml`）；加载以前保存的地图时需要读取 `.bin` 和 `.json` 文件。
+- **限制**: `android:maxSdkVersion="32"` —— Android 13+（API 33+）系统将不再授予此权限，应用会使用 `getExternalFilesDir()` 等更安全的作用域存储方式。
+- **存储路径**: 仅操作 `getExternalFilesDir("SLAM")` 目录下的文件，不会读取用户的其他私人文件。
 
 ### 3.3 `android.permission.WRITE_EXTERNAL_STORAGE`（写入外部存储）
 
-| 项目 | 说明 |
-|------|------|
-| **用途** | 保存 SLAM 地图文件（.bin）及其元数据文件（.json）到外部存储 |
-| **使用位置** | `NativeHelper.MapManager.saveMap()` |
-| **必要性** | **功能必需**。用户触发"保存地图"操作时，需要将当前构建的稀疏点云地图以二进制格式写入存储，并附带关键帧数量、地图点数量、创建时间等元数据。 |
-| **限制** | `android:maxSdkVersion="32"` —— 同读取权限，高版本 Android 采用作用域存储。 |
-| **写入内容** | 仅写入 `.bin`（序列化地图数据）和 `.json`（元数据描述）两种文件类型。 |
-| **存储路径** | 仅写入 `getExternalFilesDir("SLAM/maps")` 目录，不会修改用户的其他文件。 |
+- **用途**: 保存 SLAM 地图文件（.bin）及其元数据文件（.json）到外部存储
+- **使用位置**: `NativeHelper.MapManager.saveMap()`
+- **必要性**: **功能必需**。用户触发"保存地图"操作时，需要将当前构建的稀疏点云地图以二进制格式写入存储，并附带关键帧数量、地图点数量、创建时间等元数据。
+- **限制**: `android:maxSdkVersion="32"` —— 同读取权限，高版本 Android 采用作用域存储。
+- **写入内容**: 仅写入 `.bin`（序列化地图数据）和 `.json`（元数据描述）两种文件类型。
+- **存储路径**: 仅写入 `getExternalFilesDir("SLAM/maps")` 目录，不会修改用户的其他文件。
 
 ### 3.4 `android.permission.INTERNET`（互联网访问）
 
-| 项目 | 说明 |
-|------|------|
-| **用途** | 在本设备上启动 HTTP Web 服务器，用于通过浏览器远程查看相机画面和 SLAM 数据 |
-| **使用位置** | `WebServer.java` —— 内置的 SSL 加密 Web 服务器 |
-| **必要性** | **可选权限**。仅在用户手动点击"启动 Web 服务器"按钮时使用。用于：
-1. 在局域网内通过浏览器实时查看 SLAM 点云和相机画面；
-2. 支持浏览器上传图像帧进行 SLAM 处理（Web 模式）。
-此功能完全由用户主动触发并可控。 |
-| **非联网用途** | 本项目**不会**主动连接任何互联网服务器、不发送数据到远程服务器、不包含任何远程分析、统计或遥测功能。 |
-| **说明** | 此权限仅用于设备本地（含局域网）的 Web 服务，不构成对云端的数据传输。 |
+- **用途**: 在本设备上启动 HTTP Web 服务器，用于通过浏览器远程查看相机画面和 SLAM 数据
+- **使用位置**: `WebServer.java` —— 内置的 SSL 加密 Web 服务器
+- **必要性**: **可选权限**。仅在用户手动点击"启动 Web 服务器"按钮时使用。用于：
+  1. 在局域网内通过浏览器实时查看 SLAM 点云和相机画面；
+  2. 支持浏览器上传图像帧进行 SLAM 处理（Web 模式）。
+  此功能完全由用户主动触发并可控。
+- **非联网用途**: 本项目**不会**主动连接任何互联网服务器、不发送数据到远程服务器、不包含任何远程分析、统计或遥测功能。
+- **说明**: 此权限仅用于设备本地（含局域网）的 Web 服务，不构成对云端的数据传输。
 
 ### 3.5 `android.permission.ACCESS_NETWORK_STATE`（访问网络状态）
 
-| 项目 | 说明 |
-|------|------|
-| **用途** | 获取设备当前局域网 IP 地址，用于 Web 服务器的 URL 展示和二维码生成 |
-| **使用位置** | `ArCamUIActivity.java` 中的 `getDeviceIpAddress()` 方法 |
-| **必要性** | **可选权限**。仅在启用 Web 服务器功能时使用，用于向用户显示局域网访问地址。 |
-| **使用方式** | 枚举 `NetworkInterface` 获取非回环的 IPv4 地址，不追踪网络行为，不读取具体网络内容。 |
+- **用途**: 获取设备当前局域网 IP 地址，用于 Web 服务器的 URL 展示和二维码生成
+- **使用位置**: `ArCamUIActivity.java` 中的 `getDeviceIpAddress()` 方法
+- **必要性**: **可选权限**。仅在启用 Web 服务器功能时使用，用于向用户显示局域网访问地址。
+- **使用方式**: 枚举 `NetworkInterface` 获取非回环的 IPv4 地址，不追踪网络行为，不读取具体网络内容。
 
 ---
 

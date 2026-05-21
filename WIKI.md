@@ -1,14 +1,20 @@
 # ORB-SLAM2s: Android 平台轻量化空间计算与增强现实系统
 
-（此文档仍在审查中）
-
 ## 摘要
 
-本文档详细阐述了 ORB-SLAM2s 的数学原理与核心算法实现。作为一个基于 Android 平台的轻量化空间计算系统，本项目在经典 ORB-SLAM2 框架的基础上，进一步集成了即时平面检测、地图持久化与各向异性尺度下的重定位算法。本文将严谨地从数学角度描述系统的各个模块，包括基于李代数的位姿估计、光束法平差（Bundle Adjustment）、词袋模型（Bag of Words）的回环检测以及基于奇异值分解（SVD）的平面拟合算法。
+本文档详细阐述了 ORB-SLAM2s 的数学原理与核心算法实现，以及基于源码的实际系统架构。作为一个基于 Android 平台的轻量化空间计算系统，本项目在经典 ORB-SLAM2 框架的基础上，进一步集成了多地图管理、异步后台重定位、即时平面检测、地图持久化与 AR 场景恢复等功能。本文将严谨地从数学角度描述系统的各个模块，包括基于李代数的位姿估计、光束法平差（Bundle Adjustment）、词袋模型（Bag of Words）的回环检测、基于奇异值分解（SVD）的平面拟合算法，以及项目的核心创新——异步全局重定位机制。
 
 ## 1. 引言
 
-同步定位与地图构建（SLAM）是移动机器人与增强现实（AR）领域的核心技术。ORB-SLAM2s 旨在移动端有限的计算资源下，通过单目相机实现鲁棒的 6DoF 轨迹跟踪与稀疏环境重建。系统采用多线程架构，并行处理跟踪、局部建图与回环检测任务。
+同步定位与地图构建（SLAM）是移动机器人与增强现实（AR）领域的核心技术。ORB-SLAM2s 旨在移动端有限的计算资源下，通过单目相机实现鲁棒的 6DoF 轨迹跟踪与稀疏环境重建。系统采用多线程架构，并行处理跟踪、局部建图与回环检测任务，并在此基础上增加了异步全局重定位线程，支持多地图加载与坐标系无缝对齐。
+
+**与原始 ORB-SLAM2 的关键差异**:
+- 多地图容器管理（`mvpMaps`），支持创建子地图、切换地图、增量追加
+- 独立的 GlobalReloc 后台线程，持续运行全局重定位
+- 编译时参数配置（`Config.h`），替代 YAML 运行时加载
+- 嵌入式资源加载（ORB 词汇表通过 `.incbin` 直接嵌入 `.so`）
+- 动态分辨率适配（运行时缩放内参与投影矩阵）
+- AR 平面检测与虚拟物体持久化
 
 ## 2. 符号约定
 
@@ -19,6 +25,7 @@
     *   旋转矩阵 $\mathbf{R} \in SO(3)$，平移向量 $\mathbf{t} \in \mathbb{R}^3$。
     *   变换矩阵 $\mathbf{T}_{cw} \in SE(3)$ 表示从世界坐标系到相机坐标系的变换。
 *   **地图点**: $\mathbf{X}_w \in \mathbb{R}^3$ 表示世界坐标系下的 3D 点。
+*   **相似变换**: $\mathbf{S} \in Sim(3)$ 包含尺度因子 $s$，用于闭环校正。
 
 ## 3. 视觉里程计与位姿跟踪 (Visual Odometry & Tracking)
 
@@ -36,7 +43,24 @@ $$
 \mathbf{u} = \pi(\mathbf{P}_c) = \begin{bmatrix} f_x \frac{X_c}{Z_c} + c_x \\ f_y \frac{Y_c}{Z_c} + c_y \end{bmatrix}
 $$
 
-其中 $f_x, f_y$ 为焦距，$c_x, c_y$ 为主点坐标。
+其中 $f_x, f_y$ 为焦距，$c_x, c_y$ 为主点坐标。实际内参通过 `Config.h` 编译时常量定义：
+
+```cpp
+const float CAMERA_FX = 640.0f;  // 640x360 基准分辨率下标定
+const float CAMERA_FY = 640.0f;
+const float CAMERA_CX = 320.0f;
+const float CAMERA_CY = 180.0f;
+```
+
+**动态分辨率缩放**: 系统支持运行时更改相机分辨率。基准内参在 640x360 下标定，实际运行时按比例缩放：
+
+```cpp
+float scaleX = (float)slamWidth / BASE_SLAM_WIDTH;   // 640
+float scaleY = (float)slamHeight / BASE_SLAM_HEIGHT;  // 360
+gScaledFx = gBaseFx * scaleX;
+```
+
+同时通过 `slamSys->UpdateCalibration(fx, fy, cx, cy)` 同步更新 SLAM 核心模块的校准参数。
 
 ### 3.2 基于李代数的位姿优化
 
@@ -94,6 +118,8 @@ $$
 
 结合投影约束，构建线性方程组 $\mathbf{M}\mathbf{x} = \mathbf{0}$ 求解控制点在相机坐标系下的坐标，进而通过 Procrustes 分析恢复旋转 $\mathbf{R}$ 和平移 $\mathbf{t}$。随后使用 RANSAC 剔除外点。
 
+**代码实现差异**: 项目中的 `PnPsolver` 额外实现了数据清洗（NaN/Inf 检查）、策略分级（$N<4$ 直接返回、$N<6$ 跳过 RANSAC、$N\ge6$ 启用 RANSAC）以及 OpenCV 断言错误的异常捕获。
+
 ### 3.5 单目初始化 (Monocular Initialization)
 
 单目 SLAM 系统缺乏深度信息，需通过两帧运动恢复初始地图。系统并行计算单应性矩阵 (Homography) $\mathbf{H}_{21}$ 和基础矩阵 (Fundamental) $\mathbf{F}_{21}$，并通过评分模型选择最优模型。
@@ -111,7 +137,7 @@ $$
     $$
     S_M = \sum_i (\rho(d^2(\mathbf{x}_{2i}, M \mathbf{x}_{1i})) + \rho(d^2(\mathbf{x}_{1i}, M^{-1} \mathbf{x}_{2i})))
     $$
-    其中 $\rho(\cdot)$ 为卡方检验阈值截断函数。若 $S_H / (S_H + S_F) > 0.45$，选择单应性模型；否则选择基础矩阵模型。
+    其中 $\rho(\cdot)$ 为卡方检验阈值截断函数。若 $S_H / (S_H + S_F) > 0.40$（Config.h: `INITIALIZER_H_SCORE_RATIO`），选择单应性模型；否则选择基础矩阵模型。初始化成功后要求视差 > 1.0° 且三角化点数 > 50。
 
 ### 3.6 优化雅可比矩阵 (Jacobians in Optimization)
 
@@ -143,6 +169,11 @@ $$
 $$
 \rho(s) = \begin{cases} s & s \le \delta^2 \\ 2\delta \sqrt{s} - \delta^2 & s > \delta^2 \end{cases}
 $$
+
+**资源上限管理**（Config.h）:
+- `MAX_KEYFRAMES = 2000`: 达到上限时批量剔除 5 个最旧的
+- `MAX_MAPPOINTS = 10000`: 达到上限时批量剔除 500 个最早的
+- `TRACKING_MAX_LOCAL_MAP_POINTS = 5000`: 局部地图点上限
 
 ## 5. 回环检测与 Sim3 优化
 
@@ -201,42 +232,19 @@ $$
     \mathbf{t} = \bar{\mathbf{Q}} - s\mathbf{R}\bar{\mathbf{P}}
     $$
 
-#### 5.2.2 Sim3 非线性优化
-
-在获得初始 Sim3 变换后，通过最小化双向重投影误差进行非线性优化。对于一对匹配的 3D 点 $\mathbf{X}_k$ (在关键帧 $K_k$ 坐标系下) 和 $\mathbf{X}_l$ (在关键帧 $K_l$ 坐标系下)，以及它们在各自关键帧中的观测 $\mathbf{u}_k, \mathbf{u}_l$，我们定义误差函数：
-
-$$
-E_{Sim3} = \sum_{k,l \in \mathcal{M}} \left( \rho( (\mathbf{u}_k - \pi(\mathbf{K} \mathbf{X}_k))^T \Omega_k (\mathbf{u}_k - \pi(\mathbf{K} \mathbf{X}_k)) ) + \rho( (\mathbf{u}_l - \pi(\mathbf{K} \mathbf{X}_l))^T \Omega_l (\mathbf{u}_l - \pi(\mathbf{K} \mathbf{X}_l)) ) \right)
-$$
-
-其中，$\mathbf{X}_l = s\mathbf{R}\mathbf{X}_k + \mathbf{t}$。优化变量为 Sim3 变换的李代数表示 $\boldsymbol{\xi}_{Sim3} \in \mathfrak{sim}(3)$。
-
-$$
-\mathbf{e}_{Sim3} = \mathbf{u}_{obs} - \pi( s\mathbf{R}\mathbf{P}_w + \mathbf{t} )
-$$
+**代码实现差异**: 实际代码中手动展开了所有 $3\times3$ 矩阵运算和向量点积，完全绕过了 `cv::Mat` 的内存分配和函数调用开销。
 
 ## 6. 平面检测算法 (Plane Detection System)
-### （注意！这一段在代码里的实现并不完全相同！）
 
-本项目引入了环境平面检测功能，用于 AR 对象的放置。算法通过奇异值分解（SVD）拟合最优平面，并计算局部平面坐标系。
+本项目引入了环境平面检测功能，用于 AR 对象的放置。算法基于 RANSAC 初筛 + SVD 精炼的两阶段策略。
 
-### 6.1 SVD 平面拟合
+### 6.1 算法流程
 
-给定 $N$ 个地图点 $\mathbf{P}_i = [x_i, y_i, z_i]^T$，构建矩阵 $\mathbf{A} \in \mathbb{R}^{N \times 4}$，其中第 $i$ 行数据为 $[\mathbf{P}_i^T, 1]$。平面方程 $ax+by+cz+d=0$ 的参数 $\mathbf{n} = [a,b,c,d]^T$ 可通过求解 $\mathbf{A}\mathbf{n}=\mathbf{0}$ 获得。
-
-对 $\mathbf{A}$ 进行奇异值分解：
-
-$$
-\mathbf{A} = \mathbf{U} \mathbf{\Sigma} \mathbf{V}^T
-$$
-
-最优平面参数 $\mathbf{n}$ 即为 $\mathbf{V}$ 中对应于最小奇异值的列向量。归一化法向量 $\vec{n} = [a,b,c]^T$.
-
-平面的几何中心（质心）$\mathbf{O}_{plane}$ 为所有输入点的均值：
-
-$$
-\mathbf{O}_{plane} = \frac{1}{N} \sum_{i=1}^N \mathbf{P}_i
-$$
+1. **点云筛选**: 获取当前帧可见的地图点集合 `vMPs`
+2. **RANSAC 拟合**: 随机采样 3 点确定平面候选，统计内点数，迭代 50 次（`PLANE_DETECT_RANSAC_ITERS`），选择内点最多的平面模型参数 $ax+by+cz+d=0$
+3. **SVD 精炼**: 对内点集构建矩阵 $\mathbf{A} \in \mathbb{R}^{N \times 4}$，其中第 $i$ 行为 $[\mathbf{P}_i^T, 1]$，进行 SVD 分解 $\mathbf{A} = \mathbf{U} \mathbf{\Sigma} \mathbf{V}^T$，最优平面参数 $\mathbf{n} = [a,b,c,d]^T$ 为 $\mathbf{V}$ 中最小奇异值对应的列向量
+4. **方向修正**: 确保法向量指向相机（使用首次观测位姿 `mTcw`）
+5. **坐标系构建**: 利用 Rodrigues 公式构建从世界坐标系到平面坐标系的变换矩阵 $\mathbf{T}_{pw}$
 
 ### 6.2 坐标系对齐与 SO(3) 指数映射
 
@@ -247,8 +255,6 @@ $$
 $$
 \mathbf{v} = \vec{n} \times \vec{up}, \quad \theta = \arctan2(\|\mathbf{v}\|, \vec{n} \cdot \vec{up})
 $$
-
-**注意**：旋转轴的计算顺序为 $\vec{n} \times \vec{up}$（从 $\vec{n}$ 旋转到 $\vec{up}$），而非 $\vec{up} \times \vec{n}$。
 
 归一化旋转轴得到单位向量 $\mathbf{k}$：
 
@@ -262,18 +268,28 @@ $$
 \mathbf{R}_{pw} = \exp(\theta [\mathbf{k}]_{\times}) = \mathbf{I} + \sin\theta [\mathbf{k}]_{\times} + (1-\cos\theta) [\mathbf{k}]_{\times}^2
 $$
 
-其中 $[\mathbf{k}]_{\times}$ 为单位向量 $\mathbf{k}$ 的反对称矩阵（斜对称矩阵）：
+其中 $[\mathbf{k}]_{\times}$ 为单位向量 $\mathbf{k}$ 的反对称矩阵：
 
 $$
 [\mathbf{k}]_{\times} = \begin{bmatrix} 0 & -k_z & k_y \\ k_z & 0 & -k_x \\ -k_y & k_x & 0 \end{bmatrix}
 $$
 
-**特殊情况处理**：
+**特殊情况处理**:
+- 若 $\vec{n} \cdot \vec{up} \approx 1$：法向量已对齐，$\mathbf{R}_{pw} = \mathbf{I}$
+- 若 $\vec{n} \cdot \vec{up} \approx -1$：法向量与目标方向相反，需选择任意垂直轴进行 $180^\circ$ 旋转
 
-*   若 $\vec{n} \cdot \vec{up} \approx 1$：法向量已对齐，$\mathbf{R}_{pw} = \mathbf{I}$。
-*   若 $\vec{n} \cdot \vec{up} \approx -1$：法向量与目标方向相反，需选择任意垂直轴（如 $[1,0,0]^T$）进行 $180^\circ$ 旋转。
+### 6.3 平面追踪与 AR 上下文
 
-最终变换矩阵 $\mathbf{T}_{pw}$ 结合了该旋转与质心平移，确立了以检测平面为基准的局部坐标系。
+JNI 层维护了每个地图的独立平面和 AR 对象状态：
+
+```cpp
+std::map<int, Plane*> gMapPlanes;          // 地图 ID → 平面
+std::map<int, std::vector<ArObjectInfo>> gMapArObjects;  // 地图 ID → AR 对象列表
+```
+
+平面来源有两种：
+- **手动检测**: 用户点击触发 `detectPlane()`，`planeLoadedFromMap = false`，可直接显示 AR
+- **地图加载**: 从 `.arinfo` 文件恢复，`planeLoadedFromMap = true`，需要对齐成功才能显示
 
 ## 7. 核心算法：改进的 ORB 特征提取
 
@@ -281,7 +297,7 @@ $$
 
 ### 7.1 图像金字塔构建
 
-为了实现尺度不变性，系统构建了包含 $n_{levels}$ 层的图像金字塔。设 $I_0$ 为原始图像，第 $l$ 层图像 ($l \in \{0, \dots, n_{levels}-1\}$) 记为 $I_l$。层间尺度因子为 $s > 1$ (通常取 1.2)。
+为了实现尺度不变性，系统构建了包含 $n_{levels}$ 层的图像金字塔。设 $I_0$ 为原始图像，第 $l$ 层图像 ($l \in \{0, \dots, n_{levels}-1\}$) 记为 $I_l$。层间尺度因子为 $s > 1$（Config.h: `ORB_EXTRACTOR_SCALE_FACTOR = 1.2f`，`ORB_EXTRACTOR_N_LEVELS = 8`）。
 
 第 $l$ 层的尺度为：
 $$
@@ -298,9 +314,9 @@ $$
 
 标准的 FAST 算法容易产生特征点聚类的问题。本实现采用了 **基于网格的双阈值 (Grid-based Dual-Threshold)** 策略：
 
-1.  **网格划分**：将图像 $I_l$ 划分为 $W \times W$ 的网格单元 (通常 $30 \times 30$ 像素)。
-2.  **自适应阈值**：对于每个网格，系统首先尝试使用高阈值 $T_{high}$ (如 `iniThFAST`) 检测角点。
-3.  **回退机制**：如果在高阈值下未在网格内发现角点，系统自动降低阈值至 $T_{low}$ (如 `minThFAST`) 并重试。这确保了在弱纹理区域仍能提取到候选点，防止跟踪丢失。
+1. **网格划分**：将图像 $I_l$ 划分为 $W \times W$ 的网格单元 (通常 $30 \times 30$ 像素)
+2. **自适应阈值**：对于每个网格，系统首先尝试使用高阈值 `iniThFAST = 20` 检测角点
+3. **回退机制**：如果网格内角点数量 ≤ 3，系统自动降低阈值至 `minThFAST = 7` 并重试
 
 FAST 角点判定准则为：以像素 $I_p$ 为中心，半径为 3 的圆周上 (Bresenham 圆，16个像素)，存在连续 $n$ 个像素的亮度均大于 $I_p + T$ 或均小于 $I_p - T$。
 
@@ -308,10 +324,10 @@ FAST 角点判定准则为：以像素 $I_p$ 为中心，半径为 3 的圆周�
 
 为了保证最大的信息熵和最优的空间分布，原始 FAST 点集需经过 **四叉树分布** 处理：
 
-1.  **初始化**：根节点覆盖包含所有候选点 $\mathcal{P}_{raw}$ 的图像区域。
-2.  **递归分裂**：若节点内的点集 $|\mathcal{P}_n| > 1$，则将其分裂为 4 个子象限。
-3.  **平衡策略**：系统迭代选择包含点数最多的节点进行分裂，扩展树结构直至叶节点数量等于目标特征数 $N_l$。
-4.  **极大值抑制与选择**：从每个最终叶节点中，选择具有最大 FAST 响应值 (Harris 评分或强度差之和) 的唯一点。
+1. **初始化**：根节点覆盖包含所有候选点 $\mathcal{P}_{raw}$ 的图像区域
+2. **递归分裂**：若节点内的点集 $|\mathcal{P}_n| > 1$，则将其分裂为 4 个子象限
+3. **平衡策略**：系统迭代选择包含点数最多的节点进行分裂，扩展树结构直至叶节点数量等于目标特征数 $N_l$
+4. **极大值抑制与选择**：从每个最终叶节点中，选择具有最大 FAST 响应值的唯一点
 
 该算法在数学上近似实现了泊松盘采样 (Poisson Disk Sampling)，确保特征点间距满足：
 $$
@@ -338,7 +354,7 @@ $$
 \theta = \text{atan2}(m_{01}, m_{10})
 $$
 
-*注：实现中使用了圆形掩膜 (通过 `umax` 向量) 以确保旋转严格遵守图像块的几何形状。*
+**实现优化**: 代码中利用圆形的中心对称性将 $m_{10}$ 和 $m_{01}$ 的计算量减半，通过预先计算的 `umax` 向量避免 `sqrt` 边界判断。
 
 ### 7.5 描述子：Steered BRIEF
 
@@ -365,7 +381,7 @@ $$
 D(\mathbf{x}) = \sum_{i=0}^{255} 2^i \tau(\mathbf{p}_i, \mathbf{q}_i; \theta)
 $$
 
-这种方法生成了鲁棒的二进制特征向量，支持极速的汉明距离匹配。
+**性能优化**: 三角函数查找表 (360 项量化) + 循环展开 (8 对比较/迭代) + 宏内联。
 
 ### 7.6 特征匹配：汉明距离 (Hamming Distance)
 
@@ -376,416 +392,321 @@ $$
 d_H(D_a, D_b) = \sum_{i=0}^{255} (D_a^{(i)} \oplus D_b^{(i)}) = \text{popcount}(D_a \oplus D_b)
 $$
 
-其中 $\oplus$ 表示按位异或 (XOR) 运算，$D^{(i)}$ 表示第 $i$ 位的值，$\text{popcount}(\cdot)$ 表示计算二进制中置位 (1) 的个数。
+其中 $\oplus$ 表示按位异或 (XOR) 运算，$\text{popcount}(\cdot)$ 表示计算二进制中置位 (1) 的个数。代码中使用 OpenCV 的 `cv::norm(a, b, cv::NORM_HAMMING)`，自动利用 NEON SIMD 指令集加速。
 
 ## 8. 系统架构与执行流程 (System Architecture & Execution Flow)
 
-本项目在原 ORB-SLAM2 基础上进行了重大改进，引入了地图持久化、多地图管理及异步重定位机制。本节详细描述系统的核心执行流程。
+### 8.1 模块化结构
 
-### 8.1 系统启动与初始化
+项目由三个 Gradle 模块组成：
 
-1.  **资源加载**: 系统首先加载 ORB 词汇表（支持文件加载与嵌入式二进制加载），这是闭环检测与全局重定位的基础。
-2.  **线程创建**: 
-    *   **Tracking (主线程)**: 负责处理每一帧图像，进行实时位姿估计。
-    *   **LocalMapping**: 负责关键帧处理与局部地图优化。
-    *   **LoopClosing**: 负责全局闭环检测与位姿图优化。
-    *   **GlobalReloc (新增后台线程)**: 负责在后台异步运行全局重定位算法，实现当前 SLAM 系统与持久化地图的自动对齐。
-3.  **地图加载 (Map Loading)**:
-    *   系统支持加载预先构建的 `.map` 二进制文件。
-    *   加载过程通过 `BuildLoadedRefCache` 构建参考地图的特征索引（倒排索引与空间网格索引），为高效匹配做准备。
+```
+app/                          # Java UI + OpenGL 渲染 (零 C++ 代码)
+VtonaxAR/                     # 所有 C++ 代码 + JNI 桥接
+OpenCVLibrary/                # OpenCV Android SDK 封装
+```
 
-### 8.2 主跟踪线程流程 (Tracking Thread Flow)
+所有 C++ 代码集中在 `VtonaxAR` 模块中，编译产物为三个 `.so`：
+- `libSLAM_AR.so` — SLAM 核心 + JNI + DBoW2 + 平面检测（单体库）
+- `libg2o.a` — 图优化静态库
+- `lib3dof.so` — 独立 3DoF 跟踪库
 
-主线程 `System::TrackMonocular` 驱动整个系统的运转，其核心逻辑流程如下：
+### 8.2 系统启动与初始化
 
-1.  **预处理**: 图像转灰度，检查模式切换（定位模式/SLAM模式）与重置请求。
-2.  **特征提取**: 对当前帧提取 ORB 特征，构建图像金字塔。
-3.  **状态判断与初始化**:
-    *   若状态为 `NOT_INITIALIZED`，进入单目初始化流程（参见 3.5 节）。
-    *   若初始化成功，创建初始地图与关键帧。
-4.  **位姿跟踪 (Pose Tracking)**:
-    *   **参考帧跟踪/恒速模型跟踪**: 根据上一帧状态，利用参考关键帧匹配或恒速运动模型预测当前位姿。
-    *   **局部地图跟踪 (TrackLocalMap)**: 搜索当前视锥体内的局部地图点，通过投影匹配与位姿优化（Motion-only BA）精炼位姿。
-5.  **异步重定位融合 (Async Reloc Fusion)**:
-    *   系统检查后台 `GlobalReloc` 线程是否计算出了当前 SLAM 坐标系与加载地图坐标系的对齐变换 $\mathbf{T}_{map\_slam}$。
-    *   若存在对齐变换，主线程将消耗该结果，修正当前位姿，并状态切换为 "已对齐"。
-    *   **快照绑定 (BindLoadedMapPoints)**: 在已对齐状态下，系统将加载地图中的点（Loaded MapPoints）投影到当前帧进行匹配，实现当前序列与历史地图的融合。
-6.  **关键帧决策**: 根据当前帧的特征点数量、距离上一关键帧的间隔及局部建图线程的负载，决定是否插入新的关键帧。
+1. **Java 层**: `ArCamUIActivity.onCreate()` → 异步调用 `NativeHelper.initSLAM()`
+2. **JNI 层**: `initSLAM()` → 设置内参、预计算投影矩阵、初始化分析器、创建 `System` 对象
+3. **资源加载**: ORB 词汇表优先从嵌入式二进制（`.incbin` 汇编指令嵌入）加载，无需文件 IO
+4. **线程创建**:
+    - **Tracking (主线程)**: 处理每一帧图像，实时位姿估计
+    - **LocalMapping (后台)**: 关键帧处理与局部地图优化
+    - **LoopClosing (后台)**: 回环检测与位姿图优化
+    - **GlobalReloc (新增后台)**: 异步全局重定位，与加载地图对齐
+5. **相机启动**: SLAM 初始化完成后才启动 CameraX 预览
+
+### 8.3 主跟踪线程流程 (Tracking Thread Flow)
+
+```
+预处理 → 特征提取 → 状态判断 → 位姿跟踪 → 异步融合 → 关键帧决策
+```
+
+1. **预处理**: 半分辨率下采样（面积 1/4）、检查 SLAM 开关、检查重置请求
+2. **特征提取**: 8 层金字塔 ORB 提取，每帧 1000 个特征点
+3. **状态判断与初始化**:
+    - `NOT_INITIALIZED` → 并行 H/F 初始化
+    - `OK` → 正常跟踪
+    - `LOST` → 尝试重定位，超时 3 秒后 `Reset(true)`
+4. **位姿跟踪**:
+    - **恒速模型跟踪**: 预测位姿 → 投影匹配 → Motion-only BA
+    - **参考帧跟踪**: BoW 加速匹配 → PnP 求解
+5. **异步重定位融合**:
+    - 检查后台 `GlobalReloc` 是否计算出对齐变换 $\mathbf{T}_{map\_slam}$
+    - 若存在则消耗结果、修正位姿、执行 `BindLoadedMapPoints`
+6. **关键帧决策**: 根据特征点数量、帧间隔、LocalMapping 负载决定是否插入关键帧
+
+### 8.4 状态机定义
+
+| 状态 | 含义 | 处理动作 |
+|------|------|---------|
+| `SYSTEM_NOT_READY (-1)` | 词汇表未加载 | 等待 |
+| `NO_IMAGES_YET (0)` | 等待图像 | 跳过 |
+| `NOT_INITIALIZED (1)` | 未初始化 | 并行 H/F 初始化 |
+| `OK (2)` | 正常跟踪 | 位姿估计 + 局部地图 |
+| `LOST (3)` | 跟踪丢失 | 重定位 / Reset(true) |
 
 ## 9. 异步全局重定位与地图持久化
 
 ### 9.1 异步全局重定位算法 (Asynchronous Global Relocalization)
 
-传统的重定位通常在跟踪丢失（Lost）时阻塞式运行。本项目设计了并行运行的 `GlobalReloc` 策略，旨在实现“无缝”的地图合并与重定位。
+这是本项目区别于原始 ORB-SLAM2 的核心创新。通过独立的 `GlobalReloc` 后台线程实现当前 SLAM 系统与加载地图的**无缝对齐**。
 
-**算法流程**:
+#### 参考缓存构建
 
-1.  **快照生成 (Snapshot)**: 主线程将当前帧的描述子、关键点及临时位姿打包成“快照”，放入非阻塞队列。
-2.  **智能调度**: 后台线程监控跟踪质量。若当前跟踪稳定（内点丰富），降低运行频率以节省计算资源；若跟踪不稳定或尚未对齐，则全速运行。
-3.  **候选帧检索**:
-    *   利用 BoW 倒排索引，在加载的参考地图中检索与当前帧相似度最高的 $N$ 个候选位置。
-    *   **空间网格搜索**: 若 BoW 检索失败但存在位姿先验，利用空间网格 (Spatial Grid) 在先验位置附近直接搜索地图点。
-4.  **几何验证与解算**:
-    *   **特征匹配**: 对当前帧与候选地图点进行描述子匹配 (KNN + Ratio Test)。
-    *   **PnP 求解**: 使用 EPnP + RANSAC 求解当前帧在参考地图坐标系下的位姿 $\mathbf{T}_{ref\_curr}$。
-5.  **对齐变换计算**:
-    *   若求解成功，计算对齐变换 $\mathbf{T}_{align} = \mathbf{T}_{ref\_curr} \times \mathbf{T}_{slam\_curr}^{-1}$。
-    *   该变换描述了当前 SLAM 局部坐标系到全局加载地图坐标系的刚体变换关系。
+加载地图后，系统构建三种索引结构以支持高效匹配：
+
+**倒排索引** (`mRefInverted`):
+```
+WordID → [MapPoint_Index_1, MapPoint_Index_2, ...]
+```
+基于 DBoW2 词汇的哈希表，加速候选检索。
+
+**空间网格索引** (`mRefGrid`):
+```cpp
+struct LoadedMapGrid {
+    float cellSize = 10.0f;  // 默认 10m 网格
+    std::vector<std::vector<int>> cells;
+    void GetCandidatesInSphere(center, radius, snaps, outIndices);
+};
+```
+3D 空间划分，支持圆形范围精确过滤。
+
+**不可变快照** (`mRefSnapshots`):
+```cpp
+struct RefMPSnapshot {
+    cv::Point3f Pw;     // 世界坐标
+    float minD, maxD;   // 深度范围
+    int mapId;          // 地图 ID
+};
+```
+避免后台线程与主线程的竞态条件。
+
+#### 快照机制
+
+主线程与后台线程通过**无锁原子版本号**协调：
+
+```cpp
+std::atomic<unsigned long long> mSnapSeqProduced{0ULL};  // 生产端
+std::atomic<unsigned long long> mSnapSeqConsumed{0ULL};  // 消费端
+```
+
+- **生产**: 主线程每帧将描述子、关键点、位姿打包为快照，递增 `mSnapSeqProduced`
+- **消费**: 后台线程通过条件变量实时唤醒，获取最新快照进行处理
+
+#### 对齐流程
+
+1. **BoW 检索**: 使用倒排索引在加载地图中检索 Top-K 候选（Config: `SYSTEM_RELOC_CONFIG_TOP_K = 20`）
+2. **特征匹配**: KNN + Ratio Test 对当前帧与候选点进行描述子匹配
+3. **PnP 求解**: EPnP + RANSAC 求解当前帧在加载地图坐标系下的位姿
+4. **对齐发布**: 通过 `PublishRelocAlignment` 发布对齐结果 `T_map_from_slam`
+5. **平滑更新** (主线程消费): EMA 平滑、跳帧（每 3 帧更新）、SVD 正交化修正
+
+#### 智能调度
+
+后台线程根据跟踪质量动态调整运行频率：
+- **跟踪稳定** (内点 > 100): 低频运行，减少 CPU 争用
+- **跟踪不稳定** / **未对齐**: 全速运行（80μs 睡眠间隔）
+- 跟踪丢失时后台线程停止，避免浪费计算资源
 
 ### 9.2 安全 PnP 求解器 (Robust Safe PnP)
 
-为了应对恶劣环境下的数据异常，系统实现了 `SolvePnPSafe` 算法：
+为了应对恶劣环境下的数据异常，`PnPsolver` 实现了额外的鲁棒性保障：
 
-*   **数据清洗**: 严格检查输入 3D-2D 点对的数值有效性（NaN/Inf 检查）及坐标范围限制，防止野值干扰。
-*   **策略分级**:
-    *   若点对数量 $N < 4$，直接返回失败，避免无解。
-    *   若 $N < 6$，使用 P3P 或 EPnP 求解，跳过 RANSAC 迭代，仅做最小二乘优化。
-    *   若 $N \ge 6$，启用 RANSAC 迭代机制，剔除误匹配外点（Outliers），确保位姿估计的鲁棒性。
-*   **异常捕获**: 封装 OpenCV 调用，捕获内部断言错误（Assertion Fails），防止因数值不稳定导致的程序崩溃。
+- **数据清洗**: 严格检查 3D-2D 点对的 NaN/Inf 及坐标范围限制（`PNP_LIMIT_2D = 1e5`, `PNP_LIMIT_3D = 1e6`）
+- **策略分级**:
+    - $N < 4$: 直接返回失败
+    - $4 \le N < 6$: 跳过 RANSAC，仅做最小二乘
+    - $N \ge 6$: 启用 RANSAC（200 次迭代、误差阈值 6.0、置信度 0.999）
+- **异常捕获**: 封装 OpenCV 调用，捕获内部断言错误，防止程序崩溃
 
 ### 9.3 地图持久化格式 (Map Persistence Format)
 
-系统采用自定义二进制格式 ("MAP1") 存储地图，实现高效的序列化与反序列化：
+系统采用自定义二进制格式存储地图：
 
-*   **文件头**: 魔数 (Magic Number) 与版本号，确保文件兼容性。
-*   **关键帧块**:
-    *   存储 ID、时间戳、位姿 $\mathbf{T}_{cw}$。
-    *   **完整特征保留**: 存储所有关键点的坐标、尺度、角度及对应的 descriptors。这使得重加载的地图无需原始图像即可用于重定位匹配。
-*   **地图点块**:
-    *   存储世界坐标 $\mathbf{P}_w$、法向量 $\vec{n}$。
-    *   存储代表性描述子 (Most Representative Descriptor) 及可视深度范围 $[d_{min}, d_{max}]$。
-    *   保留 `mbFromLoadedMap` 标记，区分历史地图点与新生成的地图点。
+**SLAM 地图文件 (`.bin`)**:
+- 魔数: `0x4D415031` ("MAP1")
+- 版本: 1
+- 关键帧块: ID、时间戳、位姿 $\mathbf{T}_{cw}$、所有关键点（坐标、尺度、角度、描述子）
+- 地图点块: 世界坐标 $\mathbf{P}_w$、法向量、代表性描述子、深度范围 $[d_{min}, d_{max}]$、`mbFromLoadedMap` 标记
+
+**AR 信息文件 (`.arinfo`)**:
+- 魔数: `0x4152494E` ("ARIN")
+- 版本: 1
+- 平面信息: 原点、法向量、旋转角
+- AR 对象列表: 每个对象包含模型矩阵和 ID
+
+**元数据文件 (`.json`)**（Java 层 `MapManager`）:
+```json
+{"name": "map_0521", "keyFrames": 42, "mapPoints": 1500,
+ "createTime": 1716288000000, "hasPlane": true, "fileSize": 204800}
+```
+
+### 9.4 多地图管理
+
+```cpp
+std::vector<Map*> mvpMaps;           // 多地图容器
+void CreateNewMap();                  // 创建子地图
+void SwitchToMap(Map* pMap);          // 切换地图
+void LoadMap(path, mapId, append);    // 加载(可追加)
+```
+
+| 模式 | 说明 |
+|------|------|
+| `LoadMap(path, 0, false)` | 默认覆盖模式 |
+| `LoadMap(path, id, false)` | 指定 ID 加载 |
+| `LoadMap(path, id, true)` | 追加模式，保留现有地图 |
+
+子地图创建条件: 连续丢失 30 帧，冷却期 150 帧，最大 10 个子地图。
+
+地图切换由 JNI 层检测 Map ID 变化，经 `MAP_SWITCH_THRESHOLD = 3` 帧确认后自动切换 AR 上下文。
 
 ## 10. 性能优化策略 (Performance Optimization Strategies)
-### （注意！以下为代码实现部分）
 
-本项目针对移动端有限的计算资源进行了系统性的性能优化。本节详细阐述在 ORB 特征提取、特征匹配及整体架构层面实施的优化方案。
-
-### 10.1 ORB 特征提取优化 (ORB Extractor Optimizations)
+### 10.1 ORB 特征提取优化
 
 #### 10.1.1 三角函数查找表优化 (Trigonometric Lookup Table)
 
-**问题**: 描述子计算中需要对每个关键点进行旋转变换，频繁调用 `sin()` 和 `cos()` 函数成为性能瓶颈。
+**问题**: 描述子计算中需要对每个关键点进行旋转变换，频繁调用 `sin()` 和 `cos()` 成为性能瓶颈。
 
-**解决方案**: 实现预计算的三角函数查找表：
+**方案**: 预计算 `sineTable[361]` 和 `cosineTable[361]`，角度量化为整数索引。量化误差 $\epsilon < 0.5°$，对描述子鲁棒性影响可忽略。
 
-```cpp
-static float sineTable[361];
-static float cosineTable[361];
-
-static void InitTrigTable() {
-    for(int i=0; i<=360; i++) {
-        float rad = i * (float)CV_PI / 180.0f;
-        sineTable[i] = sin(rad);
-        cosineTable[i] = cos(rad);
-    }
-}
-```
-
-在描述子计算时，将角度量化为整数索引：
-
-```cpp
-int angleIdx = (int)(kpt.angle + 0.5f);
-if(angleIdx < 0) angleIdx += 360;
-if(angleIdx >= 360) angleIdx -= 360;
-
-float a = cosineTable[angleIdx];
-float b = sineTable[angleIdx];
-```
-
-**性能提升**: 消除了描述子计算中的超越函数调用。
-
-**数学原理**: 利用角度的离散性，将连续函数 $\sin(\theta), \cos(\theta)$ 映射为离散查找表 $T_{sin}[k], T_{cos}[k]$，其中 $k = \lfloor \theta \cdot \frac{180}{\pi} + 0.5 \rfloor$。量化误差 $\epsilon < 0.5°$，对描述子鲁棒性影响可忽略。
+**性能提升**: 消除了描述子计算中的所有超越函数调用。
 
 #### 10.1.2 灰度质心方向计算优化 (IC_Angle Optimization)
 
-**问题**: 原始实现中存在大量重复的内存访问和冗余计算。
+1. **对称性利用**: 利用圆形补丁的中心对称性减少一半计算量：
+    ```cpp
+    // 利用中心线对称性 (v=0)
+    for (int u = 1; u <= ORB_HALF_PATCH_SIZE; ++u)
+        m_10 += u * (center[u] - center[-u]);
+    ```
 
-**优化策略**:
+2. **四点同时处理**: 每个 $(u,v)$ 位置同时处理四个对称点 $(u,v), (-u,v), (u,-v), (-u,-v)$
 
-1. **对称性利用**: 利用圆形补丁的中心对称性，减少一半的计算量：
+3. **边界预计算 (`umax`)**: 预先计算圆形补丁每一行的最大横坐标，避免 `sqrt` 运算
 
-```cpp
-// 利用中心线对称性 (v=0)
-for (int u = 1; u <= ORB_HALF_PATCH_SIZE; ++u)
-    m_10 += u * (center[u] - center[-u]);
-```
+#### 10.1.3 描述子计算向量化
 
-2. **循环展开与预计算**: 预计算行偏移量，减少地址计算：
-
-```cpp
-int offset = v * step;
-const uchar* ptr_plus = center + offset;
-const uchar* ptr_minus = center - offset;
-```
-
-3. **代数简化**: 利用对称性简化矩计算：
-
-对于矩 $m_{01}$ 和 $m_{10}$：
-
-$
-m_{01} = \sum_{v=-r}^{r} v \sum_{u=-d_v}^{d_v} (I(u,v) - I(u,-v))
-$
-
-$
-m_{10} = \sum_{u=-r}^{r} u \sum_{v=-d_u}^{d_u} (I(u,v) - I(-u,v))
-$
-
-其中 $d_v = \lfloor\sqrt{r^2 - v^2}\rfloor$ 为圆形边界约束。
-
-4. **消除零项**: 在 $u=0$ 或 $v=0$ 时，某些项的贡献为零，直接跳过计算：
+使用位操作和循环展开加速二进制测试，将 8 对比较操作打包为单个字节：
 
 ```cpp
-// 中心列 (u=0)
-v_sum += (ptr_plus[0] - ptr_minus[0]);
-// m_10 在 u=0 时为 0，无需计算
-```
-
-5. **四点同时处理**: 对于每个 $(u,v)$ 位置，同时处理四个对称点 $(u,v), (-u,v), (u,-v), (-u,-v)$：
-
-```cpp
-// m_01 计算: v * sum(val_plus - val_minus)
-v_sum += (val_plus_pos - val_minus_pos) + (val_plus_neg - val_minus_neg);
-
-// m_10 计算: 利用对称性
-// u * (val_pos_sum) + (-u) * (val_neg_sum) = u * (val_pos_sum - val_neg_sum)
-int val_u_sum = (val_plus_pos + val_minus_pos);
-int val_neg_u_sum = (val_plus_neg + val_minus_neg);
-m_10 += u * (val_u_sum - val_neg_u_sum);
-```
-
-**性能提升**: 减少了内存访问和计算量。
-
-#### 10.1.3 描述子计算向量化 (Descriptor Computation Vectorization)
-
-**优化**: 使用位操作和循环展开加速二进制测试：
-
-```cpp
-for (int i = 0; i < 32; ++i, pattern += 16)
-{
+for (int i = 0; i < 32; ++i, pattern += 16) {
     int t0, t1, val;
-    t0 = GET_VALUE(0); t1 = GET_VALUE(1);
-    val = t0 < t1;
-    t0 = GET_VALUE(2); t1 = GET_VALUE(3);
-    val |= (t0 < t1) << 1;
+    t0 = GET_VALUE(0); t1 = GET_VALUE(1);  val = t0 < t1;
+    t0 = GET_VALUE(2); t1 = GET_VALUE(3);  val |= (t0 < t1) << 1;
     // ... 8对比较展开
     desc[i] = (uchar)val;
 }
 ```
 
-**原理**: 将 8 次比较操作打包为单个字节，减少分支预测失败和内存写入次数。每个字节的第 $i$ 位由二进制测试 $\tau_i$ 决定：
+### 10.2 特征匹配优化
 
-$
-\text{desc}[k] = \sum_{i=0}^{7} 2^i \cdot \tau_{8k+i}
-$
+#### 10.2.1 汉明距离硬件加速
 
-其中 $\tau_i = \mathbb{1}[I(\mathbf{p}_i) < I(\mathbf{q}_i)]$ 为指示函数。
+使用 OpenCV 的 `cv::norm(a, b, cv::NORM_HAMMING)`，在 ARM 上自动调用 NEON SIMD 指令集（`vcnt`）。
 
-**宏定义优化**: 使用宏消除函数调用开销：
+#### 10.2.2 延迟平方根计算
 
-```cpp
-#define GET_VALUE(idx) \
-    center[cvRound(pattern[idx].x*b + pattern[idx].y*a)*step + \
-           cvRound(pattern[idx].x*a - pattern[idx].y*b)]
-```
+先进行平方距离比较，仅在通过筛选后计算实际距离。
 
-这允许编译器在内层循环中进行更激进的优化，避免函数调用的栈操作开销。
-
-### 10.2 特征匹配优化 (Feature Matching Optimizations)
-
-#### 10.2.1 汉明距离计算优化 (Hamming Distance Optimization)
-
-**原始实现问题**: 手工实现的位计数算法在现代处理器上效率低下。
-
-**优化方案**: 使用 OpenCV 的硬件加速实现：
-
-```cpp
-int ORBmatcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)
-{
-    // 使用 OpenCV 优化实现（SSE/AVX/NEON）
-    return cv::norm(a, b, cv::NORM_HAMMING);
-}
-```
-
-**性能提升**: 在支持 SIMD 指令的平台上显著提升性能。OpenCV 的 `NORM_HAMMING` 自动选择最优实现：
-- x86/x64: 使用 POPCNT 指令或 SSE4.2
-- ARM: 使用 NEON 的 `vcnt` 指令
-
-#### 10.2.2 距离计算优化 (Distance Computation Optimization)
-
-**问题**: 在投影匹配中需要频繁计算 3D 点到相机的距离，`sqrt()` 操作成为瓶颈。
-
-**优化策略**: 延迟平方根计算，先进行平方距离比较：
-
-```cpp
-// 使用平方距离进行快速范围检查
-const float dx = PO.at<float>(0);
-const float dy = PO.at<float>(1);
-const float dz = PO.at<float>(2);
-const float distSq = dx*dx + dy*dy + dz*dz;
-const float maxDistSq = maxDistance * maxDistance;
-const float minDistSq = minDistance * minDistance;
-
-if(distSq < minDistSq || distSq > maxDistSq)
-    continue;
-
-// 只在需要时计算实际距离
-const float dist = sqrt(distSq);
-```
-
-**数学原理**: 对于距离约束 $d_{min} \le \|\mathbf{P}\| \le d_{max}$，等价于 $d_{min}^2 \le \|\mathbf{P}\|^2 \le d_{max}^2$。由于平方函数在正实数域单调递增，可先进行平方距离判断，仅在通过筛选后计算实际距离。
-
-**性能提升**: 消除了大量的 `sqrt()` 调用。
-
-#### 10.2.3 整数乘法替代浮点运算 (Integer Multiplication Optimization)
-
-**优化**: 在旋转直方图筛选中，使用整数乘法替代浮点乘法：
+#### 10.2.3 整数乘法替代浮点运算
 
 ```cpp
 // 原始: if(max2 < 0.1f * max1)
-// 优化: 使用整数乘法
-if(max2*10 < max1)
-{
-    ind2=-1;
-    ind3=-1;
-}
-else if(max3*10 < max1)
-{
-    ind3=-1;
-}
+// 优化: 整数乘法
+if(max2 * 10 < max1) { ind2=-1; ind3=-1; }
 ```
 
-**原理**: 对于比例判断 $x < k \cdot y$，可转换为 $x \cdot \frac{1}{k} < y$。当 $k$ 为简单分数时（如 $0.1 = \frac{1}{10}$），可转换为整数乘法 $10x < y$，避免浮点运算。
+### 10.3 内存与数学运算优化
 
-### 10.3 内存访问优化 (Memory Access Optimizations)
+- **内存预分配**: vector `reserve()` 避免扩容开销
+- **图像金字塔边界填充**: 预分配带边界的完整图像，避免边界条件分支
+- **逆内参缓存**: `invfx`, `invfy` 将除法转为乘法
+- **中值描述子**: `std::nth_element` ($O(N)$) 替代全排序 ($O(N \log N)$)
 
-#### 10.3.1 缓存友好的数据布局 (Cache-Friendly Data Layout)
+### 10.4 嵌入式资源 (Embedded Resources)
 
-**优化**: 在图像金字塔构建中，使用连续内存布局和边界填充：
+ORB 词汇表和 LUT 通过 CMake 的 `.incbin` 汇编指令直接嵌入 `.so`：
 
-```cpp
-Size wholeSize(sz.width + ORB_EDGE_THRESHOLD*2, sz.height + ORB_EDGE_THRESHOLD*2);
-Mat temp(wholeSize, image.type());
-mvImagePyramid[level] = temp(Rect(ORB_EDGE_THRESHOLD, ORB_EDGE_THRESHOLD, sz.width, sz.height));
+```cmake
+embed_resource(ORBvoc.txt.arm.bin ORBvoc_txt_arm_bin ${EMBEDDED_DIR}/ORBvoc.o)
+embed_resource(ORB_LUT.bin ORB_LUT_bin ${EMBEDDED_DIR}/ORB_LUT.o)
 ```
 
-**原理**: 通过预分配带边界的完整图像，避免边界检查和条件分支，提高缓存命中率。
+链接时作为目标文件直接链接，运行时零文件 IO。
 
-#### 10.3.2 预分配与容量保留 (Pre-allocation and Capacity Reservation)
+### 10.5 Top-K 地图点 UI 同步
 
-**优化**: 在关键路径上预分配容器容量：
+使用 `std::partial_sort` 仅筛选 ID 最大的前 N 个地图点，最小化 JNI 传输和 OpenGL 渲染开销：
 
 ```cpp
-vector<int> rotHist[HISTO_LENGTH];
-for(int i=0;i<HISTO_LENGTH;i++)
-    rotHist[i].reserve(500);  // 预分配容量
-
-vToDistributeKeys.reserve(nfeatures*10);  // 预留足够空间
+std::partial_sort(v.begin(), v.begin() + maxPoints, v.end(), MapPointComparator());
+// 只取前 maxPoints 个
 ```
 
-**效果**: 减少动态内存分配次数，避免 `vector` 扩容时的数据拷贝。
+### 10.6 线程安全的分层锁设计
 
-### 10.4 算法层面优化 (Algorithmic Optimizations)
+| 互斥锁 | 保护数据 | 策略 |
+|--------|---------|------|
+| `gSlamStateMutex` | SLAM 系统指针、跟踪状态 | 跟踪线程必须获得，不可阻塞 |
+| `gMapDataMutex` | 平面、AR 对象、地图数据 | 短暂锁定，细粒度更新 |
+| `gMapPointsMutex` | 地图点/关键点缓存 | UI 线程使用 `try_lock` 无阻塞 |
 
-#### 10.4.1 四叉树特征分布 (Quadtree Distribution)
+### 10.7 SLAM 运行时开关
 
-**优势**: 相比原始的网格分布方法，四叉树算法提供：
-
-1. **自适应空间划分**: 根据特征密度动态调整分割粒度
-2. **更优的空间均匀性**: 近似泊松盘采样，最大化特征点间距
-3. **更好的尺度不变性**: 在不同尺度层级保持一致的分布质量
-
-**时间复杂度**: $O(N \log N)$，其中 $N$ 为候选特征点数量。
-
-#### 10.4.2 双阈值 FAST 检测 (Dual-Threshold FAST)
-
-**策略**: 自适应阈值机制确保在各种纹理条件下都能提取足够特征：
-
+`setEnableSLAM(false)` 时完全跳过 TrackMonocular、特征提取等全部计算：
 ```cpp
-FAST(cellImage, cellKeyPoints, iniThFAST, true);
-if(cellKeyPoints.size() <= 3)
-{
-    cellKeyPoints.clear();
-    FAST(cellImage, cellKeyPoints, minThFAST, true);
+if (!gEnableSLAM) {
+    status = 0;  // NO_IMAGES_YET
+    vMPs.clear(); vKeys.clear();
+    gShouldDrawArObject = false;
 }
 ```
 
-**效果**: 在弱纹理区域降低阈值，防止跟踪丢失；在强纹理区域保持高阈值，确保特征质量。
+### 10.8 Vtonax 性能分析器
 
-### 10.5 编译器优化与平台适配 (Compiler Optimizations)
+可选工具，由 `VTONAX_DEVELOP_MODE` 控制（默认关闭）。开启后提供：
+- RAII 自动计时 (`VT_PROFILE_FUNCTION()`)
+- 纳秒级高精度时间戳
+- Chrome Trace Event 格式输出（`chrome://tracing` 可视化）
 
-#### 10.5.1 内联函数与宏定义
+关闭时所有宏展开为空，零运行时开销。
 
-**优化**: 使用宏定义消除函数调用开销（已在 10.1.3 节描述）。
+### 10.9 半分辨率处理
 
-#### 10.5.2 分支预测优化
+核心移动端优化。在 JNI 层使用 `cv::resize` 将图像长宽各缩小一半（面积 1/4），极大地减少了像素级操作的计算量。
 
-**优化**: 将常见情况放在 `if` 分支，罕见情况放在 `else`：
+### 10.10 编译期优化
 
-```cpp
-if(!pMP->mbTrackInView)
-    continue;  // 快速路径
-
-if(pMP->isBad())
-    continue;  // 快速路径
-
-// 主要逻辑
+```cmake
+-O2 -g -fno-omit-frame-pointer -fno-strict-aliasing -fno-lto
+-DANDROID_ARM_NEON=TRUE
 ```
 
-**原理**: 现代 CPU 的分支预测器倾向于预测 `if` 分支为真，将快速失败路径放在前面可提高预测准确率。
+### 10.11 优化总结表
 
-#### 10.5.3 常量折叠与编译时计算
-
-**优化**: 将运行时计算转换为编译时常量：
-
-```cpp
-const float factorPI = (float)(CV_PI/180.f);  // 编译时计算
-```
-
-编译器可以在编译阶段完成此计算，避免运行时的浮点除法。
-
-#### 10.5.4 循环不变量外提
-
-**优化**: 将循环内的不变计算移到循环外：
-
-```cpp
-const int step = (int)image.step1();  // 循环外计算
-for (int v = 1; v <= ORB_HALF_PATCH_SIZE; ++v)
-{
-    int offset = v * step;  // 使用预计算的 step
-    // ...
-}
-```
-
-这避免了在每次循环迭代中重复计算图像步长。
-
-### 10.6 性能提升总结 (Performance Improvement Summary)
-
-| 优化项 | 目标模块 | 实施难度 | 精度影响 |
-|--------|---------|---------|---------|
-| 三角函数查找表 | 描述子计算 | 低 | 无 |
-| IC_Angle 对称性优化 | 方向计算 | 中 | 无 |
-| 延迟平方根计算 | 投影匹配 | 低 | 无 |
-| 汉明距离硬件加速 | 特征匹配 | 低 | 无 |
-| 整数乘法优化 | 直方图筛选 | 低 | 无 |
-| 四叉树分布 | 特征提取 | 中 | 正面 |
-| 双阈值 FAST | 特征检测 | 低 | 正面 |
-
-**综合效果**: 在保持精度不变的前提下，特征提取和特征匹配模块的性能得到显著提升。
-
-### 10.7 优化原则与最佳实践 (Optimization Principles)
-
-1. **精度优先**: 所有优化必须保证算法精度不受影响
-2. **可测量**: 每项优化都通过性能测试验证实际效果
-3. **可回退**: 使用编译开关控制优化，便于问题定位
-4. **渐进式**: 逐步实施优化，避免引入复杂性
-5. **平台兼容**: 避免使用平台特定指令，保持代码可移植性
-
-**关键经验**:
-- 优先优化热点路径（通过性能分析工具定位）
-- 数学优化优于代码优化（如延迟平方根计算）
-- 利用硬件特性但保持可移植性（如 OpenCV 的自适应 SIMD）
-- 详细记录优化前后的性能数据
+| 优化模块 | 优化手段 | 核心算法 | 影响 |
+|---------|---------|---------|------|
+| 特征提取 | 三角函数 LUT | 预计算查找表 | CPU 大幅减负 |
+| 特征提取 | IC_Angle 对称性 | 圆形对称优化 | 减少 50% 乘法 |
+| 特征匹配 | 词袋加速 | 倒排索引 | 极速匹配 |
+| 特征匹配 | 旋转一致性 | 直方图统计 | 高效外点剔除 |
+| 跟踪 | 轻量级投影 | 矩阵手动展开 | 减少内存分配 |
+| 位姿求解 | 安全 PnP | EPnP + RANSAC | 数值鲁棒性 |
+| 后台重定位 | 原子版本号 | 无锁快照 | 零阻塞 |
+| 图像处理 | 半分辨率 | 面积 1/4 降采样 | 移动端关键优化 |
+| 资源加载 | `.incbin` 嵌入 | 汇编指令嵌入 | 零文件 IO |
+| UI 同步 | Top-K 偏序 | `partial_sort` | 最小化传输 |
 
 ---
-*文档最后更新时间: 2026-01-31*
+
+*本文档基于 Android_ORB-SLAM2s 项目源码编写，反映了截至 2026 年 5 月的实际实现状态。*
+*文档维护者: Olsc*
