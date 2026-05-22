@@ -607,6 +607,7 @@ void LocalMapping::CancelStopRequest()
 {
     unique_lock<mutex> lock(mMutexStop);
     mbStopRequested = false;
+    mbStopped = false;
 }
 
 bool LocalMapping::Stop()
