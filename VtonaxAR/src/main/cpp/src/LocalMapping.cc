@@ -600,7 +600,6 @@ void LocalMapping::RequestStop()
 {
     unique_lock<mutex> lock(mMutexStop);
     mbStopRequested = true;
-    unique_lock<mutex> lock2(mMutexNewKFs);
     mbAbortBA = true;
 }
 
@@ -608,6 +607,7 @@ void LocalMapping::CancelStopRequest()
 {
     unique_lock<mutex> lock(mMutexStop);
     mbStopRequested = false;
+    mbStopped = false;
 }
 
 bool LocalMapping::Stop()
@@ -636,6 +636,8 @@ bool LocalMapping::stopRequested()
 
 void LocalMapping::Release()
 {
+    // 锁顺序 mMutexStop → mMutexFinish: 与 Stopped 循环的
+    // isStopped(mMutexStop) → CheckFinish(mMutexFinish) 保持一致
     unique_lock<mutex> lock(mMutexStop);
     unique_lock<mutex> lock2(mMutexFinish);
     if(mbFinished)
@@ -788,10 +790,11 @@ bool LocalMapping::CheckFinish()
 
 void LocalMapping::SetFinish()
 {
-    unique_lock<mutex> lock(mMutexFinish);
-    mbFinished = true;    
-    unique_lock<mutex> lock2(mMutexStop);
+    // 锁顺序 mMutexStop → mMutexFinish：与 Release() 一致
+    unique_lock<mutex> lock(mMutexStop);
+    unique_lock<mutex> lock2(mMutexFinish);
     mbStopped = true;
+    mbFinished = true;
 }
 
 bool LocalMapping::isFinished()

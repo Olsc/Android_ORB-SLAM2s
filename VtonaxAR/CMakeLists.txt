@@ -112,13 +112,21 @@ target_compile_definitions(g2o PRIVATE
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(g2o PRIVATE
-            $<$<CONFIG:Release>:-O2 -g -fno-omit-frame-pointer -fno-strict-aliasing -fno-lto>
-            $<$<CONFIG:Debug>:-O2 -g -fno-omit-frame-pointer -fno-strict-aliasing -fno-lto>)
+            $<$<CONFIG:Release>:-O3 -g -fno-omit-frame-pointer -fno-strict-aliasing -ffast-math -flto=thin>
+            $<$<CONFIG:Debug>:-O2 -g -fno-omit-frame-pointer -fno-strict-aliasing>)
+    target_link_options(g2o PRIVATE
+            $<$<CONFIG:Release>:-flto=thin -O3>)
 else()
     target_compile_options(g2o PRIVATE
-            $<$<CONFIG:Release>:-O2 -g -fno-omit-frame-pointer -fno-strict-aliasing -fno-lto -fno-aggressive-loop-optimizations -fno-delete-null-pointer-checks>
-            $<$<CONFIG:Debug>:-O2 -g -fno-omit-frame-pointer -fno-strict-aliasing -fno-lto -fno-aggressive-loop-optimizations -fno-delete-null-pointer-checks>)
+            $<$<CONFIG:Release>:-O3 -g -fno-omit-frame-pointer -fno-strict-aliasing -ffast-math -flto -funroll-loops>
+            $<$<CONFIG:Debug>:-O2 -g -fno-omit-frame-pointer -fno-strict-aliasing>)
+    target_link_options(g2o PRIVATE
+            $<$<CONFIG:Release>:-flto -O3>)
 endif()
+
+# ARM64 架构特定优化
+target_compile_options(g2o PRIVATE
+    $<$<AND:$<CONFIG:Release>,$<STREQUAL:${ANDROID_ABI},arm64-v8a>>:-march=armv8.2-a+fp16+rcpc+dotprod>)
 
 include_directories(
         src/main/cpp
@@ -262,16 +270,26 @@ add_library(SLAM_AR SHARED
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(SLAM_AR PRIVATE
-            $<$<CONFIG:Release>:-O2 -g -fno-omit-frame-pointer -fno-strict-aliasing -fno-lto>
-            $<$<CONFIG:Debug>:-O2 -g -fno-omit-frame-pointer -fno-strict-aliasing -fno-lto>)
+            $<$<CONFIG:Release>:-O3 -g -fno-omit-frame-pointer -fno-strict-aliasing -ffast-math -flto=thin>
+            $<$<CONFIG:Debug>:-O2 -g -fno-omit-frame-pointer -fno-strict-aliasing>)
 else()
     target_compile_options(SLAM_AR PRIVATE
-            $<$<CONFIG:Release>:-O2 -g -fno-omit-frame-pointer -fno-strict-aliasing -fno-lto -fno-aggressive-loop-optimizations -fno-delete-null-pointer-checks>
-            $<$<CONFIG:Debug>:-O2 -g -fno-omit-frame-pointer -fno-strict-aliasing -fno-lto -fno-aggressive-loop-optimizations -fno-delete-null-pointer-checks>)
+            $<$<CONFIG:Release>:-O3 -g -fno-omit-frame-pointer -fno-strict-aliasing -ffast-math -flto -funroll-loops>
+            $<$<CONFIG:Debug>:-O2 -g -fno-omit-frame-pointer -fno-strict-aliasing>)
 endif()
 
+# LTO 链接标志（仅 Release）
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    target_link_options(SLAM_AR PRIVATE
+            $<$<CONFIG:Release>:-flto=thin -O3>)
+else()
+    target_link_options(SLAM_AR PRIVATE
+            $<$<CONFIG:Release>:-flto -O3>)
+endif()
+
+# ARM64 架构特定优化
 target_compile_options(SLAM_AR PRIVATE
-        $<$<CONFIG:Release>:-O2 -g -fno-omit-frame-pointer -fno-strict-aliasing -fno-lto -fno-aggressive-loop-optimizations -fno-delete-null-pointer-checks>)
+    $<$<AND:$<CONFIG:Release>,$<STREQUAL:${ANDROID_ABI},arm64-v8a>>:-march=armv8.2-a+fp16+rcpc+dotprod>)
 
 find_library(log-lib log)
 

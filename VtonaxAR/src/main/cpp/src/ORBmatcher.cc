@@ -45,6 +45,11 @@
 //#include<stdint-gcc.h>
 #include <stdint.h>
 #include <cstring>
+
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+#include <arm_neon.h>
+#endif
+
 using namespace std;
 
 namespace ORB_SLAM2
@@ -1757,6 +1762,34 @@ int ORBmatcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)
     const uint8_t* pa = a.ptr<uint8_t>();
     const uint8_t* pb = b.ptr<uint8_t>();
 
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+    // ARM NEON 路径: vcntq_u8 + vaddlvq_u8
+    // 单指令 16 字节 popcount, 2 次加载覆盖全部 32 字节
+    const uint8x16_t va0 = vld1q_u8(pa);
+    const uint8x16_t vb0 = vld1q_u8(pb);
+    const uint8x16_t va1 = vld1q_u8(pa + 16);
+    const uint8x16_t vb1 = vld1q_u8(pb + 16);
+
+    const uint8x16_t xor0 = veorq_u8(va0, vb0);
+    const uint8x16_t xor1 = veorq_u8(va1, vb1);
+
+    // vcntq_u8: 每条指令对 16 个字节同时计算 popcount
+    // vaddlvq_u8: 将 16 字节的 popcount 水平累加为单个 u32
+    const uint8x16_t pop0 = vcntq_u8(xor0);
+    const uint8x16_t pop1 = vcntq_u8(xor1);
+
+    // vaddlvq_u8 是 AArch64 特有指令，Armv7 回退到 vpaddlq
+    #if defined(__aarch64__)
+        return (int)(vaddlvq_u8(pop0) + vaddlvq_u8(pop1));
+    #else
+        // Armv7 NEON: 使用 vpaddlq 逐步归约
+        uint16x8_t sum16 = vpaddlq_u8(vaddq_u8(pop0, pop1));
+        uint32x4_t sum32 = vpaddlq_u16(sum16);
+        uint64x2_t sum64 = vpaddlq_u32(sum32);
+        return (int)(vgetq_lane_u64(sum64, 0) + vgetq_lane_u64(sum64, 1));
+    #endif
+#else
+    // 标量回退: 4 × 64 位 popcount (与之前相同)
     uint64_t va[4], vb[4];
     std::memcpy(va, pa, 32);
     std::memcpy(vb, pb, 32);
@@ -1765,6 +1798,7 @@ int ORBmatcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)
            __builtin_popcountll(va[1] ^ vb[1]) +
            __builtin_popcountll(va[2] ^ vb[2]) +
            __builtin_popcountll(va[3] ^ vb[3]);
+#endif
 }
 
 // // 预留一个兼容性更好的方案

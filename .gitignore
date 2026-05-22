@@ -47,6 +47,8 @@ freeline.py
 freeline/
 freeline_project_description.json
 
-Temp/
 diff_report.md
 .claude/settings.local.json
+docs/profiler_tools/vtonax_profile.bin
+docs/profiler_tools/profile_trace.json
+benchmarks

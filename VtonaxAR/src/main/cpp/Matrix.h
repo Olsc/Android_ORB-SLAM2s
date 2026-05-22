@@ -67,34 +67,113 @@ public:
     Mat inverse() const
     {
         if (rows != cols) throw std::runtime_error("not square");
-        
+
+        if (rows == 3)
+        {
+            const float
+                a00 = data[0], a01 = data[1], a02 = data[2],
+                a10 = data[3], a11 = data[4], a12 = data[5],
+                a20 = data[6], a21 = data[7], a22 = data[8];
+
+            const float det = a00*(a11*a22 - a12*a21)
+                            - a01*(a10*a22 - a12*a20)
+                            + a02*(a10*a21 - a11*a20);
+
+            const float invDet = 1.0f / det;
+            Mat r(3, 3);
+            r.data[0] =  (a11*a22 - a12*a21) * invDet;
+            r.data[1] = -(a01*a22 - a02*a21) * invDet;
+            r.data[2] =  (a01*a12 - a02*a11) * invDet;
+            r.data[3] = -(a10*a22 - a12*a20) * invDet;
+            r.data[4] =  (a00*a22 - a02*a20) * invDet;
+            r.data[5] = -(a00*a12 - a02*a10) * invDet;
+            r.data[6] =  (a10*a21 - a11*a20) * invDet;
+            r.data[7] = -(a00*a21 - a01*a20) * invDet;
+            r.data[8] =  (a00*a11 - a01*a10) * invDet;
+            return r;
+        }
+
+        if (rows == 4)
+        {
+            const float* m = data.data();
+            const float
+                src00 = m[0],  src10 = m[1],  src20 = m[2],  src30 = m[3],
+                src01 = m[4],  src11 = m[5],  src21 = m[6],  src31 = m[7],
+                src02 = m[8],  src12 = m[9],  src22 = m[10], src32 = m[11],
+                src03 = m[12], src13 = m[13], src23 = m[14], src33 = m[15];
+
+            const float
+                atmp0  = src22*src33,  atmp1  = src23*src32,
+                atmp2  = src21*src33,  atmp3  = src23*src31,
+                atmp4  = src21*src32,  atmp5  = src22*src31,
+                atmp6  = src20*src33,  atmp7  = src23*src30,
+                atmp8  = src20*src32,  atmp9  = src22*src30,
+                atmp10 = src20*src31,  atmp11 = src21*src30;
+
+            const float
+                dst0 = (atmp0*src11 + atmp3*src12 + atmp4*src13) - (atmp1*src11 + atmp2*src12 + atmp5*src13),
+                dst1 = (atmp1*src10 + atmp6*src12 + atmp9*src13) - (atmp0*src10 + atmp7*src12 + atmp8*src13),
+                dst2 = (atmp2*src10 + atmp7*src11 + atmp10*src13) - (atmp3*src10 + atmp6*src11 + atmp11*src13),
+                dst3 = (atmp5*src10 + atmp8*src11 + atmp11*src12) - (atmp4*src10 + atmp9*src11 + atmp10*src12),
+                dst4 = (atmp1*src01 + atmp2*src02 + atmp5*src03) - (atmp0*src01 + atmp3*src02 + atmp4*src03),
+                dst5 = (atmp0*src00 + atmp7*src02 + atmp8*src03) - (atmp1*src00 + atmp6*src02 + atmp9*src03),
+                dst6 = (atmp3*src00 + atmp6*src01 + atmp11*src03) - (atmp2*src00 + atmp7*src01 + atmp10*src03),
+                dst7 = (atmp4*src00 + atmp9*src01 + atmp10*src02) - (atmp5*src00 + atmp8*src01 + atmp11*src02);
+
+            const float
+                btmp0 = src02*src13,  btmp1 = src03*src12,
+                btmp2 = src01*src13,  btmp3 = src03*src11,
+                btmp4 = src01*src12,  btmp5 = src02*src11,
+                btmp6 = src00*src13,  btmp7 = src03*src10,
+                btmp8 = src00*src12,  btmp9 = src02*src10,
+                btmp10 = src00*src11, btmp11 = src01*src10;
+
+            const float
+                dst8  = (btmp0*src31 + btmp3*src32 + btmp4*src33) - (btmp1*src31 + btmp2*src32 + btmp5*src33),
+                dst9  = (btmp1*src30 + btmp6*src32 + btmp9*src33) - (btmp0*src30 + btmp7*src32 + btmp8*src33),
+                dst10 = (btmp2*src30 + btmp7*src31 + btmp10*src33) - (btmp3*src30 + btmp6*src31 + btmp11*src33),
+                dst11 = (btmp5*src30 + btmp8*src31 + btmp11*src32) - (btmp4*src30 + btmp9*src31 + btmp10*src32),
+                dst12 = (btmp2*src20 + btmp5*src21 + btmp1*src22) - (btmp4*src21 + btmp0*src22 + btmp3*src20),
+                dst13 = (btmp8*src21 + btmp0*src20 + btmp7*src22) - (btmp6*src22 + btmp9*src21 + btmp1*src20),
+                dst14 = (btmp6*src21 + btmp11*src22 + btmp3*src20) - (btmp10*src22 + btmp2*src20 + btmp7*src21),
+                dst15 = (btmp10*src20 + btmp4*src20 + btmp9*src22) - (btmp8*src22 + btmp11*src20 + btmp5*src21);
+
+            const float det = src00*dst0 + src01*dst1 + src02*dst2 + src03*dst3;
+            const float invDet = 1.0f / det;
+
+            Mat r(4, 4);
+            r.data[0]  = dst0*invDet;  r.data[1]  = dst4*invDet;
+            r.data[2]  = dst8*invDet;  r.data[3]  = dst12*invDet;
+            r.data[4]  = dst1*invDet;  r.data[5]  = dst5*invDet;
+            r.data[6]  = dst9*invDet;  r.data[7]  = dst13*invDet;
+            r.data[8]  = dst2*invDet;  r.data[9]  = dst6*invDet;
+            r.data[10] = dst10*invDet; r.data[11] = dst14*invDet;
+            r.data[12] = dst3*invDet;  r.data[13] = dst7*invDet;
+            r.data[14] = dst11*invDet; r.data[15] = dst15*invDet;
+            return r;
+        }
+
         int n = rows;
         Mat a(*this);
         Mat inv = Mat::identity(n);
-        
+
         for (int i = 0; i < n; ++i)
         {
             float pivot = a(i, i);
-            
             if (std::abs(pivot) < 1e-8f)
-            {
                 pivot = 1e-8f;
-            }
-            
             float invPivot = 1.0f / pivot;
-            
+
             for (int j = 0; j < n; ++j)
             {
                 a(i, j) *= invPivot;
                 inv(i, j) *= invPivot;
             }
-            
+
             for (int r = 0; r < n; ++r)
             {
                 if (r == i) continue;
-                
                 float factor = a(r, i);
-                
                 for (int c = 0; c < n; ++c)
                 {
                     a(r, c) -= factor * a(i, c);
@@ -102,7 +181,6 @@ public:
                 }
             }
         }
-        
         return inv;
     }
 };
