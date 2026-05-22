@@ -240,15 +240,25 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
 
 int Optimizer::PoseOptimization(Frame *pFrame)
 {
-    g2o::SparseOptimizer optimizer;
-    g2o::BlockSolver_6_3::LinearSolverType * linearSolver;
+    // 线程局部缓存：避免每帧 new/delete 求解器对象
+    // PoseOptimization 每帧调用 1 次，是实时性关键路径
+    thread_local struct {
+        g2o::SparseOptimizer optimizer;
+        g2o::BlockSolver_6_3::LinearSolverType* linearSolver = nullptr;
+        g2o::BlockSolver_6_3* solver_ptr = nullptr;
+        g2o::OptimizationAlgorithmLevenberg* solver = nullptr;
+    } cache;
 
-    linearSolver = new g2o::LinearSolverDense<g2o::BlockSolver_6_3::PoseMatrixType>();
-
-    g2o::BlockSolver_6_3 * solver_ptr = new g2o::BlockSolver_6_3(linearSolver);
-
-    g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
-    optimizer.setAlgorithm(solver);
+    if (!cache.linearSolver) {
+        cache.linearSolver = new g2o::LinearSolverDense<g2o::BlockSolver_6_3::PoseMatrixType>();
+        cache.solver_ptr = new g2o::BlockSolver_6_3(cache.linearSolver);
+        cache.solver = new g2o::OptimizationAlgorithmLevenberg(cache.solver_ptr);
+        cache.optimizer.setAlgorithm(cache.solver);
+    } else {
+        // 复用已有求解器：clear() 释放顶点和边但保留求解器结构
+        cache.optimizer.clear();
+    }
+    g2o::SparseOptimizer& optimizer = cache.optimizer;
 
     int nInitialCorrespondences=0;
 
