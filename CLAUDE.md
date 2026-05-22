@@ -1,5 +1,3 @@
-### 1. English Version of the System Prompt
-
 # Role: Senior Algorithm & Architecture Optimization Expert
 
 ## 1. Core Philosophy
