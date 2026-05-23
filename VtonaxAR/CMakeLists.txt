@@ -112,13 +112,13 @@ target_compile_definitions(g2o PRIVATE
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(g2o PRIVATE
-            $<$<CONFIG:Release>:-O3 -g -fno-omit-frame-pointer -fno-strict-aliasing -ffast-math -flto=thin>
+            $<$<CONFIG:Release>:-O3 -g -fno-omit-frame-pointer -fno-strict-aliasing -flto=thin>
             $<$<CONFIG:Debug>:-O2 -g -fno-omit-frame-pointer -fno-strict-aliasing>)
     target_link_options(g2o PRIVATE
             $<$<CONFIG:Release>:-flto=thin -O3>)
 else()
     target_compile_options(g2o PRIVATE
-            $<$<CONFIG:Release>:-O3 -g -fno-omit-frame-pointer -fno-strict-aliasing -ffast-math -flto -funroll-loops>
+            $<$<CONFIG:Release>:-O3 -g -fno-omit-frame-pointer -fno-strict-aliasing -flto>
             $<$<CONFIG:Debug>:-O2 -g -fno-omit-frame-pointer -fno-strict-aliasing>)
     target_link_options(g2o PRIVATE
             $<$<CONFIG:Release>:-flto -O3>)
@@ -270,11 +270,11 @@ add_library(SLAM_AR SHARED
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(SLAM_AR PRIVATE
-            $<$<CONFIG:Release>:-O3 -g -fno-omit-frame-pointer -fno-strict-aliasing -ffast-math -flto=thin>
+            $<$<CONFIG:Release>:-O3 -g -fno-omit-frame-pointer -fno-strict-aliasing -flto=thin>
             $<$<CONFIG:Debug>:-O2 -g -fno-omit-frame-pointer -fno-strict-aliasing>)
 else()
     target_compile_options(SLAM_AR PRIVATE
-            $<$<CONFIG:Release>:-O3 -g -fno-omit-frame-pointer -fno-strict-aliasing -ffast-math -flto -funroll-loops>
+            $<$<CONFIG:Release>:-O3 -g -fno-omit-frame-pointer -fno-strict-aliasing -flto>
             $<$<CONFIG:Debug>:-O2 -g -fno-omit-frame-pointer -fno-strict-aliasing>)
 endif()
 

@@ -79,18 +79,21 @@ public:
                             - a01*(a10*a22 - a12*a20)
                             + a02*(a10*a21 - a11*a20);
 
-            const float invDet = 1.0f / det;
-            Mat r(3, 3);
-            r.data[0] =  (a11*a22 - a12*a21) * invDet;
-            r.data[1] = -(a01*a22 - a02*a21) * invDet;
-            r.data[2] =  (a01*a12 - a02*a11) * invDet;
-            r.data[3] = -(a10*a22 - a12*a20) * invDet;
-            r.data[4] =  (a00*a22 - a02*a20) * invDet;
-            r.data[5] = -(a00*a12 - a02*a10) * invDet;
-            r.data[6] =  (a10*a21 - a11*a20) * invDet;
-            r.data[7] = -(a00*a21 - a01*a20) * invDet;
-            r.data[8] =  (a00*a11 - a01*a10) * invDet;
-            return r;
+            if (std::fabs(det) > 1e-8f)
+            {
+                const float invDet = 1.0f / det;
+                Mat r(3, 3);
+                r.data[0] =  (a11*a22 - a12*a21) * invDet;
+                r.data[1] = -(a01*a22 - a02*a21) * invDet;
+                r.data[2] =  (a01*a12 - a02*a11) * invDet;
+                r.data[3] = -(a10*a22 - a12*a20) * invDet;
+                r.data[4] =  (a00*a22 - a02*a20) * invDet;
+                r.data[5] = -(a00*a12 - a02*a10) * invDet;
+                r.data[6] =  (a10*a21 - a11*a20) * invDet;
+                r.data[7] = -(a00*a21 - a01*a20) * invDet;
+                r.data[8] =  (a00*a11 - a01*a10) * invDet;
+                return r;
+            }
         }
 
         if (rows == 4)
@@ -133,24 +136,27 @@ public:
                 dst9  = (btmp1*src30 + btmp6*src32 + btmp9*src33) - (btmp0*src30 + btmp7*src32 + btmp8*src33),
                 dst10 = (btmp2*src30 + btmp7*src31 + btmp10*src33) - (btmp3*src30 + btmp6*src31 + btmp11*src33),
                 dst11 = (btmp5*src30 + btmp8*src31 + btmp11*src32) - (btmp4*src30 + btmp9*src31 + btmp10*src32),
-                dst12 = (btmp2*src20 + btmp5*src21 + btmp1*src22) - (btmp4*src21 + btmp0*src22 + btmp3*src20),
-                dst13 = (btmp8*src21 + btmp0*src20 + btmp7*src22) - (btmp6*src22 + btmp9*src21 + btmp1*src20),
-                dst14 = (btmp6*src21 + btmp11*src22 + btmp3*src20) - (btmp10*src22 + btmp2*src20 + btmp7*src21),
-                dst15 = (btmp10*src20 + btmp4*src20 + btmp9*src22) - (btmp8*src22 + btmp11*src20 + btmp5*src21);
+                dst12 = (btmp1*src21 + btmp2*src22 + btmp5*src23) - (btmp0*src21 + btmp3*src22 + btmp4*src23),
+                dst13 = (btmp0*src20 + btmp7*src22 + btmp8*src23) - (btmp1*src20 + btmp6*src22 + btmp9*src23),
+                dst14 = (btmp3*src20 + btmp6*src21 + btmp11*src23) - (btmp2*src20 + btmp7*src21 + btmp10*src23),
+                dst15 = (btmp4*src20 + btmp9*src21 + btmp10*src22) - (btmp5*src20 + btmp8*src21 + btmp11*src22);
 
             const float det = src00*dst0 + src01*dst1 + src02*dst2 + src03*dst3;
-            const float invDet = 1.0f / det;
 
-            Mat r(4, 4);
-            r.data[0]  = dst0*invDet;  r.data[1]  = dst4*invDet;
-            r.data[2]  = dst8*invDet;  r.data[3]  = dst12*invDet;
-            r.data[4]  = dst1*invDet;  r.data[5]  = dst5*invDet;
-            r.data[6]  = dst9*invDet;  r.data[7]  = dst13*invDet;
-            r.data[8]  = dst2*invDet;  r.data[9]  = dst6*invDet;
-            r.data[10] = dst10*invDet; r.data[11] = dst14*invDet;
-            r.data[12] = dst3*invDet;  r.data[13] = dst7*invDet;
-            r.data[14] = dst11*invDet; r.data[15] = dst15*invDet;
-            return r;
+            if (std::fabs(det) > 1e-8f)
+            {
+                const float invDet = 1.0f / det;
+                Mat r(4, 4);
+                r.data[0]  = dst0*invDet;  r.data[1]  = dst4*invDet;
+                r.data[2]  = dst8*invDet;  r.data[3]  = dst12*invDet;
+                r.data[4]  = dst1*invDet;  r.data[5]  = dst5*invDet;
+                r.data[6]  = dst9*invDet;  r.data[7]  = dst13*invDet;
+                r.data[8]  = dst2*invDet;  r.data[9]  = dst6*invDet;
+                r.data[10] = dst10*invDet; r.data[11] = dst14*invDet;
+                r.data[12] = dst3*invDet;  r.data[13] = dst7*invDet;
+                r.data[14] = dst11*invDet; r.data[15] = dst15*invDet;
+                return r;
+            }
         }
 
         int n = rows;
