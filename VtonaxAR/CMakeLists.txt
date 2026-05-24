@@ -310,7 +310,7 @@ add_library(3dof SHARED src/main/cpp/3dof.cpp src/main/cpp/Matrix.cpp)
 target_link_libraries(3dof ${log-lib})
 
 # ========== Vtonax 性能分析器 ==========
-set(VTONAX_DEVELOP_MODE OFF) # <--- 修改这里：ON 开启，OFF 关闭
+set(VTONAX_DEVELOP_MODE ON) # <--- 修改这里：ON 开启，OFF 关闭
 
 message(STATUS "Vtonax 分析器状态: ${VTONAX_DEVELOP_MODE}")
 

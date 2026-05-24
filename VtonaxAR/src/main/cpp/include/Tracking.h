@@ -150,7 +150,6 @@ public:
     cv::Mat mLastImGray;
 
     // 初始化变量（单目）
-    std::vector<int> mvIniLastMatches;
     std::vector<int> mvIniMatches;
     std::vector<cv::Point2f> mvbPrevMatched;
     std::vector<cv::Point3f> mvIniP3D;
@@ -363,7 +362,6 @@ protected:
     int mCfgTopKWords = 6;
     int mCfgMaxCandidates = 8000;
     int mCfgMatchChunk = 2000;
-    int mCfgBgSleepUs = 20000; // 兼容旧接口，不再依赖延时
     int mCfgMaxBindInliers = 120;
     int mCfgMaxProjBinds = 200;
     // 重定位冷却以避免在明显不匹配时进行重型PnP
@@ -382,12 +380,6 @@ protected:
     std::atomic<bool> mTrackingOK{false};
     // 后台线程上次运行时间戳
     std::chrono::steady_clock::time_point mLastBgRunTime;
-    // 连续重定位成功帧计数
-    int mRelocSuccessFrames = 0;
-    // 临时对齐变换矩阵（尚未确认）
-    cv::Mat mPendingT_map_from_slam;
-    float mPendingConfidence = 0.0f;
-    int mPendingInliers = 0;
     
     // 重试计数器，防止GlobalRelocLoop死循环
     int mRefCacheRetryCount = 0;

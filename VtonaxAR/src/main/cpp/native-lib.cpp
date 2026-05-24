@@ -89,13 +89,6 @@ float gCurrentModelMatrix[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
 float gCurrentViewMatrix[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
 float gCurrentProjectionMatrix[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
 
-// 3DOF/SLAM 视图矩阵偏移（用于在SLAM丢失时平滑切换到IMU视图）
-// 偏移量 = View_SLAM * View_IMU^-1
-// 当SLAM丢失时: View_Pred = Offset * View_IMU_Curr
-float gViewMatrixOffset[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
-// EKFQuat gViewOffsetQuat(1, 0, 0, 0); // 用于平滑插值
-bool gOffsetInited = false;
-float gOffsetAlpha = ORB_SLAM2::VIEW_SMOOTH_ALPHA; // 平滑系数
 
 // 记录SLAM最后有效的世界坐标（Twc平移），用于3DOF/6DOF回退保持位置
 float gLastTwcPosX = 0.0f, gLastTwcPosY = 0.0f, gLastTwcPosZ = 0.0f;
