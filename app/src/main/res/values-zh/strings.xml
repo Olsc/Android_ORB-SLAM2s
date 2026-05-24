@@ -82,6 +82,10 @@
     <string name="hint_web_server_closed">Web服务已关闭</string>
 
     <string name="btn_web_server">Web端</string>
+
+    <string name="status_enabled">已启用</string>
+    <string name="status_disabled">已禁用</string>
+
     <string name="web_fps_label"> (Web端)</string>
     <string name="hint_waiting_browser_frame">正在等待浏览器图像…</string>
     <string name="hint_web_server_started">Web服务器已启动: %1$s</string>
