@@ -83,6 +83,8 @@
 
     <string name="btn_web_server">Web端</string>
 
+    <string name="title_web_server">Web服务器</string>
+
     <string name="status_enabled">已启用</string>
     <string name="status_disabled">已禁用</string>
 
