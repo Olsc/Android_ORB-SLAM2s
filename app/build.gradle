@@ -122,7 +122,7 @@ dependencies {
 
 configurations.all {
     resolutionStrategy {
-        force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.3.21"
-        force "org.jetbrains.kotlin:kotlin-stdlib:2.3.21"
+        force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.4.0"
+        force "org.jetbrains.kotlin:kotlin-stdlib:2.4.0"
     }
 }
