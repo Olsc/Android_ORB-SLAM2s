@@ -487,7 +487,6 @@ const int RELOC_MIN_INLIERS_FOR_ALIGN = 15;
 const float RELOC_MIN_CONFIDENCE_FOR_ALIGN = 0.4f;
 
 // 连续丢失超过此帧数后创建新的子地图（子地图策略）。
-//   30 帧 @ 30fps 约等于 1 秒，即丢失 1 秒后认为不可能恢复跟踪。
 //   增大此值会延长等待时间但可能避免因短暂遮挡而错误创建新地图。
 const int TRACKING_LOST_FRAMES_FOR_NEW_MAP = 30;
 

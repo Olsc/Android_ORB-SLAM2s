@@ -953,13 +953,10 @@ void ORBextractor::ComputeKeyPointsOctTree(vector<vector<KeyPoint> >& allKeypoin
         }
     });
 
-    // 多层级并行的计算特征点方向
+    // 多层级并行的计算特征点方向（直接使用原始未模糊图像计算方向）
     cv::parallel_for_(cv::Range(0, nlevels), [&](const cv::Range& range) {
         for (int level = range.start; level < range.end; ++level)
         {
-            // 在FAST提取完成后，计算方向和描述子前，进行高斯模糊。
-            // 这既避免了FAST在模糊图像上提取导致角点丢失/跟踪不稳，又保证了方向和描述子的抗噪能力
-            GaussianBlur(mvImagePyramid[level], mvImagePyramid[level], Size(7, 7), 2, 2, BORDER_REFLECT_101);
             computeOrientation(mvImagePyramid[level], allKeypoints[level], umax);
         }
     });
@@ -1010,16 +1007,25 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
         }
     }
 
-    // 激进的细粒度并行：基于特征点的描述子计算和缩放
+    // 为每个金字塔层预先准备模糊副本（避免 in-place 模糊污染跨帧复用的金字塔内存）
+    vector<cv::Mat> blurredPyramid(nlevels);
+    cv::parallel_for_(cv::Range(0, nlevels), [&](const cv::Range& range) {
+        for (int level = range.start; level < range.end; ++level)
+        {
+            // 拷贝后再模糊，保持 mvImagePyramid 原始数据不变以供下帧复用
+            GaussianBlur(mvImagePyramid[level], blurredPyramid[level], Size(7, 7), 2, 2, BORDER_REFLECT_101);
+        }
+    });
+
+    // 基于特征点的描述子计算和缩放（使用模糊副本以增强描述子稳定性）
     cv::parallel_for_(cv::Range(0, nkeypoints), [&](const cv::Range& range) {
         for (int i = range.start; i < range.end; ++i)
         {
             KeyPoint& kp = _keypoints[i];
             int level = kp.octave;
-            
-            // 使用原始层的坐标计算描述子
+
             uchar* desc = descriptors.ptr<uchar>(i);
-            computeOrbDescriptor(kp, mvImagePyramid[level], &pattern[0], desc);
+            computeOrbDescriptor(kp, blurredPyramid[level], &pattern[0], desc);
 
             // 缩放坐标到第0层
             if (level != 0) {
