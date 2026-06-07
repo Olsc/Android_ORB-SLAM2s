@@ -1697,7 +1697,7 @@ void Tracking::CreateInitialMapMonocular()
     float medianDepth = pKFini->ComputeSceneMedianDepth(2);
     float invMedianDepth = 1.0f/medianDepth;
 
-    if(medianDepth<0 || pKFcur->TrackedMapPoints(1)<100)
+    if(medianDepth<0 || pKFcur->TrackedMapPoints(1)<INITIALIZER_MIN_TRIANGULATED)
     {
         Reset();
         return;
@@ -2195,7 +2195,7 @@ bool Tracking::TrackLocalMap()
     }else{
         //  未对齐时，如果有足够的加载点匹配，也应该认为跟踪成功
         if(mnLoadedMapInliers >= thLoaded) return true;
-        return mnMatchesInliers>=20;  // 从30降至20
+        return mnMatchesInliers >= thStrict;
     }
 }
 
