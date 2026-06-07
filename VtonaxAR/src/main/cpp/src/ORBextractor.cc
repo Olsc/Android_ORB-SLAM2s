@@ -953,22 +953,13 @@ void ORBextractor::ComputeKeyPointsOctTree(vector<vector<KeyPoint> >& allKeypoin
         }
     });
 
-    // 多层级并行的计算特征点方向
+    // 多层级并行的计算特征点方向（直接使用原始未模糊图像计算方向）
     cv::parallel_for_(cv::Range(0, nlevels), [&](const cv::Range& range) {
         for (int level = range.start; level < range.end; ++level)
         {
             computeOrientation(mvImagePyramid[level], allKeypoints[level], umax);
         }
     });
-}
-
-static void computeDescriptors(const Mat& image, vector<KeyPoint>& keypoints, Mat& descriptors,
-                               const vector<Point>& pattern)
-{
-    descriptors = Mat::zeros((int)keypoints.size(), 32, CV_8UC1);
-
-    for (size_t i = 0; i < keypoints.size(); i++)
-        computeOrbDescriptor(keypoints[i], image, &pattern[0], descriptors.ptr((int)i));
 }
 
 void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPoint>& _keypoints,
@@ -981,78 +972,67 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
     Mat image = _image.getMat();
     assert(image.type() == CV_8UC1 );
 
-    // 预计算尺度金字塔
+    // 预计算尺度金字塔 (SLAM依赖它进行后续操作，必须保留)
     ComputePyramid(image);
 
 
-    //////////////////////
-    // Martin: ORB提取占50%的时间
     vector < vector<KeyPoint> > allKeypoints;
     ComputeKeyPointsOctTree(allKeypoints);
-    /////////////////////////
-    Mat descriptors;
 
     int nkeypoints = 0;
     for (int level = 0; level < nlevels; ++level)
         nkeypoints += (int)allKeypoints[level].size();
+
     if( nkeypoints == 0 )
+    {
         _descriptors.release();
-    else
-    {
-        _descriptors.create(nkeypoints, 32, CV_8U);
-        descriptors = _descriptors.getMat();
+        _keypoints.clear();
+        return;
     }
 
-    // 预计算每层特征点在输出描述子矩阵中的起始偏移量，以便多线程安全地并行写入
-    vector<int> levelOffsets(nlevels, 0);
-    int sum = 0;
-    for (int level = 0; level < nlevels; ++level)
-    {
-        levelOffsets[level] = sum;
-        sum += (int)allKeypoints[level].size();
-    }
-
-    // 使用 OpenCV parallel_for_ 对每一层的模糊和描述子计算进行并行化
-    cv::parallel_for_(cv::Range(0, nlevels), [&](const cv::Range& range) {
-        for (int level = range.start; level < range.end; ++level)
-        {
-            vector<KeyPoint>& keypoints = allKeypoints[level];
-            int nkeypointsLevel = (int)keypoints.size();
-
-            if(nkeypointsLevel==0)
-                continue;
-
-            // 在当前金字塔层级图像上做高斯模糊，用于描述子计算
-            Mat workingMat = mvImagePyramid[level];
-            GaussianBlur(workingMat, workingMat, Size(7, 7), 2, 2, BORDER_REFLECT_101);
-
-            // 计算描述符
-            int offset = levelOffsets[level];
-            Mat desc = descriptors.rowRange(offset, offset + nkeypointsLevel);
-            computeDescriptors(workingMat, keypoints, desc, pattern);
-
-            // 缩放关键点坐标
-            if (level != 0)
-            {
-                float scale = mvScaleFactor[level];
-                for (vector<KeyPoint>::iterator keypoint = keypoints.begin(),
-                     keypointEnd = keypoints.end(); keypoint != keypointEnd; ++keypoint)
-                    keypoint->pt *= scale;
-            }
-        }
-    });
+    _descriptors.create(nkeypoints, 32, CV_8U);
+    Mat descriptors = _descriptors.getMat();
 
     // 顺序地将结果收集并插入到主关键点向量中
-    _keypoints.clear();
-    _keypoints.reserve(nkeypoints);
+    _keypoints.resize(nkeypoints);
+    int offset = 0;
     for (int level = 0; level < nlevels; ++level)
     {
         vector<KeyPoint>& keypoints = allKeypoints[level];
-        if(!keypoints.empty())
+        int nkeypointsLevel = keypoints.size();
+        if(nkeypointsLevel > 0)
         {
-            _keypoints.insert(_keypoints.end(), keypoints.begin(), keypoints.end());
+            std::copy(keypoints.begin(), keypoints.end(), _keypoints.begin() + offset);
+            offset += nkeypointsLevel;
         }
     }
+
+    // 为每个金字塔层预先准备模糊副本（避免 in-place 模糊污染跨帧复用的金字塔内存）
+    vector<cv::Mat> blurredPyramid(nlevels);
+    cv::parallel_for_(cv::Range(0, nlevels), [&](const cv::Range& range) {
+        for (int level = range.start; level < range.end; ++level)
+        {
+            // 拷贝后再模糊，保持 mvImagePyramid 原始数据不变以供下帧复用
+            GaussianBlur(mvImagePyramid[level], blurredPyramid[level], Size(7, 7), 2, 2, BORDER_REFLECT_101);
+        }
+    });
+
+    // 基于特征点的描述子计算和缩放（使用模糊副本以增强描述子稳定性）
+    cv::parallel_for_(cv::Range(0, nkeypoints), [&](const cv::Range& range) {
+        for (int i = range.start; i < range.end; ++i)
+        {
+            KeyPoint& kp = _keypoints[i];
+            int level = kp.octave;
+
+            uchar* desc = descriptors.ptr<uchar>(i);
+            computeOrbDescriptor(kp, blurredPyramid[level], &pattern[0], desc);
+
+            // 缩放坐标到第0层
+            if (level != 0) {
+                kp.pt *= mvScaleFactor[level];
+            }
+        }
+    });
 }
 
 void ORBextractor::ComputePyramid(cv::Mat image)
