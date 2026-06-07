@@ -1246,20 +1246,12 @@ void Tracking::Track()
                     CheckReplacedInLastFrame();
                 }
 
-                if(mVelocity.empty() || mCurrentFrame.mnId<mnLastRelocFrameId+2)
+                VT_PROFILE_SCOPE("Tracking::TrackWithMotionModel");
+                bOK = TrackWithMotionModel();
+                if(!bOK)
                 {
-                    VT_PROFILE_SCOPE("Tracking::TrackReferenceKeyFrame");
+                    VT_PROFILE_SCOPE("Tracking::TrackRefKF_Fallback");
                     bOK = TrackReferenceKeyFrame();
-                }
-                else
-                {
-                    VT_PROFILE_SCOPE("Tracking::TrackWithMotionModel");
-                    bOK = TrackWithMotionModel();
-                    if(!bOK)
-                    {
-                        VT_PROFILE_SCOPE("Tracking::TrackRefKF_Fallback");
-                        bOK = TrackReferenceKeyFrame();
-                    }
                 }
             }
             else
@@ -1280,11 +1272,8 @@ void Tracking::Track()
                 if(!mbVO)
                 {
                     // 在上一帧中，我们在地图中跟踪了足够的地图点
-                    if(!mVelocity.empty())
-                    {
-                        bOK = TrackWithMotionModel();
-                    }
-                    else
+                    bOK = TrackWithMotionModel();
+                    if(!bOK)
                     {
                         bOK = TrackReferenceKeyFrame();
                     }
@@ -1296,9 +1285,9 @@ void Tracking::Track()
                     vector<MapPoint*> vpMPsMM;
                     vector<bool> vbOutMM;
                     cv::Mat TcwMM;
-                    if(!mVelocity.empty())
+                    bOKMM = TrackWithMotionModel();
+                    if(bOKMM)
                     {
-                        bOKMM = TrackWithMotionModel();
                         vpMPsMM = mCurrentFrame.mvpMapPoints;
                         vbOutMM = mCurrentFrame.mvbOutlier;
                         TcwMM = mCurrentFrame.mTcw.clone();
@@ -1727,6 +1716,7 @@ void Tracking::CreateInitialMapMonocular()
         {
             MapPoint* pMP = vpAllMapPoints[iMP];
             pMP->SetWorldPos(pMP->GetWorldPos()*invMedianDepth);
+            pMP->UpdateNormalAndDepth();
         }
     }
 
@@ -1776,6 +1766,8 @@ bool Tracking::TrackReferenceKeyFrame()
 {
     // 关键帧为空或已坏则不进行参考跟踪，避免互斥锁空指针崩溃
     if(!mpReferenceKF || mpReferenceKF->isBad()) return false;
+    if(mLastFrame.mTcw.empty()) return false; // 防御性判空
+    
     // 计算词袋向量
     mCurrentFrame.ComputeBoW();
 
@@ -1848,13 +1840,19 @@ void Tracking::UpdateLastFrame()
 
 bool Tracking::TrackWithMotionModel()
 {
+    if(mLastFrame.mTcw.empty())
+        return false;
+
     ORBmatcher matcher(0.9,true);
 
     // 根据参考关键帧更新上一帧位姿
     // 如果处于定位模式则创建"视觉里程计"点
     UpdateLastFrame();
 
-    mCurrentFrame.SetPose(mVelocity*mLastFrame.mTcw);
+    if(mVelocity.empty())
+        mCurrentFrame.SetPose(mLastFrame.mTcw.clone());
+    else
+        mCurrentFrame.SetPose(mVelocity*mLastFrame.mTcw);
 
     fill(mCurrentFrame.mvpMapPoints.begin(),mCurrentFrame.mvpMapPoints.end(),static_cast<MapPoint*>(NULL));
 
@@ -2242,12 +2240,14 @@ bool Tracking::NeedNewKeyFrame()
     const bool c1a = mCurrentFrame.mnId>=mnLastKeyFrameId+mMaxFrames;
     // 条件1b：已过去超过"MinFrames"且局部建图空闲
     const bool c1b = (mCurrentFrame.mnId>=mnLastKeyFrameId+mMinFrames && bLocalMappingIdle);
+    // 初期建图特例：如果地图中只有很少关键帧(<=2)，强制放宽闲置要求，允许频繁插入以迅速扩大地图
+    const bool c1_init = (nKFs<=2 && mCurrentFrame.mnId>=mnLastKeyFrameId+mMinFrames);
     // 条件1c：跟踪较弱（单目模式不适用）
     const bool c1c = false;
     // 条件2：与参考关键帧相比跟踪点较少。与地图匹配相比有很多视觉里程计。
     const bool c2 = ((mnMatchesInliers<nRefMatches*thRefRatio|| bNeedToInsertClose) && mnMatchesInliers>15);
 
-    if ((c1a || c1b || c1c) && c2)
+    if ((c1a || c1b || c1c || c1_init) && c2)
     {
         // 如果建图接受关键帧，则插入关键帧。
         // 否则发送信号中断BA
@@ -2258,7 +2258,7 @@ bool Tracking::NeedNewKeyFrame()
         else
         {
             mpLocalMapper->InterruptBA();
-            if (mSensor != System::MONOCULAR)
+            if (mSensor != System::MONOCULAR || nKFs <= 2)
             {
                 if (mpLocalMapper->KeyframesInQueue() < 3)
                     return true;

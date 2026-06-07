@@ -425,7 +425,7 @@ void MapPoint::UpdateNormalAndDepth()
     {
         KeyFrame* pKF = mit->first;
         cv::Mat Owi = pKF->GetCameraCenter();
-        cv::Mat normali = mWorldPos - Owi;
+        cv::Mat normali = Pos - Owi;
         
         // 内联计算向量范数，避免cv::norm调用
         const float nx = normali.at<float>(0);

@@ -392,7 +392,10 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
             }
             float tmpM[16];
             getColMajorMatrixFromMat(tmpM, TcwForAR);
-            getRUBViewMatrixFromRDF(tmpM, gCurrentViewMatrix);
+            {
+                std::lock_guard<std::mutex> dataLock(gMapDataMutex);
+                getRUBViewMatrixFromRDF(tmpM, gCurrentViewMatrix);
+            }
         }
         
         // AR对象显示条件
@@ -446,31 +449,31 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
                 }
             }
         }
-    }
+        
+        // AR模式：显示完整地图点云（绿色）
+        if(status==2) {
+            // 一旦对齐成功，立即显示完整地图点云，无需等待新点数量
+            bool hasAlignment = slamSys->HasMapAlignment();
 
-    // AR模式：显示完整地图点云（绿色）
-    if(status==2) {
-        // 一旦对齐成功，立即显示完整地图点云，无需等待新点数量
-        bool hasAlignment = slamSys->HasMapAlignment();
-
-        if(hasAlignment)
-        {
-            // 获取对齐后的相机位姿（在地图坐标系下）
-            cv::Mat TcwForProjection = slamSys->GetMapAlignedPose(Tcw);
-            
-            // 获取所有地图点并绘制（绿色点云）- 受点云显示开关控制
-            if(gEnablePointCloudDisplay) {
-                vector<ORB_SLAM2::MapPoint*> allMapPoints = slamSys->GetAllMapPoints();
-                drawAllMapPoints(TcwForProjection, allMapPoints, outputImage, fx, fy, cx, cy, true);
+            if(hasAlignment)
+            {
+                // 获取对齐后的相机位姿（在地图坐标系下）
+                cv::Mat TcwForProjection = slamSys->GetMapAlignedPose(Tcw);
+                
+                // 获取所有地图点并绘制（绿色点云）- 受点云显示开关控制
+                if(gEnablePointCloudDisplay) {
+                    vector<ORB_SLAM2::MapPoint*> allMapPoints = slamSys->GetAllMapPoints();
+                    drawAllMapPoints(TcwForProjection, allMapPoints, outputImage, fx, fy, cx, cy, true);
+                }
             }
         }
+        
+        // 最后绘制跟踪到的特征点（蓝色点云）- 受点云显示开关控制
+        if(gEnablePointCloudDisplay) {
+            drawTrackedPoints(vKeys,vMPs,outputImage);
+        }
     }
-    
-    // 最后绘制跟踪到的特征点（蓝色点云）- 受点云显示开关控制
-    if(gEnablePointCloudDisplay) {
-        drawTrackedPoints(vKeys,vMPs,outputImage);
-    }
-    
+
     //cv::imwrite(modelPath+"/lala2.jpg",outputImage);
     return status;
 }
@@ -746,22 +749,29 @@ Java_com_orb_slam2s_slamar_NativeHelper_getV(JNIEnv *env, jobject instance, jflo
 
     bool useSlam = false;
     cv::Mat TcwForView;
-    if(slamSys){
-        int st = slamSys->GetTrackingState();
-        if(st==2 && !Tcw.empty()) {
-            useSlam = true;
-            TcwForView = Tcw;
-            if(slamSys->HasMapAlignment()) {
-                TcwForView = slamSys->GetMapAlignedPose(Tcw);
+    {
+        std::unique_lock<std::mutex> slamLock(gSlamStateMutex, std::try_to_lock);
+        if(slamLock.owns_lock() && slamSys){
+            int st = slamSys->GetTrackingState();
+            if(st==2 && !Tcw.empty()) {
+                useSlam = true;
+                TcwForView = Tcw.clone();
+                if(slamSys->HasMapAlignment()) {
+                    TcwForView = slamSys->GetMapAlignedPose(Tcw);
+                }
             }
         }
     }
+    
     if(useSlam){
         float tmpM[16];
         getColMajorMatrixFromMat(tmpM, TcwForView);
         getRUBViewMatrixFromRDF(tmpM, viewM);
     } else {
-        setIdentityM(viewM);
+        std::lock_guard<std::mutex> dataLock(gMapDataMutex);
+        for(int i = 0; i < 16; i++) {
+            viewM[i] = gCurrentViewMatrix[i];
+        }
     }
 
     env->ReleaseFloatArrayElements(viewM_, viewM, 0);
@@ -1001,8 +1011,11 @@ Java_com_orb_slam2s_slamar_NativeHelper_shouldDrawArObject(JNIEnv *env, jobject 
 JNIEXPORT void JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_getArObjectModelMatrix(JNIEnv *env, jobject instance, jfloatArray matrix_) {
     jfloat *matrix = env->GetFloatArrayElements(matrix_, NULL);
-    for(int i = 0; i < 16; i++) {
-        matrix[i] = gCurrentModelMatrix[i];
+    {
+        std::lock_guard<std::mutex> dataLock(gMapDataMutex);
+        for(int i = 0; i < 16; i++) {
+            matrix[i] = gCurrentModelMatrix[i];
+        }
     }
     env->ReleaseFloatArrayElements(matrix_, matrix, 0);
 }
@@ -1011,8 +1024,11 @@ Java_com_orb_slam2s_slamar_NativeHelper_getArObjectModelMatrix(JNIEnv *env, jobj
 JNIEXPORT void JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_getArObjectViewMatrix(JNIEnv *env, jobject instance, jfloatArray matrix_) {
     jfloat *matrix = env->GetFloatArrayElements(matrix_, NULL);
-    for(int i = 0; i < 16; i++) {
-        matrix[i] = gCurrentViewMatrix[i];
+    {
+        std::lock_guard<std::mutex> dataLock(gMapDataMutex);
+        for(int i = 0; i < 16; i++) {
+            matrix[i] = gCurrentViewMatrix[i];
+        }
     }
     env->ReleaseFloatArrayElements(matrix_, matrix, 0);
 }
