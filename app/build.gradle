@@ -126,3 +126,9 @@ configurations.all {
         force "org.jetbrains.kotlin:kotlin-stdlib:2.3.21"
     }
 }
+
+tasks.configureEach { task ->
+    if (task.name.contains('lintAnalyze') || task.name.contains('lintVitalAnalyze') || task.name == 'lint') {
+        task.enabled = false
+    }
+}

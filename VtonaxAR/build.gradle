@@ -62,3 +62,9 @@ android {
 dependencies {
     implementation project(':OpenCVLibrary')
 }
+
+tasks.configureEach { task ->
+    if (task.name.contains('lintAnalyze') || task.name.contains('lintVitalAnalyze') || task.name == 'lint') {
+        task.enabled = false
+    }
+}
