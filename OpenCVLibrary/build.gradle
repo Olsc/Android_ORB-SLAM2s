@@ -48,7 +48,7 @@ configurations.all {
 }
 
 tasks.configureEach { task ->
-    if (task.name.toLowerCase().contains("lint")) {
+    if (task.name.contains("lintAnalyze") || task.name.contains("lintVitalAnalyze") || task.name == "lint") {
         task.enabled = false
     }
 }
