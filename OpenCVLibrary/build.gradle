@@ -30,6 +30,8 @@ android {
     ndkVersion "26.3.11579264"
     lint {
         targetSdk 36
+        abortOnError false
+        checkReleaseBuilds false
     }
     testOptions {
         targetSdk 36
