@@ -1107,33 +1107,30 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
 
     // SE3 位姿恢复 并 缓存相机中心以加速后续点更新
     std::map<KeyFrame*, cv::Mat> mapCameraCenters;
+    for(size_t i=0;i<vpKFs.size();i++)
     {
-        unique_lock<mutex> lock(pMap->mMutexMapUpdate);
-        for(size_t i=0;i<vpKFs.size();i++)
-        {
-            KeyFrame* pKFi = vpKFs[i];
-            if(!pKFi || pKFi->isBad()) continue;
+        KeyFrame* pKFi = vpKFs[i];
+        if(!pKFi || pKFi->isBad()) continue;
 
-            const int nIDi = pKFi->mnId;
-            if(nIDi < 0 || nIDi > (int)nMaxKFid) continue;
+        const int nIDi = pKFi->mnId;
+        if(nIDi < 0 || nIDi > (int)nMaxKFid) continue;
 
-            g2o::VertexSim3Expmap* VSim3 = static_cast<g2o::VertexSim3Expmap*>(optimizer.vertex(nIDi));
-            if(!VSim3) continue;
-            
-            g2o::Sim3 CorrectedSiw =  VSim3->estimate();
-            vCorrectedSwc[nIDi]=CorrectedSiw.inverse();
-            Eigen::Matrix3d eigR = CorrectedSiw.rotation().toRotationMatrix();
-            Eigen::Vector3d eigt = CorrectedSiw.translation();
-            double s = CorrectedSiw.scale();
-            
-            if(std::abs(s) < 1e-10) continue;
-            eigt *=(1./s); //[R t/s;0 1]
-            cv::Mat Tiw = Converter::toCvSE3(eigR,eigt);
-            pKFi->SetPose(Tiw);
-            
-            // 缓存更新后的相机中心
-            mapCameraCenters[pKFi] = pKFi->GetCameraCenter();
-        }
+        g2o::VertexSim3Expmap* VSim3 = static_cast<g2o::VertexSim3Expmap*>(optimizer.vertex(nIDi));
+        if(!VSim3) continue;
+        
+        g2o::Sim3 CorrectedSiw =  VSim3->estimate();
+        vCorrectedSwc[nIDi]=CorrectedSiw.inverse();
+        Eigen::Matrix3d eigR = CorrectedSiw.rotation().toRotationMatrix();
+        Eigen::Vector3d eigt = CorrectedSiw.translation();
+        double s = CorrectedSiw.scale();
+        
+        if(std::abs(s) < 1e-10) continue;
+        eigt *=(1./s); //[R t/s;0 1]
+        cv::Mat Tiw = Converter::toCvSE3(eigR,eigt);
+        pKFi->SetPose(Tiw);
+        
+        // 缓存更新后的相机中心
+        mapCameraCenters[pKFi] = pKFi->GetCameraCenter();
     }
 
     // 校正点。变换到"未优化"的参考关键帧位姿，然后用优化后的位姿变换回来

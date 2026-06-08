@@ -774,6 +774,8 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
 
                     pMP->SetWorldPos(Rwc*Xc+twc);
                 }
+                
+                pMP->UpdateNormalAndDepth();
             }            
 
             mpMap->InformNewBigChange();
