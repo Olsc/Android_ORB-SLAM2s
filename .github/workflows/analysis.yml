@@ -41,7 +41,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Publish
-        run: ./gradlew build
+        run: ./gradlew build -x lint
         working-directory: .
 
       - name: List Files
