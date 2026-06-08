@@ -274,7 +274,7 @@ void ORB_SLAM2::Tracking::BindLoadedMapPointsUsingSnapshots()
 
         float u=0.f,v=0.f,Z=0.f;
         ProjectPwWithRTK(Rcw, tcw, s.Pw, fx, fy, cx, cy, u, v, Z);
-        if(Z<=0 || Z>50.0f) continue;  // 过滤深度异常的点
+        if(Z<=0 || Z>BIND_MAX_DEPTH) continue;  // 过滤深度异常的点
         if(u<0 || u>=mCurrentFrame.mnMaxX || v<0 || v>=mCurrentFrame.mnMaxY) continue;
 
 
@@ -461,7 +461,6 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
         mRefGrid = newGrid;
     } 
 
-    //LOGD("参考缓存重建完成：总加载点=%d，有描述子=%d，高质量=%d，缓存=%d", totalLoaded, withDesc, highQuality, (int)mRefIdxToMP.size());
     // 通知后台线程参考缓存已就绪（无延时）
     mSnapSeqProduced++;
     mCvReloc.notify_all();
@@ -777,7 +776,7 @@ void Tracking::GlobalRelocLoop(int sessionId)
                 cv::Mat Ow = -Rcw.t()*tcw;
                 cv::Point3f center(Ow.at<float>(0), Ow.at<float>(1), Ow.at<float>(2));
                 
-                // 搜索半径：从配置文件读取
+            // 从配置文件读取搜索半径
                 float searchRadius = TRACKING_RELOC_SEARCH_RADIUS;
                 
                 std::vector<int> gridCandidates;
@@ -822,7 +821,6 @@ void Tracking::GlobalRelocLoop(int sessionId)
                 for(int i=0;i<(int)refSnaps.size() && (int)candidateIdx.size()<mCfgMaxCandidates;i+=step){ candidateIdx.push_back(i); }
             }
         }
-        //LOGD("RelocBG: 候选数=%d", (int)candidateIdx.size());  // 高频日志，已注释
 
         // 步骤2.5：基于姿态的门控（利用最近姿态做粗筛）
         // 自适应策略：若粗筛结果过少，说明位姿不准，回退到使用原始候选集以提高稳定性
@@ -855,10 +853,8 @@ void Tracking::GlobalRelocLoop(int sessionId)
             if(!gated.empty() && ((int)gated.size() >= candidatesBeforeGating/5 || (int)gated.size() >= 100)){
                 candidateIdx.swap(gated);
             } else {
-                // LOGD("重定位后台: 姿态粗筛过激进(筛选后=%d < %d*0.2)，回退使用原始候选", (int)gated.size(), candidatesBeforeGating);
             }
         }
-        // LOGD("重定位后台: 姿态粗筛后候选数=%d", (int)candidateIdx.size());
 
         // 步骤3：仅对候选行进行KNN匹配（分割成块；可选并行）
         // 复用线程局部的BF匹配器，降低构造与缓存开销
@@ -914,11 +910,10 @@ void Tracking::GlobalRelocLoop(int sessionId)
                 keptPairs++;
             }
         }
-        //LOGD("RelocBG: KNN保留=%d", keptPairs);  // 高频日志，已注释
         // 实时匹配分数：归一化的匹配覆盖率（用于UI展示进入目标区域的可能性）
         float matchScore = 0.0f;
         if(N>0){
-            matchScore = std::min(1.0f, (float)keptPairs / std::max(20.0f, (float)N*0.5f));
+            matchScore = std::min(1.0f, (float)keptPairs / std::max(RELO_MATCH_SCORE_DIVISOR, (float)N*0.5f));
         }
         mRelocMatchScore.store(matchScore);
         if(pts3d.size()<12){
@@ -953,8 +948,8 @@ void Tracking::GlobalRelocLoop(int sessionId)
             // 组装去重后的索引集合
             std::vector<size_t> keep; keep.reserve(bestPosByRef.size());
             for(auto &kv: bestPosByRef) keep.push_back(kv.second);
-            // 按距离升序截断到上限（例如200）
-            const size_t MAX_PNP_SAMPLES = 200;
+            // 按距离升序截断到上限
+            const size_t MAX_PNP_SAMPLES = RELO_BG_PNP_MAX_SAMPLES;
             std::nth_element(keep.begin(), keep.begin()+std::min(keep.size(), MAX_PNP_SAMPLES), keep.end(),
                              [&](size_t a, size_t b){ return descDist[a] < descDist[b]; });
             if(keep.size() > MAX_PNP_SAMPLES) keep.resize(MAX_PNP_SAMPLES);
@@ -969,7 +964,6 @@ void Tracking::GlobalRelocLoop(int sessionId)
         }
 
         bool alignedNow=false; int inliersCnt=0;
-        //LOGD("RelocBG: PnP样本数=%d", (int)pts3d.size());  // 高频日志，已注释
         if(mRelocCooldownFrames>0){ mRelocCooldownFrames--; continue; }
         
         // PnP求解策略：6+ 使用RANSAC；4-5 使用P3P/EPNP并做重投影验证，严禁在<6时进入RANSAC路径
@@ -977,7 +971,6 @@ void Tracking::GlobalRelocLoop(int sessionId)
             std::vector<cv::Point3f> f3d; std::vector<cv::Point2f> f2d; std::vector<int> fq, fr;
             FilterPnPInputsSync(pts3d, pts2d, qIdx, refIdx, f3d, f2d, fq, fr);
             if(f3d.size()<4){
-                //LOGD("RelocBG: 过滤后点数不足4个，跳过PnP");  // 高频日志，已注释
                 continue;
             }
             cv::Mat K = mK; cv::Mat distCoeffs = cv::Mat::zeros(4,1,CV_32F);
@@ -1061,20 +1054,16 @@ void Tracking::GlobalRelocLoop(int sessionId)
                         
                         // 仍然发布对齐结果供主线程使用
                         PublishRelocAlignment(T_map_from_slam, inliersCnt, conf, ts, bestMapId);
-                        // LOGD("重定位后台: 发布对齐 内点数=%d 置信度=%.2f 地图ID=%d (票数=%d/%d)", 
                         //      inliersCnt, conf, bestMapId, maxVote, inliersCnt);
                         alignedNow = true;
                     } else {
-                        // LOGD("重定位后台: 丢弃不稳定的对齐结果 内点数=%d 最佳地图ID=%d 票数=%d 次佳票数=%d", 
                         //      inliersCnt, bestMapId, maxVote, secondMaxVote);
                     }
                 }
             } else {
-                 // LOGD("重定位后台: PnP失败或内点不足 (内点数=%d < %d)", inliersCnt, minInliers);
                  mRelocCooldownFrames = TRACKING_RELOC_COOLDOWN_FRAMES;
             }
         } else {
-            //LOGD("RelocBG: 点数不足4个，跳过PnP");  // 高频日志，已注释
         }
     }
 }
@@ -1446,7 +1435,6 @@ void Tracking::Track()
                 }
                 else
                 {
-                    // LOGD("跟踪: 丢失 %d 帧 (>%d)。正在创建新子地图。",
                     //      mConsecutiveLostFrames, TRACKING_LOST_FRAMES_FOR_NEW_MAP);
                     mpSystem->CreateNewMap();
                     mLastNewMapFrameId = mCurrentFrame.mnId;
@@ -1917,7 +1905,6 @@ bool Tracking::TrackLocalMap()
             if(!p || p->isBad()) continue;
             if(p->mbFromLoadedMap){ localLoaded++; if(!p->GetDescriptor().empty()) localWithDesc++; }
         }
-        //LOGD("Reloc: localMP size=%d, loaded=%d, loadedWithDesc=%d", localTotal, localLoaded, localWithDesc);
     }
 
     // 避免遍历全局已加载的地图点，这会导致严重卡顿且过早进行地图匹配。
@@ -1931,7 +1918,7 @@ bool Tracking::TrackLocalMap()
         {
             const vector<MapPoint*> allMPs = mpMap->GetAllMapPoints();
             int added=0;
-            for (size_t i = 0; i < allMPs.size() && added < 200; i++)
+            for (size_t i = 0; i < allMPs.size() && added < LOCAL_MAP_SUPPLEMENT_COUNT; i++)
             {
                 MapPoint *p = allMPs[i];
                 if (!p || p->isBad())
@@ -2031,7 +2018,7 @@ bool Tracking::TrackLocalMap()
                             float v = mCurrentFrame.fy*Pc.at<float>(1)/Z + mCurrentFrame.cy;
                             if(u<0 || u>=mCurrentFrame.mnMaxX || v<0 || v>=mCurrentFrame.mnMaxY) continue;
 
-                            const float searchRadius = 15.0f;
+                            const float searchRadius = RELOC_PROJ_SEARCH_RADIUS;
                             vector<size_t> vIndices = mCurrentFrame.GetFeaturesInArea(u, v, searchRadius);
                             if(vIndices.empty()) continue;
 
@@ -2060,7 +2047,6 @@ bool Tracking::TrackLocalMap()
                                 }
                             }
                         }
-                        //LOGD("重定位主函数: 高精度绑定 strongBinds=%d", strongBinds);
                     }
                 };
 
@@ -2090,13 +2076,11 @@ bool Tracking::TrackLocalMap()
                             const int confirmInliers = mPendingAlign.inliers;
                             applyAlign(mPendingAlign);
                             mMapSwitchCooldownFrames = 20;
-                            // LOGD("重定位主函数: 地图切换确认 map=%d -> %d (count=%d inliers=%d)",
                             //      curMapId, newMapId, confirmCount, confirmInliers);
                         }
                     }
                 }
             } else {
-                // LOGD("重定位主函数: 拒绝低质量对齐结果 内点数=%d 置信度=%.2f (要求>=%d,>=%.2f)", 
                 //     res.inliers, res.confidence, minInliers, minConfidence);
                 // 不清除已有对齐状态，但拒绝新的低质量对齐
             }
@@ -2113,15 +2097,13 @@ bool Tracking::TrackLocalMap()
     BindLoadedMapPointsUsingSnapshots();
     {
         int bindCnt=0; for(auto *p : mCurrentFrame.mvpMapPoints){ if(p && !p->isBad()) bindCnt++; }
-        //LOGD("RelocMain: 帧内已绑定点数=%d 有对齐=%d", bindCnt, mbHaveMapAlign?1:0);  // 高频日志，已注释
     }
     // 对齐存在时，连续失败的宽限策略：如果上帧成功，这一帧边缘内点稍低允许通过一次
     if(mbHaveMapAlign){
-        if(mnMatchesInliers>=20) mConsecutiveFail=0; else mConsecutiveFail++;
+        if(mnMatchesInliers>=CONSECUTIVE_FAIL_INLIERS_BASELINE) mConsecutiveFail=0; else mConsecutiveFail++;
     } else {
         mConsecutiveFail=0;
     }
-    //LOGD("RelocMain: mnMatchesInliers=%d consecutiveFail=%d", mnMatchesInliers, mConsecutiveFail);  // 高频日志，已注释
     mnMatchesInliers = 0;
 
     // 统计匹配到加载点的数量，作为置信度来源
@@ -2181,7 +2163,7 @@ bool Tracking::TrackLocalMap()
     int thLoaded = TRACKING_SUCCESS_LOADED;  // 从15降至10，加载点阈值
     
     // 若已有地图对齐，进一步放宽阈值，确保持续跟踪
-    if(mbHaveMapAlign){ thStrict = 20; }  // 从40降至20
+    if(mbHaveMapAlign){ thStrict = ALIGNED_STRICT_INLIERS_OVERRIDE; }
     if(mCurrentFrame.mnId<mnLastRelocFrameId+mMaxFrames && mnMatchesInliers<thStrict)
         return false;
 
@@ -2216,7 +2198,7 @@ bool Tracking::NeedNewKeyFrame()
         return false;
 
     // 参考关键帧中跟踪的地图点
-    int nMinObs = 3;
+    int nMinObs = REFKF_MIN_OBSERVATIONS;
     if(nKFs<=2)
         nMinObs=2;
     if(mpReferenceKF==nullptr) return false;
@@ -2335,7 +2317,7 @@ void Tracking::SearchLocalPoints()
         if(pMP->isBad())
             continue;
         // 投影（这会填充用于匹配的MapPoint变量）
-        if(mCurrentFrame.isInFrustum(pMP,0.5))
+        if(mCurrentFrame.isInFrustum(pMP,FRUSTUM_VISIBILITY_TH))
         {
             pMP->IncreaseVisible();
             nToMatch++;
@@ -2348,7 +2330,7 @@ void Tracking::SearchLocalPoints()
         int th = TRACKING_LOCAL_SEARCH_TH;
         // 如果相机最近被重定位，则执行更粗糙的搜索
         if(mCurrentFrame.mnId<mnLastRelocFrameId+2)
-            th=5;
+            th=RELOC_POST_SEARCH_TH;
         
         // 先进行常规描述子匹配
         matcher.SearchByProjection(mCurrentFrame,mvpLocalMapPoints,th);
@@ -2407,7 +2389,6 @@ void Tracking::SearchLocalPoints()
             }
         }
         
-        //LOGD("SearchLocalPoints: 额外加载点匹配=%d", additionalMatches);  // 调试日志，已注释
     }
 }
 
@@ -2470,7 +2451,6 @@ void Tracking::UpdateLocalPoints()
         mvpLocalMapPoints.resize(TRACKING_MAX_LOCAL_MAP_POINTS);
     }
     
-    //LOGD("UpdateLocalPoints: 局部地图点数量=%d", (int)mvpLocalMapPoints.size());  // 高频日志，已注释
 }
 
 
@@ -2525,7 +2505,7 @@ void Tracking::UpdateLocalKeyFrames()
 
 
     // 还包括一些尚未包含的关键帧，它们是已包含关键帧的邻居 (使用安全的索引迭代以防止 vector 重分配导致迭代器失效崩溃)
-    const size_t nMaxLocalKFs = 80;
+    const size_t nMaxLocalKFs = MAX_LOCAL_KEYFRAMES;
     for(size_t i=0; i<mvpLocalKeyFrames.size(); i++)
     {
         // 限制关键帧数量
@@ -2534,7 +2514,7 @@ void Tracking::UpdateLocalKeyFrames()
 
         KeyFrame* pKF = mvpLocalKeyFrames[i];
 
-        const vector<KeyFrame*> vNeighs = pKF->GetBestCovisibilityKeyFrames(10);
+        const vector<KeyFrame*> vNeighs = pKF->GetBestCovisibilityKeyFrames(COVISIBILITY_NEIGHBOR_COUNT);
 
         for(vector<KeyFrame*>::const_iterator itNeighKF=vNeighs.begin(), itEndNeighKF=vNeighs.end(); itNeighKF!=itEndNeighKF; itNeighKF++)
         {
@@ -2649,7 +2629,7 @@ bool Tracking::Relocalization()
                 else
                 {
                     PnPsolver* pSolver = new PnPsolver(mCurrentFrame,vvpMapPointMatches[i]);
-                    pSolver->SetRansacParameters(0.99,10,300,4,0.5,5.991);
+                    pSolver->SetRansacParameters(PNP_RANSAC_PROB, PNP_RANSAC_MIN_INLIERS, PNP_RANSAC_MAX_ITERS, PNP_RANSAC_MIN_SET, PNP_RANSAC_EPSILON, PNP_RANSAC_TH2);
                     vpPnPsolvers[i] = pSolver;
                 }
             }
@@ -2844,7 +2824,7 @@ void Tracking::Reset()
     mRelocMatchScore.store(0.0f);
     // Reset后设置cooldown期（至少30帧），等待足够的新扫描点积累后再开始重定位
     // 避免Reset后立即匹配到错误区域
-    mRelocCooldownFrames = 30;  // Reset后至少等待30帧才开始重定位
+    mRelocCooldownFrames = RESET_COOLDOWN_FRAMES;  // 从Config.h读取冷却帧数
     mConsecutiveFail = 0;
 
     // 清除地图（这会删除地图点和关键帧）
@@ -2905,7 +2885,6 @@ void Tracking::ClearTrackingState()
         KeyFrame::nNextId = 0;
         Frame::nNextId = 0;
     } else {
-       // LOGD("ClearTrackingState: 地图非空 (KFs=%lu)，跳过ID重置以防止冲突", mpMap->KeyFramesInMap());
     }
     
     // 清除关键帧引用以防止访问已删除的对象

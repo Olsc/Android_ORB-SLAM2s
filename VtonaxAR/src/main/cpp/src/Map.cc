@@ -62,7 +62,6 @@ void Map::AddMapPoint(MapPoint *pMP)
     mspMapPoints.insert(pMP);
     // Debug: 跟踪加载地图标志的传播（避免在此处迭代现有集合）
     // if(pMP && pMP->mbFromLoadedMap){
-    //     LOGD("Map::AddMapPoint loaded=1, p=%p, totalAll=%d", (void*)pMP, (int)mspMapPoints.size());
     // }
 }
 
@@ -70,7 +69,6 @@ void Map::EraseMapPoint(MapPoint *pMP)
 {
     unique_lock<mutex> lock(mMutexMap);
     // if(pMP){
-    //     LOGD("Map::EraseMapPoint p=%p loaded=%d bad=%d", (void*)pMP, (int)pMP->mbFromLoadedMap, (int)pMP->isBad());
     // }
     mspMapPoints.erase(pMP);
     

@@ -88,7 +88,6 @@ void KeyFrame::SetPose(const cv::Mat &Tcw_)
     
     // 验证输入位姿的有效性，防止崩溃
     if(Tcw_.empty() || Tcw_.rows < 4 || Tcw_.cols < 4){
-        //LOGE("关键帧::设置位姿: 无效的位姿输入 (空=%d, 行数=%d, 列数=%d)",
         //     Tcw_.empty()?1:0,
         //     Tcw_.empty()?0:Tcw_.rows,
         //     Tcw_.empty()?0:Tcw_.cols);

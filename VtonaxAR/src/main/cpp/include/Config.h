@@ -112,9 +112,8 @@ const int KEYFRAME_REDUNDANCY_OBS_THRESHOLD = 3;
 
 // 地图点被视为"优质"所需的最小观测关键帧数。
 //   低于此观测数的点会在帧修剪中被优先剔除。
-//   单目模式建议 2（因单目观测不够稳定），双目/RGB-D 可设为 3。
+//   本项目为单目模式，仅使用单目阈值。
 const int MAPPOINT_MIN_OBSERVATIONS_MONO = 2;
-const int MAPPOINT_MIN_OBSERVATIONS_STEREO = 3;
 
 
 // ==========================================
@@ -126,6 +125,13 @@ const int MAPPOINT_MIN_OBSERVATIONS_STEREO = 3;
 //   防止单帧投影匹配耗时过高。
 //   对低端设备可减小至 2000，高端设备可以不限制（放大至 10000）。
 const int TRACKING_MAX_LOCAL_MAP_POINTS = 5000;
+
+// 视锥可见性判定阈值（0~1）。
+//   在 SearchLocalPoints() 中调用 isInFrustum() 时用于判断地图点是否在视野内。
+//   0.5f 表示地图点投影位置偏离图像中心不超过图像尺寸 50% 时仍视为可见。
+//   增大此值（如 0.7f）会使更多远处/边缘点参与匹配搜索，但增加误匹配风险；
+//   减小（如 0.3f）则更严格，减少计算量但可能漏掉边缘特征。
+const float FRUSTUM_VISIBILITY_TH = 0.5f;
 
 // PnP求解中 2D 像素坐标的有效范围上限。
 //   若匹配点投影后的像素坐标绝对值超过此值，视为投影异常剔除。
@@ -153,11 +159,25 @@ const double PNP_RANSAC_CONFIDENCE = 0.999;
 const float TRACKING_SEARCH_RADIUS_ALIGNED = 12.0f;
 const float TRACKING_SEARCH_RADIUS_UNALIGNED = 8.0f;
 
+// 加载点投影绑定时允许的最大深度（米）。
+//   在 BindLoadedMapPointsUsingSnapshots() 中将参考快照点投影到当前帧时，
+//   若相机坐标系下深度 Z > 此值则跳过，避免匹配到极远处的低质量点。
+//   设得过大（如 100）可匹配到更远的点但易引入深度不确定性大的误匹配；
+//   设得过小（如 20）会丢弃远处真实点，减少可绑定点数量。
+const float BIND_MAX_DEPTH = 50.0f;
+
 // 全局重定位搜索半径（单位：米）。
 //   在重定位阶段，将当前帧的 Bow 候选关键帧的地图点投影到当前帧时，
 //   以此半径在图像上确定搜索范围。
 //   值越大容差越好但计算量增大，值小则可能漏掉候选。
 const float TRACKING_RELOC_SEARCH_RADIUS = 50.0f;
+
+// 重定位成功后高精度投影绑定的搜索半径（像素）。
+//   在 TrackLocalMap() 中消费后台对齐结果后，将已加载地图点投影到当前帧，
+//   以此半径在图像上搜索最近邻特征点进行绑定。
+//   值越大绑定召回率越高但计算量和误匹配增加；
+//   值小则更保守，适合已对齐到位后做精细化补充匹配。
+const float RELOC_PROJ_SEARCH_RADIUS = 15.0f;
 
 // 跟踪对齐更新参数：
 //   MIN_INLIERS_UPDATE      = 20：触发对齐更新的最小内点数下限。
@@ -208,9 +228,18 @@ const int TRACKING_RELOC_PNP_MIN_INLIERS = 10;
 //   当一次 PnP 尝试失败后，等待此帧数再发起下一次重定位，避免无用功。
 const int TRACKING_RELOC_COOLDOWN_FRAMES = 5;
 
-// 主线程 TrackLocalMap 阶段中 PnP 姿态求解所需的最小内点数。
-//   低于此值时认为追踪不够好，尝试更激进的重新定位策略。
-const int TRACKING_LOCAL_PNP_MIN_INLIERS = 10;
+// 后台重定位 PnP 求解的最大采样数。
+//   在 GlobalRelocLoop() 中对 2D-3D 候选点对进行去重后，
+//   按描述子距离升序截断到此上限，控制 RANSAC 求解的代价上限。
+//   增大可在更多候选点上搜索更优姿态，但 RANSAC 耗时线性增加。
+//   建议范围 100~500，移动端推荐 200。
+const int RELO_BG_PNP_MAX_SAMPLES = 200;
+
+// 后台重定位匹配分数的归一化分母。
+//   在 GlobalRelocLoop() 中计算 matchScore = min(1.0, keptPairs / (N * 0.5))
+//   时使用的分母基数。实际分母为此值（或 N*0.5 的较大者）。
+//   此分数用于 UI 展示进入目标区域的可能性，不影响算法精度。
+const float RELO_MATCH_SCORE_DIVISOR = 20.0f;
 
 // 单目初始化阶段所需的最小 ORB 匹配点数。
 //   若两帧间高质量匹配数低于此值，认为场景缺乏纹理或运动不足，无法初始化。
@@ -229,6 +258,13 @@ const int TRACKING_MOTION_MIN_MATCHES = 20;
 //   低于此值时降级到重定位或 TrackLocalMap 中更激进的搜索。
 const int TRACKING_REFKF_MIN_MATCHES = 15;
 
+// 参考关键帧匹配判定时，地图点所需的最小观测数。
+//   在 NeedNewKeyFrame() 中调用 TrackedMapPoints(nMinObs) 时使用，
+//   用于统计参考关键帧中"可靠"的地图点数量。
+//   增大此值会使关键帧统计更严格（仅计高度观测的点），
+//   减小则宽松但仍过滤掉零观测的孤立点。
+const int REFKF_MIN_OBSERVATIONS = 3;
+
 // 参考关键帧跟踪匹配比率阈值。
 //   RATIO：正常建图阶段，匹配与预测比率的容忍度。
 //   NEWMAP_RATIO：新地图（关键帧 < 2）时放宽阈值，因为初始帧匹配不稳定。
@@ -244,10 +280,24 @@ const float TRACKING_KF_MONO_RATIO = 0.9f;
 //   建议在快速运动场景适当增大。
 const int TRACKING_LOCAL_SEARCH_TH = 1;
 
+// 局部地图点数不足时的补充上限。
+//   在 TrackLocalMap() 中若 mvpLocalMapPoints < 50，从全局地图点中
+//   补充最多此数量的点进入局部地图，确保跟踪有足够候选。
+//   增大可在建图初期提供更多匹配候选，但增加 SearchLocalPoints 的计算量。
+//   设为 0 可禁用补充机制。
+const int LOCAL_MAP_SUPPLEMENT_COUNT = 200;
+
 // 连续跟踪失败宽容次数。
 //   当已对齐状态下连续 TRACKING_MAX_CONSECUTIVE_FAIL 帧内点数均偏低时，
 //   触发从对齐状态降级到未对齐或重定位。
 const int TRACKING_MAX_CONSECUTIVE_FAIL = 3;
+
+// 连续失败帧宽限时的内点数基线。
+//   在 TrackLocalMap() 中，若 mbHaveMapAlign 且 mnMatchesInliers >= 此值，
+//   则重置连续失败计数 mConsecutiveFail = 0；否则递增。
+//   当内点数低于此值但未达 TRACKING_MAX_CONSECUTIVE_FAIL 上限时，
+//   系统仍判定跟踪成功但会累积失败计数，避免单帧抖动导致立即丢失。
+const int CONSECUTIVE_FAIL_INLIERS_BASELINE = 20;
 
 // 重定位 PoseOptimization 后判定成功的最小内点数。
 //   少于此时认为重定位失败，继续搜索下一组候选。
@@ -261,6 +311,26 @@ const int TRACKING_SUCCESS_STRICT = 30;
 const int TRACKING_SUCCESS_LOOSE = 15;
 const int TRACKING_SUCCESS_LOADED = 10;
 
+// 已对齐状态下 STRICT 阈值的覆盖值。
+//   在 TrackLocalMap() 中，当 mbHaveMapAlign = true 时，
+//   将 TRACKING_SUCCESS_STRICT 动态覆盖为此值（默认 20），
+//   因为已对齐状态下加载地图点的内点统计规则不同，
+//   过高的 STRICT 阈值会导致已对齐状态下频繁判定跟踪失败。
+const int ALIGNED_STRICT_INLIERS_OVERRIDE = 20;
+
+// 局部关键帧列表的最大数量限制。
+//   在 UpdateLocalKeyFrames() 中，当 mvpLocalKeyFrames.size() 超过此值时
+//   停止添加新的邻居/子/父关键帧。
+//   增大使局部地图包含更多约束，BA 优化更准但耗时增加；
+//   减小则效率优先，适合低端设备。
+const int MAX_LOCAL_KEYFRAMES = 80;
+
+// 共视图邻居关键帧的最佳共视数量。
+//   在 UpdateLocalKeyFrames() 中，对每个局部关键帧调用
+//   GetBestCovisibilityKeyFrames(COVISIBILITY_NEIGHBOR_COUNT)
+//   将其共视关系最好的前 N 个关键帧也纳入局部地图。
+//   增大使局部地图连接更紧密，但可能引入冗余帧。
+const int COVISIBILITY_NEIGHBOR_COUNT = 10;
 
 // ==========================================
 // 初始化器参数（单目初始化阶段）
@@ -346,11 +416,9 @@ const float OPTIMIZER_HUBER_TH_3D = 2.79553215f; // sqrt(7.815)
 
 // 卡方检验的阈值，用于判断误差项是否为外点：
 //   2DoF（2D投影）：5.991（95%置信）。
-//   3DoF（3D误差）：7.815（95%置信）。
 //   1DoF（1D误差）：3.841（95%置信）。
 //   误差项的卡方值大于对应阈值则视为外点，在优化中被剔除。
 const float OPTIMIZER_CHI2_TH_2D = 5.991f;
-const float OPTIMIZER_CHI2_TH_3D = 7.815f;
 const float OPTIMIZER_CHI2_TH_1D = 3.841f;
 
 // Sim3 求解器的卡方阈值（2DoF 99% 置信）。
@@ -384,18 +452,19 @@ const float INITIALIZER_H_SCORE_RATIO = 0.40f;
 const float INITIALIZER_MIN_PARALLAX = 1.0f;
 const int INITIALIZER_MIN_TRIANGULATED = 50;
 
-// PnP RANSAC 求解参数（求解模块专用）：
+// PnP RANSAC 求解参数（求解模块 & 重定位通用）：
 //   PROB = 0.99：期望置信概率。
-//   MIN_INLIERS = 8：接受求解结果的最小内点数。
+//   MIN_INLIERS = 10：接受求解结果的最小内点数。(注:原ORB-SLAM2默认为8,
+//                   实际重定位场景要求更严格，已在PnPsolver默认参数中统一更新)
 //   MAX_ITERS = 300：最大迭代次数。
 //   MIN_SET = 4：P3P 算法最少需要 4 组匹配。
-//   EPSILON = 0.4f：内点判定时的相对误差容限因子。
+//   EPSILON = 0.5f：内点判定时的相对误差容限因子。
 //   TH2 = 5.991f：重投影卡方阈值（2DoF 95% 置信）。
 const double PNP_RANSAC_PROB = 0.99;
-const int PNP_RANSAC_MIN_INLIERS = 8;
+const int PNP_RANSAC_MIN_INLIERS = 10;
 const int PNP_RANSAC_MAX_ITERS = 300;
 const int PNP_RANSAC_MIN_SET = 4;
-const float PNP_RANSAC_EPSILON = 0.4f;
+const float PNP_RANSAC_EPSILON = 0.5f;
 const float PNP_RANSAC_TH2 = 5.991f;
 
 // 帧网格划分参数：
@@ -486,6 +555,20 @@ const int RELOC_MIN_INLIERS_FOR_ALIGN = 15;
 //   内点数/总点数 < 此值时认为对齐不可靠。
 const float RELOC_MIN_CONFIDENCE_FOR_ALIGN = 0.4f;
 
+// 重定位后短期内 SearchLocalPoints 的投影搜索窗口半径（像素）。
+//   在 SearchLocalPoints() 中，若当前帧在重定位后 2 帧内（mnId < mnLastRelocFrameId + 2），
+//   使用此值替代 TRACKING_LOCAL_SEARCH_TH 进行更粗糙的搜索以提高召回。
+//   增大可更快找回更多匹配，但误匹配增加；减小则更保守。
+//   标准值 5，在稳定跟踪时可适当降低。
+const int RELOC_POST_SEARCH_TH = 5;
+
+// Reset() 后后台重定位的冷却帧数。
+//   在 Reset() 完成后，设置 mRelocCooldownFrames 为此值，
+//   在此期间后台重定位线程不发起 PnP 求解。
+//   目的是等待足够的新扫描点积累后再尝试匹配，
+//   避免 Reset 后立即匹配到错误区域导致错误对齐。
+const int RESET_COOLDOWN_FRAMES = 30;
+
 // 连续丢失超过此帧数后创建新的子地图（子地图策略）。
 //   增大此值会延长等待时间但可能避免因短暂遮挡而错误创建新地图。
 const int TRACKING_LOST_FRAMES_FOR_NEW_MAP = 30;
@@ -554,36 +637,6 @@ const int OPTIMIZER_ESSENTIAL_GRAPH_MIN_FEAT = 100;
 
 
 // ==========================================
-// AR 与平面检测参数
-// ==========================================
-
-// 平面检测成功/失败的状态码，供渲染层判断使用。
-const int PLANE_DETECTED = 233;
-const int PLANE_NOT_DETECTED = 1234;
-
-// 启用 AR 模式所需的最少新增地图点数。
-//   确保 SLAM 已有足够建图稳定后才开启 AR，防止 AR 物体在未收敛的地图上漂移。
-const int MIN_NEW_POINTS_BEFORE_AR = 50;
-
-// AR 物体的默认缩放系数。
-//   用于渲染时控制 AR 虚拟物体的视觉大小。
-const float AR_OBJECT_SCALE_DEFAULT = 0.20f;
-
-// ==========================================
-// SLAM 状态控制参数
-// ==========================================
-
-// SLAM 丢失状态自动重置超时时间（秒）。
-//   当跟踪丢失超过此时间且未恢复时，系统自动重置 SLAM 状态。
-//   设得过短会导致频繁重置，过长则在真正失败的场景中无响应。
-const double LOST_RESET_TIMEOUT = 3.0;
-
-// 地图切换确认所需的连续帧数。
-//   连续 MAP_SWITCH_THRESHOLD 帧请求地图切换后才真正执行切换。
-//   防止单帧误触发导致地图跳跃。
-const int MAP_SWITCH_THRESHOLD = 3;
-
-// ==========================================
 // 重定位优化参数
 // ==========================================
 
@@ -597,40 +650,8 @@ const int RELOC_MIN_SHARED_WORDS = 10;
 const int RELOC_MAX_CANDIDATES = 20;
 
 // ==========================================
-// 视图渲染参数
+// 系统运行时参数
 // ==========================================
-
-// 视图平滑插值系数（指数移动平均的 alpha）。
-//   值越大（接近 1）平滑响应越快但有抖动；
-//   值越小（接近 0）越平滑但延迟越大。
-//   典型范围 0.01 ~ 0.1。
-const float VIEW_SMOOTH_ALPHA = 0.05f;
-
-// ==========================================
-// 系统运行时参数（原硬编码值集中管理）
-// ==========================================
-
-// SLAM 工作帧率（影响时间戳累加和跟踪节奏）。
-//   应与真实相机帧率一致。若不一致，运动模型预测的速度会有系统性偏差。
-const float SYSTEM_FPS = 30.0f;
-
-// 原始图像下采样缩放因子。
-//   输入图像在送入 SLAM 前缩放至 1/DOWNSCALE_FACTOR 大小。
-//   2.0f 表示将 1280×720 缩放到 640×360 再处理。
-//   增大可显著降低计算量但会丢失细节，影响远距离特征提取。
-const float IMAGE_DOWNSCALE_FACTOR = 2.0f;
-
-// SLAM 工作基准分辨率（宽/高，像素）。
-//   下采样后的图像送至 SLAM 核心时的期望尺寸，
-//   不强制裁剪但会影响内参缩放计算。
-const float BASE_SLAM_WIDTH = 640.0f;
-const float BASE_SLAM_HEIGHT = 360.0f;
-
-// OpenGL 投影的裁剪面距离（近/远，单位与场景一致）。
-//   近裁剪面 ZNEAR 设得过大会裁掉近处的有效内容，
-//   远裁剪面 ZFAR 设得过小会裁掉远处的物体。
-const float PROJECTION_ZNEAR = 0.1f;
-const float PROJECTION_ZFAR = 1000.0f;
 
 // 等待 LocalMapping / LoopClosing 线程停止的超时时间（毫秒）。
 //   在系统析构时发送停止信号后，最多等待此时间让线程自行退出。
@@ -641,7 +662,50 @@ const int LOOP_LOCALMAPPER_TIMEOUT_MS = 5000;
 //   防止频繁触发子地图创建，避免 map 互斥锁反复竞争。
 const int NEW_MAP_COOLDOWN_MS = 5000;
 
-// 平面检测 RANSAC 迭代次数。
+// ==========================================
+// JNI 桥接层参数（与 native-lib.cpp 共享）
+// ==========================================
+
+// SLAM 工作帧率（帧/秒），用于 JNI 层的递进时间戳累加。
+//   应与 CAMERA_FPS 一致，保持两套系统的时间同步。
+const float SYSTEM_FPS = 30.0f;
+
+// 原始图像下采样缩放因子（native-lib 侧使用）。
+//   输入图像在送入 SLAM 前缩放至 1/DOWNSCALE_FACTOR 大小。
+//   此值与 SLAM 核心的内参缩放计算配合，需与 Java 层保持同步。
+const float IMAGE_DOWNSCALE_FACTOR = 2.0f;
+
+// SLAM 工作基准分辨率（宽/高，像素），供 JNI 侧 AR 渲染布局计算使用。
+//   配合下采样后的图像尺寸，用于投影矩阵和视口计算。
+const float BASE_SLAM_WIDTH = 640.0f;
+const float BASE_SLAM_HEIGHT = 360.0f;
+
+// OpenGL 投影的裁剪面距离（近/远，单位与场景一致），供 JNI 侧 AR 渲染使用。
+//   近裁剪面 ZNEAR 设得过大会裁掉近处的有效内容，
+//   远裁剪面 ZFAR 设得过小会裁掉远处的物体。
+const float PROJECTION_ZNEAR = 0.1f;
+const float PROJECTION_ZFAR = 1000.0f;
+
+// SLAM 丢失状态自动重置超时时间（秒），供 JNI 侧丢帧检测使用。
+//   当跟踪丢失超过此时间且未恢复时，JNI 层触发系统重置。
+const double LOST_RESET_TIMEOUT = 3.0;
+
+// 地图切换确认所需的连续帧数，供 JNI 侧地图切换检测使用。
+//   连续 MAP_SWITCH_THRESHOLD 帧请求地图切换后才真正执行切换。
+const int MAP_SWITCH_THRESHOLD = 3;
+
+// 启用 AR 模式所需的最少新增地图点数，供 JNI 侧 AR 启用判定使用。
+//   确保 SLAM 已有足够建图稳定后才开启 AR，防止 AR 物体漂移。
+const int MIN_NEW_POINTS_BEFORE_AR = 50;
+
+// AR 物体的默认缩放系数，供 JNI 侧 AR 物体渲染使用。
+const float AR_OBJECT_SCALE_DEFAULT = 0.20f;
+
+// 平面检测成功/失败的状态码，供 JNI 侧渲染层判断使用。
+const int PLANE_DETECTED = 233;
+const int PLANE_NOT_DETECTED = 1234;
+
+// 平面检测 RANSAC 迭代次数，供 JNI 侧平面检测调用使用。
 //   增大提高平面拟合鲁棒性（尤其是有噪点云时），但增加耗时。
 const int PLANE_DETECT_RANSAC_ITERS = 50;
 
