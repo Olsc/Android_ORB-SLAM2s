@@ -186,9 +186,9 @@ embed_resource(${RESOURCE_DIR}/ORB_LUT.bin ORB_LUT_bin ${EMBEDDED_DIR}/ORB_LUT.o
 add_custom_target(generate_embedded_resources DEPENDS ${EMBEDDED_OBJS})
 
 # ----------------------------------------------------------------------------
-# 6. 构建 SLAM AR 核心底层基础库 (SLAM_AR)
+# 6. 构建 SLAM AR 核心底层基础库 (VtonaxAR_Engine)
 # ----------------------------------------------------------------------------
-add_library(SLAM_AR STATIC
+add_library(VtonaxAR_Engine STATIC
     # SLAM 核心组件
     ${REPO_ROOT}/VtonaxAR/src/main/cpp/include/System.h
     ${REPO_ROOT}/VtonaxAR/src/main/cpp/include/Tracking.h
@@ -252,7 +252,7 @@ add_library(SLAM_AR STATIC
     ${EMBEDDED_OBJS}
 )
 
-add_dependencies(SLAM_AR generate_embedded_resources)
+add_dependencies(VtonaxAR_Engine generate_embedded_resources)
 
 # ----------------------------------------------------------------------------
 # 7. 构建桌面可执行文件 (VtonaxAR_Ubuntu)
@@ -260,7 +260,7 @@ add_dependencies(SLAM_AR generate_embedded_resources)
 add_executable(VtonaxAR_Ubuntu ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
 
 target_link_libraries(VtonaxAR_Ubuntu
-    SLAM_AR
+    VtonaxAR_Engine
     g2o
     ${OpenCV_LIBS}
     Threads::Threads

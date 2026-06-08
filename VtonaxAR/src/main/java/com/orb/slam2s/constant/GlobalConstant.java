@@ -57,13 +57,15 @@ public class GlobalConstant {
             targetH = (int) (targetW / targetRatio);
         }
 
+        // 确保最低分辨率不低于640x360 (保证SLAM特征点数量)
+        if (targetW < 640) {
+            targetW = 640;
+            targetH = (int) (targetW / targetRatio);
+        }
+
         // 确保奇数尺寸对齐到偶数 (OpenCV处理需要)
         if (targetW % 2 != 0) targetW++;
         if (targetH % 2 != 0) targetH++;
-
-        // 确保最低分辨率不低于320x180 (保证SLAM可用)
-        if (targetW < 320) targetW = 320;
-        if (targetH < 180) targetH = 180;
 
         RESOLUTION_WIDTH = targetW;
         RESOLUTION_HEIGHT = targetH;
