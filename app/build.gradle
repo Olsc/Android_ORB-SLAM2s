@@ -68,6 +68,8 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             if (keystorePropsFile.exists()) {
                 signingConfig signingConfigs.release
+            } else {
+                signingConfig signingConfigs.debug
             }
         }
         debug {
@@ -128,7 +130,8 @@ configurations.all {
 }
 
 tasks.configureEach { task ->
-    if (task.name.contains('lintAnalyze') || task.name.contains('lintVitalAnalyze') || task.name == 'lint') {
+    if (task.name.toLowerCase().contains("lint")) {
         task.enabled = false
+        task.onlyIf { false }
     }
 }

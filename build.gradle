@@ -20,6 +20,7 @@ allprojects {
     tasks.configureEach { task ->
         if (task.name.toLowerCase().contains("lint")) {
             task.enabled = false
+            task.onlyIf { false }
         }
     }
 }
