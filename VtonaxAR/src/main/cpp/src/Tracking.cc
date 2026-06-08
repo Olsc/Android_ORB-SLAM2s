@@ -2245,7 +2245,7 @@ bool Tracking::NeedNewKeyFrame()
     // 条件1c：跟踪较弱（单目模式不适用）
     const bool c1c = false;
     // 条件2：与参考关键帧相比跟踪点较少。与地图匹配相比有很多视觉里程计。
-    const bool c2 = ((mnMatchesInliers<nRefMatches*thRefRatio|| bNeedToInsertClose) && mnMatchesInliers>15);
+    const bool c2 = ((mnMatchesInliers<nRefMatches*thRefRatio|| bNeedToInsertClose) && mnMatchesInliers>=TRACKING_SUCCESS_LOADED);
 
     if ((c1a || c1b || c1c || c1_init) && c2)
     {
