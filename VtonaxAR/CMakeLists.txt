@@ -200,8 +200,8 @@ embed_resource(${RESOURCE_DIR}/ORB_LUT.bin ORB_LUT_bin ${EMBEDDED_DIR}/ORB_LUT.o
 add_custom_target(generate_embedded_resources DEPENDS ${EMBEDDED_OBJS})
 
 
-# ========== 整合所有组件到一个 SO：libSLAM_AR.so ==========
-add_library(SLAM_AR SHARED
+# ========== 整合所有组件到一个 SO：libVtonaxAR_Engine.so ==========
+add_library(VtonaxAR_Engine SHARED
         # SLAM Core 组件
         src/main/cpp/include/System.h
         src/main/cpp/include/Tracking.h
@@ -269,35 +269,35 @@ add_library(SLAM_AR SHARED
         )
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(SLAM_AR PRIVATE
+    target_compile_options(VtonaxAR_Engine PRIVATE
             $<$<CONFIG:Release>:-O3 -g -fno-omit-frame-pointer -fno-strict-aliasing -flto=thin>
             $<$<CONFIG:Debug>:-O2 -g -fno-omit-frame-pointer -fno-strict-aliasing>)
 else()
-    target_compile_options(SLAM_AR PRIVATE
+    target_compile_options(VtonaxAR_Engine PRIVATE
             $<$<CONFIG:Release>:-O3 -g -fno-omit-frame-pointer -fno-strict-aliasing -flto>
             $<$<CONFIG:Debug>:-O2 -g -fno-omit-frame-pointer -fno-strict-aliasing>)
 endif()
 
 # LTO 链接标志（仅 Release）
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_link_options(SLAM_AR PRIVATE
+    target_link_options(VtonaxAR_Engine PRIVATE
             $<$<CONFIG:Release>:-flto=thin -O3>)
 else()
-    target_link_options(SLAM_AR PRIVATE
+    target_link_options(VtonaxAR_Engine PRIVATE
             $<$<CONFIG:Release>:-flto -O3>)
 endif()
 
 # ARM64 架构特定优化
-target_compile_options(SLAM_AR PRIVATE
+target_compile_options(VtonaxAR_Engine PRIVATE
     $<$<AND:$<CONFIG:Release>,$<STREQUAL:${ANDROID_ABI},arm64-v8a>>:-march=armv8.2-a+fp16+rcpc+dotprod>)
 
 find_library(log-lib log)
 
 # 确保在编译前生成嵌入的资源对象文件
-add_dependencies(SLAM_AR generate_embedded_resources)
+add_dependencies(VtonaxAR_Engine generate_embedded_resources)
 
 
-target_link_libraries(SLAM_AR
+target_link_libraries(VtonaxAR_Engine
         libopencv_java4
         g2o
         ${log-lib}
@@ -306,8 +306,8 @@ target_link_libraries(SLAM_AR
         )
 
 # ========== 3DOF 独立库 ==========
-add_library(3dof SHARED src/main/cpp/3dof.cpp src/main/cpp/Matrix.cpp)
-target_link_libraries(3dof ${log-lib})
+add_library(Vtonax_3DOF SHARED src/main/cpp/3dof.cpp src/main/cpp/Matrix.cpp)
+target_link_libraries(Vtonax_3DOF ${log-lib})
 
 # ========== Vtonax 性能分析器 ==========
 set(VTONAX_DEVELOP_MODE ON) # <--- 修改这里：ON 开启，OFF 关闭
@@ -319,16 +319,16 @@ include_directories(src/main/cpp/profiler)
 
 if(VTONAX_DEVELOP_MODE)
     # 仅在开启时添加分析器库
-    add_library(vtonax_profiler SHARED
+    add_library(Vtonax_Profiler SHARED
             src/main/cpp/profiler/VtonaxProfiler.cpp
             src/main/cpp/profiler/VtonaxProfiler.h
     )
     
-    # 使用 PUBLIC 确保宏定义传播给所有链接到此库的目标（如 SLAM_AR）
-    target_compile_definitions(vtonax_profiler PUBLIC VTONAX_DEVELOP_MODE)
+    # 使用 PUBLIC 确保宏定义传播给所有链接到此库的目标（如 VtonaxAR_Engine）
+    target_compile_definitions(Vtonax_Profiler PUBLIC VTONAX_DEVELOP_MODE)
     
-    target_link_libraries(vtonax_profiler ${log-lib})
+    target_link_libraries(Vtonax_Profiler ${log-lib})
     
     # 链接分析器库
-    target_link_libraries(SLAM_AR vtonax_profiler)
+    target_link_libraries(VtonaxAR_Engine Vtonax_Profiler)
 endif()
