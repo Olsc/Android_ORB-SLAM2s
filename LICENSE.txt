@@ -1,11 +1,18 @@
-ORB-SLAM2 is released under a GPLv3 license (see License-gpl.txt).
-Please see Dependencies.md for a list of all included code and library dependencies which are not property of the authors of ORB-SLAM2.
+ORB-SLAM2 is released under the GNU General Public License v3.0 (GPLv3). See License-gpl.txt for details.
+
+Please see Dependencies.md for a list of all included code and library dependencies that are not the property of the authors of ORB-SLAM2.
 
 For a closed-source version of ORB-SLAM2 for commercial purposes, please contact the authors.
 
-If you use ORB-SLAM in an academic work, please cite the most relevant publication associated by visiting:
+Additional AI Model Training Restrictions:
+
+1. This software may not be used, in whole or in part, for the training, fine-tuning, optimization, alignment, evaluation, or development of any proprietary, closed-source, or commercially restricted artificial intelligence, machine learning, or foundation models.
+
+2. Use of this software for training, fine-tuning, evaluation, or development of open-source artificial intelligence or machine learning models is permitted, provided that all resulting works, modifications, derivative works, and distributions comply with the terms and obligations of the GNU General Public License v3.0 (GPLv3).
+
+3. Any model, dataset, software, or derivative work created using this software must preserve all applicable copyright notices, license notices, attribution requirements, and source code disclosure obligations required by GPLv3.
+
+4. Redistribution of modified versions or derivative works that incorporate or are based upon this software must remain licensed under GPLv3 and must make corresponding source code available as required by GPLv3.
+
+If you use ORB-SLAM in academic work, please cite the most relevant publication associated with the project by visiting:
 https://github.com/raulmur/ORB_SLAM2
-
-
-
-
