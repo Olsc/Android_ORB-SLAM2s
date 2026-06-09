@@ -1231,8 +1231,10 @@ void Tracking::Track()
             {
                 // CheckReplacedInLastFrame 访问 MapPoint::GetReplaced()，需短暂持锁防止并发替换
                 {
-                    std::unique_lock<std::mutex> lock(mpMap->mMutexMapUpdate);
-                    CheckReplacedInLastFrame();
+                    std::unique_lock<std::mutex> lock(mpMap->mMutexMapUpdate, std::try_to_lock);
+                    if (lock.owns_lock()) {
+                        CheckReplacedInLastFrame();
+                    }
                 }
 
                 VT_PROFILE_SCOPE("Tracking::TrackWithMotionModel");
@@ -2647,8 +2649,14 @@ bool Tracking::Relocalization()
     bool bMatch = false;
     ORBmatcher matcher2(0.9,true);
 
+    auto start_time = std::chrono::steady_clock::now();
     while(nCandidates>0 && !bMatch)
     {
+        auto current_time = std::chrono::steady_clock::now();
+        if (std::chrono::duration_cast<std::chrono::milliseconds>(current_time - start_time).count() > 1000) {
+            break; // 超时强制退出
+        }
+
         for(int i=0; i<nKFs; i++)
         {
             if(vbDiscarded[i])

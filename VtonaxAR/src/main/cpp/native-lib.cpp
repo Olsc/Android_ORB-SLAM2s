@@ -289,14 +289,17 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
         cv::Mat imgSmall;
         cv::resize(image, imgSmall, cv::Size(cvRound(image.cols / DOWNSCALE), cvRound(image.rows / DOWNSCALE)));
 
-        // SLAM跟踪线程拥有最高优先级，绝不能因为拿不到锁而丢弃帧（会导致跟踪丢失）
-        // 如果UI线程持有锁，SLAM线程等待几毫秒是完全可以接受的
-        std::unique_lock<std::mutex> lock(gSlamStateMutex);
+        // SLAM跟踪线程拥有最高优先级
+        ORB_SLAM2::System* currentSlamSys = nullptr;
+        {
+            std::unique_lock<std::mutex> lock(gSlamStateMutex);
+            currentSlamSys = slamSys;
+        }
 
-        if(slamSys) {
+        if(currentSlamSys) {
             // 执行跟踪
-            Tcw = slamSys->TrackMonocular(imgSmall, timeStamp);
-            status = slamSys->GetTrackingState();
+            Tcw = currentSlamSys->TrackMonocular(imgSmall, timeStamp);
+            status = currentSlamSys->GetTrackingState();
 
             // 必须全程持有锁保护 slamSys 的访问！
             // 不能提前释放，否则在获取地图点时 slamSys 可能被 Reset 线程修改或销毁
@@ -304,9 +307,9 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
             // 更新缓存
             {
                 std::lock_guard<std::mutex> lock2(gMapPointsMutex);
-                if(slamSys) { 
-                    vMPs = slamSys->GetTrackedMapPoints();
-                    vKeys = slamSys->GetTrackedKeyPointsUn();
+                if(currentSlamSys) { 
+                    vMPs = currentSlamSys->GetTrackedMapPoints();
+                    vKeys = currentSlamSys->GetTrackedKeyPointsUn();
                 }
             }
         } else {
