@@ -138,7 +138,6 @@ public class GlbRenderer {
     private FloatBuffer normalBuffer;
     private ShortBuffer indexBuffer;
     private int vertexCount;
-    private int indexType = GLES20.GL_UNSIGNED_SHORT;
 
     // ======== 模型变换 ========
     private final float[] modelMatrix = new float[16];
@@ -151,7 +150,6 @@ public class GlbRenderer {
     private float[] materialDiffuse  = {0.8f, 0.8f, 0.8f};
     private float[] materialSpecular = {0.5f, 0.5f, 0.5f};
     private float   materialShininess = 32.0f;
-    private boolean hasTexture = true;
 
     // ======== 光照 ========
     private final float[] lightPosition  = {2.0f, 4.0f, 3.0f};
@@ -208,32 +206,13 @@ public class GlbRenderer {
         // 3. 解析 GLB 文件并填充缓冲
         parseGlb(context, glbAssetName);
 
-        // 4. 加载纹理（优先使用 GLB 内嵌纹理，否则用外部或默认）
+        // 4. 加载纹理（仅使用 GLB 内嵌材质，无外部纹理回退）
         if (textureBitmap != null) {
             uploadTexture(textureBitmap);
             Log.i(TAG, "使用 GLB 内嵌纹理");
         } else {
-            // 尝试从文件名推断外部纹理
-            String texBase = glbAssetName.replaceAll("(?i)\\.glb$", "");
-            boolean loaded = false;
-            for (String ext : new String[]{".png", ".jpg", ".jpeg", ".bmp"}) {
-                try {
-                    InputStream is = context.getAssets().open(texBase + ext);
-                    Bitmap bmp = BitmapFactory.decodeStream(is);
-                    is.close();
-                    if (bmp != null) {
-                        uploadTexture(bmp);
-                        Log.i(TAG, "加载外部纹理: " + texBase + ext);
-                        loaded = true;
-                        break;
-                    }
-                } catch (IOException ignored) { }
-            }
-            if (!loaded) {
-                uploadTexture(createCheckerTexture());
-                hasTexture = false;
-                Log.w(TAG, "未找到纹理，使用棋盘格默认纹理");
-            }
+            uploadTexture(createCheckerTexture());
+            Log.i(TAG, "GLB 无内嵌纹理，使用默认棋盘格纹理");
         }
     }
 
@@ -330,14 +309,8 @@ public class GlbRenderer {
         GLES20.glEnable(GLES20.GL_BLEND);
         GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
 
-        // ---- 绘制 ----
-        if (indexType == GLES20.GL_UNSIGNED_SHORT) {
-            GLES20.glDrawElements(GLES20.GL_TRIANGLES, vertexCount, GLES20.GL_UNSIGNED_SHORT, indexBuffer);
-        } else {
-            // 在 GLES 2.0 中, GL_UNSIGNED_INT 需要 GL_OES_element_index_uint
-            // 现代 Android 设备均支持, 此处使用整型常量避免 GLES30 依赖
-            GLES20.glDrawElements(GLES20.GL_TRIANGLES, vertexCount, 0x1405 /* GL_UNSIGNED_INT */, indexBuffer);
-        }
+        // ---- 绘制 (readIndices 统一转换为 unsigned short) ----
+        GLES20.glDrawElements(GLES20.GL_TRIANGLES, vertexCount, GLES20.GL_UNSIGNED_SHORT, indexBuffer);
 
         // ---- 清理 ----
         GLES20.glDisableVertexAttribArray(positionAttribute);

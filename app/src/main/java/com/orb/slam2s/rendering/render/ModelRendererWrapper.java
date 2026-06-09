@@ -45,10 +45,8 @@ public class ModelRendererWrapper implements GLSurfaceView.Renderer, NativeHelpe
     private GlbRenderer glbRenderer;
 
     private String modelPath;
-    private String texturePath;
     private float initSize = 1.0f;
-    
-    private int surfaceWidth, surfaceHeight;
+
     private boolean isInitialized = false;
     private boolean shouldDraw = false;
     
@@ -92,17 +90,6 @@ public class ModelRendererWrapper implements GLSurfaceView.Renderer, NativeHelpe
 
     public ModelRendererWrapper setModelPath(String modelPath) {
         this.modelPath = modelPath;
-        return this;
-    }
-
-    @Deprecated
-    public ModelRendererWrapper setObjPath(String objPath) {
-        this.modelPath = objPath;
-        return this;
-    }
-
-    public ModelRendererWrapper setTexturePath(String texturePath) {
-        this.texturePath = texturePath;
         return this;
     }
 
@@ -201,8 +188,6 @@ public class ModelRendererWrapper implements GLSurfaceView.Renderer, NativeHelpe
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
         Log.d(TAG, "表面已改变: " + width + "x" + height);
-        surfaceWidth = width;
-        surfaceHeight = height;
         GLES20.glViewport(0, 0, width, height);
     }
 
