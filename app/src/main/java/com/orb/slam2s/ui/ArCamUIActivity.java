@@ -29,7 +29,7 @@ import java.util.Enumeration;
 import com.orb.slam2s.server.WebServer;
 
 import com.orb.slam2s.constant.GlobalConstant;
-import com.orb.slam2s.rendering.render.ObjRendererWrapper;
+import com.orb.slam2s.rendering.render.ModelRendererWrapper;
 import com.orb.slam2s.rendering.render.ThreeDofCubeRenderer;
 import com.orb.slam2s.sensors.OrientationSensor;
 import com.orb.slam2s.slamar.NativeHelper;
@@ -216,8 +216,8 @@ public class ArCamUIActivity extends AppCompatActivity implements
         // 触摸帮助类，用于处理手势
         touchHelper = new TouchHelper(this);
 
-        // 初始化渲染器（GLES20渲染OBJ模型）
-        initGLES20Obj();
+        // 初始化GLB模型渲染器
+        initGLES20Model();
 
         // 设置触摸事件响应
         View touchView = findViewById(R.id.touch_panel);
@@ -606,22 +606,21 @@ public class ArCamUIActivity extends AppCompatActivity implements
                 .show();
     }
 
-    private void initGLES20Obj() {
-        Log.d(TAG, "initGLES20Obj: 初始化OBJ模型渲染器");
+    private void initGLES20Model() {
+        Log.d(TAG, "initGLES20Model: 初始化GLB模型渲染器");
 
         final GLRootView glRootView = findViewById(R.id.ar_object_view_gles2_obj);
         glRootView.setAspectRatio(GlobalConstant.RESOLUTION_WIDTH, GlobalConstant.RESOLUTION_HEIGHT);
 
-        ObjRendererWrapper objRendererWrapper = ObjRendererWrapper.newInstance()
+        ModelRendererWrapper modelRendererWrapper = ModelRendererWrapper.newInstance()
                 .setArObjectView(glRootView)
                 .setNativeHelper(nativeHelper)
                 .setContext(this)
-                .setObjPath("model.obj")
-                .setTexturePath("model.png")
+                .setModelPath("model.glb")
                 .setInitSize(0.20f)
                 .init(touchHelper);
 
-        nativeHelper.addOnMVPUpdatedCallback(objRendererWrapper);
+        nativeHelper.addOnMVPUpdatedCallback(modelRendererWrapper);
     }
 
     @Override

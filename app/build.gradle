@@ -36,7 +36,7 @@ android {
     }
 
     aaptOptions {
-        noCompress "tflite", "mindir", "obj", "mtl"
+        noCompress "tflite", "mindir", "glb", "mtl"
     }
 
     sourceSets {
@@ -107,7 +107,7 @@ dependencies {
     implementation 'androidx.preference:preference:1.2.1'
     implementation 'androidx.appcompat:appcompat:1.7.1'
     implementation 'com.google.android.material:material:1.14.0'
-    implementation 'de.javagl:obj:0.4.0'
+
     implementation project(':OpenCVLibrary')
     implementation project(':VtonaxAR')
 

@@ -33,18 +33,18 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 /**
- * 用于在AR环境中渲染OBJ模型的包装类。
+ * 用于在AR环境中渲染3D模型（GLB格式）的包装类。
  * 遵循类似于ArObjectWrapper的构建器模式。
  */
-public class ObjRendererWrapper implements GLSurfaceView.Renderer, NativeHelper.OnMVPUpdatedCallback {
-    private static final String TAG = "ObjRendererWrapper";
+public class ModelRendererWrapper implements GLSurfaceView.Renderer, NativeHelper.OnMVPUpdatedCallback {
+    private static final String TAG = "ModelRendererWrapper";
 
     private GLRootView arObjectView;
     private Context context;
     private NativeHelper nativeHelper;
-    private ObjectRenderer objectRenderer;
-    
-    private String objPath;
+    private GlbRenderer glbRenderer;
+
+    private String modelPath;
     private String texturePath;
     private float initSize = 1.0f;
     
@@ -63,49 +63,55 @@ public class ObjRendererWrapper implements GLSurfaceView.Renderer, NativeHelper.
     private static final float MIN_SCALE = 0.1f;  // 最小缩放比例
     private static final float MAX_SCALE = 5.0f;  // 最大缩放比例
 
-    private ObjRendererWrapper() {
-        objectRenderer = new ObjectRenderer();
+    private ModelRendererWrapper() {
+        glbRenderer = new GlbRenderer();
         // 用单位矩阵初始化矩阵
         android.opengl.Matrix.setIdentityM(modelMatrix, 0);
         android.opengl.Matrix.setIdentityM(viewMatrix, 0);
         android.opengl.Matrix.setIdentityM(projectionMatrix, 0);
     }
 
-    public static ObjRendererWrapper newInstance() {
-        return new ObjRendererWrapper();
+    public static ModelRendererWrapper newInstance() {
+        return new ModelRendererWrapper();
     }
 
-    public ObjRendererWrapper setArObjectView(GLRootView arObjectView) {
+    public ModelRendererWrapper setArObjectView(GLRootView arObjectView) {
         this.arObjectView = arObjectView;
         return this;
     }
 
-    public ObjRendererWrapper setContext(Context context) {
+    public ModelRendererWrapper setContext(Context context) {
         this.context = context;
         return this;
     }
 
-    public ObjRendererWrapper setNativeHelper(NativeHelper nativeHelper) {
+    public ModelRendererWrapper setNativeHelper(NativeHelper nativeHelper) {
         this.nativeHelper = nativeHelper;
         return this;
     }
 
-    public ObjRendererWrapper setObjPath(String objPath) {
-        this.objPath = objPath;
+    public ModelRendererWrapper setModelPath(String modelPath) {
+        this.modelPath = modelPath;
         return this;
     }
 
-    public ObjRendererWrapper setTexturePath(String texturePath) {
+    @Deprecated
+    public ModelRendererWrapper setObjPath(String objPath) {
+        this.modelPath = objPath;
+        return this;
+    }
+
+    public ModelRendererWrapper setTexturePath(String texturePath) {
         this.texturePath = texturePath;
         return this;
     }
 
-    public ObjRendererWrapper setInitSize(float initSize) {
+    public ModelRendererWrapper setInitSize(float initSize) {
         this.initSize = initSize;
         return this;
     }
 
-    public ObjRendererWrapper init(TouchHelper touchHelper) {
+    public ModelRendererWrapper init(TouchHelper touchHelper) {
         if (arObjectView == null) {
             Log.e(TAG, "ArObjectView为空，无法初始化");
             return this;
@@ -156,47 +162,39 @@ public class ObjRendererWrapper implements GLSurfaceView.Renderer, NativeHelper.
         Log.d(TAG, "表面已创建");
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
-        if (context != null && objPath != null && texturePath != null) {
+        if (context != null && modelPath != null) {
             try {
-                Log.i(TAG, String.format("开始初始化ObjectRenderer - OBJ: %s, 纹理: %s", objPath, texturePath));
-                objectRenderer.createOnGlThread(context, objPath, texturePath);
+                Log.i(TAG, String.format("开始初始化GlbRenderer - 模型: %s", modelPath));
+                glbRenderer.createOnGlThread(context, modelPath);
                 isInitialized = true;
-                Log.i(TAG, "[成功] ObjectRenderer初始化成功");
-                
+                Log.i(TAG, "[成功] GlbRenderer初始化成功");
+
                 // 显示自动缩放信息
-                float autoScale = objectRenderer.getAutoScaleFactor();
+                float autoScale = glbRenderer.getAutoScaleFactor();
                 if (autoScale != 1.0f) {
                     Log.i(TAG, String.format("[信息] 自动缩放已应用: %.3fx", autoScale));
                 }
-                
+
             } catch (IOException e) {
-                Log.e(TAG, "[错误] 初始化ObjectRenderer失败", e);
-                Log.e(TAG, String.format("检查文件是否存在: OBJ='%s', 纹理='%s'", objPath, texturePath));
+                Log.e(TAG, "[错误] 初始化GlbRenderer失败", e);
+                Log.e(TAG, String.format("检查文件是否存在: model='%s'", modelPath));
                 isInitialized = false;
                 
                 // 尝试给出更多调试信息
                 try {
-                    context.getAssets().open(objPath).close();
-                    Log.d(TAG, "[成功] OBJ文件存在: " + objPath);
-                } catch (IOException objE) {
-                    Log.e(TAG, "[错误] OBJ文件不存在: " + objPath);
-                }
-                
-                try {
-                    context.getAssets().open(texturePath).close();
-                    Log.d(TAG, "[成功] 纹理文件存在: " + texturePath);
-                } catch (IOException texE) {
-                    Log.w(TAG, "[警告] 纹理文件不存在: " + texturePath + " (但会使用默认纹理)");
+                    context.getAssets().open(modelPath).close();
+                    Log.d(TAG, "[成功] GLB文件存在: " + modelPath);
+                } catch (IOException me) {
+                    Log.e(TAG, "[错误] GLB文件不存在: " + modelPath);
                 }
             } catch (Exception e) {
-                Log.e(TAG, "[错误] 初始化ObjectRenderer遇到意外错误", e);
+                Log.e(TAG, "[错误] 初始化GlbRenderer遇到意外错误", e);
                 isInitialized = false;
             }
         } else {
-            Log.e(TAG, String.format("[错误] 无法初始化ObjectRenderer - context: %s, objPath: %s, texturePath: %s", 
-                    context != null ? "正常" : "为空", 
-                    objPath != null ? objPath : "null", 
-                    texturePath != null ? texturePath : "null"));
+            Log.e(TAG, String.format("[错误] 无法初始化GlbRenderer - context: %s, modelPath: %s",
+                    context != null ? "正常" : "为空",
+                    modelPath != null ? modelPath : "null"));
         }
     }
 
@@ -215,7 +213,7 @@ public class ObjRendererWrapper implements GLSurfaceView.Renderer, NativeHelper.
         GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT | GLES20.GL_COLOR_BUFFER_BIT);
 
         // 仅在以下情况下渲染：
-        // 1. ObjectRenderer已初始化
+        // 1. GlbRenderer已初始化
         // 2. NativeHelper指示应该绘制（SLAM_ON && planeDetected）
         // 3. 我们从native回调获得了有效的矩阵
         if (!isInitialized || !shouldDraw || !matricesReady) {
@@ -243,8 +241,8 @@ public class ObjRendererWrapper implements GLSurfaceView.Renderer, NativeHelper.
         android.opengl.Matrix.multiplyMM(scaledModelMatrix, 0, modelMatrix, 0, transformMatrix, 0);
 
         // 使用来自NativeHelper的矩阵更新并绘制对象
-        objectRenderer.updateModelMatrix(scaledModelMatrix, 1.0f);
-        objectRenderer.draw(viewMatrix, projectionMatrix, 1.0f);
+        glbRenderer.updateModelMatrix(scaledModelMatrix, 1.0f);
+        glbRenderer.draw(viewMatrix, projectionMatrix, 1.0f);
     }
 
     @Override

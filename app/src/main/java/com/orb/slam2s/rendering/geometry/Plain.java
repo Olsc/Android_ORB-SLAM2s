@@ -1,4 +1,4 @@
-package com.orb.slam2s.rendering.obj;
+package com.orb.slam2s.rendering.geometry;
 
 /**
  * Created by Ads on 2016/11/19.
