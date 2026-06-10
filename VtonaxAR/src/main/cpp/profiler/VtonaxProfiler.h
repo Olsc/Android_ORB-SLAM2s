@@ -60,8 +60,10 @@ private:
 #define VT_PROFILE_SHUTDOWN() Vtonax::Profiler::Get().Shutdown()
 #define VT_PROFILE_BEGIN(name) Vtonax::Profiler::Get().WriteEvent(name, Vtonax::EventType::Begin)
 #define VT_PROFILE_END(name) Vtonax::Profiler::Get().WriteEvent(name, Vtonax::EventType::End)
-#define VT_PROFILE_FUNCTION() Vtonax::Timer _timer(__PRETTY_FUNCTION__)
-#define VT_PROFILE_SCOPE(name) Vtonax::Timer _timer(name)
+#define VT_CONCAT_IMPL(a, b) a##b
+#define VT_CONCAT(a, b) VT_CONCAT_IMPL(a, b)
+#define VT_PROFILE_FUNCTION() Vtonax::Timer VT_CONCAT(_timer_, __LINE__)(__PRETTY_FUNCTION__)
+#define VT_PROFILE_SCOPE(name) Vtonax::Timer VT_CONCAT(_timer_, __LINE__)(name)
 
 #else
 

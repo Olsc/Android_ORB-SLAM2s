@@ -4,7 +4,7 @@ import android.content.Context;
 import android.opengl.GLES20;
 import android.opengl.Matrix;
 
-import com.orb.slam2s.rendering.obj.Plain;
+import com.orb.slam2s.rendering.geometry.Plain;
 import com.orb.slam2s.R;
 import com.orb.slam2s.utils.TextureUtils;
 

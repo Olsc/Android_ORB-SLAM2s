@@ -540,7 +540,6 @@ void System::SaveMap(const std::string &filename)
         writtenMPs++;
     }
     ofs.close();
-    // LOGD("保存地图完成: 已写入 关键帧=%u/%u 地图点=%u/%u", writtenKFs, nKFs, writtenMPs, nMPs);
 }
 
 void System::LoadMap(const std::string &filename, int mapId, bool bAppend)

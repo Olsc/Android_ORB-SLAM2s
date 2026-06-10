@@ -60,8 +60,8 @@ keywords: {Visualization;Simultaneous localization and mapping;Cameras;Real-time
 | Snapdragon 8 Elite   | 小米15        | 30 FPS    |
 | Snapdragon 8+ Gen1   | 红米K60       | 30 FPS    |
 | Snapdragon 870       | 小米10S       | 30 FPS    |
-| Snapdragon 835       | 小米6         | 15-20 FPS |
-| Snapdragon AR1 Gen 1 | Rokid Glasses | 10-15 FPS |
+| Snapdragon 835       | 小米6         | 15-30 FPS |
+| Snapdragon AR1 Gen 1 | Rokid Glasses | 10-25 FPS |
 
 ### 暗帧检测
 

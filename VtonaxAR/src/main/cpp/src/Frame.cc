@@ -93,7 +93,6 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
 
     // logTime();
     N = mvKeys.size();
-    // LOGD("关键点数量 %d",N);
 
     if(mvKeys.empty())
         return;
@@ -127,7 +126,6 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
     // 确保网格元素宽度和高度倒数已初始化
     if(mfGridElementWidthInv <= 0 || mfGridElementHeightInv <= 0)
     {
-        //LOGE("Grid element dimensions not properly initialized");
         return;
     }
 
@@ -139,7 +137,6 @@ void Frame::AssignFeaturesToGrid()
     // 确保N和mvKeysUn有效
     if(N <= 0 || mvKeysUn.empty())
     {
-        //LOGE("Invalid keypoints data in AssignFeaturesToGrid");
         return;
     }
 
@@ -153,7 +150,6 @@ void Frame::AssignFeaturesToGrid()
         // 确保索引在有效范围内
         if(i >= (int)mvKeysUn.size())
         {
-            //LOGE("Index out of bounds in AssignFeaturesToGrid: %d >= %zu", i, mvKeysUn.size());
             continue;
         }
 
@@ -170,7 +166,6 @@ void Frame::AssignFeaturesToGrid()
             }
             //else
             //{
-            //    LOGE("Grid position out of bounds: (%d, %d)", nGridPosX, nGridPosY);
             //}
         }
     }
@@ -332,7 +327,6 @@ bool Frame::PosInGrid(const cv::KeyPoint &kp, int &posX, int &posY)
     // 确保网格元素尺寸已初始化
     if(mfGridElementWidthInv <= 0 || mfGridElementHeightInv <= 0)
     {
-        //LOGE("Grid element dimensions not initialized in PosInGrid");
         posX = -1;
         posY = -1;
         return false;

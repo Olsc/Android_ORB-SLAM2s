@@ -392,8 +392,13 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     const int its[4]={10,10,10,10};    
 
     int nBad=0;
+    auto start_time = std::chrono::steady_clock::now();
     for(size_t it=0; it<4; it++)
     {
+        auto current_time = std::chrono::steady_clock::now();
+        if (std::chrono::duration_cast<std::chrono::milliseconds>(current_time - start_time).count() > 200) {
+            break; // 单次优化总超时限制200ms
+        }
 
         vSE3->setEstimate(Converter::toSE3Quat(pFrame->mTcw));
         optimizer.initializeOptimization(0);
