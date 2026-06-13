@@ -222,10 +222,10 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
         // 开启透明背景混合模式
         view.setBlendMode(View.BlendMode.TRANSLUCENT);
 
-        // 设置适合移动端的渲染质量
+        // 设置适合移动端的低配渲染质量
         view.setRenderQuality(new View.RenderQuality());
         View.RenderQuality quality = view.getRenderQuality();
-        quality.hdrColorBuffer = View.QualityLevel.MEDIUM;
+        quality.hdrColorBuffer = View.QualityLevel.LOW;
         view.setRenderQuality(quality);
 
         // 关闭后期处理（防背景变黑或造成卡顿）
@@ -240,7 +240,7 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
         // 创建 gltf 加载组件
         materialProvider = new UbershaderProvider(engine);
         assetLoader = new AssetLoader(engine, materialProvider, EntityManager.get());
-        resourceLoader = new ResourceLoader(engine, true);
+        resourceLoader = new ResourceLoader(engine, false); // false=不生成mipmap,节省GPU内存
 
         // 创建三点定向光源，让 PBR 材质展示更佳
         createLights();
