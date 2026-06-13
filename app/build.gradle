@@ -120,6 +120,10 @@ dependencies {
     implementation 'com.google.zxing:core:3.5.4'
     implementation 'io.noties.markwon:core:4.6.2'
     implementation 'io.noties.markwon:ext-tables:4.6.2'
+
+implementation 'com.google.android.filament:filament-android:1.71.6'
+implementation 'com.google.android.filament:gltfio-android:1.71.6'
+implementation 'com.google.android.filament:filament-utils-android:1.71.6'
 }
 
 configurations.all {

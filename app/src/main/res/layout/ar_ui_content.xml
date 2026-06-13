@@ -9,7 +9,7 @@
         android:layout_centerInParent="true"
         android:id="@+id/my_fake_glsurface_view" />
 
-    <com.orb.slam2s.rendering.gles.GLRootView
+    <com.orb.slam2s.rendering.gles.FilamentAspectSurfaceView
         android:id="@+id/ar_object_view_gles2_obj"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
