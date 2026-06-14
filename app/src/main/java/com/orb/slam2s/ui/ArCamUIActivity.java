@@ -34,7 +34,7 @@ import com.orb.slam2s.rendering.render.ThreeDofCubeRenderer;
 import com.orb.slam2s.sensors.OrientationSensor;
 import com.orb.slam2s.slamar.NativeHelper;
 import com.orb.slam2s.R;
-import com.orb.slam2s.rendering.gles.GLRootView;
+import com.orb.slam2s.rendering.gles.FilamentAspectSurfaceView;
 import com.orb.slam2s.utils.FpsMeter;
 import com.orb.slam2s.utils.TouchHelper;
 
@@ -64,6 +64,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
     private NativeHelper nativeHelper;
     private NativeHelper.MapManager mapManager;
     private TouchHelper touchHelper;
+    private ModelRendererWrapper modelRendererWrapper;
 
     private boolean detectPlane;
 
@@ -609,10 +610,10 @@ public class ArCamUIActivity extends AppCompatActivity implements
     private void initGLES20Model() {
         Log.d(TAG, "initGLES20Model: 初始化GLB模型渲染器");
 
-        final GLRootView glRootView = findViewById(R.id.ar_object_view_gles2_obj);
+        final FilamentAspectSurfaceView glRootView = findViewById(R.id.ar_object_view_gles2_obj);
         glRootView.setAspectRatio(GlobalConstant.RESOLUTION_WIDTH, GlobalConstant.RESOLUTION_HEIGHT);
 
-        ModelRendererWrapper modelRendererWrapper = ModelRendererWrapper.newInstance()
+        modelRendererWrapper = ModelRendererWrapper.newInstance()
                 .setArObjectView(glRootView)
                 .setNativeHelper(nativeHelper)
                 .setContext(this)
@@ -783,6 +784,13 @@ public class ArCamUIActivity extends AppCompatActivity implements
         if (pointsUpdater != null) {
             pointsUpdater.interrupt();
         }
+        
+        // 销毁 Filament 资源
+        if (modelRendererWrapper != null) {
+            modelRendererWrapper.destroy();
+            modelRendererWrapper = null;
+        }
+
         super.onDestroy();
         if (mOpenCvCameraView != null)
             mOpenCvCameraView.disableView();

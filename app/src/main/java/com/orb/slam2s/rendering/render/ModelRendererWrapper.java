@@ -17,52 +17,119 @@ package com.orb.slam2s.rendering.render;
 
 import android.content.Context;
 import android.graphics.PixelFormat;
-import android.opengl.GLES20;
-import android.opengl.GLSurfaceView;
-import android.os.Build;
+import android.view.Choreographer;
+import android.view.Surface;
 import android.util.Log;
 
 import com.orb.slam2s.constant.GlobalConstant;
-import com.orb.slam2s.rendering.gles.GLRootView;
+import com.orb.slam2s.rendering.gles.FilamentAspectSurfaceView;
 import com.orb.slam2s.slamar.NativeHelper;
 import com.orb.slam2s.utils.TouchHelper;
 
-import java.io.IOException;
+import com.google.android.filament.Engine;
+import com.google.android.filament.Renderer;
+import com.google.android.filament.Scene;
+import com.google.android.filament.View;
+import com.google.android.filament.Camera;
+import com.google.android.filament.Box;
+import com.google.android.filament.SwapChain;
+import com.google.android.filament.Viewport;
+import com.google.android.filament.EntityManager;
+import com.google.android.filament.LightManager;
+import com.google.android.filament.TransformManager;
+import com.google.android.filament.IndirectLight;
+import com.google.android.filament.MaterialInstance;
+import com.google.android.filament.RenderableManager;
+import com.google.android.filament.android.DisplayHelper;
+import com.google.android.filament.android.UiHelper;
+import com.google.android.filament.gltfio.AssetLoader;
+import com.google.android.filament.gltfio.FilamentAsset;
+import com.google.android.filament.gltfio.MaterialProvider;
+import com.google.android.filament.gltfio.ResourceLoader;
+import com.google.android.filament.gltfio.UbershaderProvider;
+import com.google.android.filament.utils.Utils;
 
-import javax.microedition.khronos.egl.EGLConfig;
-import javax.microedition.khronos.opengles.GL10;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * 用于在AR环境中渲染3D模型（GLB格式）的包装类。
- * 遵循类似于ArObjectWrapper的构建器模式。
+ * 用于在AR环境中渲染3D模型（GLB格式）的包装类（基于 Google Filament 渲染引擎）。
  */
-public class ModelRendererWrapper implements GLSurfaceView.Renderer, NativeHelper.OnMVPUpdatedCallback {
+public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
     private static final String TAG = "ModelRendererWrapper";
 
-    private GLRootView arObjectView;
+    static {
+        // 初始化 Filament 运行环境
+        Utils.init();
+    }
+
+    private FilamentAspectSurfaceView arObjectView;
     private Context context;
     private NativeHelper nativeHelper;
-    private GlbRenderer glbRenderer;
 
     private String modelPath;
     private float initSize = 1.0f;
 
     private boolean isInitialized = false;
     private boolean shouldDraw = false;
-    
-    // 存储来自NativeHelper回调的矩阵
-    private float[] modelMatrix = new float[16];
-    private float[] viewMatrix = new float[16]; 
-    private float[] projectionMatrix = new float[16];
+
+    // 存储来自 NativeHelper 回调的矩阵 (OpenGL 格式)
+    private final float[] modelMatrix = new float[16];
+    private final float[] viewMatrix = new float[16];
+    private final float[] projectionMatrix = new float[16];
     private boolean matricesReady = false;
-    
+
+    // 自动缩放和中心化相关的变量
+    private final float[] modelCenter = new float[3];
+    private final float[] modelHalfExtent = new float[3];
+    private float autoScaleFactor = 1.0f;
+    private boolean hasBoundingBox = false;
+    private int logCounter = 0;
+
     // 双指缩放相关
     private float currentScaleFactor = 1.0f;  // 当前累积的缩放因子
-    private static final float MIN_SCALE = 0.1f;  // 最小缩放比例
-    private static final float MAX_SCALE = 5.0f;  // 最大缩放比例
+    private static final float MIN_SCALE = 0.05f;  // 最小缩放比例
+    private static final float MAX_SCALE = 10.0f;  // 最大缩放比例
+
+    // Filament 核心对象
+    private Engine engine;
+    private Renderer renderer;
+    private Scene scene;
+    private View view;
+    private Camera camera;
+    private SwapChain swapChain;
+    private UiHelper uiHelper;
+    private DisplayHelper displayHelper;
+
+    // gltfio 核心加载对象
+    private MaterialProvider materialProvider;
+    private AssetLoader assetLoader;
+    private ResourceLoader resourceLoader;
+    private FilamentAsset asset;
+    private IndirectLight indirectLight;
+
+    // 灯光实体列表
+    private final List<Integer> lightEntities = new ArrayList<>();
+
+    // 编舞者 (Choreographer) 渲染帧循环相关
+    private Choreographer choreographer;
+    private boolean isFrameCallbackActive = false;
+
+    private final Choreographer.FrameCallback frameCallback = new Choreographer.FrameCallback() {
+        @Override
+        public void doFrame(long frameTimeNanos) {
+            if (isFrameCallbackActive) {
+                choreographer.postFrameCallback(this);
+            }
+            // 始终执行 render() — 丢失追踪时 render 内部会隐藏模型并渲染透明帧
+            render(frameTimeNanos);
+        }
+    };
 
     private ModelRendererWrapper() {
-        glbRenderer = new GlbRenderer();
         // 用单位矩阵初始化矩阵
         android.opengl.Matrix.setIdentityM(modelMatrix, 0);
         android.opengl.Matrix.setIdentityM(viewMatrix, 0);
@@ -73,7 +140,7 @@ public class ModelRendererWrapper implements GLSurfaceView.Renderer, NativeHelpe
         return new ModelRendererWrapper();
     }
 
-    public ModelRendererWrapper setArObjectView(GLRootView arObjectView) {
+    public ModelRendererWrapper setArObjectView(FilamentAspectSurfaceView arObjectView) {
         this.arObjectView = arObjectView;
         return this;
     }
@@ -104,197 +171,510 @@ public class ModelRendererWrapper implements GLSurfaceView.Renderer, NativeHelpe
             return this;
         }
 
-        arObjectView.setEGLContextClientVersion(2);
-        arObjectView.setEGLConfigChooser(8, 8, 8, 8, 16, 0);
+        // 配置 SurfaceView 保持背景透明且在最上层
         arObjectView.getHolder().setFormat(PixelFormat.TRANSLUCENT);
         arObjectView.setZOrderOnTop(true);
 
-        arObjectView.setRenderer(this);
-        arObjectView.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            arObjectView.setPreserveEGLContextOnPause(true);
-        }
-
-        // 如果提供了touchHelper，添加缩放回调
+        // 添加双指缩放回调
         if (touchHelper != null) {
             touchHelper.addScalingCallback(new TouchHelper.ScalingCallback() {
                 @Override
                 public void updateScale(float scaleFactor) {
-                    // 仅在有AR物体正在渲染时才允许缩放
-                    if (shouldDraw && nativeHelper != null && 
-                        nativeHelper.getLastTrackingResult() == GlobalConstant.SLAM_ON) {
-                        // 累积缩放因子（scaleFactor是增量值，不是绝对值）
+                    if (shouldDraw && nativeHelper != null) {
                         currentScaleFactor *= scaleFactor;
-                        
-                        // 限制缩放范围，防止物体过大或过小
                         if (currentScaleFactor < MIN_SCALE) {
                             currentScaleFactor = MIN_SCALE;
                         } else if (currentScaleFactor > MAX_SCALE) {
                             currentScaleFactor = MAX_SCALE;
                         }
-                        
-                        Log.d(TAG, String.format("缩放更新: 因子=%.2f, 总缩放=%.2f", 
+                        Log.d(TAG, String.format("缩放更新: 因子=%.2f, 总缩放=%.2f",
                             scaleFactor, currentScaleFactor));
                     }
                 }
             });
         }
 
+        choreographer = Choreographer.getInstance();
+        displayHelper = new DisplayHelper(context);
+
+        // 初始化 Filament
+        setupFilament();
+
         return this;
     }
 
-    @Override
-    public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-        Log.d(TAG, "表面已创建");
-        GLES20.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    private void setupFilament() {
+        Log.d(TAG, "正在初始化 Filament 引擎...");
+        engine = Engine.create();
+        renderer = engine.createRenderer();
+        scene = engine.createScene();
 
-        if (context != null && modelPath != null) {
-            try {
-                Log.i(TAG, String.format("开始初始化GlbRenderer - 模型: %s", modelPath));
-                glbRenderer.createOnGlThread(context, modelPath);
-                isInitialized = true;
-                Log.i(TAG, "[成功] GlbRenderer初始化成功");
+        // 创建相机实体与组件，设置曝光度
+        int cameraEntity = EntityManager.get().create();
+        camera = engine.createCamera(cameraEntity);
+        camera.setExposure(16.0f, 1.0f / 125.0f, 100.0f);
 
-                // 显示自动缩放信息
-                float autoScale = glbRenderer.getAutoScaleFactor();
-                if (autoScale != 1.0f) {
-                    Log.i(TAG, String.format("[信息] 自动缩放已应用: %.3fx", autoScale));
+        // 配置 View
+        view = engine.createView();
+        view.setScene(scene);
+        view.setCamera(camera);
+
+        // 开启透明背景混合模式
+        view.setBlendMode(View.BlendMode.TRANSLUCENT);
+
+        // 设置适合移动端的低配渲染质量
+        view.setRenderQuality(new View.RenderQuality());
+        View.RenderQuality quality = view.getRenderQuality();
+        quality.hdrColorBuffer = View.QualityLevel.LOW;
+        view.setRenderQuality(quality);
+
+        // 关闭后期处理（防背景变黑或造成卡顿）
+        view.setPostProcessingEnabled(false);
+
+        // 配置渲染器清除选项（清除背景为全透明）
+        Renderer.ClearOptions clearOptions = renderer.getClearOptions();
+        clearOptions.clearColor = new double[]{0.0, 0.0, 0.0, 0.0};
+        clearOptions.clear = true;
+        renderer.setClearOptions(clearOptions);
+
+        // 创建 gltf 加载组件
+        materialProvider = new UbershaderProvider(engine);
+        assetLoader = new AssetLoader(engine, materialProvider, EntityManager.get());
+        resourceLoader = new ResourceLoader(engine, false); // false=不生成mipmap,节省GPU内存
+
+        // 创建三点定向光源，让 PBR 材质展示更佳
+        createLights();
+
+        // 绑定 Surface 生命周期与 SwapChain 建立
+        uiHelper = new UiHelper(UiHelper.ContextErrorPolicy.DONT_CHECK);
+        uiHelper.setOpaque(false);
+        uiHelper.setRenderCallback(new UiHelper.RendererCallback() {
+            @Override
+            public void onNativeWindowChanged(Surface surface) {
+                Log.d(TAG, "Surface 创建或变更，重新创建 SwapChain");
+                if (swapChain != null) {
+                    engine.destroySwapChain(swapChain);
                 }
+                swapChain = engine.createSwapChain(surface);
+                displayHelper.attach(renderer, arObjectView.getDisplay());
 
-            } catch (IOException e) {
-                Log.e(TAG, "[错误] 初始化GlbRenderer失败", e);
-                Log.e(TAG, String.format("检查文件是否存在: model='%s'", modelPath));
-                isInitialized = false;
-                
-                // 尝试给出更多调试信息
-                try {
-                    context.getAssets().open(modelPath).close();
-                    Log.d(TAG, "[成功] GLB文件存在: " + modelPath);
-                } catch (IOException me) {
-                    Log.e(TAG, "[错误] GLB文件不存在: " + modelPath);
+                if (!isInitialized) {
+                    loadModelAsync();
                 }
-            } catch (Exception e) {
-                Log.e(TAG, "[错误] 初始化GlbRenderer遇到意外错误", e);
-                isInitialized = false;
             }
-        } else {
-            Log.e(TAG, String.format("[错误] 无法初始化GlbRenderer - context: %s, modelPath: %s",
-                    context != null ? "正常" : "为空",
-                    modelPath != null ? modelPath : "null"));
+
+            @Override
+            public void onDetachedFromSurface() {
+                Log.d(TAG, "Surface 销毁，注销 SwapChain");
+                if (swapChain != null) {
+                    engine.destroySwapChain(swapChain);
+                    swapChain = null;
+                }
+                displayHelper.detach();
+            }
+
+            @Override
+            public void onResized(int width, int height) {
+                Log.d(TAG, "Surface 大小变更为: " + width + "x" + height);
+                view.setViewport(new Viewport(0, 0, width, height));
+            }
+        });
+        uiHelper.attachTo(arObjectView);
+    }
+
+    private void createLights() {
+
+        // 1. 主光源 - 纯白
+        int mainLight = EntityManager.get().create();
+        new LightManager.Builder(LightManager.Type.DIRECTIONAL)
+                .color(1.0f, 1.0f, 1.0f)
+                .intensity(100000.0f)
+                .direction(-0.5f, -1.0f, -0.5f)
+                .castShadows(false)
+                .build(engine, mainLight);
+        scene.addEntity(mainLight);
+        lightEntities.add(mainLight);
+
+        // 2. 补光 - 纯白
+        int fillLight = EntityManager.get().create();
+        new LightManager.Builder(LightManager.Type.DIRECTIONAL)
+                .color(1.0f, 1.0f, 1.0f)
+                .intensity(50000.0f)
+                .direction(0.5f, 1.0f, 0.5f)
+                .castShadows(false)
+                .build(engine, fillLight);
+        scene.addEntity(fillLight);
+        lightEntities.add(fillLight);
+
+        // 3. 环境光 (IndirectLight) - 纯白
+        float[] sh = new float[27];
+        sh[0] = 1.0f; sh[1] = 1.0f; sh[2] = 1.0f;
+        for (int i = 3; i < 27; i++) sh[i] = 0.0f;
+
+        try {
+            indirectLight = new IndirectLight.Builder()
+                    .irradiance(3, sh)
+                    .intensity(30000.0f)
+                    .build(engine);
+            scene.setIndirectLight(indirectLight);
+            Log.d(TAG, "纯白环境光已创建");
+        } catch (Exception e) {
+            Log.e(TAG, "创建环境光时失败", e);
         }
     }
 
-    @Override
-    public void onSurfaceChanged(GL10 gl, int width, int height) {
-        Log.d(TAG, "表面已改变: " + width + "x" + height);
-        GLES20.glViewport(0, 0, width, height);
+    private void loadModelAsync() {
+        if (context == null || modelPath == null) return;
+
+        Log.i(TAG, "开始异步解析加载 GLB: " + modelPath);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try (InputStream is = context.getAssets().open(modelPath)) {
+                    byte[] bytes = new byte[is.available()];
+                    int bytesRead = is.read(bytes);
+                    Log.d(TAG, "已读取 GLB 字节大小: " + bytesRead);
+
+                    final ByteBuffer buffer = ByteBuffer.allocateDirect(bytes.length);
+                    buffer.put(bytes);
+                    buffer.flip();
+
+                    // 转回 UI 线程添加至场景，保证与主渲染环境线程同步
+                    arObjectView.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                asset = assetLoader.createAsset(buffer);
+                                if (asset == null) {
+                                    Log.e(TAG, "AssetLoader 创建模型失败");
+                                    return;
+                                }
+
+                                // 获取模型包围盒并计算自动缩放因子
+                                try {
+                                    Box box = asset.getBoundingBox();
+                                    if (box != null) {
+                                        float[] center = box.getCenter();
+                                        float[] halfExtent = box.getHalfExtent();
+                                        System.arraycopy(center, 0, modelCenter, 0, 3);
+                                        System.arraycopy(halfExtent, 0, modelHalfExtent, 0, 3);
+                                        hasBoundingBox = true;
+
+                                        float maxDim = Math.max(halfExtent[0], Math.max(halfExtent[1], halfExtent[2])) * 2.0f;
+                                        if (maxDim > 0.0f) {
+                                            // 自动缩放模型，使其最大维度为 0.5 米（可根据具体模型调整）
+                                            autoScaleFactor = 0.5f / maxDim;
+                                        } else {
+                                            autoScaleFactor = 1.0f;
+                                        }
+                                        Log.i(TAG, String.format("模型包围盒成功获取. 中心: [%.4f, %.4f, %.4f], 半长宽高: [%.4f, %.4f, %.4f], 自动缩放系数: %.6f",
+                                                modelCenter[0], modelCenter[1], modelCenter[2],
+                                                modelHalfExtent[0], modelHalfExtent[1], modelHalfExtent[2],
+                                                autoScaleFactor));
+                                    } else {
+                                        Log.w(TAG, "模型包围盒 Box 为空，将使用默认缩放 1.0 且不进行中心化偏移");
+                                    }
+                                } catch (Exception e) {
+                                    Log.e(TAG, "读取模型包围盒时出现异常，将使用默认缩放 1.0", e);
+                                    hasBoundingBox = false;
+                                    autoScaleFactor = 1.0f;
+                                }
+
+                                // 修改为同步载入贴图与内部材质数据，确保显示的第一帧材质就是完整的
+                                Log.i(TAG, "开始同步载入贴图与内部材质数据...");
+                                try {
+                                    resourceLoader.loadResources(asset);
+                                    Log.i(TAG, "贴图与内部材质数据同步载入完成");
+
+                                    // 调试: 输出模型实体总数
+                                    Log.i(TAG, "模型加载完成，实体数=" + asset.getEntities().length);
+                                } catch (Exception e) {
+                                    Log.e(TAG, "同步载入贴图与材质资源时发生异常", e);
+                                }
+
+                                // 调整材质参数
+                                customizeMaterials();
+
+                                // 将模型中包含的所有实体（网格、灯光等几何体）以及根节点全部添加到场景中
+                                int[] entities = asset.getEntities();
+                                for (int entity : entities) {
+                                    scene.addEntity(entity);
+                                }
+                                scene.addEntity(asset.getRoot());
+
+                                isInitialized = true;
+                                // 初始化完成后启动帧循环（保持常开，丢失追踪时由 TransformManager 隐藏模型）
+                                startFrameLoop();
+                                Log.i(TAG, "[成功] Filament 模型加载已就绪");
+                            } catch (Exception e) {
+                                Log.e(TAG, "初始化加载 GLB 节点时触发异常", e);
+                            }
+                        }
+                    });
+
+                } catch (IOException e) {
+                    Log.e(TAG, "读取 Assets 中 " + modelPath + " 错误", e);
+                }
+            }
+        }).start();
     }
 
-    @Override
-    public void onDrawFrame(GL10 gl) {
-        // 清除屏幕
-        GLES20.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-        GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT | GLES20.GL_COLOR_BUFFER_BIT);
+    /**
+     * 优化与调整模型的所有材质球属性
+     */
+    private void customizeMaterials() {
+        if (asset == null || engine == null) return;
 
-        // 仅在以下情况下渲染：
-        // 1. GlbRenderer已初始化
-        // 2. NativeHelper指示应该绘制（SLAM_ON && planeDetected）
-        // 3. 我们从native回调获得了有效的矩阵
-        if (!isInitialized || !shouldDraw || !matricesReady) {
-            return;
+        RenderableManager rm = engine.getRenderableManager();
+        int[] entities = asset.getEntities();
+
+        for (int entity : entities) {
+            int instance = rm.getInstance(entity);
+            if (instance == 0) {
+                continue;
+            }
+
+            int primitiveCount = rm.getPrimitiveCount(instance);
+            String nodeName = asset.getName(entity);
+            if (nodeName == null) nodeName = "";
+            Log.d(TAG, String.format("处理节点: %s (实体 ID: %d, Primitives: %d)", nodeName, entity, primitiveCount));
+
+            for (int i = 0; i < primitiveCount; i++) {
+                MaterialInstance materialInstance = rm.getMaterialInstanceAt(instance, i);
+                if (materialInstance == null) continue;
+
+                String matName = materialInstance.getName();
+                if (matName == null) matName = "";
+                Log.d(TAG, String.format("  Primitive %d - 材质: %s", i, matName));
+
+                try { materialInstance.setParameter("roughnessFactor", 1.0f); } catch (Exception e) {}
+                try { materialInstance.setParameter("metallicFactor", 0.0f); } catch (Exception e) {}
+                try { materialInstance.setParameter("reflectance", 0.0f); } catch (Exception e) {}
+                try { materialInstance.setParameter("normalScale", 0.0f); } catch (Exception e) {}
+                try { materialInstance.setParameter("aoStrength", 0.0f); } catch (Exception e) {}
+            }
+        }
+        Log.i(TAG, "材质优化完成");
+    }
+
+    private void render(long frameTimeNanos) {
+        if (swapChain == null || engine == null) return;
+
+        // 1. 异步贴图资源加载状态机推进
+        if (isInitialized && asset != null) {
+            resourceLoader.asyncUpdateLoad();
         }
 
-        // 应用变换：旋转 + 缩放
-        float[] transformMatrix = new float[16];
-        float[] rotationMatrix = new float[16];
-        float[] scaledModelMatrix = new float[16];
-        
-        // 创建旋转矩阵：绕X轴旋转180度以将模型翻转为直立
-        android.opengl.Matrix.setIdentityM(rotationMatrix, 0);
-        android.opengl.Matrix.rotateM(rotationMatrix, 0, 180.0f, 1.0f, 0.0f, 0.0f);
-        
-        // 创建缩放矩阵（结合初始大小和用户缩放）
-        float finalScale = initSize * currentScaleFactor;
-        android.opengl.Matrix.setIdentityM(transformMatrix, 0);
-        android.opengl.Matrix.scaleM(transformMatrix, 0, finalScale, finalScale, finalScale);
-        
-        // 组合：首先应用旋转，然后缩放
-        android.opengl.Matrix.multiplyMM(transformMatrix, 0, transformMatrix, 0, rotationMatrix, 0);
-        
-        // 应用到来自NativeHelper的模型矩阵
-        android.opengl.Matrix.multiplyMM(scaledModelMatrix, 0, modelMatrix, 0, transformMatrix, 0);
+        // 2. 将 SLAM 矩阵传给 Camera 与 Model Transform
+        if (matricesReady) {
+            // 每隔 150 帧打印一次矩阵日志，用于故障排除
+            if (logCounter++ % 150 == 0) {
+                Log.d(TAG, "Matrix Debug:");
+                Log.d(TAG, "modelMatrix: " + java.util.Arrays.toString(modelMatrix));
+                Log.d(TAG, "viewMatrix: " + java.util.Arrays.toString(viewMatrix));
+                Log.d(TAG, "projectionMatrix: " + java.util.Arrays.toString(projectionMatrix));
+            }
 
-        // 使用来自NativeHelper的矩阵更新并绘制对象
-        glbRenderer.updateModelMatrix(scaledModelMatrix, 1.0f);
-        glbRenderer.draw(viewMatrix, projectionMatrix, 1.0f);
+            // SLAM 视图矩阵为 world-to-camera，而 Filament 相机要求 camera-to-world (即视图矩阵的逆矩阵)
+            float[] cameraModelMatrix = new float[16];
+            if (android.opengl.Matrix.invertM(cameraModelMatrix, 0, viewMatrix, 0)) {
+                camera.setModelMatrix(cameraModelMatrix);
+            } else {
+                camera.setModelMatrix(viewMatrix); // 逆矩阵失败则回退直接赋值
+            }
+
+            // 同步 Projection 投影矩阵 (需要转为 double 数组)
+            double[] doubleProj = new double[16];
+            for (int i = 0; i < 16; i++) {
+                doubleProj[i] = projectionMatrix[i];
+            }
+            // 这里的 near/far 裁剪面参数（0.1f 和 1000.0f）必须与 JNI 中 frustumM_RUB 里的参数严格一致
+            camera.setCustomProjection(doubleProj, 0.1, 1000.0);
+        }
+
+        // 3. 模型变换 / 显隐控制
+        //    当 shouldDraw && matricesReady 时：正常定位到 AR 平面
+        //    否则：缩放至 0 隐藏（帧循环常开，透明 clearColor 透出相机）
+        if (asset != null) {
+            int rootEntity = asset.getRoot();
+            TransformManager tm = engine.getTransformManager();
+            int instance = tm.getInstance(rootEntity);
+            if (instance != 0) {
+                boolean wantDraw = shouldDraw && matricesReady;
+                if (wantDraw) {
+                    float finalScale = initSize * currentScaleFactor * autoScaleFactor;
+
+                    float[] transformMatrix = new float[16];
+                    android.opengl.Matrix.setIdentityM(transformMatrix, 0);
+
+                    // S: 缩放（自动归一化 + 用户预设 + 手势缩放）
+                    android.opengl.Matrix.scaleM(transformMatrix, 0, finalScale, finalScale, finalScale);
+                    // R: 绕 X 旋转 180° 修正坐标轴朝向
+                    android.opengl.Matrix.rotateM(transformMatrix, 0, 180.0f, 1.0f, 0.0f, 0.0f);
+                    // 无 T(center)：modelMatrix 已由 SLAM 定位到平面
+
+                    float[] scaledModelMatrix = new float[16];
+                    android.opengl.Matrix.multiplyMM(scaledModelMatrix, 0, modelMatrix, 0, transformMatrix, 0);
+
+                    tm.setTransform(instance, scaledModelMatrix);
+                } else {
+                    // 隐藏：缩放为 0，透明背景透出相机画面
+                    float[] hidden = new float[16];
+                    android.opengl.Matrix.setIdentityM(hidden, 0);
+                    android.opengl.Matrix.scaleM(hidden, 0, 0.0f, 0.0f, 0.0f);
+                    tm.setTransform(instance, hidden);
+                }
+            }
+        }
+
+        // 4. 执行渲染绘制
+        if (renderer.beginFrame(swapChain, frameTimeNanos)) {
+            renderer.render(view);
+            renderer.endFrame();
+        }
+    }
+
+    private void startFrameLoop() {
+        if (!isFrameCallbackActive) {
+            isFrameCallbackActive = true;
+            choreographer.postFrameCallback(frameCallback);
+            Log.d(TAG, "开启 Filament 帧渲染循环");
+        }
+    }
+
+    private void stopFrameLoop() {
+        if (isFrameCallbackActive) {
+            isFrameCallbackActive = false;
+            choreographer.removeFrameCallback(frameCallback);
+            Log.d(TAG, "暂停 Filament 帧渲染循环");
+        }
     }
 
     @Override
     public void onUpdateModelMatrix(float[] M) {
-        // 当模型矩阵更新时，NativeHelper会调用此方法
         if (M != null && M.length == 16) {
             System.arraycopy(M, 0, modelMatrix, 0, 16);
-            // Log.d(TAG, "模型矩阵已更新");  // 高频日志已注释
             checkMatricesReady();
         }
     }
 
     @Override
     public void onUpdateViewMatrix(float[] M) {
-        // 当视图矩阵更新时，NativeHelper会调用此方法
         if (M != null && M.length == 16) {
             System.arraycopy(M, 0, viewMatrix, 0, 16);
-            // Log.d(TAG, "视图矩阵已更新");  // 高频日志已注释
             checkMatricesReady();
         }
     }
 
     @Override
     public void onUpdateProjectionMatrix(float[] M) {
-        // 当投影矩阵更新时，NativeHelper会调用此方法
         if (M != null && M.length == 16) {
             System.arraycopy(M, 0, projectionMatrix, 0, 16);
-            // Log.d(TAG, "投影矩阵已更新");  // 高频日志已注释
             checkMatricesReady();
         }
     }
 
     @Override
     public void requestReset() {
-        Log.d(TAG, "请求重置被调用 - 重置渲染状态");
-        matricesReady = false;
+        Log.d(TAG, "重置渲染状态");
         shouldDraw = false;
-        currentScaleFactor = 1.0f;  // 重置缩放因子
+        matricesReady = false;
+        currentScaleFactor = 1.0f;
+        // 帧循环在 init 后常开，由 render() 中的 TransformManager 控制显隐
     }
 
     @Override
     public void setDraw(boolean flag) {
-        //Log.d(TAG, "setDraw: " + flag);
         shouldDraw = flag;
         if (!flag) {
-            // 如果应该停止绘制，也重置矩阵就绪状态
             matricesReady = false;
         } else {
-            //  当设置为绘制时，从NativeHelper获取最新矩阵
-            // 这样可以支持从地图加载恢复的平面（矩阵已在C++端就绪）
             if (nativeHelper != null) {
                 nativeHelper.getM(modelMatrix);
                 nativeHelper.getV(viewMatrix);
                 nativeHelper.getP(GlobalConstant.RESOLUTION_WIDTH, GlobalConstant.RESOLUTION_HEIGHT, projectionMatrix);
                 matricesReady = true;
-                //Log.d(TAG, "setDraw: 已从Native获取矩阵，matricesReady=true");
             }
         }
     }
 
-    /**
-     * 检查NativeHelper是否已设置所有必需的矩阵
-     */
     private void checkMatricesReady() {
-        // 如果我们至少收到了模型和视图矩阵，则认为矩阵已就绪
-        // 投影矩阵在平面检测期间设置一次
         matricesReady = true;
-        // Log.d(TAG, "矩阵已准备好进行渲染");  // 高频日志已注释
+    }
+
+    /**
+     * 释放 Filament 所占用的 native 及 Java 层资源。
+     * 在 Activity 的 onDestroy() 触发时必须调用该方法。
+     */
+    public void destroy() {
+        Log.d(TAG, "开始释放 Filament 引擎资源...");
+        stopFrameLoop();
+
+        if (uiHelper != null) {
+            uiHelper.detach();
+        }
+
+        if (engine != null) {
+            if (swapChain != null) {
+                engine.destroySwapChain(swapChain);
+                swapChain = null;
+            }
+
+            for (int light : lightEntities) {
+                engine.destroyEntity(light);
+            }
+            lightEntities.clear();
+
+            if (indirectLight != null) {
+                engine.destroyIndirectLight(indirectLight);
+                indirectLight = null;
+            }
+
+            if (asset != null) {
+                assetLoader.destroyAsset(asset);
+                asset = null;
+            }
+
+            if (assetLoader != null) {
+                assetLoader.destroy();
+                assetLoader = null;
+            }
+
+            if (resourceLoader != null) {
+                resourceLoader.destroy();
+                resourceLoader = null;
+            }
+
+            if (materialProvider != null) {
+                materialProvider.destroy();
+                materialProvider = null;
+            }
+
+            if (view != null) {
+                engine.destroyView(view);
+                view = null;
+            }
+
+            if (scene != null) {
+                engine.destroyScene(scene);
+                scene = null;
+            }
+
+            if (camera != null) {
+                engine.destroyCameraComponent(camera.getEntity());
+                camera = null;
+            }
+
+            if (renderer != null) {
+                engine.destroyRenderer(renderer);
+                renderer = null;
+            }
+
+            engine.destroy();
+            engine = null;
+        }
+
+        isInitialized = false;
+        Log.i(TAG, "Filament 引擎资源已全部安全释放");
     }
 }
