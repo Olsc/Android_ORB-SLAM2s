@@ -94,6 +94,13 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
     private static final float MIN_SCALE = 0.05f;  // 最小缩放比例
     private static final float MAX_SCALE = 10.0f;  // 最大缩放比例
 
+    // === 性能优化：缓存矩阵以避免在 render 循环中 new 对象引发 GC 卡顿 ===
+    private final float[] tempCameraModelMatrix = new float[16];
+    private final double[] tempDoubleProj = new double[16];
+    private final float[] tempTransformMatrix = new float[16];
+    private final float[] tempScaledModelMatrix = new float[16];
+    private final float[] tempHiddenMatrix = new float[16];
+
     // Filament 核心对象
     private Engine engine;
     private Renderer renderer;
@@ -230,6 +237,12 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
 
         // 关闭后期处理（防背景变黑或造成卡顿）
         view.setPostProcessingEnabled(false);
+        view.setSampleCount(1); // 关闭多重采样抗锯齿 (MSAA)，提升性能
+
+        // 开启动态分辨率（在移动端设备上对性能提升巨大）
+        View.DynamicResolutionOptions options = new View.DynamicResolutionOptions();
+        options.enabled = true;
+        view.setDynamicResolutionOptions(options);
 
         // 配置渲染器清除选项（清除背景为全透明）
         Renderer.ClearOptions clearOptions = renderer.getClearOptions();
@@ -476,20 +489,18 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
             }
 
             // SLAM 视图矩阵为 world-to-camera，而 Filament 相机要求 camera-to-world (即视图矩阵的逆矩阵)
-            float[] cameraModelMatrix = new float[16];
-            if (android.opengl.Matrix.invertM(cameraModelMatrix, 0, viewMatrix, 0)) {
-                camera.setModelMatrix(cameraModelMatrix);
+            if (android.opengl.Matrix.invertM(tempCameraModelMatrix, 0, viewMatrix, 0)) {
+                camera.setModelMatrix(tempCameraModelMatrix);
             } else {
                 camera.setModelMatrix(viewMatrix); // 逆矩阵失败则回退直接赋值
             }
 
             // 同步 Projection 投影矩阵 (需要转为 double 数组)
-            double[] doubleProj = new double[16];
             for (int i = 0; i < 16; i++) {
-                doubleProj[i] = projectionMatrix[i];
+                tempDoubleProj[i] = projectionMatrix[i];
             }
             // 这里的 near/far 裁剪面参数（0.1f 和 1000.0f）必须与 JNI 中 frustumM_RUB 里的参数严格一致
-            camera.setCustomProjection(doubleProj, 0.1, 1000.0);
+            camera.setCustomProjection(tempDoubleProj, 0.1, 1000.0);
         }
 
         // 3. 模型变换 / 显隐控制
@@ -504,25 +515,22 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
                 if (wantDraw) {
                     float finalScale = initSize * currentScaleFactor * autoScaleFactor;
 
-                    float[] transformMatrix = new float[16];
-                    android.opengl.Matrix.setIdentityM(transformMatrix, 0);
+                    android.opengl.Matrix.setIdentityM(tempTransformMatrix, 0);
 
                     // S: 缩放（自动归一化 + 用户预设 + 手势缩放）
-                    android.opengl.Matrix.scaleM(transformMatrix, 0, finalScale, finalScale, finalScale);
+                    android.opengl.Matrix.scaleM(tempTransformMatrix, 0, finalScale, finalScale, finalScale);
                     // R: 绕 X 旋转 180° 修正坐标轴朝向
-                    android.opengl.Matrix.rotateM(transformMatrix, 0, 180.0f, 1.0f, 0.0f, 0.0f);
+                    android.opengl.Matrix.rotateM(tempTransformMatrix, 0, 180.0f, 1.0f, 0.0f, 0.0f);
                     // 无 T(center)：modelMatrix 已由 SLAM 定位到平面
 
-                    float[] scaledModelMatrix = new float[16];
-                    android.opengl.Matrix.multiplyMM(scaledModelMatrix, 0, modelMatrix, 0, transformMatrix, 0);
+                    android.opengl.Matrix.multiplyMM(tempScaledModelMatrix, 0, modelMatrix, 0, tempTransformMatrix, 0);
 
-                    tm.setTransform(instance, scaledModelMatrix);
+                    tm.setTransform(instance, tempScaledModelMatrix);
                 } else {
                     // 隐藏：缩放为 0，透明背景透出相机画面
-                    float[] hidden = new float[16];
-                    android.opengl.Matrix.setIdentityM(hidden, 0);
-                    android.opengl.Matrix.scaleM(hidden, 0, 0.0f, 0.0f, 0.0f);
-                    tm.setTransform(instance, hidden);
+                    android.opengl.Matrix.setIdentityM(tempHiddenMatrix, 0);
+                    android.opengl.Matrix.scaleM(tempHiddenMatrix, 0, 0.0f, 0.0f, 0.0f);
+                    tm.setTransform(instance, tempHiddenMatrix);
                 }
             }
         }
