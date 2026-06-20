@@ -36,10 +36,6 @@ public class WebServer {
     private com.orb.slam2s.slamar.NativeHelper nativeHelper;
     private android.content.Context context;
 
-    // 存储最新数据
-    private volatile byte[] lastFrame;
-    private volatile float[] lastPoints;
-
     // 活跃的MJPEG流
     private final List<OutputStream> streamClients = Collections.synchronizedList(new ArrayList<>());
 
@@ -178,8 +174,8 @@ public class WebServer {
         }
     }
 
+    @SuppressWarnings("unused")
     public void broadcastFrame(byte[] frame) {
-        this.lastFrame = frame;
         synchronized (streamClients) {
             Iterator<OutputStream> it = streamClients.iterator();
             while (it.hasNext()) {
@@ -196,10 +192,6 @@ public class WebServer {
                 }
             }
         }
-    }
-
-    public void updatePoints(float[] points) {
-        this.lastPoints = points;
     }
 
     private class ClientHandler implements Runnable {
@@ -234,13 +226,11 @@ public class WebServer {
                     consumeHeaders(is);
 
                     if (path.equals("/")) {
-                        sendAssetFile(os, "index.html", "text/html");
+                        sendAssetFile(os);
                     } else if (path.equals("/stream")) {
                         handleStream(os);
                     } else if (path.equals("/data")) {
                         handleData(os);
-                    } else if (path.equals("/reset")) {
-                        handleReset(os);
                     } else {
                         send404(os);
                     }
@@ -280,8 +270,8 @@ public class WebServer {
             return buffer.toString("UTF-8").trim();
         }
 
-        private void sendAssetFile(OutputStream os, String fileName, String contentType) throws IOException {
-            try (InputStream assetIs = context.getAssets().open(fileName)) {
+        private void sendAssetFile(OutputStream os) throws IOException {
+            try (InputStream assetIs = context.getAssets().open("index.html")) {
                 ByteArrayOutputStream buffer = new ByteArrayOutputStream();
                 int nRead;
                 byte[] data = new byte[4096];
@@ -292,7 +282,7 @@ public class WebServer {
                 byte[] content = buffer.toByteArray();
 
                 String response = "HTTP/1.1 200 OK\r\n" +
-                        "Content-Type: " + contentType + "\r\n" +
+                        "Content-Type: text/html\r\n" +
                         "Content-Length: " + content.length + "\r\n\r\n";
                 os.write(response.getBytes());
                 os.write(content);
@@ -414,19 +404,6 @@ public class WebServer {
             os.write(bytes);
         }
 
-        private void handleReset(OutputStream os) throws IOException {
-            if (nativeHelper != null) {
-                nativeHelper.resetSLAM();
-                String response = "HTTP/1.1 200 OK\r\n" +
-                        "Access-Control-Allow-Origin: *\r\n" +
-                        "Content-Type: text/plain\r\n" +
-                        "Content-Length: 15\r\n\r\n" +
-                        "SLAM Reset Done";
-                os.write(response.getBytes());
-            } else {
-                send404(os);
-            }
-        }
 
         private void handleUploadFrame(InputStream is, OutputStream os) throws IOException {
             try {

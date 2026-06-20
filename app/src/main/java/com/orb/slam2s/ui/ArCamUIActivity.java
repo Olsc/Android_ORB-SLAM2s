@@ -75,9 +75,9 @@ public class ArCamUIActivity extends AppCompatActivity implements
     private Button btnSaveMap;
     private Button btnLoadMap;
     private Button btnMapList;
-    private Button btnResetSlam;
     private Button btnTogglePointCloud;
     private Button btnToggleSlam;
+
 
     private Button btn3DofCube;
     private android.os.Handler uiHandler = new android.os.Handler();
@@ -265,8 +265,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
         btnSaveMap = findViewById(R.id.btn_save_map);
         btnLoadMap = findViewById(R.id.btn_load_map);
         btnMapList = findViewById(R.id.btn_map_list);
-        btnResetSlam = findViewById(R.id.btn_reset_slam);
-
         // 创建AR物体按钮（原检测平面功能）
         btnCreateArObject.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -297,17 +295,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
                 @Override
                 public void onClick(View v) {
                     showMapListDialog(true);
-                }
-            });
-        }
-
-        // 添加SLAM重置按钮
-        if (btnResetSlam != null) {
-            btnResetSlam.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Log.d(TAG, "重置SLAM按钮被点击");
-                    resetSLAM();
                 }
             });
         }
@@ -1011,25 +998,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
         uiHandler.postDelayed(updater, 1000);
     }
 
-    // 重置SLAM系统
-    private void resetSLAM() {
-        if (nativeHelper != null) {
-            Log.i(TAG, "正在重置SLAM系统...");
-            showHint(getString(R.string.hint_resetting_slam));
-
-            // 重置平面检测状态
-            detectPlane = false;
-
-            // 调用Native层的重置方法
-            nativeHelper.resetSLAM();
-
-            showHint(getString(R.string.hint_slam_reset));
-            Log.i(TAG, "SLAM系统重置完成");
-        } else {
-            Log.e(TAG, "无法重置SLAM：NativeHelper为null");
-            showHint(getString(R.string.hint_reset_failed));
-        }
-    }
 
     // 切换点云显示状态
     private void togglePointCloudDisplay() {

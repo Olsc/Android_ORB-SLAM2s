@@ -247,13 +247,8 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
     private int getDisplayRotation() {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
             try {
-                android.view.Display display = context.getDisplay();
-                if (display != null) {
-                    return display.getRotation();
-                }
-            } catch (Exception e) {
-                // 回退方案
-            } catch (NoSuchMethodError e) {
+                return context.getDisplay().getRotation();
+            } catch (Exception | NoSuchMethodError e) {
                 // 回退方案
             }
         }

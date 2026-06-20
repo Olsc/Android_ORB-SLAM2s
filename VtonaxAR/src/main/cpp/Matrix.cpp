@@ -505,9 +505,3 @@ void matrixToQuaternion(float M[],Quaternion &q){
     q.z=qz;
     q.w=qw;
 }
-
-inline float sign(float f){
-    if(f<0) return -1.0f;
-    return 1.0f;
-}
-

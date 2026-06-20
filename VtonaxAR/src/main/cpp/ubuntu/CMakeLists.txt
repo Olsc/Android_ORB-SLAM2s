@@ -26,6 +26,7 @@ message(STATUS "  - 头文件路径: ${OpenCV_INCLUDE_DIRS}")
 # 3. 编译器优化选项与编译定义
 # ----------------------------------------------------------------------------
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native -Wall -pthread")
+add_compile_definitions(EIGEN_DONT_ALIGN_STATICALLY EIGEN_DISABLE_UNALIGNED_ARRAY_ASSERT EIGEN_MAX_ALIGN_BYTES=16)
 
 # 头文件包含路径列表 (全部使用根目录绝对路径定位，确保无缝解析)
 include_directories(
@@ -241,7 +242,6 @@ add_library(VtonaxAR_Engine STATIC
     ${REPO_ROOT}/VtonaxAR/src/main/cpp/Thirdparty/DBoW2/DUtils/Random.cpp
     
     # 底层通用实用组件
-    ${REPO_ROOT}/VtonaxAR/src/main/cpp/Utils.cpp
     ${REPO_ROOT}/VtonaxAR/src/main/cpp/EmbeddedResources.cpp
     ${REPO_ROOT}/VtonaxAR/src/main/cpp/UIUtils.cpp
     ${REPO_ROOT}/VtonaxAR/src/main/cpp/Plane.cpp
@@ -266,4 +266,16 @@ target_link_libraries(VtonaxAR_Ubuntu
     Threads::Threads
 )
 
-message(STATUS "[CMake] 构建文件生成完毕。您现在可以在编译目录运行 'make' 命令来构建 VtonaxAR_Ubuntu。")
+# ----------------------------------------------------------------------------
+# 8. 构建 Benchmark 工具 (VtonaxAR_Benchmark)
+# ----------------------------------------------------------------------------
+add_executable(VtonaxAR_Benchmark ${CMAKE_CURRENT_SOURCE_DIR}/benchmark.cpp)
+
+target_link_libraries(VtonaxAR_Benchmark
+    VtonaxAR_Engine
+    g2o
+    ${OpenCV_LIBS}
+    Threads::Threads
+)
+
+message(STATUS "[CMake] 构建文件生成完毕。您现在可以在编译目录运行 'make' 命令来构建 VtonaxAR_Ubuntu 或 VtonaxAR_Benchmark。")
