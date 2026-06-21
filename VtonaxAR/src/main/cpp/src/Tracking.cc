@@ -864,16 +864,22 @@ void Tracking::GlobalRelocLoop(int sessionId)
         const int chunk = mCfgMatchChunk;
         for(size_t base=0;base<candidateIdx.size();base+=chunk){
             size_t end = std::min(candidateIdx.size(), base+chunk);
-            // 收集子矩阵视图
-            cv::Mat sub; sub.create(0, refDesc.cols, CV_8U);
+            // 收集子矩阵视图：预分配矩阵空间，避免逐行 push_back 导致的重复内存分配与拷贝开销
+            cv::Mat sub;
+            sub.create(end-base, refDesc.cols, CV_8U);
             std::vector<int> subMap; subMap.reserve(end-base);
+            int rowIdx = 0;
             for(size_t i=base;i<end;i++){
                 int ridx = (int)candidateIdx[i];
                 if(ridx<0 || ridx>=refDesc.rows) continue; // 越界保护
-                sub.push_back(refDesc.row(ridx));
+                refDesc.row(ridx).copyTo(sub.row(rowIdx));
                 subMap.push_back(ridx);
+                rowIdx++;
             }
-            if(sub.rows==0) continue; // 无有效子集则跳过本批
+            if(rowIdx==0) continue; // 无有效子集则跳过本批
+            if(rowIdx < sub.rows){
+                sub = sub.rowRange(0, rowIdx); // 裁切到实际大小（轻量级浅拷贝，共享 buffer 头信息）
+            }
             std::vector<std::vector<cv::DMatch>> knnPart;
             matcher.knnMatch(desc, sub, knnPart, 2);
             // 将trainIdx重新映射到全局
@@ -1166,29 +1172,35 @@ void Tracking::SetMap(Map *pMap)
 cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
 {
     VT_PROFILE_FUNCTION();
-    mImGray = im;
-
-    if(mImGray.channels()==3)
-    {
-        if(mbRGB)
-            cvtColor(mImGray,mImGray,CV_RGB2GRAY);
-        else
-            cvtColor(mImGray,mImGray,CV_BGR2GRAY);
-    }
-    else if(mImGray.channels()==4)
-    {
-        if(mbRGB)
-            cvtColor(mImGray,mImGray,CV_RGBA2GRAY);
-        else
-            cvtColor(mImGray,mImGray,CV_BGRA2GRAY);
-    }
 
     // 应用 CLAHE 增强对比度，同时避免过度放大传感器噪点。
-    // 使用静态线程局部变量（static thread_local）以避免在主循环中产生重复的内存分配和构造开销。
+    // 使用静态线程局部变量以复用内存缓冲，显著减少主循环中的 Mat 缓冲区重复分配。
+    static thread_local cv::Mat grayBuffer;
+    static thread_local cv::Mat claheBuffer;
     static thread_local cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(3.0, cv::Size(8, 8));
-    static thread_local cv::Mat preprocessed;
-    clahe->apply(mImGray, preprocessed);
-    mImGray = preprocessed;
+
+    if(im.channels()==3)
+    {
+        if(mbRGB)
+            cvtColor(im, grayBuffer, CV_RGB2GRAY);
+        else
+            cvtColor(im, grayBuffer, CV_BGR2GRAY);
+    }
+    else if(im.channels()==4)
+    {
+        if(mbRGB)
+            cvtColor(im, grayBuffer, CV_RGBA2GRAY);
+        else
+            cvtColor(im, grayBuffer, CV_BGRA2GRAY);
+    }
+    else
+    {
+        // 已经是单通道灰度图，拷贝数据到 grayBuffer 缓冲（大小和类型匹配时为零分配的 memcpy）
+        im.copyTo(grayBuffer);
+    }
+
+    clahe->apply(grayBuffer, claheBuffer);
+    mImGray = claheBuffer;
 
     {
         VT_PROFILE_SCOPE("Tracking::FrameConstruction");

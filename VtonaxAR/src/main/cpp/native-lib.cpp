@@ -286,7 +286,8 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
         // SLAM 正常运行
         
         const float DOWNSCALE = ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR;
-        cv::Mat imgSmall;
+        // 使用静态线程局部变量复用内存，避免每帧 resize 时重新分配内存
+        static thread_local cv::Mat imgSmall;
         cv::resize(image, imgSmall, cv::Size(cvRound(image.cols / DOWNSCALE), cvRound(image.rows / DOWNSCALE)));
 
         // SLAM跟踪线程拥有最高优先级
