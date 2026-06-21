@@ -36,6 +36,7 @@
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/features2d/features2d.hpp>
+#include <opencv2/imgproc.hpp>
 
 #include "ORBmatcher.h"
 #include "FrameDrawer.h"
@@ -1181,6 +1182,13 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
         else
             cvtColor(mImGray,mImGray,CV_BGRA2GRAY);
     }
+
+    // 应用 CLAHE 增强对比度，同时避免过度放大传感器噪点。
+    // 使用静态线程局部变量（static thread_local）以避免在主循环中产生重复的内存分配和构造开销。
+    static thread_local cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(3.0, cv::Size(8, 8));
+    static thread_local cv::Mat preprocessed;
+    clahe->apply(mImGray, preprocessed);
+    mImGray = preprocessed;
 
     {
         VT_PROFILE_SCOPE("Tracking::FrameConstruction");
