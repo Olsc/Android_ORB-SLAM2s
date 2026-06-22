@@ -101,6 +101,18 @@ int main(int argc, char** argv) {
         return -1;
     }
 
+    // 计算输入源的 FPS，用于帧率控制
+    double inputFps = cap.get(cv::CAP_PROP_FPS);
+    if (inputFps <= 0) inputFps = 30.0;
+    bool isVideoFile = !(videoSource == "0" || videoSource == "1" || videoSource == "2");
+    const double TARGET_FPS = 30.0;
+    const int frameSkip = isVideoFile ? std::max(1, (int)std::round(inputFps / TARGET_FPS)) : 1;
+
+    std::cout << "[Ubuntu GUI] 输入源 FPS: " << inputFps
+              << ", 固定处理帧率: " << TARGET_FPS << " FPS"
+              << (frameSkip > 1 ? " (跳帧率: " + std::to_string(frameSkip) + ")" : "")
+              << std::endl;
+
     // 设置视频分辨率为 1280x720 以获得绝佳的高清画质
     cap.set(cv::CAP_PROP_FRAME_WIDTH, 1280);
     cap.set(cv::CAP_PROP_FRAME_HEIGHT, 720);
@@ -116,16 +128,22 @@ int main(int argc, char** argv) {
 
     std::cout << "[Ubuntu GUI] 主处理线程循环已启动。按键盘 'ESC' 或 'q' 退出程序。" << std::endl;
 
+    int skipCounter = 0;
     while (true) {
         cap >> frame;
         if (frame.empty()) {
-            // 如果读取的是本地视频文件，播放结束后自动循环播放
-            if (videoSource != "0" && videoSource != "1" && videoSource != "2") {
+            if (isVideoFile) {
                 cap.set(cv::CAP_PROP_POS_FRAMES, 0);
-                continue;
+                cap >> frame;          // 读取循环后的第一帧
+                skipCounter = 0;       // 重置跳帧计数器
             }
-            break;
+            if (frame.empty()) break;
         }
+
+        // 跳帧：仅当计数器达到 frameSkip 时才处理，其余帧丢弃
+        skipCounter++;
+        if (skipCounter < frameSkip) continue;
+        skipCounter = 0;
 
         // 计算实时帧率 FPS
         frameCounter++;
@@ -141,11 +159,13 @@ int main(int argc, char** argv) {
         cv::cvtColor(frame, imgGr, cv::COLOR_BGR2GRAY);
         imgRgba = frame.clone(); // 保留彩色帧用于渲染
 
-        // 将图像缩放到 50% 传入 SLAM 系统（与 Android 的 processImage 逻辑完全对齐）
+        // 缩放到 SLAM 工作分辨率 (640x360)
         cv::Mat imgSmall;
-        cv::resize(imgGr, imgSmall, cv::Size(imgGr.cols / 2, imgGr.rows / 2));
+        cv::resize(imgGr, imgSmall,
+                   cv::Size((int)ORB_SLAM2::BASE_SLAM_WIDTH,
+                            (int)ORB_SLAM2::BASE_SLAM_HEIGHT));
 
-        timeStamp += 1.0 / 30.0;
+        timeStamp += 1.0 / TARGET_FPS;
         int status = 0; // 初始状态为 NO_IMAGES_YET
 
         if (gEnableSLAM) {
@@ -201,7 +221,7 @@ int main(int argc, char** argv) {
         cv::imshow("VtonaxAR SLAM Engine", imgRgba);
 
         // 键盘按键捕获
-        char key = (char)cv::waitKey(20);
+        char key = (char)cv::waitKey(33);  // ~30 FPS 显示刷新
         if (key == 27 || key == 'q') {
             break;
         }

@@ -286,7 +286,8 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
         // SLAM 正常运行
         
         const float DOWNSCALE = ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR;
-        cv::Mat imgSmall;
+        // 使用静态线程局部变量复用内存，避免每帧 resize 时重新分配内存
+        static thread_local cv::Mat imgSmall;
         cv::resize(image, imgSmall, cv::Size(cvRound(image.cols / DOWNSCALE), cvRound(image.rows / DOWNSCALE)));
 
         // SLAM跟踪线程拥有最高优先级
@@ -953,43 +954,6 @@ Java_com_orb_slam2s_slamar_NativeHelper_clearArObjects(JNIEnv *env, jobject inst
 JNIEXPORT jint JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_getArObjectCount(JNIEnv *env, jobject instance) {
     return static_cast<jint>(gArObjects.size());
-}
-
-// 重置SLAM系统（轻量重置：只清除跟踪状态，保留加载的地图）
-JNIEXPORT void JNICALL
-Java_com_orb_slam2s_slamar_NativeHelper_resetSLAM(JNIEnv *env, jobject instance) {
-    // 必须先获取gSlamStateMutex，确保processImage不会同时访问slamSys
-    std::lock_guard<std::mutex> slamLock(gSlamStateMutex);
-    std::lock_guard<std::mutex> dataLock(gMapDataMutex);
-    if(slamSys) {
-        LOGD("手动重置SLAM（保留地图模式）");
-        slamSys->Reset(true);  // 保留地图的重置
-        
-        //  只重置手动检测的平面，保留从地图加载的平面
-        if(pPlane && !planeLoadedFromMap) {
-            // 如果平面是手动检测的（非地图加载），则删除
-            delete pPlane;
-            pPlane = nullptr;
-            LOGD("已重置手动检测的平面");
-        } else if(pPlane && planeLoadedFromMap) {
-            // 如果平面是从地图加载的，保留它
-            LOGD("保留从地图加载的平面（重置后仍可见）");
-            // 重置AR对象渲染状态会在下一帧自动根据pPlane存在与否恢复
-        }
-        
-        gArObjects.clear();
-        // 注意：不重置 gShouldDrawArObject，让它由状态自动更新
-        // gShouldDrawArObject = false;  // 移除这行，让它根据pPlane自动判断
-        gArObjectScale = 0.20f;
-        
-        // 重置丢失计时器
-        wasLost = false;
-        lastOkTime = timeStamp;
-        // 注意：不需要重置gLoadedMapPointCount，因为地图还在
-        LOGD("SLAM已重置，地图数据已保留，新地图点计数器将重新开始");
-    } else {
-        LOGD("警告：SLAM系统尚未初始化");
-    }
 }
 
 // ========== AR对象管理（C++端） ==========

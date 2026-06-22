@@ -144,10 +144,7 @@ public class NativeHelper {
     public native void loadMapWithId(String path, int mapId, boolean append);
     public native int getCurrentMapId();
     public native int[] getMapStats();
-    
-    // 本地方法：重置SLAM系统
-    public native void resetSLAM();
-    
+
     // AR重定位模式控制（默认已启用）
     public native void setFullMapDisplay(boolean enable);
     public native boolean isFullMapDisplayEnabled();

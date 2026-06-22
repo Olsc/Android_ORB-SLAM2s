@@ -32,7 +32,7 @@ public class ModelActivity extends Activity {
         // 不再使用加载界面，直接进行初始化
 
         // 检查权限，若权限通过则初始化
-        if(checkPermission(Manifest.permission.CAMERA,REQUEST_PERMISSION))
+        if(checkPermission())
             init();
     }
 
@@ -44,30 +44,25 @@ public class ModelActivity extends Activity {
     }
 
     /**
-     * 检查是否获得了特定的权限
-     * @param permission 权限名称
-     * @param requestCode 请求码
+     * 检查是否获得了 CAMERA 权限
      * @return 是否有权限
      */
-    private boolean checkPermission(String permission, int requestCode){
+    private boolean checkPermission(){
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            // 如果没有获得权限
-            if (ContextCompat.checkSelfPermission(this, permission)
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                     != PackageManager.PERMISSION_GRANTED) {
-                // 如果需要解释为什么需要权限
-                if (ActivityCompat.shouldShowRequestPermissionRationale(this, permission)) {
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)) {
                     showHint(getString(R.string.permission_camera_storage_required));
-                    finish(); // 权限被拒绝则退出
+                    finish();
                 } else {
-                    // 请求权限
                     ActivityCompat.requestPermissions(this,
-                            new String[]{ permission },
-                            requestCode);
+                            new String[]{ Manifest.permission.CAMERA },
+                            REQUEST_PERMISSION);
                 }
                 return false;
-            } else return true; // 已获得权限
+            } else return true;
         }
-        return true; // 如果是 Android 6.0 以下版本，直接返回 true
+        return true;
     }
 
     @Override

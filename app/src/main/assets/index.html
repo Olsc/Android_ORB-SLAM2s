@@ -245,13 +245,6 @@
                     </div>
                 </div>
 
-                <div class="control-group">
-                    <div class="control-group-title">SLAM 控制</div>
-                    <div class="btn-row">
-                        <button onclick="remoteReset()" class="danger">重置 SLAM</button>
-                    </div>
-                </div>
-
                 <div class="control-group" style="margin-top: 5px;">
                     <div class="slider-container">
                         <span>粒子:</span>
@@ -534,22 +527,6 @@
 
         function updateStatus(message) {
             document.getElementById('status').innerText = message;
-        }
-
-        function remoteReset() {
-            if (confirm('确定要重置由于 SLAM 系统吗？这将清除当前所有地图点。')) {
-                fetch('/reset').then(res => {
-                    if (res.ok) {
-                        updateStatus("SLAM 系统已重置");
-                        console.log("SLAM Remote Reset Successful");
-                    } else {
-                        updateStatus("重置失败: " + res.status);
-                    }
-                }).catch(err => {
-                    console.error("Reset failed", err);
-                    updateStatus("重置请求失败");
-                });
-            }
         }
 
         function updatePointSize(val) {

@@ -184,17 +184,6 @@
             android:orientation="vertical"
             android:visibility="gone">
             <Button
-                android:id="@+id/btn_reset_slam"
-                android:layout_width="76dp"
-                android:layout_height="32dp"
-                android:layout_marginBottom="4dp"
-                android:text="@string/btn_reset"
-                android:textSize="10sp"
-                android:textAllCaps="false"
-                android:alpha="0.85"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"/>
-            <Button
                 android:id="@+id/btn_toggle_slam"
                 android:layout_width="76dp"
                 android:layout_height="32dp"
