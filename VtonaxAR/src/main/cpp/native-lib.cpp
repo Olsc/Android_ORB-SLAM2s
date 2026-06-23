@@ -292,7 +292,7 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
             LOGE("processImage: 输入图像为空，跳帧处理");
             return 0;
         }
-        cv::resize(image, imgSmall, cv::Size(cvRound(image.cols / DOWNSCALE), cvRound(image.rows / DOWNSCALE)), 0, 0, cv::INTER_NEAREST);
+        cv::resize(image, imgSmall, cv::Size(cvRound(image.cols / DOWNSCALE), cvRound(image.rows / DOWNSCALE)), 0, 0, cv::INTER_LINEAR);
 
         // SLAM跟踪线程拥有最高优先级
         ORB_SLAM2::System* currentSlamSys = nullptr;
