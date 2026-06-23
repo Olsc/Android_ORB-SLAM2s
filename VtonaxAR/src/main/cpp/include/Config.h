@@ -103,7 +103,7 @@ const int MAPPOINT_CULL_BATCH_SIZE = 500;
 //   当某关键帧中超过 90% 的地图点同时被至少 3 个其他关键帧观测到时，
 //   该帧被视为冗余并被剔除，以保持后端 BA 规模可控。
 //   调高此值（如0.95f）会保留更多关键帧，建图更密集但计算量增大。
-const float KEYFRAME_REDUNDANCY_THRESHOLD = 0.95f;
+const float KEYFRAME_REDUNDANCY_THRESHOLD = 0.9f;
 
 // 判定地图点冗余时所需的"其他关键帧观测数"下限。
 //   观测数 ≥ 此值的点不参与关键帧冗余性判定（因为它们足够可靠）。
@@ -278,7 +278,7 @@ const float TRACKING_KF_MONO_RATIO = 0.9f;
 //   将局部地图点投影到当前帧图像时，在此半径内搜索匹配。
 //   值越大越容易匹配到远处点但计算量增大；值小则更快但可能遗漏。
 //   建议在快速运动场景适当增大。
-const int TRACKING_LOCAL_SEARCH_TH = 4;
+const int TRACKING_LOCAL_SEARCH_TH = 1;
 
 // 局部地图点数不足时的补充上限。
 //   在 TrackLocalMap() 中若 mvpLocalMapPoints < 50，从全局地图点中
@@ -323,7 +323,7 @@ const int ALIGNED_STRICT_INLIERS_OVERRIDE = 20;
 //   停止添加新的邻居/子/父关键帧。
 //   增大使局部地图包含更多约束，BA 优化更准但耗时增加；
 //   减小则效率优先，适合低端设备。
-const int MAX_LOCAL_KEYFRAMES = 60;
+const int MAX_LOCAL_KEYFRAMES = 80;
 
 // 共视图邻居关键帧的最佳共视数量。
 //   在 UpdateLocalKeyFrames() 中，对每个局部关键帧调用
@@ -591,7 +591,7 @@ const int MAX_SUBMAP_COUNT = 10;
 // 三角化时选取的邻近关键帧数量。
 //   对每个新关键帧，在共视图中取 NEIGHBORS 个最佳共视帧来三角化新地图点。
 //   增大可增加三角化的候选类型，但计算量线性增加。
-const int LOCAL_MAPPING_TRIANGULATION_NEIGHBORS = 15;
+const int LOCAL_MAPPING_TRIANGULATION_NEIGHBORS = 20;
 
 // 三角化最小基线/中值深度比。
 //   只有当两个关键帧的基线长度 > 当前场景中值深度 × 此比例时，才进行三角化。
@@ -624,7 +624,7 @@ const int LOCAL_MAPPING_CULL_PROTECT_FRAMES = 5;
 //   若队列积压超过此值，主线程的 Track() 会阻塞等待 LocalMapping 消费。
 //   增大可让主线程更流畅但增加建图延迟，设小则建图及时但主线程可能等待。
 //   当 MAV 等高速场景建议增大，精度优先场景建议减小。
-const int LOCAL_MAPPING_MAX_QUEUED_KFS = 5;
+const int LOCAL_MAPPING_MAX_QUEUED_KFS = 3;
 
 // ==========================================
 // 基础图优化参数（Essential Graph BA）

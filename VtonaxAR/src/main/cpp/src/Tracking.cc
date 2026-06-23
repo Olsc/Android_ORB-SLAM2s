@@ -1173,34 +1173,24 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
 {
     VT_PROFILE_FUNCTION();
 
-    // 应用 CLAHE 增强对比度，同时避免过度放大传感器噪点。
-    // 使用静态线程局部变量以复用内存缓冲，显著减少主循环中的 Mat 缓冲区重复分配。
-    static thread_local cv::Mat grayBuffer;
-    static thread_local cv::Mat claheBuffer;
-    static thread_local cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(3.0, cv::Size(8, 8));
-
     if(im.channels()==3)
     {
         if(mbRGB)
-            cvtColor(im, grayBuffer, CV_RGB2GRAY);
+            cvtColor(im, mImGray, CV_RGB2GRAY);
         else
-            cvtColor(im, grayBuffer, CV_BGR2GRAY);
+            cvtColor(im, mImGray, CV_BGR2GRAY);
     }
     else if(im.channels()==4)
     {
         if(mbRGB)
-            cvtColor(im, grayBuffer, CV_RGBA2GRAY);
+            cvtColor(im, mImGray, CV_RGBA2GRAY);
         else
-            cvtColor(im, grayBuffer, CV_BGRA2GRAY);
+            cvtColor(im, mImGray, CV_BGRA2GRAY);
     }
     else
     {
-        // 已经是单通道灰度图，拷贝数据到 grayBuffer 缓冲（大小和类型匹配时为零分配的 memcpy）
-        im.copyTo(grayBuffer);
+        im.copyTo(mImGray);
     }
-
-    clahe->apply(grayBuffer, claheBuffer);
-    mImGray = claheBuffer;
 
     {
         VT_PROFILE_SCOPE("Tracking::FrameConstruction");
