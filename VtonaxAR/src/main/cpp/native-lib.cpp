@@ -288,7 +288,11 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
         const float DOWNSCALE = ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR;
         // 使用静态线程局部变量复用内存，避免每帧 resize 时重新分配内存
         static thread_local cv::Mat imgSmall;
-        cv::resize(image, imgSmall, cv::Size(cvRound(image.cols / DOWNSCALE), cvRound(image.rows / DOWNSCALE)));
+        if (image.empty()) {
+            LOGE("processImage: 输入图像为空，跳帧处理");
+            return 0;
+        }
+        cv::resize(image, imgSmall, cv::Size(cvRound(image.cols / DOWNSCALE), cvRound(image.rows / DOWNSCALE)), 0, 0, cv::INTER_NEAREST);
 
         // SLAM跟踪线程拥有最高优先级
         ORB_SLAM2::System* currentSlamSys = nullptr;

@@ -28,8 +28,7 @@ public class NativeHelper {
     // 加载必要的本地库
     static {
         System.loadLibrary("c++_shared");      // C++ 运行时
-        System.loadLibrary("opencv_java4");    // OpenCV
-        System.loadLibrary("VtonaxAR_Engine");         // 整合后的 SLAM_AR
+        System.loadLibrary("VtonaxAR_Engine");         // 整合后的 SLAM_AR（含 OpenCV 原生模块）
         System.loadLibrary("Vtonax_3DOF");            // 独立出来的 3DOF 库
     }
 

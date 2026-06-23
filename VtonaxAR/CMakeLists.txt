@@ -2,12 +2,13 @@ cmake_minimum_required(VERSION 3.10.2)
 
 set(CMAKE_VERBOSE_MAKEFILE on)
 set(libs "${CMAKE_SOURCE_DIR}/src/main/jniLibs")
-include_directories(${CMAKE_SOURCE_DIR}/src/main/cpp/opencv/include)
 
-#--------------------------------------------------- 导入 ---------------------------------------------------#
-add_library(libopencv_java4 SHARED IMPORTED )
-set_target_properties(libopencv_java4 PROPERTIES
-        IMPORTED_LOCATION "${libs}/${ANDROID_ABI}/libopencv_java4.so")
+#--------------------------------------------------- OpenCV 构建 ---------------------------------------------------#
+# 使用 TEMP/opencv 的纯 C/C++ 源码构建，替代旧的 libopencv_java4.so + OpenCVLibrary
+set(OPENCV_SRC_DIR "${CMAKE_SOURCE_DIR}/src/main/cpp/opencv_src")
+include_directories(${OPENCV_SRC_DIR}/include)
+include_directories(${OPENCV_SRC_DIR}/modules/core/include)
+add_subdirectory(${OPENCV_SRC_DIR} opencv_build)
 
 
 
@@ -260,6 +261,8 @@ add_library(VtonaxAR_Engine SHARED
         src/main/cpp/UIUtils.cpp
         src/main/cpp/Plane.cpp
         src/main/cpp/Matrix.cpp
+        src/main/cpp/bridge/OpenCVBridge.cpp
+        src/main/cpp/bridge/opencv_stubs.cpp
 
 
         # 6DoF 传感融合功能已移除
@@ -298,16 +301,27 @@ add_dependencies(VtonaxAR_Engine generate_embedded_resources)
 
 
 target_link_libraries(VtonaxAR_Engine
-        libopencv_java4
+        -Wl,--whole-archive
+        opencv_core
+        opencv_imgproc
+        opencv_features2d
+        opencv_flann
+        opencv_calib3d
+        -Wl,--no-whole-archive
         g2o
         ${log-lib}
+        jnigraphics                     # For AndroidBitmap_* APIs (bitmap.h)
         EGL
         GLESv1_CM
         )
 
 # ========== 3DOF 独立库 ==========
 add_library(Vtonax_3DOF SHARED src/main/cpp/3dof.cpp src/main/cpp/Matrix.cpp)
-target_link_libraries(Vtonax_3DOF ${log-lib})
+target_include_directories(Vtonax_3DOF PRIVATE
+    ${OPENCV_SRC_DIR}/include
+    ${OPENCV_SRC_DIR}/modules/core/include
+)
+target_link_libraries(Vtonax_3DOF ${log-lib} opencv_core)
 
 # ========== Vtonax 性能分析器 ==========
 set(VTONAX_DEVELOP_MODE ON) # <--- 修改这里：ON 开启，OFF 关闭
@@ -319,7 +333,7 @@ include_directories(src/main/cpp/profiler)
 
 if(VTONAX_DEVELOP_MODE)
     # 仅在开启时添加分析器库
-    add_library(Vtonax_Profiler SHARED
+    add_library(Vtonax_Profiler STATIC
             src/main/cpp/profiler/VtonaxProfiler.cpp
             src/main/cpp/profiler/VtonaxProfiler.h
     )

@@ -449,6 +449,9 @@ namespace DBoW2 {
         /// this condition holds: m_words[wid]->word_id == wid
         std::vector<Node*> m_words;
 
+        /// Contiguous memory block for descriptors to avoid OOM
+        std::vector<unsigned char> m_descriptor_data;
+
     };
 
 // --------------------------------------------------------------------------
@@ -569,7 +572,19 @@ namespace DBoW2 {
       this->m_nodes.clear();
       this->m_words.clear();
 
+      this->m_descriptor_data = voc.m_descriptor_data;
       this->m_nodes = voc.m_nodes;
+
+      if(!this->m_descriptor_data.empty())
+      {
+        unsigned char* p_desc_data = this->m_descriptor_data.data();
+        for(size_t i = 0; i < this->m_nodes.size(); ++i)
+        {
+          unsigned char* node_desc_ptr = p_desc_data + (i * F::L);
+          this->m_nodes[i].descriptor = cv::Mat(1, F::L, CV_8U, node_desc_ptr);
+        }
+      }
+
       this->createWords();
 
       return *this;
@@ -1476,92 +1491,50 @@ namespace DBoW2 {
     bool TemplatedVocabulary<TDescriptor,F>::loadFromBinFile(const std::string &filename)
     {
       ifstream f;
-      f.open(filename.c_str(),ios::binary);
-
-      if(f.eof())
+      f.open(filename.c_str(), ios::binary | ios::ate);
+      if(!f.is_open())
         return false;
 
-      m_words.clear();
-      m_nodes.clear();
+      streamsize size = f.tellg();
+      f.seekg(0, ios::beg);
 
-      f.read((char*)&m_k,sizeof(m_k));
-      f.read((char*)&m_L,sizeof(m_L));
-      int n1, n2;
-      f.read((char*)&n1,sizeof(n1));
-      f.read((char*)&n2,sizeof(n2));
-
-      if(m_k<0 || m_k>20 || m_L<1 || m_L>10 || n1<0 || n1>5 || n2<0 || n2>3)
+      std::vector<unsigned char> buffer(size);
+      if(f.read((char*)buffer.data(), size))
       {
-        std::cerr << "Vocabulary loading failure: This is not a correct Binary file!" << endl;
-        return false;
+        f.close();
+        return loadFromMemoryBin(buffer.data(), size);
       }
-
-      m_scoring = (ScoringType)n1;
-      m_weighting = (WeightingType)n2;
-      createScoringObject();
-
-      // nodes
-      int expected_nodes =
-              (int)((pow((double)m_k, (double)m_L + 1) - 1)/(m_k - 1));
-      m_nodes.reserve(expected_nodes);
-      m_words.reserve(pow((double)m_k, (double)m_L + 1));
-      m_nodes.resize(1);
-      m_nodes[0].id = 0;
-      while((!f.eof()) && ( m_nodes.size()<(unsigned int)expected_nodes) )
-      {
-        int nid = m_nodes.size();
-        m_nodes.resize(m_nodes.size()+1);
-        m_nodes[nid].id = nid;
-        int pid ;
-        f.read((char*)&pid,sizeof(pid));
-        m_nodes[nid].parent = pid;
-        m_nodes[pid].children.push_back(nid);
-        int nIsLeaf;
-        unsigned char nIsLeafuc;
-        f.read((char*)&nIsLeafuc,sizeof(nIsLeafuc));
-        nIsLeaf=nIsLeafuc;
-        unsigned char array[F::L]; // the number of element is stored in F::L
-        f.read((char*)array,(long)F::L);
-        m_nodes[nid].descriptor.create(1, F::L, CV_8U);
-        F::fromArray8U(m_nodes[nid].descriptor,(unsigned char *)array);
-        f.read((char*)&m_nodes[nid].weight,sizeof(m_nodes[nid].weight));
-        if(nIsLeaf>0)
-        {
-          int wid = m_words.size();
-          m_words.resize(wid+1);
-          m_nodes[nid].word_id = wid;
-          m_words[wid] = &m_nodes[nid];
-        }
-        else
-        {
-          m_nodes[nid].children.reserve(m_k);
-        }
-      }
-
       f.close();
-      return true;
-
+      return false;
     }
 // --------------------------------------------------------------------------
 
     template<class TDescriptor, class F>
     bool TemplatedVocabulary<TDescriptor,F>::loadFromMemoryBin(const unsigned char* data, size_t size)
     {
-      // Create a memory stream from the buffer
-      std::string buffer((const char*)data, size);
-      std::istringstream f(buffer, ios::binary);
-
-      if(f.eof())
-        return false;
+      const unsigned char* read_ptr = data;
+      const unsigned char* end_ptr = data + size;
 
       m_words.clear();
       m_nodes.clear();
+      m_descriptor_data.clear();
 
-      f.read((char*)&m_k,sizeof(m_k));
-      f.read((char*)&m_L,sizeof(m_L));
+      if(read_ptr >= end_ptr)
+        return false;
+
+      // Safe read helper lambda
+      auto safe_read = [&](void* dest, size_t bytes) -> bool {
+        if (read_ptr + bytes > end_ptr) return false;
+        memcpy(dest, read_ptr, bytes);
+        read_ptr += bytes;
+        return true;
+      };
+
+      if(!safe_read(&m_k, sizeof(m_k))) return false;
+      if(!safe_read(&m_L, sizeof(m_L))) return false;
       int n1, n2;
-      f.read((char*)&n1,sizeof(n1));
-      f.read((char*)&n2,sizeof(n2));
+      if(!safe_read(&n1, sizeof(n1))) return false;
+      if(!safe_read(&n2, sizeof(n2))) return false;
 
       if(m_k<0 || m_k>20 || m_L<1 || m_L>10 || n1<0 || n1>5 || n2<0 || n2>3)
       {
@@ -1578,26 +1551,35 @@ namespace DBoW2 {
               (int)((pow((double)m_k, (double)m_L + 1) - 1)/(m_k - 1));
       m_nodes.reserve(expected_nodes);
       m_words.reserve(pow((double)m_k, (double)m_L + 1));
+
+      // Contiguous allocation for all nodes
+      m_descriptor_data.resize(expected_nodes * F::L);
+      unsigned char* p_desc_data = m_descriptor_data.data();
+
       m_nodes.resize(1);
       m_nodes[0].id = 0;
-      while((!f.eof()) && ( m_nodes.size()<(unsigned int)expected_nodes) )
+      while(read_ptr < end_ptr && m_nodes.size() < (unsigned int)expected_nodes)
       {
         int nid = m_nodes.size();
         m_nodes.resize(m_nodes.size()+1);
         m_nodes[nid].id = nid;
         int pid ;
-        f.read((char*)&pid,sizeof(pid));
+        if(!safe_read(&pid, sizeof(pid))) break;
         m_nodes[nid].parent = pid;
         m_nodes[pid].children.push_back(nid);
         int nIsLeaf;
         unsigned char nIsLeafuc;
-        f.read((char*)&nIsLeafuc,sizeof(nIsLeafuc));
+        if(!safe_read(&nIsLeafuc, sizeof(nIsLeafuc))) break;
         nIsLeaf=nIsLeafuc;
         unsigned char array[F::L];
-        f.read((char*)array,(long)F::L);
-        m_nodes[nid].descriptor.create(1, F::L, CV_8U);
-        F::fromArray8U(m_nodes[nid].descriptor,(unsigned char *)array);
-        f.read((char*)&m_nodes[nid].weight,sizeof(m_nodes[nid].weight));
+        if(!safe_read(array, F::L)) break;
+        
+        // Wrap descriptor around contiguous memory
+        unsigned char* node_desc_ptr = p_desc_data + (nid * F::L);
+        m_nodes[nid].descriptor = cv::Mat(1, F::L, CV_8U, node_desc_ptr);
+        F::fromArray8U(m_nodes[nid].descriptor, (unsigned char *)array);
+
+        if(!safe_read(&m_nodes[nid].weight, sizeof(m_nodes[nid].weight))) break;
         if(nIsLeaf>0)
         {
           int wid = m_words.size();

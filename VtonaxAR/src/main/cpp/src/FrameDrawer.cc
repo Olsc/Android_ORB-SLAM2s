@@ -94,7 +94,13 @@ cv::Mat FrameDrawer::DrawFrame()
     } // 销毁作用域锁 -> 释放互斥锁
 
     if(im.channels()<3) // 这应该总是成立
+    {
+        if (im.depth() != CV_8U && im.depth() != CV_16U && im.depth() != CV_32F)
+        {
+            im.convertTo(im, CV_8U);
+        }
         cvtColor(im,im,CV_GRAY2BGR);
+    }
 
     // 绘制
     if(state==Tracking::NOT_INITIALIZED) // 初始化中

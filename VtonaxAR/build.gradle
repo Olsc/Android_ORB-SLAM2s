@@ -47,7 +47,7 @@ android {
         jniLibs {
             useLegacyPackaging true
             excludes += ['lib/x86/**', 'lib/x86_64/**']
-            pickFirsts += ['lib/armeabi-v7a/libopencv_java4.so', 'lib/arm64-v8a/libopencv_java4.so', 'lib/**/libc++_shared.so']
+            pickFirsts += ['lib/**/libc++_shared.so']
         }
     }
 
@@ -60,7 +60,7 @@ android {
 }
 
 dependencies {
-    implementation project(':OpenCVLibrary')
+    // OpenCV 改用原生编译（TEMP/opencv），不再需要 Java Library
 }
 
 tasks.configureEach { task ->

@@ -10,9 +10,7 @@ import com.orb.slam2s.constant.GlobalConstant;
 import com.orb.slam2s.rendering.gles.GLRootView;
 import com.orb.slam2s.utils.TextureUtils;
 
-import org.opencv.android.Utils;
-import org.opencv.core.Mat;
-import org.opencv.core.Size;
+import com.orb.slam2s.slamar.OpenCVBridge;
 
 import java.util.List;
 
@@ -63,28 +61,6 @@ public abstract class CameraGLViewBase extends GLRootView{
         mMaxHeight = MAX_UNSPECIFIED;
     }
     
-    public interface CvCameraViewListener {
-        /**
-         * 当相机预览启动时调用此方法。在此方法调用后，帧将通过onCameraFrame()回调传递给客户端。
-         * @param width - 将传递的帧的宽度
-         * @param height - 将传递的帧的高度
-         */
-        public void onCameraViewStarted(int width, int height);
-
-        /**
-         * 当相机预览因某种原因停止时调用此方法。
-         * 在调用此方法后，将不会通过onCameraFrame()回调传递帧。
-         */
-        public void onCameraViewStopped();
-
-        /**
-         * 当需要传递帧时调用此方法。
-         * 返回值是一个修改后的帧，需要显示在屏幕上。
-         * TODO: 传递指定帧格式的参数(BPP, YUV或RGB等)
-         */
-        public Mat onCameraFrame(Mat inputFrame);
-    }
-
     public interface CvCameraViewListener2 {
         /**
          * 当相机预览启动时调用此方法。在此方法调用后，帧将通过onCameraFrame()回调传递给客户端。
@@ -104,44 +80,7 @@ public abstract class CameraGLViewBase extends GLRootView{
          * 返回值是一个修改后的帧，需要显示在屏幕上。
          * TODO: 传递指定帧格式的参数(BPP, YUV或RGB等)
          */
-        public Mat onCameraFrame(CvCameraViewFrame inputFrame);
-    };
-
-    protected class CvCameraViewListenerAdapter implements CvCameraViewListener2  {
-        public CvCameraViewListenerAdapter(CvCameraViewListener oldStypeListener) {
-            mOldStyleListener = oldStypeListener;
-        }
-
-        public void onCameraViewStarted(int width, int height) {
-            mOldStyleListener.onCameraViewStarted(width, height);
-        }
-
-        public void onCameraViewStopped() {
-            mOldStyleListener.onCameraViewStopped();
-        }
-
-        public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
-             Mat result = null;
-             switch (mPreviewFormat) {
-                case RGBA:
-                    result = mOldStyleListener.onCameraFrame(inputFrame.rgba());
-                    break;
-                case GRAY:
-                    result = mOldStyleListener.onCameraFrame(inputFrame.gray());
-                    break;
-                default:
-                    Log.e(TAG, "无效的帧格式！仅支持RGBA和灰度格式！");
-            };
-
-            return result;
-        }
-
-        public void setFrameFormat(int format) {
-            mPreviewFormat = format;
-        }
-
-        private int mPreviewFormat = RGBA;
-        private CvCameraViewListener mOldStyleListener;
+        public long onCameraFrame(CvCameraViewFrame inputFrame);
     };
 
     /**
@@ -151,14 +90,14 @@ public abstract class CameraGLViewBase extends GLRootView{
     public interface CvCameraViewFrame {
 
         /**
-         * 此方法返回带有帧的RGBA Mat
+         * 此方法返回带有帧的RGBA native Mat 地址
          */
-        public Mat rgba();
+        public long rgba();
 
         /**
-         * 此方法返回带有帧的单通道灰度Mat
+         * 此方法返回带有帧的单通道灰度 native Mat 地址
          */
-        public Mat gray();
+        public long gray();
     };
 
     /**
@@ -209,10 +148,7 @@ public abstract class CameraGLViewBase extends GLRootView{
     public void SetCaptureFormat(int format)
     {
         mPreviewFormat = format;
-        if (mListener instanceof CvCameraViewListenerAdapter) {
-            CvCameraViewListenerAdapter adapter = (CvCameraViewListenerAdapter) mListener;
-            adapter.setFrameFormat(mPreviewFormat);
-        }
+        // 旧式 CvCameraViewListener 已移除
     }
 
     /**
@@ -297,25 +233,23 @@ public abstract class CameraGLViewBase extends GLRootView{
      * @param frame - 要传递的当前帧
      */
     protected void deliverAndDrawFrame(CvCameraViewFrame frame) {
-        Mat modified;
+        long modifiedAddr;
 
         if (mListener != null) {
-            modified = mListener.onCameraFrame(frame);
+            modifiedAddr = mListener.onCameraFrame(frame);
         } else {
-            modified = frame.rgba();
+            modifiedAddr = frame.rgba();
         }
 
         boolean bmpValid = true;
-        if (modified != null) {
+        if (modifiedAddr != 0) {
             synchronized (mSyncObject) {
                 if (mCacheBitmap != null && !mCacheBitmap.isRecycled()) {
                     try {
-                        //这很快。
-                        Utils.matToBitmap(modified, mCacheBitmap);
+                        // 通过 JNI 将 native Mat 转为 Bitmap（比 Utils.matToBitmap 更快）
+                        OpenCVBridge.nativeMatToBitmap(modifiedAddr, mCacheBitmap);
                     } catch(Exception e) {
-                        Log.e(TAG, "Mat类型: " + modified);
-                        Log.e(TAG, "Bitmap类型: " + mCacheBitmap.getWidth() + "*" + mCacheBitmap.getHeight());
-                        Log.e(TAG, "Utils.matToBitmap()抛出异常: " + e.getMessage());
+                        Log.e(TAG, "nativeMatToBitmap抛出异常: " + e.getMessage());
                         bmpValid = false;
                     }
                 } else {
@@ -381,7 +315,7 @@ public abstract class CameraGLViewBase extends GLRootView{
      * @param surfaceHeight
      * @return 最佳帧大小
      */
-    protected Size calculateCameraFrameSize(List<?> supportedSizes, ListItemAccessor accessor, int surfaceWidth, int surfaceHeight) {
+    protected android.util.Size calculateCameraFrameSize(List<?> supportedSizes, ListItemAccessor accessor, int surfaceWidth, int surfaceHeight) {
         int calcWidth = 0;
         int calcHeight = 0;
 
@@ -394,15 +328,15 @@ public abstract class CameraGLViewBase extends GLRootView{
 
             if (width <= maxAllowedWidth && height <= maxAllowedHeight) {
                 if (width >= calcWidth && height >= calcHeight) {
-                    calcWidth = (int) width;
-                    calcHeight = (int) height;
+                    calcWidth = width;
+                    calcHeight = height;
                 }
             }
         }
         // 使用动态计算的分辨率
         if (calcWidth > 0 && calcHeight > 0) {
-            return new Size(calcWidth, calcHeight);
+            return new android.util.Size(calcWidth, calcHeight);
         }
-        return new Size(GlobalConstant.RESOLUTION_WIDTH, GlobalConstant.RESOLUTION_HEIGHT);
+        return new android.util.Size(GlobalConstant.RESOLUTION_WIDTH, GlobalConstant.RESOLUTION_HEIGHT);
     }
 }
