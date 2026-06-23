@@ -690,9 +690,8 @@ int getNumThreads(void)
 unsigned defaultNumberOfThreads()
 {
 #ifdef __ANDROID__
-    // many modern phones/tables have 4-core CPUs. Let's use no more
-    // than 2 threads by default not to overheat the devices
-    const unsigned int default_number_of_threads = 2;
+    // modern phones have 8-core CPUs. Using 4 threads is a good balance for big cores.
+    const unsigned int default_number_of_threads = std::max(2u, std::min(4u, (unsigned int)cv::getNumberOfCPUs()));
 #else
     const unsigned int default_number_of_threads = (unsigned int)std::max(1, cv::getNumberOfCPUs());
 #endif

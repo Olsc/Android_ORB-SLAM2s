@@ -125,16 +125,14 @@ foreach(mod ${OPENCV_MODULES})
     endif()
     target_include_directories(opencv_${mod} PUBLIC ${mod_includes})
 
-    # --- 优化标志（target 级别 → 在 NDK 内部标志之后生效） ---
+    target_compile_options(opencv_${mod} PRIVATE -O3 -DNDEBUG)
+    target_compile_definitions(opencv_${mod} PRIVATE NDEBUG)
+
+    if("${ANDROID_ABI}" STREQUAL "arm64-v8a")
+        target_compile_options(opencv_${mod} PRIVATE -march=armv8.2-a+fp16+rcpc+dotprod)
+    endif()
     target_compile_options(opencv_${mod} PRIVATE
-        $<$<CONFIG:Debug>:-O2 -g>
-        $<$<CONFIG:RelWithDebInfo>:-O2 -g>
-        $<$<NOT:$<CONFIG:Debug>>:$<$<NOT:$<CONFIG:RelWithDebInfo>>:-O3 -DNDEBUG>>
-    )
-    # 架构相关标志
-    # ARM64：ARMv8.2-A 特性（dotprod, fp16）— 仅 Release，与父工程一致
-    target_compile_options(opencv_${mod} PRIVATE
-        $<$<AND:$<STREQUAL:${ANDROID_ABI},arm64-v8a>,$<CONFIG:Release>>:-march=armv8.2-a+fp16+rcpc+dotprod -flto=thin>
+        $<$<AND:$<STREQUAL:${ANDROID_ABI},arm64-v8a>,$<CONFIG:Release>>:-flto=thin>
     )
 
     if(ANDROID)

@@ -1199,8 +1199,7 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
         im.copyTo(grayBuffer);
     }
 
-    clahe->apply(grayBuffer, claheBuffer);
-    mImGray = claheBuffer;
+    mImGray = grayBuffer;
 
     {
         VT_PROFILE_SCOPE("Tracking::FrameConstruction");
