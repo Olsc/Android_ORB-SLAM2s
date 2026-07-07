@@ -411,7 +411,8 @@ void PnPsolver::choose_control_points(void)
 
 
   // 从参考点的PCA中获取C1、C2和C3：
-  CvMat * PW0 = cvCreateMat(number_of_correspondences, 3, CV_64F);
+  m_PW0_buffer.resize(number_of_correspondences * 3);
+  CvMat PW0 = cvMat(number_of_correspondences, 3, CV_64F, m_PW0_buffer.data());
 
   double pw0tpw0[3 * 3], dc[3], uct[3 * 3];
   CvMat PW0tPW0 = cvMat(3, 3, CV_64F, pw0tpw0);
@@ -420,12 +421,10 @@ void PnPsolver::choose_control_points(void)
 
   for(int i = 0; i < number_of_correspondences; i++)
     for(int j = 0; j < 3; j++)
-      PW0->data.db[3 * i + j] = pws[3 * i + j] - cws[0][j];
+      PW0.data.db[3 * i + j] = pws[3 * i + j] - cws[0][j];
 
-  cvMulTransposed(PW0, &PW0tPW0, 1);
+  cvMulTransposed(&PW0, &PW0tPW0, 1);
   cvSVD(&PW0tPW0, &DC, &UCt, 0, CV_SVD_MODIFY_A | CV_SVD_U_T);
-
-  cvReleaseMat(&PW0);
 
   for(int i = 1; i < 4; i++) {
     double k = sqrt(dc[i - 1] / number_of_correspondences);
@@ -505,20 +504,20 @@ double PnPsolver::compute_pose(double R[3][3], double t[3])
   choose_control_points();
   compute_barycentric_coordinates();
 
-  CvMat * M = cvCreateMat(2 * number_of_correspondences, 12, CV_64F);
+  m_M_buffer.resize(2 * number_of_correspondences * 12);
+  CvMat M = cvMat(2 * number_of_correspondences, 12, CV_64F, m_M_buffer.data());
 
   for(int i = 0; i < number_of_correspondences; i++)
-    fill_M(M, 2 * i, alphas + 4 * i, us[2 * i], us[2 * i + 1]);
+    fill_M(&M, 2 * i, alphas + 4 * i, us[2 * i], us[2 * i + 1]);
 
   double mtm[12 * 12], d[12], ut[12 * 12];
   CvMat MtM = cvMat(12, 12, CV_64F, mtm);
   CvMat D   = cvMat(12,  1, CV_64F, d);
   CvMat Ut  = cvMat(12, 12, CV_64F, ut);
 
-  cvMulTransposed(M, &MtM, 1);
+  cvMulTransposed(&M, &MtM, 1);
 
   cvSVD(&MtM, &D, &Ut, 0, CV_SVD_MODIFY_A | CV_SVD_U_T);
-  cvReleaseMat(&M);
 
   double l_6x10[6 * 10], rho[6];
   CvMat L_6x10 = cvMat(6, 10, CV_64F, l_6x10);

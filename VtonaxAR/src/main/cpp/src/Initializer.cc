@@ -240,7 +240,8 @@ cv::Mat Initializer::ComputeH21(const vector<cv::Point2f> &vP1, const vector<cv:
 {
     const int N = vP1.size();
 
-    cv::Mat A(2*N,9,CV_32F);
+    float a_data[16 * 9];
+    cv::Mat A(2*N,9,CV_32F, a_data);
 
     for(int i=0; i<N; i++)
     {
@@ -271,18 +272,24 @@ cv::Mat Initializer::ComputeH21(const vector<cv::Point2f> &vP1, const vector<cv:
 
     }
 
-    cv::Mat u,w,vt;
+    float u_data[16 * 16];
+    float w_data[9 * 1];
+    float vt_data[9 * 9];
+    cv::Mat u(2*N, 2*N, CV_32F, u_data);
+    cv::Mat w(9, 1, CV_32F, w_data);
+    cv::Mat vt(9, 9, CV_32F, vt_data);
 
-    cv::SVDecomp(A,w,u,vt,cv::SVD::MODIFY_A | cv::SVD::FULL_UV);
+    cv::SVD::compute(A,w,u,vt,cv::SVD::MODIFY_A | cv::SVD::FULL_UV);
 
-    return vt.row(8).reshape(0, 3);
+    return vt.row(8).reshape(0, 3).clone();
 }
 
 cv::Mat Initializer::ComputeF21(const vector<cv::Point2f> &vP1,const vector<cv::Point2f> &vP2)
 {
     const int N = vP1.size();
 
-    cv::Mat A(N,9,CV_32F);
+    float a_data[8 * 9];
+    cv::Mat A(N,9,CV_32F, a_data);
 
     for(int i=0; i<N; i++)
     {
@@ -302,9 +309,14 @@ cv::Mat Initializer::ComputeF21(const vector<cv::Point2f> &vP1,const vector<cv::
         A.at<float>(i,8) = 1;
     }
 
-    cv::Mat u,w,vt;
+    float u_data[8 * 8];
+    float w_data[8 * 1];
+    float vt_data[9 * 9];
+    cv::Mat u(N, N, CV_32F, u_data);
+    cv::Mat w(N, 1, CV_32F, w_data);
+    cv::Mat vt(9, 9, CV_32F, vt_data);
 
-    cv::SVDecomp(A,w,u,vt,cv::SVD::MODIFY_A | cv::SVD::FULL_UV);
+    cv::SVD::compute(A,w,u,vt,cv::SVD::MODIFY_A | cv::SVD::FULL_UV);
 
     cv::Mat Fpre = vt.row(8).reshape(0, 3);
 

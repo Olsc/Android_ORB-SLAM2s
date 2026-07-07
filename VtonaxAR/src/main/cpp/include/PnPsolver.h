@@ -180,6 +180,10 @@ class PnPsolver {
 
   // 与尺度级别相关的最大平方误差。最大误差 = th*th*sigma(level)*sigma(level)
   vector<float> mvMaxError;
+
+  // RANSAC 内部循环防止动态内存分配的缓冲区
+  std::vector<double> m_M_buffer;
+  std::vector<double> m_PW0_buffer;
 };
 
 } //namespace ORB_SLAM2
