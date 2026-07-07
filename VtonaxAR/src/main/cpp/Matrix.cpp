@@ -477,27 +477,31 @@ void matrixToQuaternion(float M[],Quaternion &q){
 
     if (tr > 0) {
         float S = (float) (sqrt(tr+1) * 2); // S=4*qw
+        float invS = 1.0f / S;
         qw = 0.25f * S;
-        qx = (m21 - m12) / S;
-        qy = (m02 - m20) / S;
-        qz = (m10 - m01) / S;
+        qx = (m21 - m12) * invS;
+        qy = (m02 - m20) * invS;
+        qz = (m10 - m01) * invS;
     } else if ((m00 > m11)&(m00 > m22)) {
         float S = (float) (sqrt(1.0 + m00 - m11 - m22) * 2); // S=4*qx
-        qw = (m21 - m12) / S;
+        float invS = 1.0f / S;
+        qw = (m21 - m12) * invS;
         qx = 0.25f * S;
-        qy = (m01 + m10) / S;
-        qz = (m02 + m20) / S;
+        qy = (m01 + m10) * invS;
+        qz = (m02 + m20) * invS;
     } else if (m11 > m22) {
         float S = (float) (sqrt(1.0 + m11 - m00 - m22) * 2); // S=4*qy
-        qw = (m02 - m20) / S;
-        qx = (m01 + m10) / S;
+        float invS = 1.0f / S;
+        qw = (m02 - m20) * invS;
+        qx = (m01 + m10) * invS;
         qy = 0.25f * S;
-        qz = (m12 + m21) / S;
+        qz = (m12 + m21) * invS;
     } else {
         float S = (float) (sqrt(1.0 + m22 - m00 - m11) * 2); // S=4*qz
-        qw = (m10 - m01) / S;
-        qx = (m02 + m20) / S;
-        qy = (m12 + m21) / S;
+        float invS = 1.0f / S;
+        qw = (m10 - m01) * invS;
+        qx = (m02 + m20) * invS;
+        qy = (m12 + m21) * invS;
         qz = 0.25f * S;
     }
     q.x=qx;

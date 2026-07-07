@@ -67,8 +67,8 @@ protected:
 
     void CheckInliers();
 
-    void Project(const std::vector<cv::Mat> &vP3Dw, std::vector<cv::Mat> &vP2D, cv::Mat Tcw, cv::Mat K);
-    void FromCameraToImage(const std::vector<cv::Mat> &vP3Dc, std::vector<cv::Mat> &vP2D, cv::Mat K);
+    void Project(const std::vector<cv::Mat> &vP3Dw, std::vector<cv::Point2f> &vP2D, cv::Mat Tcw, cv::Mat K);
+    void FromCameraToImage(const std::vector<cv::Mat> &vP3Dc, std::vector<cv::Point2f> &vP2D, cv::Mat K);
 
 protected:
 
@@ -112,8 +112,8 @@ protected:
     std::vector<size_t> mvAllIndices;
 
     // 投影
-    std::vector<cv::Mat> mvP1im1;
-    std::vector<cv::Mat> mvP2im2;
+    std::vector<cv::Point2f> mvP1im1;
+    std::vector<cv::Point2f> mvP2im2;
 
     // RANSAC概率
     double mRansacProb;

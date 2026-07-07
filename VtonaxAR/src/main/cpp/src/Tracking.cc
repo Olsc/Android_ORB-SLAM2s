@@ -1395,8 +1395,6 @@ void Tracking::Track()
             if(NeedNewKeyFrame())
             {
                 VT_PROFILE_SCOPE("Tracking::CreateNewKeyFrame");
-                // CreateNewKeyFrame 修改地图结构，需短暂持锁
-                std::unique_lock<std::mutex> lock(mpMap->mMutexMapUpdate);
                 CreateNewKeyFrame();
             }
 
@@ -1464,12 +1462,15 @@ void Tracking::Track()
         }
         mLastTrackingInliers.store(currentInliers);
 
-        // 为后台全局线程快照最新的优化位姿和特征
+        cv::Mat tempTcw = mCurrentFrame.mTcw.clone();
+        cv::Mat tempDesc = mCurrentFrame.mDescriptors.clone();
+        std::vector<cv::KeyPoint> tempKeysUn = mCurrentFrame.mvKeysUn;
+        
         {
             std::unique_lock<std::mutex> lk(mMutexReloc);
-            mLastTcwSlam = mCurrentFrame.mTcw.clone();
-            mLastDesc = mCurrentFrame.mDescriptors.clone();
-            mLastKeysUn = mCurrentFrame.mvKeysUn;
+            cv::swap(mLastTcwSlam, tempTcw);
+            cv::swap(mLastDesc, tempDesc);
+            mLastKeysUn.swap(tempKeysUn);
             mLastN = mCurrentFrame.N;
             mLastTimestamp = mCurrentFrame.mTimeStamp;
             // 生产新快照并唤醒后台线程（无延时）

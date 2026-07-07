@@ -254,11 +254,9 @@ int Optimizer::PoseOptimization(Frame *pFrame)
         cache.solver_ptr = new g2o::BlockSolver_6_3(cache.linearSolver);
         cache.solver = new g2o::OptimizationAlgorithmLevenberg(cache.solver_ptr);
         cache.optimizer.setAlgorithm(cache.solver);
-    } else {
-        // 复用已有求解器：clear() 释放顶点和边但保留求解器结构
-        cache.optimizer.clear();
     }
     g2o::SparseOptimizer& optimizer = cache.optimizer;
+    optimizer.clear();
 
     int nInitialCorrespondences=0;
 
@@ -296,24 +294,14 @@ int Optimizer::PoseOptimization(Frame *pFrame)
                 const cv::KeyPoint &kpUn = pFrame->mvKeysUn[i];
                 obs << kpUn.pt.x, kpUn.pt.y;
 
-                // 在创建 Edge 之前先验证 vertex 是否存在
-                g2o::OptimizableGraph::Vertex* v0 = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(0));
-                if(!v0)
-                {
-                    continue;
-                }
-                
                 g2o::EdgeSE3ProjectXYZOnlyPose* e = new g2o::EdgeSE3ProjectXYZOnlyPose();
-                if(!e)
-                {
-                    continue;
-                }
 
                 try {
-                    e->setVertex(0, v0);
+                    e->setVertex(0, vSE3);
                     e->setMeasurement(obs);
                     const float invSigma2 = pFrame->mvInvLevelSigma2[kpUn.octave];
                     e->setInformation(Eigen::Matrix2d::Identity()*invSigma2);
+                    e->setLevel(0);
 
                     g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
                     e->setRobustKernel(rk);
@@ -338,15 +326,14 @@ int Optimizer::PoseOptimization(Frame *pFrame)
                 vpEdgesMono.push_back(e);
                 vnIndexEdgeMono.push_back(i);
             }
-            // 立体观测相关代码已移除
         }
 
     }
     }
 
-
-    if(nInitialCorrespondences<3)
+    if(nInitialCorrespondences<3) {
         return 0;
+    }
 
     // 我们执行4次优化，每次优化后我们将观测分类为内点/外点
     // 在下一次优化中，不包括外点，但在最后它们可以再次被分类为内点。

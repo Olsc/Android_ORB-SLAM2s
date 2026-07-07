@@ -347,7 +347,7 @@ void Sim3Solver::ComputeSim3(cv::Mat &P1, cv::Mat &P2)
 
 void Sim3Solver::CheckInliers()
 {
-    vector<cv::Mat> vP1im2, vP2im1;
+    vector<cv::Point2f> vP1im2, vP2im1;
     Project(mvX3Dc2,vP2im1,mT12i,mK1);
     Project(mvX3Dc1,vP1im2,mT21i,mK2);
 
@@ -355,13 +355,13 @@ void Sim3Solver::CheckInliers()
 
     for(size_t i=0; i<mvP1im1.size(); i++)
     {
-        // 使用标量运算替代cv::Mat减法和dot，避免每次迭代的临时Mat分配
-        const float dx1 = mvP1im1[i].at<float>(0) - vP2im1[i].at<float>(0);
-        const float dy1 = mvP1im1[i].at<float>(1) - vP2im1[i].at<float>(1);
+        // 直接访问 Point2f 坐标，避免访问 Mat 开销
+        const float dx1 = mvP1im1[i].x - vP2im1[i].x;
+        const float dy1 = mvP1im1[i].y - vP2im1[i].y;
         const float err1 = dx1*dx1 + dy1*dy1;
 
-        const float dx2 = vP1im2[i].at<float>(0) - mvP2im2[i].at<float>(0);
-        const float dy2 = vP1im2[i].at<float>(1) - mvP2im2[i].at<float>(1);
+        const float dx2 = vP1im2[i].x - mvP2im2[i].x;
+        const float dy2 = vP1im2[i].y - mvP2im2[i].y;
         const float err2 = dx2*dx2 + dy2*dy2;
 
         if(err1<mvnMaxError1[i] && err2<mvnMaxError2[i])
@@ -390,7 +390,7 @@ float Sim3Solver::GetEstimatedScale()
     return mBestScale;
 }
 
-void Sim3Solver::Project(const vector<cv::Mat> &vP3Dw, vector<cv::Mat> &vP2D, cv::Mat Tcw, cv::Mat K)
+void Sim3Solver::Project(const vector<cv::Mat> &vP3Dw, vector<cv::Point2f> &vP2D, cv::Mat Tcw, cv::Mat K)
 {
     // 提取矩阵元素为标量，避免循环内创建临时Mat对象
     cv::Mat Rcw = Tcw.rowRange(0,3).colRange(0,3);
@@ -412,11 +412,8 @@ void Sim3Solver::Project(const vector<cv::Mat> &vP3Dw, vector<cv::Mat> &vP2D, cv
     vP2D.clear();
     vP2D.reserve(vP3Dw.size());
 
-    cv::Mat point2D(2, 1, CV_32F);  // 复用的 2D 点容器
-
     for(size_t i=0, iend=vP3Dw.size(); i<iend; i++)
     {
-        // cv::Mat P3Dc = Rcw*vP3Dw[i]+tcw;
         const float X = vP3Dw[i].at<float>(0);
         const float Y = vP3Dw[i].at<float>(1);
         const float Z = vP3Dw[i].at<float>(2);
@@ -429,14 +426,11 @@ void Sim3Solver::Project(const vector<cv::Mat> &vP3Dw, vector<cv::Mat> &vP2D, cv
         const float u = fx*Xc*invz+cx;
         const float v = fy*Yc*invz+cy;
 
-        // 复用 Mat 容器而非每次创建新的
-        point2D.at<float>(0) = u;
-        point2D.at<float>(1) = v;
-        vP2D.push_back(point2D.clone());  // clone 确保数据独立
+        vP2D.push_back(cv::Point2f(u, v));
     }
 }
 
-void Sim3Solver::FromCameraToImage(const vector<cv::Mat> &vP3Dc, vector<cv::Mat> &vP2D, cv::Mat K)
+void Sim3Solver::FromCameraToImage(const vector<cv::Mat> &vP3Dc, vector<cv::Point2f> &vP2D, cv::Mat K)
 {
     const float &fx = K.at<float>(0,0);
     const float &fy = K.at<float>(1,1);
@@ -446,18 +440,13 @@ void Sim3Solver::FromCameraToImage(const vector<cv::Mat> &vP3Dc, vector<cv::Mat>
     vP2D.clear();
     vP2D.reserve(vP3Dc.size());
 
-    // 复用 Mat 容器，避免循环内频繁堆分配
-    cv::Mat point2D(2, 1, CV_32F);
-
     for(size_t i=0, iend=vP3Dc.size(); i<iend; i++)
     {
         const float invz = 1.0f/(vP3Dc[i].at<float>(2));
         const float x = vP3Dc[i].at<float>(0)*invz;
         const float y = vP3Dc[i].at<float>(1)*invz;
 
-        point2D.at<float>(0) = fx*x+cx;
-        point2D.at<float>(1) = fy*y+cy;
-        vP2D.push_back(point2D.clone());
+        vP2D.push_back(cv::Point2f(fx*x+cx, fy*y+cy));
     }
 }
 
