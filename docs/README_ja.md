@@ -135,6 +135,18 @@ ORB-SLAM2コアライブラリは[GPLv3ライセンス](https://github.com/raulm
 このAndroidアダプテーションおよび強化プロジェクト（ORB-SLAM2s）も**GPL-3.0ライセンス**の下でライセンスされています。詳細については、[LICENSE.txt](../LICENSE.txt)および[License-gpl.txt](../License-gpl.txt)ファイルを参照してください。
 <br><br>プロジェクトコラボレーションまたはその他の分野の協力に関するお問い合わせは、OlscStudio@outlook.comまでご連絡ください。
 
+## サードパーティの依存関係とライセンス
+
+このプロジェクトは、いくつかの優れたオープンソースのサードパーティライブラリに依存しています。各々のオープンソースライセンスを厳格に遵守しています：
+
+- **[OpenCV 5 (コア部分)](https://github.com/opencv/opencv)**: **Apache 2.0 ライセンス**の下でライセンスされています。プロジェクトを軽量に保つため、必要なコアコードのみを抽出しました。
+- **[srrg_hbst](https://gitlab.com/srrg-software/srrg_hbst)**: **BSD 3-Clause ライセンス**の下でライセンスされています。高速でスケーラブルな画像マッチングに使用されます。
+- **[DBoW2](https://github.com/dorian3d/DBoW2)**: **BSD ライセンス**の下でライセンスされています。基本的な語彙ベクトルおよび特徴マッチング構造に使用されます。
+- **[g2o](https://github.com/RainerKuemmerle/g2o)**: **BSD ライセンス**（コアコンポーネント）の下でライセンスされています。非線形最適化に使用されます。
+- **[Eigen3](http://eigen.tuxfamily.org/)**: **MPL2 (Mozilla Public License v2.0)**の下でライセンスされています。行列演算および代数計算に使用されます。
+
+サードパーティライセンスに関する問題については、それぞれの公式リポジトリを参照してください。
+
 ## 学術的引用
 
 学術的研究でORB-SLAM2（単眼）を使用する場合は、以下のように引用してください:
@@ -169,7 +181,11 @@ ORB-SLAM2コアライブラリは[GPLv3ライセンス](https://github.com/raulm
 
 ## OpenCV
 
-画像と特徴の操作には[OpenCV](http://opencv.org)を使用しています。ダウンロードおよびインストール手順は以下にあります: http://opencv.org **最低4.5.0以上が必要です**。
+画像と特徴の操作には[OpenCV](http://opencv.org)を使用しています。**OpenCV 5にアップデートされました**。注意：プロジェクトを軽量に保つため、OpenCV 5のライブラリ全体をインポートするのではなく、必要なコアコードのみを抽出しています。
+
+## HBST (Hierarchical Bag of Scalable Trees)
+
+高速でスケーラブルな画像マッチングのために[srrg_hbst](https://gitlab.com/srrg-software/srrg_hbst)を統合しました。従来のDBoW2と比較して、ループ検出とリローカリゼーションのパフォーマンスが大幅に向上しています。
 
 ## Eigen3
 
