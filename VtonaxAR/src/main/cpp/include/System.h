@@ -47,8 +47,6 @@
 #include "LocalMapping.h"
 #include "LoopClosing.h"
 #include "KeyFrameDatabase.h"
-#include "ORBVocabulary.h"
-#include "Viewer.h"
 
 namespace ORB_SLAM2
 {
@@ -84,7 +82,7 @@ public:
      * @param strSettingsFile 相机配置文件路径（YAML格式）
      * @param sensor 传感器类型（当前仅支持MONOCULAR）
      */
-    System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor);
+    System(const string &strSettingsFile, const eSensor sensor);
 
     /**
      * 处理单目图像帧（主处理函数）
@@ -261,8 +259,6 @@ public:
      * @param pMap 目标地图指针
      */
     void SwitchToMap(Map* pMap);
-    
-
 
     /**
      * 设置是否启用回环检测
@@ -278,18 +274,13 @@ private:
     // ========== 传感器配置 ==========
     eSensor mSensor;  // 输入传感器类型
 
-    // ========== 词汇表 ==========
-    ORBVocabulary* mpVocabulary;  // ORB词汇表（用于位置识别和特征匹配）
-
     // 用于位置识别的关键帧数据库（重定位和回环检测）。
     KeyFrameDatabase* mpKeyFrameDatabase;
 
     // 存储所有关键帧和地图点指针的地图结构。
     Map* mpMap;
 
-    // 跟踪器。它接收帧并计算相关的相机位姿。
-    // 它还决定何时插入新的关键帧，创建一些新的地图点，
-    // 并在跟踪失败时执行重定位。
+    // 跟踪器：接收帧并计算相机位姿，决定何时插入关键帧、创建地图点，丢失时执行重定位。
     Tracking* mpTracker;
 
     // 局部建图器。它管理局部地图并执行局部束调整。
@@ -326,7 +317,7 @@ private:
     std::mutex mMutexNewMap;
     std::chrono::steady_clock::time_point mLastNewMapTime;
 
-        const bool USE_BINARY=true;
+    const bool USE_BINARY=true;
 };
 
 }// namespace ORB_SLAM2

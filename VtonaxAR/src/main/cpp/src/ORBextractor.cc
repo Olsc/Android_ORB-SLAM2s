@@ -529,6 +529,7 @@ ORBextractor::ORBextractor(int _nfeatures, float _scaleFactor, int _nlevels,
     }
 
     mvImagePyramid.resize(nlevels);
+    mvBlurredPyramid.resize(nlevels);
 
     mnFeaturesPerLevel.resize(nlevels);
     float factor = 1.0f / scaleFactor;
@@ -1008,12 +1009,13 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
     }
 
     // 为每个金字塔层预先准备模糊副本（避免 in-place 模糊污染跨帧复用的金字塔内存）
-    vector<cv::Mat> blurredPyramid(nlevels);
+    if (mvBlurredPyramid.size() != (size_t)nlevels)
+        mvBlurredPyramid.resize(nlevels);
     cv::parallel_for_(cv::Range(0, nlevels), [&](const cv::Range& range) {
         for (int level = range.start; level < range.end; ++level)
         {
             // 拷贝后再模糊，保持 mvImagePyramid 原始数据不变以供下帧复用
-            GaussianBlur(mvImagePyramid[level], blurredPyramid[level], Size(7, 7), 2, 2, BORDER_REFLECT_101);
+            GaussianBlur(mvImagePyramid[level], mvBlurredPyramid[level], Size(7, 7), 2, 2, BORDER_REFLECT_101);
         }
     });
 
@@ -1025,7 +1027,7 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
             int level = kp.octave;
 
             uchar* desc = descriptors.ptr<uchar>(i);
-            computeOrbDescriptor(kp, blurredPyramid[level], &pattern[0], desc);
+            computeOrbDescriptor(kp, mvBlurredPyramid[level], &pattern[0], desc);
 
             // 缩放坐标到第0层
             if (level != 0) {

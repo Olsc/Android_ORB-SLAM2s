@@ -92,7 +92,7 @@ bool Initializer::Initialize(const Frame &CurrentFrame, const vector<int> &vMatc
     // 为每次 RANSAC 迭代生成 8 个点的集合
     mvSets = vector< vector<size_t> >(mMaxIterations,vector<size_t>(INITIALIZER_RANSAC_MIN_SET,0));
 
-    DUtils::Random::SeedRandOnce(0);
+    srand(0);
 
     for(int it=0; it<mMaxIterations; it++)
     {
@@ -101,7 +101,7 @@ bool Initializer::Initialize(const Frame &CurrentFrame, const vector<int> &vMatc
         // 选择最小集
         for(size_t j=0; j<INITIALIZER_RANSAC_MIN_SET; j++)
         {
-            int randi = DUtils::Random::RandomInt(0,vAvailableIndices.size()-1);
+            int randi = rand() % vAvailableIndices.size();
             int idx = vAvailableIndices[randi];
 
             mvSets[it][j] = idx;
@@ -592,9 +592,7 @@ bool Initializer::ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv:
     const float minGoodRatio = (N < 150) ? 0.6f : 0.9f;
     const int minTri = std::min(minTriangulated, std::max(30, N/2));
 
-    // 我们使用Faugeras等人的方法恢复8种运动假设
-    // 分段平面环境中的运动和运动结构
-    // 国际模式识别和人工智能杂志, 1988
+    // 使用Faugeras (1988) 平面场景方法恢复8种运动假设
 
     cv::Mat invK = K.inv();
     cv::Mat A = invK*H21*K;

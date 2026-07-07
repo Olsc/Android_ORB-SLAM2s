@@ -41,7 +41,7 @@
 
 #include "KeyFrame.h"
 #include "Frame.h"
-#include "ORBVocabulary.h"
+#include "HBSTTypes.h"
 
 #include<mutex>
 
@@ -57,7 +57,7 @@ class KeyFrameDatabase
 {
 public:
 
-    KeyFrameDatabase(const ORBVocabulary &voc);
+    KeyFrameDatabase();
 
    void add(KeyFrame* pKF);
 
@@ -73,11 +73,11 @@ public:
 
 protected:
 
-  // 关联的词汇表
-  const ORBVocabulary* mpVoc;
+  // HBST 树
+  HBSTTree* mpTree;
 
-  // 倒排文件
-  std::vector<list<KeyFrame*> > mvInvertedFile;
+  // KeyFrame ID 到 KeyFrame* 的映射
+  std::map<long unsigned int, KeyFrame*> mhmKeyFrames;
 
   // 互斥锁
   std::mutex mMutex;

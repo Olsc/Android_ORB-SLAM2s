@@ -54,7 +54,6 @@ class Tracking;
 class LocalMapping;
 class KeyFrameDatabase;
 
-
 class LoopClosing
 {
 public:
@@ -65,13 +64,12 @@ public:
 
 public:
 
-    LoopClosing(Map* pMap, KeyFrameDatabase* pDB, ORBVocabulary* pVoc);
+    LoopClosing(Map* pMap, KeyFrameDatabase* pDB);
 
     void SetTracker(Tracking* pTracker);
 
     void SetLocalMapper(LocalMapping* pLocalMapper);
     void SetMap(Map* pMap);
-
 
     // 主函数
     void Run();
@@ -126,7 +124,7 @@ protected:
     Tracking* mpTracker;
 
     KeyFrameDatabase* mpKeyFrameDB;
-    ORBVocabulary* mpORBVocabulary;
+    // ORBVocabulary* mpORBVocabulary;
 
     LocalMapping *mpLocalMapper;
 
@@ -156,10 +154,6 @@ protected:
     bool mbStopGBA;
     std::mutex mMutexGBA;
     std::thread* mpThreadGBA;
-
-    // 在双目/RGB-D情况下固定尺度
-
-
 
     int mnFullBAIdx;
 };

@@ -38,9 +38,7 @@
 #include<vector>
 
 #include "MapPoint.h"
-#include "Thirdparty/DBoW2/DBoW2/BowVector.h"
-#include "Thirdparty/DBoW2/DBoW2/FeatureVector.h"
-#include "ORBVocabulary.h"
+#include "HBSTTypes.h"
 #include "KeyFrame.h"
 #include "ORBextractor.h"
 #include "Config.h"
@@ -64,13 +62,10 @@ public:
     Frame(const Frame &frame);
 
     // 单目相机的构造函数。
-    Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extractor,ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth = 0.0f);
+    Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extractor, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth = 0.0f);
 
     // 在图像上提取ORB。0表示左图像，1表示右图像。
     void ExtractORB(int flag, const cv::Mat &im);
-
-    // 计算词袋表示。
-    void ComputeBoW();
 
     // 设置相机位姿。
     void SetPose(cv::Mat Tcw);
@@ -98,8 +93,6 @@ public:
     std::vector<size_t> GetFeaturesInArea(const float &x, const float  &y, const float  &r, const int minLevel=-1, const int maxLevel=-1) const;
 
 public:
-    // 用于重定位的词汇表。
-    ORBVocabulary* mpORBvocabulary;
 
     // 特征提取器。
     ORBextractor* mpORBextractorLeft;
@@ -130,12 +123,12 @@ public:
     std::vector<cv::KeyPoint> mvKeys;
     std::vector<cv::KeyPoint> mvKeysUn;
 
-    // 词袋向量结构。
-    DBoW2::BowVector mBowVec;
-    DBoW2::FeatureVector mFeatVec;
-
     // ORB描述符，每行与一个关键点关联。
     cv::Mat mDescriptors;
+
+    // HBST树缓存，用于快速匹配
+    std::shared_ptr<HBSTTree> mpTree;
+    std::shared_ptr<HBSTTree> GetHBSTTree();
 
     // 与关键点关联的地图点，如果没有关联则为NULL指针。
     std::vector<MapPoint*> mvpMapPoints;

@@ -41,6 +41,9 @@
 #include "MapPoint.h"
 #include "Frame.h"
 #include "Config.h"
+#include <vector>
+
+using namespace std;
 
 namespace ORB_SLAM2
 {
@@ -177,7 +180,6 @@ class PnPsolver {
 
   // 与尺度级别相关的最大平方误差。最大误差 = th*th*sigma(level)*sigma(level)
   vector<float> mvMaxError;
-
 };
 
 } //namespace ORB_SLAM2

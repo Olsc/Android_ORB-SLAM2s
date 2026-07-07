@@ -49,18 +49,18 @@
 namespace ORB_SLAM2
 {
 
-System::System(const std::string &strVocFile, const std::string &strSettingsFile, const eSensor sensor):mSensor(sensor),  mbReset(false),mbResetKeepMap(false),mbActivateLocalizationMode(false),
+System::System(const std::string &strSettingsFile, const eSensor sensor):mSensor(sensor),  mbReset(false),mbResetKeepMap(false),mbActivateLocalizationMode(false),
         mbDeactivateLocalizationMode(false)
 {
-        // 输出欢迎消息-此处虽注释掉但要保留！
+    // 限制 OpenCV 仅使用单个线程，防止在移动平台多核（大小核）架构上对小图像进行并发处理时的线程调度和同步开销
+    cv::setNumThreads(1);
+
+    // 输出欢迎消息-此处虽注释掉但要保留！
         // std::cout << std::endl <<
         // "ORB-SLAM2 Copyright (C) 2014-2016 Raul Mur-Artal, University of Zaragoza." << std::endl <<
         // "This program comes with ABSOLUTELY NO WARRANTY;" << std::endl  <<
         // "This is free software, and you are welcome to redistribute it" << std::endl <<
         // "under certain conditions. See LICENSE.txt." << std::endl << std::endl;
-
-    // 检测是否使用嵌入资源（strVocFile为":embedded:"时）
-    bool useEmbedded = (strVocFile == ":embedded:");
 
     // 加载 ORB LUT (优先尝试从嵌入资源加载)
     {
@@ -74,40 +74,8 @@ System::System(const std::string &strVocFile, const std::string &strSettingsFile
         }
     }
 
-    //加载ORB词汇表
-    LOGD("正在加载ORB词汇表...");
-
-    mpVocabulary = new ORBVocabulary();
-
-    bool bVocLoad=false;
-    
-    if(useEmbedded) {
-        // 从嵌入资源加载词汇表
-        LOGD("正在从嵌入资源加载词汇表");
-        const unsigned char* vocData = nullptr;
-        size_t vocSize = 0;
-        if(EmbeddedResources::Get("ORBvoc.txt.arm.bin", vocData, vocSize)) {
-            LOGD("嵌入词汇表大小：%zu", vocSize);
-            bVocLoad = mpVocabulary->loadFromMemoryBin(vocData, vocSize);
-        } else {
-            LOGE("无法获取嵌入的词汇表资源");
-            exit(-1);
-        }
-    } else {
-        if(USE_BINARY) bVocLoad=mpVocabulary->loadFromBinFile(strVocFile+".arm.bin");
-        else
-            bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
-    }
-
-    if(!bVocLoad)
-    {
-        LOGE("词汇表加载失败: %s", strVocFile.c_str());
-        exit(-1);
-    }
-    LOGD("词汇表加载完成！");
-
     //创建关键帧数据库
-    mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
+    mpKeyFrameDatabase = new KeyFrameDatabase();
 
     //创建地图
     mpMap = new Map();
@@ -119,7 +87,7 @@ System::System(const std::string &strVocFile, const std::string &strSettingsFile
 
     //初始化跟踪线程
     //(它将运行在主执行线程中，即调用此构造函数的线程)
-    mpTracker = new Tracking(this, mpVocabulary, mpFrameDrawer,
+    mpTracker = new Tracking(this, mpFrameDrawer,
                              mpMap, mpKeyFrameDatabase, strSettingsFile, mSensor);
 
     //初始化局部建图线程并启动
@@ -127,7 +95,7 @@ System::System(const std::string &strVocFile, const std::string &strSettingsFile
     mptLocalMapping = new std::thread(&ORB_SLAM2::LocalMapping::Run,mpLocalMapper);
 
     //初始化回环闭合线程并启动
-    mpLoopCloser = new LoopClosing(mpMap, mpKeyFrameDatabase, mpVocabulary);
+    mpLoopCloser = new LoopClosing(mpMap, mpKeyFrameDatabase);
     mptLoopClosing = new std::thread(&ORB_SLAM2::LoopClosing::Run, mpLoopCloser);
 
     //设置线程间的指针
@@ -322,12 +290,7 @@ bool System::HasLoadedMap()
 
 void System::CreateNewMap()
 {
-    // ===== 限频保护 =====
-    // 高性能机器上每帧间隔短（10–20 ms），若频繁在丢失/找回之间切换，会连续触发 CreateNewMap。
-    // 旧实现调用 mpTracker->Reset()，内部含 RequestReset(LocalMapper)、RequestReset(LoopCloser)、
-    // StopGlobalRelocThread::join 等阻塞操作，每次可阻塞主跟踪线程 50–800 ms，导致画面卡死。
-    // 低性能机器每帧间隔大，触发频率低，反而不容易卡死 —— 典型的"频率倒置"问题。
-    // 此处加 5 秒冷却期，与 Tracking.cc 中的帧计数冷却形成双保险。
+    // ===== 限频保护：加 5 秒冷却期，防止频繁切换导致主线程被阻塞数十~数百毫秒 =====
     {
         std::unique_lock<std::mutex> lock(mMutexNewMap);
         auto now = std::chrono::steady_clock::now();
@@ -351,16 +314,12 @@ void System::CreateNewMap()
         mpLocalMapper->ClearQueues();
     }
 
-    // 清空 LoopClosing 的回环关键帧队列。这些 KF 属于旧 Map，
-    // 若在切到新空 Map 后被 LoopClosing 处理，会留下陈旧状态（对空 Map 做 CorrectLoop）。
-    // 与 RequestReset 不同：ClearQueue 不阻塞等待，耗时 O(1)。
+    // 清空 LoopClosing 的回环关键帧队列（旧 Map 的 KF），避免对新空 Map 做 CorrectLoop。ClearQueue 不阻塞等待，耗时 O(1)。
     if (mpLoopCloser) {
         mpLoopCloser->ClearQueue();
     }
 
-    // ===== 2. 停止后台重定位线程 =====
-    // 必须在 SwitchToMap 前停掉，防止后台线程在切 Map 期间访问到悬空的 MapPoint*。
-    // StopGlobalRelocThread 内部先设停止标志 → notify_all 唤醒 → join 等待退出。
+    // ===== 2. 停止后台重定位线程（防止切 Map 期间访问悬空指针） =====
     if (mpTracker) {
         mpTracker->StopGlobalRelocThread();
     }
@@ -397,11 +356,7 @@ void System::CreateNewMap()
     SwitchToMap(pNewMap);
 
     // ===== 5. 轻量重置跟踪运行时状态 =====
-    // 使用 PrepareForNewMap 而非 Reset()：
-    //   - 不调 RequestReset(LocalMapper/LoopCloser) → 不阻塞等 spin
-    //   - 不调 mpMap->clear()               → 新 Map 本就是空的，旧 Map 不碰
-    //   - 不调 StopGlobalRelocThread         → 已在上方停止
-    // 全程耗时 < 1 ms，杜绝高频创建子地图时主线程被阻塞数十~数百毫秒。
+    // PrepareForNewMap 代替 Reset()：不阻塞 spin、不清旧 Map、不停重定位线程，全程 < 1 ms
     if (mpTracker) {
         mpTracker->PrepareForNewMap();
     }
@@ -586,9 +541,7 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
         // 但仍尝试加载，只是警告
     }
     
-    // 1. 只清除之前加载的地图点（mbFromLoadedMap=true），保留当前扫描的点
-    // 2. 不调用 ClearTrackingState()，保持跟踪状态连续
-    // 3. 直接将新地图点添加到现有地图中
+    // 只清除之前加载的地图点，保留当前扫描的点，保持跟踪状态连续，新点直接添加到现有地图
     
     if(!bAppend)
     {

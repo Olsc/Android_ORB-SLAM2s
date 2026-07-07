@@ -190,9 +190,6 @@ void LocalMapping::ProcessNewKeyFrame()
         mlNewKeyFrames.pop_front();
     }
 
-    // 计算词袋结构
-    mpCurrentKeyFrame->ComputeBoW();
-
     // 将地图点关联到新关键帧，并更新法线和描述子
     const vector<MapPoint*> vpMapPointMatches = mpCurrentKeyFrame->GetMapPointMatches();
 
@@ -302,12 +299,6 @@ void LocalMapping::CreateNewMapPoints()
         cv::Mat vBaseline = Ow2-Ow1;
         const float baseline = cv::norm(vBaseline);
 
-        // if(!mbMonocular)
-        // {
-        //     if(baseline<pKF2->mb)
-        //     continue;
-        // }
-        // else
         {
             const float medianDepthKF2 = pKF2->ComputeSceneMedianDepth(2);
             const float ratioBaselineDepth = baseline/medianDepthKF2;
@@ -353,9 +344,7 @@ void LocalMapping::CreateNewMapPoints()
             const float kp2_ur = -1.0f;
             bool bStereo2 = false;
 
-            // 检查光线之间的视差
-            // 用标量替换 xn1/xn2/ray1/ray2 四个 cv::Mat，消除内层循环的 4 次堆分配
-            // xn1 = [(kp1.pt.x-cx1)*invfx1, (kp1.pt.y-cy1)*invfy1, 1]
+            // 检查光线之间的视差（标量替换优化 cv::Mat 分配）
             const float xn1x = (kp1.pt.x-cx1)*invfx1;
             const float xn1y = (kp1.pt.y-cy1)*invfy1;
             // xn2 = [(kp2.pt.x-cx2)*invfx2, (kp2.pt.y-cy2)*invfy2, 1]
@@ -378,11 +367,6 @@ void LocalMapping::CreateNewMapPoints()
             float cosParallaxStereo1 = cosParallaxStereo;
             float cosParallaxStereo2 = cosParallaxStereo;
 
-            // 单目模式下跳过双目视差计算
-            // if(bStereo1)
-            //     cosParallaxStereo1 = cos(2*atan2(mpCurrentKeyFrame->mb/2,mpCurrentKeyFrame->mvDepth[idx1]));
-            // else if(bStereo2)
-            //     cosParallaxStereo2 = cos(2*atan2(pKF2->mb/2,pKF2->mvDepth[idx2]));
 
             cosParallaxStereo = min(cosParallaxStereo1,cosParallaxStereo2);
 
@@ -685,13 +669,15 @@ void LocalMapping::InterruptBA()
 
 void LocalMapping::KeyFrameCulling()
 {
-    // 检查冗余关键帧（仅限局部关键帧）
-    // 如果一个关键帧观测到的90%的地图点至少被其他3个关键帧（在相同或更精细的尺度上）观测到，则认为该关键帧是冗余的
-    // 我们只考虑近距离的双目点
+    // 检查冗余关键帧：超过 REDUNDANCY_THRESHOLD 的地图点被≥3个其他KF观测则视为冗余
     vector<KeyFrame*> vpLocalKeyFrames = mpCurrentKeyFrame->GetVectorCovisibleKeyFrames();
 
     for(vector<KeyFrame*>::iterator vit=vpLocalKeyFrames.begin(), vend=vpLocalKeyFrames.end(); vit!=vend; vit++)
     {
+        // 每次循环检查是否被中断（Reset/Stop请求），防止长时间阻塞
+        if(mbAbortBA)
+            break;
+
         KeyFrame* pKF = *vit;
         if(pKF->mnId==0)
             continue;
@@ -708,33 +694,12 @@ void LocalMapping::KeyFrameCulling()
             {
                 if(!pMP->isBad())
                 {
-                    // 单目模式下跳过深度检查
-                    // if(!mbMonocular)
-                    // {
-                    //     if(pKF->mvDepth[i]>pKF->mThDepth || pKF->mvDepth[i]<0)
-                    //         continue;
-                    // }
 
                     nMPs++;
                     if(pMP->Observations()>thObs)
                     {
                         const int &scaleLevel = pKF->mvKeysUn[i].octave;
-                        const std::map<KeyFrame*, size_t> observations = pMP->GetObservations();
-                        int nObs=0;
-                        for(std::map<KeyFrame*, size_t>::const_iterator mit=observations.begin(), mend=observations.end(); mit!=mend; mit++)
-                        {
-                            KeyFrame* pKFi = mit->first;
-                            if(pKFi==pKF)
-                                continue;
-                            const int &scaleLeveli = pKFi->mvKeysUn[mit->second].octave;
-
-                            if(scaleLeveli<=scaleLevel+1)
-                            {
-                                nObs++;
-                                if(nObs>=thObs)
-                                    break;
-                            }
-                        }
+                        int nObs = pMP->GetRedundantObservationsCount(pKF, scaleLevel);
                         if(nObs>=thObs)
                         {
                             nRedundantObservations++;
@@ -742,7 +707,7 @@ void LocalMapping::KeyFrameCulling()
                     }
                 }
             }
-        }  
+        }
 
         if(nRedundantObservations>KEYFRAME_REDUNDANCY_THRESHOLD*nMPs)
             pKF->SetBadFlag();

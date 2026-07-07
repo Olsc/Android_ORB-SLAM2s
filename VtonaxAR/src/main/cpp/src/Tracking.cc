@@ -34,6 +34,9 @@
 
 #include "Tracking.h"
 
+#include <chrono>
+#include <unordered_set>
+
 #include <opencv2/core/core.hpp>
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/imgproc.hpp>
@@ -183,9 +186,8 @@ static bool SolvePnPSafe(const std::vector<cv::Point3f>& pts3d,
 // 使用参考快照在主线程快速绑定已加载地图点，避免只出现一次的闪烁现象
 void ORB_SLAM2::Tracking::BindLoadedMapPointsUsingSnapshots()
 {
-    // 只有在真正对齐成功后才进行绑定，防止在错误位置强制匹配
-    // 但要注意：Reset 后如果没有对齐，应该允许正常扫描新点，所以检查对齐状态的时机很重要
-    // 先检查基本数据是否存在
+    // 只在真正对齐成功后才绑定，防止在错误位置强制匹配
+    // Reset后未对齐时应允许正常扫描新点，因此需检查对齐状态
     if (mRefDesc.empty() || mRefSnapshots.empty() || mRefIdxToMP.empty())
         return;
 
@@ -193,9 +195,8 @@ void ORB_SLAM2::Tracking::BindLoadedMapPointsUsingSnapshots()
     if (mCurrentFrame.N <= 0 || mCurrentFrame.mTcw.empty())
         return;
     
-    // 如果当前跟踪已经非常稳定（内点很多），不需要再绑定加载的地图点
-    // 使用Config.h中的阈值参数，而非硬编码
-    // 这可以大幅减少主线程开销，避免每帧都做繁重的投影匹配
+    // 如果当前跟踪已很稳定（内点多），跳过绑定以节省主线程开销
+    // 阈值取自Config.h，避免每帧做繁重的投影匹配
     if(mnMatchesInliers > MAIN_THREAD_BIND_INLIER_THRESHOLD) return;
     
     // 只有在成功对齐后才绑定，防止Reset后在没有对齐的情况下错误匹配
@@ -339,7 +340,7 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
     cv::Mat newRefDesc; 
     std::vector<MapPoint*> newRefIdxToMP; 
     std::vector<RefMPSnapshot> newRefSnapshots;
-    std::unordered_map<unsigned int, std::vector<int>> newRefInverted;
+    std::vector<size_t> objects;
     
     const vector<MapPoint*> allMPs = mpMap->GetAllMapPoints();
     
@@ -359,7 +360,7 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
     if(validCount > 0) {
         newRefIdxToMP.reserve(validCount);
         newRefSnapshots.reserve(validCount);
-        newRefInverted.reserve(10000);  // 预估词汇数量
+        objects.reserve(validCount);
         
         // 预分配描述子矩阵,避免逐行push_back的拷贝开销
         // 先假设 descriptor（特征描述子）的列数是 32，之后再通过实际数据去确认
@@ -416,18 +417,8 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
         snap.mapId = p->GetMapId();
         newRefSnapshots.push_back(snap);
 
-        // 倒排索引：视觉词 -> 行索引
-        std::vector<cv::Mat> feats; feats.push_back(d);
-        DBoW2::BowVector bow; DBoW2::FeatureVector feat;
-        mpORBVocabulary->transform(feats, bow, feat, 1);
-        if(!bow.empty()){
-            const int refRow = rowIdx;
-            // 将该描述子的所有词条都建立倒排，提高召回
-            for(auto it=bow.begin(); it!=bow.end(); ++it){
-                unsigned int w = it->first;
-                newRefInverted[w].push_back(refRow);
-            }
-        }
+        // HBST的叶节点映射（行索引）
+        objects.push_back(rowIdx);
         
         highQuality++;
         rowIdx++;
@@ -439,13 +430,21 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
         newRefDesc = newRefDesc.rowRange(0, rowIdx).clone();
     }
     
+    // 构建 HBST 树 (移到锁外以避免持有锁时间过长)
+    std::shared_ptr<HBSTTree> pNewRefTree = std::make_shared<HBSTTree>();
+    if (!newRefDesc.empty() && !objects.empty()) {
+        HBSTTree::MatchableVector matchables = HBSTTree::getMatchables(newRefDesc, objects, 0);
+        pNewRefTree->add(matchables);
+    }
+
     // 交换到正式对象（短锁保护）
     {
         std::unique_lock<std::mutex> lk(mMutexReloc);
         mRefDesc = newRefDesc; // 浅拷贝
         mRefIdxToMP.swap(newRefIdxToMP);
         mRefSnapshots.swap(newRefSnapshots);
-        mRefInverted.swap(newRefInverted);
+
+        mpRefTree = pNewRefTree;
         mRefCachedMPCount = (int)mRefIdxToMP.size();
         mRefLastBuildTs = mLastTimestamp;
         
@@ -558,8 +557,8 @@ using namespace std;
 namespace ORB_SLAM2
 {
 
-Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,  Map *pMap, KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor):
-    mState(NO_IMAGES_YET), mSensor(sensor), mbOnlyTracking(false), mbVO(false), mpORBVocabulary(pVoc),
+Tracking::Tracking(System *pSys, FrameDrawer *pFrameDrawer,  Map *pMap, KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor):
+    mState(NO_IMAGES_YET), mSensor(sensor), mbOnlyTracking(false), mbVO(false),
     mpKeyFrameDB(pKFDB), mpInitializer(static_cast<Initializer*>(NULL)), mLastInitAttemptTime(0.0), mpSystem(pSys),
     mpFrameDrawer(pFrameDrawer),  mpMap(pMap), mnLastRelocFrameId(0), mnCurrentMapId(0),
     mCfgTopKWords(20), mCfgMaxCandidates(5000), mCfgMatchChunk(1000),
@@ -622,14 +621,8 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
     // 启动基于生命周期事件的后台全局重定位线程（无延时唤醒）
     StartGlobalRelocThread();
     
-    // 设置合理的重定位配置，确保后台线程不会干扰SLAM主流程
-    // 参数含义: 
-    // topKWords=20: BoW词典中选择前20个最相关的单词用于候选关键帧检索
-    // maxCandidates=3000: 最大候选关键帧数量，限制参与匹配的关键帧数
-    // matchChunk=500: 特征匹配分块大小，每批次处理500个候选关键帧
-    // bgSleepUs=100000: 后台线程休眠时间(微秒)，控制CPU占用(100ms)
-    // maxBindInliers=80: PnP求解所需的最小内点数
-    // maxProjBinds=30: 3D点投影匹配的最大数量
+    // 设置重定位配置（topKWords/maxCandidates/matchChunk/bgSleepUs/maxBindInliers/maxProjBinds）
+    // 确保后台线程不会干扰SLAM主流程
     SetRelocConfig(SYSTEM_RELOC_CONFIG_TOP_K, SYSTEM_RELOC_CONFIG_MAX_CANDIDATES, SYSTEM_RELOC_CONFIG_MATCH_CHUNK, SYSTEM_RELOC_CONFIG_BG_SLEEP_US, SYSTEM_RELOC_CONFIG_MAX_BIND_INLIERS, SYSTEM_RELOC_CONFIG_MAX_PROJ_BINDS);
 }
 
@@ -666,7 +659,7 @@ void Tracking::GlobalRelocLoop(int sessionId)
         // KNN + ratio，然后回退
         // 步骤1：计算当前帧的BoW（移到锁外以避免在计算期间持有锁）
         Frame tmp; // 用于bow的轻量级容器
-        tmp.mDescriptors = desc; tmp.N = N; tmp.mvKeysUn = keys; tmp.mpORBvocabulary = mpORBVocabulary; tmp.ComputeBoW();
+        // tmp.mDescriptors = desc; tmp.N = N; tmp.mvKeysUn = keys; tmp.ComputeBoW();
 
         cv::Mat refDesc;
         std::vector<RefMPSnapshot> refSnaps;
@@ -690,9 +683,8 @@ void Tracking::GlobalRelocLoop(int sessionId)
                 break;  // 退出重试循环，回到外层等待
             }
             
-            // 检查是否需要构建/重建缓存
-            // 确保描述符和快照之间的一致性
-            // 移除 mRefCachedMPCount < 200 的检查，防止在地图点较少或无加载点时陷入死循环重建缓存导致卡死
+            // 检查是否需要构建/重建缓存，确保描述符和快照间的一致性
+            // 移除了mRefCachedMPCount<200检查，防止点少时死循环
             if(mRefDesc.empty() || mRefDesc.rows!=(int)mRefSnapshots.size()) {
                 // 1. 检查状态：系统必须已初始化
                 if(mState==NO_IMAGES_YET || mState==NOT_INITIALIZED) {
@@ -742,34 +734,46 @@ void Tracking::GlobalRelocLoop(int sessionId)
             // 复制一致的数据
             refDesc = mRefDesc; // 浅拷贝可以（cv::Mat引用计数）
             refSnaps = mRefSnapshots; // 快照的深拷贝
-            
-            // 构建valToRef映射（目前是恒等映射，但为了结构而保留）
-            valToRef.reserve(mRefIdxToMP.size());
-            for(size_t i=0;i<refSnaps.size();++i) valToRef.push_back((int)i);
+            std::shared_ptr<HBSTTree> pTree = mpRefTree;
 
-            // 立即查询mRefInverted（在持有锁的同时）以确保索引与refSnaps匹配
-            candidateIdx.reserve(mCfgMaxCandidates);
-            const int topK = mCfgTopKWords;
-            std::vector<unsigned int> topWords; topWords.reserve(topK);
-            for(auto &kv : tmp.mBowVec){ if(topWords.size()>= (size_t)topK) break; topWords.push_back(kv.first); }
-            
-            for(unsigned int w : topWords){
-                auto it = mRefInverted.find(w);
-                if(it==mRefInverted.end()) continue;
-                const std::vector<int> &idxs = it->second;
-                candidateIdx.insert(candidateIdx.end(), idxs.begin(), idxs.end());
-                if((int)candidateIdx.size()>mCfgMaxCandidates) break;
+            // 初始化 valToRef 恒等映射（修复 HBST 重构引入的遗漏问题，防止全局重定位丢弃所有匹配）
+            valToRef.resize(refSnaps.size());
+            for(size_t i = 0; i < refSnaps.size(); ++i) {
+                valToRef[i] = (int)i;
             }
             
-            break; // 完成
+            // 立即释放锁！以避免在重型匹配计算期间持有锁而阻塞主跟踪线程！
+            lk.unlock();
+            
+            if (pTree && !desc.empty()) {
+                std::vector<size_t> query_objects;
+                for(int i=0; i<desc.rows; i++) query_objects.push_back(i);
+                HBSTTree::MatchableVector query_matchables = HBSTTree::getMatchables(desc, query_objects, 0);
+
+                HBSTTree::MatchVectorMap matches;
+                pTree->match(query_matchables, matches, 50);
+
+                for(auto m : query_matchables) delete m;
+
+                std::unordered_set<int> candidateSet;
+                for(const auto& match_pair : matches) {
+                    for(const auto& m : match_pair.second) {
+                        for(size_t ref_idx : m.object_references) {
+                            candidateSet.insert(ref_idx);
+                        }
+                    }
+                }
+                candidateIdx.assign(candidateSet.begin(), candidateSet.end());
+            }
+
+            break; // 完成 (此时锁已释放，安全退出循环)
         }
         
         // 验证检查
         if(refDesc.empty() || refDesc.cols!=desc.cols){ continue; }
         if(candidateIdx.empty()){
-            // 退化策略：
-            // 1) 基于最近位姿粗投影筛选可见点（若有），否则
-            // 2) 对参考快照做步长均匀采样，限制数量，确保任何起始位置都能进行尝试匹配
+            // 退化策略：先基于最近位姿粗投影筛选可见点
+            // 否则对参考快照均匀采样，确保任何起始位置都能尝试匹配
             if(!TcwSlam.empty()){
                 // 使用网格索引加速查找
                 cv::Mat Rcw = TcwSlam.rowRange(0,3).colRange(0,3);
@@ -1052,9 +1056,7 @@ void Tracking::GlobalRelocLoop(int sessionId)
                         }
                     }
 
-                    // 仅在有明确优胜者且内点足够时发布
-                    // 1. 最佳地图至少有15个内点
-                    // 2. 与第二佳地图有明显差距（至少多20%的票数）
+                    // 仅在最佳地图优胜（内点>=15且多于第二名20%）且内点足够时发布
                     if (bestMapId != -1 && maxVote >= RELOC_MIN_INLIERS_FOR_ALIGN && (maxVote > secondMaxVote * 1.2)) {
                         // 使用平滑更新机制，减少单帧抖动（性能优化版本）
                         UpdateAlignmentSmooth(T_map_from_slam, inliersCnt, conf, ts);
@@ -1104,13 +1106,7 @@ void Tracking::StopGlobalRelocThread()
 void Tracking::SetRelocConfig(int topKWords, int maxCandidates, int matchChunk, int bgSleepUs,
                         int maxBindInliers, int maxProjBinds)
 {
-    // 重定位配置参数设置
-    // topKWords: BoW词典中选择前K个最相关的单词用于候选关键帧检索
-    // maxCandidates: 最大候选关键帧数量，限制参与匹配的关键帧数
-    // matchChunk: 特征匹配分块大小，每批次处理的候选关键帧数
-    // bgSleepUs: 后台线程休眠时间(微秒)，控制CPU占用
-    // maxBindInliers: PnP求解所需的最小内点数
-    // maxProjBinds: 3D点投影匹配的最大数量
+    // 设置重定位参数：topKWords/maxCandidates/matchChunk/bgSleepUs/maxBindInliers/maxProjBinds
     
     if(topKWords>0) mCfgTopKWords = topKWords;
     if(maxCandidates>0) mCfgMaxCandidates = maxCandidates;
@@ -1173,41 +1169,31 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
 {
     VT_PROFILE_FUNCTION();
 
-    // 应用 CLAHE 增强对比度，同时避免过度放大传感器噪点。
-    // 使用静态线程局部变量以复用内存缓冲，显著减少主循环中的 Mat 缓冲区重复分配。
-    static thread_local cv::Mat grayBuffer;
-    static thread_local cv::Mat claheBuffer;
-    static thread_local cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(3.0, cv::Size(8, 8));
-
     if(im.channels()==3)
     {
         if(mbRGB)
-            cvtColor(im, grayBuffer, CV_RGB2GRAY);
+            cvtColor(im, mImGray, CV_RGB2GRAY);
         else
-            cvtColor(im, grayBuffer, CV_BGR2GRAY);
+            cvtColor(im, mImGray, CV_BGR2GRAY);
     }
     else if(im.channels()==4)
     {
         if(mbRGB)
-            cvtColor(im, grayBuffer, CV_RGBA2GRAY);
+            cvtColor(im, mImGray, CV_RGBA2GRAY);
         else
-            cvtColor(im, grayBuffer, CV_BGRA2GRAY);
+            cvtColor(im, mImGray, CV_BGRA2GRAY);
     }
     else
     {
-        // 已经是单通道灰度图，拷贝数据到 grayBuffer 缓冲（大小和类型匹配时为零分配的 memcpy）
-        im.copyTo(grayBuffer);
+        im.copyTo(mImGray);
     }
-
-    clahe->apply(grayBuffer, claheBuffer);
-    mImGray = claheBuffer;
 
     {
         VT_PROFILE_SCOPE("Tracking::FrameConstruction");
         if(mState==NOT_INITIALIZED || mState==NO_IMAGES_YET)
-            mCurrentFrame = Frame(mImGray,timestamp,mpIniORBextractor,mpORBVocabulary,mK,mDistCoef,mbf);
+            mCurrentFrame = Frame(mImGray,timestamp,mpIniORBextractor,mK,mDistCoef,mbf);
         else
-            mCurrentFrame = Frame(mImGray,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf);
+            mCurrentFrame = Frame(mImGray,timestamp,mpORBextractorLeft,mK,mDistCoef,mbf);
     }
 
     Track();
@@ -1444,9 +1430,8 @@ void Tracking::Track()
             // 必须保证地图有足够关键帧，防止初始扫描阶段点云被意外清空
             if (mConsecutiveLostFrames > TRACKING_LOST_FRAMES_FOR_NEW_MAP && mpMap->KeyFramesInMap() > 10)
             {
-                // 冷却保护：高性能机器丢失/找回切换极快，若不限频会反复触发 CreateNewMap，
-                // 每次都会阻塞主跟踪线程几十到几百毫秒（含 RequestReset、StopGlobalRelocThread::join 等），
-                // 导致整体扫描画面卡死。低性能机器因每帧间隔大反而不容易触发。
+                // 冷却保护：限频防止高性能机器反复触发CreateNewMap导致主线程卡死
+                // 低性能机器因每帧间隔大反而不易触发
                 if (mLastNewMapFrameId > 0 &&
                     mCurrentFrame.mnId < mLastNewMapFrameId + TRACKING_NEW_MAP_COOLDOWN_FRAMES)
                 {
@@ -1661,8 +1646,8 @@ void Tracking::CreateInitialMapMonocular()
     KeyFrame* pKFcur = new KeyFrame(mCurrentFrame,mpMap,mpKeyFrameDB);
 
 
-    pKFini->ComputeBoW();
-    pKFcur->ComputeBoW();
+    // pKFini->ComputeBoW();
+    // pKFcur->ComputeBoW();
 
     // 插入关键帧到地图中
     mpMap->AddKeyFrame(pKFini);
@@ -1779,14 +1764,14 @@ bool Tracking::TrackReferenceKeyFrame()
     if(mLastFrame.mTcw.empty()) return false; // 防御性判空
     
     // 计算词袋向量
-    mCurrentFrame.ComputeBoW();
+    // mCurrentFrame.ComputeBoW();
 
     // 首先对参考关键帧进行ORB匹配
     // 如果找到足够多的匹配点，我们就设置PnP求解器
     ORBmatcher matcher(0.7,true);
     vector<MapPoint*> vpMapPointMatches;
 
-    int nmatches = matcher.SearchByBoW(mpReferenceKF,mCurrentFrame,vpMapPointMatches);
+    int nmatches = matcher.SearchByHBST(mpReferenceKF,mCurrentFrame,vpMapPointMatches);
 
     if(nmatches<TRACKING_REFKF_MIN_MATCHES)
         return false;
@@ -1826,7 +1811,7 @@ void Tracking::UpdateLastFrame()
 {
     // 根据参考关键帧更新位姿
     KeyFrame* pRef = mLastFrame.mpReferenceKF;
-    
+
     // 确保列表非空再访问 back()，防止 ClearTrackingState 后崩溃
     cv::Mat Tlr;
     if(!mlRelativeFramePoses.empty()) {
@@ -1834,14 +1819,24 @@ void Tracking::UpdateLastFrame()
     } else {
         Tlr = cv::Mat::eye(4,4,CV_32F);
     }
-    
+
     // 确保参考关键帧有效
-    if(!pRef || pRef->isBad()) {
-        // 如果参考关键帧无效，跳过位姿更新
+    if(!pRef) {
         return;
     }
 
-    mLastFrame.SetPose(Tlr*pRef->GetPose());
+    // 持地图锁访问关键帧，防止在 isBad 检查和 GetPose 之间
+    // 被其他线程（如 Reset→Map::clear）删除关键帧对象
+    cv::Mat T_ref_pose;
+    {
+        std::unique_lock<std::mutex> lock(mpMap->mMutexMapUpdate);
+        if(pRef->isBad()) {
+            return;
+        }
+        T_ref_pose = pRef->GetPose();
+    }
+
+    mLastFrame.SetPose(Tlr * T_ref_pose);
 
     // 单目模式不需要创建视觉里程计地图点
     if(mnLastKeyFrameId==mLastFrame.mnId || !mbOnlyTracking)
@@ -1850,6 +1845,10 @@ void Tracking::UpdateLastFrame()
 
 bool Tracking::TrackWithMotionModel()
 {
+    // 防御性检查：确保跟踪状态正常，防止 Reset 后
+    // mLastFrame.mpReferenceKF 悬空指针导致的崩溃
+    if(mState != OK)
+        return false;
     if(mLastFrame.mTcw.empty())
         return false;
 
@@ -1983,7 +1982,7 @@ bool Tracking::TrackLocalMap()
                         pKFcur->AddMapPoint(pMP, i);
                         pMP->AddObservation(pKFcur, i);
                     }
-                    pKFcur->ComputeBoW();
+                    // pKFcur->ComputeBoW();
                     mpMap->AddKeyFrame(pKFcur);
                     pKFcur->UpdateConnections();
                     mpLocalMapper->InsertKeyFrame(pKFcur);
@@ -2349,11 +2348,23 @@ void Tracking::SearchLocalPoints()
     if(nToMatch>0)
     {
         ORBmatcher matcher(0.8);
-        int th = TRACKING_LOCAL_SEARCH_TH;
-        // 如果相机最近被重定位，则执行更粗糙的搜索
-        if(mCurrentFrame.mnId<mnLastRelocFrameId+2)
-            th=RELOC_POST_SEARCH_TH;
-        
+        int th;
+
+        // 动态搜索半径：根据跟踪状态自适应调整
+        if (mState == LOST) {
+            // 丢失状态：用最大搜索半径提高找回概率
+            th = TRACKING_LOCAL_SEARCH_TH_LOST;
+        } else if (mCurrentFrame.mnId < mnLastRelocFrameId + 10) {
+            // 重定位后短期内：中等搜索半径快速建立匹配
+            th = TRACKING_LOCAL_SEARCH_TH_RELOC;
+        } else {
+            // 正常跟踪：标准搜索半径
+            th = TRACKING_LOCAL_SEARCH_TH;
+        }
+
+        // 更新动态搜索半径成员变量，供后续逻辑引用
+        mDynamicSearchTh = static_cast<float>(th);
+
         // 先进行常规描述子匹配
         matcher.SearchByProjection(mCurrentFrame,mvpLocalMapPoints,th);
 
@@ -2487,9 +2498,7 @@ void Tracking::UpdateLocalKeyFrames()
             MapPoint* pMP = mCurrentFrame.mvpMapPoints[i];
             if(!pMP->isBad())
             {
-                const map<KeyFrame*,size_t> observations = pMP->GetObservations();
-                for(map<KeyFrame*,size_t>::const_iterator it=observations.begin(), itend=observations.end(); it!=itend; it++)
-                    keyframeCounter[it->first]++;
+                pMP->ShareObservations(keyframeCounter);
             }
             else
             {
@@ -2574,9 +2583,8 @@ void Tracking::UpdateLocalKeyFrames()
             {
                 mvpLocalKeyFrames.push_back(pParent);
                 pParent->mnTrackReferenceForFrame=mCurrentFrame.mnId;
-                // 注意：父节点只有一个，处理后自然进入外循环下一次迭代
-                // 此处不能 break，否则会提前终止整个外层 for 循环，
-                // 导致其余关键帧的邻居/孩子/父节点全部无法加入局部地图
+                // 此处不能break，否则提前终止外层for循环
+                // 导致其余关键帧的邻居/孩子/父节点无法加入局部地图
             }
         }
 
@@ -2591,8 +2599,6 @@ void Tracking::UpdateLocalKeyFrames()
 
 bool Tracking::Relocalization()
 {
-    // 计算词袋向量
-    mCurrentFrame.ComputeBoW();
 
     // 当跟踪丢失时执行重定位
     // 跟踪丢失：查询关键帧数据库以获取重定位的候选关键帧
@@ -2643,7 +2649,7 @@ bool Tracking::Relocalization()
             {
                 // 使用局部 ORBmatcher
                 ORBmatcher matcher(0.75,true);
-                int nmatches = matcher.SearchByBoW(pKF,mCurrentFrame,vvpMapPointMatches[i]);
+                int nmatches = matcher.SearchByHBST(pKF,mCurrentFrame,vvpMapPointMatches[i]);
                 if(nmatches<TRACKING_REFKF_MIN_MATCHES)
                 {
                     vbDiscarded[i] = true;
@@ -2812,7 +2818,7 @@ void Tracking::Reset()
         mRefDesc.release();
         mRefIdxToMP.clear();
         mRefSnapshots.clear();
-        mRefInverted.clear();
+        mpRefTree.reset();
         mRefCachedMPCount = 0;
         mRefLastBuildTs = 0.0;
         
@@ -2889,11 +2895,8 @@ void Tracking::ClearTrackingState()
 {
     LOGD("跟踪::清除状态 (仅运行时)");
     
-    // 清除跟踪状态但保留加载的地图点
-    // 如果地图非空，我们将状态设为 LOST，迫使系统尝试重定位，而不是重新初始化
-    // 如果设置为 NO_IMAGES_YET，Track() 会调用 MonocularInitialization，建立一个全新的坐标系，
-    // 这会导致新扫描的点云与已加载的地图不匹配。
-    // 设置为 LOST 后，Track() 会调用 Relocalization()，尝试在现有地图中找回位置。
+    // 清除跟踪状态但保留加载地图点：地图非空则设LOST尝试重定位
+    // 避免设为NO_IMAGES_YET导致新建坐标系与加载地图不匹配
     if(mpMap && mpMap->KeyFramesInMap() > 0) {
         mState = LOST;
     } else {
@@ -2905,10 +2908,8 @@ void Tracking::ClearTrackingState()
     mlFrameTimes.clear();
     mlbLost.clear();
     
-    // 重置帧ID
-    //KeyFrame::nNextId = 0;
-    //Frame::nNextId = 0;
-    // 如果地图中有关键帧，绝对不能重置ID，否则会导致G2O中ID冲突
+    // 重置帧ID，但地图有关键帧时不能重置以防G2O ID冲突
+    //KeyFrame::nNextId = 0; Frame::nNextId = 0;
     if(!mpMap || mpMap->KeyFramesInMap() == 0) {
         KeyFrame::nNextId = 0;
         Frame::nNextId = 0;
@@ -2952,7 +2953,7 @@ void Tracking::ClearTrackingState()
         mRefDesc.release();
         mRefIdxToMP.clear();
         mRefSnapshots.clear();
-        mRefInverted.clear();
+        mpRefTree.reset();
         mRefCachedMPCount = 0;
         mRefLastBuildTs = 0.0;
     }
@@ -2997,12 +2998,8 @@ void Tracking::ClearTrackingState()
 
 void Tracking::PrepareForNewMap()
 {
-    // 仅清除运行时状态：
-    //   - 不调用 RequestReset(LocalMapping/LoopClosing) —— 由 System::CreateNewMap 的外层流程统一管理；
-    //   - 不调用 mpMap->clear() —— 旧地图已切换走，新地图本来就是空的；
-    //   - 不调用 StopGlobalRelocThread() —— 由外层先停后调用本函数，避免重复 join。
-    // 设计目标：让本函数在主跟踪线程上下文中执行的耗时控制在毫秒级，
-    // 杜绝高频丢失场景下主跟踪线程被反复阻塞数十~数百毫秒导致的"画面卡死"。
+    // 仅清除运行时状态，不调用RequestReset/mpMap->clear/StopGlobalRelocThread
+    // 设计目标：毫秒级耗时，避免高频丢失场景下主线程卡死
     LOGD("跟踪::PrepareForNewMap (轻量切图，仅清运行时状态)");
 
     mState = NO_IMAGES_YET;
@@ -3036,10 +3033,8 @@ void Tracking::PrepareForNewMap()
 
 void Tracking::ClearRelocCacheForMapSwitch()
 {
-    // 仅清空与"加载/旧地图"相关的重定位缓存与对齐状态。
-    // 不释放 Map、不停后台线程、不接触 mlNewKeyFrames 等队列。
-    // 调用语义：先 StopGlobalRelocThread()，再 ClearRelocCacheForMapSwitch()，
-    //           再 SwitchToMap()，最后 PrepareForNewMap() + StartGlobalRelocThread()。
+    // 仅清空加载/旧地图的重定位缓存与对齐状态（不释放Map或停后台线程）
+    // 调用顺序：StopGlobalRelocThread -> ClearRelocCacheForMapSwitch -> SwitchToMap -> PrepareForNewMap + StartGlobalRelocThread
     LOGD("跟踪::ClearRelocCacheForMapSwitch (仅清重定位缓存)");
 
     {
@@ -3048,7 +3043,7 @@ void Tracking::ClearRelocCacheForMapSwitch()
         mRefDesc.release();
         mRefIdxToMP.clear();
         mRefSnapshots.clear();
-        mRefInverted.clear();
+        mpRefTree.reset();
         mRefGrid.Clear();
         mRefCachedMPCount = 0;
         mRefLastBuildTs = 0.0;
@@ -3106,7 +3101,7 @@ void Tracking::ClearRelocCache()
         mRefDesc.release();
         mRefIdxToMP.clear();
         mRefSnapshots.clear();
-        mRefInverted.clear();
+        mpRefTree.reset();
         mRefGrid.Clear();
         mRefCachedMPCount = 0;
         mRefLastBuildTs = 0.0;

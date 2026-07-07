@@ -288,27 +288,27 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
         const float DOWNSCALE = ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR;
         // 使用静态线程局部变量复用内存，避免每帧 resize 时重新分配内存
         static thread_local cv::Mat imgSmall;
-        cv::resize(image, imgSmall, cv::Size(cvRound(image.cols / DOWNSCALE), cvRound(image.rows / DOWNSCALE)));
+        if (image.empty()) {
+            LOGE("processImage: 输入图像为空，跳帧处理");
+            return 0;
+        }
+        cv::resize(image, imgSmall, cv::Size(cvRound(image.cols / DOWNSCALE), cvRound(image.rows / DOWNSCALE)), 0, 0, cv::INTER_LINEAR);
 
         // SLAM跟踪线程拥有最高优先级
         ORB_SLAM2::System* currentSlamSys = nullptr;
         {
             std::unique_lock<std::mutex> lock(gSlamStateMutex);
             currentSlamSys = slamSys;
-        }
 
         if(currentSlamSys) {
-            // 执行跟踪
+            // 执行跟踪（全程持锁，防止并发 Reset/LoadMap 破坏地图数据）
             Tcw = currentSlamSys->TrackMonocular(imgSmall, timeStamp);
             status = currentSlamSys->GetTrackingState();
-
-            // 必须全程持有锁保护 slamSys 的访问！
-            // 不能提前释放，否则在获取地图点时 slamSys 可能被 Reset 线程修改或销毁
 
             // 更新缓存
             {
                 std::lock_guard<std::mutex> lock2(gMapPointsMutex);
-                if(currentSlamSys) { 
+                if(currentSlamSys) {
                     vMPs = currentSlamSys->GetTrackedMapPoints();
                     vKeys = currentSlamSys->GetTrackedKeyPointsUn();
                 }
@@ -317,7 +317,7 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
             Tcw = cv::Mat();
             status = 0;
         }
-        // 锁在这里自动释放（超出作用域）
+        } // gSlamStateMutex 在此释放
         
         // 确保 vMPs 在任何情况下都处于安全状态
         
@@ -518,8 +518,9 @@ Java_com_orb_slam2s_slamar_NativeHelper_initSLAM(JNIEnv* env, jobject instance, 
     
     // 初始化分析器 (仅在开发模式下生效)
     VT_PROFILE_INITIALIZE(std::string(path) + "/vtonax_profile.bin");
-    
-    slamSys = new ORB_SLAM2::System(":embedded:", "", ORB_SLAM2::System::MONOCULAR);
+    LOGD("Create SLAM System...");
+    slamSys = new ORB_SLAM2::System("", ORB_SLAM2::System::MONOCULAR);
+    slamSys->UpdateCalibration(fx, fy, cx, cy);
 }
 
 /**

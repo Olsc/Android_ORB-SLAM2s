@@ -38,8 +38,7 @@ import com.orb.slam2s.rendering.gles.FilamentAspectSurfaceView;
 import com.orb.slam2s.utils.FpsMeter;
 import com.orb.slam2s.utils.TouchHelper;
 
-import org.opencv.core.CvType;
-import org.opencv.core.Mat;
+import com.orb.slam2s.slamar.OpenCVBridge;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.activity.OnBackPressedCallback;
@@ -55,8 +54,8 @@ public class ArCamUIActivity extends AppCompatActivity implements
 
     private static final String TAG = "SlamCamActivity";
 
-    private Mat mRgba;
-    private Mat mGray;
+    private long mRgbaAddr;     // native Mat 地址 (CV_8UC4)
+    private long mGrayAddr;     // native Mat 地址 (CV_8UC1)
 
     private CameraGLView mOpenCvCameraView;
     private boolean initFinished;
@@ -789,8 +788,8 @@ public class ArCamUIActivity extends AppCompatActivity implements
     @Override
     public void onCameraViewStarted(int width, int height) {
         Log.d(TAG, "onCameraViewStarted: 摄像头视图启动，宽度=" + width + " 高度=" + height);
-        mRgba = new Mat(height, width, CvType.CV_8UC4);
-        mGray = new Mat(height, width, CvType.CV_8UC1);
+        mRgbaAddr = OpenCVBridge.nativeCreateMat(height, width, OpenCVBridge.CV_8UC4);
+        mGrayAddr = OpenCVBridge.nativeCreateMat(height, width, OpenCVBridge.CV_8UC1);
         // 通知native层更新内参和投影矩阵
         if (nativeHelper != null) {
             nativeHelper.updateResolution(width, height);
@@ -800,31 +799,27 @@ public class ArCamUIActivity extends AppCompatActivity implements
     @Override
     public void onCameraViewStopped() {
         Log.d(TAG, "onCameraViewStopped: 摄像头视图停止");
-        mRgba.release();
-        mGray.release();
+        if (mRgbaAddr != 0) { OpenCVBridge.nativeReleaseMat(mRgbaAddr); mRgbaAddr = 0; }
+        if (mGrayAddr != 0) { OpenCVBridge.nativeReleaseMat(mGrayAddr); mGrayAddr = 0; }
     }
 
     @Override
-    public Mat onCameraFrame(CameraGLViewBase.CvCameraViewFrame inputFrame) {
+    public long onCameraFrame(CameraGLViewBase.CvCameraViewFrame inputFrame) {
         // Web模式：完全停止本地处理，显示黑屏
         if (useWebCamera) {
-            // 创建黑屏Mat（如果还没创建）
-            if (mRgba == null || mRgba.empty()) {
-                mRgba = inputFrame.rgba();
-            }
+            mRgbaAddr = inputFrame.rgba();
             // 填充黑色
-            mRgba.setTo(new org.opencv.core.Scalar(0, 0, 0, 255));
-            // 不更新fpsText，让Web线程来更新
-            return mRgba;
+            OpenCVBridge.nativeMatSetTo(mRgbaAddr, 0, 0, 0, 255);
+            return mRgbaAddr;
         }
 
         // 传统模式：使用本地相机进行SLAM
-        mRgba = inputFrame.rgba();
-        mGray = inputFrame.gray();
+        mRgbaAddr = inputFrame.rgba();
+        mGrayAddr = inputFrame.gray();
 
         // 确保SLAM已经初始化完成才处理帧
         if (initFinished && slamInitialized) {
-            int trackingResult = nativeHelper.processCameraFrame(mGray.getNativeObjAddr(), mRgba.getNativeObjAddr());
+            int trackingResult = nativeHelper.processCameraFrame(mGrayAddr, mRgbaAddr);
 
             if (detectPlane) {
                 showHint(getString(R.string.hint_request_sent));
@@ -842,7 +837,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
                 fpsText.setText(mFpsMeter.getText());
             }
         });
-        return mRgba;
+        return mRgbaAddr;
     }
 
     // 启动Web图像处理线程
@@ -856,8 +851,8 @@ public class ArCamUIActivity extends AppCompatActivity implements
             @Override
             public void run() {
                 Log.d(TAG, "Web图像处理线程已启动");
-                Mat webRgba = null;
-                Mat webGray = null;
+                long webRgbaAddr = 0;
+                long webGrayAddr = 0;
 
                 while (isProcessingWebFrames) {
                     try {
@@ -876,28 +871,22 @@ public class ArCamUIActivity extends AppCompatActivity implements
                                     frameData, 0, frameData.length);
 
                             if (browserBitmap != null) {
-                                // 初始化或调整Mat大小
-                                if (webRgba == null || webRgba.cols() != browserBitmap.getWidth()
-                                        || webRgba.rows() != browserBitmap.getHeight()) {
-                                    if (webRgba != null)
-                                        webRgba.release();
-                                    if (webGray != null)
-                                        webGray.release();
-                                    webRgba = new Mat(browserBitmap.getHeight(), browserBitmap.getWidth(),
-                                            org.opencv.core.CvType.CV_8UC4);
-                                    webGray = new Mat(browserBitmap.getHeight(), browserBitmap.getWidth(),
-                                            org.opencv.core.CvType.CV_8UC1);
+                                // 仅在尺寸变化时重新创建 native Mat
+                                if (webRgbaAddr == 0) {
+                                    webRgbaAddr = OpenCVBridge.nativeCreateMat(
+                                            browserBitmap.getHeight(), browserBitmap.getWidth(), OpenCVBridge.CV_8UC4);
+                                    webGrayAddr = OpenCVBridge.nativeCreateMat(
+                                            browserBitmap.getHeight(), browserBitmap.getWidth(), OpenCVBridge.CV_8UC1);
                                 }
 
-                                // 转换为OpenCV Mat
-                                org.opencv.android.Utils.bitmapToMat(browserBitmap, webRgba);
-                                org.opencv.imgproc.Imgproc.cvtColor(webRgba, webGray,
-                                        org.opencv.imgproc.Imgproc.COLOR_RGBA2GRAY);
+                                // 将 Bitmap 转为 native Mat
+                                OpenCVBridge.nativeBitmapToMat(browserBitmap, webRgbaAddr);
+                                OpenCVBridge.nativeRGBA2Gray(webRgbaAddr, webGrayAddr);
                                 browserBitmap.recycle();
 
                                 // 处理SLAM
                                 int trackingResult = nativeHelper.processCameraFrame(
-                                        webGray.getNativeObjAddr(), webRgba.getNativeObjAddr());
+                                        webGrayAddr, webRgbaAddr);
 
                                 // 更新FPS
                                 mFpsMeter.measure();
@@ -938,11 +927,11 @@ public class ArCamUIActivity extends AppCompatActivity implements
                     }
                 }
 
-                // 清理资源
-                if (webRgba != null)
-                    webRgba.release();
-                if (webGray != null)
-                    webGray.release();
+                // 清理 native Mat 资源
+                if (webRgbaAddr != 0)
+                    OpenCVBridge.nativeReleaseMat(webRgbaAddr);
+                if (webGrayAddr != 0)
+                    OpenCVBridge.nativeReleaseMat(webGrayAddr);
                 Log.d(TAG, "Web图像处理线程已停止");
             }
         });
@@ -997,7 +986,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
         };
         uiHandler.postDelayed(updater, 1000);
     }
-
 
     // 切换点云显示状态
     private void togglePointCloudDisplay() {
@@ -1245,5 +1233,4 @@ public class ArCamUIActivity extends AppCompatActivity implements
             Log.d(TAG, "Web服务器已关闭，本地相机已恢复正常处理");
         }
     }
-
 }

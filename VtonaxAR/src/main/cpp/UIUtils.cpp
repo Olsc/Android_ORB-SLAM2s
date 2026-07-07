@@ -95,7 +95,7 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
         // 随机选择3个点作为最小集合来拟合平面
         for(short i = 0; i < 3; ++i)
         {
-            int randi = DUtils::Random::RandomInt(0, vAvailableIndices.size()-1);
+            int randi = rand() % vAvailableIndices.size();
 
             int idx = vAvailableIndices[randi];
 

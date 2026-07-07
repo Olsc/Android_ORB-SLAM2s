@@ -62,8 +62,6 @@ public:
     void SetMap(Map* pMap);
     void ClearQueues();
 
-
-
     // 主函数
     void Run();
 
@@ -106,8 +104,6 @@ protected:
     cv::Mat ComputeF12(KeyFrame* &pKF1, KeyFrame* &pKF2);
 
     cv::Mat SkewSymmetricMatrix(const cv::Mat &v);
-
-
 
     void ResetIfRequested();
     bool mbResetRequested;

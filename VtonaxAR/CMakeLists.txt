@@ -2,12 +2,22 @@ cmake_minimum_required(VERSION 3.10.2)
 
 set(CMAKE_VERBOSE_MAKEFILE on)
 set(libs "${CMAKE_SOURCE_DIR}/src/main/jniLibs")
-include_directories(${CMAKE_SOURCE_DIR}/src/main/cpp/opencv/include)
 
-#--------------------------------------------------- 导入 ---------------------------------------------------#
-add_library(libopencv_java4 SHARED IMPORTED )
-set_target_properties(libopencv_java4 PROPERTIES
-        IMPORTED_LOCATION "${libs}/${ANDROID_ABI}/libopencv_java4.so")
+# Find OpenMP to enable multi-threading acceleration
+project(VtonaxAR C CXX)
+find_package(OpenMP)
+if(OpenMP_CXX_FOUND)
+    message(STATUS "OpenMP CXX found!")
+else()
+    message(WARNING "OpenMP CXX NOT found! OpenCV will compile without OpenMP acceleration.")
+endif()
+
+#--------------------------------------------------- OpenCV 构建 ---------------------------------------------------#
+# 使用 TEMP/opencv 的纯 C/C++ 源码构建，替代旧的 libopencv_java4.so + OpenCVLibrary
+set(OPENCV_SRC_DIR "${CMAKE_SOURCE_DIR}/src/main/cpp/opencv_src")
+include_directories(${OPENCV_SRC_DIR}/include)
+include_directories(${OPENCV_SRC_DIR}/modules/core/include)
+add_subdirectory(${OPENCV_SRC_DIR} opencv_build)
 
 
 
@@ -103,6 +113,7 @@ include_directories(
         src/main/cpp/include
         src/main/cpp/Thirdparty
         src/main/cpp/Thirdparty/g2o
+        src/main/cpp/Thirdparty/srrg_hbst
 )
 
 target_compile_definitions(g2o PRIVATE
@@ -112,16 +123,22 @@ target_compile_definitions(g2o PRIVATE
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(g2o PRIVATE
-            $<$<CONFIG:Release>:-O3 -g -fno-omit-frame-pointer -fno-strict-aliasing -flto=thin>
+            $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:-O3 -g -fno-omit-frame-pointer -fno-strict-aliasing -flto=thin>
             $<$<CONFIG:Debug>:-O2 -g -fno-omit-frame-pointer -fno-strict-aliasing>)
+    if(OpenMP_CXX_FOUND)
+        target_link_libraries(g2o PUBLIC OpenMP::OpenMP_CXX)
+    endif()
     target_link_options(g2o PRIVATE
-            $<$<CONFIG:Release>:-flto=thin -O3>)
+            $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:-flto=thin -O3>)
 else()
     target_compile_options(g2o PRIVATE
-            $<$<CONFIG:Release>:-O3 -g -fno-omit-frame-pointer -fno-strict-aliasing -flto>
+            $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:-O3 -g -fno-omit-frame-pointer -fno-strict-aliasing -flto>
             $<$<CONFIG:Debug>:-O2 -g -fno-omit-frame-pointer -fno-strict-aliasing>)
+    if(OpenMP_CXX_FOUND)
+        target_link_libraries(g2o PUBLIC OpenMP::OpenMP_CXX)
+    endif()
     target_link_options(g2o PRIVATE
-            $<$<CONFIG:Release>:-flto -O3>)
+            $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:-flto -O3>)
 endif()
 
 # ARM64 架构特定优化
@@ -133,6 +150,7 @@ include_directories(
         src/main/cpp/include
         src/main/cpp/Thirdparty
         src/main/cpp/Thirdparty/g2o
+        src/main/cpp/Thirdparty/srrg_hbst
         src/main/ncnn-android-vulkan-shared/${ANDROID_ABI}/include
 )
 
@@ -187,13 +205,11 @@ endfunction()
 
 # 嵌入资源文件
 set(EMBEDDED_OBJS
-    ${EMBEDDED_DIR}/ORBvoc.o
     ${EMBEDDED_DIR}/ORB_LUT.o
 )
 
 # 使用符号基础名称，函数会生成 _binary_<symbol_base>_start/end 符号
 # 这些符号名称必须与 EmbeddedResources.cpp 中声明的符号匹配
-embed_resource(${RESOURCE_DIR}/ORBvoc.txt.arm.bin ORBvoc_txt_arm_bin ${EMBEDDED_DIR}/ORBvoc.o)
 embed_resource(${RESOURCE_DIR}/ORB_LUT.bin ORB_LUT_bin ${EMBEDDED_DIR}/ORB_LUT.o)
 
 # 创建自定义目标以确保在链接前生成所有对象文件
@@ -239,19 +255,7 @@ add_library(VtonaxAR_Engine SHARED
         src/main/cpp/src/Sim3Solver.cc
         src/main/cpp/src/Initializer.cc
         
-        # DBoW2 组件
-        src/main/cpp/Thirdparty/DBoW2/DBoW2/BowVector.h
-        src/main/cpp/Thirdparty/DBoW2/DBoW2/FORB.h
-        src/main/cpp/Thirdparty/DBoW2/DBoW2/FClass.h
-        src/main/cpp/Thirdparty/DBoW2/DBoW2/FeatureVector.h
-        src/main/cpp/Thirdparty/DBoW2/DBoW2/ScoringObject.h
-        src/main/cpp/Thirdparty/DBoW2/DBoW2/TemplatedVocabulary.h
-        src/main/cpp/Thirdparty/DBoW2/DUtils/Random.h
-        src/main/cpp/Thirdparty/DBoW2/DBoW2/BowVector.cpp
-        src/main/cpp/Thirdparty/DBoW2/DBoW2/FORB.cpp
-        src/main/cpp/Thirdparty/DBoW2/DBoW2/FeatureVector.cpp
-        src/main/cpp/Thirdparty/DBoW2/DBoW2/ScoringObject.cpp
-        src/main/cpp/Thirdparty/DBoW2/DUtils/Random.cpp
+        # DBoW2 组件移除，使用 HBST
 
         src/main/cpp/EmbeddedResources.cpp
         
@@ -260,6 +264,8 @@ add_library(VtonaxAR_Engine SHARED
         src/main/cpp/UIUtils.cpp
         src/main/cpp/Plane.cpp
         src/main/cpp/Matrix.cpp
+        src/main/cpp/bridge/OpenCVBridge.cpp
+        src/main/cpp/bridge/opencv_stubs.cpp
 
 
         # 6DoF 传感融合功能已移除
@@ -270,26 +276,22 @@ add_library(VtonaxAR_Engine SHARED
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(VtonaxAR_Engine PRIVATE
-            $<$<CONFIG:Release>:-O3 -g -fno-omit-frame-pointer -fno-strict-aliasing -flto=thin>
+            $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:-O3 -ffast-math -g -fno-omit-frame-pointer -fno-strict-aliasing -flto=thin>
             $<$<CONFIG:Debug>:-O2 -g -fno-omit-frame-pointer -fno-strict-aliasing>)
 else()
     target_compile_options(VtonaxAR_Engine PRIVATE
-            $<$<CONFIG:Release>:-O3 -g -fno-omit-frame-pointer -fno-strict-aliasing -flto>
+            $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:-O3 -g -fno-omit-frame-pointer -fno-strict-aliasing -flto>
             $<$<CONFIG:Debug>:-O2 -g -fno-omit-frame-pointer -fno-strict-aliasing>)
 endif()
 
-# LTO 链接标志（仅 Release）
+# LTO 链接标志（仅 Release 和 RelWithDebInfo）
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_link_options(VtonaxAR_Engine PRIVATE
-            $<$<CONFIG:Release>:-flto=thin -O3>)
+            $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:-flto=thin -O3>)
 else()
     target_link_options(VtonaxAR_Engine PRIVATE
-            $<$<CONFIG:Release>:-flto -O3>)
+            $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:-flto -O3>)
 endif()
-
-# ARM64 架构特定优化
-target_compile_options(VtonaxAR_Engine PRIVATE
-    $<$<AND:$<CONFIG:Release>,$<STREQUAL:${ANDROID_ABI},arm64-v8a>>:-march=armv8.2-a+fp16+rcpc+dotprod>)
 
 find_library(log-lib log)
 
@@ -298,16 +300,35 @@ add_dependencies(VtonaxAR_Engine generate_embedded_resources)
 
 
 target_link_libraries(VtonaxAR_Engine
-        libopencv_java4
+        -Wl,--whole-archive
+        opencv_core
+        opencv_imgproc
+        opencv_features2d
+        opencv_flann
+        opencv_calib3d
+        -Wl,--no-whole-archive
         g2o
         ${log-lib}
+        jnigraphics                     # For AndroidBitmap_* APIs (bitmap.h)
         EGL
         GLESv1_CM
         )
 
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(VtonaxAR_Engine OpenMP::OpenMP_CXX -static-openmp)
+endif()
+
 # ========== 3DOF 独立库 ==========
 add_library(Vtonax_3DOF SHARED src/main/cpp/3dof.cpp src/main/cpp/Matrix.cpp)
-target_link_libraries(Vtonax_3DOF ${log-lib})
+target_include_directories(Vtonax_3DOF PRIVATE
+    ${OPENCV_SRC_DIR}/include
+    ${OPENCV_SRC_DIR}/modules/core/include
+)
+target_link_libraries(Vtonax_3DOF ${log-lib} opencv_core)
+
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(Vtonax_3DOF OpenMP::OpenMP_CXX -static-openmp)
+endif()
 
 # ========== Vtonax 性能分析器 ==========
 set(VTONAX_DEVELOP_MODE ON) # <--- 修改这里：ON 开启，OFF 关闭
@@ -327,7 +348,11 @@ if(VTONAX_DEVELOP_MODE)
     # 使用 PUBLIC 确保宏定义传播给所有链接到此库的目标（如 VtonaxAR_Engine）
     target_compile_definitions(Vtonax_Profiler PUBLIC VTONAX_DEVELOP_MODE)
     
-    target_link_libraries(Vtonax_Profiler ${log-lib})
+    target_link_libraries(Vtonax_Profiler ${log-lib} -static-openmp)
+    
+    if(OpenMP_CXX_FOUND)
+        target_link_libraries(Vtonax_Profiler OpenMP::OpenMP_CXX -static-openmp)
+    endif()
     
     # 链接分析器库
     target_link_libraries(VtonaxAR_Engine Vtonax_Profiler)

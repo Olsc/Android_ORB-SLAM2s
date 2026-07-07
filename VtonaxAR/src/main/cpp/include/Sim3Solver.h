@@ -40,8 +40,6 @@
 
 #include "KeyFrame.h"
 
-
-
 namespace ORB_SLAM2
 {
 
@@ -61,7 +59,6 @@ public:
     cv::Mat GetEstimatedTranslation();
     float GetEstimatedScale();
 
-
 protected:
 
     void ComputeCentroid(cv::Mat &P, cv::Mat &Pr, cv::Mat &C);
@@ -72,7 +69,6 @@ protected:
 
     void Project(const std::vector<cv::Mat> &vP3Dw, std::vector<cv::Mat> &vP2D, cv::Mat Tcw, cv::Mat K);
     void FromCameraToImage(const std::vector<cv::Mat> &vP3Dc, std::vector<cv::Mat> &vP2D, cv::Mat K);
-
 
 protected:
 
@@ -112,8 +108,6 @@ protected:
     cv::Mat mBestTranslation;
     float mBestScale;
 
-
-
     // 随机选择的索引
     std::vector<size_t> mvAllIndices;
 
@@ -137,7 +131,6 @@ protected:
     // 标定参数
     cv::Mat mK1;
     cv::Mat mK2;
-
 };
 
 } //namespace ORB_SLAM2

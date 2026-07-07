@@ -157,10 +157,6 @@ void MapPoint::AddObservation(KeyFrame* pKF, size_t idx)
         return;
     mObservations[pKF]=idx;
 
-    // 单目模式每个观测计数为1
-    // if(pKF->mvuRight[idx]>=0)
-    //     nObs+=2;
-    // else
         nObs++;
 
     // 如果还没有参考关键帧，使用首次观测的关键帧作为参考
@@ -175,10 +171,6 @@ void MapPoint::EraseObservation(KeyFrame* pKF)
         if(mObservations.count(pKF))
         {
             int idx = mObservations[pKF];
-            // 单目模式每个观测计数为1
-            // if(pKF->mvuRight[idx]>=0)
-            //     nObs-=2;
-            // else
                 nObs--;
 
             mObservations.erase(pKF);
@@ -200,6 +192,38 @@ map<KeyFrame*, size_t> MapPoint::GetObservations()
 {
     unique_lock<mutex> lock(mMutexFeatures);
     return mObservations;
+}
+
+void MapPoint::ShareObservations(std::map<KeyFrame*, int>& counter, unsigned long excludeId)
+{
+    unique_lock<mutex> lock(mMutexFeatures);
+    for(std::map<KeyFrame*, size_t>::const_iterator mit=mObservations.begin(), mend=mObservations.end(); mit!=mend; mit++)
+    {
+        KeyFrame* pKF = mit->first;
+        if(pKF->mnId == excludeId || pKF->isBad())
+            continue;
+        counter[pKF]++;
+    }
+}
+
+int MapPoint::GetRedundantObservationsCount(KeyFrame* pKF, int scaleLevel)
+{
+    unique_lock<mutex> lock(mMutexFeatures);
+    int count = 0;
+    for(std::map<KeyFrame*, size_t>::const_iterator mit=mObservations.begin(), mend=mObservations.end(); mit!=mend; mit++)
+    {
+        KeyFrame* pKFi = mit->first;
+        if(pKFi==pKF || pKFi->isBad())
+            continue;
+        if(mit->second >= pKFi->mvKeysUn.size())
+            continue;
+        const int &scaleLeveli = pKFi->mvKeysUn[mit->second].octave;
+        if(scaleLeveli<=scaleLevel+1)
+        {
+            count++;
+        }
+    }
+    return count;
 }
 
 int MapPoint::Observations() const

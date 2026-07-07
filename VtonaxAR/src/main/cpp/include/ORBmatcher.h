@@ -47,6 +47,11 @@
 namespace ORB_SLAM2
 {
 
+#include "HBSTTypes.h"
+#include <utility>
+
+using namespace std;
+
 class ORBmatcher
 {    
 public:
@@ -55,6 +60,19 @@ public:
 
     // 计算两个ORB描述子之间的汉明距离
     static int DescriptorDistance(const cv::Mat &a, const cv::Mat &b);
+
+    // 基于 HBST 的帧间特征匹配，支持比率测试
+    int SearchByHBST(Frame &F1, Frame &F2, std::vector<cv::Point2f> &vbPrevMatched);
+
+    // 基于 HBST 的关键帧间特征匹配
+    int SearchByHBST(KeyFrame *pKF1, KeyFrame *pKF2, std::vector<MapPoint*> &vpMatches12);
+
+    // 使用 HBST 替代 BoW 进行快速特征匹配
+    // 用于重定位和回环检测
+    int SearchByHBST(KeyFrame *pKF, Frame &F, std::vector<MapPoint*> &vpMapPointMatches);
+
+    // 从特征点描述子构造 HBST 的 Matchable 格式
+    static HBSTTree::MatchableVector getMatchables(const cv::Mat &descriptors, const std::vector<size_t>& objects);
 
     // 在帧关键点和投影地图点之间搜索匹配，返回匹配数量
     // 用于跟踪局部地图(跟踪)
@@ -71,12 +89,6 @@ public:
     // 使用相似变换投影地图点并搜索匹配
     // 用于回环检测(闭环)
     int SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const std::vector<MapPoint*> &vpPoints, std::vector<MapPoint*> &vpMatched, int th);
-
-    // 在关键帧的地图点和帧的ORB之间搜索匹配
-    // 暴力搜索约束在同一词汇节点的ORB(在特定层级)
-    // 用于重定位和回环检测
-    int SearchByBoW(KeyFrame *pKF, Frame &F, std::vector<MapPoint*> &vpMapPointMatches);
-    int SearchByBoW(KeyFrame *pKF1, KeyFrame* pKF2, std::vector<MapPoint*> &vpMatches12);
 
     // 地图初始化的匹配(仅用于单目情况)
     int SearchForInitialization(Frame &F1, Frame &F2, std::vector<cv::Point2f> &vbPrevMatched, std::vector<int> &vnMatches12, int windowSize=10);
@@ -100,7 +112,6 @@ public:
     static const int TH_LOW;
     static const int TH_HIGH;
     static const int HISTO_LENGTH;
-
 
 protected:
 
