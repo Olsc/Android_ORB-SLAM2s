@@ -125,9 +125,8 @@ foreach(mod ${OPENCV_MODULES})
     endif()
     target_include_directories(opencv_${mod} PUBLIC ${mod_includes})
 
-    target_compile_options(opencv_${mod} PRIVATE 
+    target_compile_options(opencv_${mod} PRIVATE
         -O3 -DNDEBUG
-        $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:-ffast-math>
     )
     target_compile_definitions(opencv_${mod} PRIVATE NDEBUG)
 

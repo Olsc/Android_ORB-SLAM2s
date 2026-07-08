@@ -1454,13 +1454,8 @@ void Tracking::Track()
 
         mLastFrame = Frame(mCurrentFrame);
         
-        // 更新内点数供后台线程智能调度使用
-        int currentInliers = 0;
-        for(int i = 0; i < mCurrentFrame.N; i++) {
-            if(mCurrentFrame.mvpMapPoints[i] && !mCurrentFrame.mvbOutlier[i])
-                currentInliers++;
-        }
-        mLastTrackingInliers.store(currentInliers);
+        // 更新内点数供后台线程智能调度使用（TrackLocalMap 已统计 mnMatchesInliers）
+        mLastTrackingInliers.store(mnMatchesInliers);
 
         cv::Mat tempTcw = mCurrentFrame.mTcw.clone();
         cv::Mat tempDesc = mCurrentFrame.mDescriptors.clone();

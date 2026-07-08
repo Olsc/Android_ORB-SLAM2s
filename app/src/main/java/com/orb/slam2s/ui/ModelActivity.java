@@ -2,19 +2,14 @@ package com.orb.slam2s.ui;
 
 import android.Manifest;
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import android.os.Build;
 import android.os.Bundle;
- 
-import android.util.Log;
+
 import android.widget.Toast;
 
 import com.orb.slam2s.R;
-import com.orb.slam2s.utils.ZipHelper;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -92,30 +87,10 @@ public class ModelActivity extends Activity {
     }
 
     private void extractModelFiles() {
-        final Context ctx = this;
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        executor.execute(new Runnable() {
-            @Override
-            public void run() {
-                boolean createNew = false;
-                String resDir = ctx.getExternalFilesDir("SLAM").getAbsolutePath();
-                try {
-                    ZipHelper.saveFile(ctx, resDir, "CameraSettings.yaml", "CameraSettings.yaml", createNew);
-                    ZipHelper.saveFile(ctx, resDir, "ORBvoc.txt.arm.bin", "ORBvoc.txt.arm.bin", createNew);
-                } catch (Exception e) {
-                    Log.e("ModelActivity", "extractModelFiles error: "+e.getMessage());
-                }
-
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Intent intent = new Intent(ModelActivity.this, ArCamUIActivity.class);
-                        startActivity(intent);
-                        finish();
-                    }
-                });
-            }
-        });
-        executor.shutdown();
+        // 模型文件已通过嵌入式资源加载，无需从 assets 提取
+        // 直接跳转到主界面
+        Intent intent = new Intent(ModelActivity.this, ArCamUIActivity.class);
+        startActivity(intent);
+        finish();
     }
 }

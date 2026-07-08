@@ -160,7 +160,11 @@ static float IC_Angle(const Mat& image, Point2f pt,  const vector<int> & u_max)
 
     int step = (int)image.step1();
 
-    for (int v = 1; v <= ORB_HALF_PATCH_SIZE; ++v)
+    // m_01 后缀和累加器：sum_{v=1}^{h} v * v_sum(v) = sum_{v=1}^{h} suffix_{k=v}^{h} v_sum(k)
+    // 从右向左扫描，累计 v_sum 的后缀和，每次 m_01 += 累加器，用加法完全替代乘法
+    int suffix_m01 = 0;
+
+    for (int v = ORB_HALF_PATCH_SIZE; v >= 1; --v)
     {
         int v_sum = 0;
         int d = u_max[v];
@@ -189,7 +193,10 @@ static float IC_Angle(const Mat& image, Point2f pt,  const vector<int> & u_max)
             suffix += (val_u_sum - val_neg_u_sum);
             m_10 += suffix;
         }
-        m_01 += v * v_sum;
+
+        // m_01 后缀和：suffix_m01 = sum_{k=v}^{h} v_sum(k)，逐层累加
+        suffix_m01 += v_sum;
+        m_01 += suffix_m01;
     }
 
     return fastAtan2((float)m_01, (float)m_10);

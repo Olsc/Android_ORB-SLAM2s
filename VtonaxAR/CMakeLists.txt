@@ -276,7 +276,7 @@ add_library(VtonaxAR_Engine SHARED
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(VtonaxAR_Engine PRIVATE
-            $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:-O3 -ffast-math -g -fno-omit-frame-pointer -fno-strict-aliasing -flto=thin>
+            $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:-O3 -g -fno-omit-frame-pointer -fno-strict-aliasing -flto=thin>
             $<$<CONFIG:Debug>:-O2 -g -fno-omit-frame-pointer -fno-strict-aliasing>)
 else()
     target_compile_options(VtonaxAR_Engine PRIVATE
