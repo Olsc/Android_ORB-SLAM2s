@@ -330,6 +330,9 @@ void LocalMapping::CreateNewMapPoints()
 
         // 对每个匹配进行三角化
         const int nmatches = vMatchedIndices.size();
+        
+        cv::Mat w,u,vt;
+
         for(int ikp=0; ikp<nmatches; ikp++)
         {
             const int &idx1 = vMatchedIndices[ikp].first;
@@ -381,7 +384,6 @@ void LocalMapping::CreateNewMapPoints()
                 A.row(2) = xn2x*Tcw2.row(2)-Tcw2.row(0);
                 A.row(3) = xn2y*Tcw2.row(2)-Tcw2.row(1);
 
-                cv::Mat w,u,vt;
                 cv::SVD::compute(A,w,u,vt,cv::SVD::MODIFY_A| cv::SVD::FULL_UV);
 
                 x3D = vt.row(3).t();
@@ -628,9 +630,16 @@ void LocalMapping::Release()
         return;
     mbStopped = false;
     mbStopRequested = false;
-    for(list<KeyFrame*>::iterator lit = mlNewKeyFrames.begin(), lend=mlNewKeyFrames.end(); lit!=lend; lit++)
-        delete *lit;
-    mlNewKeyFrames.clear();
+    list<KeyFrame*> lKFs;
+    {
+        unique_lock<mutex> lock3(mMutexNewKFs);
+        lKFs.swap(mlNewKeyFrames);
+    }
+    for(list<KeyFrame*>::iterator lit = lKFs.begin(), lend=lKFs.end(); lit!=lend; lit++)
+    {
+        if(*lit)
+            (*lit)->SetBadFlag();
+    }
 }
 
 bool LocalMapping::AcceptKeyFrames()

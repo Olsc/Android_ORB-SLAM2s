@@ -335,6 +335,11 @@ void PnPsolver::CheckInliers()
 {
     mnInliersi=0;
 
+    const float fuc = (float)uc;
+    const float fvc = (float)vc;
+    const float ffu = (float)fu;
+    const float ffv = (float)fv;
+
     for(int i=0; i<N; i++)
     {
         cv::Point3f P3Dw = mvP3Dw[i];
@@ -344,8 +349,8 @@ void PnPsolver::CheckInliers()
         float Yc = mRi[1][0]*P3Dw.x+mRi[1][1]*P3Dw.y+mRi[1][2]*P3Dw.z+mti[1];
         float invZc = 1/(mRi[2][0]*P3Dw.x+mRi[2][1]*P3Dw.y+mRi[2][2]*P3Dw.z+mti[2]);
 
-        double ue = uc + fu * Xc * invZc;
-        double ve = vc + fv * Yc * invZc;
+        float ue = fuc + ffu * Xc * invZc;
+        float ve = fvc + ffv * Yc * invZc;
 
         float distX = P2D.x-ue;
         float distY = P2D.y-ve;

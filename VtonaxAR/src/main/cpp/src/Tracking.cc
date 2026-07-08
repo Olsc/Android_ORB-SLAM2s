@@ -2869,6 +2869,9 @@ void Tracking::Reset()
     //KeyFrame::nNextId = 0;
     //Frame::nNextId = 0;
     mState = NO_IMAGES_YET;
+    mpReferenceKF = static_cast<KeyFrame*>(NULL);
+    mLastFrame = Frame();
+    mCurrentFrame = Frame();
 
     if(mpInitializer)
     {
@@ -2903,6 +2906,9 @@ void Tracking::ClearTrackingState()
     mlpReferences.clear();
     mlFrameTimes.clear();
     mlbLost.clear();
+    mpReferenceKF = static_cast<KeyFrame*>(NULL);
+    mLastFrame = Frame();
+    mCurrentFrame = Frame();
     
     // 重置帧ID，但地图有关键帧时不能重置以防G2O ID冲突
     //KeyFrame::nNextId = 0; Frame::nNextId = 0;
