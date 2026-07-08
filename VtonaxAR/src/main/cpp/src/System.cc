@@ -131,14 +131,13 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
         {
             mpLocalMapper->RequestStop();
 
-            // 等待局部建图器真正停止
-            while(!mpLocalMapper->isStopped())
+            // 仅在 LM 已停止时切换模式，否则等下一帧再检查
+            if(mpLocalMapper->isStopped())
             {
-                usleep(1000);
+                mpTracker->InformOnlyTracking(true);
+                mbActivateLocalizationMode = false;
             }
-
-            mpTracker->InformOnlyTracking(true);
-            mbActivateLocalizationMode = false;
+            // 未停止时不清除标志，下一帧继续等待
         }
         if(mbDeactivateLocalizationMode)
         {
