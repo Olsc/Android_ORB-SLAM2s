@@ -39,6 +39,7 @@
 #include "Optimizer.h"
 #include "ORBmatcher.h"
 #include "Config.h"
+#include "Random.h"
 
 #include<thread>
 
@@ -92,7 +93,7 @@ bool Initializer::Initialize(const Frame &CurrentFrame, const vector<int> &vMatc
     // 为每次 RANSAC 迭代生成 8 个点的集合
     mvSets = vector< vector<size_t> >(mMaxIterations,vector<size_t>(INITIALIZER_RANSAC_MIN_SET,0));
 
-    srand(0);
+    LCG lcg(0);
 
     for(int it=0; it<mMaxIterations; it++)
     {
@@ -101,7 +102,7 @@ bool Initializer::Initialize(const Frame &CurrentFrame, const vector<int> &vMatc
         // 选择最小集
         for(size_t j=0; j<INITIALIZER_RANSAC_MIN_SET; j++)
         {
-            int randi = rand() % vAvailableIndices.size();
+            int randi = lcg.randomInt(0, vAvailableIndices.size()-1);
             int idx = vAvailableIndices[randi];
 
             mvSets[it][j] = idx;

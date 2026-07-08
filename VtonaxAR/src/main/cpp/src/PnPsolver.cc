@@ -81,7 +81,7 @@ namespace ORB_SLAM2
 
 PnPsolver::PnPsolver(const Frame &F, const vector<MapPoint*> &vpMapPointMatches):
     pws(0), us(0), alphas(0), pcs(0), maximum_number_of_correspondences(0), number_of_correspondences(0), mnInliersi(0),
-    mnIterations(0), mnBestInliers(0), N(0)
+    mnIterations(0), mnBestInliers(0), N(0), mLcg(0)
 {
     mvpMapPointMatches = vpMapPointMatches;
     mvP2D.reserve(F.mvpMapPoints.size());
@@ -206,7 +206,7 @@ cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInlie
             // 获取最小点集
             for(short i = 0; i < mRansacMinSet; ++i)
             {
-                int randi = rand() % vAvailableIndices.size();
+                int randi = mLcg.randomInt(0, vAvailableIndices.size()-1);
 
                 int idx = vAvailableIndices[randi];
 
@@ -509,18 +509,48 @@ double PnPsolver::compute_pose(double R[3][3], double t[3])
   choose_control_points();
   compute_barycentric_coordinates();
 
-  m_M_buffer.resize(2 * number_of_correspondences * 12);
-  CvMat M = cvMat(2 * number_of_correspondences, 12, CV_64F, m_M_buffer.data());
+  double mtm[12 * 12] = {0};
 
-  for(int i = 0; i < number_of_correspondences; i++)
-    fill_M(&M, 2 * i, alphas + 4 * i, us[2 * i], us[2 * i + 1]);
+  for(int i = 0; i < number_of_correspondences; i++) {
+    double u = us[2 * i];
+    double v = us[2 * i + 1];
+    const double* a = alphas + 4 * i;
 
-  double mtm[12 * 12], d[12], ut[12 * 12];
+    double m1_0[4], m1_2[4], m2_1[4], m2_2[4];
+    for (int k = 0; k < 4; k++) {
+      m1_0[k] = a[k] * fu;
+      m1_2[k] = a[k] * (uc - u);
+      m2_1[k] = a[k] * fv;
+      m2_2[k] = a[k] * (vc - v);
+    }
+
+    for (int j = 0; j < 4; j++) {
+      for (int k = j; k < 4; k++) {
+        mtm[12 * (3 * j)     + (3 * k)]     += m1_0[j] * m1_0[k];
+        // mtm[12 * (3 * j)     + (3 * k + 1)] += 0;
+        mtm[12 * (3 * j)     + (3 * k + 2)] += m1_0[j] * m1_2[k];
+
+        // mtm[12 * (3 * j + 1) + (3 * k)]     += 0;
+        mtm[12 * (3 * j + 1) + (3 * k + 1)] += m2_1[j] * m2_1[k];
+        mtm[12 * (3 * j + 1) + (3 * k + 2)] += m2_1[j] * m2_2[k];
+
+        mtm[12 * (3 * j + 2) + (3 * k)]     += m1_2[j] * m1_0[k];
+        mtm[12 * (3 * j + 2) + (3 * k + 1)] += m2_2[j] * m2_1[k];
+        mtm[12 * (3 * j + 2) + (3 * k + 2)] += m1_2[j] * m1_2[k] + m2_2[j] * m2_2[k];
+      }
+    }
+  }
+
+  for (int r = 0; r < 12; r++) {
+    for (int c = r + 1; c < 12; c++) {
+      mtm[12 * c + r] = mtm[12 * r + c];
+    }
+  }
+
+  double d[12], ut[12 * 12];
   CvMat MtM = cvMat(12, 12, CV_64F, mtm);
   CvMat D   = cvMat(12,  1, CV_64F, d);
   CvMat Ut  = cvMat(12, 12, CV_64F, ut);
-
-  cvMulTransposed(&M, &MtM, 1);
 
   cvSVD(&MtM, &D, &Ut, 0, CV_SVD_MODIFY_A | CV_SVD_U_T);
 

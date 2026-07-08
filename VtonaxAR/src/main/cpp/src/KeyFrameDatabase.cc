@@ -45,7 +45,7 @@ namespace ORB_SLAM2
 {
 
 KeyFrameDatabase::KeyFrameDatabase ():
-    mpTree(new HBSTTree())
+    mpTree(new HBSTTree()), mnErasedCount(0)
 {
 }
 
@@ -68,7 +68,14 @@ void KeyFrameDatabase::add(KeyFrame *pKF)
 void KeyFrameDatabase::erase(KeyFrame* pKF)
 {
     unique_lock<mutex> lock(mMutex);
-    mhmKeyFrames.erase(pKF->mnId);
+    if (mhmKeyFrames.erase(pKF->mnId) > 0) {
+        mnErasedCount++;
+        // 当删除数量达到设定的阈值时，触发树重建，彻底清理残留特征点
+        if (mnErasedCount >= 20) {
+            rebuild();
+            mnErasedCount = 0;
+        }
+    }
 }
 
 void KeyFrameDatabase::clear()
@@ -76,6 +83,7 @@ void KeyFrameDatabase::clear()
     unique_lock<mutex> lock(mMutex);
     mpTree->clear();
     mhmKeyFrames.clear();
+    mnErasedCount = 0;
 }
 
 
@@ -112,9 +120,8 @@ vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float mi
             float score = (float)num_matches / (float)pKF->N;
             
             pKFi->mLoopScore = score;
+            pKFi->mnLoopQuery = pKF->mnId;
             
-            // Adjust minScore since HBST score is different from BoW score
-            // Let's say we need at least 15 matches for a loop candidate
             if (num_matches >= 15) {
                 lScoreAndMatch.push_back(make_pair(score, pKFi));
             }
@@ -138,7 +145,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float mi
         for(vector<KeyFrame*>::iterator vit=vpNeighs.begin(), vend=vpNeighs.end(); vit!=vend; vit++)
         {
             KeyFrame* pKF2 = *vit;
-            if (pKF2->mLoopScore > 0)
+            if (pKF2->mnLoopQuery == pKF->mnId && pKF2->mLoopScore > 0)
             {
                 accScore+=pKF2->mLoopScore;
                 if(pKF2->mLoopScore>bestScore)
@@ -205,6 +212,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
             float score = (float)num_matches / (float)F->N;
             
             pKFi->mRelocScore = score;
+            pKFi->mnRelocQuery = F->mnId;
             
             if (num_matches > 15) {
                 lScoreAndMatch.push_back(make_pair(score, pKFi));
@@ -229,7 +237,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
         for(vector<KeyFrame*>::iterator vit=vpNeighs.begin(), vend=vpNeighs.end(); vit!=vend; vit++)
         {
             KeyFrame* pKF2 = *vit;
-            if (pKF2->mRelocScore > 0)
+            if (pKF2->mnRelocQuery == F->mnId && pKF2->mRelocScore > 0)
             {
                 accScore+=pKF2->mRelocScore;
                 if(pKF2->mRelocScore>bestScore)
@@ -267,6 +275,25 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
     }
 
     return vpRelocCandidates;
+}
+
+void KeyFrameDatabase::rebuild()
+{
+    // 清除树以安全释放所有 Matchable 对象的内存
+    mpTree->clear();
+
+    // 重新把 mhmKeyFrames 中所有的活动关键帧特征插入树中
+    for (auto& pair : mhmKeyFrames) {
+        KeyFrame* pKF = pair.second;
+        if (!pKF || pKF->isBad() || pKF->mDescriptors.empty())
+            continue;
+
+        std::vector<size_t> objects(pKF->N);
+        for(int i = 0; i < pKF->N; i++) objects[i] = i;
+
+        HBSTTree::MatchableVector matchables = HBSTTree::getMatchables(pKF->mDescriptors, objects, pKF->mnId);
+        mpTree->add(matchables);
+    }
 }
 
 } //namespace ORB_SLAM2

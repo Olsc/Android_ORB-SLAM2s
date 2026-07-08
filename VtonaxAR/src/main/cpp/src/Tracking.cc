@@ -1821,8 +1821,6 @@ void Tracking::UpdateLastFrame()
         return;
     }
 
-    // 持地图锁访问关键帧，防止在 isBad 检查和 GetPose 之间
-    // 被其他线程（如 Reset→Map::clear）删除关键帧对象
     cv::Mat T_ref_pose;
     {
         std::unique_lock<std::mutex> lock(mpMap->mMutexMapUpdate);

@@ -1064,7 +1064,7 @@ void ORBextractor::ComputePyramid(cv::Mat image)
         // 计算调整大小后的图像
         if( level != 0 )
         {
-            resize(mvImagePyramid[level-1], mvImagePyramid[level], sz, 0, 0, cv::INTER_NEAREST);
+            resize(mvImagePyramid[level-1], mvImagePyramid[level], sz, 0, 0, cv::INTER_LINEAR);
 
             copyMakeBorder(mvImagePyramid[level], temp, ORB_EDGE_THRESHOLD, ORB_EDGE_THRESHOLD, ORB_EDGE_THRESHOLD, ORB_EDGE_THRESHOLD,
                            BORDER_REFLECT_101+BORDER_ISOLATED);

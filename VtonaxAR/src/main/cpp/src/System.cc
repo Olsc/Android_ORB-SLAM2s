@@ -42,6 +42,7 @@
 #include "EmbeddedResources.h"
 #include <fstream>
 #include <thread>
+#include <Eigen/Core>
 #include <iomanip>
 #include <sstream>
 #include "VtonaxProfiler.h" // 性能分析器
@@ -52,8 +53,9 @@ namespace ORB_SLAM2
 System::System(const std::string &strSettingsFile, const eSensor sensor):mSensor(sensor),  mbReset(false),mbResetKeepMap(false),mbActivateLocalizationMode(false),
         mbDeactivateLocalizationMode(false)
 {
-    // 限制 OpenCV 仅使用单个线程，防止在移动平台多核（大小核）架构上对小图像进行并发处理时的线程调度和同步开销
+    // 限制 OpenCV 和 Eigen 仅使用单个线程，防止在移动平台多核（大小核）架构上对小图像进行并发处理时的线程调度和同步开销，彻底减少核间冲突并降低能耗
     cv::setNumThreads(1);
+    Eigen::setNbThreads(1);
 
     // 输出欢迎消息-此处虽注释掉但要保留！
         // std::cout << std::endl <<

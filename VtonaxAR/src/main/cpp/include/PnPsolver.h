@@ -42,6 +42,7 @@
 #include "Frame.h"
 #include "Config.h"
 #include <vector>
+#include "Random.h"
 
 using namespace std;
 
@@ -184,6 +185,9 @@ class PnPsolver {
   // RANSAC 内部循环防止动态内存分配的缓冲区
   std::vector<double> m_M_buffer;
   std::vector<double> m_PW0_buffer;
+
+  // 独立随机数生成器（LCG），避免全局 rand() 共享导致非确定性
+  LCG mLcg;
 };
 
 } //namespace ORB_SLAM2

@@ -79,6 +79,12 @@ protected:
   // KeyFrame ID 到 KeyFrame* 的映射
   std::map<long unsigned int, KeyFrame*> mhmKeyFrames;
 
+  // 延迟重建 HBST 树以消除被删除关键帧的物理残留
+  void rebuild();
+
+  // 自上次重建以来删除的关键帧数量
+  int mnErasedCount;
+
   // 互斥锁
   std::mutex mMutex;
 };
