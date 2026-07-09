@@ -640,10 +640,15 @@ void Tracking::GlobalRelocLoop(int sessionId)
         }
         
 
-        // 复制快照（只读数据，避免阻塞主链）
+        // 使用 try_lock 复制快照，避免阻塞主跟踪线程
         cv::Mat desc; std::vector<cv::KeyPoint> keys; int N=0; double ts=0.0; cv::Mat TcwSlam;
         {
-            std::unique_lock<std::mutex> lk(mMutexReloc);
+            std::unique_lock<std::mutex> lk(mMutexReloc, std::try_to_lock);
+            if (!lk.owns_lock()) {
+                // 跟踪线程正在更新快照，跳过一次
+                mSnapSeqConsumed.store(mSnapSeqProduced.load());
+                continue;
+            }
             if(!mLastDesc.empty()) desc = mLastDesc.clone();
             keys = mLastKeysUn; N = mLastN; ts = mLastTimestamp;
             if(!mLastTcwSlam.empty()) TcwSlam = mLastTcwSlam.clone();
@@ -667,8 +672,15 @@ void Tracking::GlobalRelocLoop(int sessionId)
         std::vector<int> candidateIdx;
 
         // 重试循环以确保所有参考数据的一致快照（refDesc, refSnaps, mRefInverted）
+        // 使用 try_lock 确保后台线程不会阻塞主跟踪线程
         while(true) {
-            std::unique_lock<std::mutex> lk(mMutexReloc);
+            std::unique_lock<std::mutex> lk(mMutexReloc, std::try_to_lock);
+            if (!lk.owns_lock()) {
+                // 跟踪线程正在持有锁（正在更新快照），跳过一次以避免阻塞主线程
+                // 不消费快照，下次唤醒时重新尝试
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                continue;
+            }
             
             // 在内部重试循环中检查退出标志
             // 否则 Reset() 调用 StopGlobalRelocThread() 时，如果此处在死循环重试，主线程会卡死在 join()
@@ -787,12 +799,14 @@ void Tracking::GlobalRelocLoop(int sessionId)
                 std::vector<int> gridCandidates;
                 gridCandidates.reserve(mCfgMaxCandidates);
                 
-                // 使用锁保护 mRefGrid 访问
+                // 使用 try_lock 保护 mRefGrid 访问，避免阻塞主线程
                 {
-                    std::unique_lock<std::mutex> lk(mMutexReloc);
-                    // 确保Grid状态与当前快照一致（防止极端情况下的重建）
-                    if(mRefDesc.rows == (int)refSnaps.size()) {
-                         mRefGrid.GetCandidatesInBBox(center, searchRadius, gridCandidates);
+                    std::unique_lock<std::mutex> lk(mMutexReloc, std::try_to_lock);
+                    if (lk.owns_lock()) {
+                        // 确保Grid状态与当前快照一致（防止极端情况下的重建）
+                        if(mRefDesc.rows == (int)refSnaps.size()) {
+                             mRefGrid.GetCandidatesInBBox(center, searchRadius, gridCandidates);
+                        }
                     }
                 }
                 
