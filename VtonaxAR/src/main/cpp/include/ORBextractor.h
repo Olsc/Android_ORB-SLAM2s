@@ -104,7 +104,15 @@ public:
 protected:
 
     void ComputePyramid(cv::Mat image);
-    void ComputeKeyPointsOctTree(std::vector<std::vector<cv::KeyPoint> >& allKeypoints);    
+    void ComputeKeyPointsOctTree(std::vector<std::vector<cv::KeyPoint> >& allKeypoints);
+
+    // 多屏障合并辅助函数
+    void detectAndOrientLevels(const cv::Range& range,
+                               std::vector<std::vector<cv::KeyPoint> >& allKeypoints);
+    void blurAndComputeDescriptors(const cv::Range& range,
+                                   const std::vector<int>& levelDescOffset,
+                                   std::vector<cv::KeyPoint>& keypoints,
+                                   cv::Mat& descriptors);
     std::vector<cv::KeyPoint> DistributeOctTree(const std::vector<cv::KeyPoint>& vToDistributeKeys, const int &minX,
                                            const int &maxX, const int &minY, const int &maxY, const int &nFeatures, const int &level);
     std::vector<cv::Point> pattern;

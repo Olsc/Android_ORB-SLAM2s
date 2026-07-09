@@ -45,6 +45,7 @@
 
 #include <thread>
 #include <mutex>
+#include <condition_variable>
 #include "Thirdparty/g2o/g2o/types/types_seven_dof_expmap.h"
 
 namespace ORB_SLAM2
@@ -147,6 +148,10 @@ protected:
     g2o::Sim3 mg2oScw;
 
     long unsigned int mLastLoopKFid;
+
+    // 事件驱动唤醒
+    std::mutex mMutexEvent;
+    std::condition_variable mCvEvent;
 
     // 全局光束调整相关变量
     bool mbRunningGBA;

@@ -42,6 +42,7 @@
 #include "KeyFrameDatabase.h"
 
 #include <mutex>
+#include <condition_variable>
 
 
 namespace ORB_SLAM2
@@ -70,6 +71,11 @@ public:
     // 线程同步
     void RequestStop();
     void CancelStopRequest();
+
+    // 等待 LM 进入 Stopped 状态，最多等 timeoutMs 毫秒。返回时调用者仍需 isStopped() 确认。
+    // 替代外部对 isStopped() 的盲轮询（usleep 轮询）。
+    void WaitForStopped(int timeoutMs);
+
     void RequestReset();
     bool Stop();
     void Release();
@@ -137,6 +143,10 @@ protected:
 
     bool mbAcceptKeyFrames;
     std::mutex mMutexAccept;
+
+    // 事件驱动唤醒：InsertKeyFrame/RequestStop/Release/RequestFinish/RequestReset
+    std::mutex mMutexEvent;
+    std::condition_variable mCvEvent;
 };
 
 } //namespace ORB_SLAM2

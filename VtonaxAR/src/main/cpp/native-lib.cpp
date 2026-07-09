@@ -76,6 +76,7 @@ std::mutex gMapDataMutex;
 // ========== SLAM 系统访问的读写锁优化 ==========
 static std::mutex gSlamPtrLock;                    // 仅保护 slamSys 指针（极短临界区）
 static std::atomic<int> gProcessingFrames{0};      // 正在处理的帧数（用于写操作协调）
+static std::condition_variable gCvProcessingFrames; // gProcessingFrames 归零时通知写操作
 static std::mutex gTcwLock;                        // 保护 Tcw 缓存
 static cv::Mat gCachedTcw;                         // 线程安全的 Tcw 缓存
 static int gCachedTrackingState = 0;               // 线程安全的跟踪状态缓存
@@ -329,6 +330,7 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
             status = localStatus;
             // 标记跟踪完成（写操作可通过 gProcessingFrames 感知）
             gProcessingFrames.fetch_sub(1, std::memory_order_release);
+            gCvProcessingFrames.notify_one();  // 唤醒可能在等待的加载地图线程
         } else {
             {
                 std::lock_guard<std::mutex> _tcwLock(gTcwLock);
@@ -632,14 +634,14 @@ Java_com_orb_slam2s_slamar_NativeHelper_loadMap(JNIEnv* env, jobject instance, j
         // 1. 持有 gSlamPtrLock → 阻止新的帧处理开始
         // 2. 等待 gProcessingFrames 归零 → 等待正在处理中的帧完成
         // 注意：此锁只在用户手动加载地图时短暂持有一两秒，不影响正常跟踪流程
-        std::lock_guard<std::mutex> lock(gSlamPtrLock);
+        std::unique_lock<std::mutex> lock(gSlamPtrLock);
 
         // 等待正在处理中的帧完成（它们在 lock 获取前就已开始了 TrackMonocular）
         // 这些帧完成后会在 gSlamPtrLock 锁外自动递减 gProcessingFrames，
         // 因此即使我们持有 gSlamPtrLock，它们也能正常完成
-        while (gProcessingFrames.load(std::memory_order_acquire) > 0) {
-            usleep(1000);
-        }
+        gCvProcessingFrames.wait(lock, []{
+            return gProcessingFrames.load(std::memory_order_acquire) == 0;
+        });
         // 此时：gProcessingFrames == 0，gSlamPtrLock 被持有
         // 新的 processImage 被阻塞在 gSlamPtrLock 上
 
@@ -677,10 +679,10 @@ Java_com_orb_slam2s_slamar_NativeHelper_loadMapWithId(JNIEnv *env, jobject insta
     const char *path = env->GetStringUTFChars(path_, 0);
     if(slamSys){
         // 写锁协议：与 loadMap 一致
-        std::lock_guard<std::mutex> lock(gSlamPtrLock);
-        while (gProcessingFrames.load(std::memory_order_acquire) > 0) {
-            usleep(1000);
-        }
+        std::unique_lock<std::mutex> lock(gSlamPtrLock);
+        gCvProcessingFrames.wait(lock, []{
+            return gProcessingFrames.load(std::memory_order_acquire) == 0;
+        });
 
         double t0 = (double)cv::getTickCount();
         

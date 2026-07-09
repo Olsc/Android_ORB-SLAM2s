@@ -676,9 +676,9 @@ void Tracking::GlobalRelocLoop(int sessionId)
         while(true) {
             std::unique_lock<std::mutex> lk(mMutexReloc, std::try_to_lock);
             if (!lk.owns_lock()) {
-                // 跟踪线程正在持有锁（正在更新快照），跳过一次以避免阻塞主线程
-                // 不消费快照，下次唤醒时重新尝试
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                // 跟踪线程正在持有锁（正在更新快照），等待释放后立即重新尝试
+                std::unique_lock<std::mutex> waitLock(mMutexReloc);
+                mCvReloc.wait_for(waitLock, std::chrono::milliseconds(1));
                 continue;
             }
             
@@ -701,40 +701,44 @@ void Tracking::GlobalRelocLoop(int sessionId)
                 // 1. 检查状态：系统必须已初始化
                 if(mState==NO_IMAGES_YET || mState==NOT_INITIALIZED) {
                     lk.unlock();
-                    mRefCacheRetryCount++;  // 增加重试计数
-                    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                    mRefCacheRetryCount++;
+                    {
+                        std::unique_lock<std::mutex> waitLock(mMutexReloc);
+                        mCvReloc.wait_for(waitLock, std::chrono::milliseconds(500));
+                    }
                     continue;
                 }
-                
+
                 // 2. 检查是否有加载的地图点，如果没有，则不需要构建缓存，避免死循环空转
                 // 防止新环境建图时后台线程频繁占用锁
                 int loadedCount = 0;
                 {
                     // 快速检查，无需获取全量地图锁
                     // 注意：这只是一个估计，为了性能我们不严格加锁统计
-                     loadedCount = mpMap->GetLoadedMapMPCount(); 
+                     loadedCount = mpMap->GetLoadedMapMPCount();
                 }
-                
+
                 if(loadedCount == 0) {
                      lk.unlock();
-                     mRefCacheRetryCount++;  // 增加重试计数
-                     // 如果没有加载的点，休眠更长时间，等待可能的地图加载或合并
-                     std::this_thread::sleep_for(std::chrono::seconds(2));
+                     mRefCacheRetryCount++;
+                     {
+                         std::unique_lock<std::mutex> waitLock(mMutexReloc);
+                         mCvReloc.wait_for(waitLock, std::chrono::seconds(2));
+                     }
                      continue;
                 }
 
                 lk.unlock();
                 BuildLoadedRefCache();
 
-                // 如果重建后仍然为空，说明确实没有符合条件的点，暂停一会避免死循环空转消耗CPU
+                // 如果重建后仍然为空，暂停一会避免死循环空转
                 {
                     std::unique_lock<std::mutex> lk2(mMutexReloc);
                     if(mRefDesc.empty()) {
-                        lk2.unlock();
-                        mRefCacheRetryCount++;  // 增加重试计数
-                        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                        mRefCacheRetryCount++;
+                        mCvReloc.wait_for(lk2, std::chrono::milliseconds(500));
                     } else {
-                        mRefCacheRetryCount = 0;  // 成功后重置计数
+                        mRefCacheRetryCount = 0;
                     }
                 }
                 continue; // 重试

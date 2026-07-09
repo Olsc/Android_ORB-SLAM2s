@@ -246,10 +246,9 @@ const int LOOP_RANSAC_MAX_ITERS = 300;
 // ==========================================
 
 // Huber 核函数阈值：2DoF≈2.448, 3DoF≈2.796
-// 注意：自2026-07-09起，Huber已被Cauchy核替代
-const float OPTIMIZER_HUBER_TH_2D = 2.4476519f;  // 保留用于chi2阈值判断
+const float OPTIMIZER_HUBER_TH_2D = 2.4476519f;  // Huber核函数delta参数
 const float OPTIMIZER_HUBER_TH_3D = 2.79553215f;
-const float OPTIMIZER_CAUCHY_DELTA = 1.5f;        // Cauchy核delta参数(最优值)
+
 
 // 卡方检验阈值：2DoF=5.991, 1DoF=3.841
 const float OPTIMIZER_CHI2_TH_2D = 5.991f;

@@ -39,6 +39,7 @@
 #include "Config.h"
 
 #include<mutex>
+#include<chrono>
 #include<algorithm>
 #include "VtonaxProfiler.h" // 性能分析器
 
@@ -146,9 +147,21 @@ void LocalMapping::Run()
         {
             // 安全停止区域
             VT_PROFILE_SCOPE("LocalMapping::Stopped");
-            while(isStopped() && !CheckFinish())
             {
-                usleep(3000);
+                std::unique_lock<std::mutex> lock(mMutexEvent);
+                while(isStopped() && !CheckFinish())
+                {
+                    // 阻塞等待 Release() 唤醒
+                    if(mCvEvent.wait_for(lock, std::chrono::seconds(5))
+                            == std::cv_status::timeout)
+                    {
+                        // 超时了还没人 Release — 自动恢复，避免 LM 永久卡死
+                        unique_lock<mutex> stopLock(mMutexStop);
+                        mbStopped = false;
+                        mbStopRequested = false;
+                        // 继续主循环，跟踪线程会看到 LM 已恢复正常
+                    }
+                }
             }
             if(CheckFinish())
                 break;
@@ -162,7 +175,11 @@ void LocalMapping::Run()
         if(CheckFinish())
             break;
 
-        usleep(3000);
+        // 等待事件（新 KF/Stop/Finish/Reset），有事件立即唤醒，最多等 3ms
+        {
+            std::unique_lock<std::mutex> lock(mMutexEvent);
+            mCvEvent.wait_for(lock, std::chrono::milliseconds(3));
+        }
     }
 
     SetFinish();
@@ -173,6 +190,7 @@ void LocalMapping::InsertKeyFrame(KeyFrame *pKF)
     unique_lock<mutex> lock(mMutexNewKFs);
     mlNewKeyFrames.push_back(pKF);
     mbAbortBA=true;
+    mCvEvent.notify_one();
 }
 
 
@@ -587,6 +605,7 @@ void LocalMapping::RequestStop()
     unique_lock<mutex> lock(mMutexStop);
     mbStopRequested = true;
     mbAbortBA = true;
+    mCvEvent.notify_one();
 }
 
 void LocalMapping::CancelStopRequest()
@@ -602,6 +621,8 @@ bool LocalMapping::Stop()
     if(mbStopRequested && !mbNotStop)
     {
         mbStopped = true;
+        // 通知 WaitForStopped 的调用方（LoopClosing）状态已变化
+        mCvEvent.notify_one();
         return true;
     }
 
@@ -612,6 +633,13 @@ bool LocalMapping::isStopped()
 {
     unique_lock<mutex> lock(mMutexStop);
     return mbStopped;
+}
+
+void LocalMapping::WaitForStopped(int timeoutMs)
+{
+    if (isStopped()) return;
+    std::unique_lock<std::mutex> lock(mMutexEvent);
+    mCvEvent.wait_for(lock, std::chrono::milliseconds(timeoutMs));
 }
 
 bool LocalMapping::stopRequested()
@@ -640,6 +668,9 @@ void LocalMapping::Release()
         if(*lit)
             (*lit)->SetBadFlag();
     }
+    // 通知 Stopped 循环退出等待（mCvEvent.wait 在 mMutexStop 下阻塞时，
+    // notify 在 mMutexStop/mMutexFinish 释放后发送，确保数据可见性）
+    mCvEvent.notify_one();
 }
 
 bool LocalMapping::AcceptKeyFrames()
@@ -737,6 +768,7 @@ void LocalMapping::RequestReset()
         mbResetRequested = true;
         mbAbortBA = true; // 立即中断正在进行的BA，确保Reset能被快速处理
     }
+    mCvEvent.notify_one();
 }
 
 void LocalMapping::ResetIfRequested()
@@ -754,6 +786,7 @@ void LocalMapping::RequestFinish()
 {
     unique_lock<mutex> lock(mMutexFinish);
     mbFinishRequested = true;
+    mCvEvent.notify_one();
 }
 
 bool LocalMapping::CheckFinish()

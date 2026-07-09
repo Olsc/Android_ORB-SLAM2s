@@ -158,9 +158,9 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
 
                 if(bRobust)
                 {
-                    g2o::RobustKernelCauchy* rk = new g2o::RobustKernelCauchy;
+                    g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
                     e->setRobustKernel(rk);
-                    rk->setDelta(OPTIMIZER_CAUCHY_DELTA);
+                    rk->setDelta(thHuber2D);
                 }
 
                 e->fx = pKF->fx;
@@ -275,7 +275,7 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     vpEdgesMono.reserve(N);
     vnIndexEdgeMono.reserve(N);
 
-    const float deltaCauchy = OPTIMIZER_CAUCHY_DELTA; // Cauchy核delta参数(最优值1.5)
+    const float deltaMono = OPTIMIZER_HUBER_TH_2D; // 卡方检验阈值(5.991对应的平方根)
     {
     unique_lock<mutex> lock(MapPoint::mGlobalMutex);
 
@@ -303,9 +303,9 @@ int Optimizer::PoseOptimization(Frame *pFrame)
                     e->setInformation(Eigen::Matrix2d::Identity()*invSigma2);
                     e->setLevel(0);
 
-                    g2o::RobustKernelCauchy* rk = new g2o::RobustKernelCauchy;
+                    g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
                     e->setRobustKernel(rk);
-                    rk->setDelta(deltaCauchy);
+                    rk->setDelta(deltaMono);
 
                     e->fx = pFrame->fx;
                     e->fy = pFrame->fy;
@@ -502,7 +502,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
     vector<MapPoint*> vpMapPointEdgeMono;
     vpMapPointEdgeMono.reserve(nExpectedSize);
 
-    const float thHuberMono = OPTIMIZER_CAUCHY_DELTA; // Cauchy核delta参数(最优值1.5)
+    const float thHuberMono = OPTIMIZER_HUBER_TH_2D; // 卡方检验阈值(5.991对应的平方根)
 
     for(list<MapPoint*>::iterator lit=lLocalMapPoints.begin(), lend=lLocalMapPoints.end(); lit!=lend; lit++)
     {
@@ -553,7 +553,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
                         const float &invSigma2 = pKFi->mvInvLevelSigma2[kpUn.octave];
                         e->setInformation(Eigen::Matrix2d::Identity()*invSigma2);
 
-                        g2o::RobustKernelCauchy* rk = new g2o::RobustKernelCauchy;
+                        g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
                         e->setRobustKernel(rk);
                         rk->setDelta(thHuberMono);
 
@@ -1218,7 +1218,7 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
             const float &invSigmaSquare1 = pKF1->mvInvLevelSigma2[kpUn1.octave];
             e12->setInformation(Eigen::Matrix2d::Identity()*invSigmaSquare1);
 
-            g2o::RobustKernelCauchy* rk1 = new g2o::RobustKernelCauchy;
+            g2o::RobustKernelHuber* rk1 = new g2o::RobustKernelHuber;
             e12->setRobustKernel(rk1);
             rk1->setDelta(deltaHuber);
             optimizer.addEdge(e12);
@@ -1246,7 +1246,7 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
             float invSigmaSquare2 = pKF2->mvInvLevelSigma2[kpUn2.octave];
             e21->setInformation(Eigen::Matrix2d::Identity()*invSigmaSquare2);
 
-            g2o::RobustKernelCauchy* rk2 = new g2o::RobustKernelCauchy;
+            g2o::RobustKernelHuber* rk2 = new g2o::RobustKernelHuber;
             e21->setRobustKernel(rk2);
             rk2->setDelta(deltaHuber);
             optimizer.addEdge(e21);

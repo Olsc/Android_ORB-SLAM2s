@@ -45,6 +45,7 @@
 
 #include<mutex>
 #include<thread>
+#include<chrono>
 
 
 namespace ORB_SLAM2
@@ -100,7 +101,11 @@ void LoopClosing::Run()
         if(CheckFinish())
             break;
 
-        usleep(5000);
+        // 等待事件（新 KF/Finish/Reset），有事件立即唤醒，最多等 5ms
+        {
+            std::unique_lock<std::mutex> lock(mMutexEvent);
+            mCvEvent.wait_for(lock, std::chrono::milliseconds(5));
+        }
     }
 
     SetFinish();
@@ -111,6 +116,7 @@ void LoopClosing::InsertKeyFrame(KeyFrame *pKF)
     unique_lock<mutex> lock(mMutexLoopQueue);
     if(pKF->mnId!=0)
         mlpLoopKeyFrameQueue.push_back(pKF);
+    mCvEvent.notify_one();
 }
 
 bool LoopClosing::CheckNewKeyFrames()
@@ -418,12 +424,7 @@ void LoopClosing::CorrectLoop()
     }
 
     // 等待局部建图线程有效停止
-    int nWaited = 0;
-    while(!mpLocalMapper->isStopped() && nWaited < LOOP_LOCALMAPPER_TIMEOUT_MS)
-    {
-        usleep(1000);
-        nWaited++;
-    }
+    mpLocalMapper->WaitForStopped(LOOP_LOCALMAPPER_TIMEOUT_MS);
 
     if(!mpLocalMapper->isStopped())
     {
@@ -628,6 +629,7 @@ void LoopClosing::RequestReset()
         unique_lock<mutex> lock(mMutexReset);
         mbResetRequested = true;
     }
+    mCvEvent.notify_one();
 }
 
 void LoopClosing::ResetIfRequested()
@@ -660,12 +662,18 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
             // cout << "正在更新地图 ..." << endl;
             mpLocalMapper->RequestStop();
             // 等待局部建图线程有效停止
+            mpLocalMapper->WaitForStopped(LOOP_LOCALMAPPER_TIMEOUT_MS);
 
-            int nWaited = 0;
-            while(!mpLocalMapper->isStopped() && !mpLocalMapper->isFinished() && nWaited < LOOP_LOCALMAPPER_TIMEOUT_MS)
             {
-                usleep(1000);
-                nWaited++;
+                unique_lock<mutex> recheckLock(mMutexGBA);
+                if(idx != mnFullBAIdx)
+                {
+                    if(mpLocalMapper->isStopped() && !mpLocalMapper->isFinished())
+                    {
+                        mpLocalMapper->Release();
+                    }
+                    return;
+                }
             }
 
             if(!mpLocalMapper->isStopped() && !mpLocalMapper->isFinished())
@@ -763,6 +771,7 @@ void LoopClosing::RequestFinish()
     // 请求结束闭环检测线程
     unique_lock<mutex> lock(mMutexFinish);
     mbFinishRequested = true;
+    mCvEvent.notify_one();
 }
 
 bool LoopClosing::CheckFinish()

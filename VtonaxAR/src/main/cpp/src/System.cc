@@ -42,6 +42,8 @@
 #include "EmbeddedResources.h"
 #include <fstream>
 #include <thread>
+#include <chrono>
+#include <condition_variable>
 #include <Eigen/Core>
 #include <iomanip>
 #include <sstream>
@@ -53,13 +55,8 @@ namespace ORB_SLAM2
 System::System(const std::string &strSettingsFile, const eSensor sensor):mSensor(sensor),  mbReset(false),mbResetKeepMap(false),mbActivateLocalizationMode(false),
         mbDeactivateLocalizationMode(false)
 {
-    // 启用 OpenCV 和 Eigen 多线程并行计算。
     {
-        int n_threads = static_cast<int>(std::thread::hardware_concurrency());
-        int ocv_threads = std::max(1, n_threads - 1);
-        ocv_threads = std::min(4, ocv_threads);
-        cv::setNumThreads(ocv_threads);
-        Eigen::setNbThreads(ocv_threads);
+        cv::setNumThreads(1);
     }
 
     // 输出欢迎消息-此处虽注释掉但要保留！
@@ -143,6 +140,10 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
             {
                 mpTracker->InformOnlyTracking(true);
                 mbActivateLocalizationMode = false;
+                // 释放 LM 线程，使其从 Stopped 状态恢复。
+                // 进入仅定位模式后 Tracking 不会再创建新关键帧，
+                // LM 会在无新 KF 时空闲等待（3ms 事件循环），不会消耗 CPU。
+                mpLocalMapper->Release();
             }
             // 未停止时不清除标志，下一帧继续等待
         }
@@ -159,6 +160,12 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
         std::unique_lock<std::mutex> lock(mMutexReset);
         if(mbReset)
         {
+            // 如果 LM 正处于 Stopped 状态等待 Release，需要先唤醒它，
+            // 否则 RequestReset 设置的标志永远不会被 LM 读取到。
+            if (mpLocalMapper) {
+                mpLocalMapper->Release();
+            }
+
             if(mbResetKeepMap) {
                 mpTracker->ClearTrackingState();
             } else {
@@ -221,10 +228,13 @@ void System::Shutdown()
     mpLoopCloser->RequestFinish();
 
     // 等待所有线程真正停止
+    std::mutex mtx;
+    std::condition_variable cv;
+    std::unique_lock<std::mutex> lock(mtx);
     while(!mpLocalMapper->isFinished() || !mpLoopCloser->isFinished()
           || mpLoopCloser->isRunningGBA())
     {
-        usleep(5000);
+        cv.wait_for(lock, std::chrono::milliseconds(5));
     }
 
 }
@@ -318,6 +328,8 @@ void System::CreateNewMap()
         mpLocalMapper->SetAcceptKeyFrames(false);
         mpLocalMapper->InterruptBA();
         mpLocalMapper->ClearQueues();
+        // 释放 LM 线程
+        mpLocalMapper->Release();
     }
 
     // 清空 LoopClosing 的回环关键帧队列（旧 Map 的 KF），避免对新空 Map 做 CorrectLoop。ClearQueue 不阻塞等待，耗时 O(1)。
@@ -336,7 +348,18 @@ void System::CreateNewMap()
         mpTracker->ClearRelocCacheForMapSwitch();
     }
 
-    // ===== 4. 创建新 Map 并切换 =====
+    // ===== 4. 退出仅定位模式 =====
+    // CreateNewMap 后需要在新地图上正常建图，不能停留在仅定位模式。
+    {
+        std::unique_lock<std::mutex> lock(mMutexMode);
+        mbActivateLocalizationMode = false;
+        mbDeactivateLocalizationMode = false;
+    }
+    if (mpTracker) {
+        mpTracker->InformOnlyTracking(false);
+    }
+
+    // ===== 5. 创建新 Map 并切换 =====
     // 限制子地图总数，超出时删除最旧的地图（id=0 的初始地图不删）
     if ((int)mvpMaps.size() >= MAX_SUBMAP_COUNT) {
         // 找出最旧的非 id=0 地图并释放
@@ -361,18 +384,18 @@ void System::CreateNewMap()
 
     SwitchToMap(pNewMap);
 
-    // ===== 5. 轻量重置跟踪运行时状态 =====
+    // ===== 6. 轻量重置跟踪运行时状态 =====
     // PrepareForNewMap 代替 Reset()：不阻塞 spin、不清旧 Map、不停重定位线程，全程 < 1 ms
     if (mpTracker) {
         mpTracker->PrepareForNewMap();
     }
 
-    // ===== 6. 重启后台重定位线程 =====
+    // ===== 7. 重启后台重定位线程 =====
     if (mpTracker) {
         mpTracker->StartGlobalRelocThread();
     }
 
-    // ===== 7. 恢复 LocalMapping =====
+    // ===== 8. 恢复 LocalMapping =====
     if (mpLocalMapper) {
         mpLocalMapper->SetAcceptKeyFrames(true);
     }
