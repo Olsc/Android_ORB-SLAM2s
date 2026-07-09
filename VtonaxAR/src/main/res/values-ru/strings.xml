@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="hint_map_saved">Карта сохранена: %1$s</string>
+    <string name="hint_map_save_failed">Сбой сохранения: %1$s</string>
+    <string name="hint_map_file_not_found">Файл карты не найден</string>
+    <string name="hint_map_loaded">Карта загружена: %1$s</string>
+    <string name="hint_maps_loaded">Загружено карт: %1$d</string>
+    <string name="hint_map_load_failed">Сбой загрузки: %1$s</string>
+    <string name="hint_map_load_requested">Запрошена загрузка карты</string>
+    <string name="hint_map_deleted">Карта удалена</string>
+    <string name="hint_map_delete_failed">Сбой удаления</string>
+</resources>

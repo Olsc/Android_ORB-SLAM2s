@@ -1,0 +1,102 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ORB-SLAM2s</string>
+    <string name="btn_ar_object">AR-объект</string>
+    <string name="btn_save">Сохранить</string>
+    <string name="btn_load">Загрузить</string>
+    <string name="btn_map">Карта</string>
+    <string name="btn_reset">Сброс</string>
+    <string name="btn_slam">✓SLAM</string>
+    <string name="btn_point_cloud">✓Облако точек</string>
+    <string name="loading_slam_init">Инициализация системы SLAM…</string>
+    <string name="loading_slam_wait">Пожалуйста, подождите, это может занять некоторое время</string>
+    <string name="slam_init_complete">Система SLAM инициализирована</string>
+    <string name="slam_init_failed">Ошибка инициализации SLAM: %1$s</string>
+    <string name="loading">Загрузка…</string>
+    <string name="hint_request_sent">Запрос отправлен</string>
+    <string name="hint_resetting_slam">Сброс системы SLAM…</string>
+    <string name="hint_slam_reset">Система SLAM сброшена</string>
+    <string name="hint_reset_failed">Сброс не удался: Система не инициализирована</string>
+    <string name="hint_pointcloud_enabled">Облако точек включено</string>
+    <string name="hint_pointcloud_disabled">Облако точек отключено</string>
+    <string name="btn_pointcloud_enabled">✓Облако точек</string>
+    <string name="btn_pointcloud_disabled">Облако точек</string>
+    <string name="hint_slam_enabled">SLAM включён</string>
+    <string name="hint_slam_disabled">SLAM отключён</string>
+    <string name="btn_slam_disabled">SLAM</string>
+    <string name="input_map_name">Введите название карты</string>
+    <string name="dialog_save_map">Сохранить карту</string>
+    <string name="button_cancel">Отмена</string>
+    <string name="hint_no_maps">Нет сохранённых карт</string>
+    <string name="map_stats_keyframes">Ключевые кадры: %1$d</string>
+    <string name="map_stats_mappoints">Точки карты: %1$d</string>
+    <string name="map_stats_size">Размер: %1$dКБ</string>
+    <string name="dialog_map_manage">Управление картами</string>
+    <string name="dialog_select_map">Выбрать карту</string>
+    <string name="action_load">Загрузить</string>
+    <string name="action_delete">Удалить</string>
+    <string name="action_view_details">Подробности</string>
+    <string name="action_load_multi">Мультизагрузка</string>
+    <string name="dialog_confirm_delete">Подтверждение удаления</string>
+    <string name="dialog_confirm_delete_message">Удалить карту \"%1$s\"?</string>
+    <string name="hint_map_deleted">Карта удалена</string>
+    <string name="hint_map_delete_failed">Ошибка удаления</string>
+    <string name="button_back">Назад</string>
+    <string name="dialog_map_details">Информация о карте</string>
+    <string name="map_details_name">Название карты: %1$s</string>
+    <string name="map_details_keyframes">Ключевые кадры: %1$d</string>
+    <string name="map_details_mappoints">Точки карты: %1$d</string>
+    <string name="map_details_size">Размер файла: %1$d КБ</string>
+    <string name="map_details_time">Создано: %1$s</string>
+    <string name="map_details_plane">Есть плоскость: %1$s</string>
+    <string name="map_details_plane_yes">Да</string>
+    <string name="map_details_plane_no">Нет</string>
+    <string name="button_ok">ОК</string>
+    <string name="map_stats_format">КК: %1$d | ТК: %2$d | Пл.: %3$s</string>
+    <string name="map_stats_plane_yes">Да</string>
+    <string name="map_stats_plane_no">Нет</string>
+    <string name="hint_map_load_requested">Запрос загрузки карты</string>
+    <string name="hint_map_saved">Карта сохранена: %1$s</string>
+    <string name="hint_map_save_failed">Ошибка сохранения: %1$s</string>
+    <string name="hint_map_file_not_found">Файл карты не найден</string>
+    <string name="hint_map_loaded">Карта загружена: %1$s</string>
+    <string name="hint_maps_loaded">Загружено карт: %1$d</string>
+    <string name="hint_map_load_failed">Ошибка загрузки: %1$s</string>
+    <string name="permission_camera_storage_required">Необходимы разрешения камеры и хранилища. Предоставьте разрешения в настройках.</string>
+    <string name="btn_mini_world">Мини-вид</string>
+    <string name="hint_mini_world_enabled">Мини-вид включён</string>
+    <string name="hint_mini_world_disabled">Мини-вид отключён</string>
+
+    <string name="category_ar">Управление AR</string>
+    <string name="category_map">Карта</string>
+    <string name="category_slam">SLAM</string>
+    <string name="category_display">Отображение</string>
+
+    <string name="btn_3dof">3DOF</string>
+    <string name="btn_3dof_close">Закрыть 3DOF</string>
+    <string name="hint_3dof_unavailable">Функция 3DOF недоступна</string>
+    <string name="hint_3dof_spawned">Куб 3DOF создан в 5 метрах впереди</string>
+    <string name="hint_3dof_closed">Режим 3DOF закрыт</string>
+    <string name="btn_web_server_close">Закрыть веб-сервер</string>
+    <string name="btn_web_server_open">Открыть веб-сервер</string>
+    <string name="hint_web_server_closed">Веб-сервер закрыт</string>
+
+    <string name="btn_web_server">Веб-сервер</string>
+
+    <string name="status_enabled">включён</string>
+    <string name="status_disabled">отключён</string>
+
+    <string name="title_web_server">Веб-сервер</string>
+    <string name="web_fps_label"> (Веб)</string>
+    <string name="hint_waiting_browser_frame">Ожидание изображения браузера…</string>
+    <string name="hint_web_server_started">Веб-сервер запущен: %1$s</string>
+    <string name="web_url_default">http://0.0.0.0:8080</string>
+
+    <string name="privacy_title">Политика конфиденциальности &amp; Условия использования</string>
+    <string name="privacy_scroll_hint">↓ Прокрутите вниз, чтобы прочитать полное соглашение</string>
+    <string name="privacy_scroll_done">✓ Вы прочитали полное соглашение</string>
+    <string name="privacy_agree">Принять &amp; Продолжить</string>
+    <string name="privacy_disagree_notice">Если вы не согласны, пожалуйста, выйдите из приложения</string>
+    <string name="privacy_load_error">Не удалось загрузить политику конфиденциальности. Пожалуйста, попробуйте снова.</string>
+
+</resources>

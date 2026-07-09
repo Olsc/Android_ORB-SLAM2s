@@ -1,0 +1,102 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ORB-SLAM2s</string>
+    <string name="btn_ar_object">Oggetto AR</string>
+    <string name="btn_save">Salva</string>
+    <string name="btn_load">Carica</string>
+    <string name="btn_map">Mappa</string>
+    <string name="btn_reset">Reimposta</string>
+    <string name="btn_slam">✓SLAM</string>
+    <string name="btn_point_cloud">✓Nuvola di punti</string>
+    <string name="loading_slam_init">Inizializzazione sistema SLAM…</string>
+    <string name="loading_slam_wait">Attendere, potrebbe volerci un momento</string>
+    <string name="slam_init_complete">Sistema SLAM inizializzato</string>
+    <string name="slam_init_failed">Inizializzazione SLAM fallita: %1$s</string>
+    <string name="loading">Caricamento…</string>
+    <string name="hint_request_sent">Richiesta inviata</string>
+    <string name="hint_resetting_slam">Reimpostazione sistema SLAM…</string>
+    <string name="hint_slam_reset">Sistema SLAM reimpostato</string>
+    <string name="hint_reset_failed">Reimpostazione fallita: Sistema non inizializzato</string>
+    <string name="hint_pointcloud_enabled">Nuvola di punti attivata</string>
+    <string name="hint_pointcloud_disabled">Nuvola di punti disattivata</string>
+    <string name="btn_pointcloud_enabled">✓Nuvola di punti</string>
+    <string name="btn_pointcloud_disabled">Nuvola di punti</string>
+    <string name="hint_slam_enabled">SLAM attivato</string>
+    <string name="hint_slam_disabled">SLAM disattivato</string>
+    <string name="btn_slam_disabled">SLAM</string>
+    <string name="input_map_name">Inserire il nome della mappa</string>
+    <string name="dialog_save_map">Salva mappa</string>
+    <string name="button_cancel">Annulla</string>
+    <string name="hint_no_maps">Nessuna mappa salvata</string>
+    <string name="map_stats_keyframes">Fotogrammi chiave: %1$d</string>
+    <string name="map_stats_mappoints">Punti mappa: %1$d</string>
+    <string name="map_stats_size">Dimensione: %1$dKB</string>
+    <string name="dialog_map_manage">Gestione mappe</string>
+    <string name="dialog_select_map">Seleziona mappa</string>
+    <string name="action_load">Carica</string>
+    <string name="action_delete">Elimina</string>
+    <string name="action_view_details">Visualizza dettagli</string>
+    <string name="action_load_multi">Caricamento multiplo</string>
+    <string name="dialog_confirm_delete">Conferma eliminazione</string>
+    <string name="dialog_confirm_delete_message">Eliminare la mappa \"%1$s\"?</string>
+    <string name="hint_map_deleted">Mappa eliminata</string>
+    <string name="hint_map_delete_failed">Eliminazione fallita</string>
+    <string name="button_back">Indietro</string>
+    <string name="dialog_map_details">Dettagli mappa</string>
+    <string name="map_details_name">Nome mappa: %1$s</string>
+    <string name="map_details_keyframes">Fotogrammi chiave: %1$d</string>
+    <string name="map_details_mappoints">Punti mappa: %1$d</string>
+    <string name="map_details_size">Dimensione file: %1$d KB</string>
+    <string name="map_details_time">Creato: %1$s</string>
+    <string name="map_details_plane">Ha piano: %1$s</string>
+    <string name="map_details_plane_yes">Sì</string>
+    <string name="map_details_plane_no">No</string>
+    <string name="button_ok">OK</string>
+    <string name="map_stats_format">KFs: %1$d | MPs: %2$d | Piano: %3$s</string>
+    <string name="map_stats_plane_yes">Sì</string>
+    <string name="map_stats_plane_no">No</string>
+    <string name="hint_map_load_requested">Caricamento mappa richiesto</string>
+    <string name="hint_map_saved">Mappa salvata: %1$s</string>
+    <string name="hint_map_save_failed">Salvataggio fallito: %1$s</string>
+    <string name="hint_map_file_not_found">File mappa non trovato</string>
+    <string name="hint_map_loaded">Mappa caricata: %1$s</string>
+    <string name="hint_maps_loaded">%1$d mappe caricate</string>
+    <string name="hint_map_load_failed">Caricamento fallito: %1$s</string>
+    <string name="permission_camera_storage_required">Sono necessari i permessi fotocamera e archiviazione. Concedili nelle impostazioni.</string>
+    <string name="btn_mini_world">Mini vista</string>
+    <string name="hint_mini_world_enabled">Mini vista attivata</string>
+    <string name="hint_mini_world_disabled">Mini vista disattivata</string>
+
+    <string name="category_ar">Controlli AR</string>
+    <string name="category_map">Mappa</string>
+    <string name="category_slam">SLAM</string>
+    <string name="category_display">Display</string>
+
+    <string name="btn_3dof">3DOF</string>
+    <string name="btn_3dof_close">Chiudi 3DOF</string>
+    <string name="hint_3dof_unavailable">Funzione 3DOF non disponibile</string>
+    <string name="hint_3dof_spawned">Cubo 3DOF generato a 5 metri davanti</string>
+    <string name="hint_3dof_closed">Modalità 3DOF chiusa</string>
+    <string name="btn_web_server_close">Chiudi server web</string>
+    <string name="btn_web_server_open">Apri server web</string>
+    <string name="hint_web_server_closed">Server web chiuso</string>
+
+    <string name="btn_web_server">Server web</string>
+
+    <string name="status_enabled">attivato</string>
+    <string name="status_disabled">disattivato</string>
+
+    <string name="title_web_server">Server web</string>
+    <string name="web_fps_label"> (Web)</string>
+    <string name="hint_waiting_browser_frame">In attesa dell\'immagine del browser…</string>
+    <string name="hint_web_server_started">Server web avviato: %1$s</string>
+    <string name="web_url_default">http://0.0.0.0:8080</string>
+
+    <string name="privacy_title">Informativa sulla privacy &amp; Condizioni d\'uso</string>
+    <string name="privacy_scroll_hint">↓ Scorrere fino in fondo per leggere l\'accordo completo</string>
+    <string name="privacy_scroll_done">✓ Hai letto l\'accordo completo</string>
+    <string name="privacy_agree">Accetta &amp; Continua</string>
+    <string name="privacy_disagree_notice">Se non accetti, per favore esci dall\'applicazione</string>
+    <string name="privacy_load_error">Caricamento dell\'informativa sulla privacy fallito. Riprova.</string>
+
+</resources>

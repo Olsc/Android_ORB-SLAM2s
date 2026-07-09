@@ -1,0 +1,102 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ORB-SLAM2s</string>
+    <string name="btn_ar_object">Objeto AR</string>
+    <string name="btn_save">Guardar</string>
+    <string name="btn_load">Carregar</string>
+    <string name="btn_map">Mapa</string>
+    <string name="btn_reset">Redefinir</string>
+    <string name="btn_slam">✓SLAM</string>
+    <string name="btn_point_cloud">✓Nuvem de pontos</string>
+    <string name="loading_slam_init">A inicializar sistema SLAM…</string>
+    <string name="loading_slam_wait">Por favor aguarde, isto pode demorar um pouco</string>
+    <string name="slam_init_complete">Sistema SLAM inicializado</string>
+    <string name="slam_init_failed">Falha na inicialização SLAM: %1$s</string>
+    <string name="loading">A carregar…</string>
+    <string name="hint_request_sent">Pedido enviado</string>
+    <string name="hint_resetting_slam">A redefinir sistema SLAM…</string>
+    <string name="hint_slam_reset">Sistema SLAM redefinido</string>
+    <string name="hint_reset_failed">Falha ao redefinir: Sistema não inicializado</string>
+    <string name="hint_pointcloud_enabled">Nuvem de pontos ativada</string>
+    <string name="hint_pointcloud_disabled">Nuvem de pontos desativada</string>
+    <string name="btn_pointcloud_enabled">✓Nuvem de pontos</string>
+    <string name="btn_pointcloud_disabled">Nuvem de pontos</string>
+    <string name="hint_slam_enabled">SLAM ativado</string>
+    <string name="hint_slam_disabled">SLAM desativado</string>
+    <string name="btn_slam_disabled">SLAM</string>
+    <string name="input_map_name">Introduzir nome do mapa</string>
+    <string name="dialog_save_map">Guardar mapa</string>
+    <string name="button_cancel">Cancelar</string>
+    <string name="hint_no_maps">Sem mapas guardados</string>
+    <string name="map_stats_keyframes">Fotogramas-chave: %1$d</string>
+    <string name="map_stats_mappoints">Pontos do mapa: %1$d</string>
+    <string name="map_stats_size">Tamanho: %1$dKB</string>
+    <string name="dialog_map_manage">Gestão de mapas</string>
+    <string name="dialog_select_map">Selecionar mapa</string>
+    <string name="action_load">Carregar</string>
+    <string name="action_delete">Eliminar</string>
+    <string name="action_view_details">Ver detalhes</string>
+    <string name="action_load_multi">Carregamento múltiplo</string>
+    <string name="dialog_confirm_delete">Confirmar eliminação</string>
+    <string name="dialog_confirm_delete_message">Eliminar mapa \"%1$s\"?</string>
+    <string name="hint_map_deleted">Mapa eliminado</string>
+    <string name="hint_map_delete_failed">Falha ao eliminar</string>
+    <string name="button_back">Voltar</string>
+    <string name="dialog_map_details">Detalhes do mapa</string>
+    <string name="map_details_name">Nome do mapa: %1$s</string>
+    <string name="map_details_keyframes">Fotogramas-chave: %1$d</string>
+    <string name="map_details_mappoints">Pontos do mapa: %1$d</string>
+    <string name="map_details_size">Tamanho do ficheiro: %1$d KB</string>
+    <string name="map_details_time">Criado: %1$s</string>
+    <string name="map_details_plane">Tem plano: %1$s</string>
+    <string name="map_details_plane_yes">Sim</string>
+    <string name="map_details_plane_no">Não</string>
+    <string name="button_ok">OK</string>
+    <string name="map_stats_format">KFs: %1$d | MPs: %2$d | Plano: %3$s</string>
+    <string name="map_stats_plane_yes">Sim</string>
+    <string name="map_stats_plane_no">Não</string>
+    <string name="hint_map_load_requested">Carregamento de mapa solicitado</string>
+    <string name="hint_map_saved">Mapa guardado: %1$s</string>
+    <string name="hint_map_save_failed">Falha ao guardar: %1$s</string>
+    <string name="hint_map_file_not_found">Ficheiro de mapa não encontrado</string>
+    <string name="hint_map_loaded">Mapa carregado: %1$s</string>
+    <string name="hint_maps_loaded">%1$d mapas carregados</string>
+    <string name="hint_map_load_failed">Falha ao carregar: %1$s</string>
+    <string name="permission_camera_storage_required">São necessárias permissões de câmara e armazenamento. Conceda-as nas definições.</string>
+    <string name="btn_mini_world">Mini vista</string>
+    <string name="hint_mini_world_enabled">Mini vista ativada</string>
+    <string name="hint_mini_world_disabled">Mini vista desativada</string>
+
+    <string name="category_ar">Controlos AR</string>
+    <string name="category_map">Mapa</string>
+    <string name="category_slam">SLAM</string>
+    <string name="category_display">Ecrã</string>
+
+    <string name="btn_3dof">3DOF</string>
+    <string name="btn_3dof_close">Fechar 3DOF</string>
+    <string name="hint_3dof_unavailable">Funcionalidade 3DOF indisponível</string>
+    <string name="hint_3dof_spawned">Cubo 3DOF gerado a 5 metros à frente</string>
+    <string name="hint_3dof_closed">Modo 3DOF fechado</string>
+    <string name="btn_web_server_close">Fechar servidor web</string>
+    <string name="btn_web_server_open">Abrir servidor web</string>
+    <string name="hint_web_server_closed">Servidor web fechado</string>
+
+    <string name="btn_web_server">Servidor web</string>
+
+    <string name="status_enabled">ativado</string>
+    <string name="status_disabled">desativado</string>
+
+    <string name="title_web_server">Servidor web</string>
+    <string name="web_fps_label"> (Web)</string>
+    <string name="hint_waiting_browser_frame">À espera de imagem do browser…</string>
+    <string name="hint_web_server_started">Servidor web iniciado: %1$s</string>
+    <string name="web_url_default">http://0.0.0.0:8080</string>
+
+    <string name="privacy_title">Política de Privacidade &amp; Termos de Utilização</string>
+    <string name="privacy_scroll_hint">↓ Por favor deslize até ao fundo para ler o acordo completo</string>
+    <string name="privacy_scroll_done">✓ Leu o acordo completo</string>
+    <string name="privacy_agree">Aceitar &amp; Continuar</string>
+    <string name="privacy_disagree_notice">Se não aceitar, por favor saia da aplicação</string>
+    <string name="privacy_load_error">Falha ao carregar a política de privacidade. Por favor tente novamente.</string>
+
+</resources>

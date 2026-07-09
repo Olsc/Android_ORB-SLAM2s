@@ -1,0 +1,102 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ORB-SLAM2s</string>
+    <string name="btn_ar_object">AR Nesnesi</string>
+    <string name="btn_save">Kaydet</string>
+    <string name="btn_load">Yükle</string>
+    <string name="btn_map">Harita</string>
+    <string name="btn_reset">Sıfırla</string>
+    <string name="btn_slam">✓SLAM</string>
+    <string name="btn_point_cloud">✓Nokta Bulutu</string>
+    <string name="loading_slam_init">SLAM sistemi başlatılıyor…</string>
+    <string name="loading_slam_wait">Lütfen bekleyin, bu biraz zaman alabilir</string>
+    <string name="slam_init_complete">SLAM sistemi başlatıldı</string>
+    <string name="slam_init_failed">SLAM başlatma başarısız: %1$s</string>
+    <string name="loading">Yükleniyor…</string>
+    <string name="hint_request_sent">İstek gönderildi</string>
+    <string name="hint_resetting_slam">SLAM sistemi sıfırlanıyor…</string>
+    <string name="hint_slam_reset">SLAM sistemi sıfırlandı</string>
+    <string name="hint_reset_failed">Sıfırlama başarısız: Sistem başlatılmadı</string>
+    <string name="hint_pointcloud_enabled">Nokta bulutu etkinleştirildi</string>
+    <string name="hint_pointcloud_disabled">Nokta bulutu devre dışı bırakıldı</string>
+    <string name="btn_pointcloud_enabled">✓Nokta Bulutu</string>
+    <string name="btn_pointcloud_disabled">Nokta Bulutu</string>
+    <string name="hint_slam_enabled">SLAM etkinleştirildi</string>
+    <string name="hint_slam_disabled">SLAM devre dışı bırakıldı</string>
+    <string name="btn_slam_disabled">SLAM</string>
+    <string name="input_map_name">Harita adı girin</string>
+    <string name="dialog_save_map">Haritayı Kaydet</string>
+    <string name="button_cancel">İptal</string>
+    <string name="hint_no_maps">Kayıtlı harita yok</string>
+    <string name="map_stats_keyframes">Anahtar Kareler: %1$d</string>
+    <string name="map_stats_mappoints">Harita Noktaları: %1$d</string>
+    <string name="map_stats_size">Boyut: %1$dKB</string>
+    <string name="dialog_map_manage">Harita Yönetimi</string>
+    <string name="dialog_select_map">Harita Seç</string>
+    <string name="action_load">Yükle</string>
+    <string name="action_delete">Sil</string>
+    <string name="action_view_details">Ayrıntıları Görüntüle</string>
+    <string name="action_load_multi">Çoklu Yükleme</string>
+    <string name="dialog_confirm_delete">Silmeyi Onayla</string>
+    <string name="dialog_confirm_delete_message">\"%1$s\" haritası silinsin mi?</string>
+    <string name="hint_map_deleted">Harita silindi</string>
+    <string name="hint_map_delete_failed">Silme başarısız</string>
+    <string name="button_back">Geri</string>
+    <string name="dialog_map_details">Harita Ayrıntıları</string>
+    <string name="map_details_name">Harita Adı: %1$s</string>
+    <string name="map_details_keyframes">Anahtar Kareler: %1$d</string>
+    <string name="map_details_mappoints">Harita Noktaları: %1$d</string>
+    <string name="map_details_size">Dosya Boyutu: %1$d KB</string>
+    <string name="map_details_time">Oluşturuldu: %1$s</string>
+    <string name="map_details_plane">Düzlem Var: %1$s</string>
+    <string name="map_details_plane_yes">Evet</string>
+    <string name="map_details_plane_no">Hayır</string>
+    <string name="button_ok">Tamam</string>
+    <string name="map_stats_format">AK: %1$d | HN: %2$d | Düzlem: %3$s</string>
+    <string name="map_stats_plane_yes">Evet</string>
+    <string name="map_stats_plane_no">Hayır</string>
+    <string name="hint_map_load_requested">Harita yükleme istendi</string>
+    <string name="hint_map_saved">Harita kaydedildi: %1$s</string>
+    <string name="hint_map_save_failed">Kaydetme başarısız: %1$s</string>
+    <string name="hint_map_file_not_found">Harita dosyası bulunamadı</string>
+    <string name="hint_map_loaded">Harita yüklendi: %1$s</string>
+    <string name="hint_maps_loaded">%1$d harita yüklendi</string>
+    <string name="hint_map_load_failed">Yükleme başarısız: %1$s</string>
+    <string name="permission_camera_storage_required">Kamera ve depolama izinleri gereklidir. Lütfen ayarlardan izin verin.</string>
+    <string name="btn_mini_world">Mini Görünüm</string>
+    <string name="hint_mini_world_enabled">Mini görünüm etkinleştirildi</string>
+    <string name="hint_mini_world_disabled">Mini görünüm devre dışı bırakıldı</string>
+
+    <string name="category_ar">AR Kontrolleri</string>
+    <string name="category_map">Harita</string>
+    <string name="category_slam">SLAM</string>
+    <string name="category_display">Görüntü</string>
+
+    <string name="btn_3dof">3DOF</string>
+    <string name="btn_3dof_close">3DOF\'u Kapat</string>
+    <string name="hint_3dof_unavailable">3DOF özelliği kullanılamıyor</string>
+    <string name="hint_3dof_spawned">3DOF küpü 5 metre ileride oluşturuldu</string>
+    <string name="hint_3dof_closed">3DOF modu kapatıldı</string>
+    <string name="btn_web_server_close">Web Sunucusunu Kapat</string>
+    <string name="btn_web_server_open">Web Sunucusunu Aç</string>
+    <string name="hint_web_server_closed">Web sunucusu kapatıldı</string>
+
+    <string name="btn_web_server">Web Sunucusu</string>
+
+    <string name="status_enabled">etkin</string>
+    <string name="status_disabled">devre dışı</string>
+
+    <string name="title_web_server">Web Sunucusu</string>
+    <string name="web_fps_label"> (Web)</string>
+    <string name="hint_waiting_browser_frame">Tarayıcı görüntüsü bekleniyor…</string>
+    <string name="hint_web_server_started">Web sunucusu başlatıldı: %1$s</string>
+    <string name="web_url_default">http://0.0.0.0:8080</string>
+
+    <string name="privacy_title">Gizlilik Politikası &amp; Kullanım Koşulları</string>
+    <string name="privacy_scroll_hint">↓ Tam sözleşmeyi okumak için en alta kaydırın</string>
+    <string name="privacy_scroll_done">✓ Tam sözleşmeyi okudunuz</string>
+    <string name="privacy_agree">Kabul Et &amp; Devam Et</string>
+    <string name="privacy_disagree_notice">Kabul etmiyorsanız lütfen uygulamadan çıkın</string>
+    <string name="privacy_load_error">Gizlilik politikası yüklenemedi. Lütfen tekrar deneyin.</string>
+
+</resources>

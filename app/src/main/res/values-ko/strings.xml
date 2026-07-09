@@ -1,0 +1,102 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ORB-SLAM2s</string>
+    <string name="btn_ar_object">AR 객체</string>
+    <string name="btn_save">저장</string>
+    <string name="btn_load">불러오기</string>
+    <string name="btn_map">지도</string>
+    <string name="btn_reset">초기화</string>
+    <string name="btn_slam">✓SLAM</string>
+    <string name="btn_point_cloud">✓포인트 클라우드</string>
+    <string name="loading_slam_init">SLAM 시스템 초기화 중…</string>
+    <string name="loading_slam_wait">잠시 기다려 주세요, 시간이 걸릴 수 있습니다</string>
+    <string name="slam_init_complete">SLAM 시스템 초기화 완료</string>
+    <string name="slam_init_failed">SLAM 초기화 실패: %1$s</string>
+    <string name="loading">불러오는 중…</string>
+    <string name="hint_request_sent">요청 전송됨</string>
+    <string name="hint_resetting_slam">SLAM 시스템 초기화 중…</string>
+    <string name="hint_slam_reset">SLAM 시스템이 초기화되었습니다</string>
+    <string name="hint_reset_failed">초기화 실패: 시스템이 초기화되지 않음</string>
+    <string name="hint_pointcloud_enabled">포인트 클라우드 활성화됨</string>
+    <string name="hint_pointcloud_disabled">포인트 클라우드 비활성화됨</string>
+    <string name="btn_pointcloud_enabled">✓포인트 클라우드</string>
+    <string name="btn_pointcloud_disabled">포인트 클라우드</string>
+    <string name="hint_slam_enabled">SLAM 활성화됨</string>
+    <string name="hint_slam_disabled">SLAM 비활성화됨</string>
+    <string name="btn_slam_disabled">SLAM</string>
+    <string name="input_map_name">지도 이름 입력</string>
+    <string name="dialog_save_map">지도 저장</string>
+    <string name="button_cancel">취소</string>
+    <string name="hint_no_maps">저장된 지도 없음</string>
+    <string name="map_stats_keyframes">키프레임: %1$d</string>
+    <string name="map_stats_mappoints">지도 포인트: %1$d</string>
+    <string name="map_stats_size">크기: %1$dKB</string>
+    <string name="dialog_map_manage">지도 관리</string>
+    <string name="dialog_select_map">지도 선택</string>
+    <string name="action_load">불러오기</string>
+    <string name="action_delete">삭제</string>
+    <string name="action_view_details">세부 정보 보기</string>
+    <string name="action_load_multi">다중 불러오기</string>
+    <string name="dialog_confirm_delete">삭제 확인</string>
+    <string name="dialog_confirm_delete_message">지도 \"%1$s\"을(를) 삭제하시겠습니까?</string>
+    <string name="hint_map_deleted">지도가 삭제되었습니다</string>
+    <string name="hint_map_delete_failed">삭제 실패</string>
+    <string name="button_back">뒤로</string>
+    <string name="dialog_map_details">지도 세부 정보</string>
+    <string name="map_details_name">지도 이름: %1$s</string>
+    <string name="map_details_keyframes">키프레임: %1$d</string>
+    <string name="map_details_mappoints">지도 포인트: %1$d</string>
+    <string name="map_details_size">파일 크기: %1$d KB</string>
+    <string name="map_details_time">생성일: %1$s</string>
+    <string name="map_details_plane">평면 있음: %1$s</string>
+    <string name="map_details_plane_yes">예</string>
+    <string name="map_details_plane_no">아니오</string>
+    <string name="button_ok">확인</string>
+    <string name="map_stats_format">KFs: %1$d | MPs: %2$d | 평면: %3$s</string>
+    <string name="map_stats_plane_yes">예</string>
+    <string name="map_stats_plane_no">아니오</string>
+    <string name="hint_map_load_requested">지도 불러오기 요청됨</string>
+    <string name="hint_map_saved">지도 저장됨: %1$s</string>
+    <string name="hint_map_save_failed">저장 실패: %1$s</string>
+    <string name="hint_map_file_not_found">지도 파일을 찾을 수 없음</string>
+    <string name="hint_map_loaded">지도 불러옴: %1$s</string>
+    <string name="hint_maps_loaded">%1$d개 지도 불러옴</string>
+    <string name="hint_map_load_failed">불러오기 실패: %1$s</string>
+    <string name="permission_camera_storage_required">카메라 및 저장소 권한이 필요합니다. 설정에서 권한을 허용해 주세요.</string>
+    <string name="btn_mini_world">미니 뷰</string>
+    <string name="hint_mini_world_enabled">미니 뷰 활성화됨</string>
+    <string name="hint_mini_world_disabled">미니 뷰 비활성화됨</string>
+
+    <string name="category_ar">AR 컨트롤</string>
+    <string name="category_map">지도</string>
+    <string name="category_slam">SLAM</string>
+    <string name="category_display">디스플레이</string>
+
+    <string name="btn_3dof">3DOF</string>
+    <string name="btn_3dof_close">3DOF 닫기</string>
+    <string name="hint_3dof_unavailable">3DOF 기능을 사용할 수 없습니다</string>
+    <string name="hint_3dof_spawned">3DOF 큐브가 5미터 앞에 생성됨</string>
+    <string name="hint_3dof_closed">3DOF 모드 종료됨</string>
+    <string name="btn_web_server_close">웹 서버 닫기</string>
+    <string name="btn_web_server_open">웹 서버 열기</string>
+    <string name="hint_web_server_closed">웹 서버가 닫혔습니다</string>
+
+    <string name="btn_web_server">웹 서버</string>
+
+    <string name="status_enabled">활성화됨</string>
+    <string name="status_disabled">비활성화됨</string>
+
+    <string name="title_web_server">웹 서버</string>
+    <string name="web_fps_label"> (웹)</string>
+    <string name="hint_waiting_browser_frame">브라우저 이미지 대기 중…</string>
+    <string name="hint_web_server_started">웹 서버 시작됨: %1$s</string>
+    <string name="web_url_default">http://0.0.0.0:8080</string>
+
+    <string name="privacy_title">개인정보 처리방침 &amp; 이용약관</string>
+    <string name="privacy_scroll_hint">↓ 전체 계약서를 읽으려면 맨 아래로 스크롤하세요</string>
+    <string name="privacy_scroll_done">✓ 전체 계약서를 읽으셨습니다</string>
+    <string name="privacy_agree">동의 &amp; 계속</string>
+    <string name="privacy_disagree_notice">동의하지 않으시면 앱을 종료해 주세요</string>
+    <string name="privacy_load_error">개인정보 처리방침을 불러오지 못했습니다. 다시 시도해 주세요.</string>
+
+</resources>

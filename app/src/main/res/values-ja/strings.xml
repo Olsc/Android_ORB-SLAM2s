@@ -1,0 +1,102 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ORB-SLAM2s</string>
+    <string name="btn_ar_object">ARオブジェクト</string>
+    <string name="btn_save">保存</string>
+    <string name="btn_load">読込</string>
+    <string name="btn_map">マップ</string>
+    <string name="btn_reset">リセット</string>
+    <string name="btn_slam">✓SLAM</string>
+    <string name="btn_point_cloud">✓点群</string>
+    <string name="loading_slam_init">SLAMシステムを初期化中…</string>
+    <string name="loading_slam_wait">しばらくお待ちください</string>
+    <string name="slam_init_complete">SLAMシステムの初期化完了</string>
+    <string name="slam_init_failed">SLAMの初期化に失敗: %1$s</string>
+    <string name="loading">読み込み中…</string>
+    <string name="hint_request_sent">リクエスト送信済み</string>
+    <string name="hint_resetting_slam">SLAMシステムをリセット中…</string>
+    <string name="hint_slam_reset">SLAMシステムをリセットしました</string>
+    <string name="hint_reset_failed">リセット失敗: システムが初期化されていません</string>
+    <string name="hint_pointcloud_enabled">点群を有効化しました</string>
+    <string name="hint_pointcloud_disabled">点群を無効化しました</string>
+    <string name="btn_pointcloud_enabled">✓点群</string>
+    <string name="btn_pointcloud_disabled">点群</string>
+    <string name="hint_slam_enabled">SLAMを有効化しました</string>
+    <string name="hint_slam_disabled">SLAMを無効化しました</string>
+    <string name="btn_slam_disabled">SLAM</string>
+    <string name="input_map_name">マップ名を入力</string>
+    <string name="dialog_save_map">マップを保存</string>
+    <string name="button_cancel">キャンセル</string>
+    <string name="hint_no_maps">保存されたマップはありません</string>
+    <string name="map_stats_keyframes">キーフレーム: %1$d</string>
+    <string name="map_stats_mappoints">マップ点: %1$d</string>
+    <string name="map_stats_size">サイズ: %1$dKB</string>
+    <string name="dialog_map_manage">マップ管理</string>
+    <string name="dialog_select_map">マップを選択</string>
+    <string name="action_load">読込</string>
+    <string name="action_delete">削除</string>
+    <string name="action_view_details">詳細を表示</string>
+    <string name="action_load_multi">複数読込</string>
+    <string name="dialog_confirm_delete">削除の確認</string>
+    <string name="dialog_confirm_delete_message">マップ \"%1$s\" を削除しますか？</string>
+    <string name="hint_map_deleted">マップが削除されました</string>
+    <string name="hint_map_delete_failed">削除に失敗しました</string>
+    <string name="button_back">戻る</string>
+    <string name="dialog_map_details">マップ詳細</string>
+    <string name="map_details_name">マップ名: %1$s</string>
+    <string name="map_details_keyframes">キーフレーム数: %1$d</string>
+    <string name="map_details_mappoints">マップ点数: %1$d</string>
+    <string name="map_details_size">ファイルサイズ: %1$d KB</string>
+    <string name="map_details_time">作成日時: %1$s</string>
+    <string name="map_details_plane">平面あり: %1$s</string>
+    <string name="map_details_plane_yes">あり</string>
+    <string name="map_details_plane_no">なし</string>
+    <string name="button_ok">OK</string>
+    <string name="map_stats_format">KF: %1$d | MP: %2$d | 平面: %3$s</string>
+    <string name="map_stats_plane_yes">あり</string>
+    <string name="map_stats_plane_no">なし</string>
+    <string name="hint_map_load_requested">マップ読込をリクエストしました</string>
+    <string name="hint_map_saved">マップが保存されました: %1$s</string>
+    <string name="hint_map_save_failed">保存に失敗しました: %1$s</string>
+    <string name="hint_map_file_not_found">マップファイルが見つかりません</string>
+    <string name="hint_map_loaded">マップが読み込まれました: %1$s</string>
+    <string name="hint_maps_loaded">%1$d 件のマップを読み込みました</string>
+    <string name="hint_map_load_failed">読込に失敗しました: %1$s</string>
+    <string name="permission_camera_storage_required">カメラとストレージの権限が必要です。設定から権限を付与してください。</string>
+    <string name="btn_mini_world">ミニビュー</string>
+    <string name="hint_mini_world_enabled">ミニビューを有効化しました</string>
+    <string name="hint_mini_world_disabled">ミニビューを無効化しました</string>
+
+    <string name="category_ar">AR操作</string>
+    <string name="category_map">マップ</string>
+    <string name="category_slam">SLAM</string>
+    <string name="category_display">表示</string>
+
+    <string name="btn_3dof">3DOF</string>
+    <string name="btn_3dof_close">3DOFを閉じる</string>
+    <string name="hint_3dof_unavailable">3DOF機能は利用できません</string>
+    <string name="hint_3dof_spawned">3DOFキューブが5メートル先に生成されました</string>
+    <string name="hint_3dof_closed">3DOFモードを終了しました</string>
+    <string name="btn_web_server_close">Webサーバーを閉じる</string>
+    <string name="btn_web_server_open">Webサーバーを開く</string>
+    <string name="hint_web_server_closed">Webサーバーを閉じました</string>
+
+    <string name="btn_web_server">Webサーバー</string>
+
+    <string name="status_enabled">有効</string>
+    <string name="status_disabled">無効</string>
+
+    <string name="title_web_server">Webサーバー</string>
+    <string name="web_fps_label"> (Web)</string>
+    <string name="hint_waiting_browser_frame">ブラウザー画像を待機中…</string>
+    <string name="hint_web_server_started">Webサーバー起動: %1$s</string>
+    <string name="web_url_default">http://0.0.0.0:8080</string>
+
+    <string name="privacy_title">プライバシーポリシー &amp; 利用規約</string>
+    <string name="privacy_scroll_hint">↓ 全文を読むには最後までスクロールしてください</string>
+    <string name="privacy_scroll_done">✓ 全文をお読みいただきました</string>
+    <string name="privacy_agree">同意して続ける</string>
+    <string name="privacy_disagree_notice">同意しない場合はアプリを終了してください</string>
+    <string name="privacy_load_error">プライバシーポリシーの読み込みに失敗しました。再試行してください。</string>
+
+</resources>

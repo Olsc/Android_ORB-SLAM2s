@@ -1,0 +1,102 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ORB-SLAM2s</string>
+    <string name="btn_ar_object">วัตถุ AR</string>
+    <string name="btn_save">บันทึก</string>
+    <string name="btn_load">โหลด</string>
+    <string name="btn_map">แผนที่</string>
+    <string name="btn_reset">รีเซ็ต</string>
+    <string name="btn_slam">✓SLAM</string>
+    <string name="btn_point_cloud">✓กลุ่มจุด</string>
+    <string name="loading_slam_init">กำลังเริ่มต้นระบบ SLAM…</string>
+    <string name="loading_slam_wait">กรุณารอ อาจใช้เวลาสักครู่</string>
+    <string name="slam_init_complete">ระบบ SLAM พร้อมใช้งาน</string>
+    <string name="slam_init_failed">การเริ่มต้น SLAM ล้มเหลว: %1$s</string>
+    <string name="loading">กำลังโหลด…</string>
+    <string name="hint_request_sent">ส่งคำขอแล้ว</string>
+    <string name="hint_resetting_slam">กำลังรีเซ็ตระบบ SLAM…</string>
+    <string name="hint_slam_reset">รีเซ็ตระบบ SLAM แล้ว</string>
+    <string name="hint_reset_failed">รีเซ็ตล้มเหลว: ระบบยังไม่ได้เริ่มต้น</string>
+    <string name="hint_pointcloud_enabled">เปิดใช้งานกลุ่มจุดแล้ว</string>
+    <string name="hint_pointcloud_disabled">ปิดใช้งานกลุ่มจุดแล้ว</string>
+    <string name="btn_pointcloud_enabled">✓กลุ่มจุด</string>
+    <string name="btn_pointcloud_disabled">กลุ่มจุด</string>
+    <string name="hint_slam_enabled">เปิดใช้งาน SLAM แล้ว</string>
+    <string name="hint_slam_disabled">ปิดใช้งาน SLAM แล้ว</string>
+    <string name="btn_slam_disabled">SLAM</string>
+    <string name="input_map_name">ป้อนชื่อแผนที่</string>
+    <string name="dialog_save_map">บันทึกแผนที่</string>
+    <string name="button_cancel">ยกเลิก</string>
+    <string name="hint_no_maps">ไม่มีแผนที่ที่บันทึกไว้</string>
+    <string name="map_stats_keyframes">คีย์เฟรม: %1$d</string>
+    <string name="map_stats_mappoints">จุดแผนที่: %1$d</string>
+    <string name="map_stats_size">ขนาด: %1$dKB</string>
+    <string name="dialog_map_manage">จัดการแผนที่</string>
+    <string name="dialog_select_map">เลือกแผนที่</string>
+    <string name="action_load">โหลด</string>
+    <string name="action_delete">ลบ</string>
+    <string name="action_view_details">ดูรายละเอียด</string>
+    <string name="action_load_multi">โหลดหลายรายการ</string>
+    <string name="dialog_confirm_delete">ยืนยันการลบ</string>
+    <string name="dialog_confirm_delete_message">ลบแผนที่ \"%1$s\"?</string>
+    <string name="hint_map_deleted">ลบแผนที่แล้ว</string>
+    <string name="hint_map_delete_failed">การลบล้มเหลว</string>
+    <string name="button_back">กลับ</string>
+    <string name="dialog_map_details">รายละเอียดแผนที่</string>
+    <string name="map_details_name">ชื่อแผนที่: %1$s</string>
+    <string name="map_details_keyframes">คีย์เฟรม: %1$d</string>
+    <string name="map_details_mappoints">จุดแผนที่: %1$d</string>
+    <string name="map_details_size">ขนาดไฟล์: %1$d KB</string>
+    <string name="map_details_time">สร้างเมื่อ: %1$s</string>
+    <string name="map_details_plane">มีระนาบ: %1$s</string>
+    <string name="map_details_plane_yes">ใช่</string>
+    <string name="map_details_plane_no">ไม่</string>
+    <string name="button_ok">ตกลง</string>
+    <string name="map_stats_format">KFs: %1$d | MPs: %2$d | ระนาบ: %3$s</string>
+    <string name="map_stats_plane_yes">ใช่</string>
+    <string name="map_stats_plane_no">ไม่</string>
+    <string name="hint_map_load_requested">ส่งคำขอโหลดแผนที่</string>
+    <string name="hint_map_saved">บันทึกแผนที่แล้ว: %1$s</string>
+    <string name="hint_map_save_failed">การบันทึกล้มเหลว: %1$s</string>
+    <string name="hint_map_file_not_found">ไม่พบไฟล์แผนที่</string>
+    <string name="hint_map_loaded">โหลดแผนที่แล้ว: %1$s</string>
+    <string name="hint_maps_loaded">โหลด %1$d แผนที่แล้ว</string>
+    <string name="hint_map_load_failed">การโหลดล้มเหลว: %1$s</string>
+    <string name="permission_camera_storage_required">ต้องการสิทธิ์กล้องและที่เก็บข้อมูล กรุณาอนุญาตในการตั้งค่า</string>
+    <string name="btn_mini_world">มุมมองย่อ</string>
+    <string name="hint_mini_world_enabled">เปิดมุมมองย่อแล้ว</string>
+    <string name="hint_mini_world_disabled">ปิดมุมมองย่อแล้ว</string>
+
+    <string name="category_ar">ควบคุม AR</string>
+    <string name="category_map">แผนที่</string>
+    <string name="category_slam">SLAM</string>
+    <string name="category_display">การแสดงผล</string>
+
+    <string name="btn_3dof">3DOF</string>
+    <string name="btn_3dof_close">ปิด 3DOF</string>
+    <string name="hint_3dof_unavailable">ฟีเจอร์ 3DOF ไม่พร้อมใช้งาน</string>
+    <string name="hint_3dof_spawned">สร้างลูกบาศก์ 3DOF ข้างหน้า 5 เมตร</string>
+    <string name="hint_3dof_closed">ปิดโหมด 3DOF แล้ว</string>
+    <string name="btn_web_server_close">ปิดเว็บเซิร์ฟเวอร์</string>
+    <string name="btn_web_server_open">เปิดเว็บเซิร์ฟเวอร์</string>
+    <string name="hint_web_server_closed">ปิดเว็บเซิร์ฟเวอร์แล้ว</string>
+
+    <string name="btn_web_server">เว็บเซิร์ฟเวอร์</string>
+
+    <string name="status_enabled">เปิดใช้งาน</string>
+    <string name="status_disabled">ปิดใช้งาน</string>
+
+    <string name="title_web_server">เว็บเซิร์ฟเวอร์</string>
+    <string name="web_fps_label"> (เว็บ)</string>
+    <string name="hint_waiting_browser_frame">กำลังรอภาพจากเบราว์เซอร์…</string>
+    <string name="hint_web_server_started">เว็บเซิร์ฟเวอร์เริ่มทำงาน: %1$s</string>
+    <string name="web_url_default">http://0.0.0.0:8080</string>
+
+    <string name="privacy_title">นโยบายความเป็นส่วนตัว &amp; เงื่อนไขการใช้งาน</string>
+    <string name="privacy_scroll_hint">↓ กรุณาเลื่อนลงถึงด้านล่างเพื่ออ่านข้อตกลงฉบับสมบูรณ์</string>
+    <string name="privacy_scroll_done">✓ คุณได้อ่านข้อตกลงฉบับสมบูรณ์แล้ว</string>
+    <string name="privacy_agree">ยอมรับ &amp; ดำเนินการต่อ</string>
+    <string name="privacy_disagree_notice">หากไม่ยอมรับ กรุณาออกจากแอปพลิเคชัน</string>
+    <string name="privacy_load_error">โหลดนโยบายความเป็นส่วนตัวล้มเหลว กรุณาลองอีกครั้ง</string>
+
+</resources>

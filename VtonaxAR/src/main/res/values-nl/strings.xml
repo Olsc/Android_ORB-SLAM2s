@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="hint_map_saved">Kaart opgeslagen: %1$s</string>
+    <string name="hint_map_save_failed">Opslaan mislukt: %1$s</string>
+    <string name="hint_map_file_not_found">Kaartbestand niet gevonden</string>
+    <string name="hint_map_loaded">Kaart geladen: %1$s</string>
+    <string name="hint_maps_loaded">%1$d kaarten geladen</string>
+    <string name="hint_map_load_failed">Laden mislukt: %1$s</string>
+    <string name="hint_map_load_requested">Kaart laden aangevraagd</string>
+    <string name="hint_map_deleted">Kaart verwijderd</string>
+    <string name="hint_map_delete_failed">Verwijderen mislukt</string>
+</resources>

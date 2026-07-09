@@ -1,0 +1,102 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ORB-SLAM2s</string>
+    <string name="btn_ar_object">شیء AR</string>
+    <string name="btn_save">ذخیره</string>
+    <string name="btn_load">بارگذاری</string>
+    <string name="btn_map">نقشه</string>
+    <string name="btn_reset">بازنشانی</string>
+    <string name="btn_slam">✓SLAM</string>
+    <string name="btn_point_cloud">✓ابر نقطه</string>
+    <string name="loading_slam_init">در حال راه‌اندازی سیستم SLAM…</string>
+    <string name="loading_slam_wait">لطفاً صبر کنید، این ممکن است کمی طول بکشد</string>
+    <string name="slam_init_complete">سیستم SLAM راه‌اندازی شد</string>
+    <string name="slam_init_failed">راه‌اندازی SLAM ناموفق بود: %1$s</string>
+    <string name="loading">در حال بارگذاری…</string>
+    <string name="hint_request_sent">درخواست ارسال شد</string>
+    <string name="hint_resetting_slam">در حال بازنشانی سیستم SLAM…</string>
+    <string name="hint_slam_reset">سیستم SLAM بازنشانی شد</string>
+    <string name="hint_reset_failed">بازنشانی ناموفق: سیستم راه‌اندازی نشده است</string>
+    <string name="hint_pointcloud_enabled">ابر نقطه فعال شد</string>
+    <string name="hint_pointcloud_disabled">ابر نقطه غیرفعال شد</string>
+    <string name="btn_pointcloud_enabled">✓ابر نقطه</string>
+    <string name="btn_pointcloud_disabled">ابر نقطه</string>
+    <string name="hint_slam_enabled">SLAM فعال شد</string>
+    <string name="hint_slam_disabled">SLAM غیرفعال شد</string>
+    <string name="btn_slam_disabled">SLAM</string>
+    <string name="input_map_name">نام نقشه را وارد کنید</string>
+    <string name="dialog_save_map">ذخیره نقشه</string>
+    <string name="button_cancel">لغو</string>
+    <string name="hint_no_maps">هیچ نقشه‌ای ذخیره نشده است</string>
+    <string name="map_stats_keyframes">فریم‌های کلیدی: %1$d</string>
+    <string name="map_stats_mappoints">نقاط نقشه: %1$d</string>
+    <string name="map_stats_size">اندازه: %1$dKB</string>
+    <string name="dialog_map_manage">مدیریت نقشه</string>
+    <string name="dialog_select_map">انتخاب نقشه</string>
+    <string name="action_load">بارگذاری</string>
+    <string name="action_delete">حذف</string>
+    <string name="action_view_details">مشاهده جزئیات</string>
+    <string name="action_load_multi">بارگذاری چندگانه</string>
+    <string name="dialog_confirm_delete">تأیید حذف</string>
+    <string name="dialog_confirm_delete_message">نقشه \"%1$s\" حذف شود؟</string>
+    <string name="hint_map_deleted">نقشه حذف شد</string>
+    <string name="hint_map_delete_failed">حذف ناموفق بود</string>
+    <string name="button_back">بازگشت</string>
+    <string name="dialog_map_details">جزئیات نقشه</string>
+    <string name="map_details_name">نام نقشه: %1$s</string>
+    <string name="map_details_keyframes">فریم‌های کلیدی: %1$d</string>
+    <string name="map_details_mappoints">نقاط نقشه: %1$d</string>
+    <string name="map_details_size">اندازه فایل: %1$d KB</string>
+    <string name="map_details_time">ایجاد شده: %1$s</string>
+    <string name="map_details_plane">دارای صفحه: %1$s</string>
+    <string name="map_details_plane_yes">بله</string>
+    <string name="map_details_plane_no">خیر</string>
+    <string name="button_ok">باشه</string>
+    <string name="map_stats_format">KFs: %1$d | MPs: %2$d | صفحه: %3$s</string>
+    <string name="map_stats_plane_yes">بله</string>
+    <string name="map_stats_plane_no">خیر</string>
+    <string name="hint_map_load_requested">درخواست بارگذاری نقشه</string>
+    <string name="hint_map_saved">نقشه ذخیره شد: %1$s</string>
+    <string name="hint_map_save_failed">ذخیره ناموفق بود: %1$s</string>
+    <string name="hint_map_file_not_found">فایل نقشه پیدا نشد</string>
+    <string name="hint_map_loaded">نقشه بارگذاری شد: %1$s</string>
+    <string name="hint_maps_loaded">%1$d نقشه بارگذاری شد</string>
+    <string name="hint_map_load_failed">بارگذاری ناموفق بود: %1$s</string>
+    <string name="permission_camera_storage_required">مجوز دوربین و حافظه لازم است. لطفاً در تنظیمات مجوز دهید.</string>
+    <string name="btn_mini_world">نمای کوچک</string>
+    <string name="hint_mini_world_enabled">نمای کوچک فعال شد</string>
+    <string name="hint_mini_world_disabled">نمای کوچک غیرفعال شد</string>
+
+    <string name="category_ar">کنترل AR</string>
+    <string name="category_map">نقشه</string>
+    <string name="category_slam">SLAM</string>
+    <string name="category_display">نمایش</string>
+
+    <string name="btn_3dof">3DOF</string>
+    <string name="btn_3dof_close">بستن 3DOF</string>
+    <string name="hint_3dof_unavailable">قابلیت 3DOF در دسترس نیست</string>
+    <string name="hint_3dof_spawned">مکعب 3DOF در 5 متر جلو ایجاد شد</string>
+    <string name="hint_3dof_closed">حالت 3DOF بسته شد</string>
+    <string name="btn_web_server_close">بستن سرور وب</string>
+    <string name="btn_web_server_open">باز کردن سرور وب</string>
+    <string name="hint_web_server_closed">سرور وب بسته شد</string>
+
+    <string name="btn_web_server">سرور وب</string>
+
+    <string name="status_enabled">فعال</string>
+    <string name="status_disabled">غیرفعال</string>
+
+    <string name="title_web_server">سرور وب</string>
+    <string name="web_fps_label"> (وب)</string>
+    <string name="hint_waiting_browser_frame">در انتظار تصویر مرورگر…</string>
+    <string name="hint_web_server_started">سرور وب شروع شد: %1$s</string>
+    <string name="web_url_default">http://0.0.0.0:8080</string>
+
+    <string name="privacy_title">سیاست حریم خصوصی &amp; شرایط استفاده</string>
+    <string name="privacy_scroll_hint">↓ لطفاً به پایین اسکرول کنید تا توافقنامه کامل را بخوانید</string>
+    <string name="privacy_scroll_done">✓ توافقنامه کامل را خواندید</string>
+    <string name="privacy_agree">موافقت &amp; ادامه</string>
+    <string name="privacy_disagree_notice">در صورت عدم موافقت، لطفاً از برنامه خارج شوید</string>
+    <string name="privacy_load_error">بارگذاری سیاست حریم خصوصی ناموفق بود. دوباره امتحان کنید.</string>
+
+</resources>

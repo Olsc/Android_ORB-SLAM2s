@@ -1,0 +1,102 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ORB-SLAM2s</string>
+    <string name="btn_ar_object">AR-object</string>
+    <string name="btn_save">Opslaan</string>
+    <string name="btn_load">Laden</string>
+    <string name="btn_map">Kaart</string>
+    <string name="btn_reset">Resetten</string>
+    <string name="btn_slam">✓SLAM</string>
+    <string name="btn_point_cloud">✓Puntenwolk</string>
+    <string name="loading_slam_init">SLAM-systeem initialiseren…</string>
+    <string name="loading_slam_wait">Even geduld, dit kan even duren</string>
+    <string name="slam_init_complete">SLAM-systeem geïnitialiseerd</string>
+    <string name="slam_init_failed">SLAM-initialisatie mislukt: %1$s</string>
+    <string name="loading">Laden…</string>
+    <string name="hint_request_sent">Verzoek verzonden</string>
+    <string name="hint_resetting_slam">SLAM-systeem resetten…</string>
+    <string name="hint_slam_reset">SLAM-systeem gereset</string>
+    <string name="hint_reset_failed">Reset mislukt: Systeem niet geïnitialiseerd</string>
+    <string name="hint_pointcloud_enabled">Puntenwolk ingeschakeld</string>
+    <string name="hint_pointcloud_disabled">Puntenwolk uitgeschakeld</string>
+    <string name="btn_pointcloud_enabled">✓Puntenwolk</string>
+    <string name="btn_pointcloud_disabled">Puntenwolk</string>
+    <string name="hint_slam_enabled">SLAM ingeschakeld</string>
+    <string name="hint_slam_disabled">SLAM uitgeschakeld</string>
+    <string name="btn_slam_disabled">SLAM</string>
+    <string name="input_map_name">Kaartnaam invoeren</string>
+    <string name="dialog_save_map">Kaart opslaan</string>
+    <string name="button_cancel">Annuleren</string>
+    <string name="hint_no_maps">Geen opgeslagen kaarten</string>
+    <string name="map_stats_keyframes">Sleutelframes: %1$d</string>
+    <string name="map_stats_mappoints">Kaartpunten: %1$d</string>
+    <string name="map_stats_size">Grootte: %1$dKB</string>
+    <string name="dialog_map_manage">Kaartbeheer</string>
+    <string name="dialog_select_map">Kaart selecteren</string>
+    <string name="action_load">Laden</string>
+    <string name="action_delete">Verwijderen</string>
+    <string name="action_view_details">Details bekijken</string>
+    <string name="action_load_multi">Meerdere laden</string>
+    <string name="dialog_confirm_delete">Verwijdering bevestigen</string>
+    <string name="dialog_confirm_delete_message">Kaart \"%1$s\" verwijderen?</string>
+    <string name="hint_map_deleted">Kaart verwijderd</string>
+    <string name="hint_map_delete_failed">Verwijderen mislukt</string>
+    <string name="button_back">Terug</string>
+    <string name="dialog_map_details">Kaartdetails</string>
+    <string name="map_details_name">Kaartnaam: %1$s</string>
+    <string name="map_details_keyframes">Sleutelframes: %1$d</string>
+    <string name="map_details_mappoints">Kaartpunten: %1$d</string>
+    <string name="map_details_size">Bestandsgrootte: %1$d KB</string>
+    <string name="map_details_time">Aangemaakt: %1$s</string>
+    <string name="map_details_plane">Heeft vlak: %1$s</string>
+    <string name="map_details_plane_yes">Ja</string>
+    <string name="map_details_plane_no">Nee</string>
+    <string name="button_ok">OK</string>
+    <string name="map_stats_format">KFs: %1$d | MPs: %2$d | Vlak: %3$s</string>
+    <string name="map_stats_plane_yes">Ja</string>
+    <string name="map_stats_plane_no">Nee</string>
+    <string name="hint_map_load_requested">Kaart laden aangevraagd</string>
+    <string name="hint_map_saved">Kaart opgeslagen: %1$s</string>
+    <string name="hint_map_save_failed">Opslaan mislukt: %1$s</string>
+    <string name="hint_map_file_not_found">Kaartbestand niet gevonden</string>
+    <string name="hint_map_loaded">Kaart geladen: %1$s</string>
+    <string name="hint_maps_loaded">%1$d kaarten geladen</string>
+    <string name="hint_map_load_failed">Laden mislukt: %1$s</string>
+    <string name="permission_camera_storage_required">Camera- en opslagmachtigingen zijn vereist. Verleen machtigingen in instellingen.</string>
+    <string name="btn_mini_world">Mini-weergave</string>
+    <string name="hint_mini_world_enabled">Mini-weergave ingeschakeld</string>
+    <string name="hint_mini_world_disabled">Mini-weergave uitgeschakeld</string>
+
+    <string name="category_ar">AR-bediening</string>
+    <string name="category_map">Kaart</string>
+    <string name="category_slam">SLAM</string>
+    <string name="category_display">Weergave</string>
+
+    <string name="btn_3dof">3DOF</string>
+    <string name="btn_3dof_close">3DOF sluiten</string>
+    <string name="hint_3dof_unavailable">3DOF-functie niet beschikbaar</string>
+    <string name="hint_3dof_spawned">3DOF-kubus 5 meter voor u gegenereerd</string>
+    <string name="hint_3dof_closed">3DOF-modus gesloten</string>
+    <string name="btn_web_server_close">Webserver sluiten</string>
+    <string name="btn_web_server_open">Webserver openen</string>
+    <string name="hint_web_server_closed">Webserver gesloten</string>
+
+    <string name="btn_web_server">Webserver</string>
+
+    <string name="status_enabled">ingeschakeld</string>
+    <string name="status_disabled">uitgeschakeld</string>
+
+    <string name="title_web_server">Webserver</string>
+    <string name="web_fps_label"> (Web)</string>
+    <string name="hint_waiting_browser_frame">Wachten op browserafbeelding…</string>
+    <string name="hint_web_server_started">Webserver gestart: %1$s</string>
+    <string name="web_url_default">http://0.0.0.0:8080</string>
+
+    <string name="privacy_title">Privacybeleid &amp; Gebruiksvoorwaarden</string>
+    <string name="privacy_scroll_hint">↓ Scroll naar beneden om de volledige overeenkomst te lezen</string>
+    <string name="privacy_scroll_done">✓ U heeft de volledige overeenkomst gelezen</string>
+    <string name="privacy_agree">Akkoord &amp; Doorgaan</string>
+    <string name="privacy_disagree_notice">Als u niet akkoord gaat, verlaat dan de applicatie</string>
+    <string name="privacy_load_error">Privacybeleid laden mislukt. Probeer het opnieuw.</string>
+
+</resources>

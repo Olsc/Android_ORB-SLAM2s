@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="hint_map_saved">地圖已儲存: %1$s</string>
+    <string name="hint_map_save_failed">儲存失敗: %1$s</string>
+    <string name="hint_map_file_not_found">地圖檔案不存在</string>
+    <string name="hint_map_loaded">地圖已載入: %1$s</string>
+    <string name="hint_maps_loaded">已載入 %1$d 個地圖</string>
+    <string name="hint_map_load_failed">載入失敗: %1$s</string>
+    <string name="hint_map_load_requested">載入地圖已請求</string>
+    <string name="hint_map_deleted">地圖已刪除</string>
+    <string name="hint_map_delete_failed">刪除失敗</string>
+</resources>
