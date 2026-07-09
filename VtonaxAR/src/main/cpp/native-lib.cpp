@@ -74,21 +74,6 @@ std::vector<ArObjectInfo> gArObjects;
 std::mutex gMapDataMutex;
 
 // ========== SLAM 系统访问的读写锁优化 ==========
-// 原本 gSlamStateMutex 在整个 TrackMonocular() 期间持锁，
-// 导致 JNI 读取函数（getV/detect/getMiniMapPoints）在跟踪期间全部被阻塞，
-// 这是画面卡顿的根本原因。
-//
-// 优化方案：
-//   - gSlamPtrLock: 仅保护 slamSys 指针的读取（极短临界区，仅指针复制）
-//   - gProcessingFrames: 原子帧计数器，跟踪期间+1，完成后-1
-//   - gTcwLock: 保护 Tcw 缓存的读写
-//   - TrackMonocular 不在任何外层锁的保护下执行，
-//     其线程安全性由 SLAM 系统内部已有的细粒度锁保证
-//
-// 读写协调协议：
-//   - 读取端（processImage）: 短暂持有 gSlamPtrLock 复制指针 → 增加帧计数器 → 释放锁 → TrackMonocular → 减少帧计数器
-//   - 写入端（loadMap/Reset）: 持有 gSlamPtrLock → 置空指针 → 等待帧计数器归零 → 执行写入操作 → 恢复指针
-
 static std::mutex gSlamPtrLock;                    // 仅保护 slamSys 指针（极短临界区）
 static std::atomic<int> gProcessingFrames{0};      // 正在处理的帧数（用于写操作协调）
 static std::mutex gTcwLock;                        // 保护 Tcw 缓存
@@ -314,10 +299,6 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
         cv::resize(image, imgSmall, cv::Size(cvRound(image.cols / DOWNSCALE), cvRound(image.rows / DOWNSCALE)), 0, 0, cv::INTER_LINEAR);
 
         // ===== 读写锁优化：不再全程持有全局锁 =====
-        // 1. 短暂持有 gSlamPtrLock 复制系统指针（微秒级），不阻塞其他读取线程
-        // 2. TrackMonocular 在全局锁之外执行，其内部线程安全由 SLAM 细粒度锁（mMutexReloc 等）保证
-        // 3. 跟踪结果被安全复制到线程本地缓存（gCachedTcw 等）
-        // 4. 写操作（loadMap/Reset）通过 gProcessingFrames 协调：置空指针 → 等待帧归零 → 修改
         ORB_SLAM2::System* currentSlamSys = nullptr;
         {
             std::lock_guard<std::mutex> _ptrLock(gSlamPtrLock);
@@ -425,9 +406,7 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
 
         // 如果SLAM正在跟踪，更新AR对象视图矩阵
         if(status == 2) {  // SLAM正常工作
-            // 使用线程局部 Tcw（localTcw），避免全局 Tcw 的数据竞争
             // 如果有对齐，使用对齐后的位姿更新AR对象的视图矩阵
-            // 确保AR对象在加载地图的坐标系下正确显示
             cv::Mat TcwForAR = localTcw;
             if(slamSys->HasMapAlignment()) {
                 TcwForAR = slamSys->GetMapAlignedPose(localTcw);
@@ -879,14 +858,11 @@ Java_com_orb_slam2s_slamar_NativeHelper_getMiniMapPoints(JNIEnv *env, jobject in
     std::vector<float> out;
     size_t total = v.size();
     
-    // 策略：使用 Top-K 算法获取最新的 maxPoints 个点（按 ID 降序）
-    // 这样可以确保画面实时更新，且严格遵守数量限制，实现"遗忘"旧点
+    // 使用 Top-K 算法获取最新的 maxPoints 个点（按 ID 降序）
     
     if (total > 0) {
         if (total > (size_t)maxPoints) {
             // 使用 partial_sort 找出前 maxPoints 个最大的（最新的）点
-            // 注意：这会改变 v 的前 maxPoints 个元素的顺序
-            // 因为 v 是我们拷贝出来的副本（GetAllMapPoints 返回值），所以修改它是安全的
             std::partial_sort(v.begin(), v.begin() + maxPoints, v.end(), MapPointComparator());
             
             // 只取前 maxPoints 个
@@ -927,8 +903,6 @@ Java_com_orb_slam2s_slamar_NativeHelper_getMiniMapPoints(JNIEnv *env, jobject in
 // 获取当前跟踪的地图点
 JNIEXPORT jfloatArray JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_getTrackedPoints(JNIEnv *env, jobject instance, jint maxPoints) {
-    // 性能优化：getTrackedPoints只需要gMapPointsMutex，不需要gSlamStateMutex
-    // 因为我们访问的是已经复制好的vMPs缓存，而不是直接访问slamSys
     std::vector<float> out;
     
     // 线程安全地复制vMPs以防止与SLAM线程的竞态条件

@@ -94,7 +94,7 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
     private static final float MIN_SCALE = 0.05f;  // 最小缩放比例
     private static final float MAX_SCALE = 10.0f;  // 最大缩放比例
 
-    // === 性能优化：缓存矩阵以避免在 render 循环中 new 对象引发 GC 卡顿 ===
+    // 缓存矩阵以避免在 render 循环中 new 对象引发 GC 卡顿
     private final float[] tempCameraModelMatrix = new float[16];
     private final double[] tempDoubleProj = new double[16];
     private final float[] tempTransformMatrix = new float[16];

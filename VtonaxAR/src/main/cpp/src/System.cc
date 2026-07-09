@@ -54,12 +54,6 @@ System::System(const std::string &strSettingsFile, const eSensor sensor):mSensor
         mbDeactivateLocalizationMode(false)
 {
     // 启用 OpenCV 和 Eigen 多线程并行计算。
-    // 之前使用 cv::setNumThreads(1) 作为临时方案，原因是多线程下的锁竞争导致画面卡死。
-    // 经过全面的线程安全优化（读写锁替代粗粒度全局锁、减少 mMutexReloc 竞争、原子化关键标志位），
-    // 现在可以安全地启用多线程，充分利用移动平台多核（包括大小核）架构的计算能力。
-    //
-    // 策略：为 SLAM 主线程保留 1 个核心，其余分配给 OpenCV/Eigen。
-    // 上限 4 线程，避免移动端过度竞争导致调度开销超过并行收益。
     {
         int n_threads = static_cast<int>(std::thread::hardware_concurrency());
         int ocv_threads = std::max(1, n_threads - 1);

@@ -130,6 +130,7 @@ int ORBmatcher::SearchByProjection(Frame &F, const vector<MapPoint*> &vpMapPoint
                 bestLevel2 = bestLevel;
                 bestLevel = F.mvKeysUn[idx].octave;
                 bestIdx=idx;
+                if (bestDist == 0) break;  // 零距离无法被超越
             }
             else if(dist<bestDist2)
             {
@@ -175,9 +176,10 @@ bool ORBmatcher::CheckDistEpipolarLine(const cv::KeyPoint &kp1,const cv::KeyPoin
     if(den==0)
         return false;
 
-    const float dsqr = num*num/den;
-
-    return dsqr<ORB_MATCHER_EPILINE_TH*pKF2->mvLevelSigma2[kp2.octave];
+    // 优化: 消除除法 num*num/den < th 等价于 num*num < den*th
+    // 数学等价: a/b < c ⇔ a < b*c (当b>0)
+    const float epiTh = ORB_MATCHER_EPILINE_TH * pKF2->mvLevelSigma2[kp2.octave];
+    return num*num < den * epiTh;
 }
 
 int ORBmatcher::SearchByHBST(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPointMatches)
@@ -432,6 +434,7 @@ int ORBmatcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapP
             {
                 bestDist = dist;
                 bestIdx = idx;
+                if (bestDist == 0) break;
             }
         }
 

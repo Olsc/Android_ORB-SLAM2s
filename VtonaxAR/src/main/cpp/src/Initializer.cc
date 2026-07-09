@@ -357,8 +357,8 @@ float Initializer::CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vecto
     float score = 0;
 
     const float th = OPTIMIZER_CHI2_TH_2D;
-
-    const float invSigmaSquare = 1.0/(sigma*sigma);
+    const float thSigma2 = th * sigma * sigma;
+    const float invSigmaSquare = 1.0f/(sigma*sigma);
 
     for(int i=0; i<N; i++)
     {
@@ -380,12 +380,11 @@ float Initializer::CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vecto
 
         const float squareDist1 = (u1-u2in1)*(u1-u2in1)+(v1-v2in1)*(v1-v2in1);
 
-        const float chiSquare1 = squareDist1*invSigmaSquare;
-
-        if(chiSquare1>th)
+        // 优化: squareDist1*invSigmaSquare > th ⇔ squareDist1 > th*sigma²
+        if(squareDist1 > thSigma2)
             bIn = false;
         else
-            score += th - chiSquare1;
+            score += th - squareDist1*invSigmaSquare;
 
         // x1in2 = H21*x1
 
@@ -395,12 +394,10 @@ float Initializer::CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vecto
 
         const float squareDist2 = (u2-u1in2)*(u2-u1in2)+(v2-v1in2)*(v2-v1in2);
 
-        const float chiSquare2 = squareDist2*invSigmaSquare;
-
-        if(chiSquare2>th)
+        if(squareDist2 > thSigma2)
             bIn = false;
         else
-            score += th - chiSquare2;
+            score += th - squareDist2*invSigmaSquare;
 
         if(bIn)
             vbMatchesInliers[i]=true;
@@ -432,7 +429,8 @@ float Initializer::CheckFundamental(const cv::Mat &F21, vector<bool> &vbMatchesI
     const float th = OPTIMIZER_CHI2_TH_1D;
     const float thScore = OPTIMIZER_CHI2_TH_2D;
 
-    const float invSigmaSquare = 1.0/(sigma*sigma);
+    const float thSigma2 = th * sigma * sigma;
+    const float invSigmaSquare = 1.0f/(sigma*sigma);
 
     for(int i=0; i<N; i++)
     {
@@ -456,12 +454,11 @@ float Initializer::CheckFundamental(const cv::Mat &F21, vector<bool> &vbMatchesI
 
         const float squareDist1 = num2*num2/(a2*a2+b2*b2);
 
-        const float chiSquare1 = squareDist1*invSigmaSquare;
-
-        if(chiSquare1>th)
+        // 优化: squareDist1*invSigmaSquare > th ⇔ squareDist1 > th*sigma²
+        if(squareDist1 > thSigma2)
             bIn = false;
         else
-            score += thScore - chiSquare1;
+            score += thScore - squareDist1*invSigmaSquare;
 
         // l1 =x2tF21=(a1,b1,c1)
 
@@ -473,12 +470,10 @@ float Initializer::CheckFundamental(const cv::Mat &F21, vector<bool> &vbMatchesI
 
         const float squareDist2 = num1*num1/(a1*a1+b1*b1);
 
-        const float chiSquare2 = squareDist2*invSigmaSquare;
-
-        if(chiSquare2>th)
+        if(squareDist2 > thSigma2)
             bIn = false;
         else
-            score += thScore - chiSquare2;
+            score += thScore - squareDist2*invSigmaSquare;
 
         if(bIn)
             vbMatchesInliers[i]=true;

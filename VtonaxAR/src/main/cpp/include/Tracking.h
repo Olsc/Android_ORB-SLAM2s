@@ -280,7 +280,7 @@ protected:
     double mLastAlignTs = 0.0;
     std::atomic<float> mRelocMatchScore{0.0f};
     
-    // 平滑对齐更新机制：使用EMA（指数移动平均）减少抖动，性能优化版本
+    // 平滑对齐更新机制：使用EMA（指数移动平均）减少抖动
     cv::Mat mSmoothedT_map_from_slam;  // 平滑后的对齐变换
     int mAlignUpdateCount = 0;  // 对齐更新计数
     int mAlignSkipCounter = 0;  // 跳帧计数器，用于降低更新频率

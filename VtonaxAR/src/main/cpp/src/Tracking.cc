@@ -1072,7 +1072,7 @@ void Tracking::GlobalRelocLoop(int sessionId)
 
                     // 仅在最佳地图优胜（内点>=15且多于第二名20%）且内点足够时发布
                     if (bestMapId != -1 && maxVote >= RELOC_MIN_INLIERS_FOR_ALIGN && (maxVote > secondMaxVote * 1.2)) {
-                        // 使用平滑更新机制，减少单帧抖动（性能优化版本）
+                        // 使用平滑更新机制，减少单帧抖动
                         UpdateAlignmentSmooth(T_map_from_slam, inliersCnt, conf, ts);
                         
                         // 仍然发布对齐结果供主线程使用

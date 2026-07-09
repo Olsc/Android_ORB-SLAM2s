@@ -195,7 +195,9 @@ cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInlie
         vector<size_t> vAvailableIndices;
 
         int nCurrentIterations = 0;
-        while(mnIterations<mRansacMaxIts || nCurrentIterations<nIterations)
+        // 自适应RANSAC提前终止：当已有足够好的解且剩余迭代不可能找到更好的时停止
+        int maxAdaptiveIters = mRansacMaxIts;
+        while(mnIterations<maxAdaptiveIters || nCurrentIterations<nIterations)
         {
             nCurrentIterations++;
             mnIterations++;
@@ -251,6 +253,28 @@ cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInlie
                     return mRefinedTcw.clone();
                 }
 
+            }
+
+            // 自适应提前终止：基于当前最佳内点率估算所需迭代次数
+            // N = log(1-p) / log(1-(1-ε)^s)
+            // p=0.99, s=4, ε=外点率
+            if (mnBestInliers > mRansacMinSet && nCurrentIterations > PNP_ADAPTIVE_START_ITER) {
+                float bestInlierRatio = (float)mnBestInliers / (float)N;
+                if (bestInlierRatio > PNP_ADAPTIVE_MIN_RATIO) {
+                    float outlierRatio = 1.0f - bestInlierRatio;
+                    float prob_no_good = 1.0f;
+                    for (int k = 0; k < mRansacMinSet; k++)
+                        prob_no_good *= outlierRatio;  // (1-ε)^s
+                    if (prob_no_good > 0.0f) {
+                        // N = log(1-p) / log(1-(1-ε)^s)
+                        float n_needed = log(1.0 - mRansacProb) / log(1.0 - (1.0f - outlierRatio) * (1.0f - outlierRatio) * (1.0f - outlierRatio) * (1.0f - outlierRatio) + 1e-30f);
+                        n_needed = max(1.0f, n_needed);
+                        // 剩余迭代不足以找到更好的解 → 提前终止
+                        if (nCurrentIterations >= n_needed * PNP_ADAPTIVE_SAFETY_FACTOR) {
+                            maxAdaptiveIters = mnIterations;  // 终止 while 循环
+                        }
+                    }
+                }
             }
         }
 

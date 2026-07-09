@@ -246,8 +246,10 @@ const int LOOP_RANSAC_MAX_ITERS = 300;
 // ==========================================
 
 // Huber 核函数阈值：2DoF≈2.448, 3DoF≈2.796
-const float OPTIMIZER_HUBER_TH_2D = 2.4476519f;
+// 注意：自2026-07-09起，Huber已被Cauchy核替代
+const float OPTIMIZER_HUBER_TH_2D = 2.4476519f;  // 保留用于chi2阈值判断
 const float OPTIMIZER_HUBER_TH_3D = 2.79553215f;
+const float OPTIMIZER_CAUCHY_DELTA = 1.5f;        // Cauchy核delta参数(最优值)
 
 // 卡方检验阈值：2DoF=5.991, 1DoF=3.841
 const float OPTIMIZER_CHI2_TH_2D = 5.991f;
@@ -281,6 +283,11 @@ const int PNP_RANSAC_MAX_ITERS = 300;
 const int PNP_RANSAC_MIN_SET = 4;
 const float PNP_RANSAC_EPSILON = 0.5f;
 const float PNP_RANSAC_TH2 = 5.991f;
+
+// 自适应RANSAC提前终止参数
+const int PNP_ADAPTIVE_START_ITER = 30;   // 至少迭代30次后才检查提前终止
+const float PNP_ADAPTIVE_MIN_RATIO = 0.3f;  // 内点率低于30%时不触发提前终止
+const float PNP_ADAPTIVE_SAFETY_FACTOR = 1.5f;  // 安全系数：理论×1.5后提前终止
 
 // 帧网格划分：48×64，约640×360时每格13.3×7.5像素
 const int FRAME_GRID_ROWS = 48;
