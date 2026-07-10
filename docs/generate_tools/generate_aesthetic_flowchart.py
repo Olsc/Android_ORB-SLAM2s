@@ -1,6 +1,10 @@
 
 import graphviz
 import os
+import sys
+_env_bin = os.path.join(os.path.dirname(sys.executable), 'Library', 'bin')
+if os.path.isdir(_env_bin):
+    os.environ['PATH'] = _env_bin + os.pathsep + os.environ.get('PATH', '')
 
 def generate_flowchart(lang='en'):
     """
@@ -63,6 +67,28 @@ def generate_flowchart(lang='en'):
             <tr><td align="left">{ui_label_body}</td></tr>
         </table>>''', shape='plain')
         
+        # 节点: CameraX 相机管道
+        cam_title = t("Camera Pipeline", "相机管道")
+        cam_body = t(
+            "• CameraX ImageAnalysis<br/>• YUV → RGBA + Gray Mat<br/>• OpenCVBridge JNI",
+            "• CameraX ImageAnalysis<br/>• YUV → RGBA + Gray 转换<br/>• OpenCVBridge JNI 调用"
+        )
+        android.node('CameraX_Pipe', f'''<<table border="0" cellborder="1" cellspacing="0" cellpadding="4">
+            <tr><td bgcolor="#0277BD"><font color="white"><b>{cam_title}</b></font></td></tr>
+            <tr><td align="left">{cam_body}</td></tr>
+        </table>>''', shape='plain')
+
+        # 节点: Web 服务器
+        web_title = t("Web Server (Optional)", "Web 服务器 (可选)")
+        web_body = t(
+            "• SSL/TLS (HTTPS:8080)<br/>• MJPEG Stream + Data API<br/>• Remote Frame Upload",
+            "• SSL/TLS 加密 (HTTPS:8080)<br/>• MJPEG 流 + 数据 API<br/>• 远程图像帧上传"
+        )
+        android.node('Web_Server', f'''<<table border="0" cellborder="1" cellspacing="0" cellpadding="4">
+            <tr><td bgcolor="#0277BD"><font color="white"><b>{web_title}</b></font></td></tr>
+            <tr><td align="left">{web_body}</td></tr>
+        </table>>''', shape='plain')
+
         # 节点: 方向传感器
         sensor_title = t("OrientationSensor", "方向传感器 (OrientationSensor)")
         sensor_body = t(
@@ -87,7 +113,9 @@ def generate_flowchart(lang='en'):
 
         # Android 内部连线
         android.edge('User_Input', 'UI_Activity', t('Trigger Event', '触发事件'))
+        android.edge('CameraX_Pipe', 'UI_Activity', t('RGBA+Gray Frame', 'RGBA+Gray 帧'))
         android.edge('Sensor_IMU', 'UI_Activity', t('Sensor Data', '传感器数据'))
+        android.edge('UI_Activity', 'Web_Server', t('Manual Start/Stop', '手动启停'), style='dashed')
 
     # ==================== JNI 桥接层 ====================
     with dot.subgraph(name='cluster_1_JNI') as jni:
@@ -118,7 +146,7 @@ def generate_flowchart(lang='en'):
         dof_title = t("3DOF Module", "3DOF 模块")
         jni.node('JNI_3DOF', f'''<<table border="0" cellborder="1" cellspacing="0" cellpadding="4">
             <tr><td bgcolor="#FF7043"><font color="white"><b>{dof_title}</b></font></td></tr>
-            <tr><td align="left">• compute3DofMVP()<br/>• calculateInsertionPoint()</td></tr>
+            <tr><td align="left">• compute3DofMVP()<br/>• calculate3DofInsertionPoint()</td></tr>
         </table>>''', shape='plain')
 
         # 节点: 全局状态
@@ -152,7 +180,7 @@ def generate_flowchart(lang='en'):
                 <tr><td align="left">{t("Orchestrates Tracking", "协调跟踪过程")}</td></tr>
             </table>>''', shape='plain')
             
-            track.node('ORB_Extract', 'ORBExtractor::operator()', shape='box')
+            track.node('ORB_Extract', 'ORBextractor::operator()', shape='box')
             track.node('Pose_Opt', 'Optimizer::PoseOptimization\n(G2O / BA)', shape='box')
             track.node('Track_Ref', 'TrackReferenceKeyFrame', shape='box')
             track.node('Track_Model', 'TrackWithMotionModel', shape='box')
@@ -226,11 +254,12 @@ def generate_flowchart(lang='en'):
         system.edge('Persistence', 'Map_Atlas', t('Serialize/Deserialize', '序列化/反序列化'), dir='both')
 
     # ==================== 跨层级连接 ====================
-    dot.edge('UI_Activity', 'JNI_Process', t('1. Mat (Frame)', '1. Mat (视频帧)'), penwidth='2.0', color='#01579B')
+    dot.edge('UI_Activity', 'JNI_Process', t('1. processCameraFrame()', '1. processCameraFrame()'), penwidth='2.0', color='#01579B')
     dot.edge('JNI_Process', 'System_Track', '2. TrackMonocular()', penwidth='2.0', color='#E65100')
     dot.edge('JNI_3DOF', 'Global_State', t('Writes MVP', '写入 MVP'))
     dot.edge('UI_Activity', 'JNI_3DOF', t('3. Get MVP', '3. 获取 MVP'), style='dashed')
     dot.edge('User_Input', 'Persistence', t('Trigger Save/Load', '触发保存/加载'), color='#BF360C')
+    dot.edge('Web_Server', 'JNI_Process', t('Query SLAM Data', '查询 SLAM 数据'), style='dotted', color='#0277BD')
 
     # 保存文件
     try:
