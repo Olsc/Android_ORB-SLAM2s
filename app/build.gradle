@@ -20,12 +20,12 @@ android {
         jniLibs {
             useLegacyPackaging true
             excludes += ['lib/x86/**', 'lib/x86_64/**']
-            pickFirsts += ['lib/armeabi-v7a/libopencv_java4.so', 'lib/arm64-v8a/libopencv_java4.so', 'lib/**/libc++_shared.so']
+            pickFirsts += ['lib/**/libc++_shared.so']
         }
         resources {
             excludes += [
-                'lib/x86/**', 
-                'lib/x86_64/**', 
+                'lib/x86/**',
+                'lib/x86_64/**',
                 '**/DebugProbesKt.bin',
                 '**/kotlin/**',
                 '**/*.kotlin_metadata',
@@ -108,7 +108,6 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.7.1'
     implementation 'com.google.android.material:material:1.14.0'
 
-    implementation project(':OpenCVLibrary')
     implementation project(':VtonaxAR')
 
     // CameraX

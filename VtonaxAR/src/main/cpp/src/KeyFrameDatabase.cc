@@ -36,7 +36,6 @@
 
 #include "KeyFrame.h"
 #include "Config.h"
-#include "Thirdparty/DBoW2/DBoW2/BowVector.h"
 
 #include<mutex>
 
@@ -45,10 +44,9 @@ using namespace std;
 namespace ORB_SLAM2
 {
 
-KeyFrameDatabase::KeyFrameDatabase (const ORBVocabulary &voc):
-    mpVoc(&voc)
+KeyFrameDatabase::KeyFrameDatabase ():
+    mpTree(new HBSTTree()), mnErasedCount(0)
 {
-    mvInvertedFile.resize(voc.size());
 }
 
 
@@ -56,100 +54,77 @@ void KeyFrameDatabase::add(KeyFrame *pKF)
 {
     unique_lock<mutex> lock(mMutex);
 
-    for(DBoW2::BowVector::const_iterator vit= pKF->mBowVec.begin(), vend=pKF->mBowVec.end(); vit!=vend; vit++)
-        mvInvertedFile[vit->first].push_back(pKF);
+    if (pKF->mDescriptors.empty()) return;
+
+    std::vector<size_t> objects(pKF->N);
+    for(int i=0; i<pKF->N; i++) objects[i] = i;
+    
+    HBSTTree::MatchableVector matchables = HBSTTree::getMatchables(pKF->mDescriptors, objects, pKF->mnId);
+    mpTree->add(matchables);
+
+    mhmKeyFrames[pKF->mnId] = pKF;
 }
 
 void KeyFrameDatabase::erase(KeyFrame* pKF)
 {
     unique_lock<mutex> lock(mMutex);
-
-    // 删除逆向文件中的条目
-    for(DBoW2::BowVector::const_iterator vit=pKF->mBowVec.begin(), vend=pKF->mBowVec.end(); vit!=vend; vit++)
-    {
-        // 共享该单词的关键帧列表
-        list<KeyFrame*> &lKFs =   mvInvertedFile[vit->first];
-
-        for(list<KeyFrame*>::iterator lit=lKFs.begin(), lend= lKFs.end(); lit!=lend; lit++)
-        {
-            if(pKF==*lit)
-            {
-                lKFs.erase(lit);
-                break;
-            }
+    if (mhmKeyFrames.erase(pKF->mnId) > 0) {
+        mnErasedCount++;
+        // 当删除数量达到设定的阈值时，触发树重建，彻底清理残留特征点
+        if (mnErasedCount >= 20) {
+            rebuild();
+            mnErasedCount = 0;
         }
     }
 }
 
 void KeyFrameDatabase::clear()
 {
-    mvInvertedFile.clear();
-    mvInvertedFile.resize(mpVoc->size());
+    unique_lock<mutex> lock(mMutex);
+    mpTree->clear();
+    mhmKeyFrames.clear();
+    mnErasedCount = 0;
 }
 
 
 vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float minScore)
 {
     set<KeyFrame*> spConnectedKeyFrames = pKF->GetConnectedKeyFrames();
-    list<KeyFrame*> lKFsSharingWords;
+    list<pair<float,KeyFrame*> > lScoreAndMatch;
 
-    // 搜索与当前关键帧共享单词的所有关键帧
-    // 丢弃与查询关键帧相连的关键帧
     {
         unique_lock<mutex> lock(mMutex);
 
-        for(DBoW2::BowVector::const_iterator vit=pKF->mBowVec.begin(), vend=pKF->mBowVec.end(); vit != vend; vit++)
-        {
-            list<KeyFrame*> &lKFs =   mvInvertedFile[vit->first];
+        if (pKF->mDescriptors.empty()) return vector<KeyFrame*>();
 
-            for(list<KeyFrame*>::iterator lit=lKFs.begin(), lend= lKFs.end(); lit!=lend; lit++)
-            {
-                KeyFrame* pKFi=*lit;
-                if(pKFi->mnLoopQuery!=pKF->mnId)
-                {
-                    pKFi->mnLoopWords=0;
-                    if(!spConnectedKeyFrames.count(pKFi))
-                    {
-                        pKFi->mnLoopQuery=pKF->mnId;
-                        lKFsSharingWords.push_back(pKFi);
-                    }
-                }
-                pKFi->mnLoopWords++;
+        std::vector<size_t> objects(pKF->N);
+        for(int i=0; i<pKF->N; i++) objects[i] = i;
+        
+        HBSTTree::MatchableVector query_matchables = HBSTTree::getMatchables(pKF->mDescriptors, objects, pKF->mnId);
+        
+        HBSTTree::MatchVectorMap matches;
+        mpTree->match(query_matchables, matches, 50);
+        
+        for (auto m : query_matchables) delete m;
+
+        for (const auto& match_pair : matches) {
+            long unsigned int id = match_pair.first;
+            if (id == pKF->mnId) continue;
+            
+            if (mhmKeyFrames.count(id) == 0) continue; 
+            
+            KeyFrame* pKFi = mhmKeyFrames[id];
+            if (spConnectedKeyFrames.count(pKFi)) continue;
+
+            int num_matches = match_pair.second.size();
+            float score = (float)num_matches / (float)pKF->N;
+            
+            pKFi->mLoopScore = score;
+            pKFi->mnLoopQuery = pKF->mnId;
+            
+            if (num_matches >= 15) {
+                lScoreAndMatch.push_back(make_pair(score, pKFi));
             }
-        }
-    }
-
-    if(lKFsSharingWords.empty())
-        return vector<KeyFrame*>();
-
-    list<pair<float,KeyFrame*> > lScoreAndMatch;
-
-    // 只与共享足够单词的关键帧进行比较
-    int maxCommonWords=0;
-    for(list<KeyFrame*>::iterator lit=lKFsSharingWords.begin(), lend= lKFsSharingWords.end(); lit!=lend; lit++)
-    {
-        if((*lit)->mnLoopWords>maxCommonWords)
-            maxCommonWords=(*lit)->mnLoopWords;
-    }
-
-    int minCommonWords = maxCommonWords*0.8f;
-
-    int nscores=0;
-
-    // 计算相似度得分，保留得分高于最小分数的匹配
-    for(list<KeyFrame*>::iterator lit=lKFsSharingWords.begin(), lend= lKFsSharingWords.end(); lit!=lend; lit++)
-    {
-        KeyFrame* pKFi = *lit;
-
-        if(pKFi->mnLoopWords>minCommonWords)
-        {
-            nscores++;
-
-            float si = mpVoc->score(pKF->mBowVec,pKFi->mBowVec);
-
-            pKFi->mLoopScore = si;
-            if(si>=minScore)
-                lScoreAndMatch.push_back(make_pair(si,pKFi));
         }
     }
 
@@ -157,9 +132,8 @@ vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float mi
         return vector<KeyFrame*>();
 
     list<pair<float,KeyFrame*> > lAccScoreAndMatch;
-    float bestAccScore = minScore;
+    float bestAccScore = 0;
 
-    // 现在通过共视关系累积得分
     for(list<pair<float,KeyFrame*> >::iterator it=lScoreAndMatch.begin(), itend=lScoreAndMatch.end(); it!=itend; it++)
     {
         KeyFrame* pKFi = it->second;
@@ -171,7 +145,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float mi
         for(vector<KeyFrame*>::iterator vit=vpNeighs.begin(), vend=vpNeighs.end(); vit!=vend; vit++)
         {
             KeyFrame* pKF2 = *vit;
-            if(pKF2->mnLoopQuery==pKF->mnId && pKF2->mnLoopWords>minCommonWords)
+            if (pKF2->mnLoopQuery == pKF->mnId && pKF2->mLoopScore > 0)
             {
                 accScore+=pKF2->mLoopScore;
                 if(pKF2->mLoopScore>bestScore)
@@ -187,7 +161,6 @@ vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float mi
             bestAccScore=accScore;
     }
 
-    // 返回得分高于0.75*bestScore的所有关键帧
     float minScoreToRetain = 0.75f*bestAccScore;
 
     set<KeyFrame*> spAlreadyAddedKF;
@@ -207,66 +180,43 @@ vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float mi
         }
     }
 
-
     return vpLoopCandidates;
 }
 
 vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
 {
-    list<KeyFrame*> lKFsSharingWords;
+    list<pair<float,KeyFrame*> > lScoreAndMatch;
 
-    // 搜索与当前帧共享单词的所有关键帧
     {
         unique_lock<mutex> lock(mMutex);
 
-        for(DBoW2::BowVector::const_iterator vit=F->mBowVec.begin(), vend=F->mBowVec.end(); vit != vend; vit++)
-        {
-            list<KeyFrame*> &lKFs =   mvInvertedFile[vit->first];
+        if (F->mDescriptors.empty()) return vector<KeyFrame*>();
 
-            for(list<KeyFrame*>::iterator lit=lKFs.begin(), lend= lKFs.end(); lit!=lend; lit++)
-            {
-                KeyFrame* pKFi=*lit;
-                if(pKFi->mnRelocQuery!=F->mnId)
-                {
-                    pKFi->mnRelocWords=0;
-                    pKFi->mnRelocQuery=F->mnId;
-                    lKFsSharingWords.push_back(pKFi);
-                }
-                pKFi->mnRelocWords++;
+        std::vector<size_t> objects(F->N);
+        for(int i=0; i<F->N; i++) objects[i] = i;
+        
+        HBSTTree::MatchableVector query_matchables = HBSTTree::getMatchables(F->mDescriptors, objects, F->mnId);
+        
+        HBSTTree::MatchVectorMap matches;
+        mpTree->match(query_matchables, matches, 50);
+        
+        for (auto m : query_matchables) delete m;
+
+        for (const auto& match_pair : matches) {
+            long unsigned int id = match_pair.first;
+            if (mhmKeyFrames.count(id) == 0) continue;
+            
+            KeyFrame* pKFi = mhmKeyFrames[id];
+
+            int num_matches = match_pair.second.size();
+            float score = (float)num_matches / (float)F->N;
+            
+            pKFi->mRelocScore = score;
+            pKFi->mnRelocQuery = F->mnId;
+            
+            if (num_matches > 15) {
+                lScoreAndMatch.push_back(make_pair(score, pKFi));
             }
-        }
-    }
-    if(lKFsSharingWords.empty())
-        return vector<KeyFrame*>();
-
-    // 早期剪枝 - 过滤共享词数过少的关键帧
-    // 设置最小共享词数阈值,避免处理明显不相关的关键帧
-    
-    // 只与共享足够单词的关键帧进行比较
-    int maxCommonWords=0;
-    for(list<KeyFrame*>::iterator lit=lKFsSharingWords.begin(), lend= lKFsSharingWords.end(); lit!=lend; lit++)
-    {
-        if((*lit)->mnRelocWords>maxCommonWords)
-            maxCommonWords=(*lit)->mnRelocWords;
-    }
-
-    int minCommonWords = max(RELOC_MIN_SHARED_WORDS, (int)(maxCommonWords*0.8f));
-
-    list<pair<float,KeyFrame*> > lScoreAndMatch;
-
-    int nscores=0;
-
-    // 计算相似度得分
-    for(list<KeyFrame*>::iterator lit=lKFsSharingWords.begin(), lend= lKFsSharingWords.end(); lit!=lend; lit++)
-    {
-        KeyFrame* pKFi = *lit;
-
-        if(pKFi->mnRelocWords>minCommonWords)
-        {
-            nscores++;
-            float si = mpVoc->score(F->mBowVec,pKFi->mBowVec);
-            pKFi->mRelocScore=si;
-            lScoreAndMatch.push_back(make_pair(si,pKFi));
         }
     }
 
@@ -276,7 +226,6 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
     list<pair<float,KeyFrame*> > lAccScoreAndMatch;
     float bestAccScore = 0;
 
-    // 现在通过共视关系累积得分
     for(list<pair<float,KeyFrame*> >::iterator it=lScoreAndMatch.begin(), itend=lScoreAndMatch.end(); it!=itend; it++)
     {
         KeyFrame* pKFi = it->second;
@@ -288,31 +237,28 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
         for(vector<KeyFrame*>::iterator vit=vpNeighs.begin(), vend=vpNeighs.end(); vit!=vend; vit++)
         {
             KeyFrame* pKF2 = *vit;
-            if(pKF2->mnRelocQuery!=F->mnId)
-                continue;
-
-            accScore+=pKF2->mRelocScore;
-            if(pKF2->mRelocScore>bestScore)
+            if (pKF2->mnRelocQuery == F->mnId && pKF2->mRelocScore > 0)
             {
-                pBestKF=pKF2;
-                bestScore = pKF2->mRelocScore;
+                accScore+=pKF2->mRelocScore;
+                if(pKF2->mRelocScore>bestScore)
+                {
+                    pBestKF=pKF2;
+                    bestScore = pKF2->mRelocScore;
+                }
             }
-
         }
         lAccScoreAndMatch.push_back(make_pair(accScore,pBestKF));
         if(accScore>bestAccScore)
             bestAccScore=accScore;
     }
 
-    // 返回得分高于0.75*bestScore的所有关键帧
     float minScoreToRetain = 0.75f*bestAccScore;
     set<KeyFrame*> spAlreadyAddedKF;
     vector<KeyFrame*> vpRelocCandidates;
     vpRelocCandidates.reserve(lAccScoreAndMatch.size());
     for(list<pair<float,KeyFrame*> >::iterator it=lAccScoreAndMatch.begin(), itend=lAccScoreAndMatch.end(); it!=itend; it++)
     {
-        const float &si = it->first;
-        if(si>minScoreToRetain)
+        if(it->first>minScoreToRetain)
         {
             KeyFrame* pKFi = it->second;
             if(!spAlreadyAddedKF.count(pKFi))
@@ -323,16 +269,31 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
         }
     }
 
-    // Top-K截断 - 只保留得分最高的K个候选
-    // 避免返回过多候选导致后续匹配耗时过长
     if(vpRelocCandidates.size() > RELOC_MAX_CANDIDATES)
     {
-        // 按得分排序(已经按得分筛选,但可能有多个得分相近的)
-        // 这里简单截断,因为候选已经按质量排序
         vpRelocCandidates.resize(RELOC_MAX_CANDIDATES);
     }
 
     return vpRelocCandidates;
+}
+
+void KeyFrameDatabase::rebuild()
+{
+    // 清除树以安全释放所有 Matchable 对象的内存
+    mpTree->clear();
+
+    // 重新把 mhmKeyFrames 中所有的活动关键帧特征插入树中
+    for (auto& pair : mhmKeyFrames) {
+        KeyFrame* pKF = pair.second;
+        if (!pKF || pKF->isBad() || pKF->mDescriptors.empty())
+            continue;
+
+        std::vector<size_t> objects(pKF->N);
+        for(int i = 0; i < pKF->N; i++) objects[i] = i;
+
+        HBSTTree::MatchableVector matchables = HBSTTree::getMatchables(pKF->mDescriptors, objects, pKF->mnId);
+        mpTree->add(matchables);
+    }
 }
 
 } //namespace ORB_SLAM2

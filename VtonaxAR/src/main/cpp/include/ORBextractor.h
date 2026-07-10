@@ -70,9 +70,7 @@ public:
     // 加载 ORB 描述子旋转偏移量查找表
     static void LoadLUT(const unsigned char* buffer, size_t size);
 
-    // 计算图像上的ORB特征和描述子
-    // ORB特征使用八叉树在图像上分散分布
-    // 当前实现中忽略掩码
+    // 计算图像上的ORB特征（使用八叉树分散分布，当前忽略掩码）
     void operator()( cv::InputArray image, cv::InputArray mask,
       std::vector<cv::KeyPoint>& keypoints,
       cv::OutputArray descriptors);
@@ -101,11 +99,20 @@ public:
 
     std::vector<cv::Mat> mvImagePyramid;
     std::vector<cv::Mat> mvImagePyramidPadded;  // 带边界的临时 Mat，复用避免每帧每层堆分配
+    std::vector<cv::Mat> mvBlurredPyramid;      // 模糊后的临时 Mat，复用避免每帧每层堆分配
 
 protected:
 
     void ComputePyramid(cv::Mat image);
-    void ComputeKeyPointsOctTree(std::vector<std::vector<cv::KeyPoint> >& allKeypoints);    
+    void ComputeKeyPointsOctTree(std::vector<std::vector<cv::KeyPoint> >& allKeypoints);
+
+    // 多屏障合并辅助函数
+    void detectAndOrientLevels(const cv::Range& range,
+                               std::vector<std::vector<cv::KeyPoint> >& allKeypoints);
+    void blurAndComputeDescriptors(const cv::Range& range,
+                                   const std::vector<int>& levelDescOffset,
+                                   std::vector<cv::KeyPoint>& keypoints,
+                                   cv::Mat& descriptors);
     std::vector<cv::KeyPoint> DistributeOctTree(const std::vector<cv::KeyPoint>& vToDistributeKeys, const int &minX,
                                            const int &maxX, const int &minY, const int &maxY, const int &nFeatures, const int &level);
     std::vector<cv::Point> pattern;

@@ -41,8 +41,6 @@
 
 #include <mutex>
 
-
-
 namespace ORB_SLAM2
 {
 
@@ -78,7 +76,7 @@ public:
     // 获取已加载地图点的数量（用于优化GlobalRelocLoop）
     long unsigned int GetLoadedMapMPCount();
 
-    vector<KeyFrame*> mvpKeyFrameOrigins;
+    std::vector<KeyFrame*> mvpKeyFrameOrigins;
 
     std::mutex mMutexMapUpdate;
 

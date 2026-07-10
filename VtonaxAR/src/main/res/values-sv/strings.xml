@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="hint_map_saved">Karta sparad: %1$s</string>
+    <string name="hint_map_save_failed">Det gick inte att spara: %1$s</string>
+    <string name="hint_map_file_not_found">Kartfilen hittades inte</string>
+    <string name="hint_map_loaded">Karta inläst: %1$s</string>
+    <string name="hint_maps_loaded">%1$d kartor inlästa</string>
+    <string name="hint_map_load_failed">Inläsning misslyckades: %1$s</string>
+    <string name="hint_map_load_requested">Kartinläsning begärd</string>
+    <string name="hint_map_deleted">Karta raderad</string>
+    <string name="hint_map_delete_failed">Radering misslyckades</string>
+</resources>

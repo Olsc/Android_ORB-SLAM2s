@@ -55,6 +55,16 @@ using namespace std;
 namespace ORB_SLAM2
 {
 
+// 辅助内联函数：用于在 HBST 树中快速查找对应描述子的叶子节点，以避免代码重复
+inline const HBSTNode* FindHBSTLeafNode(const HBSTTree* tree, const HBSTMatchable::Descriptor &desc) {
+    if (!tree) return nullptr;
+    const HBSTNode* node = tree->root();
+    while (node && node->hasLeafs()) {
+        node = desc[node->indexSplitBit()] ? node->right : node->left;
+    }
+    return node;
+}
+
 const int ORBmatcher::TH_HIGH = ORB_MATCHER_TH_HIGH;
 const int ORBmatcher::TH_LOW = ORB_MATCHER_TH_LOW;
 const int ORBmatcher::HISTO_LENGTH = ORB_MATCHER_HISTO_LENGTH;
@@ -109,14 +119,6 @@ int ORBmatcher::SearchByProjection(Frame &F, const vector<MapPoint*> &vpMapPoint
                 if(F.mvpMapPoints[idx]->Observations()>0)
                     continue;
 
-            // 单目模式不需要双目约束检查
-            // if(F.mvuRight[idx]>0)
-            // {
-            //     const float er = fabs(pMP->mTrackProjXR-F.mvuRight[idx]);
-            //     if(er>r*F.mvScaleFactors[nPredictedLevel])
-            //         continue;
-            // }
-
             const cv::Mat &d = F.mDescriptors.row(idx);
 
             const int dist = DescriptorDistance(MPdescriptor,d);
@@ -128,6 +130,7 @@ int ORBmatcher::SearchByProjection(Frame &F, const vector<MapPoint*> &vpMapPoint
                 bestLevel2 = bestLevel;
                 bestLevel = F.mvKeysUn[idx].octave;
                 bestIdx=idx;
+                if (bestDist == 0) break;  // 零距离无法被超越
             }
             else if(dist<bestDist2)
             {
@@ -173,18 +176,19 @@ bool ORBmatcher::CheckDistEpipolarLine(const cv::KeyPoint &kp1,const cv::KeyPoin
     if(den==0)
         return false;
 
-    const float dsqr = num*num/den;
-
-    return dsqr<ORB_MATCHER_EPILINE_TH*pKF2->mvLevelSigma2[kp2.octave];
+    // 优化: 消除除法 num*num/den < th 等价于 num*num < den*th
+    // 数学等价: a/b < c ⇔ a < b*c (当b>0)
+    const float epiTh = ORB_MATCHER_EPILINE_TH * pKF2->mvLevelSigma2[kp2.octave];
+    return num*num < den * epiTh;
 }
 
-int ORBmatcher::SearchByBoW(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPointMatches)
+int ORBmatcher::SearchByHBST(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPointMatches)
 {
+    if(!pKF || pKF->isBad())
+        return 0;
+
     const vector<MapPoint*> vpMapPointsKF = pKF->GetMapPointMatches();
-
     vpMapPointMatches = vector<MapPoint*>(F.N,static_cast<MapPoint*>(NULL));
-
-    const DBoW2::FeatureVector &vFeatVecKF = pKF->mFeatVec;
 
     int nmatches=0;
 
@@ -193,133 +197,123 @@ int ORBmatcher::SearchByBoW(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoin
         rotHist[i].reserve(500);
     const float factor = 1.0f/HISTO_LENGTH;
 
-    // 确保描述子矩阵有效
     if(pKF->mDescriptors.empty() || F.mDescriptors.empty())
         return 0;
-    
+
     const int nKFDescriptors = pKF->mDescriptors.rows;
+    if (vpMapPointsKF.size() < static_cast<size_t>(nKFDescriptors))
+        return 0;
+
     const int nFDescriptors = F.mDescriptors.rows;
-    const size_t nKFMapPoints = vpMapPointsKF.size();
-    const size_t nKFKeys = pKF->mvKeysUn.size();
-    const size_t nFKeys = F.mvKeys.size();
 
-    // 我们对属于同一词汇节点（在特定级别）的 ORB 进行匹配
-    DBoW2::FeatureVector::const_iterator KFit = vFeatVecKF.begin();
-    DBoW2::FeatureVector::const_iterator Fit = F.mFeatVec.begin();
-    DBoW2::FeatureVector::const_iterator KFend = vFeatVecKF.end();
-    DBoW2::FeatureVector::const_iterator Fend = F.mFeatVec.end();
+    std::shared_ptr<HBSTTree> treeKF = pKF->GetHBSTTree();
+    if (!treeKF)
+        return 0;
+    const auto& matchablesKF = treeKF->matchables();
 
-    while(KFit != KFend && Fit != Fend)
+    std::shared_ptr<HBSTTree> treeF = F.GetHBSTTree();
+    if (!treeF)
+        return 0;
+
+    for(int iKF=0; iKF<nKFDescriptors; iKF++)
     {
-        if(KFit->first == Fit->first)
-        {
-            const vector<unsigned int> vIndicesKF = KFit->second;
-            const vector<unsigned int> vIndicesF = Fit->second;
+        MapPoint* pMP = vpMapPointsKF[iKF];
+        if(!pMP || pMP->isBad())
+            continue;
 
-            for(size_t iKF=0; iKF<vIndicesKF.size(); iKF++)
-            {
-                const unsigned int realIdxKF = vIndicesKF[iKF];
+        // 直接从关键帧预构建的 HBST 树中获取 bitset 描述子，避免重复进行二进制转换
+        const HBSTMatchable::Descriptor &descKF = matchablesKF[iKF]->descriptor;
 
-                // 边界检查：确保索引在有效范围内
-                if(realIdxKF >= nKFMapPoints || realIdxKF >= (unsigned int)nKFDescriptors || realIdxKF >= nKFKeys)
-                    continue;
+        // 使用辅助内联函数遍历查找叶子节点，减少重复代码
+        const HBSTNode* node_current = FindHBSTLeafNode(treeF.get(), descKF);
+        if(!node_current)
+            continue;
 
-                MapPoint* pMP = vpMapPointsKF[realIdxKF];
+        const auto& candidates = node_current->getMatchables();
 
-                if(!pMP)
-                    continue;
+        int bestDist1 = 256;
+        int bestIdxF = -1;
+        int bestDist2 = 256;
 
-                if(pMP->isBad())
-                    continue;                
+        for (const auto* candidate : candidates) {
+            size_t realIdxF = candidate->objects.begin()->second;
 
-                const cv::Mat &dKF= pKF->mDescriptors.row(realIdxKF);
+            if (vpMapPointMatches[realIdxF])
+                continue;
 
-                int bestDist1=256;
-                int bestIdxF =-1 ;
-                int bestDist2=256;
+            // 直接在 bitset 上通过异或和计数来计算汉明距离，实现极致速度且无内存拷贝与函数调用
+            const int dist = (descKF ^ candidate->descriptor).count();
 
-                for(size_t iF=0; iF<vIndicesF.size(); iF++)
-                {
-                    const unsigned int realIdxF = vIndicesF[iF];
+            if (dist < bestDist1) {
+                bestDist2 = bestDist1;
+                bestDist1 = dist;
+                bestIdxF = realIdxF;
+            } else if (dist < bestDist2) {
+                bestDist2 = dist;
+            }
+        }
 
-                    // 边界检查：确保索引在有效范围内
-                    if(realIdxF >= (unsigned int)F.N || realIdxF >= (unsigned int)nFDescriptors || realIdxF >= nFKeys)
-                        continue;
-
-                    if(vpMapPointMatches[realIdxF])
-                        continue;
-
-                    const cv::Mat &dF = F.mDescriptors.row(realIdxF);
-
-                    const int dist =  DescriptorDistance(dKF,dF);
-
-                    if(dist<bestDist1)
-                    {
-                        bestDist2=bestDist1;
-                        bestDist1=dist;
-                        bestIdxF=realIdxF;
+        if (bestDist1 <= TH_LOW) {
+            // 尺度一致性检查：若金字塔层级差异过大，增加等效距离
+            if (mbCheckOrientation) {
+                int scaleKF_i = pKF->mvKeysUn[iKF].octave;
+                int scaleF_i = F.mvKeys[bestIdxF].octave;
+                float scaleDiff = fabs(static_cast<float>(scaleKF_i - scaleF_i));
+                if (scaleDiff > 2.0f) {
+                    // 尺度差异过大，增加等效距离减少其被选中的概率
+                    float effectiveDist = bestDist1 * (1.0f + scaleDiff * 0.15f);
+                    if (effectiveDist > TH_LOW) {
+                        continue;  // 等效距离超过阈值，丢弃此匹配
                     }
-                    else if(dist<bestDist2)
-                    {
-                        bestDist2=dist;
+                    // 仍接受但降低ratio test的实际约束
+                    if (static_cast<float>(bestDist1) < mfNNratio * static_cast<float>(bestDist2) * (1.0f + scaleDiff * 0.1f)) {
+                        vpMapPointMatches[bestIdxF] = pMP;
+                        float rot = pKF->mvKeysUn[iKF].angle - F.mvKeys[bestIdxF].angle;
+                        if (rot < 0.0) rot += 360.0f;
+                        int bin = round(rot * factor);
+                        if (bin == HISTO_LENGTH) bin = 0;
+                        assert(bin >= 0 && bin < HISTO_LENGTH);
+                        rotHist[bin].push_back(bestIdxF);
+                        nmatches++;
                     }
-                }
-
-                if(bestDist1<=TH_LOW)
-                {
-                    if(static_cast<float>(bestDist1)<mfNNratio*static_cast<float>(bestDist2))
-                    {
-                        vpMapPointMatches[bestIdxF]=pMP;
-
-                        const cv::KeyPoint &kp = pKF->mvKeysUn[realIdxKF];
-
-                        if(mbCheckOrientation)
-                        {
-                            float rot = kp.angle-F.mvKeys[bestIdxF].angle;
-                            if(rot<0.0)
-                                rot+=360.0f;
-                            int bin = round(rot*factor);
-                            if(bin==HISTO_LENGTH)
-                                bin=0;
-                            assert(bin>=0 && bin<HISTO_LENGTH);
-                            rotHist[bin].push_back(bestIdxF);
-                        }
+                } else {
+                    if (static_cast<float>(bestDist1) < mfNNratio * static_cast<float>(bestDist2)) {
+                        vpMapPointMatches[bestIdxF] = pMP;
+                        float rot = pKF->mvKeysUn[iKF].angle - F.mvKeys[bestIdxF].angle;
+                        if (rot < 0.0) rot += 360.0f;
+                        int bin = round(rot * factor);
+                        if (bin == HISTO_LENGTH) bin = 0;
+                        assert(bin >= 0 && bin < HISTO_LENGTH);
+                        rotHist[bin].push_back(bestIdxF);
                         nmatches++;
                     }
                 }
-
+            } else {
+                if (static_cast<float>(bestDist1) < mfNNratio * static_cast<float>(bestDist2)) {
+                    vpMapPointMatches[bestIdxF] = pMP;
+                    nmatches++;
+                }
             }
-
-            KFit++;
-            Fit++;
-        }
-        else if(KFit->first < Fit->first)
-        {
-            KFit = vFeatVecKF.lower_bound(Fit->first);
-        }
-        else
-        {
-            Fit = F.mFeatVec.lower_bound(KFit->first);
         }
     }
 
+    if (mbCheckOrientation) {
+        // 小样本时跳过旋转直方图过滤：当匹配总数不足时，
+        // 旋转直方图的主方向统计不可靠，过滤会过度剔除有效匹配。
+        if (nmatches >= HISTO_LENGTH) {
+            int ind1 = -1;
+            int ind2 = -1;
+            int ind3 = -1;
 
-    if(mbCheckOrientation)
-    {
-        int ind1=-1;
-        int ind2=-1;
-        int ind3=-1;
+            ComputeThreeMaxima(rotHist, HISTO_LENGTH, ind1, ind2, ind3);
 
-        ComputeThreeMaxima(rotHist,HISTO_LENGTH,ind1,ind2,ind3);
-
-        for(int i=0; i<HISTO_LENGTH; i++)
-        {
-            if(i==ind1 || i==ind2 || i==ind3)
-                continue;
-            for(size_t j=0, jend=rotHist[i].size(); j<jend; j++)
-            {
-                vpMapPointMatches[rotHist[i][j]]=static_cast<MapPoint*>(NULL);
-                nmatches--;
+            for (int i = 0; i < HISTO_LENGTH; i++) {
+                if (i == ind1 || i == ind2 || i == ind3)
+                    continue;
+                for (size_t j = 0, jend = rotHist[i].size(); j < jend; j++) {
+                    vpMapPointMatches[rotHist[i][j]] = static_cast<MapPoint*>(NULL);
+                    nmatches--;
+                }
             }
         }
     }
@@ -338,8 +332,10 @@ int ORBmatcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapP
     // 分解 Scw
     cv::Mat sRcw = Scw.rowRange(0,3).colRange(0,3);
     const float scw = sqrt(sRcw.row(0).dot(sRcw.row(0)));
-    cv::Mat Rcw = sRcw/scw;
-    cv::Mat tcw = Scw.rowRange(0,3).col(3)/scw;
+    // 用乘法代替矩阵除法以加快计算速度，因为计算机算乘法明显快于除法
+    const float inv_scw = 1.0f/scw;
+    cv::Mat Rcw = sRcw * inv_scw;
+    cv::Mat tcw = Scw.rowRange(0,3).col(3) * inv_scw;
     cv::Mat Ow = -Rcw.t()*tcw;
 
     // 关键帧中已找到的地图点集合
@@ -438,6 +434,7 @@ int ORBmatcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapP
             {
                 bestDist = dist;
                 bestIdx = idx;
+                if (bestDist == 0) break;
             }
         }
 
@@ -569,153 +566,149 @@ int ORBmatcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f
     return nmatches;
 }
 
-int ORBmatcher::SearchByBoW(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &vpMatches12)
+int ORBmatcher::SearchByHBST(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &vpMatches12)
 {
+    if (!pKF1 || pKF1->isBad() || !pKF2 || pKF2->isBad())
+        return 0;
+
     const vector<cv::KeyPoint> &vKeysUn1 = pKF1->mvKeysUn;
-    const DBoW2::FeatureVector &vFeatVec1 = pKF1->mFeatVec;
     const vector<MapPoint*> vpMapPoints1 = pKF1->GetMapPointMatches();
     const cv::Mat &Descriptors1 = pKF1->mDescriptors;
 
     const vector<cv::KeyPoint> &vKeysUn2 = pKF2->mvKeysUn;
-    const DBoW2::FeatureVector &vFeatVec2 = pKF2->mFeatVec;
     const vector<MapPoint*> vpMapPoints2 = pKF2->GetMapPointMatches();
     const cv::Mat &Descriptors2 = pKF2->mDescriptors;
 
-    vpMatches12 = vector<MapPoint*>(vpMapPoints1.size(),static_cast<MapPoint*>(NULL));
-    vector<bool> vbMatched2(vpMapPoints2.size(),false);
+    vpMatches12 = vector<MapPoint*>(vpMapPoints1.size(), static_cast<MapPoint*>(NULL));
+    vector<bool> vbMatched2(vpMapPoints2.size(), false);
 
     vector<int> rotHist[HISTO_LENGTH];
-    for(int i=0;i<HISTO_LENGTH;i++)
+    for (int i = 0; i < HISTO_LENGTH; i++)
         rotHist[i].reserve(500);
 
-    const float factor = 1.0f/HISTO_LENGTH;
+    const float factor = 1.0f / HISTO_LENGTH;
 
-    // 确保描述子矩阵有效
-    if(Descriptors1.empty() || Descriptors2.empty())
+    if (Descriptors1.empty() || Descriptors2.empty())
         return 0;
-    
+
     const int nDescriptors1 = Descriptors1.rows;
     const int nDescriptors2 = Descriptors2.rows;
-    const size_t nMapPoints1 = vpMapPoints1.size();
-    const size_t nMapPoints2 = vpMapPoints2.size();
-    const size_t nKeys1 = vKeysUn1.size();
-    const size_t nKeys2 = vKeysUn2.size();
+
+    if (vpMapPoints1.size() < static_cast<size_t>(nDescriptors1) || vpMapPoints2.size() < static_cast<size_t>(nDescriptors2))
+        return 0;
 
     int nmatches = 0;
 
-    DBoW2::FeatureVector::const_iterator f1it = vFeatVec1.begin();
-    DBoW2::FeatureVector::const_iterator f2it = vFeatVec2.begin();
-    DBoW2::FeatureVector::const_iterator f1end = vFeatVec1.end();
-    DBoW2::FeatureVector::const_iterator f2end = vFeatVec2.end();
+    std::shared_ptr<HBSTTree> tree1 = pKF1->GetHBSTTree();
+    if (!tree1)
+        return 0;
+    const auto& matchables1 = tree1->matchables();
 
-    while(f1it != f1end && f2it != f2end)
-    {
-        if(f1it->first == f2it->first)
-        {
-            for(size_t i1=0, iend1=f1it->second.size(); i1<iend1; i1++)
-            {
-                const size_t idx1 = f1it->second[i1];
+    // Obtain the pre-built cached tree of KeyFrame pKF2
+    std::shared_ptr<HBSTTree> tree2 = pKF2->GetHBSTTree();
+    if (!tree2)
+        return 0;
 
-                // 边界检查：确保索引在有效范围内
-                if(idx1 >= nMapPoints1 || idx1 >= (size_t)nDescriptors1 || idx1 >= nKeys1)
-                    continue;
+    // Loop over KeyFrame pKF1's features
+    for (int idx1 = 0; idx1 < nDescriptors1; idx1++) {
+        MapPoint* pMP1 = vpMapPoints1[idx1];
+        if (!pMP1 || pMP1->isBad())
+            continue;
 
-                MapPoint* pMP1 = vpMapPoints1[idx1];
-                if(!pMP1)
-                    continue;
-                if(pMP1->isBad())
-                    continue;
+        // 直接从关键帧1预构建的 HBST 树中获取 bitset 描述子，避免重复进行二进制转换
+        const HBSTMatchable::Descriptor &desc1 = matchables1[idx1]->descriptor;
 
-                const cv::Mat &d1 = Descriptors1.row(idx1);
+        // 使用辅助内联函数遍历查找叶子节点，减少重复代码
+        const HBSTNode* node_current = FindHBSTLeafNode(tree2.get(), desc1);
+        if (!node_current)
+            continue;
 
-                int bestDist1=256;
-                int bestIdx2 =-1 ;
-                int bestDist2=256;
+        const auto& candidates = node_current->getMatchables();
 
-                for(size_t i2=0, iend2=f2it->second.size(); i2<iend2; i2++)
-                {
-                    const size_t idx2 = f2it->second[i2];
+        int bestDist1 = 256;
+        int bestIdx2 = -1;
+        int bestDist2 = 256;
 
-                    // 边界检查：确保索引在有效范围内
-                    if(idx2 >= nMapPoints2 || idx2 >= (size_t)nDescriptors2 || idx2 >= nKeys2)
+        for (const auto* candidate : candidates) {
+            size_t idx2 = candidate->objects.begin()->second;
+
+            MapPoint* pMP2 = vpMapPoints2[idx2];
+            if (!pMP2 || pMP2->isBad() || vbMatched2[idx2])
+                continue;
+
+            // 直接在 bitset 上通过异或和计数来计算汉明距离，实现极致速度且无内存拷贝与函数调用
+            const int dist = (desc1 ^ candidate->descriptor).count();
+
+            if (dist < bestDist1) {
+                bestDist2 = bestDist1;
+                bestDist1 = dist;
+                bestIdx2 = idx2;
+            } else if (dist < bestDist2) {
+                bestDist2 = dist;
+            }
+        }
+
+        if (bestDist1 < TH_LOW) {
+            // 尺度一致性检查：若金字塔层级差异过大，增加等效距离
+            if (mbCheckOrientation) {
+                int scaleKP1 = vKeysUn1[idx1].octave;
+                int scaleKP2 = vKeysUn2[bestIdx2].octave;
+                float scaleDiff = fabs(static_cast<float>(scaleKP1 - scaleKP2));
+                if (scaleDiff > 2.0f) {
+                    float effectiveDist = bestDist1 * (1.0f + scaleDiff * 0.15f);
+                    if (effectiveDist > TH_LOW) {
                         continue;
-
-                    MapPoint* pMP2 = vpMapPoints2[idx2];
-
-                    if(vbMatched2[idx2] || !pMP2)
-                        continue;
-
-                    if(pMP2->isBad())
-                        continue;
-
-                    const cv::Mat &d2 = Descriptors2.row(idx2);
-
-                    int dist = DescriptorDistance(d1,d2);
-
-                    if(dist<bestDist1)
-                    {
-                        bestDist2=bestDist1;
-                        bestDist1=dist;
-                        bestIdx2=idx2;
                     }
-                    else if(dist<bestDist2)
-                    {
-                        bestDist2=dist;
+                    if (static_cast<float>(bestDist1) < mfNNratio * static_cast<float>(bestDist2) * (1.0f + scaleDiff * 0.1f)) {
+                        vpMatches12[idx1] = vpMapPoints2[bestIdx2];
+                        vbMatched2[bestIdx2] = true;
+                        float rot = vKeysUn1[idx1].angle - vKeysUn2[bestIdx2].angle;
+                        if (rot < 0.0) rot += 360.0f;
+                        int bin = round(rot * factor);
+                        if (bin == HISTO_LENGTH) bin = 0;
+                        assert(bin >= 0 && bin < HISTO_LENGTH);
+                        rotHist[bin].push_back(idx1);
+                        nmatches++;
                     }
-                }
-
-                if(bestDist1<TH_LOW)
-                {
-                    if(static_cast<float>(bestDist1)<mfNNratio*static_cast<float>(bestDist2))
-                    {
-                        vpMatches12[idx1]=vpMapPoints2[bestIdx2];
-                        vbMatched2[bestIdx2]=true;
-
-                        if(mbCheckOrientation)
-                        {
-                            float rot = vKeysUn1[idx1].angle-vKeysUn2[bestIdx2].angle;
-                            if(rot<0.0)
-                                rot+=360.0f;
-                            int bin = round(rot*factor);
-                            if(bin==HISTO_LENGTH)
-                                bin=0;
-                            assert(bin>=0 && bin<HISTO_LENGTH);
-                            rotHist[bin].push_back(idx1);
-                        }
+                } else {
+                    if (static_cast<float>(bestDist1) < mfNNratio * static_cast<float>(bestDist2)) {
+                        vpMatches12[idx1] = vpMapPoints2[bestIdx2];
+                        vbMatched2[bestIdx2] = true;
+                        float rot = vKeysUn1[idx1].angle - vKeysUn2[bestIdx2].angle;
+                        if (rot < 0.0) rot += 360.0f;
+                        int bin = round(rot * factor);
+                        if (bin == HISTO_LENGTH) bin = 0;
+                        assert(bin >= 0 && bin < HISTO_LENGTH);
+                        rotHist[bin].push_back(idx1);
                         nmatches++;
                     }
                 }
+            } else {
+                if (static_cast<float>(bestDist1) < mfNNratio * static_cast<float>(bestDist2)) {
+                    vpMatches12[idx1] = vpMapPoints2[bestIdx2];
+                    vbMatched2[bestIdx2] = true;
+                    nmatches++;
+                }
             }
-
-            f1it++;
-            f2it++;
-        }
-        else if(f1it->first < f2it->first)
-        {
-            f1it = vFeatVec1.lower_bound(f2it->first);
-        }
-        else
-        {
-            f2it = vFeatVec2.lower_bound(f1it->first);
         }
     }
 
-    if(mbCheckOrientation)
-    {
-        int ind1=-1;
-        int ind2=-1;
-        int ind3=-1;
+    if (mbCheckOrientation) {
+        // 小样本时跳过旋转直方图过滤
+        if (nmatches >= HISTO_LENGTH) {
+            int ind1 = -1;
+            int ind2 = -1;
+            int ind3 = -1;
 
-        ComputeThreeMaxima(rotHist,HISTO_LENGTH,ind1,ind2,ind3);
+            ComputeThreeMaxima(rotHist, HISTO_LENGTH, ind1, ind2, ind3);
 
-        for(int i=0; i<HISTO_LENGTH; i++)
-        {
-            if(i==ind1 || i==ind2 || i==ind3)
-                continue;
-            for(size_t j=0, jend=rotHist[i].size(); j<jend; j++)
-            {
-                vpMatches12[rotHist[i][j]]=static_cast<MapPoint*>(NULL);
-                nmatches--;
+            for (int i = 0; i < HISTO_LENGTH; i++) {
+                if (i == ind1 || i == ind2 || i == ind3)
+                    continue;
+                for (size_t j = 0, jend = rotHist[i].size(); j < jend; j++) {
+                    vpMatches12[rotHist[i][j]] = static_cast<MapPoint*>(NULL);
+                    nmatches--;
+                }
             }
         }
     }
@@ -726,21 +719,26 @@ int ORBmatcher::SearchByBoW(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
 int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F12,
                                        vector<pair<size_t, size_t> > &vMatchedPairs, const bool bOnlyStereo)
 {    
-    const DBoW2::FeatureVector &vFeatVec1 = pKF1->mFeatVec;
-    const DBoW2::FeatureVector &vFeatVec2 = pKF2->mFeatVec;
+    if (!pKF1 || pKF1->isBad() || !pKF2 || pKF2->isBad())
+        return 0;
 
     // 计算第二幅图像中的像极点
     cv::Mat Cw = pKF1->GetCameraCenter();
     cv::Mat R2w = pKF2->GetRotation();
     cv::Mat t2w = pKF2->GetTranslation();
+    std::shared_ptr<HBSTTree> tree1 = pKF1->GetHBSTTree();
+    if (!tree1)
+        return 0;
+    const auto& matchables1 = tree1->matchables();
+
+    std::shared_ptr<HBSTTree> tree2 = pKF2->GetHBSTTree();
+    if (!tree2)
+        return 0;
+
     cv::Mat C2 = R2w*Cw+t2w;
     const float invz = 1.0f/C2.at<float>(2);
     const float ex =pKF2->fx*C2.at<float>(0)*invz+pKF2->cx;
     const float ey =pKF2->fy*C2.at<float>(1)*invz+pKF2->cy;
-
-    // 在未跟踪的关键点之间查找匹配
-    // 通过 ORB 词汇表加速匹配
-    // 仅比较共享相同节点的 ORB
 
     int nmatches=0;
     vector<bool> vbMatched2(pKF2->N,false);
@@ -752,111 +750,75 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
 
     const float factor = 1.0f/HISTO_LENGTH;
 
-    DBoW2::FeatureVector::const_iterator f1it = vFeatVec1.begin();
-    DBoW2::FeatureVector::const_iterator f2it = vFeatVec2.begin();
-    DBoW2::FeatureVector::const_iterator f1end = vFeatVec1.end();
-    DBoW2::FeatureVector::const_iterator f2end = vFeatVec2.end();
+    // Loop over pKF1's features that DO NOT have map points
+    for (int idx1 = 0; idx1 < pKF1->N; idx1++) {
+        MapPoint* pMP1 = pKF1->GetMapPoint(idx1);
+        if (pMP1)
+            continue;
 
-    while(f1it!=f1end && f2it!=f2end)
-    {
-        if(f1it->first == f2it->first)
-        {
-            for(size_t i1=0, iend1=f1it->second.size(); i1<iend1; i1++)
-            {
-                const size_t idx1 = f1it->second[i1];
-                
-                MapPoint* pMP1 = pKF1->GetMapPoint(idx1);
-                
-                // 如果已经有地图点则跳过
-                if(pMP1)
+        const bool bStereo1 = false;
+        if (bOnlyStereo && !bStereo1)
+            continue;
+
+        const cv::KeyPoint &kp1 = pKF1->mvKeysUn[idx1];
+        
+        // 直接从关键帧1预构建的 HBST 树中获取 bitset 描述子，避免重复进行二进制转换
+        const HBSTMatchable::Descriptor &desc1 = matchables1[idx1]->descriptor;
+
+        // 使用辅助内联函数遍历查找叶子节点，减少重复代码
+        const HBSTNode* node_current = FindHBSTLeafNode(tree2.get(), desc1);
+        if (!node_current)
+            continue;
+
+        const auto& candidates = node_current->getMatchables();
+
+        int bestDist = TH_LOW;
+        int bestIdx2 = -1;
+
+        for (const auto* candidate : candidates) {
+            size_t idx2 = candidate->objects.begin()->second;
+
+            if (pKF2->GetMapPoint(idx2) || vbMatched2[idx2])
+                continue;
+
+            const bool bStereo2 = false;
+            if (bOnlyStereo && !bStereo2)
+                continue;
+
+            // 直接在 bitset 上通过异或和计数来计算汉明距离，实现极致速度且无内存拷贝与函数调用
+            const int dist = (desc1 ^ candidate->descriptor).count();
+
+            if (dist > TH_LOW || dist > bestDist)
+                continue;
+
+            const cv::KeyPoint &kp2 = pKF2->mvKeysUn[idx2];
+
+            if (!bStereo1 && !bStereo2) {
+                const float distex = ex - kp2.pt.x;
+                const float distey = ey - kp2.pt.y;
+                if (distex * distex + distey * distey < 100 * pKF2->mvScaleFactors[kp2.octave])
                     continue;
-
-                // 单目模式不需要双目检查
-                const bool bStereo1 = false;
-
-                if(bOnlyStereo)
-                    if(!bStereo1)
-                        continue;
-                
-                const cv::KeyPoint &kp1 = pKF1->mvKeysUn[idx1];
-                
-                const cv::Mat &d1 = pKF1->mDescriptors.row(idx1);
-                
-                int bestDist = TH_LOW;
-                int bestIdx2 = -1;
-                
-                for(size_t i2=0, iend2=f2it->second.size(); i2<iend2; i2++)
-                {
-                    size_t idx2 = f2it->second[i2];
-                    
-                    MapPoint* pMP2 = pKF2->GetMapPoint(idx2);
-                    
-                    // 如果我们已经匹配或者存在地图点则跳过
-                    // 注意：这里找的是没有地图点的特征进行三角化
-                    if(vbMatched2[idx2] || pMP2)
-                        continue;
-
-                    // 单目模式不需要双目检查
-                    const bool bStereo2 = false;
-
-                    if(bOnlyStereo)
-                        if(!bStereo2)
-                            continue;
-                    
-                    const cv::Mat &d2 = pKF2->mDescriptors.row(idx2);
-                    
-                    const int dist = DescriptorDistance(d1,d2);
-                    
-                    if(dist>TH_LOW || dist>bestDist)
-                        continue;
-
-                    const cv::KeyPoint &kp2 = pKF2->mvKeysUn[idx2];
-
-                    if(!bStereo1 && !bStereo2)
-                    {
-                        const float distex = ex-kp2.pt.x;
-                        const float distey = ey-kp2.pt.y;
-                        if(distex*distex+distey*distey<100*pKF2->mvScaleFactors[kp2.octave])
-                            continue;
-                    }
-
-                    if(CheckDistEpipolarLine(kp1,kp2,F12,pKF2))
-                    {
-                        bestIdx2 = idx2;
-                        bestDist = dist;
-                    }
-                }
-                
-                if(bestIdx2>=0)
-                {
-                    const cv::KeyPoint &kp2 = pKF2->mvKeysUn[bestIdx2];
-                    vMatches12[idx1]=bestIdx2;
-                    nmatches++;
-
-                    if(mbCheckOrientation)
-                    {
-                        float rot = kp1.angle-kp2.angle;
-                        if(rot<0.0)
-                            rot+=360.0f;
-                        int bin = round(rot*factor);
-                        if(bin==HISTO_LENGTH)
-                            bin=0;
-                        assert(bin>=0 && bin<HISTO_LENGTH);
-                        rotHist[bin].push_back(idx1);
-                    }
-                }
             }
 
-            f1it++;
-            f2it++;
+            if (CheckDistEpipolarLine(kp1, kp2, F12, pKF2)) {
+                bestIdx2 = idx2;
+                bestDist = dist;
+            }
         }
-        else if(f1it->first < f2it->first)
-        {
-            f1it = vFeatVec1.lower_bound(f2it->first);
-        }
-        else
-        {
-            f2it = vFeatVec2.lower_bound(f1it->first);
+
+        if (bestIdx2 >= 0) {
+            vMatches12[idx1] = bestIdx2;
+            vbMatched2[bestIdx2] = true;
+
+            if (mbCheckOrientation) {
+                float rot = kp1.angle - pKF2->mvKeysUn[bestIdx2].angle;
+                if (rot < 0.0) rot += 360.0f;
+                int bin = round(rot * factor);
+                if (bin == HISTO_LENGTH) bin = 0;
+                assert(bin >= 0 && bin < HISTO_LENGTH);
+                rotHist[bin].push_back(idx1);
+            }
+            nmatches++;
         }
     }
 
@@ -878,7 +840,6 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
                 nmatches--;
             }
         }
-
     }
 
     vMatchedPairs.clear();
@@ -896,6 +857,9 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
 
 int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const float th)
 {
+    if (!pKF || pKF->isBad())
+        return 0;
+
     cv::Mat Rcw = pKF->GetRotation();
     cv::Mat tcw = pKF->GetTranslation();
     cv::Mat Ow = pKF->GetCameraCenter();
@@ -1055,6 +1019,9 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
 
 int ORBmatcher::Fuse(KeyFrame *pKF, cv::Mat Scw, const vector<MapPoint *> &vpPoints, float th, vector<MapPoint *> &vpReplacePoint)
 {
+    if (!pKF || pKF->isBad())
+        return 0;
+
     // 获取校准参数用于后续投影
     const float &fx = pKF->fx;
     const float &fy = pKF->fy;
@@ -1191,6 +1158,9 @@ int ORBmatcher::Fuse(KeyFrame *pKF, cv::Mat Scw, const vector<MapPoint *> &vpPoi
 int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &vpMatches12,
                              const float &s12, const cv::Mat &R12, const cv::Mat &t12, const float th)
 {
+    if (!pKF1 || pKF1->isBad() || !pKF2 || pKF2->isBad())
+        return 0;
+
     const float &fx = pKF1->fx;
     const float &fy = pKF1->fy;
     const float &cx = pKF1->cx;
@@ -1509,9 +1479,6 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
                 for(vector<size_t>::const_iterator vit=vIndices2.begin(), vend=vIndices2.end(); vit!=vend; vit++)
                 {
                     const size_t i2 = *vit;
-                    if(CurrentFrame.mvpMapPoints[i2])
-                        if(CurrentFrame.mvpMapPoints[i2]->Observations()>0)
-                            continue;
 
                     const cv::Mat &d = CurrentFrame.mDescriptors.row(i2);
 
@@ -1754,9 +1721,7 @@ void ORBmatcher::ComputeThreeMaxima(vector<int>* histo, const int L, int &ind1, 
 }
 
 
-// 位集计数操作来自
-// http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
-// 此方案适合更新的现代处理器
+// 位集计数来自 bithacks (CountBitsSetParallel)
 int ORBmatcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)
 {
     const uint8_t* pa = a.ptr<uint8_t>();
@@ -1801,26 +1766,5 @@ int ORBmatcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)
 #endif
 }
 
-// // 预留一个兼容性更好的方案
-// int ORBmatcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)
-// {
-//     // 256 位 BRIEF 描述子 = 32 字节 = 4 × uint64_t。
-//     // 使用 SWAR (SIMD Within A Register) 64 位 popcount
-//     const uint8_t* pa = a.ptr<uint8_t>();
-//     const uint8_t* pb = b.ptr<uint8_t>();
-
-//     int dist = 0;
-//     for (int k = 0; k < 4; ++k) {
-//         uint64_t va, vb;
-//         std::memcpy(&va, pa + k * 8, 8);
-//         std::memcpy(&vb, pb + k * 8, 8);
-//         uint64_t v = va ^ vb;
-//         v = v - ((v >> 1) & 0x5555555555555555ULL);
-//         v = (v & 0x3333333333333333ULL) + ((v >> 2) & 0x3333333333333333ULL);
-//         v = (v + (v >> 4)) & 0x0F0F0F0F0F0F0F0FULL;
-//         dist += (int)((v * 0x0101010101010101ULL) >> 56);
-//     }
-//     return dist;
-// }
 
 } //namespace ORB_SLAM2

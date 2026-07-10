@@ -37,6 +37,9 @@
 #include "ORBmatcher.h"
 #include <thread>
 #include "Config.h"
+#include <algorithm>
+
+using namespace std;
 
 namespace ORB_SLAM2
 {
@@ -48,21 +51,22 @@ float Frame::mnMinX, Frame::mnMinY, Frame::mnMaxX, Frame::mnMaxY;
 float Frame::mfGridElementWidthInv, Frame::mfGridElementHeightInv;
 
 Frame::Frame()
+    : mpTree(nullptr)
 {}
 
 // 复制构造函数
 Frame::Frame(const Frame &frame)
-    :mpORBvocabulary(frame.mpORBvocabulary), mpORBextractorLeft(frame.mpORBextractorLeft),
+    :mpORBextractorLeft(frame.mpORBextractorLeft),
      mTimeStamp(frame.mTimeStamp), mK(frame.mK.clone()), mDistCoef(frame.mDistCoef.clone()),
      mbf(frame.mbf), mb(frame.mb), N(frame.N), mvKeys(frame.mvKeys),
      mvKeysUn(frame.mvKeysUn),
-     mBowVec(frame.mBowVec), mFeatVec(frame.mFeatVec),
      mDescriptors(frame.mDescriptors.clone()),
      mvpMapPoints(frame.mvpMapPoints), mvbOutlier(frame.mvbOutlier), mnId(frame.mnId),
      mpReferenceKF(frame.mpReferenceKF), mnScaleLevels(frame.mnScaleLevels),
      mfScaleFactor(frame.mfScaleFactor), mfLogScaleFactor(frame.mfLogScaleFactor),
      mvScaleFactors(frame.mvScaleFactors), mvInvScaleFactors(frame.mvInvScaleFactors),
-     mvLevelSigma2(frame.mvLevelSigma2), mvInvLevelSigma2(frame.mvInvLevelSigma2)
+     mvLevelSigma2(frame.mvLevelSigma2), mvInvLevelSigma2(frame.mvInvLevelSigma2),
+     mpTree(frame.mpTree)
 {
     for(int i=0;i<FRAME_GRID_COLS;i++)
         for(int j=0; j<FRAME_GRID_ROWS; j++)
@@ -72,9 +76,9 @@ Frame::Frame(const Frame &frame)
         SetPose(frame.mTcw);
 }
 
-Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extractor,ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth)
-    :mpORBvocabulary(voc),mpORBextractorLeft(extractor),
-     mTimeStamp(timeStamp), mK(K.clone()),mDistCoef(distCoef.clone()), mbf(bf)
+Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extractor, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth)
+    :mpORBextractorLeft(extractor),
+     mTimeStamp(timeStamp), mK(K.clone()),mDistCoef(distCoef.clone()), mbf(bf), mpTree(nullptr)
 {
     // 帧 ID
     mnId=nNextId++;
@@ -164,9 +168,6 @@ void Frame::AssignFeaturesToGrid()
             {
                 mGrid[nGridPosX][nGridPosY].push_back(i);
             }
-            //else
-            //{
-            //}
         }
     }
 }
@@ -264,9 +265,7 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
 std::vector<size_t> Frame::GetFeaturesInArea(const float &x, const float  &y, const float  &r, const int minLevel, const int maxLevel) const
 {
     std::vector<size_t> vIndices;
-    // 典型的半径搜索结果远少于 N 个，预留 16 个槽位足以避免大多数重分配
-    // 原来 reserve(N≈1000) 在 SearchLocalPoints 中被每个地图点调用一次，
-    // 导致每帧产生 ~500万 个无用槽位的初始化开销
+    // 半径搜索预留16槽位替代原来的全量reserve(N≈1000)
 
     // TODO: 临时数值，待测试和优化
     vIndices.reserve(16);
@@ -343,15 +342,6 @@ bool Frame::PosInGrid(const cv::KeyPoint &kp, int &posX, int &posY)
 }
 
 
-void Frame::ComputeBoW()
-{
-    if(mBowVec.empty())
-    {
-        std::vector<cv::Mat> vCurrentDesc = Converter::toDescriptorVector(mDescriptors);
-        mpORBvocabulary->transform(vCurrentDesc,mBowVec,mFeatVec,4);
-    }
-}
-
 void Frame::ComputeImageBounds(const cv::Mat &imLeft)
 {
     if(mDistCoef.at<float>(0)!=0.0)
@@ -380,6 +370,17 @@ void Frame::ComputeImageBounds(const cv::Mat &imLeft)
         mnMinY = 0.0f;
         mnMaxY = imLeft.rows;
     }
+}
+
+std::shared_ptr<HBSTTree> Frame::GetHBSTTree() {
+    if (!mpTree && !mDescriptors.empty()) {
+        mpTree = std::make_shared<HBSTTree>();
+        std::vector<size_t> objects(N);
+        for (int i = 0; i < N; i++) objects[i] = i;
+        HBSTTree::MatchableVector matchables = HBSTTree::getMatchables(mDescriptors, objects, mnId);
+        mpTree->add(matchables);
+    }
+    return mpTree;
 }
 
 } //namespace ORB_SLAM2

@@ -81,6 +81,7 @@ namespace g2o {
 
     double currentChi = _optimizer->activeRobustChi2();
     double tempChi=currentChi;
+    double prevChi=currentChi;
 
     double iniChi = currentChi;
 
@@ -132,17 +133,31 @@ namespace g2o {
       rho /=  scale;
 
       if (rho>0 && g2o_isfinite(tempChi)){ // last step was good
-        double alpha = 1.-pow((2*rho-1),3);
-        // crop lambda between minimum and maximum factors
-        alpha = (std::min)(alpha, _goodStepUpperScale);
-        double scaleFactor = (std::max)(_goodStepLowerScale, alpha);
-        _currentLambda *= scaleFactor;
+        // Nielsen 自适应阻尼：根据增益比 rho 动态调整阻尼因子
+        // rho 接近 1 表示预测准确，快速降低 lambda 以加速收敛
+        // rho 接近 0 表示预测较差，保持或微降 lambda
+        if (rho > 0.75) {
+          _currentLambda *= 1./3.;          // 预测很好，激进下降
+        } else if (rho > 0.25) {
+          _currentLambda *= 2./3.;          // 预测中等，温和下降
+        }
+        // rho <= 0.25: lambda 保持不变，防止过度乐观
         _ni = 2;
         currentChi=tempChi;
         _optimizer->discardTop();
+
+        // 额外收敛检测：相邻迭代卡方变化率极小（< 1e-8）时提前终止
+        if (qmax > 0 && abs(currentChi - prevChi) < 1e-8 * max(currentChi, 1e-15))
+          break;
+        prevChi = currentChi;
       } else {
-        _currentLambda*=_ni;
-        _ni*=2;
+        // 失败时根据 rho 的严重程度选择不同的增长策略
+        if (rho > -0.25) {
+          _currentLambda *= 1.5;            // 轻度失败，温和增长
+        } else {
+          _currentLambda*=_ni;              // 严重失败，加速增长
+          _ni*=2;
+        }
         _optimizer->pop(); // restore the last state before trying to optimize
       }
       qmax++;

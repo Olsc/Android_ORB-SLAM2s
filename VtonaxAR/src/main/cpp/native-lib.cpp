@@ -42,7 +42,6 @@ bool slamInited = false;
 
 std::vector<ORB_SLAM2::MapPoint*> vMPs;
 std::vector<cv::KeyPoint> vKeys;
-cv::Mat Tcw;
 
 // 用于vMPs和vKeys线程安全访问的互斥锁
 std::mutex gMapPointsMutex;
@@ -73,8 +72,14 @@ std::vector<ArObjectInfo> gArObjects;
 
 // 多地图支持
 std::mutex gMapDataMutex;
-// 保护SLAM核心状态的互斥锁，防止在跟踪过程中进行Reset/LoadMap等破坏性操作造成崩溃
-std::mutex gSlamStateMutex;
+
+// ========== SLAM 系统访问的读写锁优化 ==========
+static std::mutex gSlamPtrLock;                    // 仅保护 slamSys 指针（极短临界区）
+static std::atomic<int> gProcessingFrames{0};      // 正在处理的帧数（用于写操作协调）
+static std::condition_variable gCvProcessingFrames; // gProcessingFrames 归零时通知写操作
+static std::mutex gTcwLock;                        // 保护 Tcw 缓存
+static cv::Mat gCachedTcw;                         // 线程安全的 Tcw 缓存
+static int gCachedTrackingState = 0;               // 线程安全的跟踪状态缓存
 std::map<int, Plane*> gMapPlanes;
 std::map<int, std::vector<ArObjectInfo>> gMapArObjects;
 int gActiveMapId = 0;
@@ -288,36 +293,52 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
         const float DOWNSCALE = ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR;
         // 使用静态线程局部变量复用内存，避免每帧 resize 时重新分配内存
         static thread_local cv::Mat imgSmall;
-        cv::resize(image, imgSmall, cv::Size(cvRound(image.cols / DOWNSCALE), cvRound(image.rows / DOWNSCALE)));
+        if (image.empty()) {
+            LOGE("processImage: 输入图像为空，跳帧处理");
+            return 0;
+        }
+        cv::resize(image, imgSmall, cv::Size(cvRound(image.cols / DOWNSCALE), cvRound(image.rows / DOWNSCALE)), 0, 0, cv::INTER_LINEAR);
 
-        // SLAM跟踪线程拥有最高优先级
+        // ===== 读写锁优化：不再全程持有全局锁 =====
         ORB_SLAM2::System* currentSlamSys = nullptr;
         {
-            std::unique_lock<std::mutex> lock(gSlamStateMutex);
+            std::lock_guard<std::mutex> _ptrLock(gSlamPtrLock);
             currentSlamSys = slamSys;
+            if (currentSlamSys)
+                gProcessingFrames.fetch_add(1, std::memory_order_relaxed);
         }
 
+        // 使用线程局部 Tcw，避免全局 Tcw 的数据竞争
+        cv::Mat localTcw;
         if(currentSlamSys) {
-            // 执行跟踪
-            Tcw = currentSlamSys->TrackMonocular(imgSmall, timeStamp);
-            status = currentSlamSys->GetTrackingState();
+            // 执行跟踪（无全局锁！SLAM 系统内部锁保证线程安全）
+            localTcw = currentSlamSys->TrackMonocular(imgSmall, timeStamp);
+            int localStatus = currentSlamSys->GetTrackingState();
 
-            // 必须全程持有锁保护 slamSys 的访问！
-            // 不能提前释放，否则在获取地图点时 slamSys 可能被 Reset 线程修改或销毁
-
-            // 更新缓存
+            // 线程安全地缓存跟踪结果，供其他 JNI 函数无锁读取
             {
-                std::lock_guard<std::mutex> lock2(gMapPointsMutex);
-                if(currentSlamSys) { 
-                    vMPs = currentSlamSys->GetTrackedMapPoints();
-                    vKeys = currentSlamSys->GetTrackedKeyPointsUn();
-                }
+                std::lock_guard<std::mutex> _tcwLock(gTcwLock);
+                gCachedTcw = localTcw.clone();
+                gCachedTrackingState = localStatus;
             }
+            {
+                std::lock_guard<std::mutex> _mpLock(gMapPointsMutex);
+                vMPs = currentSlamSys->GetTrackedMapPoints();
+                vKeys = currentSlamSys->GetTrackedKeyPointsUn();
+            }
+
+            status = localStatus;
+            // 标记跟踪完成（写操作可通过 gProcessingFrames 感知）
+            gProcessingFrames.fetch_sub(1, std::memory_order_release);
+            gCvProcessingFrames.notify_one();  // 唤醒可能在等待的加载地图线程
         } else {
-            Tcw = cv::Mat();
+            {
+                std::lock_guard<std::mutex> _tcwLock(gTcwLock);
+                gCachedTcw = cv::Mat();
+                gCachedTrackingState = 0;
+            }
             status = 0;
         }
-        // 锁在这里自动释放（超出作用域）
         
         // 确保 vMPs 在任何情况下都处于安全状态
         
@@ -388,10 +409,9 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
         // 如果SLAM正在跟踪，更新AR对象视图矩阵
         if(status == 2) {  // SLAM正常工作
             // 如果有对齐，使用对齐后的位姿更新AR对象的视图矩阵
-            // 确保AR对象在加载地图的坐标系下正确显示
-            cv::Mat TcwForAR = Tcw;
+            cv::Mat TcwForAR = localTcw;
             if(slamSys->HasMapAlignment()) {
-                TcwForAR = slamSys->GetMapAlignedPose(Tcw);
+                TcwForAR = slamSys->GetMapAlignedPose(localTcw);
             }
             float tmpM[16];
             getColMajorMatrixFromMat(tmpM, TcwForAR);
@@ -461,7 +481,7 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
             if(hasAlignment)
             {
                 // 获取对齐后的相机位姿（在地图坐标系下）
-                cv::Mat TcwForProjection = slamSys->GetMapAlignedPose(Tcw);
+                cv::Mat TcwForProjection = slamSys->GetMapAlignedPose(localTcw);
                 
                 // 获取所有地图点并绘制（绿色点云）- 受点云显示开关控制
                 if(gEnablePointCloudDisplay) {
@@ -518,8 +538,9 @@ Java_com_orb_slam2s_slamar_NativeHelper_initSLAM(JNIEnv* env, jobject instance, 
     
     // 初始化分析器 (仅在开发模式下生效)
     VT_PROFILE_INITIALIZE(std::string(path) + "/vtonax_profile.bin");
-    
-    slamSys = new ORB_SLAM2::System(":embedded:", "", ORB_SLAM2::System::MONOCULAR);
+    LOGD("Create SLAM System...");
+    slamSys = new ORB_SLAM2::System("", ORB_SLAM2::System::MONOCULAR);
+    slamSys->UpdateCalibration(fx, fy, cx, cy);
 }
 
 /**
@@ -588,7 +609,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_saveMap(JNIEnv* env, jobject instance, j
     
     if (slamSys)
     {
-        
+
         double t0 = static_cast<double>(cv::getTickCount());
         slamSys->SaveMap(std::string(path));
         SavePlaneAndArInfo(std::string(path)); // 保存平面和AR信息
@@ -609,11 +630,23 @@ Java_com_orb_slam2s_slamar_NativeHelper_loadMap(JNIEnv* env, jobject instance, j
     
     if (slamSys)
     {
-        // 在加载地图时锁定SLAM状态，阻止processImage进行跟踪
-        std::lock_guard<std::mutex> lock(gSlamStateMutex);
-        
+        // 写锁协议：
+        // 1. 持有 gSlamPtrLock → 阻止新的帧处理开始
+        // 2. 等待 gProcessingFrames 归零 → 等待正在处理中的帧完成
+        // 注意：此锁只在用户手动加载地图时短暂持有一两秒，不影响正常跟踪流程
+        std::unique_lock<std::mutex> lock(gSlamPtrLock);
+
+        // 等待正在处理中的帧完成（它们在 lock 获取前就已开始了 TrackMonocular）
+        // 这些帧完成后会在 gSlamPtrLock 锁外自动递减 gProcessingFrames，
+        // 因此即使我们持有 gSlamPtrLock，它们也能正常完成
+        gCvProcessingFrames.wait(lock, []{
+            return gProcessingFrames.load(std::memory_order_acquire) == 0;
+        });
+        // 此时：gProcessingFrames == 0，gSlamPtrLock 被持有
+        // 新的 processImage 被阻塞在 gSlamPtrLock 上
+
         LOGD("JNI加载地图开始：%s", path);
-        
+
         double t0 = static_cast<double>(cv::getTickCount());
         slamSys->LoadMap(std::string(path), 0, false); // 默认ID=0，覆盖模式
         LoadPlaneAndArInfo(std::string(path), 0); // 加载平面和AR信息
@@ -645,8 +678,11 @@ Java_com_orb_slam2s_slamar_NativeHelper_loadMapWithId(JNIEnv *env, jobject insta
                                                jstring path_, jint mapId, jboolean append) {
     const char *path = env->GetStringUTFChars(path_, 0);
     if(slamSys){
-        // 在加载地图时锁定SLAM状态，阻止processImage进行跟踪
-        std::lock_guard<std::mutex> lock(gSlamStateMutex);
+        // 写锁协议：与 loadMap 一致
+        std::unique_lock<std::mutex> lock(gSlamPtrLock);
+        gCvProcessingFrames.wait(lock, []{
+            return gProcessingFrames.load(std::memory_order_acquire) == 0;
+        });
 
         double t0 = (double)cv::getTickCount();
         
@@ -696,19 +732,28 @@ JNIEXPORT void JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_detect(JNIEnv *env, jobject instance,
                                                jintArray statusBuf_) {
     jint *statusBuf = env->GetIntArrayElements(statusBuf_, NULL);
-    // 性能优化：使用try_lock避免阻塞，如果锁被占用则跳过本次检测
-    std::unique_lock<std::mutex> slamLock(gSlamStateMutex, std::try_to_lock);
+
+    // 从线程安全缓存读取最新 Tcw，无需阻塞跟踪线程
+    cv::Mat currentTcw;
+    int currentStatus = 0;
+    {
+        std::lock_guard<std::mutex> tcwLock(gTcwLock);
+        currentTcw = gCachedTcw.clone();
+        currentStatus = gCachedTrackingState;
+    }
+
+    // 同时也需要 gMapDataMutex 保护平面数据
     std::unique_lock<std::mutex> dataLock(gMapDataMutex, std::try_to_lock);
-    if(!slamLock.owns_lock() || !dataLock.owns_lock() || Tcw.empty()){
+    if(!dataLock.owns_lock() || currentTcw.empty()){
         statusBuf[1] = ORB_SLAM2::PLANE_NOT_DETECTED;
         env->ReleaseIntArrayElements(statusBuf_, statusBuf, 0);
         return;
     }
-    if(!Tcw.empty()){
+    if(!currentTcw.empty()){
         // 平面检测也应该在对齐后的坐标系下进行（如果有对齐）
-        cv::Mat TcwForPlane = Tcw;
+        cv::Mat TcwForPlane = currentTcw;
         if(slamSys->HasMapAlignment()) {
-            TcwForPlane = slamSys->GetMapAlignedPose(Tcw);
+            TcwForPlane = slamSys->GetMapAlignedPose(currentTcw);
         }
         
         pPlane=detectPlane(TcwForPlane,vMPs,ORB_SLAM2::PLANE_DETECT_RANSAC_ITERS);
@@ -741,23 +786,21 @@ JNIEXPORT void JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_getV(JNIEnv *env, jobject instance, jfloatArray viewM_) {
     jfloat *viewM = env->GetFloatArrayElements(viewM_, NULL);
 
+    // 从线程安全缓存读取最新 Tcw 和状态，不阻塞跟踪线程
     bool useSlam = false;
     cv::Mat TcwForView;
     {
-        std::unique_lock<std::mutex> slamLock(gSlamStateMutex, std::try_to_lock);
-        if(slamLock.owns_lock() && slamSys){
-            int st = slamSys->GetTrackingState();
-            if(st==2 && !Tcw.empty()) {
-                useSlam = true;
-                TcwForView = Tcw.clone();
-                if(slamSys->HasMapAlignment()) {
-                    TcwForView = slamSys->GetMapAlignedPose(Tcw);
-                }
-            }
+        std::lock_guard<std::mutex> tcwLock(gTcwLock);
+        if(gCachedTrackingState == 2 && !gCachedTcw.empty()) {
+            useSlam = true;
+            TcwForView = gCachedTcw.clone();
         }
     }
     
     if(useSlam){
+        if(slamSys && slamSys->HasMapAlignment()) {
+            TcwForView = slamSys->GetMapAlignedPose(TcwForView);
+        }
         float tmpM[16];
         getColMajorMatrixFromMat(tmpM, TcwForView);
         getRUBViewMatrixFromRDF(tmpM, viewM);
@@ -807,26 +850,21 @@ struct MapPointComparator {
 
 JNIEXPORT jfloatArray JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_getMiniMapPoints(JNIEnv *env, jobject instance, jint maxPoints) {
-    // 性能优化：使用try_lock避免阻塞UI线程
-    std::unique_lock<std::mutex> slamLock(gSlamStateMutex, std::try_to_lock);
-    if(!slamLock.owns_lock() || !slamSys) {
+    // 直接读取 slamSys（Map 内部已有 mMutexMap 保护 GetAllMapPoints）
+    // 无需 gSlamStateMutex，不再阻塞跟踪线程
+    if(!slamSys) {
         return env->NewFloatArray(0);
     }
     std::vector<ORB_SLAM2::MapPoint*> v = slamSys->GetAllMapPoints();
-    // 立即释放锁，后续处理不需要锁保护
-    slamLock.unlock();
     
     std::vector<float> out;
     size_t total = v.size();
     
-    // 策略：使用 Top-K 算法获取最新的 maxPoints 个点（按 ID 降序）
-    // 这样可以确保画面实时更新，且严格遵守数量限制，实现"遗忘"旧点
+    // 使用 Top-K 算法获取最新的 maxPoints 个点（按 ID 降序）
     
     if (total > 0) {
         if (total > (size_t)maxPoints) {
             // 使用 partial_sort 找出前 maxPoints 个最大的（最新的）点
-            // 注意：这会改变 v 的前 maxPoints 个元素的顺序
-            // 因为 v 是我们拷贝出来的副本（GetAllMapPoints 返回值），所以修改它是安全的
             std::partial_sort(v.begin(), v.begin() + maxPoints, v.end(), MapPointComparator());
             
             // 只取前 maxPoints 个
@@ -867,8 +905,6 @@ Java_com_orb_slam2s_slamar_NativeHelper_getMiniMapPoints(JNIEnv *env, jobject in
 // 获取当前跟踪的地图点
 JNIEXPORT jfloatArray JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_getTrackedPoints(JNIEnv *env, jobject instance, jint maxPoints) {
-    // 性能优化：getTrackedPoints只需要gMapPointsMutex，不需要gSlamStateMutex
-    // 因为我们访问的是已经复制好的vMPs缓存，而不是直接访问slamSys
     std::vector<float> out;
     
     // 线程安全地复制vMPs以防止与SLAM线程的竞态条件

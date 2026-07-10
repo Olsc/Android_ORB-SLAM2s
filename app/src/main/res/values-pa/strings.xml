@@ -1,0 +1,102 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ORB-SLAM2s</string>
+    <string name="btn_ar_object">AR ਵਸਤੂ</string>
+    <string name="btn_save">ਸੇਵ ਕਰੋ</string>
+    <string name="btn_load">ਲੋਡ ਕਰੋ</string>
+    <string name="btn_map">ਨਕਸ਼ਾ</string>
+    <string name="btn_reset">ਰੀਸੈਟ ਕਰੋ</string>
+    <string name="btn_slam">✓SLAM</string>
+    <string name="btn_point_cloud">✓ਪੁਆਇੰਟ ਕਲਾਊਡ</string>
+    <string name="loading_slam_init">SLAM ਸਿਸਟਮ ਸ਼ੁਰੂ ਹੋ ਰਿਹਾ ਹੈ…</string>
+    <string name="loading_slam_wait">ਕਿਰਪਾ ਕਰਕੇ ਉਡੀਕ ਕਰੋ, ਇਸ ਵਿੱਚ ਕੁਝ ਸਮਾਂ ਲੱਗ ਸਕਦਾ ਹੈ</string>
+    <string name="slam_init_complete">SLAM ਸਿਸਟਮ ਸ਼ੁਰੂ ਹੋ ਗਿਆ</string>
+    <string name="slam_init_failed">SLAM ਸ਼ੁਰੂ ਕਰਨਾ ਅਸਫਲ ਰਿਹਾ: %1$s</string>
+    <string name="loading">ਲੋਡ ਹੋ ਰਿਹਾ ਹੈ…</string>
+    <string name="hint_request_sent">ਬੇਨਤੀ ਭੇਜੀ ਗਈ</string>
+    <string name="hint_resetting_slam">SLAM ਸਿਸਟਮ ਰੀਸੈਟ ਹੋ ਰਿਹਾ ਹੈ…</string>
+    <string name="hint_slam_reset">SLAM ਸਿਸਟਮ ਰੀਸੈਟ ਹੋ ਗਿਆ</string>
+    <string name="hint_reset_failed">ਰੀਸੈਟ ਅਸਫਲ: ਸਿਸਟਮ ਸ਼ੁਰੂ ਨਹੀਂ ਹੋਇਆ</string>
+    <string name="hint_pointcloud_enabled">ਪੁਆਇੰਟ ਕਲਾਊਡ ਸਮਰੱਥ ਹੈ</string>
+    <string name="hint_pointcloud_disabled">ਪੁਆਇੰਟ ਕਲਾਊਡ ਅਸਮਰੱਥ ਹੈ</string>
+    <string name="btn_pointcloud_enabled">✓ਪੁਆਇੰਟ ਕਲਾਊਡ</string>
+    <string name="btn_pointcloud_disabled">ਪੁਆਇੰਟ ਕਲਾਊਡ</string>
+    <string name="hint_slam_enabled">SLAM ਸਮਰੱਥ ਹੈ</string>
+    <string name="hint_slam_disabled">SLAM ਅਸਮਰੱਥ ਹੈ</string>
+    <string name="btn_slam_disabled">SLAM</string>
+    <string name="input_map_name">ਨਕਸ਼ੇ ਦਾ ਨਾਮ ਦਰਜ ਕਰੋ</string>
+    <string name="dialog_save_map">ਨਕਸ਼ਾ ਸੇਵ ਕਰੋ</string>
+    <string name="button_cancel">ਰੱਦ ਕਰੋ</string>
+    <string name="hint_no_maps">ਕੋਈ ਸੇਵ ਕੀਤਾ ਨਕਸ਼ਾ ਨਹੀਂ</string>
+    <string name="map_stats_keyframes">ਕੀਫ੍ਰੇਮ: %1$d</string>
+    <string name="map_stats_mappoints">ਮੈਪ ਪੁਆਇੰਟ: %1$d</string>
+    <string name="map_stats_size">ਆਕਾਰ: %1$dKB</string>
+    <string name="dialog_map_manage">ਨਕਸ਼ਾ ਪ੍ਰਬੰਧਨ</string>
+    <string name="dialog_select_map">ਨਕਸ਼ਾ ਚੁਣੋ</string>
+    <string name="action_load">ਲੋਡ ਕਰੋ</string>
+    <string name="action_delete">ਹਟਾਓ</string>
+    <string name="action_view_details">ਵੇਰਵੇ ਦੇਖੋ</string>
+    <string name="action_load_multi">ਮਲਟੀਪਲ ਲੋਡ</string>
+    <string name="dialog_confirm_delete">ਹਟਾਉਣ ਦੀ ਪੁਸ਼ਟੀ ਕਰੋ</string>
+    <string name="dialog_confirm_delete_message">ਕੀ ਨਕਸ਼ਾ \"%1$s\" ਹਟਾਉਣਾ ਹੈ?</string>
+    <string name="hint_map_deleted">ਨਕਸ਼ਾ ਹਟਾਇਆ ਗਿਆ</string>
+    <string name="hint_map_delete_failed">ਹਟਾਉਣਾ ਅਸਫਲ ਰਿਹਾ</string>
+    <string name="button_back">ਪਿੱਛੇ</string>
+    <string name="dialog_map_details">ਨਕਸ਼ੇ ਦੇ ਵੇਰਵੇ</string>
+    <string name="map_details_name">ਨਕਸ਼ੇ ਦਾ ਨਾਮ: %1$s</string>
+    <string name="map_details_keyframes">ਕੀਫ੍ਰੇਮ: %1$d</string>
+    <string name="map_details_mappoints">ਮੈਪ ਪੁਆਇੰਟ: %1$d</string>
+    <string name="map_details_size">ਫਾਈਲ ਆਕਾਰ: %1$d KB</string>
+    <string name="map_details_time">ਬਣਾਇਆ ਗਿਆ: %1$s</string>
+    <string name="map_details_plane">ਪਲੇਨ ਹੈ: %1$s</string>
+    <string name="map_details_plane_yes">ਹਾਂ</string>
+    <string name="map_details_plane_no">ਨਹੀਂ</string>
+    <string name="button_ok">ਠੀਕ ਹੈ</string>
+    <string name="map_stats_format">KFs: %1$d | MPs: %2$d | ਪਲੇਨ: %3$s</string>
+    <string name="map_stats_plane_yes">ਹਾਂ</string>
+    <string name="map_stats_plane_no">ਨਹੀਂ</string>
+    <string name="hint_map_load_requested">ਨਕਸ਼ਾ ਲੋਡ ਕਰਨ ਦੀ ਬੇਨਤੀ ਕੀਤੀ</string>
+    <string name="hint_map_saved">ਨਕਸ਼ਾ ਸੇਵ ਕੀਤਾ ਗਿਆ: %1$s</string>
+    <string name="hint_map_save_failed">ਸੇਵ ਕਰਨਾ ਅਸਫਲ ਰਿਹਾ: %1$s</string>
+    <string name="hint_map_file_not_found">ਨਕਸ਼ਾ ਫਾਈਲ ਨਹੀਂ ਮਿਲੀ</string>
+    <string name="hint_map_loaded">ਨਕਸ਼ਾ ਲੋਡ ਹੋ ਗਿਆ: %1$s</string>
+    <string name="hint_maps_loaded">%1$d ਨਕਸ਼ੇ ਲੋਡ ਹੋ ਗਏ</string>
+    <string name="hint_map_load_failed">ਲੋਡ ਕਰਨਾ ਅਸਫਲ ਰਿਹਾ: %1$s</string>
+    <string name="permission_camera_storage_required">ਕੈਮਰਾ ਅਤੇ ਸਟੋਰੇਜ ਇਜਾਜ਼ਤਾਂ ਦੀ ਲੋੜ ਹੈ। ਕਿਰਪਾ ਕਰਕੇ ਸੈਟਿੰਗਾਂ ਵਿੱਚ ਇਜਾਜ਼ਤ ਦਿਓ।</string>
+    <string name="btn_mini_world">ਮਿੰਨੀ ਵਿਊ</string>
+    <string name="hint_mini_world_enabled">ਮਿੰਨੀ ਵਿਊ ਸਮਰੱਥ ਹੈ</string>
+    <string name="hint_mini_world_disabled">ਮਿੰਨੀ ਵਿਊ ਅਸਮਰੱਥ ਹੈ</string>
+
+    <string name="category_ar">AR ਕੰਟਰੋਲ</string>
+    <string name="category_map">ਨਕਸ਼ਾ</string>
+    <string name="category_slam">SLAM</string>
+    <string name="category_display">ਡਿਸਪਲੇ</string>
+
+    <string name="btn_3dof">3DOF</string>
+    <string name="btn_3dof_close">3DOF ਬੰਦ ਕਰੋ</string>
+    <string name="hint_3dof_unavailable">3DOF ਵਿਸ਼ੇਸ਼ਤਾ ਉਪਲਬਧ ਨਹੀਂ ਹੈ</string>
+    <string name="hint_3dof_spawned">3DOF ਕਿਊਬ 5 ਮੀਟਰ ਅੱਗੇ ਬਣਾਇਆ ਗਿਆ</string>
+    <string name="hint_3dof_closed">3DOF ਮੋਡ ਬੰਦ ਹੈ</string>
+    <string name="btn_web_server_close">ਵੈੱਬ ਸਰਵਰ ਬੰਦ ਕਰੋ</string>
+    <string name="btn_web_server_open">ਵੈੱਬ ਸਰਵਰ ਖੋਲ੍ਹੋ</string>
+    <string name="hint_web_server_closed">ਵੈੱਬ ਸਰਵਰ ਬੰਦ ਹੈ</string>
+
+    <string name="btn_web_server">ਵੈੱਬ ਸਰਵਰ</string>
+
+    <string name="status_enabled">ਸਮਰੱਥ ਹੈ</string>
+    <string name="status_disabled">ਅਸਮਰੱਥ ਹੈ</string>
+
+    <string name="title_web_server">ਵੈੱਬ ਸਰਵਰ</string>
+    <string name="web_fps_label"> (ਵੈੱਬ)</string>
+    <string name="hint_waiting_browser_frame">ਬ੍ਰਾਊਜ਼ਰ ਚਿੱਤਰ ਦੀ ਉਡੀਕ ਕਰ ਰਿਹਾ ਹੈ…</string>
+    <string name="hint_web_server_started">ਵੈੱਬ ਸਰਵਰ ਸ਼ੁਰੂ ਹੋ ਗਿਆ: %1$s</string>
+    <string name="web_url_default">http://0.0.0.0:8080</string>
+
+    <string name="privacy_title">ਪਰਦੇਦਾਰੀ ਨੀਤੀ &amp; ਵਰਤੋਂ ਦੀਆਂ ਸ਼ਰਤਾਂ</string>
+    <string name="privacy_scroll_hint">↓ ਪੂਰਾ ਸਮਝੌਤਾ ਪੜ੍ਹਨ ਲਈ ਕਿਰਪਾ ਕਰਕੇ ਹੇਠਾਂ ਸਕ੍ਰੌਲ ਕਰੋ</string>
+    <string name="privacy_scroll_done">✓ ਤੁਸੀਂ ਪੂਰਾ ਸਮਝੌਤਾ ਪੜ੍ਹ ਲਿਆ ਹੈ</string>
+    <string name="privacy_agree">ਸਹਿਮਤ &amp; ਜਾਰੀ ਰੱਖੋ</string>
+    <string name="privacy_disagree_notice">ਜੇ ਤੁਸੀਂ ਸਹਿਮਤ ਨਹੀਂ ਹੋ, ਤਾਂ ਕਿਰਪਾ ਕਰਕੇ ਐਪਲੀਕੇਸ਼ਨ ਤੋਂ ਬਾਹਰ ਆਓ</string>
+    <string name="privacy_load_error">ਪਰਦੇਦਾਰੀ ਨੀਤੀ ਲੋਡ ਕਰਨ ਵਿੱਚ ਅਸਫਲ। ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।</string>
+
+</resources>

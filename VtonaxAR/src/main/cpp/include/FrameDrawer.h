@@ -57,7 +57,6 @@ public:
 
     void SetMap(Map* pMap);
 
-
     // 更新最后处理帧的信息
     void Update(Tracking *pTracker);
 
@@ -71,12 +70,12 @@ protected:
     // 要绘制的帧信息
     cv::Mat mIm;
     int N;
-    vector<cv::KeyPoint> mvCurrentKeys;
-    vector<bool> mvbMap, mvbVO;
+    std::vector<cv::KeyPoint> mvCurrentKeys;
+    std::vector<bool> mvbMap, mvbVO;
     bool mbOnlyTracking;
     int mnTracked, mnTrackedVO;
-    vector<cv::KeyPoint> mvIniKeys;
-    vector<int> mvIniMatches;
+    std::vector<cv::KeyPoint> mvIniKeys;
+    std::vector<int> mvIniMatches;
     int mState;
 
     Map* mpMap;

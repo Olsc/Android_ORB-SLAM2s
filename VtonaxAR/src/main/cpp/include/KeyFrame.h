@@ -36,9 +36,7 @@
 #define KEYFRAME_H
 
 #include "MapPoint.h"
-#include "../Thirdparty/DBoW2/DBoW2/BowVector.h"
-#include "../Thirdparty/DBoW2/DBoW2/FeatureVector.h"
-#include "ORBVocabulary.h"
+#include "HBSTTypes.h"
 #include "ORBextractor.h"
 #include "Frame.h"
 #include "KeyFrameDatabase.h"
@@ -67,9 +65,6 @@ public:
 
     cv::Mat GetRotation();
     cv::Mat GetTranslation();
-
-    // 词袋表示
-    void ComputeBoW();
 
     // 共视图函数
     void AddConnection(KeyFrame* pKF, const int &weight);
@@ -178,9 +173,9 @@ public:
     const std::vector<cv::KeyPoint> mvKeysUn;
     const cv::Mat mDescriptors;
 
-    //词袋
-    DBoW2::BowVector mBowVec;
-    DBoW2::FeatureVector mFeatVec;
+    // HBST树缓存，用于快速匹配
+    std::shared_ptr<HBSTTree> mpTree;
+    std::shared_ptr<HBSTTree> GetHBSTTree();
 
     // 相对于父节点的姿态（在激活坏标志时计算）
     cv::Mat mTcp;
@@ -200,7 +195,6 @@ public:
     const int mnMaxY;
     const cv::Mat mK;
 
-
     // 以下变量需要通过互斥锁访问以确保线程安全。
 protected:
 
@@ -209,14 +203,11 @@ protected:
     cv::Mat Twc;
     cv::Mat Ow;
 
-
-
     // 与关键点关联的地图点
     std::vector<MapPoint*> mvpMapPoints;
 
-    // 词袋
+    // 数据库
     KeyFrameDatabase* mpKeyFrameDB;
-    ORBVocabulary* mpORBvocabulary;
 
     // 图像上的网格用于加速特征匹配
     std::vector< std::vector <std::vector<size_t> > > mGrid;

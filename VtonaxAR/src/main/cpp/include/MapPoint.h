@@ -50,7 +50,6 @@ class KeyFrame;
 class Map;
 class Frame;
 
-
 class MapPoint
 {
 public:
@@ -68,6 +67,8 @@ public:
     KeyFrame* GetReferenceKeyFrame();
 
     std::map<KeyFrame*,size_t> GetObservations();
+    void ShareObservations(std::map<KeyFrame*, int>& counter, unsigned long excludeId = -1);
+    int GetRedundantObservationsCount(KeyFrame* pKF, int scaleLevel);
     int Observations() const;
 
     void AddObservation(KeyFrame* pKF,size_t idx);
@@ -148,7 +149,6 @@ public:
     long unsigned int mnCorrectedReference;    
     cv::Mat mPosGBA;
     long unsigned int mnBAGlobalForKF;
-
 
     static std::mutex mGlobalMutex;
 

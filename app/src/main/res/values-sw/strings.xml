@@ -1,0 +1,102 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ORB-SLAM2s</string>
+    <string name="btn_ar_object">Kitu cha AR</string>
+    <string name="btn_save">Hifadhi</string>
+    <string name="btn_load">Pakia</string>
+    <string name="btn_map">Ramani</string>
+    <string name="btn_reset">Weka upya</string>
+    <string name="btn_slam">✓SLAM</string>
+    <string name="btn_point_cloud">✓Wingu la Pointi</string>
+    <string name="loading_slam_init">Kuanzisha mfumo wa SLAM…</string>
+    <string name="loading_slam_wait">Tafadhali subiri, hii inaweza kuchukua muda</string>
+    <string name="slam_init_complete">Mfumo wa SLAM umeanzishwa</string>
+    <string name="slam_init_failed">Kuanzisha SLAM kumeshindwa: %1$s</string>
+    <string name="loading">Inapakia…</string>
+    <string name="hint_request_sent">Ombi limetumwa</string>
+    <string name="hint_resetting_slam">Kuweka upya mfumo wa SLAM…</string>
+    <string name="hint_slam_reset">Mfumo wa SLAM umewekwa upya</string>
+    <string name="hint_reset_failed">Kuweka upya kumeshindwa: Mfumo haujaanzishwa</string>
+    <string name="hint_pointcloud_enabled">Wingu la pointi limewezeshwa</string>
+    <string name="hint_pointcloud_disabled">Wingu la pointi limezimwa</string>
+    <string name="btn_pointcloud_enabled">✓Wingu la Pointi</string>
+    <string name="btn_pointcloud_disabled">Wingu la Pointi</string>
+    <string name="hint_slam_enabled">SLAM imewezeshwa</string>
+    <string name="hint_slam_disabled">SLAM imezimwa</string>
+    <string name="btn_slam_disabled">SLAM</string>
+    <string name="input_map_name">Ingiza jina la ramani</string>
+    <string name="dialog_save_map">Hifadhi Ramani</string>
+    <string name="button_cancel">Ghairi</string>
+    <string name="hint_no_maps">Hakuna ramani zilizohifadhiwa</string>
+    <string name="map_stats_keyframes">Fremu Kuu: %1$d</string>
+    <string name="map_stats_mappoints">Pointi za Ramani: %1$d</string>
+    <string name="map_stats_size">Ukubwa: %1$dKB</string>
+    <string name="dialog_map_manage">Usimamizi wa Ramani</string>
+    <string name="dialog_select_map">Chagua Ramani</string>
+    <string name="action_load">Pakia</string>
+    <string name="action_delete">Futa</string>
+    <string name="action_view_details">Tazama Maelezo</string>
+    <string name="action_load_multi">Pakia Nyingi</string>
+    <string name="dialog_confirm_delete">Thibitisha Kufuta</string>
+    <string name="dialog_confirm_delete_message">Futa ramani \"%1$s\"?</string>
+    <string name="hint_map_deleted">Ramani imefutwa</string>
+    <string name="hint_map_delete_failed">Kufuta kumeshindwa</string>
+    <string name="button_back">Rudi</string>
+    <string name="dialog_map_details">Maelezo ya Ramani</string>
+    <string name="map_details_name">Jina la Ramani: %1$s</string>
+    <string name="map_details_keyframes">Fremu Kuu: %1$d</string>
+    <string name="map_details_mappoints">Pointi za Ramani: %1$d</string>
+    <string name="map_details_size">Ukubwa wa Faili: %1$d KB</string>
+    <string name="map_details_time">Iliundwa: %1$s</string>
+    <string name="map_details_plane">Ina Ndege: %1$s</string>
+    <string name="map_details_plane_yes">Ndiyo</string>
+    <string name="map_details_plane_no">Hapana</string>
+    <string name="button_ok">Sawa</string>
+    <string name="map_stats_format">KFs: %1$d | MPs: %2$d | Ndege: %3$s</string>
+    <string name="map_stats_plane_yes">Ndiyo</string>
+    <string name="map_stats_plane_no">Hapana</string>
+    <string name="hint_map_load_requested">Ombi la kupakia ramani</string>
+    <string name="hint_map_saved">Ramani imehifadhiwa: %1$s</string>
+    <string name="hint_map_save_failed">Kuhifadhi kumeshindwa: %1$s</string>
+    <string name="hint_map_file_not_found">Faili la ramani halipatikani</string>
+    <string name="hint_map_loaded">Ramani imepakiwa: %1$s</string>
+    <string name="hint_maps_loaded">Ramani %1$d zimepakiwa</string>
+    <string name="hint_map_load_failed">Kupakia kumeshindwa: %1$s</string>
+    <string name="permission_camera_storage_required">Ruhusa za kamera na hifadhi zinahitajika. Tafadhali toa ruhusa katika mipangilio.</string>
+    <string name="btn_mini_world">Mtazamo Mdogo</string>
+    <string name="hint_mini_world_enabled">Mtazamo mdogo umewezeshwa</string>
+    <string name="hint_mini_world_disabled">Mtazamo mdogo umezimwa</string>
+
+    <string name="category_ar">Udhibiti wa AR</string>
+    <string name="category_map">Ramani</string>
+    <string name="category_slam">SLAM</string>
+    <string name="category_display">Onyesho</string>
+
+    <string name="btn_3dof">3DOF</string>
+    <string name="btn_3dof_close">Funga 3DOF</string>
+    <string name="hint_3dof_unavailable">Kipengele cha 3DOF hakipatikani</string>
+    <string name="hint_3dof_spawned">Mchemraba wa 3DOF uliundwa mita 5 mbele</string>
+    <string name="hint_3dof_closed">Hali ya 3DOF imefungwa</string>
+    <string name="btn_web_server_close">Funga Seva ya Wavuti</string>
+    <string name="btn_web_server_open">Fungua Seva ya Wavuti</string>
+    <string name="hint_web_server_closed">Seva ya wavuti imefungwa</string>
+
+    <string name="btn_web_server">Seva ya Wavuti</string>
+
+    <string name="status_enabled">imewezeshwa</string>
+    <string name="status_disabled">imezimwa</string>
+
+    <string name="title_web_server">Seva ya Wavuti</string>
+    <string name="web_fps_label"> (Wavuti)</string>
+    <string name="hint_waiting_browser_frame">Kusubiri picha ya kivinjari…</string>
+    <string name="hint_web_server_started">Seva ya wavuti imeanza: %1$s</string>
+    <string name="web_url_default">http://0.0.0.0:8080</string>
+
+    <string name="privacy_title">Sera ya Faragha &amp; Masharti ya Matumizi</string>
+    <string name="privacy_scroll_hint">↓ Tafadhali telezesha chini kusoma makubaliano kamili</string>
+    <string name="privacy_scroll_done">✓ Umesoma makubaliano kamili</string>
+    <string name="privacy_agree">Kubali &amp; Endelea</string>
+    <string name="privacy_disagree_notice">Ikiwa hukubaliani, tafadhali toka kwenye programu</string>
+    <string name="privacy_load_error">Imeshindwa kupakia sera ya faragha. Tafadhali jaribu tena.</string>
+
+</resources>

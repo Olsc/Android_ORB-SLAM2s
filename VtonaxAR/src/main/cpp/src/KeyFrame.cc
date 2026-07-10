@@ -37,7 +37,10 @@
 #include "ORBmatcher.h"
 #include "Config.h"
 #include <mutex>
+#include <algorithm>
 #include "Common.h"
+
+using namespace std;
 
 namespace ORB_SLAM2
 {
@@ -50,14 +53,13 @@ KeyFrame::KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB):
     mnTrackReferenceForFrame(0), mnFuseTargetForKF(0), mnBALocalForKF(0), mnBAFixedForKF(0),
     mnLoopQuery(0), mnLoopWords(0), mnRelocQuery(0), mnRelocWords(0), mnBAGlobalForKF(0),
     fx(F.fx), fy(F.fy), cx(F.cx), cy(F.cy), invfx(F.invfx), invfy(F.invfy),
-    mbf(F.mbf), mb(F.mb), N(F.N), mvKeys(F.mvKeys), mvKeysUn(F.mvKeysUn),
-    mDescriptors(F.mDescriptors.clone()),
-    mBowVec(F.mBowVec), mFeatVec(F.mFeatVec), mnScaleLevels(F.mnScaleLevels), mfScaleFactor(F.mfScaleFactor),
+    mbf(F.mbf), mb(F.mb), N(F.N), mvKeys(F.mvKeys),    mvKeysUn(F.mvKeysUn), mDescriptors(F.mDescriptors.clone()),
+    mnScaleLevels(F.mnScaleLevels), mfScaleFactor(F.mfScaleFactor),
     mfLogScaleFactor(F.mfLogScaleFactor), mvScaleFactors(F.mvScaleFactors), mvLevelSigma2(F.mvLevelSigma2),
     mvInvLevelSigma2(F.mvInvLevelSigma2), mnMinX(F.mnMinX), mnMinY(F.mnMinY), mnMaxX(F.mnMaxX),
-    mnMaxY(F.mnMaxY), mK(F.mK), mvpMapPoints(F.mvpMapPoints), mpKeyFrameDB(pKFDB),
-    mpORBvocabulary(F.mpORBvocabulary), mbFirstConnection(true), mpParent(NULL), mbNotErase(false),
-    mbToBeErased(false), mbBad(false), mHalfBaseline(F.mb/2), mpMap(pMap)
+    mnMaxY(F.mnMaxY), mK(F.mK.clone()), mvpMapPoints(F.mvpMapPoints), mpKeyFrameDB(pKFDB),
+    mbFirstConnection(true), mpParent(NULL), mbNotErase(false),
+    mbToBeErased(false), mbBad(false), mHalfBaseline(F.mb/2), mpMap(pMap), mpTree(F.mpTree)
 {
     mnId=nNextId++;
 
@@ -72,26 +74,13 @@ KeyFrame::KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB):
     SetPose(F.mTcw);    
 }
 
-void KeyFrame::ComputeBoW()
-{
-    if(mBowVec.empty() || mFeatVec.empty())
-    {
-        std::vector<cv::Mat> vCurrentDesc = Converter::toDescriptorVector(mDescriptors);
-        // 特征向量将特征与第4层的节点关联（从叶子向上）
-        mpORBvocabulary->transform(vCurrentDesc,mBowVec,mFeatVec,4);
-    }
-}
-
 void KeyFrame::SetPose(const cv::Mat &Tcw_)
 {
     std::unique_lock<std::mutex> lock(mMutexPose);
     
     // 验证输入位姿的有效性，防止崩溃
     if(Tcw_.empty() || Tcw_.rows < 4 || Tcw_.cols < 4){
-        //     Tcw_.empty()?1:0,
-        //     Tcw_.empty()?0:Tcw_.rows,
-        //     Tcw_.empty()?0:Tcw_.cols);
-        // 设置为单位矩阵作为默认值，避免后续崩溃
+        // 位姿无效时设为单位矩阵避免崩溃
         Tcw = cv::Mat::eye(4,4,CV_32F);
         // 继续后续处理，使用单位矩阵
     } else {
@@ -235,25 +224,28 @@ int KeyFrame::GetWeight(KeyFrame *pKF)
 void KeyFrame::AddMapPoint(MapPoint *pMP, const size_t &idx)
 {
     unique_lock<mutex> lock(mMutexFeatures);
-    mvpMapPoints[idx]=pMP;
+    if(idx < mvpMapPoints.size())
+        mvpMapPoints[idx]=pMP;
 }
 
 void KeyFrame::EraseMapPointMatch(const size_t &idx)
 {
     unique_lock<mutex> lock(mMutexFeatures);
-    mvpMapPoints[idx]=static_cast<MapPoint*>(NULL);
+    if(idx < mvpMapPoints.size())
+        mvpMapPoints[idx]=static_cast<MapPoint*>(NULL);
 }
 
 void KeyFrame::EraseMapPointMatch(MapPoint* pMP)
 {
     int idx = pMP->GetIndexInKeyFrame(this);
-    if(idx>=0)
+    if(idx>=0 && static_cast<size_t>(idx)<mvpMapPoints.size())
         mvpMapPoints[idx]=static_cast<MapPoint*>(NULL);
 }
 
 void KeyFrame::ReplaceMapPointMatch(const size_t &idx, MapPoint* pMP)
 {
-    mvpMapPoints[idx]=pMP;
+    if(idx < mvpMapPoints.size())
+        mvpMapPoints[idx]=pMP;
 }
 
 set<MapPoint*> KeyFrame::GetMapPoints()
@@ -307,6 +299,8 @@ vector<MapPoint*> KeyFrame::GetMapPointMatches()
 MapPoint* KeyFrame::GetMapPoint(const size_t &idx)
 {
     unique_lock<mutex> lock(mMutexFeatures);
+    if(idx >= mvpMapPoints.size())
+        return nullptr;
     return mvpMapPoints[idx];
 }
 
@@ -333,14 +327,7 @@ void KeyFrame::UpdateConnections()
         if(pMP->isBad())
             continue;
 
-        map<KeyFrame*,size_t> observations = pMP->GetObservations();
-
-        for(map<KeyFrame*,size_t>::iterator mit=observations.begin(), mend=observations.end(); mit!=mend; mit++)
-        {
-            if(mit->first->mnId==mnId)
-                continue;
-            KFcounter[mit->first]++;
-        }
+        pMP->ShareObservations(KFcounter, mnId);
     }
 
     // 这不应该发生
@@ -499,7 +486,7 @@ void KeyFrame::SetBadFlag()
     {
         unique_lock<mutex> lockFeatures(mMutexFeatures);
         mapPointsCopy = mvpMapPoints;
-        mvpMapPoints.clear(); // 提前清空
+        mvpMapPoints.assign(N, static_cast<MapPoint*>(NULL));
     }
 
     // 2. 在锁外进行所有的 Erase 操作，避免死锁和迭代器失效
@@ -714,6 +701,18 @@ float KeyFrame::ComputeSceneMedianDepth(const int q)
     std::sort(vDepths.begin(),vDepths.end());
 
     return vDepths[(vDepths.size()-1)/q];
+}
+
+std::shared_ptr<HBSTTree> KeyFrame::GetHBSTTree() {
+    unique_lock<mutex> lock(mMutexFeatures);
+    if (!mpTree && !mDescriptors.empty()) {
+        mpTree = std::make_shared<HBSTTree>();
+        std::vector<size_t> objects(N);
+        for(int i=0; i<N; i++) objects[i] = i;
+        HBSTTree::MatchableVector matchables = HBSTTree::getMatchables(mDescriptors, objects, mnId);
+        mpTree->add(matchables);
+    }
+    return mpTree;
 }
 
 } //namespace ORB_SLAM2

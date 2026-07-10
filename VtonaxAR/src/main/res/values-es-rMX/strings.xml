@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="hint_map_saved">Mapa guardado: %1$s</string>
+    <string name="hint_map_save_failed">Error al guardar: %1$s</string>
+    <string name="hint_map_file_not_found">Archivo de mapa no encontrado</string>
+    <string name="hint_map_loaded">Mapa cargado: %1$s</string>
+    <string name="hint_maps_loaded">Cargados %1$d mapas</string>
+    <string name="hint_map_load_failed">Error al cargar: %1$s</string>
+    <string name="hint_map_load_requested">Carga de mapa solicitada</string>
+    <string name="hint_map_deleted">Mapa eliminado</string>
+    <string name="hint_map_delete_failed">Error al eliminar</string>
+</resources>

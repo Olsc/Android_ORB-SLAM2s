@@ -36,8 +36,10 @@
 #define INITIALIZER_H
 
 #include<opencv2/opencv.hpp>
+#include <opencv2/core/core.hpp>
 #include "Frame.h"
 
+using namespace std;
 
 namespace ORB_SLAM2
 {
@@ -108,7 +110,6 @@ private:
 
     // Ransac集合
     vector<vector<size_t> > mvSets;   
-
 };
 
 } //namespace ORB_SLAM2

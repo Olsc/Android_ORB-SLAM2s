@@ -40,6 +40,9 @@
 #include<mutex>
 #include<vector>
 #include<map>
+#include <mutex>
+
+using namespace std;
 
 namespace ORB_SLAM2
 {
@@ -60,9 +63,6 @@ void Map::AddMapPoint(MapPoint *pMP)
 {
     unique_lock<mutex> lock(mMutexMap);
     mspMapPoints.insert(pMP);
-    // Debug: 跟踪加载地图标志的传播（避免在此处迭代现有集合）
-    // if(pMP && pMP->mbFromLoadedMap){
-    // }
 }
 
 void Map::EraseMapPoint(MapPoint *pMP)

@@ -45,6 +45,7 @@
 
 #include <thread>
 #include <mutex>
+#include <condition_variable>
 #include "Thirdparty/g2o/g2o/types/types_seven_dof_expmap.h"
 
 namespace ORB_SLAM2
@@ -53,7 +54,6 @@ namespace ORB_SLAM2
 class Tracking;
 class LocalMapping;
 class KeyFrameDatabase;
-
 
 class LoopClosing
 {
@@ -65,13 +65,12 @@ public:
 
 public:
 
-    LoopClosing(Map* pMap, KeyFrameDatabase* pDB, ORBVocabulary* pVoc);
+    LoopClosing(Map* pMap, KeyFrameDatabase* pDB);
 
     void SetTracker(Tracking* pTracker);
 
     void SetLocalMapper(LocalMapping* pLocalMapper);
     void SetMap(Map* pMap);
-
 
     // 主函数
     void Run();
@@ -126,7 +125,7 @@ protected:
     Tracking* mpTracker;
 
     KeyFrameDatabase* mpKeyFrameDB;
-    ORBVocabulary* mpORBVocabulary;
+    // ORBVocabulary* mpORBVocabulary;
 
     LocalMapping *mpLocalMapper;
 
@@ -150,16 +149,16 @@ protected:
 
     long unsigned int mLastLoopKFid;
 
+    // 事件驱动唤醒
+    std::mutex mMutexEvent;
+    std::condition_variable mCvEvent;
+
     // 全局光束调整相关变量
     bool mbRunningGBA;
     bool mbFinishedGBA;
     bool mbStopGBA;
     std::mutex mMutexGBA;
     std::thread* mpThreadGBA;
-
-    // 在双目/RGB-D情况下固定尺度
-
-
 
     int mnFullBAIdx;
 };

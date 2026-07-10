@@ -45,14 +45,15 @@
 
 #include<mutex>
 #include<thread>
+#include<chrono>
 
 
 namespace ORB_SLAM2
 {
 
-LoopClosing::LoopClosing(Map *pMap, KeyFrameDatabase *pDB, ORBVocabulary *pVoc):
+LoopClosing::LoopClosing(Map *pMap, KeyFrameDatabase *pDB):
     mbResetRequested(false), mbFinishRequested(false), mbFinished(true), mpMap(pMap),
-    mpKeyFrameDB(pDB), mpORBVocabulary(pVoc), mpMatchedKF(NULL), mLastLoopKFid(0), mbRunningGBA(false), mbFinishedGBA(true),
+    mpKeyFrameDB(pDB), mpMatchedKF(NULL), mLastLoopKFid(0), mbRunningGBA(false), mbFinishedGBA(true),
     mbStopGBA(false), mpThreadGBA(NULL), mnFullBAIdx(0)
 {
     mnCovisibilityConsistencyTh = LOOP_COVISIBILITY_CONSISTENCY_TH;
@@ -100,7 +101,11 @@ void LoopClosing::Run()
         if(CheckFinish())
             break;
 
-        usleep(5000);
+        // 等待事件（新 KF/Finish/Reset），有事件立即唤醒，最多等 5ms
+        {
+            std::unique_lock<std::mutex> lock(mMutexEvent);
+            mCvEvent.wait_for(lock, std::chrono::milliseconds(5));
+        }
     }
 
     SetFinish();
@@ -111,6 +116,7 @@ void LoopClosing::InsertKeyFrame(KeyFrame *pKF)
     unique_lock<mutex> lock(mMutexLoopQueue);
     if(pKF->mnId!=0)
         mlpLoopKeyFrameQueue.push_back(pKF);
+    mCvEvent.notify_one();
 }
 
 bool LoopClosing::CheckNewKeyFrames()
@@ -137,34 +143,8 @@ bool LoopClosing::DetectLoop()
         return false;
     }
 
-    // 计算参考 BoW 相似度得分
-    // 这是共视图中连接的关键帧的最低得分
-    // 我们将强制闭环候选者具有比这更高的相似度
-    const vector<KeyFrame*> vpConnectedKeyFrames = mpCurrentKF->GetVectorCovisibleKeyFrames();
-    const DBoW2::BowVector &CurrentBowVec = mpCurrentKF->mBowVec;
-    float minScore = 1;
-    for(size_t i=0; i<vpConnectedKeyFrames.size(); i++)
-    {
-        KeyFrame* pKF = vpConnectedKeyFrames[i];
-        // 添加空指针检查，防止访问已删除的KeyFrame
-        if(!pKF)
-            continue;
-        // 注意：isBad()会访问互斥锁，如果KeyFrame已被删除，互斥锁可能已销毁
-        // 因此需要先检查指针有效性，然后尝试检查isBad（但要处理可能的异常）
-        try {
-            if(pKF->isBad())
-                continue;
-        } catch (...) {
-            // 如果KeyFrame已被删除，跳过它
-            continue;
-        }
-        const DBoW2::BowVector &BowVec = pKF->mBowVec;
-
-        float score = mpORBVocabulary->score(CurrentBowVec, BowVec);
-
-        if(score<minScore)
-            minScore = score;
-    }
+    // 使用 HBST 树时不需要计算基于 BoW 的 minScore
+    float minScore = 0;
 
     // 查询数据库，强制最小得分
     vector<KeyFrame*> vpCandidateKFs = mpKeyFrameDB->DetectLoopCandidates(mpCurrentKF, minScore);
@@ -178,10 +158,7 @@ bool LoopClosing::DetectLoop()
         return false;
     }
 
-    // 对于每个闭环候选，检查与先前闭环候选的一致性
-    // 每个候选者扩展一个共视组（在共视图中连接到闭环候选者的关键帧）
-    // 如果一个组与前一个组至少共享一个关键帧，则它们是一致的
-    // 我们必须在几个连续的关键帧中检测到一致的闭环才能接受它
+    // 检查闭环候选一致性：候选扩展共视组，连续多帧一致才接受闭环
     mvpEnoughConsistentCandidates.clear();
 
     vector<ConsistentGroup> vCurrentConsistentGroups;
@@ -286,7 +263,7 @@ bool LoopClosing::ComputeSim3()
             continue;
         }
 
-        int nmatches = matcher.SearchByBoW(mpCurrentKF,pKF,vvpMapPointMatches[i]);
+        int nmatches = matcher.SearchByHBST(mpCurrentKF,pKF,vvpMapPointMatches[i]);
 
         if(nmatches<LOOP_MIN_MATCHES)
         {
@@ -447,12 +424,7 @@ void LoopClosing::CorrectLoop()
     }
 
     // 等待局部建图线程有效停止
-    int nWaited = 0;
-    while(!mpLocalMapper->isStopped() && nWaited < LOOP_LOCALMAPPER_TIMEOUT_MS)
-    {
-        usleep(1000);
-        nWaited++;
-    }
+    mpLocalMapper->WaitForStopped(LOOP_LOCALMAPPER_TIMEOUT_MS);
 
     if(!mpLocalMapper->isStopped())
     {
@@ -657,6 +629,7 @@ void LoopClosing::RequestReset()
         unique_lock<mutex> lock(mMutexReset);
         mbResetRequested = true;
     }
+    mCvEvent.notify_one();
 }
 
 void LoopClosing::ResetIfRequested()
@@ -677,10 +650,7 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
     int idx =  mnFullBAIdx;
     Optimizer::GlobalBundleAdjustemnt(mpMap,10,&mbStopGBA,nLoopKF,false);
 
-    // 更新所有地图点和关键帧
-    // 局部建图在线程运行期间处于活动状态，这意味着可能会有新的关键帧
-    // 未包含在全局BA中，它们与更新后的地图不一致。
-    // 我们需要通过生成树传播校正
+    // 全局BA未覆盖新关键帧，需通过生成树传播校正
     {
         unique_lock<mutex> lock(mMutexGBA);
         if(idx!=mnFullBAIdx)
@@ -692,12 +662,18 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
             // cout << "正在更新地图 ..." << endl;
             mpLocalMapper->RequestStop();
             // 等待局部建图线程有效停止
+            mpLocalMapper->WaitForStopped(LOOP_LOCALMAPPER_TIMEOUT_MS);
 
-            int nWaited = 0;
-            while(!mpLocalMapper->isStopped() && !mpLocalMapper->isFinished() && nWaited < LOOP_LOCALMAPPER_TIMEOUT_MS)
             {
-                usleep(1000);
-                nWaited++;
+                unique_lock<mutex> recheckLock(mMutexGBA);
+                if(idx != mnFullBAIdx)
+                {
+                    if(mpLocalMapper->isStopped() && !mpLocalMapper->isFinished())
+                    {
+                        mpLocalMapper->Release();
+                    }
+                    return;
+                }
             }
 
             if(!mpLocalMapper->isStopped() && !mpLocalMapper->isFinished())
@@ -795,6 +771,7 @@ void LoopClosing::RequestFinish()
     // 请求结束闭环检测线程
     unique_lock<mutex> lock(mMutexFinish);
     mbFinishRequested = true;
+    mCvEvent.notify_one();
 }
 
 bool LoopClosing::CheckFinish()

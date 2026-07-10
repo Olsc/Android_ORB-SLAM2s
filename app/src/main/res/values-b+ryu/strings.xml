@@ -1,0 +1,102 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ORB-SLAM2s</string>
+    <string name="btn_ar_object">ARぶつ</string>
+    <string name="btn_save">しまゆん</string>
+    <string name="btn_load">ふぃちだす</string>
+    <string name="btn_map">マップ</string>
+    <string name="btn_reset">むとぅちむどぅす</string>
+    <string name="btn_slam">✓SLAM</string>
+    <string name="btn_point_cloud">✓点群</string>
+    <string name="loading_slam_init">SLAMシステム初期化中…</string>
+    <string name="loading_slam_wait">まっとーけー、ちょっとかかいびーん</string>
+    <string name="slam_init_complete">SLAMシステム初期化完了</string>
+    <string name="slam_init_failed">SLAM初期化失敗: %1$s</string>
+    <string name="loading">読み込み中…</string>
+    <string name="hint_request_sent">たのみごとなげーたびたる</string>
+    <string name="hint_resetting_slam">SLAMシステムむとぅちむどぅし中…</string>
+    <string name="hint_slam_reset">SLAMシステムむとぅちむどぅちたびたる</string>
+    <string name="hint_reset_failed">むとぅちむどぅし失敗: システム初期化されてーびらん</string>
+    <string name="hint_pointcloud_enabled">点群有効</string>
+    <string name="hint_pointcloud_disabled">点群無効</string>
+    <string name="btn_pointcloud_enabled">✓点群</string>
+    <string name="btn_pointcloud_disabled">点群</string>
+    <string name="hint_slam_enabled">SLAM有効</string>
+    <string name="hint_slam_disabled">SLAM無効</string>
+    <string name="btn_slam_disabled">SLAM</string>
+    <string name="input_map_name">マップ名いりーくぃみそーれー</string>
+    <string name="dialog_save_map">マップしまゆん</string>
+    <string name="button_cancel">やめる</string>
+    <string name="hint_no_maps">しまいたるマップねーびらん</string>
+    <string name="map_stats_keyframes">キーフレーム: %1$d</string>
+    <string name="map_stats_mappoints">マップ点: %1$d</string>
+    <string name="map_stats_size">大きさ: %1$dKB</string>
+    <string name="dialog_map_manage">マップ管理</string>
+    <string name="dialog_select_map">マップえらびー</string>
+    <string name="action_load">ふぃちだす</string>
+    <string name="action_delete">消す</string>
+    <string name="action_view_details">詳細みーん</string>
+    <string name="action_load_multi">いくちゃーんふぃちだす</string>
+    <string name="dialog_confirm_delete">消すちゃー確認</string>
+    <string name="dialog_confirm_delete_message">マップ \"%1$s\" 消さびーが？</string>
+    <string name="hint_map_deleted">マップ消したびたる</string>
+    <string name="hint_map_delete_failed">消し失敗</string>
+    <string name="button_back">戻る</string>
+    <string name="dialog_map_details">マップ詳細</string>
+    <string name="map_details_name">マップ名: %1$s</string>
+    <string name="map_details_keyframes">キーフレーム数: %1$d</string>
+    <string name="map_details_mappoints">マップ点数: %1$d</string>
+    <string name="map_details_size">ファイル大きさ: %1$d KB</string>
+    <string name="map_details_time">作りたる日: %1$s</string>
+    <string name="map_details_plane">平面あびーが: %1$s</string>
+    <string name="map_details_plane_yes">あん</string>
+    <string name="map_details_plane_no">ねーびらん</string>
+    <string name="button_ok">ゆたさるぐとぅ</string>
+    <string name="map_stats_format">KF: %1$d | MP: %2$d | 平面: %3$s</string>
+    <string name="map_stats_plane_yes">あん</string>
+    <string name="map_stats_plane_no">ねーびらん</string>
+    <string name="hint_map_load_requested">マップふぃちだしたのみーたびたる</string>
+    <string name="hint_map_saved">マップしまいたびたる: %1$s</string>
+    <string name="hint_map_save_failed">しまい失敗: %1$s</string>
+    <string name="hint_map_file_not_found">マップファイルめんそーれーびらん</string>
+    <string name="hint_map_loaded">マップふぃちだちたびたる: %1$s</string>
+    <string name="hint_maps_loaded">%1$d 枚マップふぃちだちたびたる</string>
+    <string name="hint_map_load_failed">ふぃちだし失敗: %1$s</string>
+    <string name="permission_camera_storage_required">カメラとストレージの権限がいりびーん。設定から権限くぃみそーれー。</string>
+    <string name="btn_mini_world">ちーさくみーん</string>
+    <string name="hint_mini_world_enabled">ちーさくみーん有効</string>
+    <string name="hint_mini_world_disabled">ちーさくみーん無効</string>
+
+    <string name="category_ar">AR操作</string>
+    <string name="category_map">マップ</string>
+    <string name="category_slam">SLAM</string>
+    <string name="category_display">表示</string>
+
+    <string name="btn_3dof">3DOF</string>
+    <string name="btn_3dof_close">3DOF閉じる</string>
+    <string name="hint_3dof_unavailable">3DOF機能使えびらん</string>
+    <string name="hint_3dof_spawned">3DOFキューブが5メートル先に生成</string>
+    <string name="hint_3dof_closed">3DOFモード閉じたびたる</string>
+    <string name="btn_web_server_close">Webサーバー閉じる</string>
+    <string name="btn_web_server_open">Webサーバー開ける</string>
+    <string name="hint_web_server_closed">Webサーバー閉じたびたる</string>
+
+    <string name="btn_web_server">Webサーバー</string>
+
+    <string name="status_enabled">有効</string>
+    <string name="status_disabled">無効</string>
+
+    <string name="title_web_server">Webサーバー</string>
+    <string name="web_fps_label"> (Web)</string>
+    <string name="hint_waiting_browser_frame">ブラウザー画像まっとーん…</string>
+    <string name="hint_web_server_started">Webサーバー起動: %1$s</string>
+    <string name="web_url_default">http://0.0.0.0:8080</string>
+
+    <string name="privacy_title">プライバシーポリシー &amp; 利用規約</string>
+    <string name="privacy_scroll_hint">↓ 全文読むためにスクロールしてくださいびり</string>
+    <string name="privacy_scroll_done">✓ 全文読みたびたん</string>
+    <string name="privacy_agree">うなじゅん &amp; 続ける</string>
+    <string name="privacy_disagree_notice">うなじらんぐとぅーやアプリからんーじゃびら</string>
+    <string name="privacy_load_error">プライバシーポリシー読み込み失敗。もう一回試みそーれー。</string>
+
+</resources>

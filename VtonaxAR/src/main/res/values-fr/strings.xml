@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="hint_map_saved">Carte enregistrée : %1$s</string>
+    <string name="hint_map_save_failed">Échec de l\'enregistrement : %1$s</string>
+    <string name="hint_map_file_not_found">Fichier de carte introuvable</string>
+    <string name="hint_map_loaded">Carte chargée : %1$s</string>
+    <string name="hint_maps_loaded">%1$d cartes chargées</string>
+    <string name="hint_map_load_failed">Échec du chargement : %1$s</string>
+    <string name="hint_map_load_requested">Chargement de la carte demandé</string>
+    <string name="hint_map_deleted">Carte supprimée</string>
+    <string name="hint_map_delete_failed">Échec de la suppression</string>
+</resources>

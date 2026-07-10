@@ -95,7 +95,7 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
         // 随机选择3个点作为最小集合来拟合平面
         for(short i = 0; i < 3; ++i)
         {
-            int randi = DUtils::Random::RandomInt(0, vAvailableIndices.size()-1);
+            int randi = rand() % vAvailableIndices.size();
 
             int idx = vAvailableIndices[randi];
 
@@ -195,11 +195,6 @@ void getColMajorMatrixFromMat(float M[],cv::Mat &Tcw){
 
 /**
  * 绘制所有地图点（用于AR重定位时显示完整点云）
- * 性能优化策略:
- *   1. 预先提取旋转矩阵元素，避免重复访问
- *   2. 手动矩阵乘法代替OpenCV，减少函数调用开销
- *   3. 早期剔除策略：深度检查、边界检查
- *   4. 限制最大绘制点数为5000
  */
 void drawAllMapPoints(const cv::Mat &Tcw, const std::vector<ORB_SLAM2::MapPoint*> &allMapPoints, 
                       cv::Mat &im, float fx, float fy, float cx, float cy, bool drawOnlyLoaded)

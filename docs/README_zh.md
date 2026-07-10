@@ -135,6 +135,18 @@ ORB-SLAM2核心库以[GPLv3许可证](https://github.com/raulmur/ORB_SLAM2/blob/
 此Android适配和增强项目（ORB-SLAM2s）也根据**GPL-3.0许可证**授权。详情请参见[LICENSE.txt](../LICENSE.txt)和[License-gpl.txt](../License-gpl.txt)文件。
 <br><br>项目合作或其他领域合作咨询，请联系：OlscStudio@outlook.com
 
+## 第三方依赖库及开源许可声明
+
+本项目的发展离不开众多优秀的开源项目。我们在本项目中集成并使用了以下第三方库，并严格遵守其开源协议：
+
+- **[OpenCV 5 (核心代码)](https://github.com/opencv/opencv)**：采用 **Apache 2.0 许可证**。为保持项目轻量化，我们仅截取了其必要的核心代码。
+- **[srrg_hbst](https://gitlab.com/srrg-software/srrg_hbst)**：采用 **BSD 3-Clause 许可证**。用于快速、增量式的可扩展图像匹配与重定位。
+- **[DBoW2](https://github.com/dorian3d/DBoW2)**：采用 **BSD 许可证**。用于特征向量化及基础的局部特征匹配。
+- **[g2o](https://github.com/RainerKuemmerle/g2o)**：采用 **BSD 许可证**（其核心部分）。用于图优化及非线性误差最小化。
+- **[Eigen3](http://eigen.tuxfamily.org/)**：采用 **MPL2 (Mozilla Public License v2.0) 许可证**。用于矩阵及线性代数运算。
+
+各第三方库的具体使用条款请参考其各自的官方仓库。
+
 ## 学术引用
 
 如果您在学术工作中使用ORB-SLAM2（单目），请引用：
@@ -169,7 +181,11 @@ ORB-SLAM2核心库以[GPLv3许可证](https://github.com/raulmur/ORB_SLAM2/blob/
 
 ## OpenCV
 
-我们使用[OpenCV](http://opencv.org)来操作图像和特征。下载和安装说明可在以下网址找到：http://opencv.org **至少需要4.5.0版本**。
+我们使用[OpenCV](http://opencv.org)来操作图像和特征。**已更新至OpenCV 5**。注意：为了保持项目轻量化，我们仅截取了OpenCV 5中的必要核心代码，而没有全盘接收整个库。
+
+## HBST (Hierarchical Bag of Scalable Trees)
+
+项目集成了[srrg_hbst](https://gitlab.com/srrg-software/srrg_hbst)，用于快速且可扩展的图像匹配。与传统的DBoW2相比，它在闭环检测和重定位性能上有了显著提升。
 
 ## Eigen3
 

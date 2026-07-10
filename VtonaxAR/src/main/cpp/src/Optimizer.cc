@@ -254,11 +254,9 @@ int Optimizer::PoseOptimization(Frame *pFrame)
         cache.solver_ptr = new g2o::BlockSolver_6_3(cache.linearSolver);
         cache.solver = new g2o::OptimizationAlgorithmLevenberg(cache.solver_ptr);
         cache.optimizer.setAlgorithm(cache.solver);
-    } else {
-        // 复用已有求解器：clear() 释放顶点和边但保留求解器结构
-        cache.optimizer.clear();
     }
     g2o::SparseOptimizer& optimizer = cache.optimizer;
+    optimizer.clear();
 
     int nInitialCorrespondences=0;
 
@@ -296,24 +294,14 @@ int Optimizer::PoseOptimization(Frame *pFrame)
                 const cv::KeyPoint &kpUn = pFrame->mvKeysUn[i];
                 obs << kpUn.pt.x, kpUn.pt.y;
 
-                // 在创建 Edge 之前先验证 vertex 是否存在
-                g2o::OptimizableGraph::Vertex* v0 = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(0));
-                if(!v0)
-                {
-                    continue;
-                }
-                
                 g2o::EdgeSE3ProjectXYZOnlyPose* e = new g2o::EdgeSE3ProjectXYZOnlyPose();
-                if(!e)
-                {
-                    continue;
-                }
 
                 try {
-                    e->setVertex(0, v0);
+                    e->setVertex(0, vSE3);
                     e->setMeasurement(obs);
                     const float invSigma2 = pFrame->mvInvLevelSigma2[kpUn.octave];
                     e->setInformation(Eigen::Matrix2d::Identity()*invSigma2);
+                    e->setLevel(0);
 
                     g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
                     e->setRobustKernel(rk);
@@ -338,58 +326,19 @@ int Optimizer::PoseOptimization(Frame *pFrame)
                 vpEdgesMono.push_back(e);
                 vnIndexEdgeMono.push_back(i);
             }
-            // 单目模式不使用双目观测
-            // else  // Stereo observation
-            // {
-            //     nInitialCorrespondences++;
-            //     pFrame->mvbOutlier[i] = false;
-            //
-            //     //SET EDGE
-            //     Eigen::Matrix<double,3,1> obs;
-            //     const cv::KeyPoint &kpUn = pFrame->mvKeysUn[i];
-            //     const float &kp_ur = pFrame->mvuRight[i];
-            //     obs << kpUn.pt.x, kpUn.pt.y, kp_ur;
-            //
-            //     g2o::EdgeStereoSE3ProjectXYZOnlyPose* e = new g2o::EdgeStereoSE3ProjectXYZOnlyPose();
-            //
-            //     e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(0)));
-            //     e->setMeasurement(obs);
-            //     const float invSigma2 = pFrame->mvInvLevelSigma2[kpUn.octave];
-            //     Eigen::Matrix3d Info = Eigen::Matrix3d::Identity()*invSigma2;
-            //     e->setInformation(Info);
-            //
-            //     g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
-            //     e->setRobustKernel(rk);
-            //     rk->setDelta(deltaStereo);
-            //
-            //     e->fx = pFrame->fx;
-            //     e->fy = pFrame->fy;
-            //     e->cx = pFrame->cx;
-            //     e->cy = pFrame->cy;
-            //     e->bf = pFrame->mbf;
-            //     cv::Mat Xw = pMP->GetWorldPos();
-            //     e->Xw[0] = Xw.at<float>(0);
-            //     e->Xw[1] = Xw.at<float>(1);
-            //     e->Xw[2] = Xw.at<float>(2);
-            //
-            //     optimizer.addEdge(e);
-            //
-            //     vpEdgesStereo.push_back(e);
-            //     vnIndexEdgeStereo.push_back(i);
-            // }
         }
 
     }
     }
 
-
-    if(nInitialCorrespondences<3)
+    if(nInitialCorrespondences<3) {
         return 0;
+    }
 
     // 我们执行4次优化，每次优化后我们将观测分类为内点/外点
     // 在下一次优化中，不包括外点，但在最后它们可以再次被分类为内点。
     const float chi2Mono[4]={OPTIMIZER_CHI2_TH_2D,OPTIMIZER_CHI2_TH_2D,OPTIMIZER_CHI2_TH_2D,OPTIMIZER_CHI2_TH_2D};
-    const int its[4]={10,10,10,10};    
+    const int its[4]={5,5,5,5};
 
     int nBad=0;
     auto start_time = std::chrono::steady_clock::now();
@@ -579,8 +528,6 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
                 const cv::KeyPoint &kpUn = pKFi->mvKeysUn[mit->second];
 
                 // 单目模式只使用单目观测
-                // if(pKFi->mvuRight[mit->second]<0)
-                // {
                     Eigen::Matrix<double,2,1> obs;
                     obs << kpUn.pt.x, kpUn.pt.y;
 
@@ -623,37 +570,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
                     vpEdgesMono.push_back(e);
                     vpEdgeKFMono.push_back(pKFi);
                     vpMapPointEdgeMono.push_back(pMP);
-                // }
-                // else // Stereo observation
-                // {
-                //     Eigen::Matrix<double,3,1> obs;
-                //     const float kp_ur = pKFi->mvuRight[mit->second];
-                //     obs << kpUn.pt.x, kpUn.pt.y, kp_ur;
-                //
-                //     g2o::EdgeStereoSE3ProjectXYZ* e = new g2o::EdgeStereoSE3ProjectXYZ();
-                //
-                //     e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id)));
-                //     e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pKFi->mnId)));
-                //     e->setMeasurement(obs);
-                //     const float &invSigma2 = pKFi->mvInvLevelSigma2[kpUn.octave];
-                //     Eigen::Matrix3d Info = Eigen::Matrix3d::Identity()*invSigma2;
-                //     e->setInformation(Info);
-                //
-                //     g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
-                //     e->setRobustKernel(rk);
-                //     rk->setDelta(thHuberStereo);
-                //
-                //     e->fx = pKFi->fx;
-                //     e->fy = pKFi->fy;
-                //     e->cx = pKFi->cx;
-                //     e->cy = pKFi->cy;
-                //     e->bf = pKFi->mbf;
-                //
-                //     optimizer.addEdge(e);
-                //     vpEdgesStereo.push_back(e);
-                //     vpEdgeKFStereo.push_back(pKFi);
-                //     vpMapPointEdgeStereo.push_back(pMP);
-                // }
+                // 立体观测相关代码已移除
             }
         }
     }

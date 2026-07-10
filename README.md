@@ -135,6 +135,18 @@ For a closed-source version of ORB-SLAM2 for commercial purposes, please contact
 This Android adaptation and enhancement project (ORB-SLAM2s) is also licensed under the **GPL-3.0 License**. See the [LICENSE.txt](LICENSE.txt) and [License-gpl.txt](License-gpl.txt) files for details.
 <br><br>For project collaboration or other field cooperation inquiries, please contact: OlscStudio@outlook.com
 
+## Third-Party Dependencies and Licenses
+
+This project relies on several excellent open-source third-party libraries. We strictly adhere to their respective open-source licenses:
+
+- **[OpenCV 5 (Core parts)](https://github.com/opencv/opencv)**: Licensed under the **Apache 2.0 License**. We only extracted the necessary core code to keep the project lightweight.
+- **[srrg_hbst](https://gitlab.com/srrg-software/srrg_hbst)**: Licensed under the **BSD 3-Clause License**. Used for fast and scalable image matching.
+- **[DBoW2](https://github.com/dorian3d/DBoW2)**: Licensed under the **BSD License**. Used for basic vocabulary vectors and feature matching structures.
+- **[g2o](https://github.com/RainerKuemmerle/g2o)**: Licensed under the **BSD License** (core components). Used for non-linear optimization.
+- **[Eigen3](http://eigen.tuxfamily.org/)**: Licensed under the **MPL2 (Mozilla Public License v2.0)**. Used for matrix operations and algebraic calculations.
+
+For any issues related to third-party licenses, please refer to their respective official repositories.
+
 ## Academic Citations
 
 If you use ORB-SLAM2 (Monocular) in an academic work, please cite:
@@ -169,7 +181,11 @@ If you use this Android adaptation (ORB-SLAM2s) in an academic work, please ackn
 
 ## OpenCV
 
-We use [OpenCV](http://opencv.org) to manipulate images and features. Dowload and install instructions can be found at: http://opencv.org. **Required at leat 4.5.0**.
+We use [OpenCV](http://opencv.org) to manipulate images and features. **Updated to OpenCV 5**. Note: To keep the project lightweight, we only extracted the necessary code from OpenCV 5 rather than importing the entire library.
+
+## HBST (Hierarchical Bag of Scalable Trees)
+
+We have integrated [srrg_hbst](https://gitlab.com/srrg-software/srrg_hbst) for fast and scalable image matching. It significantly improves loop closing and relocalization performance compared to DBoW2.
 
 ## Eigen3
 

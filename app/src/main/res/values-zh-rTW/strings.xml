@@ -1,0 +1,102 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ORB-SLAM2s</string>
+    <string name="btn_ar_object">AR物件</string>
+    <string name="btn_save">儲存</string>
+    <string name="btn_load">載入</string>
+    <string name="btn_map">地圖</string>
+    <string name="btn_reset">重設</string>
+    <string name="btn_slam">✓SLAM</string>
+    <string name="btn_point_cloud">✓點雲</string>
+    <string name="loading_slam_init">正在初始化 SLAM 系統…</string>
+    <string name="loading_slam_wait">請稍候，這可能需要一些時間</string>
+    <string name="slam_init_complete">SLAM 系統初始化完成</string>
+    <string name="slam_init_failed">SLAM 初始化失敗：%1$s</string>
+    <string name="loading">載入中…</string>
+    <string name="hint_request_sent">請求已發送</string>
+    <string name="hint_resetting_slam">正在重設 SLAM 系統…</string>
+    <string name="hint_slam_reset">SLAM 系統已重設</string>
+    <string name="hint_reset_failed">重設失敗：系統未初始化</string>
+    <string name="hint_pointcloud_enabled">點雲已啟用</string>
+    <string name="hint_pointcloud_disabled">點雲已停用</string>
+    <string name="btn_pointcloud_enabled">✓點雲</string>
+    <string name="btn_pointcloud_disabled">點雲</string>
+    <string name="hint_slam_enabled">SLAM 已啟用</string>
+    <string name="hint_slam_disabled">SLAM 已停用</string>
+    <string name="btn_slam_disabled">SLAM</string>
+    <string name="input_map_name">輸入地圖名稱</string>
+    <string name="dialog_save_map">儲存地圖</string>
+    <string name="button_cancel">取消</string>
+    <string name="hint_no_maps">尚無已儲存的地圖</string>
+    <string name="map_stats_keyframes">關鍵影格：%1$d</string>
+    <string name="map_stats_mappoints">地圖點：%1$d</string>
+    <string name="map_stats_size">大小：%1$dKB</string>
+    <string name="dialog_map_manage">地圖管理</string>
+    <string name="dialog_select_map">選擇地圖</string>
+    <string name="action_load">載入</string>
+    <string name="action_delete">刪除</string>
+    <string name="action_view_details">查看詳情</string>
+    <string name="action_load_multi">多重載入</string>
+    <string name="dialog_confirm_delete">確認刪除</string>
+    <string name="dialog_confirm_delete_message">確定要刪除地圖「%1$s」嗎？</string>
+    <string name="hint_map_deleted">地圖已刪除</string>
+    <string name="hint_map_delete_failed">刪除失敗</string>
+    <string name="button_back">返回</string>
+    <string name="dialog_map_details">地圖詳情</string>
+    <string name="map_details_name">地圖名稱：%1$s</string>
+    <string name="map_details_keyframes">關鍵影格數：%1$d</string>
+    <string name="map_details_mappoints">地圖點數：%1$d</string>
+    <string name="map_details_size">檔案大小：%1$d KB</string>
+    <string name="map_details_time">建立時間：%1$s</string>
+    <string name="map_details_plane">包含平面：%1$s</string>
+    <string name="map_details_plane_yes">是</string>
+    <string name="map_details_plane_no">否</string>
+    <string name="button_ok">確定</string>
+    <string name="map_stats_format">KFs: %1$d | MPs: %2$d | 平面: %3$s</string>
+    <string name="map_stats_plane_yes">是</string>
+    <string name="map_stats_plane_no">否</string>
+    <string name="hint_map_load_requested">地圖載入請求已送出</string>
+    <string name="hint_map_saved">地圖已儲存：%1$s</string>
+    <string name="hint_map_save_failed">儲存失敗：%1$s</string>
+    <string name="hint_map_file_not_found">找不到地圖檔案</string>
+    <string name="hint_map_loaded">地圖已載入：%1$s</string>
+    <string name="hint_maps_loaded">已載入 %1$d 個地圖</string>
+    <string name="hint_map_load_failed">載入失敗：%1$s</string>
+    <string name="permission_camera_storage_required">需要相機與儲存空間權限，請在設定中授權。</string>
+    <string name="btn_mini_world">小窗預覽</string>
+    <string name="hint_mini_world_enabled">小窗已啟用</string>
+    <string name="hint_mini_world_disabled">小窗已停用</string>
+
+    <string name="category_ar">AR 控制</string>
+    <string name="category_map">地圖管理</string>
+    <string name="category_slam">SLAM 控制</string>
+    <string name="category_display">顯示控制</string>
+
+    <string name="btn_3dof">3DOF</string>
+    <string name="btn_3dof_close">關閉 3DOF</string>
+    <string name="hint_3dof_unavailable">3DOF 功能不可用</string>
+    <string name="hint_3dof_spawned">3DOF 立方體已在前方 5 公尺處生成</string>
+    <string name="hint_3dof_closed">3DOF 模式已關閉</string>
+    <string name="btn_web_server_close">關閉 Web 伺服器</string>
+    <string name="btn_web_server_open">開啟 Web 伺服器</string>
+    <string name="hint_web_server_closed">Web 伺服器已關閉</string>
+
+    <string name="btn_web_server">Web 伺服器</string>
+
+    <string name="status_enabled">已啟用</string>
+    <string name="status_disabled">已停用</string>
+
+    <string name="title_web_server">Web 伺服器</string>
+    <string name="web_fps_label"> (Web)</string>
+    <string name="hint_waiting_browser_frame">正在等待瀏覽器影像…</string>
+    <string name="hint_web_server_started">Web 伺服器已啟動：%1$s</string>
+    <string name="web_url_default">http://0.0.0.0:8080</string>
+
+    <string name="privacy_title">隱私政策與使用條款</string>
+    <string name="privacy_scroll_hint">↓ 請滑動至底部閱讀完整協議</string>
+    <string name="privacy_scroll_done">✓ 您已閱讀完整協議</string>
+    <string name="privacy_agree">同意並繼續</string>
+    <string name="privacy_disagree_notice">如不同意，請退出應用程式</string>
+    <string name="privacy_load_error">載入隱私政策失敗，請重試。</string>
+
+</resources>

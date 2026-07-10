@@ -81,7 +81,7 @@ namespace ORB_SLAM2
 
 PnPsolver::PnPsolver(const Frame &F, const vector<MapPoint*> &vpMapPointMatches):
     pws(0), us(0), alphas(0), pcs(0), maximum_number_of_correspondences(0), number_of_correspondences(0), mnInliersi(0),
-    mnIterations(0), mnBestInliers(0), N(0)
+    mnIterations(0), mnBestInliers(0), N(0), mLcg(0)
 {
     mvpMapPointMatches = vpMapPointMatches;
     mvP2D.reserve(F.mvpMapPoints.size());
@@ -195,7 +195,9 @@ cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInlie
         vector<size_t> vAvailableIndices;
 
         int nCurrentIterations = 0;
-        while(mnIterations<mRansacMaxIts || nCurrentIterations<nIterations)
+        // 自适应RANSAC提前终止：当已有足够好的解且剩余迭代不可能找到更好的时停止
+        int maxAdaptiveIters = mRansacMaxIts;
+        while(mnIterations<maxAdaptiveIters || nCurrentIterations<nIterations)
         {
             nCurrentIterations++;
             mnIterations++;
@@ -206,7 +208,7 @@ cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInlie
             // 获取最小点集
             for(short i = 0; i < mRansacMinSet; ++i)
             {
-                int randi = DUtils::Random::RandomInt(0, vAvailableIndices.size()-1);
+                int randi = mLcg.randomInt(0, vAvailableIndices.size()-1);
 
                 int idx = vAvailableIndices[randi];
 
@@ -251,6 +253,28 @@ cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInlie
                     return mRefinedTcw.clone();
                 }
 
+            }
+
+            // 自适应提前终止：基于当前最佳内点率估算所需迭代次数
+            // N = log(1-p) / log(1-(1-ε)^s)
+            // p=0.99, s=4, ε=外点率
+            if (mnBestInliers > mRansacMinSet && nCurrentIterations > PNP_ADAPTIVE_START_ITER) {
+                float bestInlierRatio = (float)mnBestInliers / (float)N;
+                if (bestInlierRatio > PNP_ADAPTIVE_MIN_RATIO) {
+                    float outlierRatio = 1.0f - bestInlierRatio;
+                    float prob_no_good = 1.0f;
+                    for (int k = 0; k < mRansacMinSet; k++)
+                        prob_no_good *= outlierRatio;  // (1-ε)^s
+                    if (prob_no_good > 0.0f) {
+                        // N = log(1-p) / log(1-(1-ε)^s)
+                        float n_needed = log(1.0 - mRansacProb) / log(1.0 - (1.0f - outlierRatio) * (1.0f - outlierRatio) * (1.0f - outlierRatio) * (1.0f - outlierRatio) + 1e-30f);
+                        n_needed = max(1.0f, n_needed);
+                        // 剩余迭代不足以找到更好的解 → 提前终止
+                        if (nCurrentIterations >= n_needed * PNP_ADAPTIVE_SAFETY_FACTOR) {
+                            maxAdaptiveIters = mnIterations;  // 终止 while 循环
+                        }
+                    }
+                }
             }
         }
 
@@ -335,6 +359,11 @@ void PnPsolver::CheckInliers()
 {
     mnInliersi=0;
 
+    const float fuc = (float)uc;
+    const float fvc = (float)vc;
+    const float ffu = (float)fu;
+    const float ffv = (float)fv;
+
     for(int i=0; i<N; i++)
     {
         cv::Point3f P3Dw = mvP3Dw[i];
@@ -344,8 +373,8 @@ void PnPsolver::CheckInliers()
         float Yc = mRi[1][0]*P3Dw.x+mRi[1][1]*P3Dw.y+mRi[1][2]*P3Dw.z+mti[1];
         float invZc = 1/(mRi[2][0]*P3Dw.x+mRi[2][1]*P3Dw.y+mRi[2][2]*P3Dw.z+mti[2]);
 
-        double ue = uc + fu * Xc * invZc;
-        double ve = vc + fv * Yc * invZc;
+        float ue = fuc + ffu * Xc * invZc;
+        float ve = fvc + ffv * Yc * invZc;
 
         float distX = P2D.x-ue;
         float distY = P2D.y-ve;
@@ -411,7 +440,8 @@ void PnPsolver::choose_control_points(void)
 
 
   // 从参考点的PCA中获取C1、C2和C3：
-  CvMat * PW0 = cvCreateMat(number_of_correspondences, 3, CV_64F);
+  m_PW0_buffer.resize(number_of_correspondences * 3);
+  CvMat PW0 = cvMat(number_of_correspondences, 3, CV_64F, m_PW0_buffer.data());
 
   double pw0tpw0[3 * 3], dc[3], uct[3 * 3];
   CvMat PW0tPW0 = cvMat(3, 3, CV_64F, pw0tpw0);
@@ -420,12 +450,10 @@ void PnPsolver::choose_control_points(void)
 
   for(int i = 0; i < number_of_correspondences; i++)
     for(int j = 0; j < 3; j++)
-      PW0->data.db[3 * i + j] = pws[3 * i + j] - cws[0][j];
+      PW0.data.db[3 * i + j] = pws[3 * i + j] - cws[0][j];
 
-  cvMulTransposed(PW0, &PW0tPW0, 1);
+  cvMulTransposed(&PW0, &PW0tPW0, 1);
   cvSVD(&PW0tPW0, &DC, &UCt, 0, CV_SVD_MODIFY_A | CV_SVD_U_T);
-
-  cvReleaseMat(&PW0);
 
   for(int i = 1; i < 4; i++) {
     double k = sqrt(dc[i - 1] / number_of_correspondences);
@@ -505,20 +533,50 @@ double PnPsolver::compute_pose(double R[3][3], double t[3])
   choose_control_points();
   compute_barycentric_coordinates();
 
-  CvMat * M = cvCreateMat(2 * number_of_correspondences, 12, CV_64F);
+  double mtm[12 * 12] = {0};
 
-  for(int i = 0; i < number_of_correspondences; i++)
-    fill_M(M, 2 * i, alphas + 4 * i, us[2 * i], us[2 * i + 1]);
+  for(int i = 0; i < number_of_correspondences; i++) {
+    double u = us[2 * i];
+    double v = us[2 * i + 1];
+    const double* a = alphas + 4 * i;
 
-  double mtm[12 * 12], d[12], ut[12 * 12];
+    double m1_0[4], m1_2[4], m2_1[4], m2_2[4];
+    for (int k = 0; k < 4; k++) {
+      m1_0[k] = a[k] * fu;
+      m1_2[k] = a[k] * (uc - u);
+      m2_1[k] = a[k] * fv;
+      m2_2[k] = a[k] * (vc - v);
+    }
+
+    for (int j = 0; j < 4; j++) {
+      for (int k = j; k < 4; k++) {
+        mtm[12 * (3 * j)     + (3 * k)]     += m1_0[j] * m1_0[k];
+        // mtm[12 * (3 * j)     + (3 * k + 1)] += 0;
+        mtm[12 * (3 * j)     + (3 * k + 2)] += m1_0[j] * m1_2[k];
+
+        // mtm[12 * (3 * j + 1) + (3 * k)]     += 0;
+        mtm[12 * (3 * j + 1) + (3 * k + 1)] += m2_1[j] * m2_1[k];
+        mtm[12 * (3 * j + 1) + (3 * k + 2)] += m2_1[j] * m2_2[k];
+
+        mtm[12 * (3 * j + 2) + (3 * k)]     += m1_2[j] * m1_0[k];
+        mtm[12 * (3 * j + 2) + (3 * k + 1)] += m2_2[j] * m2_1[k];
+        mtm[12 * (3 * j + 2) + (3 * k + 2)] += m1_2[j] * m1_2[k] + m2_2[j] * m2_2[k];
+      }
+    }
+  }
+
+  for (int r = 0; r < 12; r++) {
+    for (int c = r + 1; c < 12; c++) {
+      mtm[12 * c + r] = mtm[12 * r + c];
+    }
+  }
+
+  double d[12], ut[12 * 12];
   CvMat MtM = cvMat(12, 12, CV_64F, mtm);
   CvMat D   = cvMat(12,  1, CV_64F, d);
   CvMat Ut  = cvMat(12, 12, CV_64F, ut);
 
-  cvMulTransposed(M, &MtM, 1);
-
   cvSVD(&MtM, &D, &Ut, 0, CV_SVD_MODIFY_A | CV_SVD_U_T);
-  cvReleaseMat(&M);
 
   double l_6x10[6 * 10], rho[6];
   CvMat L_6x10 = cvMat(6, 10, CV_64F, l_6x10);
@@ -652,13 +710,6 @@ void PnPsolver::estimate_R_and_t(double R[3][3], double t[3])
   t[1] = pc0[1] - dot(R[1], pw0);
   t[2] = pc0[2] - dot(R[2], pw0);
 }
-
-// void PnPsolver::print_pose(const double R[3][3], const double t[3])
-// {
-//   cout << R[0][0] << " " << R[0][1] << " " << R[0][2] << " " << t[0] << endl;
-//   cout << R[1][0] << " " << R[1][1] << " " << R[1][2] << " " << t[1] << endl;
-//   cout << R[2][0] << " " << R[2][1] << " " << R[2][2] << " " << t[2] << endl;
-// }
 
 void PnPsolver::solve_for_sign(void)
 {

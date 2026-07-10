@@ -70,7 +70,7 @@ class Tracking
 {  
 
 public:
-    Tracking(System* pSys, ORBVocabulary* pVoc, FrameDrawer* pFrameDrawer, Map* pMap,
+    Tracking(System* pSys, FrameDrawer* pFrameDrawer, Map* pMap,
              KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor);
 
     // 预处理输入并调用Track()。提取特征并执行单目处理。
@@ -80,9 +80,7 @@ public:
     void SetLoopClosing(LoopClosing* pLoopClosing);
     void SetMap(Map* pMap);
 
-    // 加载新设置
-    // 焦距应该相似，否则在投影点时尺度预测会失败
-    // TODO: 修改MapPoint::PredictScale以考虑焦距
+    // 加载新设置：焦距应相似，否则投影时尺度预测会失败。TODO: 修改MapPoint::PredictScale以考虑焦距
     void ChangeCalibration(const string &strSettingPath);
     void UpdateCalibration(float fx, float fy, float cx, float cy);
 
@@ -119,11 +117,6 @@ public:
 
     // 获取当前激活的地图ID
     int GetCurrentMapId() const { return mnCurrentMapId; }
-
-
-
-
-
 
     // 跟踪状态
     enum eTrackingState{
@@ -171,14 +164,10 @@ public:
     // 仅清除跟踪状态而不清除地图
     void ClearTrackingState();
 
-    // 在创建新子地图前调用：仅清除跟踪线程内部运行时状态，
-    // 不调用 RequestReset 链、不停止后台线程、不清空 mpMap。
-    // 设计目的：避免 System::CreateNewMap 被高频触发时反复阻塞主跟踪线程几十~几百毫秒。
+    // 创建新子地图前仅清除跟踪线程内部运行时状态，避免高频触发CreateNewMap时阻塞跟踪线程。
     void PrepareForNewMap();
 
-    // 在 SwitchToMap 切换地图前调用：仅清空与旧地图相关的重定位/对齐缓存，
-    // 不清空地图本身、不重启后台线程。需在 StopGlobalRelocThread() 之后、
-    // SwitchToMap 之前调用，确保后台线程不会再访问旧 Map 的 MapPoint*。
+    // 切换地图前清空旧地图的重定位/对齐缓存，需在StopGlobalRelocThread之后、SwitchToMap之前调用。
     void ClearRelocCacheForMapSwitch();
 
 protected:
@@ -212,10 +201,7 @@ protected:
     // 从快照投影加载的地图点并绑定到当前帧
     void BindLoadedMapPointsUsingSnapshots();
 
-    // 在仅执行定位的情况下，当没有与地图中的点匹配时，此标志为true。
-    // 如果与时间点有足够的匹配，跟踪仍将继续。
-    // 在这种情况下，我们正在做视觉里程计。系统将尝试进行重定位以恢复
-    // 到地图的"零漂移"定位。
+    // 在仅执行定位且无地图匹配时做视觉里程计，系统尝试重定位恢复零漂移定位。
     bool mbVO;
 
     //其他线程指针
@@ -226,8 +212,6 @@ protected:
     ORBextractor* mpORBextractorLeft;
     ORBextractor* mpIniORBextractor;
 
-    //BoW
-    ORBVocabulary* mpORBVocabulary;
     KeyFrameDatabase* mpKeyFrameDB;
 
     // 初始化（仅用于单目）
@@ -296,7 +280,7 @@ protected:
     double mLastAlignTs = 0.0;
     std::atomic<float> mRelocMatchScore{0.0f};
     
-    // 平滑对齐更新机制：使用EMA（指数移动平均）减少抖动，性能优化版本
+    // 平滑对齐更新机制：使用EMA（指数移动平均）减少抖动
     cv::Mat mSmoothedT_map_from_slam;  // 平滑后的对齐变换
     int mAlignUpdateCount = 0;  // 对齐更新计数
     int mAlignSkipCounter = 0;  // 跳帧计数器，用于降低更新频率
@@ -307,8 +291,8 @@ protected:
     size_t mRefCachedMPCount = 0;
     double mRefLastBuildTs = 0.0;
     std::atomic<bool> mRefBuilding{false};
-    // 倒排索引：视觉词id -> mRefIdxToMP中的索引
-    std::unordered_map<unsigned int, std::vector<int>> mRefInverted;
+    // HBST树：用于代替词袋倒排索引加速背景重定位匹配
+    std::shared_ptr<HBSTTree> mpRefTree;
     // 加载地图点的不可变快照以避免竞争
     struct RefMPSnapshot {
         cv::Point3f Pw;
@@ -388,6 +372,9 @@ protected:
     // 最近一次成功触发 CreateNewMap 时的当前帧 id，用于做冷却限频。
     // 配合 TRACKING_NEW_MAP_COOLDOWN_FRAMES 使用，避免高频丢失导致连续触发新建子地图。
     unsigned int mLastNewMapFrameId = 0;
+
+    // 动态搜索半径，根据跟踪状态自适应调整（正常:TH=4, 丢失:TH=8, 重定位后:TH=6）。
+    float mDynamicSearchTh = TRACKING_LOCAL_SEARCH_TH;
 };
 
 } //namespace ORB_SLAM2

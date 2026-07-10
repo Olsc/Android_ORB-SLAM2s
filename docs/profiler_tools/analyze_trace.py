@@ -91,7 +91,7 @@ def analyze(events):
     if 'int processImage(cv::Mat &, cv::Mat &, int *)' in durations:
         pid = 'int processImage(cv::Mat &, cv::Mat &, int *)'
         durs = durations[pid]
-        print(f"\n▶ processImage (主循环单帧总耗时):")
+        print(f"\n-> processImage (主循环单帧总耗时):")
         print(f"  调用 {len(durs)} 次, 平均 {statistics.mean(durs)/1000:.1f}ms, "
               f"中位 {statistics.median(durs)/1000:.1f}ms, "
               f"最大 {max(durs)/1000:.1f}ms")
@@ -107,14 +107,14 @@ def analyze(events):
         print(f"\n  耗时分布:")
         for lo, hi in buckets:
             cnt = sum(1 for d in durs if lo*1000 <= d < hi*1000)
-            bar = '█' * int(cnt / max(1, len(durs)) * 80)
+            bar = '#' * int(cnt / max(1, len(durs)) * 80)
             label = f"{lo}-{hi}ms" if hi < 999999 else f">{lo}ms"
             print(f"    {label:>10}: {cnt:>5} ({cnt/len(durs)*100:5.1f}%) {bar}")
 
     # 2. TrackMonocular 内部耗时
     track_funcs = [k for k in durations if 'Track' in k and 'processImage' not in k]
     if track_funcs:
-        print(f"\n▶ 跟踪阶段细分:")
+        print(f"\n-> 跟踪阶段细分:")
         for name in sorted(track_funcs, key=lambda n: statistics.mean(durations[n]), reverse=True):
             durs = durations[name]
             avg = statistics.mean(durs)
@@ -124,7 +124,7 @@ def analyze(events):
     # 3. ORB特征提取耗时
     orb_funcs = [k for k in durations if 'ORB' in k or 'ComputePyramid' in k or 'Extractor' in k]
     if orb_funcs:
-        print(f"\n▶ ORB 特征提取:")
+        print(f"\n-> ORB 特征提取:")
         for name in sorted(orb_funcs, key=lambda n: sum(durations[n]), reverse=True):
             durs = durations[name]
             avg = statistics.mean(durs)
@@ -133,7 +133,7 @@ def analyze(events):
     # 4. LocalMapping 耗时
     lm_funcs = [k for k in durations if 'LocalMapping' in k]
     if lm_funcs:
-        print(f"\n▶ 局部建图 (LocalMapping) 线程:")
+        print(f"\n-> 局部建图 (LocalMapping) 线程:")
         for name in sorted(lm_funcs, key=lambda n: sum(durations[n]), reverse=True):
             durs = durations[name]
             avg = statistics.mean(durs)
@@ -141,7 +141,7 @@ def analyze(events):
             print(f"  {name:<55}  avg={avg/1000:>7.2f}ms  cnt={len(durs):>5}  total={total/1000:>8.1f}ms")
 
     # 5. 帧率稳定性分析
-    print(f"\n▶ 帧率稳定性分析:")
+    print(f"\n-> 帧率稳定性分析:")
     pid_events = [k for k in durations if 'processImage' in k]
     if pid_events:
         durs = durations[pid_events[0]]
@@ -165,7 +165,7 @@ def analyze(events):
             print(f"  最大: {max(durs_ms):.1f}ms")
 
     # 6. 查找最耗时的单个操作
-    print(f"\n▶ 单次调用最耗时的操作 (Top 10):")
+    print(f"\n-> 单次调用最耗时的操作 (Top 10):")
     single_ops = []
     for name, durs in durations.items():
         for i, d in enumerate(durs):
@@ -221,6 +221,196 @@ def find_fps_problems(events):
                 print(f"  卡顿 (>200ms 间隔): {len(freeze)}/{len(intervals_ms)} = {len(freeze)/len(intervals_ms)*100:.1f}%")
 
 
+def detect_deadlock(events):
+    """检测卡死模式：未闭合函数、线程永久等待、BA过长"""
+    print("\n" + "="*80)
+    print("卡死/死锁检测")
+    print("="*80)
+
+    # 1. 按 TID 分组并检测未闭合 Begin
+    threads = defaultdict(list)
+    for ev in events:
+        threads[ev['tid']].append(ev)
+
+    # 供后续综合发现的变量
+    has_unclosed = False
+    open_stopped_tids = []
+    ba_ops = []
+    overlap_found = False
+
+    print("\n-> 未闭合函数 (Begin 无对应 End):")
+    for tid, evs in sorted(threads.items()):
+        stack = []
+        for ev in evs:
+            if ev['ph'] == 'B':
+                stack.append(ev['name'])
+            elif ev['ph'] == 'E':
+                if stack and stack[-1] == ev['name']:
+                    stack.pop()
+        if stack:
+            has_unclosed = True
+            print(f"  线程 {tid}: 调用栈(中断时):")
+            for name in stack:
+                print(f"    +- {name}")
+
+    if not has_unclosed:
+        print("    OK - 所有事件已闭合")
+
+    # 2. Stopped 状态分析
+    print("\n-> 线程停止状态 (Stopped) 检测:")
+    open_stopped_tids = []
+    closed_stopped_cnt = 0
+    for tid, evs in sorted(threads.items()):
+        in_stopped = False
+        for ev in evs:
+            if 'Stopped' not in ev['name']:
+                continue
+            if ev['ph'] == 'B':
+                in_stopped = True
+                closed_stopped_cnt += 1  # count each begin as one occurrence
+            elif ev['ph'] == 'E':
+                in_stopped = False
+        if in_stopped:
+            open_stopped_tids.append(tid)
+
+    if not open_stopped_tids and closed_stopped_cnt == 0:
+        print("    OK - 无线程停止状态")
+    elif open_stopped_tids:
+        print(f"    !!! 线程 {open_stopped_tids} 进入 Stopped 后未退出 (trace结束时仍卡在其中)")
+        for tid in open_stopped_tids:
+            print(f"      线程 {tid} 在 Stopped 中等待被唤醒(Release)，但无人调用 Release")
+    else:
+        print(f"    OK - {closed_stopped_cnt} 次 Stopped 均已正常退出")
+
+    # 3. 长耗时操作检测 (>500ms)
+    print("\n-> 长耗时操作 (单次 >500ms):")
+    stacks = defaultdict(list)
+    long_ops = []
+    for ev in events:
+        tid = ev['tid']
+        if ev['ph'] == 'B':
+            stacks[tid].append((ev['name'], ev['ts']))
+        elif ev['ph'] == 'E' and stacks[tid]:
+            bname, bts = stacks[tid].pop()
+            if bname == ev['name']:
+                dur = ev['ts'] - bts
+                if dur > 500000:
+                    long_ops.append((dur/1000, bname, tid))
+
+    if long_ops:
+        long_ops.sort(reverse=True)
+        print(f"  发现 {len(long_ops)} 次 >500ms 操作:")
+        for ms, name, tid in long_ops[:10]:
+            print(f"    {ms:>8.0f}ms  {name}")
+
+        ba_ops = [ms for ms, name, _ in long_ops if 'BundleAdjustment' in name]
+        if ba_ops:
+            print(f"\n    其中 BA {len(ba_ops)} 次, 平均 {sum(ba_ops)/len(ba_ops):.0f}ms, "
+                  f"最大 {max(ba_ops):.0f}ms")
+            if max(ba_ops) > 2000:
+                print("    !!! BA 最大耗时 > 2s, 建议限制 BA 窗口大小")
+    else:
+        print("    OK - 无 >500ms 操作")
+
+    # 4. 线程间重叠检测 (主线程 vs LM线程)
+    print("\n-> 线程间堵塞检测:")
+    main_tid = lm_tid = None
+    for tid, evs in sorted(threads.items()):
+        names = [e['name'] for e in evs]
+        if any('processImage' in n for n in names):
+            main_tid = tid
+        if any('LocalMapping::' in n for n in names):
+            lm_tid = tid
+
+    if main_tid and lm_tid:
+        print(f"    主线程={main_tid}, LocalMapping={lm_tid}")
+
+        # 提取主线程所有帧区间
+        main_iv = []
+        stack = []
+        for ev in threads[main_tid]:
+            if ev['ph'] == 'B':
+                stack.append((ev['name'], ev['ts']))
+            elif ev['ph'] == 'E' and stack:
+                name, ts = stack.pop()
+                if name == ev['name']:
+                    main_iv.append((name, ts, ev['ts'], ev['ts']-ts))
+
+        # 提取 LM 的 BA/Search 区间
+        lm_long = []
+        stack = []
+        for ev in threads[lm_tid]:
+            if ev['ph'] == 'B':
+                stack.append((ev['name'], ev['ts']))
+            elif ev['ph'] == 'E' and stack:
+                name, ts = stack.pop()
+                if name == ev['name']:
+                    dur = ev['ts'] - ts
+                    if dur > 500000 or 'SearchInNeighbors' in name:
+                        lm_long.append((name, ts, ev['ts'], dur))
+
+        # 找长帧+LM操作重叠
+        overlap_found = False
+        for mn, ms, me, md in main_iv:
+            if md < 60000:  # 只看 >60ms 的长帧
+                continue
+            md_ms = md/1000
+            for ln, ls, le, ld in lm_long:
+                if me > ls and ms < le:  # 区间重叠
+                    overlap_found = True
+                    print(f"    !!! 主线程({mn})耗时{md_ms:.0f}ms 与 "
+                          f"{ln}({ld/1000:.0f}ms) 重叠")
+                    break
+
+        if not overlap_found:
+            print("    OK - 主线程与 LM 线程无严重重叠")
+
+        # 帧间隔极端值
+        print("\n-> 帧间隔极端值:")
+        starts = [ev['ts'] for ev in threads[main_tid]
+                  if ev['name'] == 'int processImage(cv::Mat &, cv::Mat &, int *)' and ev['ph'] == 'B']
+        if len(starts) > 2:
+            gaps_ms = [(starts[i+1]-starts[i])/1000 for i in range(len(starts)-1)]
+            extreme = [(i, g) for i, g in enumerate(gaps_ms) if g > 100]
+            if extreme:
+                print(f"    {len(extreme)} 次 >100ms 间隔:")
+                for i, g in extreme[-5:]:
+                    print(f"      帧{i}: 间隔{g:.0f}ms")
+            else:
+                print("    OK - 无 >100ms 极端间隔")
+    else:
+        print("    无法确定线程角色")
+
+    # 综合发现列表：只列事实，不下定论
+    print("\n-> 综合发现列表:")
+    findings = []
+
+    if has_unclosed:
+        findings.append("trace中断时仍有函数未闭合")
+    if open_stopped_tids:
+        findings.append(f"线程 {open_stopped_tids} 在 Stopped 状态中未退出")
+    if ba_ops:
+        findings.append(f"BA 最大耗时 {max(ba_ops):.0f}ms")
+
+    extreme_count = 0
+    if main_tid:
+        starts2 = [ev['ts'] for ev in threads[main_tid]
+                   if ev['name'] == 'int processImage(cv::Mat &, cv::Mat &, int *)' and ev['ph'] == 'B']
+        if len(starts2) > 2:
+            gaps_ms2 = [(starts2[i+1]-starts2[i])/1000 for i in range(len(starts2)-1)]
+            extreme_count = len([g for g in gaps_ms2 if g > 150])
+    if extreme_count > 0:
+        findings.append(f"{extreme_count} 次帧间隔 >150ms")
+    if overlap_found:
+        findings.append("主线程耗时与 LM 操作重叠")
+
+    if findings:
+        for f in findings:
+            print(f"  - {f}")
+    else:
+        print("  - 未检测到异常")
+
+
 if __name__ == '__main__':
     print(f"分析文件: {TRACE_FILE}")
     print("="*80)
@@ -228,5 +418,6 @@ if __name__ == '__main__':
     events = load_trace(TRACE_FILE)
     analyze(events)
     find_fps_problems(events)
+    detect_deadlock(events)
 
-    print("\n✅ 分析完成")
+    print("\nOK 分析完成")

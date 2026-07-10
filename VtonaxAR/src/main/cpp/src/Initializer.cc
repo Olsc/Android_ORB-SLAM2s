@@ -39,6 +39,7 @@
 #include "Optimizer.h"
 #include "ORBmatcher.h"
 #include "Config.h"
+#include "Random.h"
 
 #include<thread>
 
@@ -92,7 +93,7 @@ bool Initializer::Initialize(const Frame &CurrentFrame, const vector<int> &vMatc
     // 为每次 RANSAC 迭代生成 8 个点的集合
     mvSets = vector< vector<size_t> >(mMaxIterations,vector<size_t>(INITIALIZER_RANSAC_MIN_SET,0));
 
-    DUtils::Random::SeedRandOnce(0);
+    LCG lcg(0);
 
     for(int it=0; it<mMaxIterations; it++)
     {
@@ -101,7 +102,7 @@ bool Initializer::Initialize(const Frame &CurrentFrame, const vector<int> &vMatc
         // 选择最小集
         for(size_t j=0; j<INITIALIZER_RANSAC_MIN_SET; j++)
         {
-            int randi = DUtils::Random::RandomInt(0,vAvailableIndices.size()-1);
+            int randi = lcg.randomInt(0, vAvailableIndices.size()-1);
             int idx = vAvailableIndices[randi];
 
             mvSets[it][j] = idx;
@@ -240,7 +241,8 @@ cv::Mat Initializer::ComputeH21(const vector<cv::Point2f> &vP1, const vector<cv:
 {
     const int N = vP1.size();
 
-    cv::Mat A(2*N,9,CV_32F);
+    float a_data[16 * 9];
+    cv::Mat A(2*N,9,CV_32F, a_data);
 
     for(int i=0; i<N; i++)
     {
@@ -271,18 +273,24 @@ cv::Mat Initializer::ComputeH21(const vector<cv::Point2f> &vP1, const vector<cv:
 
     }
 
-    cv::Mat u,w,vt;
+    float u_data[16 * 16];
+    float w_data[9 * 1];
+    float vt_data[9 * 9];
+    cv::Mat u(2*N, 2*N, CV_32F, u_data);
+    cv::Mat w(9, 1, CV_32F, w_data);
+    cv::Mat vt(9, 9, CV_32F, vt_data);
 
-    cv::SVDecomp(A,w,u,vt,cv::SVD::MODIFY_A | cv::SVD::FULL_UV);
+    cv::SVD::compute(A,w,u,vt,cv::SVD::MODIFY_A | cv::SVD::FULL_UV);
 
-    return vt.row(8).reshape(0, 3);
+    return vt.row(8).reshape(0, 3).clone();
 }
 
 cv::Mat Initializer::ComputeF21(const vector<cv::Point2f> &vP1,const vector<cv::Point2f> &vP2)
 {
     const int N = vP1.size();
 
-    cv::Mat A(N,9,CV_32F);
+    float a_data[8 * 9];
+    cv::Mat A(N,9,CV_32F, a_data);
 
     for(int i=0; i<N; i++)
     {
@@ -302,9 +310,14 @@ cv::Mat Initializer::ComputeF21(const vector<cv::Point2f> &vP1,const vector<cv::
         A.at<float>(i,8) = 1;
     }
 
-    cv::Mat u,w,vt;
+    float u_data[8 * 8];
+    float w_data[8 * 1];
+    float vt_data[9 * 9];
+    cv::Mat u(N, N, CV_32F, u_data);
+    cv::Mat w(N, 1, CV_32F, w_data);
+    cv::Mat vt(9, 9, CV_32F, vt_data);
 
-    cv::SVDecomp(A,w,u,vt,cv::SVD::MODIFY_A | cv::SVD::FULL_UV);
+    cv::SVD::compute(A,w,u,vt,cv::SVD::MODIFY_A | cv::SVD::FULL_UV);
 
     cv::Mat Fpre = vt.row(8).reshape(0, 3);
 
@@ -344,8 +357,8 @@ float Initializer::CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vecto
     float score = 0;
 
     const float th = OPTIMIZER_CHI2_TH_2D;
-
-    const float invSigmaSquare = 1.0/(sigma*sigma);
+    const float thSigma2 = th * sigma * sigma;
+    const float invSigmaSquare = 1.0f/(sigma*sigma);
 
     for(int i=0; i<N; i++)
     {
@@ -367,12 +380,11 @@ float Initializer::CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vecto
 
         const float squareDist1 = (u1-u2in1)*(u1-u2in1)+(v1-v2in1)*(v1-v2in1);
 
-        const float chiSquare1 = squareDist1*invSigmaSquare;
-
-        if(chiSquare1>th)
+        // 优化: squareDist1*invSigmaSquare > th ⇔ squareDist1 > th*sigma²
+        if(squareDist1 > thSigma2)
             bIn = false;
         else
-            score += th - chiSquare1;
+            score += th - squareDist1*invSigmaSquare;
 
         // x1in2 = H21*x1
 
@@ -382,12 +394,10 @@ float Initializer::CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vecto
 
         const float squareDist2 = (u2-u1in2)*(u2-u1in2)+(v2-v1in2)*(v2-v1in2);
 
-        const float chiSquare2 = squareDist2*invSigmaSquare;
-
-        if(chiSquare2>th)
+        if(squareDist2 > thSigma2)
             bIn = false;
         else
-            score += th - chiSquare2;
+            score += th - squareDist2*invSigmaSquare;
 
         if(bIn)
             vbMatchesInliers[i]=true;
@@ -419,7 +429,8 @@ float Initializer::CheckFundamental(const cv::Mat &F21, vector<bool> &vbMatchesI
     const float th = OPTIMIZER_CHI2_TH_1D;
     const float thScore = OPTIMIZER_CHI2_TH_2D;
 
-    const float invSigmaSquare = 1.0/(sigma*sigma);
+    const float thSigma2 = th * sigma * sigma;
+    const float invSigmaSquare = 1.0f/(sigma*sigma);
 
     for(int i=0; i<N; i++)
     {
@@ -443,12 +454,11 @@ float Initializer::CheckFundamental(const cv::Mat &F21, vector<bool> &vbMatchesI
 
         const float squareDist1 = num2*num2/(a2*a2+b2*b2);
 
-        const float chiSquare1 = squareDist1*invSigmaSquare;
-
-        if(chiSquare1>th)
+        // 优化: squareDist1*invSigmaSquare > th ⇔ squareDist1 > th*sigma²
+        if(squareDist1 > thSigma2)
             bIn = false;
         else
-            score += thScore - chiSquare1;
+            score += thScore - squareDist1*invSigmaSquare;
 
         // l1 =x2tF21=(a1,b1,c1)
 
@@ -460,12 +470,10 @@ float Initializer::CheckFundamental(const cv::Mat &F21, vector<bool> &vbMatchesI
 
         const float squareDist2 = num1*num1/(a1*a1+b1*b1);
 
-        const float chiSquare2 = squareDist2*invSigmaSquare;
-
-        if(chiSquare2>th)
+        if(squareDist2 > thSigma2)
             bIn = false;
         else
-            score += thScore - chiSquare2;
+            score += thScore - squareDist2*invSigmaSquare;
 
         if(bIn)
             vbMatchesInliers[i]=true;
@@ -592,9 +600,7 @@ bool Initializer::ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv:
     const float minGoodRatio = (N < 150) ? 0.6f : 0.9f;
     const int minTri = std::min(minTriangulated, std::max(30, N/2));
 
-    // 我们使用Faugeras等人的方法恢复8种运动假设
-    // 分段平面环境中的运动和运动结构
-    // 国际模式识别和人工智能杂志, 1988
+    // 使用Faugeras (1988) 平面场景方法恢复8种运动假设
 
     cv::Mat invK = K.inv();
     cv::Mat A = invK*H21*K;

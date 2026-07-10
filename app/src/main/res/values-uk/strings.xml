@@ -1,0 +1,102 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ORB-SLAM2s</string>
+    <string name="btn_ar_object">AR-об\'єкт</string>
+    <string name="btn_save">Зберегти</string>
+    <string name="btn_load">Завантажити</string>
+    <string name="btn_map">Карта</string>
+    <string name="btn_reset">Скинути</string>
+    <string name="btn_slam">✓SLAM</string>
+    <string name="btn_point_cloud">✓Хмара точок</string>
+    <string name="loading_slam_init">Ініціалізація системи SLAM…</string>
+    <string name="loading_slam_wait">Будь ласка, зачекайте, це може зайняти деякий час</string>
+    <string name="slam_init_complete">Систему SLAM ініціалізовано</string>
+    <string name="slam_init_failed">Ініціалізація SLAM не вдалася: %1$s</string>
+    <string name="loading">Завантаження…</string>
+    <string name="hint_request_sent">Запит надіслано</string>
+    <string name="hint_resetting_slam">Скидання системи SLAM…</string>
+    <string name="hint_slam_reset">Систему SLAM скинуто</string>
+    <string name="hint_reset_failed">Скидання не вдалося: Система не ініціалізована</string>
+    <string name="hint_pointcloud_enabled">Хмару точок увімкнено</string>
+    <string name="hint_pointcloud_disabled">Хмару точок вимкнено</string>
+    <string name="btn_pointcloud_enabled">✓Хмара точок</string>
+    <string name="btn_pointcloud_disabled">Хмара точок</string>
+    <string name="hint_slam_enabled">SLAM увімкнено</string>
+    <string name="hint_slam_disabled">SLAM вимкнено</string>
+    <string name="btn_slam_disabled">SLAM</string>
+    <string name="input_map_name">Введіть назву карти</string>
+    <string name="dialog_save_map">Зберегти карту</string>
+    <string name="button_cancel">Скасувати</string>
+    <string name="hint_no_maps">Немає збережених карт</string>
+    <string name="map_stats_keyframes">Ключові кадри: %1$d</string>
+    <string name="map_stats_mappoints">Точки карти: %1$d</string>
+    <string name="map_stats_size">Розмір: %1$dKB</string>
+    <string name="dialog_map_manage">Управління картами</string>
+    <string name="dialog_select_map">Вибрати карту</string>
+    <string name="action_load">Завантажити</string>
+    <string name="action_delete">Видалити</string>
+    <string name="action_view_details">Переглянути деталі</string>
+    <string name="action_load_multi">Завантажити декілька</string>
+    <string name="dialog_confirm_delete">Підтвердити видалення</string>
+    <string name="dialog_confirm_delete_message">Видалити карту \"%1$s\"?</string>
+    <string name="hint_map_deleted">Карту видалено</string>
+    <string name="hint_map_delete_failed">Видалення не вдалося</string>
+    <string name="button_back">Назад</string>
+    <string name="dialog_map_details">Деталі карти</string>
+    <string name="map_details_name">Назва карти: %1$s</string>
+    <string name="map_details_keyframes">Ключові кадри: %1$d</string>
+    <string name="map_details_mappoints">Точки карти: %1$d</string>
+    <string name="map_details_size">Розмір файлу: %1$d KB</string>
+    <string name="map_details_time">Створено: %1$s</string>
+    <string name="map_details_plane">Має площину: %1$s</string>
+    <string name="map_details_plane_yes">Так</string>
+    <string name="map_details_plane_no">Ні</string>
+    <string name="button_ok">OK</string>
+    <string name="map_stats_format">КК: %1$d | ТК: %2$d | Пл.: %3$s</string>
+    <string name="map_stats_plane_yes">Так</string>
+    <string name="map_stats_plane_no">Ні</string>
+    <string name="hint_map_load_requested">Запит на завантаження карти</string>
+    <string name="hint_map_saved">Карту збережено: %1$s</string>
+    <string name="hint_map_save_failed">Збереження не вдалося: %1$s</string>
+    <string name="hint_map_file_not_found">Файл карти не знайдено</string>
+    <string name="hint_map_loaded">Карту завантажено: %1$s</string>
+    <string name="hint_maps_loaded">Завантажено карт: %1$d</string>
+    <string name="hint_map_load_failed">Завантаження не вдалося: %1$s</string>
+    <string name="permission_camera_storage_required">Необхідні дозволи камери та сховища. Надайте дозволи в налаштуваннях.</string>
+    <string name="btn_mini_world">Міні-вид</string>
+    <string name="hint_mini_world_enabled">Міні-вид увімкнено</string>
+    <string name="hint_mini_world_disabled">Міні-вид вимкнено</string>
+
+    <string name="category_ar">Управління AR</string>
+    <string name="category_map">Карта</string>
+    <string name="category_slam">SLAM</string>
+    <string name="category_display">Відображення</string>
+
+    <string name="btn_3dof">3DOF</string>
+    <string name="btn_3dof_close">Закрити 3DOF</string>
+    <string name="hint_3dof_unavailable">Функція 3DOF недоступна</string>
+    <string name="hint_3dof_spawned">Куб 3DOF створено за 5 метрів попереду</string>
+    <string name="hint_3dof_closed">Режим 3DOF закрито</string>
+    <string name="btn_web_server_close">Закрити веб-сервер</string>
+    <string name="btn_web_server_open">Відкрити веб-сервер</string>
+    <string name="hint_web_server_closed">Веб-сервер закрито</string>
+
+    <string name="btn_web_server">Веб-сервер</string>
+
+    <string name="status_enabled">увімкнено</string>
+    <string name="status_disabled">вимкнено</string>
+
+    <string name="title_web_server">Веб-сервер</string>
+    <string name="web_fps_label"> (Веб)</string>
+    <string name="hint_waiting_browser_frame">Очікування зображення браузера…</string>
+    <string name="hint_web_server_started">Веб-сервер запущено: %1$s</string>
+    <string name="web_url_default">http://0.0.0.0:8080</string>
+
+    <string name="privacy_title">Політика конфіденційності &amp; Умови використання</string>
+    <string name="privacy_scroll_hint">↓ Прокрутіть до кінця, щоб прочитати повну угоду</string>
+    <string name="privacy_scroll_done">✓ Ви прочитали повну угоду</string>
+    <string name="privacy_agree">Погодитися &amp; Продовжити</string>
+    <string name="privacy_disagree_notice">Якщо ви не погоджуєтеся, будь ласка, вийдіть із програми</string>
+    <string name="privacy_load_error">Не вдалося завантажити політику конфіденційності. Будь ласка, спробуйте ще раз.</string>
+
+</resources>

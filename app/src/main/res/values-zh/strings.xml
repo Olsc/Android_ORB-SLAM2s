@@ -91,6 +91,7 @@
     <string name="web_fps_label"> (Web端)</string>
     <string name="hint_waiting_browser_frame">正在等待浏览器图像…</string>
     <string name="hint_web_server_started">Web服务器已启动: %1$s</string>
+    <string name="web_url_default">http://0.0.0.0:8080</string>
 
     <string name="privacy_title">隐私政策与使用条款</string>
     <string name="privacy_scroll_hint">↓ 请滑动至底部阅读完整协议</string>
