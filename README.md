@@ -45,9 +45,12 @@ shares similar performance optimization concepts with this project, though its m
 - **Relocalization & Matching**: Pose estimation and feature matching upon loading existing maps.
 - **Confidence Visualization**: Visual tracking of keypoints and matching statistics between current frames and the loaded map.
 - **Plane Detection**: Intelligent floor/surface detection based on current pose and point cloud data.
-- **Native AR Rendering**: Basic AR implementation using OpenGL ES.
+- **Native AR Rendering**: 3D rendering via **Google Filament** (GLB/glTF models) and OpenGL ES, supporting placement and interaction with virtual objects on detected planes.
 - **Dark Frame Detection**: Automatically skips dark or low-quality frames to prevent SLAM thread blocking.
-- **AR Object Management**: Support for placing and interacting with 3D objects on detected planes.
+- **AR Object Management**: Support for placing, scaling (pinch gesture), and interacting with 3D objects.
+- **3DOF Orientation Tracking**: Three-degrees-of-freedom orientation tracking using onboard device sensors (Rotation Vector / Accelerometer + Magnetometer).
+- **Web Remote Viewing**: Built-in SSL-encrypted HTTP Web server (HTTPS) for viewing camera feeds and SLAM data remotely via a browser.
+- **Multi-Map Support**: Simultaneous loading and matching of multiple map files.
 
 ---
 

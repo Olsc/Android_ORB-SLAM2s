@@ -1,6 +1,6 @@
 # ORB-SLAM2s Privacy Policy and Terms of Use
 
-**Last Updated: May 20, 2026**
+**Last Updated: July 10, 2026**
 
 ---
 
@@ -13,20 +13,34 @@ This project combines computer vision-based Simultaneous Localization and Mappin
 1. **Sparse Point Cloud SLAM Mapping**: Real-time extraction of ORB features from monocular camera input to construct sparse 3D point cloud maps of the environment;
 2. **Map Persistence**: Saving constructed maps as binary files (.bin) with associated metadata (.json) to local device storage, and reloading them for future sessions;
 3. **Relocalization & Matching**: Recovering camera pose through feature matching when loading existing maps;
-4. **Plane Detection**: Intelligent detection of horizontal floors/surfaces based on current camera pose and point cloud data;
-5. **Native AR Rendering**: 3D rendering using OpenGL ES 2.0, supporting placement of 3D objects (OBJ format models) on detected planes;
-6. **Dark Frame Detection**: Automatic detection of overly dark environments, pausing SLAM tracking to prevent wasted computational resources and tracking loss;
-7. **3D Object Interaction Management**: Support for placing, scaling (pinch gesture), and interacting with 3D AR objects;
-8. **3DOF Orientation Tracking**: Three-degrees-of-freedom orientation tracking using onboard device sensors (Rotation Vector Sensor / Accelerometer + Magnetometer);
-9. **Web Remote Viewing**: Built-in SSL-encrypted HTTP Web server (HTTPS) for viewing camera feeds and SLAM data remotely via a browser.
+4. **Confidence Visualization**: Visual tracking of keypoints and matching statistics between current frames and the loaded map;
+5. **Plane Detection**: Intelligent detection of horizontal floors/surfaces based on current camera pose and point cloud data;
+6. **Native AR Rendering**: 3D rendering via **Google Filament** (GLB/glTF format models) and OpenGL ES 2.0, supporting placement and interaction of virtual objects on detected planes;
+7. **Dark Frame Detection**: Automatic detection of overly dark environments, pausing SLAM tracking to prevent wasted computational resources and tracking loss;
+8. **3D Object Interaction Management**: Support for placing, scaling (pinch gesture), and interacting with 3D AR objects;
+9. **3DOF Orientation Tracking**: Three-degrees-of-freedom orientation tracking using onboard device sensors (Rotation Vector Sensor / Accelerometer + Magnetometer);
+10. **Web Remote Viewing**: Built-in SSL-encrypted HTTP Web server (HTTPS) for viewing camera feeds and SLAM data remotely via a browser;
+11. **Multi-Map Support**: Simultaneous loading, matching, and management of multiple map files.
 
 This project **only** runs on the Android mobile platform. Its underlying SLAM engine is implemented in C/C++ (ORB-SLAM2 core, accessed via JNI), while the upper layer uses Java for user interface and AR rendering pipelines.
 
 ---
 
-## 2. Open Source License
+## 2. User Privacy Consent Mechanism
 
-### 2.1 Project License
+The application includes a built-in privacy consent screen (`PrivacyConsentActivity`) that is displayed when the app is launched for the first time. The consent process works as follows:
+
+1. **First Launch**: On initial startup, the app loads this Privacy Policy (selecting the appropriate language — Chinese or English — based on the device's system language setting).
+2. **Scroll-to-Read Requirement**: The user must scroll through the full policy document. The "Agree" button remains disabled (grayed out) until the bottom of the document has been reached, ensuring the user has the opportunity to read the complete terms before giving consent.
+3. **Consent Persistence**: Once the user taps "Agree", their consent is saved locally on the device via `SharedPreferences`. On subsequent launches, the privacy screen is skipped automatically.
+4. **User Control**: If the user does not agree to the terms, they can exit the application by pressing the system back button.
+5. **No Data Transmission**: This consent mechanism runs entirely on the local device. No consent status or any other data is transmitted to any remote server.
+
+---
+
+## 3. Open Source License
+
+### 3.1 Project License
 
 ORB-SLAM2s (this Android adaptation and enhancement project) is released under the **GNU General Public License v3.0 (GPL-3.0)**.
 
@@ -43,21 +57,24 @@ Under the terms of the GPL-3.0 License:
   - You must retain copyright notices and license statements in the software;
   - **This software is provided "AS IS" without any warranty, express or implied** (see Section 15 Disclaimer and Section 16 Limitation of Liability in the GPL-3.0).
 
-### 2.2 Upstream Dependency Licenses
+### 3.2 Upstream Dependency Licenses
 
 This project is built upon the following open-source libraries, each with its own independent license:
 
 | Component | License | Description |
 |-----------|---------|-------------|
 | ORB-SLAM2 Core | GPL-3.0 | Original SLAM library by Raul Mur-Artal et al. |
-| DBoW2 (modified) | BSD | Bag-of-Words library for place recognition |
-| g2o (modified) | BSD | Graph optimization library for non-linear optimization |
-| Eigen3 | MPL-2.0 (mostly) | Linear algebra library |
-| OpenCV | Apache 2.0 | Computer vision library |
+| DBoW2 (modified) | Modified BSD (with notification clause) | Bag-of-Words library for place recognition |
+| g2o (modified) | BSD 2-Clause (core) | Graph optimization library for non-linear optimization (some components GPL-3.0/LGPL-3.0) |
+| Eigen3 | MPL-2.0 (mostly) | Linear algebra library (3.4+ portions also Apache-2.0/BSD-3-Clause) |
+| OpenCV 5 (core) | Apache 2.0 | Computer vision library (only necessary core modules extracted; some files BSD-3-Clause) |
 | AndroidX / CameraX | Apache 2.0 | Official Android camera and UI components |
 | Google Material Design | Apache 2.0 | UI design library |
-| ZXing ("Zebra Crossing") | Apache 2.0 | QR code generation library |
+| **srrg_hbst (HBST)** | **BSD 3-Clause** | **Hierarchical Bag of Scalable Trees — fast incremental image matching for relocalization** |
+| **Google Filament** | **Apache 2.0** | **Physically-based 3D rendering engine for AR object display (GLB/glTF model support)** |
+| ZXing ("Zebra Crossing") | Apache 2.0 | QR code generation library for Web server LAN access |
 | Google Guava | Apache 2.0 | Java core library extensions |
+| **Markwon (io.noties.markwon)** | **Apache 2.0** | **Markdown rendering library — used to display this Privacy Policy within the app** |
 
 For closed-source commercial licensing inquiries of ORB-SLAM2, please contact the original authors (orbslam@unizar.es).
 
@@ -65,11 +82,11 @@ For project collaboration or other field cooperation inquiries, please contact: 
 
 ---
 
-## 3. Permissions Requested and Usage Description
+## 4. Permissions Requested and Usage Description
 
 The following permissions are declared in AndroidManifest.xml. Each permission serves a specific and necessary purpose:
 
-### 3.1 `android.permission.CAMERA`
+### 4.1 `android.permission.CAMERA`
 
 - **Purpose**: Access the device rear camera to capture real-time video frames
 - **Usage Location**: `CameraGLView.java` → `CameraX` framework → `ImageAnalysis.Analyzer`
@@ -78,7 +95,7 @@ The following permissions are declared in AndroidManifest.xml. Each permission s
 - **Usage Scenario**: Throughout SLAM initialization, real-time tracking, plane detection, and AR rendering.
 - **Rear Camera Only**: Uses only `CameraSelector.LENS_FACING_BACK` (rear camera); does not access the front camera.
 
-### 3.2 `android.permission.READ_EXTERNAL_STORAGE`
+### 4.2 `android.permission.READ_EXTERNAL_STORAGE`
 
 - **Purpose**: Read saved SLAM map files, vocabulary files, and camera configuration files
 - **Usage Location**: `NativeHelper.java` — `initSLAM()`, `loadMap()`, `loadMapWithId()`; `ZipHelper.java`
@@ -86,7 +103,7 @@ The following permissions are declared in AndroidManifest.xml. Each permission s
 - **Limitation**: `android:maxSdkVersion="32"` — Android 13+ (API 33+) will no longer grant this permission; the app will use scoped storage (`getExternalFilesDir()`) instead.
 - **Storage Path**: Only accesses files under `getExternalFilesDir("SLAM")`; does not read other user private files.
 
-### 3.3 `android.permission.WRITE_EXTERNAL_STORAGE`
+### 4.3 `android.permission.WRITE_EXTERNAL_STORAGE`
 
 - **Purpose**: Save SLAM map files (.bin) and metadata files (.json) to external storage
 - **Usage Location**: `NativeHelper.MapManager.saveMap()`
@@ -95,7 +112,7 @@ The following permissions are declared in AndroidManifest.xml. Each permission s
 - **Written Content**: Only `.bin` (serialized map data) and `.json` (metadata description) file types.
 - **Storage Path**: Only writes to the `getExternalFilesDir("SLAM/maps")` directory; does not modify other user files.
 
-### 3.4 `android.permission.INTERNET`
+### 4.4 `android.permission.INTERNET`
 
 - **Purpose**: Start an HTTP Web server on the device for remote viewing of camera feeds and SLAM data via a browser
 - **Usage Location**: `WebServer.java` — built-in SSL-encrypted Web server
@@ -106,7 +123,7 @@ The following permissions are declared in AndroidManifest.xml. Each permission s
 - **Non-Internet Use**: This project **does not** actively connect to any internet server, send data to remote servers, or contain any remote analytics, statistics, or telemetry functionality.
 - **Explanation**: This permission is solely for local (including LAN) Web service; it does not constitute data transmission to the cloud.
 
-### 3.5 `android.permission.ACCESS_NETWORK_STATE`
+### 4.5 `android.permission.ACCESS_NETWORK_STATE`
 
 - **Purpose**: Obtain the device's local LAN IP address for the Web server URL display and QR code generation
 - **Usage Location**: `ArCamUIActivity.java` — `getDeviceIpAddress()` method
@@ -115,9 +132,9 @@ The following permissions are declared in AndroidManifest.xml. Each permission s
 
 ---
 
-## 4. Hardware Feature Usage
+## 5. Hardware Feature Usage
 
-### 4.1 Camera Hardware
+### 5.1 Camera Hardware
 
 | Item | Description |
 |------|-------------|
@@ -125,7 +142,7 @@ The following permissions are declared in AndroidManifest.xml. Each permission s
 | **Purpose** | Primary input source for SLAM real-time tracking and AR rendering. Resolution is dynamically computed (base 1280x720, maintain 16:9 aspect ratio). |
 | **Data Pipeline** | CameraX `ImageAnalysis` outputs RGBA_8888 format frames → converted to OpenCV Mat objects (RGBA + Gray) → passed to JNI layer for SLAM processing. |
 
-### 4.2 Autofocus
+### 5.2 Autofocus
 
 | Item | Description |
 |------|-------------|
@@ -133,7 +150,7 @@ The following permissions are declared in AndroidManifest.xml. Each permission s
 | **Purpose** | User tap-to-focus triggers center autofocus and metering, improving image quality and tracking stability. |
 | **Optional** | Marked as `required="false"` — devices without autofocus support can still use the camera normally. |
 
-### 4.3 Sensors (Runtime Usage, Not Declared in Manifest)
+### 5.3 Sensors (Runtime Usage, Not Declared in Manifest)
 
 | Sensor Type | Purpose | Priority |
 |-------------|---------|----------|
@@ -148,9 +165,9 @@ The following permissions are declared in AndroidManifest.xml. Each permission s
 
 ---
 
-## 5. Data Collection and Privacy Protection
+## 6. Data Collection and Privacy Protection
 
-### 5.1 Data We Do NOT Collect
+### 6.1 Data We Do NOT Collect
 
 This project strictly adheres to the principle of data minimization. **We do NOT collect, record, transmit, or share any of the following information**:
 
@@ -164,7 +181,7 @@ This project strictly adheres to the principle of data minimization. **We do NOT
 - ❌ No third-party advertising SDKs or analytics SDKs;
 - ❌ No active connections to any remote servers.
 
-### 5.2 Local Data Processing
+### 6.2 Local Data Processing
 
 | Data Type | Processing Method | Storage |
 |-----------|-------------------|---------|
@@ -175,14 +192,14 @@ This project strictly adheres to the principle of data minimization. **We do NOT
 | **Camera calibration config** | Pre-packaged file (read-only) | `getExternalFilesDir("SLAM/")` |
 | **Log information** | Outputs debug logs via Android Logcat, visible only in developer mode | System log buffer (circular overwrite) |
 
-### 5.3 Crash Handling
+### 6.3 Crash Handling
 
 This application **does not include any custom crash collection mechanism**. When the application crashes, the Android system default behavior applies (displaying the "App has stopped" dialog).
 
 - The application itself **does NOT collect, store, or upload any crash information** to any remote server;
 - The Android system may, with the user's explicit consent, collect basic crash stack information for system diagnostic purposes (this behavior is controlled by the Android system and is unrelated to this application).
 
-### 5.4 Web Server Mode
+### 6.4 Web Server Mode
 
 Users can manually enable the built-in SSL Web server (port 8080, HTTPS). In this mode:
 
@@ -192,38 +209,44 @@ Users can manually enable the built-in SSL Web server (port 8080, HTTPS). In thi
 - **QR code generation**: Generated QR codes contain only the LAN IP address and port for scanning and connecting within the same LAN;
 - **Security measures**: The Web server uses a self-signed certificate for TLS/SSL encryption, and sets `Access-Control-Allow-Origin: *` to support cross-origin requests.
 
-### 5.5 Third-Party Library Data Handling
+### 6.5 Third-Party Library Data Handling
 
 All third-party libraries used by this project run locally on the device and do not involve data transmission:
 
 - **OpenCV**: Image processing (feature extraction, matrix operations), all executed locally on the CPU;
 - **ORB-SLAM2 Core (C++)**: SLAM algorithm engine, all executed locally;
+- **srrg_hbst (HBST)**: Hierarchical binary search tree for image matching and relocalization, all executed locally;
+- **Google Filament + gltfio**: Physically-based 3D rendering engine for AR object display (GLB/glTF), rendering executed locally on GPU;
 - **ZXing**: QR code encoding, all executed locally;
-- **Google Guava / AndroidX**: System utility classes, not involved with user data.
+- **Google Guava / AndroidX**: System utility classes, not involved with user data;
+- **Markwon**: Markdown rendering library used solely for displaying the Privacy Policy within the app, all executed locally.
 
 ---
 
-## 6. Security Considerations
+## 7. Security Considerations
 
 1. **App Signing**: APK/AAB distributions of this application should be signed with the developer's private key to ensure integrity and trustworthy source.
 2. **Network Security**: Web server mode uses a self-signed TLS certificate for encrypted transmission. Browsers will show a security warning on first connection (self-signed certificate); users should confirm before proceeding.
-3. **Data Isolation**: All application data is stored in the app's `getExternalFilesDir()` sandbox directory, with access restricted by the Android system.
-4. **Minimum Permissions**: Only the minimum permissions required for SLAM and AR functionality are requested; no extraneous permissions are declared.
-5. **No Background Services**: The application has no persistent background services. All resources (camera, sensors, GL context) are released upon exit.
+3. **Cleartext Traffic Note**: The application's `AndroidManifest.xml` declares `android:usesCleartextTraffic="true"`. This is strictly necessary for the optional local Web server feature to serve HTTP content over the local LAN. The application does not send unencrypted traffic to the public internet. On Android 9+ (API 28+), the Web server uses TLS/SSL encryption (HTTPS) for all data transmission.
+4. **Data Isolation**: All application data is stored in the app's `getExternalFilesDir()` sandbox directory, with access restricted by the Android system.
+5. **Minimum Permissions**: Only the minimum permissions required for SLAM and AR functionality are requested; no extraneous permissions are declared.
+6. **No Background Services**: The application has no persistent background services. All resources (camera, sensors, GL context) are released upon exit.
+7. **App Backup & Data Leakage Prevention**: The application's `AndroidManifest.xml` declares `android:allowBackup="true"` for convenience. On Android 12+ (API 31+), users can disable backup in device settings to prevent map files and app data from being included in system backups. Users handling sensitive mapping data should consider disabling app backup.
+8. **Native Code Crash Handling**: The application's C++ native layer includes a signal handler framework that intercepts native crashes (e.g., SIGSEGV, SIGABRT) to produce diagnostic logs. These logs are written only to the Android Logcat buffer (accessible solely in developer/debug mode) and are never collected, stored, or transmitted by the application itself. This mechanism is provided solely for debugging purposes during development.
 
 ---
 
-## 7. Respect and Inclusivity
+## 8. Respect and Inclusivity
 
 The development, use, and community interaction of this project follow these principles:
 
-### 7.1 Inclusive Community
+### 8.1 Inclusive Community
 
 - This project welcomes all contributors and users, **regardless of race, color, ethnicity, gender identity, sexual orientation, age, disability, religion, nationality, or any other characteristic protected by law**;
 - We are committed to fostering a **friendly, safe, and inclusive** development environment and user community;
 - When submitting Issues, Pull Requests, or participating in any form of project discussion, please use **respectful, professional, and constructive** language;
 
-### 7.2 Prohibited Conduct
+### 8.2 Prohibited Conduct
 
 The following behaviors are **strictly prohibited** in all communication channels of this project (including but not limited to GitHub Issues, Pull Requests, discussion forums, mailing lists, etc.):
 
@@ -233,11 +256,11 @@ The following behaviors are **strictly prohibited** in all communication channel
 - ❌ Posting pornographic, violent, or otherwise inappropriate content;
 - ❌ Any form of bullying behavior;
 
-### 7.3 Reporting and Resolution
+### 8.3 Reporting and Resolution
 
 If you encounter any behavior that violates the above principles in the project community, please contact the project maintainer (OlscStudio@outlook.com). All reports will be taken seriously and addressed promptly.
 
-### 7.4 Respectful Use
+### 8.4 Respectful Use
 
 - Users should respect others' privacy and image rights when using this software. **Do not use the AR and camera capabilities of this software for unauthorized recording or surveillance**;
 - Do not use this software to create or distribute AR content containing discrimination, hate, violence, or illegal material;
@@ -245,11 +268,11 @@ If you encounter any behavior that violates the above principles in the project 
 
 ---
 
-## 8. Prohibited Uses
+## 9. Prohibited Uses
 
 When downloading, using, or distributing this software (ORB-SLAM2s) or any derivative versions, you are **strictly prohibited** from using it for the following purposes:
 
-### 8.1 Illegal and Malicious Purposes
+### 9.1 Illegal and Malicious Purposes
 - ❌ Any violation of the laws of the People's Republic of China;
 - ❌ Any violation of the laws of the user's country or region;
 - ❌ Infringement of others' privacy rights (e.g., covert recording, illegal surveillance);
@@ -259,21 +282,21 @@ When downloading, using, or distributing this software (ORB-SLAM2s) or any deriv
 - ❌ Use in un-certified medical diagnosis or surgical assistance;
 - ❌ Use in un-certified aircraft, spacecraft navigation, or flight control systems;
 
-### 8.2 High-Risk Activities
+### 9.2 High-Risk Activities
 - ❌ Use in nuclear facilities, chemical plants, life-support systems, or other environments with extremely high safety requirements;
 - ❌ Use in scenarios that could result in personal injury or property damage;
 - ❌ Integration into critical infrastructure (aerospace, rail transportation, autonomous driving, etc.) without adequate safety testing and regulatory certification;
 
-### 8.3 Intellectual Property and Compliance
+### 9.3 Intellectual Property and Compliance
 - ❌ Removing or obscuring copyright notices and license information of this software and its upstream open-source components (ORB-SLAM2, DBoW2, g2o, etc.);
 - ❌ Distributing modified versions or derivative works of this software in violation of GPL-3.0 license terms (must also be distributed under GPL-3.0 with source code provided);
 - ❌ Using this software or its components for patent infringement or to assist in patent infringement.
 
 ---
 
-## 9. Disclaimers
+## 10. Disclaimers
 
-### 9.1 Software Disclaimer
+### 10.1 Software Disclaimer
 
 Pursuant to Sections 15 and 16 of the GPL-3.0 License, and to the maximum extent permitted by applicable law:
 
@@ -281,13 +304,13 @@ Pursuant to Sections 15 and 16 of the GPL-3.0 License, and to the maximum extent
 
 IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MODIFIES AND/OR CONVEYS THE SOFTWARE AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES, INCLUDING ANY GENERAL, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE USE OR INABILITY TO USE THE SOFTWARE (INCLUDING BUT NOT LIMITED TO LOSS OF DATA, DATA BEING RENDERED INACCURATE, LOSSES SUSTAINED BY YOU OR THIRD PARTIES, OR A FAILURE OF THE SOFTWARE TO OPERATE WITH ANY OTHER SOFTWARE), EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 
-### 9.2 Functional Accuracy Disclaimer
+### 10.2 Functional Accuracy Disclaimer
 
 - **SLAM Positioning Accuracy**: This software implements spatial positioning using monocular visual SLAM. Its accuracy is affected by various factors including ambient lighting, texture richness, camera calibration quality, and device motion speed. **Positioning results may contain errors, and no guarantee is made for centimeter-level or any specific positioning accuracy**. It should not be used in scenarios requiring high precision.
 - **Plane Detection**: Plane detection is estimated based on sparse point cloud data; 100% accuracy is not guaranteed.
 - **Dark Frame Detection**: The dark frame skip logic is designed to optimize performance and should not replace professional light detection equipment.
 
-### 9.3 Force Majeure Disclaimer
+### 10.3 Force Majeure Disclaimer
 
 The developers and copyright holders shall not be held liable for software unavailability, data loss, positioning errors, or other damages caused by the following force majeure events:
 
@@ -300,23 +323,43 @@ The developers and copyright holders shall not be held liable for software unava
 7. **Environmental Factors**: Extreme temperatures, strong magnetic field interference, severe vibration, insufficient or excessive lighting, and other environmental conditions affecting SLAM performance;
 8. **Third-Party Service Interruptions**: Unavailability of code hosting platforms, dependency distribution platforms, OS update services, and other third-party services.
 
-### 9.4 Legal Compliance Disclaimer
+### 10.4 Legal Compliance Disclaimer
 
 Users are solely responsible for ensuring their use of this software complies with the laws and regulations of their country or region. The developers assume no liability for users' violation of applicable laws.
 
 ---
 
-## 10. Intellectual Property
+## 11. Intellectual Property
 
-1. **ORB-SLAM2 Core Algorithm**: Owned by Raul Mur-Artal, Juan D. Tardos, J. M. M. Montiel, and Dorian Galvez-Lopez, licensed under GPL-3.0.
-2. **DBoW2 Library**: Owned by Dorian Galvez-Lopez, licensed under BSD.
-3. **g2o Library**: Owned by Rainer Kuemmerle, licensed under BSD.
-4. **ORB-SLAM2s Adaptation and Enhancement Code**: Owned by the project contributors (see GitHub contributors list), licensed under GPL-3.0.
-5. **Project Name "ORB-SLAM2s"**: Used to identify this specific Android adaptation project; does not constitute a trademark registration.
+This project is built upon the following open-source libraries and integrates the corresponding third-party components. The intellectual property ownership and license declarations for each library are as follows:
+
+| Component | Copyright Holder | License |
+|-----------|-----------------|---------|
+| **ORB-SLAM2 Core Algorithm** | Raul Mur-Artal, Juan D. Tardos, J. M. M. Montiel, Dorian Galvez-Lopez | GPL-3.0 |
+| **DBoW2 (modified)** | Dorian Galvez-Lopez | Modified BSD (with notification clause) |
+| **g2o (modified)** | Rainer Kuemmerle, Giorgio Grisetti, Hauke Strasdat, Kurt Konolige, Wolfram Burgard | BSD 2-Clause (core); some components GPL-3.0 / LGPL-3.0 |
+| **Eigen3** | Benoît Jacob, Gaël Guennebaud and contributors | MPL-2.0 (core; 3.4+ portions also under Apache-2.0 / BSD-3-Clause / GPL-3.0) |
+| **OpenCV 5 (core)** | Intel Corporation, Willow Garage, Itseez, NVIDIA, AMD, OpenCV Foundation and contributors | Apache 2.0 (some files BSD-3-Clause) |
+| **srrg_hbst (HBST)** | Dominik Schlegel, Giorgio Grisetti — srrg-software | BSD 3-Clause |
+| **Google Filament** | Google LLC | Apache 2.0 |
+| **gltfio / filament-utils** | Google LLC | Apache 2.0 |
+| **ZXing ("Zebra Crossing")** | Sean Owen and ZXing project contributors | Apache 2.0 |
+| **Google Guava** | Google LLC | Apache 2.0 |
+| **Markwon (io.noties.markwon)** | Dimitry Ivanov (noties) | Apache 2.0 |
+| **AndroidX / CameraX** | Google LLC / Android Open Source Project | Apache 2.0 |
+| **Android Support Library / Appcompat** | Google LLC / Android Open Source Project | Apache 2.0 |
+| **Material Components (Material Design)** | Google LLC | Apache 2.0 |
+| **ORB-SLAM2s Adaptation & Enhancement Code** | Project contributors (see GitHub contributors list) | GPL-3.0 |
+| **Project Name "ORB-SLAM2s"** | Project maintainer | Does not constitute trademark registration |
+
+**Notes**:
+- For the specific terms of each third-party library, please refer to the original license text in their official repositories.
+- For closed-source commercial licensing inquiries of ORB-SLAM2, please contact the original authors: orbslam (at) unizar (dot) es.
+- For project collaboration or other field cooperation inquiries, please contact: OlscStudio@outlook.com
 
 ---
 
-## 11. Governing Law and Dispute Resolution
+## 12. Governing Law and Dispute Resolution
 
 1. **Governing Law**: The interpretation, validity, and resolution of disputes under these terms shall be governed by the **laws of the People's Republic of China**, while also taking into account relevant international intellectual property treaties (including the Berne Convention, WIPO Copyright Treaty, etc.).
 2. **Dispute Resolution**: Any disputes arising from or related to this software or these terms shall first be resolved through friendly negotiation; if negotiation fails, the dispute shall be submitted to the **People's Court with jurisdiction at the location of the project's primary maintainer**.
@@ -324,7 +367,7 @@ Users are solely responsible for ensuring their use of this software complies wi
 
 ---
 
-## 12. Miscellaneous
+## 13. Miscellaneous
 
 1. **Entire Agreement**: This Privacy Policy and Terms of Use constitute the entire agreement between you and the developer regarding the use of this software.
 2. **Severability**: If any provision of these terms is held to be invalid or unenforceable by a court of competent jurisdiction, the remaining provisions shall continue in full force and effect.
