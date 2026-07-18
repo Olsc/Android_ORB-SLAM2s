@@ -23,24 +23,36 @@ const float PI= (const float) acos(-1);  // π常量
  * 实现 r = lhs * rhs
  */
 void multiplyMM(float* r, const float* lhs, const float* rhs) {
-    for (int i=0 ; i<4 ; i++) {
-        const float rhs_i0 = rhs[ I(i,0) ];
-        float ri0 = lhs[ I(0,0) ] * rhs_i0;
-        float ri1 = lhs[ I(0,1) ] * rhs_i0;
-        float ri2 = lhs[ I(0,2) ] * rhs_i0;
-        float ri3 = lhs[ I(0,3) ] * rhs_i0;
-        for (int j=1 ; j<4 ; j++) {
-            const float rhs_ij = rhs[ I(i,j) ];
-            ri0 += lhs[ I(j,0) ] * rhs_ij;
-            ri1 += lhs[ I(j,1) ] * rhs_ij;
-            ri2 += lhs[ I(j,2) ] * rhs_ij;
-            ri3 += lhs[ I(j,3) ] * rhs_ij;
-        }
-        r[ I(i,0) ] = ri0;
-        r[ I(i,1) ] = ri1;
-        r[ I(i,2) ] = ri2;
-        r[ I(i,3) ] = ri3;
-    }
+    float tmp[16];
+    // 第0列
+    float rhs_00 = rhs[0]; float rhs_01 = rhs[1]; float rhs_02 = rhs[2]; float rhs_03 = rhs[3];
+    tmp[0] = lhs[0] * rhs_00 + lhs[4] * rhs_01 + lhs[8] * rhs_02 + lhs[12] * rhs_03;
+    tmp[1] = lhs[1] * rhs_00 + lhs[5] * rhs_01 + lhs[9] * rhs_02 + lhs[13] * rhs_03;
+    tmp[2] = lhs[2] * rhs_00 + lhs[6] * rhs_01 + lhs[10] * rhs_02 + lhs[14] * rhs_03;
+    tmp[3] = lhs[3] * rhs_00 + lhs[7] * rhs_01 + lhs[11] * rhs_02 + lhs[15] * rhs_03;
+
+    // 第1列
+    float rhs_10 = rhs[4]; float rhs_11 = rhs[5]; float rhs_12 = rhs[6]; float rhs_13 = rhs[7];
+    tmp[4] = lhs[0] * rhs_10 + lhs[4] * rhs_11 + lhs[8] * rhs_12 + lhs[12] * rhs_13;
+    tmp[5] = lhs[1] * rhs_10 + lhs[5] * rhs_11 + lhs[9] * rhs_12 + lhs[13] * rhs_13;
+    tmp[6] = lhs[2] * rhs_10 + lhs[6] * rhs_11 + lhs[10] * rhs_12 + lhs[14] * rhs_13;
+    tmp[7] = lhs[3] * rhs_10 + lhs[7] * rhs_11 + lhs[11] * rhs_12 + lhs[15] * rhs_13;
+
+    // 第2列
+    float rhs_20 = rhs[8]; float rhs_21 = rhs[9]; float rhs_22 = rhs[10]; float rhs_23 = rhs[11];
+    tmp[8] =  lhs[0] * rhs_20 + lhs[4] * rhs_21 + lhs[8] * rhs_22 + lhs[12] * rhs_23;
+    tmp[9] =  lhs[1] * rhs_20 + lhs[5] * rhs_21 + lhs[9] * rhs_22 + lhs[13] * rhs_23;
+    tmp[10] = lhs[2] * rhs_20 + lhs[6] * rhs_21 + lhs[10] * rhs_22 + lhs[14] * rhs_23;
+    tmp[11] = lhs[3] * rhs_20 + lhs[7] * rhs_21 + lhs[11] * rhs_22 + lhs[15] * rhs_23;
+
+    // 第3列
+    float rhs_30 = rhs[12]; float rhs_31 = rhs[13]; float rhs_32 = rhs[14]; float rhs_33 = rhs[15];
+    tmp[12] = lhs[0] * rhs_30 + lhs[4] * rhs_31 + lhs[8] * rhs_32 + lhs[12] * rhs_33;
+    tmp[13] = lhs[1] * rhs_30 + lhs[5] * rhs_31 + lhs[9] * rhs_32 + lhs[13] * rhs_33;
+    tmp[14] = lhs[2] * rhs_30 + lhs[6] * rhs_31 + lhs[10] * rhs_32 + lhs[14] * rhs_33;
+    tmp[15] = lhs[3] * rhs_30 + lhs[7] * rhs_31 + lhs[11] * rhs_32 + lhs[15] * rhs_33;
+
+    memcpy(r, tmp, 16 * sizeof(float));
 }
 
 void multiplyMV(float* resultVec, int resultVecOffset, const float* lhsMat, int lhsMatOffset,
@@ -404,10 +416,21 @@ void getRUBViewMatrixFromRDF(float inM[],float outM[]){
 }
 
 void getRUBModelMatrixFromRDF(float inM[],float outM[]){
-    float tmpM[16],tmpVM[16];
-    setIdentityM(tmpM);
-    rotateM(tmpVM,tmpM, +180.0f, 1.0f, 0.0f, 0.0f);
-    multiplyMM(outM,tmpVM,inM);
+    if(inM != outM) {
+        memcpy(outM, inM, 16 * sizeof(float));
+    }
+    
+    // R_x(180) * inM: inM的第1行和第2行取反，第0行和第3行保持不变
+    // 第1行索引: 1, 5, 9, 13
+    // 第2行索引: 2, 6, 10, 14
+    outM[1] = -outM[1];
+    outM[2] = -outM[2];
+    outM[5] = -outM[5];
+    outM[6] = -outM[6];
+    outM[9] = -outM[9];
+    outM[10] = -outM[10];
+    outM[13] = -outM[13];
+    outM[14] = -outM[14];
 }
 
 
