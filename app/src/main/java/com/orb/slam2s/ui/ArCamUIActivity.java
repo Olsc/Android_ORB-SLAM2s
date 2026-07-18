@@ -96,6 +96,10 @@ public class ArCamUIActivity extends AppCompatActivity implements
     private boolean isWebRunning = false;
     private Thread pointsUpdater;
 
+    // 摇杆控制AR物体旋转
+    private JoystickView joystickView;
+    private float lastJoystickAngle = -1.0f;  // 上一帧的摇杆角度，用于计算增量
+
     // 3DOF功能相关
     private OrientationSensor orientationSensor;
     private GLSurfaceView threeDofGLView;
@@ -415,6 +419,9 @@ public class ArCamUIActivity extends AppCompatActivity implements
             });
         }
 
+        // 初始化摇杆控制
+        initJoystick();
+
         // 初始化3DOF传感器
         init3DofSensor();
     }
@@ -605,6 +612,19 @@ public class ArCamUIActivity extends AppCompatActivity implements
                 .setContext(this)
                 .setModelPath("model.glb")
                 .setInitSize(0.20f)
+                .setDrawStateListener(new ModelRendererWrapper.DrawStateListener() {
+                    @Override
+                    public void onDrawStateChanged(boolean shouldDraw) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (joystickView != null) {
+                                    joystickView.setVisibility(shouldDraw ? View.VISIBLE : View.GONE);
+                                }
+                            }
+                        });
+                    }
+                })
                 .init(touchHelper);
 
         nativeHelper.addOnMVPUpdatedCallback(modelRendererWrapper);
@@ -985,6 +1005,28 @@ public class ArCamUIActivity extends AppCompatActivity implements
             }
         };
         uiHandler.postDelayed(updater, 1000);
+    }
+
+    /**
+     * 初始化摇杆 — 用于控制AR物体的Y轴旋转
+     */
+    private void initJoystick() {
+        joystickView = findViewById(R.id.joystick_view);
+        if (joystickView != null) {
+            joystickView.setOnJoystickListener(new JoystickView.OnJoystickListener() {
+                @Override
+                public void onJoystickUpdate(float angleDeg, float intensity) {
+                    if (modelRendererWrapper != null && intensity > 0.01f) {
+                        // 水平方向(cos)控制Y轴旋转(yaw)，垂直方向(-sin)控制X轴旋转(pitch)
+                        float speed = 3.0f * intensity;
+                        float yawDelta = (float) Math.cos(Math.toRadians(angleDeg)) * speed;
+                        float pitchDelta = -(float) Math.sin(Math.toRadians(angleDeg)) * speed;
+                        modelRendererWrapper.addUserRotation(yawDelta, pitchDelta);
+                    }
+                }
+            });
+            Log.d(TAG, "摇杆初始化完成");
+        }
     }
 
     // 切换点云显示状态

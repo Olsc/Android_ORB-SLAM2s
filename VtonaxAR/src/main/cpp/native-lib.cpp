@@ -149,12 +149,13 @@ void SavePlaneAndArInfo(const std::string& filename)
     for (const auto& obj : gArObjects)
     {
         if (!obj.isValid) continue;
-        
+
         ofs.write(reinterpret_cast<const char*>(obj.modelMatrix), sizeof(obj.modelMatrix));
-        
+        ofs.write(reinterpret_cast<const char*>(&obj.scale), sizeof(obj.scale));
+
         uint32_t idLen = static_cast<uint32_t>(obj.objectId.length());
         ofs.write(reinterpret_cast<const char*>(&idLen), sizeof(idLen));
-        
+
         if (idLen > 0)
         {
             ofs.write(obj.objectId.c_str(), idLen);
@@ -226,6 +227,7 @@ void LoadPlaneAndArInfo(const std::string& filename, int mapId)
     for(uint32_t i=0; i<numObjects; i++) {
         ArObjectInfo obj;
         ifs.read(reinterpret_cast<char*>(obj.modelMatrix), sizeof(obj.modelMatrix));
+        ifs.read(reinterpret_cast<char*>(&obj.scale), sizeof(obj.scale));
         uint32_t idLen = 0;
         ifs.read(reinterpret_cast<char*>(&idLen), sizeof(idLen));
         if(idLen > 0) {
@@ -720,12 +722,15 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeProcessFrameMat(
     JNIEnv* env, jobject instance, jlong matAddrGr, jlong matAddrRgba, jintArray statusBuf_)
 {
     jint* statusBuf = env->GetIntArrayElements(statusBuf_, nullptr);
-    
+
     cv::Mat& mGr = *(cv::Mat*)matAddrGr;
     cv::Mat& mRgba = *(cv::Mat*)matAddrRgba;
-    
+
+    // statusBuf: [0]=tracking, [1]=shouldDraw, [2]=scaleBits
     statusBuf[0] = processImage(mGr, mRgba, statusBuf);
-    
+    statusBuf[1] = gShouldDrawArObject ? 1 : 0;
+    statusBuf[2] = *reinterpret_cast<jint*>(&gArObjectScale);
+
     env->ReleaseIntArrayElements(statusBuf_, statusBuf, 0);
 }
 JNIEXPORT void JNICALL
@@ -773,56 +778,70 @@ Java_com_orb_slam2s_slamar_NativeHelper_detect(JNIEnv *env, jobject instance,
     env->ReleaseIntArrayElements(statusBuf_, statusBuf, 0);
 }
 
+// 统一获取MVP矩阵（替代getM/getV/getP三个独立JNI）
 JNIEXPORT void JNICALL
-Java_com_orb_slam2s_slamar_NativeHelper_getM(JNIEnv *env, jobject instance, jfloatArray modelM_) {
+Java_com_orb_slam2s_slamar_NativeHelper_nativeGetMVP(JNIEnv *env, jobject instance,
+    jfloatArray modelM_, jfloatArray viewM_, jfloatArray projM_, jint imageWidth, jint imageHeight)
+{
     jfloat *modelM = env->GetFloatArrayElements(modelM_, NULL);
+    jfloat *viewM  = env->GetFloatArrayElements(viewM_, NULL);
+    jfloat *projM  = env->GetFloatArrayElements(projM_, NULL);
 
-    std::lock_guard<std::mutex> lock(gMapDataMutex);
-    getRUBModelMatrixFromRDF(pPlane->glTpw,modelM);
+    // Model
+    {
+        std::lock_guard<std::mutex> lock(gMapDataMutex);
+        for(int i=0; i<16; i++) modelM[i] = gCurrentModelMatrix[i];
+    }
+    // View
+    {
+        bool useSlam = false;
+        cv::Mat TcwForView;
+        {
+            std::lock_guard<std::mutex> tcwLock(gTcwLock);
+            if(gCachedTrackingState==2 && !gCachedTcw.empty()) {
+                useSlam = true; TcwForView = gCachedTcw.clone();
+            }
+        }
+        if(useSlam) {
+            if(slamSys && slamSys->HasMapAlignment())
+                TcwForView = slamSys->GetMapAlignedPose(TcwForView);
+            float tmp[16]; getColMajorMatrixFromMat(tmp, TcwForView);
+            getRUBViewMatrixFromRDF(tmp, viewM);
+        } else {
+            std::lock_guard<std::mutex> lk(gMapDataMutex);
+            for(int i=0; i<16; i++) viewM[i] = gCurrentViewMatrix[i];
+        }
+    }
+    // Projection
+    frustumM_RUB(imageWidth/2, imageHeight/2, fx, fy, cx, cy,
+                 ORB_SLAM2::PROJECTION_ZNEAR, ORB_SLAM2::PROJECTION_ZFAR, projM);
 
     env->ReleaseFloatArrayElements(modelM_, modelM, 0);
+    env->ReleaseFloatArrayElements(viewM_,  viewM,  0);
+    env->ReleaseFloatArrayElements(projM_,  projM,  0);
 }
+
+// getV保留供WebServer使用
 JNIEXPORT void JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_getV(JNIEnv *env, jobject instance, jfloatArray viewM_) {
     jfloat *viewM = env->GetFloatArrayElements(viewM_, NULL);
-
-    // 从线程安全缓存读取最新 Tcw 和状态，不阻塞跟踪线程
-    bool useSlam = false;
-    cv::Mat TcwForView;
+    bool useSlam = false; cv::Mat TcwForView;
     {
         std::lock_guard<std::mutex> tcwLock(gTcwLock);
-        if(gCachedTrackingState == 2 && !gCachedTcw.empty()) {
-            useSlam = true;
-            TcwForView = gCachedTcw.clone();
+        if(gCachedTrackingState==2 && !gCachedTcw.empty()) {
+            useSlam = true; TcwForView = gCachedTcw.clone();
         }
     }
-    
-    if(useSlam){
-        if(slamSys && slamSys->HasMapAlignment()) {
+    if(useSlam) {
+        if(slamSys && slamSys->HasMapAlignment())
             TcwForView = slamSys->GetMapAlignedPose(TcwForView);
-        }
-        float tmpM[16];
-        getColMajorMatrixFromMat(tmpM, TcwForView);
-        getRUBViewMatrixFromRDF(tmpM, viewM);
+        float tmp[16]; getColMajorMatrixFromMat(tmp, TcwForView);
+        getRUBViewMatrixFromRDF(tmp, viewM);
     } else {
-        std::lock_guard<std::mutex> dataLock(gMapDataMutex);
-        for(int i = 0; i < 16; i++) {
-            viewM[i] = gCurrentViewMatrix[i];
-        }
+        std::lock_guard<std::mutex> lk(gMapDataMutex);
+        for(int i=0; i<16; i++) viewM[i] = gCurrentViewMatrix[i];
     }
-
     env->ReleaseFloatArrayElements(viewM_, viewM, 0);
-}
-
-JNIEXPORT void JNICALL
-Java_com_orb_slam2s_slamar_NativeHelper_getP(JNIEnv *env, jobject instance, jint imageWidth,
-                                             jint imageHeight, jfloatArray projectionM_) {
-    jfloat *projectionM = env->GetFloatArrayElements(projectionM_, NULL);
-
-    //TODO:/2
-    frustumM_RUB(imageWidth/2,imageHeight/2,fx,fy,cx,cy,ORB_SLAM2::PROJECTION_ZNEAR,ORB_SLAM2::PROJECTION_ZFAR,projectionM);
-
-    env->ReleaseFloatArrayElements(projectionM_, projectionM, 0);
 }
 
 // 获取地图统计信息
@@ -969,6 +988,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_saveArObject(JNIEnv *env, jobject instan
     ArObjectInfo obj;
     for(int i=0; i<16; i++) obj.modelMatrix[i] = matrix[i];
     obj.objectId = std::string(objectId);
+    obj.scale = gArObjectScale;
     obj.isValid = true;
     gArObjects.push_back(obj);
     

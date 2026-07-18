@@ -94,6 +94,16 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
     private static final float MIN_SCALE = 0.05f;  // 最小缩放比例
     private static final float MAX_SCALE = 10.0f;  // 最大缩放比例
 
+    // 用户旋转控制（摇杆）
+    private float userRotationY = 0.0f;      // Y轴旋转累积角度（度，yaw）
+    private float userRotationX = 0.0f;      // X轴旋转累积角度（度，pitch）
+
+    // AR物体显隐状态监听器（用于控制摇杆等UI元素）
+    public interface DrawStateListener {
+        void onDrawStateChanged(boolean shouldDraw);
+    }
+    private DrawStateListener drawStateListener;
+
     // 缓存矩阵以避免在 render 循环中 new 对象引发 GC 卡顿
     private final float[] tempCameraModelMatrix = new float[16];
     private final double[] tempDoubleProj = new double[16];
@@ -172,6 +182,11 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
         return this;
     }
 
+    public ModelRendererWrapper setDrawStateListener(DrawStateListener listener) {
+        this.drawStateListener = listener;
+        return this;
+    }
+
     public ModelRendererWrapper init(TouchHelper touchHelper) {
         if (arObjectView == null) {
             Log.e(TAG, "ArObjectView为空，无法初始化");
@@ -194,8 +209,8 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
                         } else if (currentScaleFactor > MAX_SCALE) {
                             currentScaleFactor = MAX_SCALE;
                         }
-                        Log.d(TAG, String.format("缩放更新: 因子=%.2f, 总缩放=%.2f",
-                            scaleFactor, currentScaleFactor));
+                        // 同步缩放值到C++，确保保存时正确
+                        nativeHelper.updateArObjectScale(scaleFactor);
                     }
                 }
             });
@@ -521,6 +536,13 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
                     android.opengl.Matrix.scaleM(tempTransformMatrix, 0, finalScale, finalScale, finalScale);
                     // R: 绕 X 旋转 180° 修正坐标轴朝向
                     android.opengl.Matrix.rotateM(tempTransformMatrix, 0, 180.0f, 1.0f, 0.0f, 0.0f);
+                    // R: 用户摇杆控制的旋转（yaw绕Y, pitch绕X）
+                    if (Math.abs(userRotationY) > 0.01f) {
+                        android.opengl.Matrix.rotateM(tempTransformMatrix, 0, userRotationY, 0.0f, 1.0f, 0.0f);
+                    }
+                    if (Math.abs(userRotationX) > 0.01f) {
+                        android.opengl.Matrix.rotateM(tempTransformMatrix, 0, userRotationX, 1.0f, 0.0f, 0.0f);
+                    }
                     // 无 T(center)：modelMatrix 已由 SLAM 定位到平面
 
                     android.opengl.Matrix.multiplyMM(tempScaledModelMatrix, 0, modelMatrix, 0, tempTransformMatrix, 0);
@@ -582,6 +604,39 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
         }
     }
 
+    /**
+     * 摇杆增量旋转：同时更新Y轴(yaw)和X轴(pitch)旋转
+     */
+    public void addUserRotation(float yawDelta, float pitchDelta) {
+        userRotationY += yawDelta;
+        userRotationY = userRotationY % 360.0f;
+        if (userRotationY < 0) userRotationY += 360.0f;
+
+        userRotationX += pitchDelta;
+        userRotationX = userRotationX % 360.0f;
+        if (userRotationX < 0) userRotationX += 360.0f;
+    }
+
+    /**
+     * 仅更新Y轴旋转（兼容旧接口）
+     */
+    public void addUserRotation(float deltaDegrees) {
+        addUserRotation(deltaDegrees, 0.0f);
+    }
+
+    /**
+     * 直接设置旋转角度
+     */
+    public void setUserRotation(float yawDeg, float pitchDeg) {
+        userRotationY = yawDeg % 360.0f;
+        if (userRotationY < 0) userRotationY += 360.0f;
+        userRotationX = pitchDeg % 360.0f;
+        if (userRotationX < 0) userRotationX += 360.0f;
+    }
+
+    public float getUserRotationY() { return userRotationY; }
+    public float getUserRotationX() { return userRotationX; }
+
     @Override
     public void requestReset() {
         Log.d(TAG, "重置渲染状态");
@@ -591,18 +646,29 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
         // 帧循环在 init 后常开，由 render() 中的 TransformManager 控制显隐
     }
 
+    public void onUpdateScale(float scale) {
+        // 从加载的地图恢复缩放（仅在通过NativeHelper回调时使用）
+        if (scale > MIN_SCALE && scale < MAX_SCALE) {
+            currentScaleFactor = scale;
+            Log.d(TAG, "从地图恢复AR物体缩放: " + scale);
+        }
+    }
+
     @Override
     public void setDraw(boolean flag) {
+        boolean changed = (shouldDraw != flag);
         shouldDraw = flag;
         if (!flag) {
             matricesReady = false;
         } else {
             if (nativeHelper != null) {
-                nativeHelper.getM(modelMatrix);
-                nativeHelper.getV(viewMatrix);
-                nativeHelper.getP(GlobalConstant.RESOLUTION_WIDTH, GlobalConstant.RESOLUTION_HEIGHT, projectionMatrix);
+                nativeHelper.nativeGetMVP(modelMatrix, viewMatrix, projectionMatrix,
+                        GlobalConstant.RESOLUTION_WIDTH, GlobalConstant.RESOLUTION_HEIGHT);
                 matricesReady = true;
             }
+        }
+        if (changed && drawStateListener != null) {
+            drawStateListener.onDrawStateChanged(flag);
         }
     }
 

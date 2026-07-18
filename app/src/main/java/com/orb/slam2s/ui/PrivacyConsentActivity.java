@@ -31,7 +31,7 @@ public class PrivacyConsentActivity extends AppCompatActivity {
      * 隐私协议开关。true = 启动时展示隐私协议（阅读到底部后方可同意）；
      * false = 跳过隐私协议，直接进入应用。
      */
-    public static final boolean ENABLE_PRIVACY = true;
+    public static final boolean ENABLE_PRIVACY = false;
 
     private static final String TAG = "PrivacyConsent";
     private static final String PREF_NAME = "privacy_prefs";
