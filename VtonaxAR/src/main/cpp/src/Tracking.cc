@@ -1870,7 +1870,12 @@ bool Tracking::TrackLocalMap()
 
                 auto applyAlign = [&](const RelocAlignResult &a){
                     std::unique_lock<std::mutex> lk(mMutexReloc);
-                    mT_map_from_slam = a.T_map_from_slam.clone();
+                    // 首次对齐时初始化平滑器；后续对齐更新由 UpdateAlignmentSmooth (EMA) 接管，
+                    // 避免主线程直接写入原始（未平滑）值导致点云抖动
+                    if(mSmoothedT_map_from_slam.empty()) {
+                        mSmoothedT_map_from_slam = a.T_map_from_slam.clone();
+                        mT_map_from_slam = mSmoothedT_map_from_slam;
+                    }
                     mbHaveMapAlign = true;
                     mAlignConfidence = a.confidence;
                     mLastAlignTs = a.ts;
