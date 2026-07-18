@@ -276,9 +276,6 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     vnIndexEdgeMono.reserve(N);
 
     const float deltaMono = OPTIMIZER_HUBER_TH_2D; // 卡方检验阈值(5.991对应的平方根)
-    {
-    unique_lock<mutex> lock(MapPoint::mGlobalMutex);
-
     for(int i=0; i<N; i++)
     {
         MapPoint* pMP = pFrame->mvpMapPoints[i];
@@ -328,7 +325,6 @@ int Optimizer::PoseOptimization(Frame *pFrame)
             }
         }
 
-    }
     }
 
     if(nInitialCorrespondences<3) {
@@ -404,7 +400,10 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
     pKF->mnBALocalForKF = pKF->mnId;
 
     const vector<KeyFrame*> vNeighKFs = pKF->GetVectorCovisibleKeyFrames();
-    for(int i=0, iend=vNeighKFs.size(); i<iend; i++)
+    // 限制局部BA窗口大小：最多取10个共视关键帧，防止局部BA耗时过久阻塞跟踪
+    // 共视度最高的KF先处理，排除的低共视KF在下一次BA中处理
+    const int nMaxBAKFs = std::min((int)vNeighKFs.size(), 10);
+    for(int i=0; i<nMaxBAKFs; i++)
     {
         KeyFrame* pKFi = vNeighKFs[i];
         pKFi->mnBALocalForKF = pKF->mnId;

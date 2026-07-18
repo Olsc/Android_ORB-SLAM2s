@@ -54,8 +54,8 @@ public:
 
     void AddKeyFrame(KeyFrame* pKF);
     void AddMapPoint(MapPoint* pMP);
-    void EraseMapPoint(MapPoint* pMP);
-    void EraseKeyFrame(KeyFrame* pKF);
+    void EraseMapPoint(MapPoint* pMP, bool bDelete = false);
+    void EraseKeyFrame(KeyFrame* pKF, bool bDelete = false);
     void SetReferenceMapPoints(const std::vector<MapPoint*> &vpMPs);
     void InformNewBigChange();
     int GetLastBigChangeIdx();
@@ -87,7 +87,7 @@ protected:
     std::set<MapPoint*> mspMapPoints;
     std::set<KeyFrame*> mspKeyFrames;
 
-    // 回收站：存储已被移除但尚未释放内存的指针，防止内存泄漏和野指针崩溃
+    // 回收站：存储已被移除但尚未释放内存的指针，防止野指针崩溃
     std::set<MapPoint*> mspMapPointsTrash;
     std::set<KeyFrame*> mspKeyFramesTrash;
 

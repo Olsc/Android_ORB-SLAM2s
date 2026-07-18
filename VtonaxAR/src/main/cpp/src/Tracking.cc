@@ -2805,6 +2805,12 @@ void Tracking::Reset()
 
     mpLocalMapper->RequestReset();
     mpLoopClosing->RequestReset();
+
+    // 等待 LocalMapping 和 LoopClosing 线程处理完重置，确保它们不再访问当前地图数据
+    // 使用条件变量而非轮询，避免睡眠延时
+    mpLocalMapper->WaitForResetComplete();
+    mpLoopClosing->WaitForResetComplete();
+
     mpKeyFrameDB->clear();
 
     // 在清除地图之前停止后台重定位线程，以避免MapPoint互斥锁上的竞争
@@ -2868,7 +2874,7 @@ void Tracking::Reset()
         for(MapPoint* p : allMPs) {
             if(p && !p->isBad() && p->mbFromLoadedMap) {
                 savedLoadedMPs.push_back(p);
-                mpMap->EraseMapPoint(p); // 只从集合移除，不 delete
+                mpMap->EraseMapPoint(p, false); // 只从集合移除，不 delete
             }
         }
         LOGD("跟踪::清理地图 总点数=%d 已移出已加载点=%d 将被清理的扫描点=%d",

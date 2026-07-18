@@ -366,7 +366,7 @@ void System::CreateNewMap()
         for(MapPoint* p : allMPs) {
             if(p && !p->isBad() && p->mbFromLoadedMap) {
                 savedLoadedMPs.push_back(p);
-                mpMap->EraseMapPoint(p); // 仅从旧地图集合移除，不 delete 对象
+                mpMap->EraseMapPoint(p, false); // 仅从旧地图集合移除，不 delete 对象
             }
         }
         if(!savedLoadedMPs.empty()) {

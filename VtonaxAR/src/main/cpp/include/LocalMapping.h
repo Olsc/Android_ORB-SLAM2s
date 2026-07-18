@@ -77,6 +77,7 @@ public:
     void WaitForStopped(int timeoutMs);
 
     void RequestReset();
+    void WaitForResetComplete();
     bool Stop();
     void Release();
     bool isStopped();
@@ -114,6 +115,10 @@ protected:
     void ResetIfRequested();
     bool mbResetRequested;
     std::mutex mMutexReset;
+
+    bool mbResetComplete = false;
+    std::mutex mMutexResetComplete;
+    std::condition_variable mCvResetComplete;
 
     bool CheckFinish();
     void SetFinish();

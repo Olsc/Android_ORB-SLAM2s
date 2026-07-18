@@ -896,42 +896,74 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
         const int wCell = ceil(width/nCols);
         const int hCell = ceil(height/nRows);
 
-        for(int i=0; i<nRows; i++)
+        // 1. 全图检测所有可能的候选点 (使用 minThFAST)
+        vector<cv::KeyPoint> vAllKeys;
+        FAST(mvImagePyramid[level], vAllKeys, minThFAST, true);
+
+        // 2. 将候选点按网格分箱
+        vector<vector<cv::KeyPoint>> grid(nRows * nCols);
+        for(size_t i = 0; i < vAllKeys.size(); ++i)
         {
-            const float iniY =minBorderY+i*hCell;
-            float maxY = iniY+hCell+6;
-
-            if(iniY>=maxBorderY-3)
+            const cv::KeyPoint& kp = vAllKeys[i];
+            const float x_glob = kp.pt.x;
+            const float y_glob = kp.pt.y;
+            // 过滤边界之外的点
+            if(x_glob < minBorderX || x_glob >= maxBorderX || y_glob < minBorderY || y_glob >= maxBorderY)
                 continue;
-            if(maxY>maxBorderY)
-                maxY = maxBorderY;
 
-            for(int j=0; j<nCols; j++)
+            const float x_rel = x_glob - minBorderX;
+            const float y_rel = y_glob - minBorderY;
+            int c = (int)(x_rel / W);
+            int r = (int)(y_rel / hCell);
+            if(c < 0) c = 0; else if(c >= nCols) c = nCols - 1;
+            if(r < 0) r = 0; else if(r >= nRows) r = nRows - 1;
+
+            grid[r * nCols + c].push_back(kp);
+        }
+
+        // 3. 逐个网格进行二段阈值过滤并存入 vToDistributeKeys
+        for(int r = 0; r < nRows; ++r)
+        {
+            for(int c = 0; c < nCols; ++c)
             {
-                const float iniX =minBorderX+j*wCell;
-                float maxX = iniX+wCell+6;
-                if(iniX>=maxBorderX-6)
+                const vector<cv::KeyPoint>& cellKeys = grid[r * nCols + c];
+                if(cellKeys.empty())
                     continue;
-                if(maxX>maxBorderX)
-                    maxX = maxBorderX;
 
-                vector<cv::KeyPoint> vKeysCell;
-                FAST(mvImagePyramid[level].rowRange(iniY,maxY).colRange(iniX,maxX),
-                     vKeysCell,iniThFAST,true);
-
-                if(vKeysCell.empty())
+                // 检查该网格内是否有大于等于 iniThFAST 的强角点
+                bool hasStrong = false;
+                for(size_t k = 0; k < cellKeys.size(); ++k)
                 {
-                    FAST(mvImagePyramid[level].rowRange(iniY,maxY).colRange(iniX,maxX),
-                         vKeysCell,minThFAST,true);
+                    if(cellKeys[k].response >= iniThFAST)
+                    {
+                        hasStrong = true;
+                        break;
+                    }
                 }
 
-                if(!vKeysCell.empty())
+                // 如果有强点，则只保留强点并做相对坐标变换
+                if(hasStrong)
                 {
-                    for(vector<cv::KeyPoint>::iterator vit=vKeysCell.begin(); vit!=vKeysCell.end();vit++)
+                    for(size_t k = 0; k < cellKeys.size(); ++k)
                     {
-                        (*vit).pt.x+=j*wCell;
-                        (*vit).pt.y+=i*hCell;
-                        vToDistributeKeys.push_back(*vit);
+                        if(cellKeys[k].response >= iniThFAST)
+                        {
+                            cv::KeyPoint kp = cellKeys[k];
+                            kp.pt.x -= minBorderX;
+                            kp.pt.y -= minBorderY;
+                            vToDistributeKeys.push_back(kp);
+                        }
+                    }
+                }
+                else
+                {
+                    // 否则保留所有符合 minThFAST 的点
+                    for(size_t k = 0; k < cellKeys.size(); ++k)
+                    {
+                        cv::KeyPoint kp = cellKeys[k];
+                        kp.pt.x -= minBorderX;
+                        kp.pt.y -= minBorderY;
+                        vToDistributeKeys.push_back(kp);
                     }
                 }
             }
