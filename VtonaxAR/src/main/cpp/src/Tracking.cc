@@ -446,30 +446,23 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
         pNewRefTree->add(matchables);
     }
 
+    // 构建空间网格索引（在锁外、swap前构建，避免使用 swap 后已失效的 newRefSnapshots）
+    // swap 后 newRefSnapshots 持有的是旧数据，必须在 swap 之前构建
+    LoadedMapGrid newGrid;
+    newGrid.Build(newRefSnapshots, 10.0f);
+
     // 交换到正式对象（短锁保护）
     {
         std::unique_lock<std::mutex> lk(mMutexReloc);
         mRefDesc = newRefDesc; // 浅拷贝
         mRefIdxToMP.swap(newRefIdxToMP);
-        mRefSnapshots.swap(newRefSnapshots);
-
+        mRefSnapshots.swap(newRefSnapshots); // swap 后 newRefSnapshots 变为旧数据
         mpRefTree = pNewRefTree;
         mRefCachedMPCount = (int)mRefIdxToMP.size();
         mRefLastBuildTs = mLastTimestamp;
-        
-        mRefLastBuildTs = mLastTimestamp;
+        mRefGrid = std::move(newGrid); // 一并原子更新网格，无需二次加锁
     }
     LOGD("BuildLoadedRefCache: 树中已缓存 %d 个点，总地图点数 = %d", mRefCachedMPCount, (int)allMPs.size());
-    
-    // 构建空间网格索引 (移到锁外构建以避免阻塞主线程)
-    // 使用本地对象构建，然后交换
-    LoadedMapGrid newGrid;
-    newGrid.Build(newRefSnapshots, 10.0f);
-    
-    {
-        std::unique_lock<std::mutex> lk(mMutexReloc);
-        mRefGrid = newGrid;
-    } 
 
     // 通知后台线程参考缓存已就绪（无延时）
     mSnapSeqProduced++;
@@ -1299,30 +1292,28 @@ void Tracking::Track()
                 mpSystem->Reset();
                 return;
             }
+
             
-            // 多地图模式：如果丢失时间过长，创建新地图（子地图）
-            // 必须保证地图有足够关键帧，防止初始扫描阶段点云被意外清空
+            // 多地图模式：如果丢失时间过长，创建新地图（子地图）继续扫描
+            // System::CreateNewMap() 内部已处理已加载点迁移到新地图，无需在此拦截
             if (mConsecutiveLostFrames > TRACKING_LOST_FRAMES_FOR_NEW_MAP && mpMap->KeyFramesInMap() > 10)
             {
                 // 冷却保护：限频防止高性能机器反复触发CreateNewMap导致主线程卡死
-                // 低性能机器因每帧间隔大反而不易触发
                 if (mLastNewMapFrameId > 0 &&
                     mCurrentFrame.mnId < mLastNewMapFrameId + TRACKING_NEW_MAP_COOLDOWN_FRAMES)
                 {
-                    // 仍在冷却期内，不触发 CreateNewMap；让丢失计数继续累积，
-                    // 等本次相机视野稳定后或冷却结束后再做处理。
                     LOGD("跟踪: 处于子地图冷却期 (距上次创建 %u 帧 < %d)，跳过 CreateNewMap",
                          mCurrentFrame.mnId - mLastNewMapFrameId, TRACKING_NEW_MAP_COOLDOWN_FRAMES);
                 }
                 else
                 {
-                    //      mConsecutiveLostFrames, TRACKING_LOST_FRAMES_FOR_NEW_MAP);
                     mpSystem->CreateNewMap();
                     mLastNewMapFrameId = mCurrentFrame.mnId;
                     mConsecutiveLostFrames = 0;
                     return;
                 }
             }
+
         }
 
         if(!mCurrentFrame.mpReferenceKF)
@@ -2869,13 +2860,30 @@ void Tracking::Reset()
     mRelocCooldownFrames = RESET_COOLDOWN_FRAMES;  // 从Config.h读取冷却帧数
     mConsecutiveFail = 0;
 
-    // 清除地图（这会删除地图点和关键帧）
+    // 清除地图前，先将已加载的地图点从地图中移出（仅移出，不 delete）
+    std::vector<MapPoint*> savedLoadedMPs;
     {
-        // 统计将丢失多少加载的点
-        int total=(int)mpMap->MapPointsInMap();
-        int loaded=0; for(MapPoint* p : mpMap->GetAllMapPoints()){ if(p && !p->isBad() && p->mbFromLoadedMap) loaded++; }
-        LOGD("跟踪::清理地图 点数=%d 已加载=%d", total, loaded);
-        mpMap->clear();
+        std::vector<MapPoint*> allMPs = mpMap->GetAllMapPoints();
+        int total = (int)allMPs.size();
+        for(MapPoint* p : allMPs) {
+            if(p && !p->isBad() && p->mbFromLoadedMap) {
+                savedLoadedMPs.push_back(p);
+                mpMap->EraseMapPoint(p); // 只从集合移除，不 delete
+            }
+        }
+        LOGD("跟踪::清理地图 总点数=%d 已移出已加载点=%d 将被清理的扫描点=%d",
+             total, (int)savedLoadedMPs.size(), total - (int)savedLoadedMPs.size());
+    }
+
+    // 清除地图（此时只会删除扫描建立的普通点和关键帧，已加载点已安全移出）
+    mpMap->clear();
+
+    // 重新将已加载地图点加回地图，使其在新的跟踪周期中继续可用于匹配
+    for(MapPoint* p : savedLoadedMPs) {
+        mpMap->AddMapPoint(p);
+    }
+    if(!savedLoadedMPs.empty()) {
+        LOGD("跟踪::重置: 已将 %d 个已加载地图点重新加回地图", (int)savedLoadedMPs.size());
     }
 
     //KeyFrame::nNextId = 0;
@@ -2891,8 +2899,10 @@ void Tracking::Reset()
         mpInitializer = static_cast<Initializer*>(NULL);
     }
     mLastInitAttemptTime = 0.0;
-    
-    // 重新启动线程（确保在清空所有状态后）
+
+    // 必须先启动后台线程，再调用 BuildLoadedRefCache！
+    // 原因：BuildLoadedRefCache 内部有 mbRelocThreadStop 的退出检查，
+    // 如果先调用会导致超过100个地图点时缓存被截断。
     StartGlobalRelocThread();
     LOGD("跟踪::重置结束");
 
@@ -2900,6 +2910,26 @@ void Tracking::Reset()
     mlpReferences.clear();
     mlFrameTimes.clear();
     mlbLost.clear();
+
+    // 若恢复了已加载地图点，在后台线程启动后重建重定位缓存
+    // 必须在 StartGlobalRelocThread 之后（mbRelocThreadStop 已重置为 false）
+    if(!savedLoadedMPs.empty()) {
+        {
+            std::unique_lock<std::mutex> lk(mMutexReloc);
+            mbHaveMapAlign = false;
+            mAlignConfidence = 0.0f;
+            mLastAlignTs = 0.0;
+            mT_map_from_slam.release();
+            mSmoothedT_map_from_slam.release();
+            mAlignUpdateCount = 0;
+            mAlignSkipCounter = 0;
+        }
+        // 有已加载地图时无需等待冷却，重置后立即可基于已加载点重定位
+        mRelocCooldownFrames = 0;
+        BuildLoadedRefCache(); // 完整重建（此时 mbRelocThreadStop=false，不会被截断）
+        LOGD("跟踪::重置: 已重建已加载地图缓存（%d 个点），冷却取消，重置后立即可重定位",
+             (int)savedLoadedMPs.size());
+    }
 }
 
 void Tracking::ClearTrackingState()
