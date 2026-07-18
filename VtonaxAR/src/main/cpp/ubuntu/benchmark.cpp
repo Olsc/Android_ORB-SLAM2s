@@ -258,7 +258,7 @@ int main(int argc, char** argv) {
 
     // 初始化 SLAM 系统
     std::cout << "正在初始化 SLAM 系统...\n";
-    slamSys = new ORB_SLAM2::System(":embedded:", "", ORB_SLAM2::System::MONOCULAR);
+    slamSys = new ORB_SLAM2::System("", ORB_SLAM2::System::MONOCULAR);
     if (!slamSys) {
         std::cerr << "SLAM 系统初始化失败\n";
         return 1;
