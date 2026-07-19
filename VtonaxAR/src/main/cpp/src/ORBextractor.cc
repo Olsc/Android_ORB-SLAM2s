@@ -138,6 +138,40 @@ static void InitDescriptorLUT(const Point* pattern) {
     bDescriptorLUTInit = true;
 }
 
+static inline float Atan2Approx(float y, float x)
+{
+    if (x == 0.0f && y == 0.0f) return 0.0f;
+    
+    float absX = std::abs(x);
+    float absY = std::abs(y);
+    float angle = 0.0f;
+    
+    if (absX >= absY) {
+        float r = absY / absX;
+        angle = r * (45.0f - (r - 1.0f) * (15.637f + 3.961f * r));
+        if (x < 0.0f) {
+            angle = 180.0f - angle;
+        }
+        if (y < 0.0f) {
+            angle = (y != 0.0f || x < 0.0f) ? (360.0f - angle) : 180.0f;
+        }
+    } else {
+        float r = absX / absY;
+        angle = 90.0f - r * (45.0f - (r - 1.0f) * (15.637f + 3.961f * r));
+        if (x < 0.0f) {
+            angle = 180.0f - angle;
+        }
+        if (y < 0.0f) {
+            angle = 360.0f - angle;
+        }
+    }
+    
+    if (angle < 0.0f) angle += 360.0f;
+    else if (angle >= 360.0f) angle -= 360.0f;
+    
+    return angle;
+}
+
 static float IC_Angle(const Mat& image, Point2f pt,  const vector<int> & u_max)
 {
     int m_01 = 0, m_10 = 0;
@@ -199,7 +233,7 @@ static float IC_Angle(const Mat& image, Point2f pt,  const vector<int> & u_max)
         m_01 += suffix_m01;
     }
 
-    return fastAtan2((float)m_01, (float)m_10);
+    return Atan2Approx((float)m_01, (float)m_10);
 }
 
 
@@ -589,33 +623,34 @@ static void computeOrientation(const Mat& image, vector<KeyPoint>& keypoints, co
 
 void ExtractorNode::DivideNode(ExtractorNode &n1, ExtractorNode &n2, ExtractorNode &n3, ExtractorNode &n4)
 {
-    const int halfX = ceil(static_cast<float>(UR.x-UL.x)/2);
-    const int halfY = ceil(static_cast<float>(BR.y-UL.y)/2);
+    const int halfX = (UR.x - UL.x + 1) >> 1;
+    const int halfY = (BR.y - UL.y + 1) >> 1;
 
     // 定义子节点的边界
     n1.UL = UL;
     n1.UR = cv::Point2i(UL.x+halfX,UL.y);
     n1.BL = cv::Point2i(UL.x,UL.y+halfY);
     n1.BR = cv::Point2i(UL.x+halfX,UL.y+halfY);
-    n1.vKeys.reserve(vKeys.size());
+    const int nReserve = (vKeys.size() + 3) >> 2;
+    n1.vKeys.reserve(nReserve);
 
     n2.UL = n1.UR;
     n2.UR = UR;
     n2.BL = n1.BR;
     n2.BR = cv::Point2i(UR.x,UL.y+halfY);
-    n2.vKeys.reserve(vKeys.size());
+    n2.vKeys.reserve(nReserve);
 
     n3.UL = n1.BL;
     n3.UR = n1.BR;
     n3.BL = BL;
     n3.BR = cv::Point2i(n1.BR.x,BL.y);
-    n3.vKeys.reserve(vKeys.size());
+    n3.vKeys.reserve(nReserve);
 
     n4.UL = n3.UR;
     n4.UR = n2.BR;
     n4.BL = n3.BR;
     n4.BR = BR;
-    n4.vKeys.reserve(vKeys.size());
+    n4.vKeys.reserve(nReserve);
 
     // 将点关联到子节点
     for(size_t i=0;i<vKeys.size();i++)
@@ -733,41 +768,41 @@ vector<cv::KeyPoint> ORBextractor::DistributeOctTree(const vector<cv::KeyPoint>&
                 // 如果子节点包含点则添加
                 if(n1.vKeys.size()>0)
                 {
-                    lNodes.push_front(n1);                    
-                    if(n1.vKeys.size()>1)
+                    lNodes.push_front(std::move(n1));                    
+                    if(lNodes.front().vKeys.size()>1)
                     {
                         nToExpand++;
-                        vSizeAndPointerToNode.push_back(make_pair(n1.vKeys.size(),&lNodes.front()));
+                        vSizeAndPointerToNode.push_back(make_pair(lNodes.front().vKeys.size(),&lNodes.front()));
                         lNodes.front().lit = lNodes.begin();
                     }
                 }
                 if(n2.vKeys.size()>0)
                 {
-                    lNodes.push_front(n2);
-                    if(n2.vKeys.size()>1)
+                    lNodes.push_front(std::move(n2));
+                    if(lNodes.front().vKeys.size()>1)
                     {
                         nToExpand++;
-                        vSizeAndPointerToNode.push_back(make_pair(n2.vKeys.size(),&lNodes.front()));
+                        vSizeAndPointerToNode.push_back(make_pair(lNodes.front().vKeys.size(),&lNodes.front()));
                         lNodes.front().lit = lNodes.begin();
                     }
                 }
                 if(n3.vKeys.size()>0)
                 {
-                    lNodes.push_front(n3);
-                    if(n3.vKeys.size()>1)
+                    lNodes.push_front(std::move(n3));
+                    if(lNodes.front().vKeys.size()>1)
                     {
                         nToExpand++;
-                        vSizeAndPointerToNode.push_back(make_pair(n3.vKeys.size(),&lNodes.front()));
+                        vSizeAndPointerToNode.push_back(make_pair(lNodes.front().vKeys.size(),&lNodes.front()));
                         lNodes.front().lit = lNodes.begin();
                     }
                 }
                 if(n4.vKeys.size()>0)
                 {
-                    lNodes.push_front(n4);
-                    if(n4.vKeys.size()>1)
+                    lNodes.push_front(std::move(n4));
+                    if(lNodes.front().vKeys.size()>1)
                     {
                         nToExpand++;
-                        vSizeAndPointerToNode.push_back(make_pair(n4.vKeys.size(),&lNodes.front()));
+                        vSizeAndPointerToNode.push_back(make_pair(lNodes.front().vKeys.size(),&lNodes.front()));
                         lNodes.front().lit = lNodes.begin();
                     }
                 }
@@ -802,37 +837,37 @@ vector<cv::KeyPoint> ORBextractor::DistributeOctTree(const vector<cv::KeyPoint>&
                     // 如果子节点包含点则添加
                     if(n1.vKeys.size()>0)
                     {
-                        lNodes.push_front(n1);
-                        if(n1.vKeys.size()>1)
+                        lNodes.push_front(std::move(n1));
+                        if(lNodes.front().vKeys.size()>1)
                         {
-                            vSizeAndPointerToNode.push_back(make_pair(n1.vKeys.size(),&lNodes.front()));
+                            vSizeAndPointerToNode.push_back(make_pair(lNodes.front().vKeys.size(),&lNodes.front()));
                             lNodes.front().lit = lNodes.begin();
                         }
                     }
                     if(n2.vKeys.size()>0)
                     {
-                        lNodes.push_front(n2);
-                        if(n2.vKeys.size()>1)
+                        lNodes.push_front(std::move(n2));
+                        if(lNodes.front().vKeys.size()>1)
                         {
-                            vSizeAndPointerToNode.push_back(make_pair(n2.vKeys.size(),&lNodes.front()));
+                            vSizeAndPointerToNode.push_back(make_pair(lNodes.front().vKeys.size(),&lNodes.front()));
                             lNodes.front().lit = lNodes.begin();
                         }
                     }
                     if(n3.vKeys.size()>0)
                     {
-                        lNodes.push_front(n3);
-                        if(n3.vKeys.size()>1)
+                        lNodes.push_front(std::move(n3));
+                        if(lNodes.front().vKeys.size()>1)
                         {
-                            vSizeAndPointerToNode.push_back(make_pair(n3.vKeys.size(),&lNodes.front()));
+                            vSizeAndPointerToNode.push_back(make_pair(lNodes.front().vKeys.size(),&lNodes.front()));
                             lNodes.front().lit = lNodes.begin();
                         }
                     }
                     if(n4.vKeys.size()>0)
                     {
-                        lNodes.push_front(n4);
-                        if(n4.vKeys.size()>1)
+                        lNodes.push_front(std::move(n4));
+                        if(lNodes.front().vKeys.size()>1)
                         {
-                            vSizeAndPointerToNode.push_back(make_pair(n4.vKeys.size(),&lNodes.front()));
+                            vSizeAndPointerToNode.push_back(make_pair(lNodes.front().vKeys.size(),&lNodes.front()));
                             lNodes.front().lit = lNodes.begin();
                         }
                     }

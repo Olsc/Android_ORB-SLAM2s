@@ -2038,7 +2038,11 @@ bool Tracking::TrackLocalMap()
     }
 
     if(mbHaveMapAlign){
-        if(mnLoadedMapInliersCurMap < 5) mNoCurMapLoadedInliersFrames++; else mNoCurMapLoadedInliersFrames = 0;
+        if(mnLoadedMapInliersCurMap < 5) {
+            ClearMapAlignment();
+        } else {
+            mNoCurMapLoadedInliersFrames = 0;
+        }
     } else {
         mNoCurMapLoadedInliersFrames = 0;
     }
@@ -2799,6 +2803,7 @@ bool Tracking::Relocalization()
     else
     {
         mnLastRelocFrameId = mCurrentFrame.mnId;
+        ClearMapAlignment();
         return true;
     }
 
@@ -2840,6 +2845,10 @@ void Tracking::Reset()
         mSmoothedT_map_from_slam.release();
         mAlignUpdateCount = 0;
         mAlignSkipCounter = 0;
+        mPendingMapId = -1;
+        mPendingMapCount = 0;
+        mNoCurMapLoadedInliersFrames = 0;
+        mLastAcceptedAlignInliers = 0;
         
         // 重置快照序列号，确保后台线程不会使用旧快照
         mSnapSeqProduced.store(0ULL);
@@ -2925,16 +2934,7 @@ void Tracking::Reset()
     // 若恢复了已加载地图点，在后台线程启动后重建重定位缓存
     // 必须在 StartGlobalRelocThread 之后（mbRelocThreadStop 已重置为 false）
     if(!savedLoadedMPs.empty()) {
-        {
-            std::unique_lock<std::mutex> lk(mMutexReloc);
-            mbHaveMapAlign = false;
-            mAlignConfidence = 0.0f;
-            mLastAlignTs = 0.0;
-            mT_map_from_slam.release();
-            mSmoothedT_map_from_slam.release();
-            mAlignUpdateCount = 0;
-            mAlignSkipCounter = 0;
-        }
+        ClearMapAlignment();
         // 有已加载地图时无需等待冷却，重置后立即可基于已加载点重定位
         mRelocCooldownFrames = 0;
         BuildLoadedRefCache(); // 完整重建（此时 mbRelocThreadStop=false，不会被截断）
@@ -2991,6 +2991,10 @@ void Tracking::ClearTrackingState()
         mSmoothedT_map_from_slam.release();
         mAlignUpdateCount = 0;
         mAlignSkipCounter = 0;
+        mPendingMapId = -1;
+        mPendingMapCount = 0;
+        mNoCurMapLoadedInliersFrames = 0;
+        mLastAcceptedAlignInliers = 0;
         
         // 重置快照序列号
         mSnapSeqProduced.store(0ULL);
@@ -3106,6 +3110,10 @@ void Tracking::ClearRelocCacheForMapSwitch()
         mSmoothedT_map_from_slam.release();
         mAlignUpdateCount = 0;
         mAlignSkipCounter = 0;
+        mPendingMapId = -1;
+        mPendingMapCount = 0;
+        mNoCurMapLoadedInliersFrames = 0;
+        mLastAcceptedAlignInliers = 0;
     }
 
     {
@@ -3139,6 +3147,10 @@ void Tracking::ClearRelocCache()
         mSmoothedT_map_from_slam.release();
         mAlignUpdateCount = 0;
         mAlignSkipCounter = 0;
+        mPendingMapId = -1;
+        mPendingMapCount = 0;
+        mNoCurMapLoadedInliersFrames = 0;
+        mLastAcceptedAlignInliers = 0;
         
         // 清空旧的重定位缓存
         mRefDesc.release();

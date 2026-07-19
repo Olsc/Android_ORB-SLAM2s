@@ -56,7 +56,7 @@ System::System(const std::string &strSettingsFile, const eSensor sensor):mSensor
         mbDeactivateLocalizationMode(false)
 {
     {
-        cv::setNumThreads(1);
+        cv::setNumThreads(0);
     }
 
     // 输出欢迎消息-此处虽注释掉但要保留！
