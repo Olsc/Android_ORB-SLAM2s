@@ -134,10 +134,6 @@ public class NativeHelper {
     public native int getCurrentMapId();
     public native int[] getMapStats();
 
-    // AR重定位模式控制（默认已启用）
-    public native void setFullMapDisplay(boolean enable);
-    public native boolean isFullMapDisplayEnabled();
-    
     // 点云显示控制（控制绿色和蓝色点云）
     public native void setPointCloudDisplay(boolean enable);
     public native boolean isPointCloudDisplayEnabled();

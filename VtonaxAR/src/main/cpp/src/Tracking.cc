@@ -209,13 +209,14 @@ void ORB_SLAM2::Tracking::BindLoadedMapPointsUsingSnapshots()
         }
     }
 
-    // 取只读拷贝，避免长时间占用互斥量
-    cv::Mat refDesc; std::vector<MapPoint*> refMPs; std::vector<RefMPSnapshot> refSnaps;
-    {
-        std::unique_lock<std::mutex> lk(mMutexReloc);
-        refDesc = mRefDesc; refMPs = mRefIdxToMP; refSnaps = mRefSnapshots;
-    }
-    if(refSnaps.size()!=refMPs.size() || refDesc.rows!=(int)refMPs.size()) return;
+    // 持有锁并使用 const 引用，完全避免在跟踪主线程中深拷贝大容器
+    std::unique_lock<std::mutex> lk(mMutexReloc);
+    if(mRefSnapshots.empty() || mRefIdxToMP.empty() || mRefDesc.empty()) return;
+    if(mRefSnapshots.size() != mRefIdxToMP.size() || mRefDesc.rows != (int)mRefIdxToMP.size()) return;
+
+    const cv::Mat &refDesc = mRefDesc;
+    const std::vector<MapPoint*> &refMPs = mRefIdxToMP;
+    const std::vector<RefMPSnapshot> &refSnaps = mRefSnapshots;
 
     // 通过当前帧位姿投影快照点，进行半径内最近邻像素匹配（不读 MP 成员）
     const float &fx = mCurrentFrame.fx;
@@ -246,17 +247,14 @@ void ORB_SLAM2::Tracking::BindLoadedMapPointsUsingSnapshots()
     // const float radius = haveAlign ? 12.0f : 8.0f;
     const float radius = haveAlign ? TRACKING_SEARCH_RADIUS_ALIGNED : TRACKING_SEARCH_RADIUS_UNALIGNED;
     
-    // 使用网格搜索减少遍历数量
+    // 使用网格搜索减少遍历数量 (无需重复加锁，复用外层 lk 锁)
     std::vector<int> gridCandidates;
     bool useGrid = false;
-    {
-        std::unique_lock<std::mutex> lk(mMutexReloc);
-        if(mRefGrid.nCols > 0) {
-             cv::Mat OwM = mCurrentFrame.GetCameraCenter();
-             cv::Point3f Ow(OwM.at<float>(0), OwM.at<float>(1), OwM.at<float>(2));
-             mRefGrid.GetCandidatesInBBox(Ow, TRACKING_GRID_SEARCH_RADIUS, gridCandidates); // 40m radius
-             useGrid = true;
-        }
+    if(mRefGrid.nCols > 0) {
+         cv::Mat OwM = mCurrentFrame.GetCameraCenter();
+         cv::Point3f Ow(OwM.at<float>(0), OwM.at<float>(1), OwM.at<float>(2));
+         mRefGrid.GetCandidatesInBBox(Ow, TRACKING_GRID_SEARCH_RADIUS, gridCandidates); // 40m radius
+         useGrid = true;
     }
 
     const size_t totalPoints = useGrid ? gridCandidates.size() : refSnaps.size();
