@@ -19,13 +19,11 @@ android {
     packaging {
         jniLibs {
             useLegacyPackaging true
-            excludes += ['lib/x86/**', 'lib/x86_64/**']
+            excludes += []
             pickFirsts += ['lib/**/libc++_shared.so']
         }
         resources {
             excludes += [
-                'lib/x86/**',
-                'lib/x86_64/**',
                 '**/DebugProbesKt.bin',
                 '**/kotlin/**',
                 '**/*.kotlin_metadata',
@@ -86,7 +84,7 @@ android {
         abi {
             enable true
             reset()
-            include 'armeabi-v7a', 'arm64-v8a'
+            include 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
             universalApk true
         }
     }
