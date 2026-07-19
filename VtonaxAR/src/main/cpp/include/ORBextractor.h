@@ -67,8 +67,8 @@ public:
 
     ~ORBextractor(){}
 
-    // 加载 ORB 描述子旋转偏移量查找表
-    static void LoadLUT(const unsigned char* buffer, size_t size);
+    // 初始化 ORB 描述子旋转偏移量查找表 (内存预生成)
+    static void InitLUT();
 
     // 计算图像上的ORB特征（使用八叉树分散分布，当前忽略掩码）
     void operator()( cv::InputArray image, cv::InputArray mask,

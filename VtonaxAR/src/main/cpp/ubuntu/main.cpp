@@ -17,7 +17,6 @@
 #include "UIUtils.h"
 #include "Matrix.h"
 #include "include/Config.h"
-#include "EmbeddedResources.h"
 
 // 定义与 JNI 类似的全局状态变量，供 Ubuntu 桌面应用程序使用
 ORB_SLAM2::System* slamSys = nullptr;

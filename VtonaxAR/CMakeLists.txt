@@ -204,16 +204,10 @@ function(embed_resource input_file symbol_base output_obj)
 endfunction()
 
 # 嵌入资源文件
-set(EMBEDDED_OBJS
-    ${EMBEDDED_DIR}/ORB_LUT.o
-)
-
-# 使用符号基础名称，函数会生成 _binary_<symbol_base>_start/end 符号
-# 这些符号名称必须与 EmbeddedResources.cpp 中声明的符号匹配
-embed_resource(${RESOURCE_DIR}/ORB_LUT.bin ORB_LUT_bin ${EMBEDDED_DIR}/ORB_LUT.o)
+set(EMBEDDED_OBJS)
 
 # 创建自定义目标以确保在链接前生成所有对象文件
-add_custom_target(generate_embedded_resources DEPENDS ${EMBEDDED_OBJS})
+add_custom_target(generate_embedded_resources DEPENDS "${EMBEDDED_OBJS}")
 
 
 # ========== 整合所有组件到一个 SO：libVtonaxAR_Engine.so ==========
@@ -255,9 +249,7 @@ add_library(VtonaxAR_Engine SHARED
         src/main/cpp/src/Sim3Solver.cc
         src/main/cpp/src/Initializer.cc
         
-        # DBoW2 组件移除，使用 HBST
 
-        src/main/cpp/EmbeddedResources.cpp
         
         # JNI 接口层
         src/main/cpp/native-lib.cpp

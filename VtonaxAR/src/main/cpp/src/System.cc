@@ -39,7 +39,7 @@
 #include "KeyFrame.h"
 #include "MapPoint.h"
 #include "Config.h"
-#include "EmbeddedResources.h"
+#include "ORBextractor.h"
 #include <fstream>
 #include <thread>
 #include <chrono>
@@ -66,17 +66,8 @@ System::System(const std::string &strSettingsFile, const eSensor sensor):mSensor
         // "This is free software, and you are welcome to redistribute it" << std::endl <<
         // "under certain conditions. See LICENSE.txt." << std::endl << std::endl;
 
-    // 加载 ORB LUT (优先尝试从嵌入资源加载)
-    {
-        const unsigned char* lutData = nullptr;
-        size_t lutSize = 0;
-        if(EmbeddedResources::Get("ORB_LUT.bin", lutData, lutSize)) {
-            LOGD("正在从嵌入资源加载 ORB LUT (大小: %zu)", lutSize);
-            ORBextractor::LoadLUT(lutData, lutSize);
-        } else {
-            LOGD("警告: 未找到嵌入的 ORB LUT，将回退到运行时计算");
-        }
-    }
+    // 初始化 ORB 查找表 (自动在内存中生成)
+    ORBextractor::InitLUT();
 
     //创建关键帧数据库
     mpKeyFrameDatabase = new KeyFrameDatabase();

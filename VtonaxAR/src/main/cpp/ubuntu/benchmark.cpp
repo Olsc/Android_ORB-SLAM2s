@@ -35,7 +35,6 @@
 #include "Plane.h"
 #include "Matrix.h"
 #include "include/Config.h"
-#include "EmbeddedResources.h"
 
 // ============================================================
 // 全局状态 (与 JNI/native-lib.cpp 对齐的最小集合)

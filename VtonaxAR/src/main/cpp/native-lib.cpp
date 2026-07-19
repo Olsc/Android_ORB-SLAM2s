@@ -20,7 +20,6 @@
 #include "UIUtils.h"
 #include "Matrix.h"
 #include "MapPoint.h"
-#include "EmbeddedResources.h"
 #include "include/Config.h"
 #include "VtonaxProfiler.h"
 

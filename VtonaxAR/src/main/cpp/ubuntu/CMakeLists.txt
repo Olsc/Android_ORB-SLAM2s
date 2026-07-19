@@ -177,13 +177,9 @@ function(embed_resource input_file symbol_base output_obj)
     )
 endfunction()
 
-set(EMBEDDED_OBJS
-    ${EMBEDDED_DIR}/ORB_LUT.o
-)
+set(EMBEDDED_OBJS)
 
-embed_resource(${RESOURCE_DIR}/ORB_LUT.bin ORB_LUT_bin ${EMBEDDED_DIR}/ORB_LUT.o)
-
-add_custom_target(generate_embedded_resources DEPENDS ${EMBEDDED_OBJS})
+add_custom_target(generate_embedded_resources DEPENDS "${EMBEDDED_OBJS}")
 
 # ----------------------------------------------------------------------------
 # 6. 构建 SLAM AR 核心底层基础库 (VtonaxAR_Engine)
@@ -229,7 +225,6 @@ add_library(VtonaxAR_Engine STATIC
     # DBoW2 组件已移除，改用 HBST
     
     # 底层通用实用组件
-    ${REPO_ROOT}/VtonaxAR/src/main/cpp/EmbeddedResources.cpp
     ${REPO_ROOT}/VtonaxAR/src/main/cpp/UIUtils.cpp
     ${REPO_ROOT}/VtonaxAR/src/main/cpp/Plane.cpp
     ${REPO_ROOT}/VtonaxAR/src/main/cpp/Matrix.cpp

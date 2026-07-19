@@ -11,9 +11,9 @@ sudo apt-get install -y build-essential cmake
 sudo apt-get install -y libopencv-dev
 ```
 
-> [!IMPORTANT]
-> **资源前置检查**：
-> 在编译前，请确保项目仓库根目录下的资源文件 `VtonaxAR/src/main/other/ORBvoc.txt.arm.bin` 与 `ORB_LUT.bin` 存在，CMake 会自动加载它们并编译为静态对象。
+> [!NOTE]
+> **资源说明**：
+> 本项目已优化，编译前不再需要准备 `ORB_LUT.bin` 查找表二进制文件，系统启动时会自动在内存中预生成 LUT 查找表。
 
 ---
 

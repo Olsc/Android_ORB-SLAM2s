@@ -97,47 +97,6 @@ struct DescriptorOffset {
 static DescriptorOffset descriptorOffsetLUT[360][512];
 static bool bDescriptorLUTInit = false;
 
-// 从内存缓冲区加载 LUT
-void ORBextractor::LoadLUT(const unsigned char* buffer, size_t size) {
-    if(bDescriptorLUTInit) return;
-    
-    // 检查大小: 360 * 512 * 8 bytes = 1474560
-    if (size != sizeof(descriptorOffsetLUT)) {
-        return; 
-    }
-    
-    memcpy(descriptorOffsetLUT, buffer, size);
-    bDescriptorLUTInit = true;
-}
-
-
-
-// 初始化描述子偏移量查找表 (如果未加载，则计算)
-static void InitDescriptorLUT(const Point* pattern) {
-    if(bDescriptorLUTInit) return;
-    
-    LOGD("InitDescriptorLUT: 未检测到预加载 LUT，开始运行时计算...");
-    // 对每个角度 (0-359度)
-    for(int angle = 0; angle < 360; angle++) {
-        const float rad = angle * (float)CV_PI / 180.0f;
-        const float a = cos(rad);
-        const float b = sin(rad);
-        
-        // 对每个采样点 (512个点)
-        for(int i = 0; i < 512; i++) {
-            const float x = (float)pattern[i].x;
-            const float y = (float)pattern[i].y;
-            
-            // 预计算旋转后的坐标偏移
-            // 原始公式: x' = x*a - y*b, y' = x*b + y*a
-            descriptorOffsetLUT[angle][i].dy = (int)(x * b + y * a + 0.5f);
-            descriptorOffsetLUT[angle][i].dx = (int)(x * a - y * b + 0.5f);
-        }
-    }
-    
-    bDescriptorLUTInit = true;
-}
-
 static inline float Atan2Approx(float y, float x)
 {
     if (x == 0.0f && y == 0.0f) return 0.0f;
@@ -546,6 +505,35 @@ static int bit_pattern_31_[256*4] =
     -1,-6, 0,-11/*mean (0.127148), correlation (0.547401)*/
 };
 
+// 初始化描述子偏移量查找表 (内存预生成)
+void ORBextractor::InitLUT() {
+    if(bDescriptorLUTInit) return;
+    
+    LOGD("InitLUT: 开始在内存中生成 ORB LUT...");
+    const Point* pattern = (const Point*)bit_pattern_31_;
+    
+    // 对每个角度 (0-359度)
+    for(int angle = 0; angle < 360; angle++) {
+        const float rad = angle * (float)CV_PI / 180.0f;
+        const float a = cos(rad);
+        const float b = sin(rad);
+        
+        // 对每个采样点 (512个点)
+        for(int i = 0; i < 512; i++) {
+            const float x = (float)pattern[i].x;
+            const float y = (float)pattern[i].y;
+            
+            // 预计算旋转后的坐标偏移
+            // 原始公式: x' = x*a - y*b, y' = x*b + y*a
+            descriptorOffsetLUT[angle][i].dy = (int)(x * b + y * a + 0.5f);
+            descriptorOffsetLUT[angle][i].dx = (int)(x * a - y * b + 0.5f);
+        }
+    }
+    
+    bDescriptorLUTInit = true;
+    LOGD("InitLUT: ORB LUT 生成完毕。");
+}
+
 ORBextractor::ORBextractor(int _nfeatures, float _scaleFactor, int _nlevels,
          int _iniThFAST, int _minThFAST):
     nfeatures(_nfeatures), scaleFactor(_scaleFactor), nlevels(_nlevels),
@@ -589,8 +577,8 @@ ORBextractor::ORBextractor(int _nfeatures, float _scaleFactor, int _nlevels,
     const Point* pattern0 = (const Point*)bit_pattern_31_;
     std::copy(pattern0, pattern0 + npoints, std::back_inserter(pattern));
 
-    // 初始化描述子偏移量查找表 (如果 LoadLUT 已调用则跳过，否则计算)
-    InitDescriptorLUT(pattern0);
+    // 初始化描述子偏移量查找表 (如果尚未初始化，则计算)
+    InitLUT();
 
     // 用于计算方向
     // 预先计算圆形补丁中每一行的结束位置
