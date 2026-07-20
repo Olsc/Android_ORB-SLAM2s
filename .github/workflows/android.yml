@@ -13,6 +13,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v7
+    - name: Clone OpenCV latest
+      run: |
+        git clone --depth=1 --branch 4.x https://github.com/opencv/opencv.git VtonaxAR/src/main/cpp/Thirdparty/opencv
     - name: set up JDK 17
       uses: actions/setup-java@v5
       with:
