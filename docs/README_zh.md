@@ -92,6 +92,11 @@ keywords: {Visualization;Simultaneous localization and mapping;Cameras;Real-time
 - [ ] SLAM频率降采样和自适应噪声处理。
 - [ ] 精细的传感器门控逻辑。
 
+## 拉取源码
+```
+git clone --recursive https://github.com/Olsc/Android_ORB-SLAM2s.git
+```
+
 ## 致谢
 
 本项目基于以下优秀的开源库构建：

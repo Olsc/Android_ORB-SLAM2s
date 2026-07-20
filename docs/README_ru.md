@@ -92,6 +92,11 @@ keywords: {Visualization;Simultaneous localization and mapping;Cameras;Real-time
 - [ ] Прореживание частоты SLAM и адаптивная обработка шума.
 - [ ] Уточненная логика управления датчиками.
 
+## Клонирование репозитория
+```
+git clone --recursive https://github.com/Olsc/Android_ORB-SLAM2s.git
+```
+
 ## Благодарности
 
 Этот проект построен на следующих превосходных библиотеках с открытым исходным кодом:

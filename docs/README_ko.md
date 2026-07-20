@@ -92,6 +92,11 @@ keywords: {Visualization;Simultaneous localization and mapping;Cameras;Real-time
 - [ ] SLAM 주파수 다운샘플링 및 적응형 노이즈 처리.
 - [ ] 정밀 센서 게이팅 로직.
 
+## 소스 코드 가져오기
+```
+git clone --recursive https://github.com/Olsc/Android_ORB-SLAM2s.git
+```
+
 ## 감사의 글
 
 이 프로젝트는 다음과 같은 훌륭한 오픈 소스 라이브러리들을 기반으로 구축되었습니다:
