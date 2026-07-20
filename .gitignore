@@ -58,9 +58,6 @@ benchmarks
 docs/key
 VtonaxAR/src/main/cpp/ubuntu/benchmark.mp4
 
-# OpenCV source (cloned during build)
-VtonaxAR/src/main/cpp/Thirdparty/opencv/
-
 TEMP
 日志.txt
 目标.txt
