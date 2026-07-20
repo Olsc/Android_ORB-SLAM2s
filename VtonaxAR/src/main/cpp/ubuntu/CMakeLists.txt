@@ -35,6 +35,7 @@ include_directories(
     ${REPO_ROOT}/VtonaxAR/src/main/cpp/include
     ${REPO_ROOT}/VtonaxAR/src/main/cpp/Thirdparty
     ${REPO_ROOT}/VtonaxAR/src/main/cpp/Thirdparty/g2o
+    ${REPO_ROOT}/VtonaxAR/src/main/cpp/Thirdparty/srrg_hbst
     ${REPO_ROOT}/VtonaxAR/src/main/cpp/profiler
 )
 
@@ -176,15 +177,9 @@ function(embed_resource input_file symbol_base output_obj)
     )
 endfunction()
 
-set(EMBEDDED_OBJS
-    ${EMBEDDED_DIR}/ORBvoc.o
-    ${EMBEDDED_DIR}/ORB_LUT.o
-)
+set(EMBEDDED_OBJS)
 
-embed_resource(${RESOURCE_DIR}/ORBvoc.txt.arm.bin ORBvoc_txt_arm_bin ${EMBEDDED_DIR}/ORBvoc.o)
-embed_resource(${RESOURCE_DIR}/ORB_LUT.bin ORB_LUT_bin ${EMBEDDED_DIR}/ORB_LUT.o)
-
-add_custom_target(generate_embedded_resources DEPENDS ${EMBEDDED_OBJS})
+add_custom_target(generate_embedded_resources DEPENDS "${EMBEDDED_OBJS}")
 
 # ----------------------------------------------------------------------------
 # 6. 构建 SLAM AR 核心底层基础库 (VtonaxAR_Engine)
@@ -227,22 +222,9 @@ add_library(VtonaxAR_Engine STATIC
     ${REPO_ROOT}/VtonaxAR/src/main/cpp/src/Sim3Solver.cc
     ${REPO_ROOT}/VtonaxAR/src/main/cpp/src/Initializer.cc
     
-    # DBoW2 关联组件
-    ${REPO_ROOT}/VtonaxAR/src/main/cpp/Thirdparty/DBoW2/DBoW2/BowVector.h
-    ${REPO_ROOT}/VtonaxAR/src/main/cpp/Thirdparty/DBoW2/DBoW2/FORB.h
-    ${REPO_ROOT}/VtonaxAR/src/main/cpp/Thirdparty/DBoW2/DBoW2/FClass.h
-    ${REPO_ROOT}/VtonaxAR/src/main/cpp/Thirdparty/DBoW2/DBoW2/FeatureVector.h
-    ${REPO_ROOT}/VtonaxAR/src/main/cpp/Thirdparty/DBoW2/DBoW2/ScoringObject.h
-    ${REPO_ROOT}/VtonaxAR/src/main/cpp/Thirdparty/DBoW2/DBoW2/TemplatedVocabulary.h
-    ${REPO_ROOT}/VtonaxAR/src/main/cpp/Thirdparty/DBoW2/DUtils/Random.h
-    ${REPO_ROOT}/VtonaxAR/src/main/cpp/Thirdparty/DBoW2/DBoW2/BowVector.cpp
-    ${REPO_ROOT}/VtonaxAR/src/main/cpp/Thirdparty/DBoW2/DBoW2/FORB.cpp
-    ${REPO_ROOT}/VtonaxAR/src/main/cpp/Thirdparty/DBoW2/DBoW2/FeatureVector.cpp
-    ${REPO_ROOT}/VtonaxAR/src/main/cpp/Thirdparty/DBoW2/DBoW2/ScoringObject.cpp
-    ${REPO_ROOT}/VtonaxAR/src/main/cpp/Thirdparty/DBoW2/DUtils/Random.cpp
+    # DBoW2 组件已移除，改用 HBST
     
     # 底层通用实用组件
-    ${REPO_ROOT}/VtonaxAR/src/main/cpp/EmbeddedResources.cpp
     ${REPO_ROOT}/VtonaxAR/src/main/cpp/UIUtils.cpp
     ${REPO_ROOT}/VtonaxAR/src/main/cpp/Plane.cpp
     ${REPO_ROOT}/VtonaxAR/src/main/cpp/Matrix.cpp

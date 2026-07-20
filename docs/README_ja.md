@@ -92,6 +92,11 @@ keywords: {Visualization;Simultaneous localization and mapping;Cameras;Real-time
 - [ ] SLAM周波数のダウンサンプリングと適応ノイズ処理。
 - [ ] 精密なセンサーチェッキングロジック。
 
+## ソースコードを取得
+```
+git clone --recursive https://github.com/Olsc/Android_ORB-SLAM2s.git
+```
+
 ## 謝辞
 
 このプロジェクトは、以下の優れたオープンソースライブラリに基づいて構築されています:

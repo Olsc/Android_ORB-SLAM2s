@@ -13,10 +13,58 @@ else()
 endif()
 
 #--------------------------------------------------- OpenCV 构建 ---------------------------------------------------#
-# 使用 TEMP/opencv 的纯 C/C++ 源码构建，替代旧的 libopencv_java4.so + OpenCVLibrary
-set(OPENCV_SRC_DIR "${CMAKE_SOURCE_DIR}/src/main/cpp/opencv_src")
+# 使用官方 OpenCV 源码库，作为子库构建，并激活 NEON/OpenMP 硬件加速
+set(OPENCV_SRC_DIR "${CMAKE_SOURCE_DIR}/src/main/cpp/Thirdparty/opencv")
+
+# 强制开启 C++ 编译器全局优化参数 (O3) 和 LTO (Link Time Optimization)
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -flto=thin" CACHE STRING "" FORCE)
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -DNDEBUG -flto=thin" CACHE STRING "" FORCE)
+set(CMAKE_CXX_FLAGS_DEBUG "-O2 -g" CACHE STRING "" FORCE)
+set(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG -flto=thin" CACHE STRING "" FORCE)
+set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O3 -DNDEBUG -flto=thin" CACHE STRING "" FORCE)
+set(CMAKE_C_FLAGS_DEBUG "-O2 -g" CACHE STRING "" FORCE)
+
+# 强制设置编译参数以排除非必要模块与测试，缩短编译时间
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
+set(BUILD_LIST "core,imgproc,features2d,flann,calib3d" CACHE STRING "List of modules to build" FORCE)
+set(BUILD_opencv_apps OFF CACHE BOOL "Build apps" FORCE)
+set(BUILD_opencv_js OFF CACHE BOOL "Build js" FORCE)
+set(BUILD_ANDROID_PROJECTS OFF CACHE BOOL "Build Android projects" FORCE)
+set(BUILD_ANDROID_EXAMPLES OFF CACHE BOOL "Build Android examples" FORCE)
+set(BUILD_DOCS OFF CACHE BOOL "Build docs" FORCE)
+set(BUILD_EXAMPLES OFF CACHE BOOL "Build examples" FORCE)
+set(BUILD_TESTS OFF CACHE BOOL "Build tests" FORCE)
+set(BUILD_PERF_TESTS OFF CACHE BOOL "Build perf tests" FORCE)
+set(BUILD_JAVA OFF CACHE BOOL "Build Java wrapper" FORCE)
+set(BUILD_FAT_JAVA_LIB OFF CACHE BOOL "Build fat Java library" FORCE)
+set(BUILD_KOTLIN OFF CACHE BOOL "Build Kotlin wrapper" FORCE)
+set(BUILD_OBJC OFF CACHE BOOL "Build ObjC wrapper" FORCE)
+set(OPENCV_ENABLE_NONFREE OFF CACHE BOOL "Enable non-free" FORCE)
+set(WITH_CUDA OFF CACHE BOOL "With CUDA" FORCE)
+set(WITH_OPENCL OFF CACHE BOOL "With OpenCL" FORCE)
+set(WITH_IPP OFF CACHE BOOL "With IPP" FORCE)
+set(WITH_TBB OFF CACHE BOOL "With TBB" FORCE)
+set(WITH_OPENMP OFF CACHE BOOL "With OpenMP" FORCE)
+set(WITH_EIGEN ON CACHE BOOL "With Eigen" FORCE)
+set(WITH_PNG OFF CACHE BOOL "With PNG" FORCE)
+set(WITH_JPEG OFF CACHE BOOL "With JPEG" FORCE)
+set(WITH_TIFF OFF CACHE BOOL "With TIFF" FORCE)
+set(WITH_WEBP OFF CACHE BOOL "With WEBP" FORCE)
+set(WITH_JASPER OFF CACHE BOOL "With Jasper" FORCE)
+set(WITH_OPENEXR OFF CACHE BOOL "With OpenEXR" FORCE)
+set(WITH_ITT OFF CACHE BOOL "With ITT" FORCE)
+set(WITH_PROTOBUF OFF CACHE BOOL "With Protobuf" FORCE)
+set(WITH_QUIRC OFF CACHE BOOL "With Quirc" FORCE)
+set(WITH_CAROTENE ON CACHE BOOL "With Carotene" FORCE)
+
 include_directories(${OPENCV_SRC_DIR}/include)
 include_directories(${OPENCV_SRC_DIR}/modules/core/include)
+include_directories(${OPENCV_SRC_DIR}/modules/imgproc/include)
+include_directories(${OPENCV_SRC_DIR}/modules/features2d/include)
+include_directories(${OPENCV_SRC_DIR}/modules/flann/include)
+include_directories(${OPENCV_SRC_DIR}/modules/calib3d/include)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
 add_subdirectory(${OPENCV_SRC_DIR} opencv_build)
 
 
@@ -203,17 +251,11 @@ function(embed_resource input_file symbol_base output_obj)
     )
 endfunction()
 
-# 嵌入资源文件
-set(EMBEDDED_OBJS
-    ${EMBEDDED_DIR}/ORB_LUT.o
-)
-
-# 使用符号基础名称，函数会生成 _binary_<symbol_base>_start/end 符号
-# 这些符号名称必须与 EmbeddedResources.cpp 中声明的符号匹配
-embed_resource(${RESOURCE_DIR}/ORB_LUT.bin ORB_LUT_bin ${EMBEDDED_DIR}/ORB_LUT.o)
+# 嵌入资源文件 (已清理，采用内存预生成)
+set(EMBEDDED_OBJS)
 
 # 创建自定义目标以确保在链接前生成所有对象文件
-add_custom_target(generate_embedded_resources DEPENDS ${EMBEDDED_OBJS})
+add_custom_target(generate_embedded_resources DEPENDS "${EMBEDDED_OBJS}")
 
 
 # ========== 整合所有组件到一个 SO：libVtonaxAR_Engine.so ==========
@@ -255,23 +297,13 @@ add_library(VtonaxAR_Engine SHARED
         src/main/cpp/src/Sim3Solver.cc
         src/main/cpp/src/Initializer.cc
         
-        # DBoW2 组件移除，使用 HBST
-
-        src/main/cpp/EmbeddedResources.cpp
-        
         # JNI 接口层
         src/main/cpp/native-lib.cpp
         src/main/cpp/UIUtils.cpp
         src/main/cpp/Plane.cpp
         src/main/cpp/Matrix.cpp
         src/main/cpp/bridge/OpenCVBridge.cpp
-        src/main/cpp/bridge/opencv_stubs.cpp
 
-
-        # 6DoF 传感融合功能已移除
-        
-        # 嵌入资源
-        ${EMBEDDED_OBJS}
         )
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -331,7 +363,7 @@ if(OpenMP_CXX_FOUND)
 endif()
 
 # ========== Vtonax 性能分析器 ==========
-set(VTONAX_DEVELOP_MODE OFF) # <--- 修改这里：ON 开启，OFF 关闭
+set(VTONAX_DEVELOP_MODE ON) # <--- 修改这里：ON 开启，OFF 关闭
 
 message(STATUS "Vtonax 分析器状态: ${VTONAX_DEVELOP_MODE}")
 

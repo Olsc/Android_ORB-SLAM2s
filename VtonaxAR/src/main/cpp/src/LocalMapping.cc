@@ -712,8 +712,16 @@ void LocalMapping::KeyFrameCulling()
     // 检查冗余关键帧：超过 REDUNDANCY_THRESHOLD 的地图点被≥3个其他KF观测则视为冗余
     vector<KeyFrame*> vpLocalKeyFrames = mpCurrentKeyFrame->GetVectorCovisibleKeyFrames();
 
+    // 每次最多处理 KEYFRAME_CULLING_MAX_KFS 个关键帧，防止单次耗时过久阻塞跟踪线程
+    // 剩余关键帧将在下一次 KeyFrameCulling 调用中处理
+    const int KEYFRAME_CULLING_MAX_KFS = 5;
+    int nProcessed = 0;
+
     for(vector<KeyFrame*>::iterator vit=vpLocalKeyFrames.begin(), vend=vpLocalKeyFrames.end(); vit!=vend; vit++)
     {
+        if(++nProcessed > KEYFRAME_CULLING_MAX_KFS)
+            break;
+
         // 每次循环检查是否被中断（Reset/Stop请求），防止长时间阻塞
         if(mbAbortBA)
             break;
@@ -779,7 +787,19 @@ void LocalMapping::ResetIfRequested()
         mlNewKeyFrames.clear();
         mlpRecentAddedMapPoints.clear();
         mbResetRequested=false;
+        {
+            unique_lock<mutex> completeLock(mMutexResetComplete);
+            mbResetComplete = true;
+        }
+        mCvResetComplete.notify_one();
     }
+}
+
+void LocalMapping::WaitForResetComplete()
+{
+    unique_lock<mutex> lock(mMutexResetComplete);
+    mCvResetComplete.wait(lock, [this]{ return mbResetComplete; });
+    mbResetComplete = false;
 }
 
 void LocalMapping::RequestFinish()

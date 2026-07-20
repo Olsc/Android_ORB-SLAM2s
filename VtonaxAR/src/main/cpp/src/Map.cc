@@ -65,31 +65,26 @@ void Map::AddMapPoint(MapPoint *pMP)
     mspMapPoints.insert(pMP);
 }
 
-void Map::EraseMapPoint(MapPoint *pMP)
+void Map::EraseMapPoint(MapPoint *pMP, bool bDelete)
 {
     unique_lock<mutex> lock(mMutexMap);
-    // if(pMP){
-    // }
     mspMapPoints.erase(pMP);
-    
-    // 将废弃的 MapPoint 放入回收站，等待 Map::clear() 统一释放
-    mspMapPointsTrash.insert(pMP);
-    
-    // 不要立即删除，因为后台线程或其他关键帧可能持有引用
-    // delete pMP;
 
+    if (bDelete) {
+        // 将废弃的 MapPoint 放入回收站，等待 Map::clear() 统一释放
+        mspMapPointsTrash.insert(pMP);
+    }
 }
 
-void Map::EraseKeyFrame(KeyFrame *pKF)
+void Map::EraseKeyFrame(KeyFrame *pKF, bool bDelete)
 {
     unique_lock<mutex> lock(mMutexMap);
     mspKeyFrames.erase(pKF);
 
-    // 将废弃的 KeyFrame 放入回收站，等待 Map::clear() 统一释放
-    mspKeyFramesTrash.insert(pKF);
-
-    // 不要立即删除
-    // delete pKF;
+    if (bDelete) {
+        // 将废弃的 KeyFrame 放入回收站，等待 Map::clear() 统一释放
+        mspKeyFramesTrash.insert(pKF);
+    }
 }
 
 void Map::SetReferenceMapPoints(const vector<MapPoint *> &vpMPs)
@@ -156,8 +151,7 @@ void Map::clear()
 
     {
         unique_lock<mutex> lock(mMutexMap);
-        
-        // 使用交换(swap)而非逐个拷贝，时间复杂度 O(1)
+
         mspMapPoints.swap(spMP);
         mspKeyFrames.swap(spKF);
         mspMapPointsTrash.swap(spMPTrash);
@@ -194,3 +188,4 @@ long unsigned int ORB_SLAM2::Map::GetLoadedMapMPCount()
     }
     return count;
 }
+

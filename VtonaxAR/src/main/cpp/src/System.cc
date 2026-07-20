@@ -39,7 +39,7 @@
 #include "KeyFrame.h"
 #include "MapPoint.h"
 #include "Config.h"
-#include "EmbeddedResources.h"
+#include "ORBextractor.h"
 #include <fstream>
 #include <thread>
 #include <chrono>
@@ -56,7 +56,7 @@ System::System(const std::string &strSettingsFile, const eSensor sensor):mSensor
         mbDeactivateLocalizationMode(false)
 {
     {
-        cv::setNumThreads(1);
+        cv::setNumThreads(0);
     }
 
     // 输出欢迎消息-此处虽注释掉但要保留！
@@ -66,17 +66,8 @@ System::System(const std::string &strSettingsFile, const eSensor sensor):mSensor
         // "This is free software, and you are welcome to redistribute it" << std::endl <<
         // "under certain conditions. See LICENSE.txt." << std::endl << std::endl;
 
-    // 加载 ORB LUT (优先尝试从嵌入资源加载)
-    {
-        const unsigned char* lutData = nullptr;
-        size_t lutSize = 0;
-        if(EmbeddedResources::Get("ORB_LUT.bin", lutData, lutSize)) {
-            LOGD("正在从嵌入资源加载 ORB LUT (大小: %zu)", lutSize);
-            ORBextractor::LoadLUT(lutData, lutSize);
-        } else {
-            LOGD("警告: 未找到嵌入的 ORB LUT，将回退到运行时计算");
-        }
-    }
+    // 初始化 ORB 查找表 (自动在内存中生成)
+    ORBextractor::InitLUT();
 
     //创建关键帧数据库
     mpKeyFrameDatabase = new KeyFrameDatabase();
@@ -360,6 +351,21 @@ void System::CreateNewMap()
     }
 
     // ===== 5. 创建新 Map 并切换 =====
+    std::vector<MapPoint*> savedLoadedMPs;
+    {
+        std::vector<MapPoint*> allMPs = mpMap->GetAllMapPoints();
+        for(MapPoint* p : allMPs) {
+            if(p && !p->isBad() && p->mbFromLoadedMap) {
+                savedLoadedMPs.push_back(p);
+                mpMap->EraseMapPoint(p, false); // 仅从旧地图集合移除，不 delete 对象
+            }
+        }
+        if(!savedLoadedMPs.empty()) {
+            LOGD("System::CreateNewMap 从旧地图移出 %d 个已加载地图点（待迁移到新地图）",
+                 (int)savedLoadedMPs.size());
+        }
+    }
+
     // 限制子地图总数，超出时删除最旧的地图（id=0 的初始地图不删）
     if ((int)mvpMaps.size() >= MAX_SUBMAP_COUNT) {
         // 找出最旧的非 id=0 地图并释放
@@ -384,6 +390,15 @@ void System::CreateNewMap()
 
     SwitchToMap(pNewMap);
 
+    // 将已加载地图点迁移到新地图，使后台重定位线程在新地图中仍可访问
+    if(!savedLoadedMPs.empty()) {
+        for(MapPoint* p : savedLoadedMPs) {
+            pNewMap->AddMapPoint(p);
+        }
+        LOGD("System::CreateNewMap 已将 %d 个已加载地图点迁移到新地图 ID=%lu",
+             (int)savedLoadedMPs.size(), pNewMap->mnId);
+    }
+
     // ===== 6. 轻量重置跟踪运行时状态 =====
     // PrepareForNewMap 代替 Reset()：不阻塞 spin、不清旧 Map、不停重定位线程，全程 < 1 ms
     if (mpTracker) {
@@ -398,6 +413,13 @@ void System::CreateNewMap()
     // ===== 8. 恢复 LocalMapping =====
     if (mpLocalMapper) {
         mpLocalMapper->SetAcceptKeyFrames(true);
+    }
+
+    // 若迁移了已加载点，重建重定位缓存，使新地图中可立即匹配
+    if(!savedLoadedMPs.empty() && mpTracker) {
+        mpTracker->BuildLoadedRefCache();
+        LOGD("System::CreateNewMap 已重建重定位缓存（%d 个已加载点），新地图可立即匹配",
+             (int)savedLoadedMPs.size());
     }
 
     LOGD("System::CreateNewMap 完成");

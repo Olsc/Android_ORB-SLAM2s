@@ -69,7 +69,6 @@
  */
 
 #include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <vector>
@@ -97,45 +96,38 @@ struct DescriptorOffset {
 static DescriptorOffset descriptorOffsetLUT[360][512];
 static bool bDescriptorLUTInit = false;
 
-// 从内存缓冲区加载 LUT
-void ORBextractor::LoadLUT(const unsigned char* buffer, size_t size) {
-    if(bDescriptorLUTInit) return;
+static inline float Atan2Approx(float y, float x)
+{
+    if (x == 0.0f && y == 0.0f) return 0.0f;
     
-    // 检查大小: 360 * 512 * 8 bytes = 1474560
-    if (size != sizeof(descriptorOffsetLUT)) {
-        return; 
-    }
+    float absX = std::abs(x);
+    float absY = std::abs(y);
+    float angle = 0.0f;
     
-    memcpy(descriptorOffsetLUT, buffer, size);
-    bDescriptorLUTInit = true;
-}
-
-
-
-// 初始化描述子偏移量查找表 (如果未加载，则计算)
-static void InitDescriptorLUT(const Point* pattern) {
-    if(bDescriptorLUTInit) return;
-    
-    LOGD("InitDescriptorLUT: 未检测到预加载 LUT，开始运行时计算...");
-    // 对每个角度 (0-359度)
-    for(int angle = 0; angle < 360; angle++) {
-        const float rad = angle * (float)CV_PI / 180.0f;
-        const float a = cos(rad);
-        const float b = sin(rad);
-        
-        // 对每个采样点 (512个点)
-        for(int i = 0; i < 512; i++) {
-            const float x = (float)pattern[i].x;
-            const float y = (float)pattern[i].y;
-            
-            // 预计算旋转后的坐标偏移
-            // 原始公式: x' = x*a - y*b, y' = x*b + y*a
-            descriptorOffsetLUT[angle][i].dy = (int)(x * b + y * a + 0.5f);
-            descriptorOffsetLUT[angle][i].dx = (int)(x * a - y * b + 0.5f);
+    if (absX >= absY) {
+        float r = absY / absX;
+        angle = r * (45.0f - (r - 1.0f) * (15.637f + 3.961f * r));
+        if (x < 0.0f) {
+            angle = 180.0f - angle;
+        }
+        if (y < 0.0f) {
+            angle = (y != 0.0f || x < 0.0f) ? (360.0f - angle) : 180.0f;
+        }
+    } else {
+        float r = absX / absY;
+        angle = 90.0f - r * (45.0f - (r - 1.0f) * (15.637f + 3.961f * r));
+        if (x < 0.0f) {
+            angle = 180.0f - angle;
+        }
+        if (y < 0.0f) {
+            angle = 360.0f - angle;
         }
     }
     
-    bDescriptorLUTInit = true;
+    if (angle < 0.0f) angle += 360.0f;
+    else if (angle >= 360.0f) angle -= 360.0f;
+    
+    return angle;
 }
 
 static float IC_Angle(const Mat& image, Point2f pt,  const vector<int> & u_max)
@@ -199,7 +191,7 @@ static float IC_Angle(const Mat& image, Point2f pt,  const vector<int> & u_max)
         m_01 += suffix_m01;
     }
 
-    return fastAtan2((float)m_01, (float)m_10);
+    return Atan2Approx((float)m_01, (float)m_10);
 }
 
 
@@ -512,6 +504,35 @@ static int bit_pattern_31_[256*4] =
     -1,-6, 0,-11/*mean (0.127148), correlation (0.547401)*/
 };
 
+// 初始化描述子偏移量查找表 (内存预生成)
+void ORBextractor::InitLUT() {
+    if(bDescriptorLUTInit) return;
+    
+    LOGD("InitLUT: 开始在内存中生成 ORB LUT...");
+    const Point* pattern = (const Point*)bit_pattern_31_;
+    
+    // 对每个角度 (0-359度)
+    for(int angle = 0; angle < 360; angle++) {
+        const float rad = angle * (float)CV_PI / 180.0f;
+        const float a = cos(rad);
+        const float b = sin(rad);
+        
+        // 对每个采样点 (512个点)
+        for(int i = 0; i < 512; i++) {
+            const float x = (float)pattern[i].x;
+            const float y = (float)pattern[i].y;
+            
+            // 预计算旋转后的坐标偏移
+            // 原始公式: x' = x*a - y*b, y' = x*b + y*a
+            descriptorOffsetLUT[angle][i].dy = (int)(x * b + y * a + 0.5f);
+            descriptorOffsetLUT[angle][i].dx = (int)(x * a - y * b + 0.5f);
+        }
+    }
+    
+    bDescriptorLUTInit = true;
+    LOGD("InitLUT: ORB LUT 生成完毕。");
+}
+
 ORBextractor::ORBextractor(int _nfeatures, float _scaleFactor, int _nlevels,
          int _iniThFAST, int _minThFAST):
     nfeatures(_nfeatures), scaleFactor(_scaleFactor), nlevels(_nlevels),
@@ -555,8 +576,8 @@ ORBextractor::ORBextractor(int _nfeatures, float _scaleFactor, int _nlevels,
     const Point* pattern0 = (const Point*)bit_pattern_31_;
     std::copy(pattern0, pattern0 + npoints, std::back_inserter(pattern));
 
-    // 初始化描述子偏移量查找表 (如果 LoadLUT 已调用则跳过，否则计算)
-    InitDescriptorLUT(pattern0);
+    // 初始化描述子偏移量查找表 (如果尚未初始化，则计算)
+    InitLUT();
 
     // 用于计算方向
     // 预先计算圆形补丁中每一行的结束位置
@@ -589,33 +610,34 @@ static void computeOrientation(const Mat& image, vector<KeyPoint>& keypoints, co
 
 void ExtractorNode::DivideNode(ExtractorNode &n1, ExtractorNode &n2, ExtractorNode &n3, ExtractorNode &n4)
 {
-    const int halfX = ceil(static_cast<float>(UR.x-UL.x)/2);
-    const int halfY = ceil(static_cast<float>(BR.y-UL.y)/2);
+    const int halfX = (UR.x - UL.x + 1) >> 1;
+    const int halfY = (BR.y - UL.y + 1) >> 1;
 
     // 定义子节点的边界
     n1.UL = UL;
     n1.UR = cv::Point2i(UL.x+halfX,UL.y);
     n1.BL = cv::Point2i(UL.x,UL.y+halfY);
     n1.BR = cv::Point2i(UL.x+halfX,UL.y+halfY);
-    n1.vKeys.reserve(vKeys.size());
+    const int nReserve = (vKeys.size() + 3) >> 2;
+    n1.vKeys.reserve(nReserve);
 
     n2.UL = n1.UR;
     n2.UR = UR;
     n2.BL = n1.BR;
     n2.BR = cv::Point2i(UR.x,UL.y+halfY);
-    n2.vKeys.reserve(vKeys.size());
+    n2.vKeys.reserve(nReserve);
 
     n3.UL = n1.BL;
     n3.UR = n1.BR;
     n3.BL = BL;
     n3.BR = cv::Point2i(n1.BR.x,BL.y);
-    n3.vKeys.reserve(vKeys.size());
+    n3.vKeys.reserve(nReserve);
 
     n4.UL = n3.UR;
     n4.UR = n2.BR;
     n4.BL = n3.BR;
     n4.BR = BR;
-    n4.vKeys.reserve(vKeys.size());
+    n4.vKeys.reserve(nReserve);
 
     // 将点关联到子节点
     for(size_t i=0;i<vKeys.size();i++)
@@ -733,41 +755,41 @@ vector<cv::KeyPoint> ORBextractor::DistributeOctTree(const vector<cv::KeyPoint>&
                 // 如果子节点包含点则添加
                 if(n1.vKeys.size()>0)
                 {
-                    lNodes.push_front(n1);                    
-                    if(n1.vKeys.size()>1)
+                    lNodes.push_front(std::move(n1));                    
+                    if(lNodes.front().vKeys.size()>1)
                     {
                         nToExpand++;
-                        vSizeAndPointerToNode.push_back(make_pair(n1.vKeys.size(),&lNodes.front()));
+                        vSizeAndPointerToNode.push_back(make_pair(lNodes.front().vKeys.size(),&lNodes.front()));
                         lNodes.front().lit = lNodes.begin();
                     }
                 }
                 if(n2.vKeys.size()>0)
                 {
-                    lNodes.push_front(n2);
-                    if(n2.vKeys.size()>1)
+                    lNodes.push_front(std::move(n2));
+                    if(lNodes.front().vKeys.size()>1)
                     {
                         nToExpand++;
-                        vSizeAndPointerToNode.push_back(make_pair(n2.vKeys.size(),&lNodes.front()));
+                        vSizeAndPointerToNode.push_back(make_pair(lNodes.front().vKeys.size(),&lNodes.front()));
                         lNodes.front().lit = lNodes.begin();
                     }
                 }
                 if(n3.vKeys.size()>0)
                 {
-                    lNodes.push_front(n3);
-                    if(n3.vKeys.size()>1)
+                    lNodes.push_front(std::move(n3));
+                    if(lNodes.front().vKeys.size()>1)
                     {
                         nToExpand++;
-                        vSizeAndPointerToNode.push_back(make_pair(n3.vKeys.size(),&lNodes.front()));
+                        vSizeAndPointerToNode.push_back(make_pair(lNodes.front().vKeys.size(),&lNodes.front()));
                         lNodes.front().lit = lNodes.begin();
                     }
                 }
                 if(n4.vKeys.size()>0)
                 {
-                    lNodes.push_front(n4);
-                    if(n4.vKeys.size()>1)
+                    lNodes.push_front(std::move(n4));
+                    if(lNodes.front().vKeys.size()>1)
                     {
                         nToExpand++;
-                        vSizeAndPointerToNode.push_back(make_pair(n4.vKeys.size(),&lNodes.front()));
+                        vSizeAndPointerToNode.push_back(make_pair(lNodes.front().vKeys.size(),&lNodes.front()));
                         lNodes.front().lit = lNodes.begin();
                     }
                 }
@@ -802,37 +824,37 @@ vector<cv::KeyPoint> ORBextractor::DistributeOctTree(const vector<cv::KeyPoint>&
                     // 如果子节点包含点则添加
                     if(n1.vKeys.size()>0)
                     {
-                        lNodes.push_front(n1);
-                        if(n1.vKeys.size()>1)
+                        lNodes.push_front(std::move(n1));
+                        if(lNodes.front().vKeys.size()>1)
                         {
-                            vSizeAndPointerToNode.push_back(make_pair(n1.vKeys.size(),&lNodes.front()));
+                            vSizeAndPointerToNode.push_back(make_pair(lNodes.front().vKeys.size(),&lNodes.front()));
                             lNodes.front().lit = lNodes.begin();
                         }
                     }
                     if(n2.vKeys.size()>0)
                     {
-                        lNodes.push_front(n2);
-                        if(n2.vKeys.size()>1)
+                        lNodes.push_front(std::move(n2));
+                        if(lNodes.front().vKeys.size()>1)
                         {
-                            vSizeAndPointerToNode.push_back(make_pair(n2.vKeys.size(),&lNodes.front()));
+                            vSizeAndPointerToNode.push_back(make_pair(lNodes.front().vKeys.size(),&lNodes.front()));
                             lNodes.front().lit = lNodes.begin();
                         }
                     }
                     if(n3.vKeys.size()>0)
                     {
-                        lNodes.push_front(n3);
-                        if(n3.vKeys.size()>1)
+                        lNodes.push_front(std::move(n3));
+                        if(lNodes.front().vKeys.size()>1)
                         {
-                            vSizeAndPointerToNode.push_back(make_pair(n3.vKeys.size(),&lNodes.front()));
+                            vSizeAndPointerToNode.push_back(make_pair(lNodes.front().vKeys.size(),&lNodes.front()));
                             lNodes.front().lit = lNodes.begin();
                         }
                     }
                     if(n4.vKeys.size()>0)
                     {
-                        lNodes.push_front(n4);
-                        if(n4.vKeys.size()>1)
+                        lNodes.push_front(std::move(n4));
+                        if(lNodes.front().vKeys.size()>1)
                         {
-                            vSizeAndPointerToNode.push_back(make_pair(n4.vKeys.size(),&lNodes.front()));
+                            vSizeAndPointerToNode.push_back(make_pair(lNodes.front().vKeys.size(),&lNodes.front()));
                             lNodes.front().lit = lNodes.begin();
                         }
                     }
@@ -896,42 +918,74 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
         const int wCell = ceil(width/nCols);
         const int hCell = ceil(height/nRows);
 
-        for(int i=0; i<nRows; i++)
+        // 1. 全图检测所有可能的候选点 (使用 minThFAST)
+        vector<cv::KeyPoint> vAllKeys;
+        FAST(mvImagePyramid[level], vAllKeys, minThFAST, true);
+
+        // 2. 将候选点按网格分箱
+        vector<vector<cv::KeyPoint>> grid(nRows * nCols);
+        for(size_t i = 0; i < vAllKeys.size(); ++i)
         {
-            const float iniY =minBorderY+i*hCell;
-            float maxY = iniY+hCell+6;
-
-            if(iniY>=maxBorderY-3)
+            const cv::KeyPoint& kp = vAllKeys[i];
+            const float x_glob = kp.pt.x;
+            const float y_glob = kp.pt.y;
+            // 过滤边界之外的点
+            if(x_glob < minBorderX || x_glob >= maxBorderX || y_glob < minBorderY || y_glob >= maxBorderY)
                 continue;
-            if(maxY>maxBorderY)
-                maxY = maxBorderY;
 
-            for(int j=0; j<nCols; j++)
+            const float x_rel = x_glob - minBorderX;
+            const float y_rel = y_glob - minBorderY;
+            int c = (int)(x_rel / W);
+            int r = (int)(y_rel / hCell);
+            if(c < 0) c = 0; else if(c >= nCols) c = nCols - 1;
+            if(r < 0) r = 0; else if(r >= nRows) r = nRows - 1;
+
+            grid[r * nCols + c].push_back(kp);
+        }
+
+        // 3. 逐个网格进行二段阈值过滤并存入 vToDistributeKeys
+        for(int r = 0; r < nRows; ++r)
+        {
+            for(int c = 0; c < nCols; ++c)
             {
-                const float iniX =minBorderX+j*wCell;
-                float maxX = iniX+wCell+6;
-                if(iniX>=maxBorderX-6)
+                const vector<cv::KeyPoint>& cellKeys = grid[r * nCols + c];
+                if(cellKeys.empty())
                     continue;
-                if(maxX>maxBorderX)
-                    maxX = maxBorderX;
 
-                vector<cv::KeyPoint> vKeysCell;
-                FAST(mvImagePyramid[level].rowRange(iniY,maxY).colRange(iniX,maxX),
-                     vKeysCell,iniThFAST,true);
-
-                if(vKeysCell.empty())
+                // 检查该网格内是否有大于等于 iniThFAST 的强角点
+                bool hasStrong = false;
+                for(size_t k = 0; k < cellKeys.size(); ++k)
                 {
-                    FAST(mvImagePyramid[level].rowRange(iniY,maxY).colRange(iniX,maxX),
-                         vKeysCell,minThFAST,true);
+                    if(cellKeys[k].response >= iniThFAST)
+                    {
+                        hasStrong = true;
+                        break;
+                    }
                 }
 
-                if(!vKeysCell.empty())
+                // 如果有强点，则只保留强点并做相对坐标变换
+                if(hasStrong)
                 {
-                    for(vector<cv::KeyPoint>::iterator vit=vKeysCell.begin(); vit!=vKeysCell.end();vit++)
+                    for(size_t k = 0; k < cellKeys.size(); ++k)
                     {
-                        (*vit).pt.x+=j*wCell;
-                        (*vit).pt.y+=i*hCell;
-                        vToDistributeKeys.push_back(*vit);
+                        if(cellKeys[k].response >= iniThFAST)
+                        {
+                            cv::KeyPoint kp = cellKeys[k];
+                            kp.pt.x -= minBorderX;
+                            kp.pt.y -= minBorderY;
+                            vToDistributeKeys.push_back(kp);
+                        }
+                    }
+                }
+                else
+                {
+                    // 否则保留所有符合 minThFAST 的点
+                    for(size_t k = 0; k < cellKeys.size(); ++k)
+                    {
+                        cv::KeyPoint kp = cellKeys[k];
+                        kp.pt.x -= minBorderX;
+                        kp.pt.y -= minBorderY;
+                        vToDistributeKeys.push_back(kp);
                     }
                 }
             }

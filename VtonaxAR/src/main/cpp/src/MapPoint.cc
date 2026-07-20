@@ -42,7 +42,7 @@ namespace ORB_SLAM2
 {
 
 long unsigned int MapPoint::nNextId=0;
-std::mutex MapPoint::mGlobalMutex;
+
 
 MapPoint::MapPoint(const cv::Mat &Pos, KeyFrame *pRefKF, Map* pMap):
     mnFirstKFid(pRefKF->mnId), mnFirstFrame(pRefKF->mnFrameId), nObs(0), mnTrackReferenceForFrame(0),
@@ -111,7 +111,6 @@ MapPoint::MapPoint(const cv::Mat &Pos, Map* pMap):
 
 void MapPoint::SetWorldPos(const cv::Mat &Pos)
 {
-    std::unique_lock<std::mutex> lock2(mGlobalMutex);
     std::unique_lock<std::mutex> lock(mMutexPos);
     Pos.copyTo(mWorldPos);
 }

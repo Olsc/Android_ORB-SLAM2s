@@ -65,24 +65,13 @@ public class NativeHelper {
      * @return 最后的追踪结果
      */
     public int processCameraFrame(long matAddrGr, long matAddrRgba) {
-        // Log.d("JNI_", "processCameraFrame: new image");  // 高频日志已注释，避免刷屏
         nativeProcessFrameMat(matAddrGr, matAddrRgba, statusBuf);
         lastTrackingResult = statusBuf[0];
+        boolean shouldDraw = (statusBuf[1] != 0);
 
-        // 如果SLAM追踪成功，更新视图矩阵
-        if (lastTrackingResult == GlobalConstant.SLAM_ON) {
-            getV(viewMatrix);
-            for (OnMVPUpdatedCallback onMVPUpdatedCallback : onMVPUpdatedCallbacks) {
-                onMVPUpdatedCallback.onUpdateViewMatrix(viewMatrix);
-            }
+        for (OnMVPUpdatedCallback cb : onMVPUpdatedCallbacks) {
+            cb.setDraw(shouldDraw);
         }
-
-        //  直接从C++查询是否应该绘制AR对象（支持地图加载后的平面恢复）
-        for (OnMVPUpdatedCallback onMVPUpdatedCallback : onMVPUpdatedCallbacks) {
-            boolean shouldDraw = shouldDrawArObject();  // 直接查询C++状态
-            onMVPUpdatedCallback.setDraw(shouldDraw);
-        }
-
         return lastTrackingResult;
     }
 
@@ -94,33 +83,30 @@ public class NativeHelper {
         detect(statusBuf);
         planeDetectResult = statusBuf[1];
 
-        // 如果检测到平面，更新模型矩阵和投影矩阵
         if (planeDetectResult == GlobalConstant.PLANE_DETECTED) {
             planeDetected = true;
-            getM(modelMatrix);
-            getP(GlobalConstant.RESOLUTION_WIDTH, GlobalConstant.RESOLUTION_HEIGHT, projectionMatrix);
-
-            // 更新模型矩阵和投影矩阵
-            for (OnMVPUpdatedCallback onMVPUpdatedCallback : onMVPUpdatedCallbacks) {
-                onMVPUpdatedCallback.requestReset();
-                onMVPUpdatedCallback.onUpdateModelMatrix(modelMatrix);
-                onMVPUpdatedCallback.onUpdateProjectionMatrix(projectionMatrix);
+            nativeGetMVP(modelMatrix, viewMatrix, projectionMatrix,
+                         GlobalConstant.RESOLUTION_WIDTH, GlobalConstant.RESOLUTION_HEIGHT);
+            for (OnMVPUpdatedCallback cb : onMVPUpdatedCallbacks) {
+                cb.requestReset();
+                cb.onUpdateModelMatrix(modelMatrix);
+                cb.onUpdateProjectionMatrix(projectionMatrix);
             }
         } else {
             planeDetected = false;
         }
 
-        //  直接从C++查询是否应该绘制AR对象
-        for (OnMVPUpdatedCallback onMVPUpdatedCallback : onMVPUpdatedCallbacks) {
-            boolean shouldDraw = shouldDrawArObject();  // 直接查询C++状态
-            onMVPUpdatedCallback.setDraw(shouldDraw);
+        for (OnMVPUpdatedCallback cb : onMVPUpdatedCallbacks) {
+            cb.setDraw(planeDetected);
         }
-
         return planeDetectResult;
     }
 
-    // 本地方法：处理摄像头帧
+    // 本地方法：处理摄像头帧 (statusBuf=[tracking,shouldDraw,scaleBits])
     public native void nativeProcessFrameMat(long matAddrGr, long matAddrRgba, int[] statusBuf);
+
+    // 统一获取MVP（替代getM/getV/getP）
+    public native void nativeGetMVP(float[] M, float[] V, float[] P, int w, int h);
 
     // 本地方法：进行平面检测
     public native void detect(int[] statusBuf);
@@ -148,10 +134,6 @@ public class NativeHelper {
     public native int getCurrentMapId();
     public native int[] getMapStats();
 
-    // AR重定位模式控制（默认已启用）
-    public native void setFullMapDisplay(boolean enable);
-    public native boolean isFullMapDisplayEnabled();
-    
     // 点云显示控制（控制绿色和蓝色点云）
     public native void setPointCloudDisplay(boolean enable);
     public native boolean isPointCloudDisplayEnabled();
@@ -165,11 +147,7 @@ public class NativeHelper {
     public native float[] calculate3DofInsertionPoint(float[] rotationMatrix, int rotation, float distance);
     public native float[] compute3DofMVP(float[] rotationMatrix, int rotation, float ratio, float[] objectPos);
     
-    // AR对象管理（C++端控制）
-    public native boolean shouldDrawArObject();
-    public native void getArObjectModelMatrix(float[] matrix);
-    public native void getArObjectViewMatrix(float[] matrix);
-    public native void getArObjectProjectionMatrix(float[] matrix);
+    // AR对象缩放
     public native void updateArObjectScale(float scaleFactor);
     public native float getArObjectScale();
 
@@ -184,14 +162,8 @@ public class NativeHelper {
         android.widget.Toast.makeText(context, context.getString(R.string.hint_map_load_requested), android.widget.Toast.LENGTH_SHORT).show();
     }
 
-    // 本地方法：获取模型矩阵
-    public native void getM(float modelM[]);
-
-    // 本地方法：获取视图矩阵
+    // 视图矩阵 (WebServer使用)
     public native void getV(float viewM[]);
-
-    // 本地方法：获取投影矩阵
-    public native void getP(int imageWidth, int imageHeight, float projectionM[]);
 
     // 获取最后的追踪结果
     public int getLastTrackingResult() {

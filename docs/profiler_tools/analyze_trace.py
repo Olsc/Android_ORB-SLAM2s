@@ -6,6 +6,7 @@
 
 import json
 import sys
+import argparse
 from collections import defaultdict
 import statistics
 
@@ -17,7 +18,7 @@ def load_trace(path):
     print(f"加载了 {len(data)} 条 trace 事件")
     return data
 
-def analyze(events):
+def analyze(events, sort_by='total', limit=30):
     # 按线程分组
     threads = defaultdict(list)
     for ev in events:
@@ -64,23 +65,45 @@ def analyze(events):
 
     # 打印分析结果
     print("\n" + "="*80)
-    print("各函数耗时统计 (按总耗时降序)")
+    print(f"各函数耗时统计 (按 {sort_by} 降序, 前 {limit if limit != -1 else '所有'} 个)")
     print("="*80)
-    print(f"{'函数名':<55} {'调用次数':>8} {'平均(us)':>10} {'中位(us)':>10} {'最小(us)':>10} {'最大(us)':>10} {'总耗时(us)':>12}")
-    print("-"*80)
+    print(f"{'函数名':<55} {'调用次数':>8} {'平均(us)':>10} {'中位(us)':>10} {'最小(us)':>10} {'最大(us)':>10} {'总耗时(us)':>12} {'占比':>8}")
+    print("-"*120)
 
-    # 按总耗时排序
-    sorted_funcs = sorted(durations.items(), key=lambda x: sum(x[1]), reverse=True)
+    # 计算全部有效函数总耗时和
+    total_program_time = sum(sum(durs) for name, durs in durations.items())
 
+    # 根据 sort_by 排序
+    if sort_by == 'total':
+        sorted_funcs = sorted(durations.items(), key=lambda x: sum(x[1]), reverse=True)
+    elif sort_by == 'avg':
+        sorted_funcs = sorted(durations.items(), key=lambda x: statistics.mean(x[1]) if x[1] else 0, reverse=True)
+    elif sort_by == 'med':
+        sorted_funcs = sorted(durations.items(), key=lambda x: statistics.median(x[1]) if x[1] else 0, reverse=True)
+    elif sort_by == 'count':
+        sorted_funcs = sorted(durations.items(), key=lambda x: len(x[1]), reverse=True)
+    elif sort_by == 'max':
+        sorted_funcs = sorted(durations.items(), key=lambda x: max(x[1]) if x[1] else 0, reverse=True)
+    elif sort_by == 'min':
+        sorted_funcs = sorted(durations.items(), key=lambda x: min(x[1]) if x[1] else 0, reverse=True)
+    else:
+        sorted_funcs = sorted(durations.items(), key=lambda x: sum(x[1]), reverse=True)
+
+    shown_count = 0
     for name, durs in sorted_funcs:
-        if len(durs) < 2:
+        if len(durs) < 1:
             continue
         avg = statistics.mean(durs)
         med = statistics.median(durs)
         mn = min(durs)
         mx = max(durs)
         total = sum(durs)
-        print(f"{name:<55} {len(durs):>8} {avg:>10.1f} {med:>10.1f} {mn:>10.1f} {mx:>10.1f} {total:>12.1f}")
+        pct = (total / total_program_time * 100.0) if total_program_time > 0 else 0.0
+        print(f"{name:<55} {len(durs):>8} {avg:>10.1f} {med:>10.1f} {mn:>10.1f} {mx:>10.1f} {total:>12.1f} {pct:>7.1f}%")
+        
+        shown_count += 1
+        if limit != -1 and shown_count >= limit:
+            break
 
     # 分析关键路径
     print("\n" + "="*80)
@@ -412,11 +435,23 @@ def detect_deadlock(events):
 
 
 if __name__ == '__main__':
-    print(f"分析文件: {TRACE_FILE}")
+    parser = argparse.ArgumentParser(description="分析 profile_trace.json 中的 SLAM 各阶段耗时分布，找出性能瓶颈")
+    parser.add_argument("trace_file", nargs="?", default=TRACE_FILE, help="Trace JSON 文件路径 (默认: profile_trace.json)")
+    parser.add_argument("--sort", choices=["total", "avg", "med", "count", "max", "min"], default="total",
+                        help="排序方式: total (总耗时), avg (平均耗时), med (中位耗时), count (调用次数), max (最大耗时) (默认: total)")
+    parser.add_argument("--limit", type=int, default=30, help="显示前 N 个最耗时的函数 (默认: 30，设置为 -1 显示全部)")
+    args = parser.parse_args()
+
+    print(f"分析文件: {args.trace_file}")
     print("="*80)
 
-    events = load_trace(TRACE_FILE)
-    analyze(events)
+    try:
+        events = load_trace(args.trace_file)
+    except FileNotFoundError:
+        print(f"错误: 找不到文件 {args.trace_file}")
+        sys.exit(1)
+        
+    analyze(events, sort_by=args.sort, limit=args.limit)
     find_fps_problems(events)
     detect_deadlock(events)
 

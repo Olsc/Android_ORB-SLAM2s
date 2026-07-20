@@ -1,1 +1,0 @@
-// stub - no custom HAL

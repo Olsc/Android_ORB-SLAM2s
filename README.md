@@ -92,6 +92,11 @@ To ensure a smooth user experience, the system monitors exposure levels. When th
 - [ ] SLAM frequency downsampling and adaptive noise handling.
 - [ ] Refined sensor gating logic.
 
+## Pull Source Code
+```
+git clone --recursive https://github.com/Olsc/Android_ORB-SLAM2s.git
+```
+
 ## Acknowledgments
 
 This project is built upon the following excellent open-source libraries:

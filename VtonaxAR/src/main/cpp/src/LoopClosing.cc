@@ -640,7 +640,19 @@ void LoopClosing::ResetIfRequested()
         mlpLoopKeyFrameQueue.clear();
         mLastLoopKFid=0;
         mbResetRequested=false;
+        {
+            unique_lock<mutex> completeLock(mMutexResetComplete);
+            mbResetComplete = true;
+        }
+        mCvResetComplete.notify_one();
     }
+}
+
+void LoopClosing::WaitForResetComplete()
+{
+    unique_lock<mutex> lock(mMutexResetComplete);
+    mCvResetComplete.wait(lock, [this]{ return mbResetComplete; });
+    mbResetComplete = false;
 }
 
 void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)

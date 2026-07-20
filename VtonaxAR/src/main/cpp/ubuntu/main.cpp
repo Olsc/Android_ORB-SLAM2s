@@ -17,7 +17,6 @@
 #include "UIUtils.h"
 #include "Matrix.h"
 #include "include/Config.h"
-#include "EmbeddedResources.h"
 
 // 定义与 JNI 类似的全局状态变量，供 Ubuntu 桌面应用程序使用
 ORB_SLAM2::System* slamSys = nullptr;
@@ -84,7 +83,7 @@ int main(int argc, char** argv) {
 
     // 采用与 Android 相同的嵌入式资源模式加载 SLAM 系统
     std::cout << "[Ubuntu GUI] 正在从程序内嵌资源中解压并加载词汇表..." << std::endl;
-    slamSys = new ORB_SLAM2::System(":embedded:", "", ORB_SLAM2::System::MONOCULAR);
+    slamSys = new ORB_SLAM2::System("", ORB_SLAM2::System::MONOCULAR);
     std::cout << "[Ubuntu GUI] SLAM 引擎初始化成功，已就绪！" << std::endl;
 
     // 初始化 OpenCV 视频捕获组件
