@@ -733,25 +733,45 @@ void LocalMapping::KeyFrameCulling()
 
         int nObs = KEYFRAME_REDUNDANCY_OBS_THRESHOLD;
         const int thObs=nObs;
-        int nRedundantObservations=0;
-        int nMPs=0;
+
+        // 首先统计有效的 MapPoints 数量，以便在检测到足够多的非冗余观测后提前退出
+        int nMPs = 0;
         for(size_t i=0, iend=vpMapPoints.size(); i<iend; i++)
         {
             MapPoint* pMP = vpMapPoints[i];
-            if(pMP)
-            {
-                if(!pMP->isBad())
-                {
+            if(pMP && !pMP->isBad())
+                nMPs++;
+        }
 
-                    nMPs++;
-                    if(pMP->Observations()>thObs)
+        // 非冗余观测的最大允许数量。一旦非冗余观测数超过此上限，该帧绝无可能满足冗余标准
+        const int maxNonRedundant = nMPs * (1.0f - KEYFRAME_REDUNDANCY_THRESHOLD);
+
+        int nRedundantObservations=0;
+        int nNonRedundantObservations=0;
+        for(size_t i=0, iend=vpMapPoints.size(); i<iend; i++)
+        {
+            MapPoint* pMP = vpMapPoints[i];
+            if(pMP && !pMP->isBad())
+            {
+                bool bRedundant = false;
+                if(pMP->Observations()>thObs)
+                {
+                    const int &scaleLevel = pKF->mvKeysUn[i].octave;
+                    int nObs = pMP->GetRedundantObservationsCount(pKF, scaleLevel);
+                    if(nObs>=thObs)
                     {
-                        const int &scaleLevel = pKF->mvKeysUn[i].octave;
-                        int nObs = pMP->GetRedundantObservationsCount(pKF, scaleLevel);
-                        if(nObs>=thObs)
-                        {
-                            nRedundantObservations++;
-                        }
+                        nRedundantObservations++;
+                        bRedundant = true;
+                    }
+                }
+
+                if(!bRedundant)
+                {
+                    nNonRedundantObservations++;
+                    // 如果非冗余点数已超限，则可断定该关键帧非冗余，提前剪枝，避免后续大量锁开销
+                    if(nNonRedundantObservations > maxNonRedundant)
+                    {
+                        break;
                     }
                 }
             }
