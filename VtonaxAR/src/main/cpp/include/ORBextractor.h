@@ -100,6 +100,7 @@ public:
     std::vector<cv::Mat> mvImagePyramid;
     std::vector<cv::Mat> mvImagePyramidPadded;  // 带边界的临时 Mat，复用避免每帧每层堆分配
     std::vector<cv::Mat> mvBlurredPyramid;      // 模糊后的临时 Mat，复用避免每帧每层堆分配
+    std::vector<cv::Mat> mvBlurredPyramidPadded;// 模糊后带边界的临时 Mat，复用避免每帧每层堆分配
 
 protected:
 
