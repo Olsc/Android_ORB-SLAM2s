@@ -498,34 +498,44 @@ float MapPoint::GetMaxDistanceInvariance()
 
 int MapPoint::PredictScale(const float &currentDist, KeyFrame* pKF)
 {
-    float ratio;
+    float maxDistance;
     {
         unique_lock<mutex> lock(mMutexPos);
-        ratio = mfMaxDistance/currentDist;
+        maxDistance = mfMaxDistance;
     }
 
-    int nScale = ceil(log(ratio)/pKF->mfLogScaleFactor);
-    if(nScale<0)
-        nScale = 0;
-    else if(nScale>=pKF->mnScaleLevels)
-        nScale = pKF->mnScaleLevels-1;
+    int nScale = 0;
+    const std::vector<float>& mvScaleFactors = pKF->mvScaleFactors;
+    const int nLevels = pKF->mnScaleLevels;
+    for (; nScale < nLevels; ++nScale)
+    {
+        if (maxDistance <= currentDist * mvScaleFactors[nScale])
+            break;
+    }
+    if (nScale >= nLevels)
+        nScale = nLevels - 1;
 
     return nScale;
 }
 
 int MapPoint::PredictScale(const float &currentDist, Frame* pF)
 {
-    float ratio;
+    float maxDistance;
     {
         unique_lock<mutex> lock(mMutexPos);
-        ratio = mfMaxDistance/currentDist;
+        maxDistance = mfMaxDistance;
     }
 
-    int nScale = ceil(log(ratio)/pF->mfLogScaleFactor);
-    if(nScale<0)
-        nScale = 0;
-    else if(nScale>=pF->mnScaleLevels)
-        nScale = pF->mnScaleLevels-1;
+    int nScale = 0;
+    const std::vector<float>& mvScaleFactors = pF->mvScaleFactors;
+    const int nLevels = pF->mnScaleLevels;
+    for (; nScale < nLevels; ++nScale)
+    {
+        if (maxDistance <= currentDist * mvScaleFactors[nScale])
+            break;
+    }
+    if (nScale >= nLevels)
+        nScale = nLevels - 1;
 
     return nScale;
 }

@@ -337,6 +337,12 @@ int ORBmatcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapP
     cv::Mat Rcw = sRcw * inv_scw;
     cv::Mat tcw = Scw.rowRange(0,3).col(3) * inv_scw;
     cv::Mat Ow = -Rcw.t()*tcw;
+    // 将矩阵数据在循环外部加载至栈上，消除循环内部的 Mat 访问开销
+    const float R00 = Rcw.at<float>(0,0), R01 = Rcw.at<float>(0,1), R02 = Rcw.at<float>(0,2);
+    const float R10 = Rcw.at<float>(1,0), R11 = Rcw.at<float>(1,1), R12 = Rcw.at<float>(1,2);
+    const float R20 = Rcw.at<float>(2,0), R21 = Rcw.at<float>(2,1), R22 = Rcw.at<float>(2,2);
+    const float tx = tcw.at<float>(0), ty = tcw.at<float>(1), tz = tcw.at<float>(2);
+    const float Ox = Ow.at<float>(0), Oy = Ow.at<float>(1), Oz = Ow.at<float>(2);
 
     // 关键帧中已找到的地图点集合
     set<MapPoint*> spAlreadyFound(vpMatched.begin(), vpMatched.end());
@@ -349,24 +355,27 @@ int ORBmatcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapP
     {
         MapPoint* pMP = vpPoints[iMP];
 
-        // 舍弃坏的地图点和已找到的点
+        // 舍弃坏的地图点 and 已找到的点
         if(pMP->isBad() || spAlreadyFound.count(pMP))
             continue;
 
-        // 获取3D坐标
-        cv::Mat p3Dw = pMP->GetWorldPos();
+        // 获取3D坐标 (使用 Point3f 替代 cv::Mat，消除堆分配)
+        cv::Point3f p3Dw;
+        pMP->GetWorldPos(p3Dw);
 
-        // 转换到相机坐标系
-        cv::Mat p3Dc = Rcw*p3Dw+tcw;
+        // 转换到相机坐标系 (标量乘加替代矩阵乘法)
+        const float p3DcX = R00 * p3Dw.x + R01 * p3Dw.y + R02 * p3Dw.z + tx;
+        const float p3DcY = R10 * p3Dw.x + R11 * p3Dw.y + R12 * p3Dw.z + ty;
+        const float p3DcZ = R20 * p3Dw.x + R21 * p3Dw.y + R22 * p3Dw.z + tz;
 
         // 深度必须为正
-        if(p3Dc.at<float>(2)<0.0)
+        if(p3DcZ<0.0f)
             continue;
 
         // 投影到图像
-        const float invz = 1/p3Dc.at<float>(2);
-        const float x = p3Dc.at<float>(0)*invz;
-        const float y = p3Dc.at<float>(1)*invz;
+        const float invz = 1.0f/p3DcZ;
+        const float x = p3DcX*invz;
+        const float y = p3DcY*invz;
 
         const float u = fx*x+cx;
         const float v = fy*y+cy;
@@ -378,27 +387,23 @@ int ORBmatcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapP
         // 深度必须在点的尺度不变区域内
         const float maxDistance = pMP->GetMaxDistanceInvariance();
         const float minDistance = pMP->GetMinDistanceInvariance();
-        cv::Mat PO = p3Dw-Ow;
         
-        // 使用平方距离进行快速范围检查
-        const float dx = PO.at<float>(0);
-        const float dy = PO.at<float>(1);
-        const float dz = PO.at<float>(2);
-        const float distSq = dx*dx + dy*dy + dz*dz;
-        const float maxDistSq = maxDistance * maxDistance;
-        const float minDistSq = minDistance * minDistance;
+        const float POx = p3Dw.x - Ox;
+        const float POy = p3Dw.y - Oy;
+        const float POz = p3Dw.z - Oz;
+        const float distSq = POx*POx + POy*POy + POz*POz;
 
-        if(distSq < minDistSq || distSq > maxDistSq)
+        if(distSq < minDistance*minDistance || distSq > maxDistance*maxDistance)
             continue;
         
-        // 只在需要时计算实际距离
+        // 观察角度过滤：使用栈获取法向，先进行平方不等式判定，再决定是否计算 sqrt
+        cv::Point3f Pn;
+        pMP->GetNormal(Pn);
+        const float dotVal = POx*Pn.x + POy*Pn.y + POz*Pn.z;
+        if(dotVal < 0.0f || dotVal*dotVal < 0.25f*distSq)
+            continue;
+
         const float dist = sqrt(distSq);
-
-        // 观察角度必须小于60度
-        cv::Mat Pn = pMP->GetNormal();
-
-        if(PO.dot(Pn)<0.5*dist)
-            continue;
 
         int nPredictedLevel = pMP->PredictScale(dist,pKF);
 
@@ -1035,6 +1040,13 @@ int ORBmatcher::Fuse(KeyFrame *pKF, cv::Mat Scw, const vector<MapPoint *> &vpPoi
     cv::Mat tcw = Scw.rowRange(0,3).col(3)/scw;
     cv::Mat Ow = -Rcw.t()*tcw;
 
+    // 将矩阵数据在循环外部加载至栈上，消除循环内部的 Mat 访问开销
+    const float R00 = Rcw.at<float>(0,0), R01 = Rcw.at<float>(0,1), R02 = Rcw.at<float>(0,2);
+    const float R10 = Rcw.at<float>(1,0), R11 = Rcw.at<float>(1,1), R12 = Rcw.at<float>(1,2);
+    const float R20 = Rcw.at<float>(2,0), R21 = Rcw.at<float>(2,1), R22 = Rcw.at<float>(2,2);
+    const float tx = tcw.at<float>(0), ty = tcw.at<float>(1), tz = tcw.at<float>(2);
+    const float Ox = Ow.at<float>(0), Oy = Ow.at<float>(1), Oz = Ow.at<float>(2);
+
     // 关键帧中已找到的地图点集合
     const set<MapPoint*> spAlreadyFound = pKF->GetMapPoints();
 
@@ -1051,20 +1063,23 @@ int ORBmatcher::Fuse(KeyFrame *pKF, cv::Mat Scw, const vector<MapPoint *> &vpPoi
         if(pMP->isBad() || spAlreadyFound.count(pMP))
             continue;
 
-        // 获取3D坐标
-        cv::Mat p3Dw = pMP->GetWorldPos();
+        // 获取3D坐标 (使用 Point3f 替代 cv::Mat，消除堆分配)
+        cv::Point3f p3Dw;
+        pMP->GetWorldPos(p3Dw);
 
-        // 转换到相机坐标系
-        cv::Mat p3Dc = Rcw*p3Dw+tcw;
+        // 转换到相机坐标系 (标量乘加替代矩阵乘法)
+        const float p3DcX = R00 * p3Dw.x + R01 * p3Dw.y + R02 * p3Dw.z + tx;
+        const float p3DcY = R10 * p3Dw.x + R11 * p3Dw.y + R12 * p3Dw.z + ty;
+        const float p3DcZ = R20 * p3Dw.x + R21 * p3Dw.y + R22 * p3Dw.z + tz;
 
         // 深度必须为正
-        if(p3Dc.at<float>(2)<0.0f)
+        if(p3DcZ<0.0f)
             continue;
 
         // 投影到图像
-        const float invz = 1.0/p3Dc.at<float>(2);
-        const float x = p3Dc.at<float>(0)*invz;
-        const float y = p3Dc.at<float>(1)*invz;
+        const float invz = 1.0f/p3DcZ;
+        const float x = p3DcX*invz;
+        const float y = p3DcY*invz;
 
         const float u = fx*x+cx;
         const float v = fy*y+cy;
@@ -1076,27 +1091,23 @@ int ORBmatcher::Fuse(KeyFrame *pKF, cv::Mat Scw, const vector<MapPoint *> &vpPoi
         // 深度必须在图像的尺度金字塔内
         const float maxDistance = pMP->GetMaxDistanceInvariance();
         const float minDistance = pMP->GetMinDistanceInvariance();
-        cv::Mat PO = p3Dw-Ow;
         
-        // 使用平方距离进行快速范围检查
-        const float dx = PO.at<float>(0);
-        const float dy = PO.at<float>(1);
-        const float dz = PO.at<float>(2);
-        const float dist3DSq = dx*dx + dy*dy + dz*dz;
-        const float maxDistSq = maxDistance * maxDistance;
-        const float minDistSq = minDistance * minDistance;
+        const float POx = p3Dw.x - Ox;
+        const float POy = p3Dw.y - Oy;
+        const float POz = p3Dw.z - Oz;
+        const float dist3DSq = POx*POx + POy*POy + POz*POz;
 
-        if(dist3DSq < minDistSq || dist3DSq > maxDistSq)
+        if(dist3DSq < minDistance*minDistance || dist3DSq > maxDistance*maxDistance)
             continue;
         
-        // 只在需要时计算实际距离
+        // 观察角度过滤：使用栈获取法向，先进行平方不等式判定，再决定是否计算 sqrt
+        cv::Point3f Pn;
+        pMP->GetNormal(Pn);
+        const float dotVal = POx*Pn.x + POy*Pn.y + POz*Pn.z;
+        if(dotVal < 0.0f || dotVal*dotVal < 0.25f*dist3DSq)
+            continue;
+
         const float dist3D = sqrt(dist3DSq);
-
-        // 观察角度必须小于60度
-        cv::Mat Pn = pMP->GetNormal();
-
-        if(PO.dot(Pn)<0.5*dist3D)
-            continue;
 
         // 计算预测的尺度层级
         const int nPredictedLevel = pMP->PredictScale(dist3D,pKF);
@@ -1203,6 +1214,17 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
     vector<int> vnMatch1(N1,-1);
     vector<int> vnMatch2(N2,-1);
 
+    // 预将矩阵数据在循环外部加载至栈上，消除循环内部的 Mat 访问开销
+    const float R1w00 = R1w.at<float>(0,0), R1w01 = R1w.at<float>(0,1), R1w02 = R1w.at<float>(0,2);
+    const float R1w10 = R1w.at<float>(1,0), R1w11 = R1w.at<float>(1,1), R1w12 = R1w.at<float>(1,2);
+    const float R1w20 = R1w.at<float>(2,0), R1w21 = R1w.at<float>(2,1), R1w22 = R1w.at<float>(2,2);
+    const float t1wX = t1w.at<float>(0), t1wY = t1w.at<float>(1), t1wZ = t1w.at<float>(2);
+
+    const float sR21_00 = sR21.at<float>(0,0), sR21_01 = sR21.at<float>(0,1), sR21_02 = sR21.at<float>(0,2);
+    const float sR21_10 = sR21.at<float>(1,0), sR21_11 = sR21.at<float>(1,1), sR21_12 = sR21.at<float>(1,2);
+    const float sR21_20 = sR21.at<float>(2,0), sR21_21 = sR21.at<float>(2,1), sR21_22 = sR21.at<float>(2,2);
+    const float t21X = t21.at<float>(0), t21Y = t21.at<float>(1), t21Z = t21.at<float>(2);
+
     // 从 KF1 变换到 KF2 并搜索
     for(int i1=0; i1<N1; i1++)
     {
@@ -1214,17 +1236,26 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
         if(pMP->isBad())
             continue;
 
-        cv::Mat p3Dw = pMP->GetWorldPos();
-        cv::Mat p3Dc1 = R1w*p3Dw + t1w;
-        cv::Mat p3Dc2 = sR21*p3Dc1 + t21;
+        // 获取3D坐标 (使用 Point3f 替代 cv::Mat，消除堆分配)
+        cv::Point3f p3Dw;
+        pMP->GetWorldPos(p3Dw);
+
+        // 标量乘加完成连续的三维空间变换 (R1w -> sR21)
+        const float p3Dc1X = R1w00*p3Dw.x + R1w01*p3Dw.y + R1w02*p3Dw.z + t1wX;
+        const float p3Dc1Y = R1w10*p3Dw.x + R1w11*p3Dw.y + R1w12*p3Dw.z + t1wY;
+        const float p3Dc1Z = R1w20*p3Dw.x + R1w21*p3Dw.y + R1w22*p3Dw.z + t1wZ;
+
+        const float p3Dc2X = sR21_00*p3Dc1X + sR21_01*p3Dc1Y + sR21_02*p3Dc1Z + t21X;
+        const float p3Dc2Y = sR21_10*p3Dc1X + sR21_11*p3Dc1Y + sR21_12*p3Dc1Z + t21Y;
+        const float p3Dc2Z = sR21_20*p3Dc1X + sR21_21*p3Dc1Y + sR21_22*p3Dc1Z + t21Z;
 
         // 深度必须为正
-        if(p3Dc2.at<float>(2)<0.0)
+        if(p3Dc2Z<0.0f)
             continue;
 
-        const float invz = 1.0/p3Dc2.at<float>(2);
-        const float x = p3Dc2.at<float>(0)*invz;
-        const float y = p3Dc2.at<float>(1)*invz;
+        const float invz = 1.0f/p3Dc2Z;
+        const float x = p3Dc2X*invz;
+        const float y = p3Dc2Y*invz;
 
         const float u = fx*x+cx;
         const float v = fy*y+cy;
@@ -1237,10 +1268,7 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
         const float minDistance = pMP->GetMinDistanceInvariance();
         
         // 使用平方距离进行快速范围检查
-        const float px = p3Dc2.at<float>(0);
-        const float py = p3Dc2.at<float>(1);
-        const float pz = p3Dc2.at<float>(2);
-        const float dist3DSq = px*px + py*py + pz*pz;
+        const float dist3DSq = p3Dc2X*p3Dc2X + p3Dc2Y*p3Dc2Y + p3Dc2Z*p3Dc2Z;
         const float maxDistSq = maxDistance * maxDistance;
         const float minDistSq = minDistance * minDistance;
 
@@ -1293,6 +1321,17 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
         }
     }
 
+    // 预将矩阵数据在循环外部加载至栈上，消除循环内部的 Mat 访问开销
+    const float R2w00 = R2w.at<float>(0,0), R2w01 = R2w.at<float>(0,1), R2w02 = R2w.at<float>(0,2);
+    const float R2w10 = R2w.at<float>(1,0), R2w11 = R2w.at<float>(1,1), R2w12 = R2w.at<float>(1,2);
+    const float R2w20 = R2w.at<float>(2,0), R2w21 = R2w.at<float>(2,1), R2w22 = R2w.at<float>(2,2);
+    const float t2wX = t2w.at<float>(0), t2wY = t2w.at<float>(1), t2wZ = t2w.at<float>(2);
+
+    const float sR12_00 = sR12.at<float>(0,0), sR12_01 = sR12.at<float>(0,1), sR12_02 = sR12.at<float>(0,2);
+    const float sR12_10 = sR12.at<float>(1,0), sR12_11 = sR12.at<float>(1,1), sR12_12 = sR12.at<float>(1,2);
+    const float sR12_20 = sR12.at<float>(2,0), sR12_21 = sR12.at<float>(2,1), sR12_22 = sR12.at<float>(2,2);
+    const float t12X = t12.at<float>(0), t12Y = t12.at<float>(1), t12Z = t12.at<float>(2);
+
     // 从 KF2 变换到 KF1 并搜索
     for(int i2=0; i2<N2; i2++)
     {
@@ -1304,17 +1343,26 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
         if(pMP->isBad())
             continue;
 
-        cv::Mat p3Dw = pMP->GetWorldPos();
-        cv::Mat p3Dc2 = R2w*p3Dw + t2w;
-        cv::Mat p3Dc1 = sR12*p3Dc2 + t12;
+        // 获取3D坐标 (使用 Point3f 替代 cv::Mat，消除堆分配)
+        cv::Point3f p3Dw;
+        pMP->GetWorldPos(p3Dw);
+
+        // 标量乘加完成连续的三维空间变换 (R2w -> sR12)
+        const float p3Dc2X = R2w00*p3Dw.x + R2w01*p3Dw.y + R2w02*p3Dw.z + t2wX;
+        const float p3Dc2Y = R2w10*p3Dw.x + R2w11*p3Dw.y + R2w12*p3Dw.z + t2wY;
+        const float p3Dc2Z = R2w20*p3Dw.x + R2w21*p3Dw.y + R2w22*p3Dw.z + t2wZ;
+
+        const float p3Dc1X = sR12_00*p3Dc2X + sR12_01*p3Dc2Y + sR12_02*p3Dc2Z + t12X;
+        const float p3Dc1Y = sR12_10*p3Dc2X + sR12_11*p3Dc2Y + sR12_12*p3Dc2Z + t12Y;
+        const float p3Dc1Z = sR12_20*p3Dc2X + sR12_21*p3Dc2Y + sR12_22*p3Dc2Z + t12Z;
 
         // 深度必须为正
-        if(p3Dc1.at<float>(2)<0.0)
+        if(p3Dc1Z<0.0f)
             continue;
 
-        const float invz = 1.0/p3Dc1.at<float>(2);
-        const float x = p3Dc1.at<float>(0)*invz;
-        const float y = p3Dc1.at<float>(1)*invz;
+        const float invz = 1.0f/p3Dc1Z;
+        const float x = p3Dc1X*invz;
+        const float y = p3Dc1Y*invz;
 
         const float u = fx*x+cx;
         const float v = fy*y+cy;
@@ -1327,10 +1375,7 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
         const float minDistance = pMP->GetMinDistanceInvariance();
         
         // 使用平方距离进行快速范围检查
-        const float px = p3Dc1.at<float>(0);
-        const float py = p3Dc1.at<float>(1);
-        const float pz = p3Dc1.at<float>(2);
-        const float dist3DSq = px*px + py*py + pz*pz;
+        const float dist3DSq = p3Dc1X*p3Dc1X + p3Dc1Y*p3Dc1Y + p3Dc1Z*p3Dc1Z;
         const float maxDistSq = maxDistance * maxDistance;
         const float minDistSq = minDistance * minDistance;
 
@@ -1417,6 +1462,12 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
     const cv::Mat Rcw = CurrentFrame.mTcw.rowRange(0,3).colRange(0,3);
     const cv::Mat tcw = CurrentFrame.mTcw.rowRange(0,3).col(3);
 
+    // 将矩阵数据在循环外部加载至栈上，消除循环内部 of Mat 访问开销
+    const float R00 = Rcw.at<float>(0,0), R01 = Rcw.at<float>(0,1), R02 = Rcw.at<float>(0,2);
+    const float R10 = Rcw.at<float>(1,0), R11 = Rcw.at<float>(1,1), R12 = Rcw.at<float>(1,2);
+    const float R20 = Rcw.at<float>(2,0), R21 = Rcw.at<float>(2,1), R22 = Rcw.at<float>(2,2);
+    const float tx = tcw.at<float>(0), ty = tcw.at<float>(1), tz = tcw.at<float>(2);
+
     const cv::Mat twc = -Rcw.t()*tcw;
 
     const cv::Mat Rlw = LastFrame.mTcw.rowRange(0,3).colRange(0,3);
@@ -1435,16 +1486,17 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
         {
             if(!LastFrame.mvbOutlier[i])
             {
-                // 投影
-                cv::Mat x3Dw = pMP->GetWorldPos();
-                cv::Mat x3Dc = Rcw*x3Dw+tcw;
+                // 投影 (使用 Point3f 替代 cv::Mat，消除堆分配)
+                cv::Point3f x3Dw;
+                pMP->GetWorldPos(x3Dw);
+                const float xc = R00*x3Dw.x + R01*x3Dw.y + R02*x3Dw.z + tx;
+                const float yc = R10*x3Dw.x + R11*x3Dw.y + R12*x3Dw.z + ty;
+                const float zc = R20*x3Dw.x + R21*x3Dw.y + R22*x3Dw.z + tz;
 
-                const float xc = x3Dc.at<float>(0);
-                const float yc = x3Dc.at<float>(1);
-                const float invzc = 1.0/x3Dc.at<float>(2);
-
-                if(invzc<0)
+                if(zc<=0.0f)
                     continue;
+
+                const float invzc = 1.0f/zc;
 
                 float u = CurrentFrame.fx*xc*invzc+CurrentFrame.cx;
                 float v = CurrentFrame.fy*yc*invzc+CurrentFrame.cy;
@@ -1545,6 +1597,13 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const set
     const cv::Mat tcw = CurrentFrame.mTcw.rowRange(0,3).col(3);
     const cv::Mat Ow = -Rcw.t()*tcw;
 
+    // 将矩阵数据在循环外部加载至栈上，消除循环内部 of Mat 访问开销
+    const float R00 = Rcw.at<float>(0,0), R01 = Rcw.at<float>(0,1), R02 = Rcw.at<float>(0,2);
+    const float R10 = Rcw.at<float>(1,0), R11 = Rcw.at<float>(1,1), R12 = Rcw.at<float>(1,2);
+    const float R20 = Rcw.at<float>(2,0), R21 = Rcw.at<float>(2,1), R22 = Rcw.at<float>(2,2);
+    const float tx = tcw.at<float>(0), ty = tcw.at<float>(1), tz = tcw.at<float>(2);
+    const float Ox = Ow.at<float>(0), Oy = Ow.at<float>(1), Oz = Ow.at<float>(2);
+
     // 旋转直方图（用于检查旋转一致性）
     vector<int> rotHist[HISTO_LENGTH];
     for(int i=0;i<HISTO_LENGTH;i++)
@@ -1561,14 +1620,17 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const set
         {
             if(!pMP->isBad() && !sAlreadyFound.count(pMP))
             {
-                // 投影
-                cv::Mat x3Dw = pMP->GetWorldPos();
-                cv::Mat x3Dc = Rcw*x3Dw+tcw;
+                // 投影 (使用 Point3f 替代 cv::Mat，消除堆分配)
+                cv::Point3f x3Dw;
+                pMP->GetWorldPos(x3Dw);
+                const float xc = R00*x3Dw.x + R01*x3Dw.y + R02*x3Dw.z + tx;
+                const float yc = R10*x3Dw.x + R11*x3Dw.y + R12*x3Dw.z + ty;
+                const float zc = R20*x3Dw.x + R21*x3Dw.y + R22*x3Dw.z + tz;
 
-                const float xc = x3Dc.at<float>(0);
-                const float yc = x3Dc.at<float>(1);
-                const float invzc = 1.0/x3Dc.at<float>(2);
+                if(zc<=0.0f)
+                    continue;
 
+                const float invzc = 1.0f/zc;
                 const float u = CurrentFrame.fx*xc*invzc+CurrentFrame.cx;
                 const float v = CurrentFrame.fy*yc*invzc+CurrentFrame.cy;
 
@@ -1577,14 +1639,11 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const set
                 if(v<CurrentFrame.mnMinY || v>CurrentFrame.mnMaxY)
                     continue;
 
-                // 计算预测的尺度层级
-                cv::Mat PO = x3Dw-Ow;
-                
-                // 使用平方距离进行快速范围检查
-                const float dx = PO.at<float>(0);
-                const float dy = PO.at<float>(1);
-                const float dz = PO.at<float>(2);
-                const float dist3DSq = dx*dx + dy*dy + dz*dz;
+                // 计算预测的尺度层级 (标量减法与乘加)
+                const float POx = x3Dw.x - Ox;
+                const float POy = x3Dw.y - Oy;
+                const float POz = x3Dw.z - Oz;
+                const float dist3DSq = POx*POx + POy*POy + POz*POz;
 
                 const float maxDistance = pMP->GetMaxDistanceInvariance();
                 const float minDistance = pMP->GetMinDistanceInvariance();

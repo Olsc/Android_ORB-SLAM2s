@@ -62,6 +62,7 @@ public:
     cv::Mat GetPose();
     cv::Mat GetPoseInverse();
     cv::Mat GetCameraCenter();
+    void GetCameraCenter(cv::Point3f& out);
 
     cv::Mat GetRotation();
     cv::Mat GetTranslation();

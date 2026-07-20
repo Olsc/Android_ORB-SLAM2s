@@ -923,6 +923,9 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
         vector<cv::KeyPoint> vAllKeys;
         FAST(mvImagePyramid[level], vAllKeys, minThFAST, true);
 
+        const float inv_W = 1.0f / W;
+        const float inv_hCell = 1.0f / (float)hCell;
+
         // 2. 将候选点按网格分箱
         vector<vector<cv::KeyPoint>> grid(nRows * nCols);
         for(size_t i = 0; i < vAllKeys.size(); ++i)
@@ -936,8 +939,8 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
 
             const float x_rel = x_glob - minBorderX;
             const float y_rel = y_glob - minBorderY;
-            int c = (int)(x_rel / W);
-            int r = (int)(y_rel / hCell);
+            int c = (int)(x_rel * inv_W);
+            int r = (int)(y_rel * inv_hCell);
             if(c < 0) c = 0; else if(c >= nCols) c = nCols - 1;
             if(r < 0) r = 0; else if(r >= nRows) r = nRows - 1;
 
