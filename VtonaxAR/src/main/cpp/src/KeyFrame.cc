@@ -122,6 +122,14 @@ cv::Mat KeyFrame::GetCameraCenter()
     return Ow.clone();
 }
 
+void KeyFrame::GetCameraCenter(cv::Point3f& out)
+{
+    std::unique_lock<std::mutex> lock(mMutexPose);
+    out.x = Ow.at<float>(0);
+    out.y = Ow.at<float>(1);
+    out.z = Ow.at<float>(2);
+}
+
 cv::Mat KeyFrame::GetRotation()
 {
     std::unique_lock<std::mutex> lock(mMutexPose);

@@ -558,6 +558,7 @@ ORBextractor::ORBextractor(int _nfeatures, float _scaleFactor, int _nlevels,
 
     mvImagePyramid.resize(nlevels);
     mvBlurredPyramid.resize(nlevels);
+    mvBlurredPyramidPadded.resize(nlevels);
 
     mnFeaturesPerLevel.resize(nlevels);
     float factor = 1.0f / scaleFactor;
@@ -922,6 +923,9 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
         vector<cv::KeyPoint> vAllKeys;
         FAST(mvImagePyramid[level], vAllKeys, minThFAST, true);
 
+        const float inv_W = 1.0f / W;
+        const float inv_hCell = 1.0f / (float)hCell;
+
         // 2. 将候选点按网格分箱
         vector<vector<cv::KeyPoint>> grid(nRows * nCols);
         for(size_t i = 0; i < vAllKeys.size(); ++i)
@@ -935,8 +939,8 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
 
             const float x_rel = x_glob - minBorderX;
             const float y_rel = y_glob - minBorderY;
-            int c = (int)(x_rel / W);
-            int r = (int)(y_rel / hCell);
+            int c = (int)(x_rel * inv_W);
+            int r = (int)(y_rel * inv_hCell);
             if(c < 0) c = 0; else if(c >= nCols) c = nCols - 1;
             if(r < 0) r = 0; else if(r >= nRows) r = nRows - 1;
 
@@ -1075,6 +1079,8 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
 
     if (mvBlurredPyramid.size() != (size_t)nlevels)
         mvBlurredPyramid.resize(nlevels);
+    if (mvBlurredPyramidPadded.size() != (size_t)nlevels)
+        mvBlurredPyramidPadded.resize(nlevels);
 
     {
         VT_PROFILE_SCOPE("ORB_Blur+Desc");
@@ -1089,9 +1095,18 @@ void ORBextractor::blurAndComputeDescriptors(
 {
     for (int level = range.start; level < range.end; ++level)
     {
-        // 高斯模糊
-        GaussianBlur(mvImagePyramid[level], mvBlurredPyramid[level],
+        // 确保 mvBlurredPyramidPadded 大小和类型正确
+        Size sz = mvImagePyramid[level].size();
+        Size wholeSize(sz.width + ORB_EDGE_THRESHOLD*2, sz.height + ORB_EDGE_THRESHOLD*2);
+        mvBlurredPyramidPadded[level].create(wholeSize, mvImagePyramid[level].type());
+
+        // 对带边框的图像进行高斯模糊
+        GaussianBlur(mvImagePyramidPadded[level], mvBlurredPyramidPadded[level],
                      Size(7, 7), 2, 2, BORDER_REFLECT_101);
+
+        // 让 mvBlurredPyramid[level] 成为 mvBlurredPyramidPadded[level] 的子矩阵 ROI
+        mvBlurredPyramid[level] = mvBlurredPyramidPadded[level](
+            Rect(ORB_EDGE_THRESHOLD, ORB_EDGE_THRESHOLD, sz.width, sz.height));
 
         // 本层关键点的描述子计算
         int start = levelDescOffset[level];
