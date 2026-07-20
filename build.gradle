@@ -1,6 +1,6 @@
 buildscript {
     ext {
-        agp_version = '9.2.1'
+        agp_version = '9.3.0'
     }
     repositories {
         google()
