@@ -447,16 +447,22 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
         }
     }
 
-    // 设置优化器
-    g2o::SparseOptimizer optimizer;
-    g2o::BlockSolver_6_3::LinearSolverType * linearSolver;
+    // 线程局部缓存：避免每次 new/delete 求解器对象
+    thread_local struct {
+        g2o::SparseOptimizer optimizer;
+        g2o::BlockSolver_6_3::LinearSolverType* linearSolver = nullptr;
+        g2o::BlockSolver_6_3* solver_ptr = nullptr;
+        g2o::OptimizationAlgorithmLevenberg* solver = nullptr;
+    } cache;
 
-    linearSolver = new g2o::LinearSolverEigen<g2o::BlockSolver_6_3::PoseMatrixType>();
-
-    g2o::BlockSolver_6_3 * solver_ptr = new g2o::BlockSolver_6_3(linearSolver);
-
-    g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
-    optimizer.setAlgorithm(solver);
+    if (!cache.linearSolver) {
+        cache.linearSolver = new g2o::LinearSolverEigen<g2o::BlockSolver_6_3::PoseMatrixType>();
+        cache.solver_ptr = new g2o::BlockSolver_6_3(cache.linearSolver);
+        cache.solver = new g2o::OptimizationAlgorithmLevenberg(cache.solver_ptr);
+        cache.optimizer.setAlgorithm(cache.solver);
+    }
+    g2o::SparseOptimizer& optimizer = cache.optimizer;
+    optimizer.clear();
 
     if(pbStopFlag)
         optimizer.setForceStopFlag(pbStopFlag);
