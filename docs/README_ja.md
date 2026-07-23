@@ -147,7 +147,7 @@ ORB-SLAM2コアライブラリは[GPLv3ライセンス](https://github.com/raulm
 
 このプロジェクトは、いくつかの優れたオープンソースのサードパーティライブラリに依存しています。各々のオープンソースライセンスを厳格に遵守しています：
 
-- **[OpenCV 5 (コア部分)](https://github.com/opencv/opencv)**: **Apache 2.0 ライセンス**の下でライセンスされています。プロジェクトを軽量に保つため、必要なコアコードのみを抽出しました。
+- **[OpenCV](https://github.com/opencv/opencv)**: **Apache 2.0 ライセンス**の下でライセンスされています。
 - **[srrg_hbst](https://gitlab.com/srrg-software/srrg_hbst)**: **BSD 3-Clause ライセンス**の下でライセンスされています。高速でスケーラブルな画像マッチングに使用されます。
 - **[DBoW2](https://github.com/dorian3d/DBoW2)**: **BSD ライセンス**の下でライセンスされています。基本的な語彙ベクトルおよび特徴マッチング構造に使用されます。
 - **[g2o](https://github.com/RainerKuemmerle/g2o)**: **BSD ライセンス**（コアコンポーネント）の下でライセンスされています。非線形最適化に使用されます。
@@ -189,7 +189,7 @@ ORB-SLAM2コアライブラリは[GPLv3ライセンス](https://github.com/raulm
 
 ## OpenCV
 
-画像と特徴の操作には[OpenCV](http://opencv.org)を使用しています。**OpenCV 5にアップデートされました**。注意：プロジェクトを軽量に保つため、OpenCV 5のライブラリ全体をインポートするのではなく、必要なコアコードのみを抽出しています。
+画像と特徴の操作には[OpenCV](http://opencv.org)を使用しています。
 
 ## HBST (Hierarchical Bag of Scalable Trees)
 
@@ -202,8 +202,6 @@ g2oに必要です（下記参照）。ダウンロードおよびインスト�
 ## DBoW2およびg2o（Thirdpartyフォルダに含まれています）
 
 [DBoW2](https://github.com/dorian3d/DBoW2)および[g2o](https://github.com/RainerKuemmerle/g2o)ライブラリをアルゴリズム参照として使用しています。両方のライブラリ（ライセンスを含む）は*Thirdparty*フォルダに含まれています。
-
-多言語翻訳はQwen3によって提供されています。誤りがあってもご容赦ください。誤りが見つかった場合は問題を提出してください。
 
 # 慣性航法（IMU）について
 

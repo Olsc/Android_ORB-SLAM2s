@@ -147,7 +147,7 @@ This Android adaptation and enhancement project (ORB-SLAM2s) is also licensed un
 
 This project relies on several excellent open-source third-party libraries. We strictly adhere to their respective open-source licenses:
 
-- **[OpenCV 5 (Core parts)](https://github.com/opencv/opencv)**: Licensed under the **Apache 2.0 License**. We only extracted the necessary core code to keep the project lightweight.
+- **[OpenCV](https://github.com/opencv/opencv)**: Licensed under the **Apache 2.0 License**.
 - **[srrg_hbst](https://gitlab.com/srrg-software/srrg_hbst)**: Licensed under the **BSD 3-Clause License**. Used for fast and scalable image matching.
 - **[DBoW2](https://github.com/dorian3d/DBoW2)**: Licensed under the **BSD License**. Used for basic vocabulary vectors and feature matching structures.
 - **[g2o](https://github.com/RainerKuemmerle/g2o)**: Licensed under the **BSD License** (core components). Used for non-linear optimization.
@@ -189,7 +189,7 @@ If you use this Android adaptation (ORB-SLAM2s) in an academic work, please ackn
 
 ## OpenCV
 
-We use [OpenCV](http://opencv.org) to manipulate images and features. **Updated to OpenCV 5**. Note: To keep the project lightweight, we only extracted the necessary code from OpenCV 5 rather than importing the entire library.
+We use [OpenCV](http://opencv.org) to manipulate images and features.
 
 ## HBST (Hierarchical Bag of Scalable Trees)
 
@@ -202,8 +202,6 @@ Required by g2o (see below). Download and install instructions can be found at: 
 ## DBoW2 and g2o (Included in Thirdparty folder)
 
 We use modified versions of the [DBoW2](https://github.com/dorian3d/DBoW2) library to perform place recognition and [g2o](https://github.com/RainerKuemmerle/g2o) library to perform non-linear optimizations. Both modified libraries (which are BSD) are included in the _Thirdparty_ folder.
-
-Multilingual translation of this project is provided by Qwen3. Please excuse any errors and submit issues if found.
 
 # About Inertial Navigation (IMU)
 
