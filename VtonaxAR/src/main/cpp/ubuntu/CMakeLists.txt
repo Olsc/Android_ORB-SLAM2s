@@ -12,15 +12,46 @@ get_filename_component(REPO_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../../.." AB
 message(STATUS "[CMake] 检测到的项目根目录路径: ${REPO_ROOT}")
 
 # ----------------------------------------------------------------------------
-# 2. 检索系统依赖项 (仅包含 OpenCV 和 线程库，其余库均使用项目内置源码)
+# 2. 内置 OpenCV 源码集成配置 (使用 Thirdparty/opencv 源码构建静态库)
 # ----------------------------------------------------------------------------
-find_package(OpenCV REQUIRED)
 find_package(Threads REQUIRED)
 
-message(STATUS "[CMake] OpenCV 库状态:")
-message(STATUS "  - 版本: ${OpenCV_VERSION}")
-message(STATUS "  - 库路径: ${OpenCV_LIBS}")
-message(STATUS "  - 头文件路径: ${OpenCV_INCLUDE_DIRS}")
+set(OPENCV_SRC_DIR "${REPO_ROOT}/VtonaxAR/src/main/cpp/Thirdparty/opencv")
+message(STATUS "[CMake] 使用内置 OpenCV 源码目录: ${OPENCV_SRC_DIR}")
+
+# 强制配置 OpenCV 编译参数，仅构建 SLAM 所需的核心模块 (core, imgproc, features2d, flann, calib3d)
+# Ubuntu 桌面版本额外需要 videoio, imgcodecs, highgui 模块用于相机/视频捕获和 GUI 显示
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
+set(BUILD_LIST "core,imgproc,features2d,flann,calib3d,videoio,imgcodecs,highgui" CACHE STRING "List of modules to build" FORCE)
+set(BUILD_opencv_apps OFF CACHE BOOL "Build apps" FORCE)
+set(BUILD_opencv_js OFF CACHE BOOL "Build js" FORCE)
+set(BUILD_ANDROID_PROJECTS OFF CACHE BOOL "Build Android projects" FORCE)
+set(BUILD_ANDROID_EXAMPLES OFF CACHE BOOL "Build Android examples" FORCE)
+set(BUILD_DOCS OFF CACHE BOOL "Build docs" FORCE)
+set(BUILD_EXAMPLES OFF CACHE BOOL "Build examples" FORCE)
+set(BUILD_TESTS OFF CACHE BOOL "Build tests" FORCE)
+set(BUILD_PERF_TESTS OFF CACHE BOOL "Build perf tests" FORCE)
+set(BUILD_JAVA OFF CACHE BOOL "Build Java wrapper" FORCE)
+set(BUILD_FAT_JAVA_LIB OFF CACHE BOOL "Build fat Java library" FORCE)
+set(BUILD_KOTLIN OFF CACHE BOOL "Build Kotlin wrapper" FORCE)
+set(BUILD_OBJC OFF CACHE BOOL "Build ObjC wrapper" FORCE)
+set(OPENCV_ENABLE_NONFREE OFF CACHE BOOL "Enable non-free" FORCE)
+set(WITH_CUDA OFF CACHE BOOL "With CUDA" FORCE)
+set(WITH_OPENCL OFF CACHE BOOL "With OpenCL" FORCE)
+set(WITH_IPP OFF CACHE BOOL "With IPP" FORCE)
+set(WITH_TBB OFF CACHE BOOL "With TBB" FORCE)
+set(WITH_EIGEN ON CACHE BOOL "With Eigen" FORCE)
+set(WITH_PNG ON CACHE BOOL "With PNG" FORCE)
+set(WITH_JPEG ON CACHE BOOL "With JPEG" FORCE)
+set(WITH_TIFF OFF CACHE BOOL "With TIFF" FORCE)
+set(WITH_WEBP OFF CACHE BOOL "With WEBP" FORCE)
+set(WITH_JASPER OFF CACHE BOOL "With Jasper" FORCE)
+set(WITH_OPENEXR OFF CACHE BOOL "With OpenEXR" FORCE)
+set(WITH_ITT OFF CACHE BOOL "With ITT" FORCE)
+set(WITH_PROTOBUF OFF CACHE BOOL "With Protobuf" FORCE)
+set(WITH_QUIRC OFF CACHE BOOL "With Quirc" FORCE)
+
+add_subdirectory(${OPENCV_SRC_DIR} opencv_build)
 
 # ----------------------------------------------------------------------------
 # 3. 编译器优化选项与编译定义
@@ -30,7 +61,17 @@ add_compile_definitions(EIGEN_DONT_ALIGN_STATICALLY EIGEN_DISABLE_UNALIGNED_ARRA
 
 # 头文件包含路径列表 (全部使用根目录绝对路径定位，确保无缝解析)
 include_directories(
-    ${OpenCV_INCLUDE_DIRS}
+    ${OPENCV_SRC_DIR}/include
+    ${OPENCV_SRC_DIR}/modules/core/include
+    ${OPENCV_SRC_DIR}/modules/imgproc/include
+    ${OPENCV_SRC_DIR}/modules/features2d/include
+    ${OPENCV_SRC_DIR}/modules/flann/include
+    ${OPENCV_SRC_DIR}/modules/calib3d/include
+    ${OPENCV_SRC_DIR}/modules/videoio/include
+    ${OPENCV_SRC_DIR}/modules/imgcodecs/include
+    ${OPENCV_SRC_DIR}/modules/highgui/include
+    ${CMAKE_CURRENT_BINARY_DIR}/opencv_build
+    ${CMAKE_CURRENT_BINARY_DIR}
     ${REPO_ROOT}/VtonaxAR/src/main/cpp
     ${REPO_ROOT}/VtonaxAR/src/main/cpp/include
     ${REPO_ROOT}/VtonaxAR/src/main/cpp/Thirdparty
@@ -244,7 +285,14 @@ add_executable(VtonaxAR_Ubuntu ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
 target_link_libraries(VtonaxAR_Ubuntu
     VtonaxAR_Engine
     g2o
-    ${OpenCV_LIBS}
+    opencv_core
+    opencv_imgproc
+    opencv_features2d
+    opencv_flann
+    opencv_calib3d
+    opencv_videoio
+    opencv_imgcodecs
+    opencv_highgui
     Threads::Threads
 )
 
@@ -256,7 +304,14 @@ add_executable(VtonaxAR_Benchmark ${CMAKE_CURRENT_SOURCE_DIR}/benchmark.cpp)
 target_link_libraries(VtonaxAR_Benchmark
     VtonaxAR_Engine
     g2o
-    ${OpenCV_LIBS}
+    opencv_core
+    opencv_imgproc
+    opencv_features2d
+    opencv_flann
+    opencv_calib3d
+    opencv_videoio
+    opencv_imgcodecs
+    opencv_highgui
     Threads::Threads
 )
 

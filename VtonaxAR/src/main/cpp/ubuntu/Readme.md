@@ -6,14 +6,12 @@
 # 更新系统源并安装基础构建链
 sudo apt-get update
 sudo apt-get install -y build-essential cmake
-
-# 安装 OpenCV 开发依赖库
-sudo apt-get install -y libopencv-dev
 ```
 
 > [!NOTE]
-> **资源说明**：
-> 本项目已优化，编译前不再需要准备 `ORB_LUT.bin` 查找表二进制文件，系统启动时会自动在内存中预生成 LUT 查找表。
+> **依赖说明**：
+> 本项目已将 OpenCV (`Thirdparty/opencv`) 源码包含在仓库中，构建时会自动作为子库打包编译 (`core`, `imgproc`, `features2d`, `flann`, `calib3d` 静态库)，无需再通过系统 `apt-get` 安装 `libopencv-dev`。
+> 系统启动时会自动在内存中预生成 ORB 描述子 LUT 查找表。
 
 ---
 
@@ -140,6 +138,18 @@ make -j$(nproc)
 5. **场景难度分类**: 良好/中等/较难/困难 场景占比
 
 **JSON 报告** 可用于进一步的数据可视化和对比分析。**CSV 文件** 可直接导入 Excel 或 Python 做逐帧深度分析。
+
+### 视频格式要求
+
+> ⚠ **重要**：项目 OpenCV 为静态编译，未链接 FFMPEG/GStreamer 后端，无法直接解码 H.264/H.265 等编码的 MP4 文件。
+
+**支持的格式**：OpenCV 内置 MJPEG 编码的 AVI 文件。
+
+若输入为 H.264 编码的 MP4，需用 `ffmpeg` 转码：
+```bash
+ffmpeg -i input.mp4 -vcodec mjpeg -q:v 5 -an output.avi
+./VtonaxAR_Benchmark output.avi
+```
 
 ### 性能注意事项
 

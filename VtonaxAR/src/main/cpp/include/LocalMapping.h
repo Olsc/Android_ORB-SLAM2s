@@ -43,6 +43,7 @@
 
 #include <mutex>
 #include <condition_variable>
+#include <atomic>
 
 
 namespace ORB_SLAM2
@@ -139,14 +140,14 @@ protected:
 
     std::mutex mMutexNewKFs;
 
-    bool mbAbortBA;
+    std::atomic<bool> mbAbortBA;
 
-    bool mbStopped;
-    bool mbStopRequested;
-    bool mbNotStop;
+    std::atomic<bool> mbStopped;
+    std::atomic<bool> mbStopRequested;
+    std::atomic<bool> mbNotStop;
     std::mutex mMutexStop;
 
-    bool mbAcceptKeyFrames;
+    std::atomic<bool> mbAcceptKeyFrames;
     std::mutex mMutexAccept;
 
     // 事件驱动唤醒：InsertKeyFrame/RequestStop/Release/RequestFinish/RequestReset

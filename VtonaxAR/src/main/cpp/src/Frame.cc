@@ -224,7 +224,7 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
     const float POx = p3f.x - mOw.at<float>(0);
     const float POy = p3f.y - mOw.at<float>(1);
     const float POz = p3f.z - mOw.at<float>(2);
-    const float dist = std::sqrt(POx*POx + POy*POy + POz*POz);
+    const float distSq = POx*POx + POy*POy + POz*POz;
 
     float viewCos = 1.0f;
     int nPredictedLevel = 0;
@@ -232,15 +232,19 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
     {
         const float maxDistance = pMP->GetMaxDistanceInvariance();
         const float minDistance = pMP->GetMinDistanceInvariance();
-        if(dist<minDistance || dist>maxDistance)
+        // 使用距离平方先判定，避免非必要点的 sqrt 开方计算
+        if(distSq < minDistance*minDistance || distSq > maxDistance*maxDistance)
             return false;
 
-        // 检查视角
+        // 检查视角使用平方乘积判定，无超越函数无除法
         cv::Point3f normal;
         pMP->GetNormal(normal);
-        viewCos = (POx*normal.x + POy*normal.y + POz*normal.z)/dist;
-        if(viewCos<viewingCosLimit)
+        const float dotVal = POx*normal.x + POy*normal.y + POz*normal.z;
+        if(dotVal < 0.0f || dotVal*dotVal < viewingCosLimit*viewingCosLimit*distSq)
             return false;
+
+        const float dist = std::sqrt(distSq);
+        viewCos = dotVal / dist;
 
         // 预测图像中的尺度
         nPredictedLevel = pMP->PredictScale(dist,this);

@@ -47,9 +47,13 @@ namespace ORB_SLAM2
 {
 
 LocalMapping::LocalMapping(Map *pMap):
-    mbResetRequested(false), mbFinishRequested(false), mbFinished(true), mpMap(pMap),
-    mbAbortBA(false), mbStopped(false), mbStopRequested(false), mbNotStop(false), mbAcceptKeyFrames(true)
+    mbResetRequested(false), mbFinishRequested(false), mbFinished(true), mpMap(pMap)
 {
+    mbAbortBA.store(false);
+    mbStopped.store(false);
+    mbStopRequested.store(false);
+    mbNotStop.store(false);
+    mbAcceptKeyFrames.store(true);
 }
 
 void LocalMapping::SetLoopCloser(LoopClosing* pLoopCloser)
@@ -114,7 +118,7 @@ void LocalMapping::Run()
                 SearchInNeighbors();
             }
 
-            mbAbortBA = false;
+            mbAbortBA.store(false);
 
             if(!CheckNewKeyFrames() && !stopRequested())
             {
@@ -122,7 +126,7 @@ void LocalMapping::Run()
                 if(mpMap->KeyFramesInMap()>2)
                 {
                     VT_PROFILE_SCOPE("LocalMapping::LocalBundleAdjustment");
-                    Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame,&mbAbortBA, mpMap);
+                    Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame, reinterpret_cast<bool*>(&mbAbortBA), mpMap);
                 }
 
                 {
@@ -157,8 +161,8 @@ void LocalMapping::Run()
                     {
                         // 超时了还没人 Release — 自动恢复，避免 LM 永久卡死
                         unique_lock<mutex> stopLock(mMutexStop);
-                        mbStopped = false;
-                        mbStopRequested = false;
+                        mbStopped.store(false);
+                        mbStopRequested.store(false);
                         // 继续主循环，跟踪线程会看到 LM 已恢复正常
                     }
                 }
@@ -189,7 +193,7 @@ void LocalMapping::InsertKeyFrame(KeyFrame *pKF)
 {
     unique_lock<mutex> lock(mMutexNewKFs);
     mlNewKeyFrames.push_back(pKF);
-    mbAbortBA=true;
+    mbAbortBA.store(true);
     mCvEvent.notify_one();
 }
 
@@ -603,24 +607,24 @@ cv::Mat LocalMapping::ComputeF12(KeyFrame *&pKF1, KeyFrame *&pKF2)
 void LocalMapping::RequestStop()
 {
     unique_lock<mutex> lock(mMutexStop);
-    mbStopRequested = true;
-    mbAbortBA = true;
+    mbStopRequested.store(true);
+    mbAbortBA.store(true);
     mCvEvent.notify_one();
 }
 
 void LocalMapping::CancelStopRequest()
 {
     unique_lock<mutex> lock(mMutexStop);
-    mbStopRequested = false;
-    mbStopped = false;
+    mbStopRequested.store(false);
+    mbStopped.store(false);
 }
 
 bool LocalMapping::Stop()
 {
     unique_lock<mutex> lock(mMutexStop);
-    if(mbStopRequested && !mbNotStop)
+    if(mbStopRequested.load() && !mbNotStop.load())
     {
-        mbStopped = true;
+        mbStopped.store(true);
         // 通知 WaitForStopped 的调用方（LoopClosing）状态已变化
         mCvEvent.notify_one();
         return true;
@@ -631,8 +635,7 @@ bool LocalMapping::Stop()
 
 bool LocalMapping::isStopped()
 {
-    unique_lock<mutex> lock(mMutexStop);
-    return mbStopped;
+    return mbStopped.load();
 }
 
 void LocalMapping::WaitForStopped(int timeoutMs)
@@ -644,8 +647,7 @@ void LocalMapping::WaitForStopped(int timeoutMs)
 
 bool LocalMapping::stopRequested()
 {
-    unique_lock<mutex> lock(mMutexStop);
-    return mbStopRequested;
+    return mbStopRequested.load();
 }
 
 void LocalMapping::Release()
@@ -656,8 +658,8 @@ void LocalMapping::Release()
     unique_lock<mutex> lock2(mMutexFinish);
     if(mbFinished)
         return;
-    mbStopped = false;
-    mbStopRequested = false;
+    mbStopped.store(false);
+    mbStopRequested.store(false);
     list<KeyFrame*> lKFs;
     {
         unique_lock<mutex> lock3(mMutexNewKFs);
@@ -675,8 +677,7 @@ void LocalMapping::Release()
 
 bool LocalMapping::AcceptKeyFrames()
 {
-    unique_lock<mutex> lock(mMutexAccept);
-    if(mbAcceptKeyFrames)
+    if(mbAcceptKeyFrames.load())
         return true;
         
     // 即使建图线程正忙，如果队列中积压的关键帧较少（少于3帧），也允许继续插入，以极大地提升跟踪稳定性，避免运动卡顿
@@ -686,25 +687,24 @@ bool LocalMapping::AcceptKeyFrames()
 
 void LocalMapping::SetAcceptKeyFrames(bool flag)
 {
-    unique_lock<mutex> lock(mMutexAccept);
-    mbAcceptKeyFrames=flag;
+    mbAcceptKeyFrames.store(flag);
 }
 
 bool LocalMapping::SetNotStop(bool flag)
 {
     unique_lock<mutex> lock(mMutexStop);
 
-    if(flag && mbStopped)
+    if(flag && mbStopped.load())
         return false;
 
-    mbNotStop = flag;
+    mbNotStop.store(flag);
 
     return true;
 }
 
 void LocalMapping::InterruptBA()
 {
-    mbAbortBA = true;
+    mbAbortBA.store(true);
 }
 
 void LocalMapping::KeyFrameCulling()
@@ -794,7 +794,7 @@ void LocalMapping::RequestReset()
     {
         unique_lock<mutex> lock(mMutexReset);
         mbResetRequested = true;
-        mbAbortBA = true; // 立即中断正在进行的BA，确保Reset能被快速处理
+        mbAbortBA.store(true); // 立即中断正在进行的BA，确保Reset能被快速处理
     }
     mCvEvent.notify_one();
 }
