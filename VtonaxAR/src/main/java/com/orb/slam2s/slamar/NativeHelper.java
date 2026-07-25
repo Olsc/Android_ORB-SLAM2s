@@ -10,15 +10,11 @@ import android.util.Log;
 import com.vtonax.ar.R;
 import com.orb.slam2s.constant.GlobalConstant;
 
-import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.util.ArrayList;
 
 /**
@@ -40,14 +36,14 @@ public class NativeHelper {
 
     // 存储MVP回调的集合
     private ArrayList<OnMVPUpdatedCallback> onMVPUpdatedCallbacks;
-    private float[] projectionMatrix = new float[16];  // 投影矩阵
-    private float[] viewMatrix = new float[16];        // 视图矩阵
-    private float[] modelMatrix = new float[16];       // 模型矩阵
+    private final float[] projectionMatrix = new float[16];  // 投影矩阵
+    private final float[] viewMatrix = new float[16];        // 视图矩阵
+    private final float[] modelMatrix = new float[16];       // 模型矩阵
     private int lastTrackingResult;                     // 最后的追踪结果
     private int planeDetectResult;                      // 平面检测结果
     private boolean planeDetected;                      // 是否检测到平面
 
-    private int[] statusBuf = new int[233];             // 状态缓冲区
+    private final int[] statusBuf = new int[233];             // 状态缓冲区
 
     private Context context;  // 上下文对象
 
@@ -155,13 +151,6 @@ public class NativeHelper {
     public native float[] getTrackedPoints(int maxPoints);
     public native float[] getAllArObjectsData();
 
-    // 便捷包装：加载后在 UI 弹出统计
-    public void loadMapWithToast(String path){
-        loadMap(path);
-        // 统计信息由 native 打日志，这里做个提示
-        android.widget.Toast.makeText(context, context.getString(R.string.hint_map_load_requested), android.widget.Toast.LENGTH_SHORT).show();
-    }
-
     // 视图矩阵 (WebServer使用)
     public native void getV(float viewM[]);
 
@@ -184,12 +173,6 @@ public class NativeHelper {
         void setDraw(boolean flag);                 // 设置是否绘制
     }
 
-    // 复制矩阵
-    public static void copyMatrix(float inM[], float outM[]) {
-        if (inM.length != outM.length) throw new RuntimeException("copyMatrix: unequal length");
-        System.arraycopy(inM, 0, outM, 0, inM.length);
-    }
-
     /**
      * MapManager类：管理地图的保存、加载、删除和查询
      */
@@ -198,9 +181,9 @@ public class NativeHelper {
         private static final String MAP_DIR_NAME = "SLAM/maps";
         private static final String MAP_METADATA_EXT = ".json";
         
-        private Context context;
-        private NativeHelper nativeHelper;
-        private File mapDirectory;
+        private final Context context;
+        private final NativeHelper nativeHelper;
+        private final File mapDirectory;
 
         public MapManager(Context context, NativeHelper nativeHelper) {
             this.context = context;
