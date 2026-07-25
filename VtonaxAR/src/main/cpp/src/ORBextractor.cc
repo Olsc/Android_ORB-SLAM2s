@@ -96,6 +96,23 @@ struct DescriptorOffset {
 static DescriptorOffset descriptorOffsetLUT[360][512];
 static bool bDescriptorLUTInit = false;
 
+// 线程局部缓存：按当前图像 step 预先缩放的单字节偏移查找表，完全消除循环内 dy * step 乘法
+static thread_local int cachedStep = -1;
+static thread_local int levelStepOffsetLUT[360][512];
+
+static void PrepareLevelStepOffsetLUT(int step)
+{
+    if (cachedStep == step) return;
+    cachedStep = step;
+    for (int a = 0; a < 360; ++a) {
+        const DescriptorOffset* src = descriptorOffsetLUT[a];
+        int* dst = levelStepOffsetLUT[a];
+        for (int i = 0; i < 512; ++i) {
+            dst[i] = src[i].dy * step + src[i].dx;
+        }
+    }
+}
+
 static inline float Atan2Approx(float y, float x)
 {
     if (x == 0.0f && y == 0.0f) return 0.0f;
@@ -210,11 +227,13 @@ static void computeOrbDescriptor(const KeyPoint& kpt,
     const uchar* center = &img.at<uchar>(kpy, kpx);
     const int step = (int)img.step;
 
-    // 获取当前角度对应的 LUT 行指针
-    const DescriptorOffset* lut_ptr = descriptorOffsetLUT[angleIdx];
+    // 确保当前 step 对应的偏移查找表已准备好
+    PrepareLevelStepOffsetLUT(step);
 
-    #define GET_VALUE(idx) \
-        center[lut_ptr[idx].dy * step + lut_ptr[idx].dx]
+    // 获取当前角度对应的单字节偏移 LUT 指针
+    const int* lut_ptr = levelStepOffsetLUT[angleIdx];
+
+    #define GET_VALUE(idx) center[lut_ptr[idx]]
 
 
     for (int i = 0; i < 32; ++i, lut_ptr += 16)
@@ -1089,6 +1108,102 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
     }
 }
 
+// 1D 分离式定点 7x7 高斯卷积 (sigma=2.0, 核权重比 256)
+// [18, 34, 49, 55, 49, 34, 18], sum = 257 (~256)
+static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPadded)
+{
+    const int rows = srcPadded.rows;
+    const int cols = srcPadded.cols;
+
+    // 线程局部平坦缓存区：避免分配
+    static thread_local std::vector<int> tempBuf;
+    if (tempBuf.size() < (size_t)(rows * cols)) {
+        tempBuf.resize(rows * cols);
+    }
+
+    // 1. 水平平滑方向 (Horizontal Pass)
+    for (int r = 0; r < rows; ++r) {
+        const uchar* srcRow = srcPadded.ptr<uchar>(r);
+        int* tempRow = &tempBuf[r * cols];
+        // 边界内像素 (3 到 cols-4)
+        for (int c = 3; c < cols - 3; ++c) {
+            int val = srcRow[c-3] * 18 + srcRow[c-2] * 34 + srcRow[c-1] * 49 +
+                      srcRow[c]   * 55 +
+                      srcRow[c+1] * 49 + srcRow[c+2] * 34 + srcRow[c+3] * 18;
+            tempRow[c] = val >> 8;
+        }
+        // 左边界处理 (c < 3)
+        for (int c = 0; c < 3; ++c) {
+            int val = 0;
+            for (int k = -3; k <= 3; ++k) {
+                int colIdx = std::abs(c + k);
+                if (colIdx >= cols) colIdx = 2 * cols - 1 - colIdx;
+                val += srcRow[colIdx] * ((k == 0) ? 55 : ((std::abs(k) == 1) ? 49 : ((std::abs(k) == 2) ? 34 : 18)));
+            }
+            tempRow[c] = val >> 8;
+        }
+        // 右边界处理 (c >= cols - 3)
+        for (int c = cols - 3; c < cols; ++c) {
+            int val = 0;
+            for (int k = -3; k <= 3; ++k) {
+                int colIdx = c + k;
+                if (colIdx >= cols) colIdx = 2 * (cols - 1) - colIdx;
+                if (colIdx < 0) colIdx = -colIdx;
+                val += srcRow[colIdx] * ((k == 0) ? 55 : ((std::abs(k) == 1) ? 49 : ((std::abs(k) == 2) ? 34 : 18)));
+            }
+            tempRow[c] = val >> 8;
+        }
+    }
+
+    // 2. 垂直平滑方向 (Vertical Pass)
+    for (int r = 3; r < rows - 3; ++r) {
+        uchar* dstRow = dstPadded.ptr<uchar>(r);
+        const int* tempRowM3 = &tempBuf[(r - 3) * cols];
+        const int* tempRowM2 = &tempBuf[(r - 2) * cols];
+        const int* tempRowM1 = &tempBuf[(r - 1) * cols];
+        const int* tempRow0  = &tempBuf[r * cols];
+        const int* tempRowP1 = &tempBuf[(r + 1) * cols];
+        const int* tempRowP2 = &tempBuf[(r + 2) * cols];
+        const int* tempRowP3 = &tempBuf[(r + 3) * cols];
+
+        for (int c = 0; c < cols; ++c) {
+            int val = tempRowM3[c] * 18 + tempRowM2[c] * 34 + tempRowM1[c] * 49 +
+                      tempRow0[c]  * 55 +
+                      tempRowP1[c] * 49 + tempRowP2[c] * 34 + tempRowP3[c] * 18;
+            int pix = val >> 8;
+            dstRow[c] = (uchar)(pix > 255 ? 255 : (pix < 0 ? 0 : pix));
+        }
+    }
+    // 上下边界处理 (r < 3 || r >= rows - 3)
+    for (int r = 0; r < 3; ++r) {
+        uchar* dstRow = dstPadded.ptr<uchar>(r);
+        for (int c = 0; c < cols; ++c) {
+            int val = 0;
+            for (int k = -3; k <= 3; ++k) {
+                int rowIdx = std::abs(r + k);
+                if (rowIdx >= rows) rowIdx = 2 * rows - 1 - rowIdx;
+                val += tempBuf[rowIdx * cols + c] * ((k == 0) ? 55 : ((std::abs(k) == 1) ? 49 : ((std::abs(k) == 2) ? 34 : 18)));
+            }
+            int pix = val >> 8;
+            dstRow[c] = (uchar)(pix > 255 ? 255 : (pix < 0 ? 0 : pix));
+        }
+    }
+    for (int r = rows - 3; r < rows; ++r) {
+        uchar* dstRow = dstPadded.ptr<uchar>(r);
+        for (int c = 0; c < cols; ++c) {
+            int val = 0;
+            for (int k = -3; k <= 3; ++k) {
+                int rowIdx = r + k;
+                if (rowIdx >= rows) rowIdx = 2 * (rows - 1) - rowIdx;
+                if (rowIdx < 0) rowIdx = -rowIdx;
+                val += tempBuf[rowIdx * cols + c] * ((k == 0) ? 55 : ((std::abs(k) == 1) ? 49 : ((std::abs(k) == 2) ? 34 : 18)));
+            }
+            int pix = val >> 8;
+            dstRow[c] = (uchar)(pix > 255 ? 255 : (pix < 0 ? 0 : pix));
+        }
+    }
+}
+
 void ORBextractor::blurAndComputeDescriptors(
     const cv::Range& range, const vector<int>& levelDescOffset,
     vector<KeyPoint>& keypoints, Mat& descriptors)
@@ -1100,9 +1215,8 @@ void ORBextractor::blurAndComputeDescriptors(
         Size wholeSize(sz.width + ORB_EDGE_THRESHOLD*2, sz.height + ORB_EDGE_THRESHOLD*2);
         mvBlurredPyramidPadded[level].create(wholeSize, mvImagePyramid[level].type());
 
-        // 对带边框的图像进行高斯模糊
-        GaussianBlur(mvImagePyramidPadded[level], mvBlurredPyramidPadded[level],
-                     Size(7, 7), 2, 2, BORDER_REFLECT_101);
+        // 对带边框的图像进行定点 1D 可分离高斯模糊优化
+        FastIntegerGaussianBlur7x7(mvImagePyramidPadded[level], mvBlurredPyramidPadded[level]);
 
         // 让 mvBlurredPyramid[level] 成为 mvBlurredPyramidPadded[level] 的子矩阵 ROI
         mvBlurredPyramid[level] = mvBlurredPyramidPadded[level](

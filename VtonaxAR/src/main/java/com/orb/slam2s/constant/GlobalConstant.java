@@ -1,7 +1,5 @@
 package com.orb.slam2s.constant;
 
-import android.opengl.Matrix;
-
 /**
  * Created by ads on 17-2-20.
  * 由Olsc于2026/5/15修改：增加动态分辨率支持
@@ -9,10 +7,6 @@ import android.opengl.Matrix;
 
 public class GlobalConstant {
     public static final int PLANE_DETECTED=233;
-    public static final int PLANE_NOT_DETECTED=1234;
-    public static final int SLAM_NOT_INITIALIZED=1;
-    public static final int SLAM_ON=2;
-    public static final int SLAM_LOST=3;
 
     // 参考分辨率 (基准值，用于比例计算)
     public static final int REFERENCE_WIDTH = 1280;

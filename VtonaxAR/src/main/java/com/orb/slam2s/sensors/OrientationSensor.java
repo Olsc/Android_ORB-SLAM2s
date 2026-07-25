@@ -24,7 +24,6 @@ public class OrientationSensor implements SensorEventListener {
     private Sensor accelerometer;
     private Sensor magnetometer;
 
-    private boolean useRotationVector = false;
     private final float[] rawRotationMatrix = new float[16];      // 原始旋转矩阵
     private final float[] rotationMatrix = new float[16];         // 重映射后的旋转矩阵
     private final float[] orientation = new float[3];
@@ -50,11 +49,9 @@ public class OrientationSensor implements SensorEventListener {
         rotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
 
         if (rotationSensor != null) {
-            useRotationVector = true;
             sensorManager.registerListener(this, rotationSensor, SensorManager.SENSOR_DELAY_GAME);
             Log.d(TAG, "使用旋转矢量传感器");
         } else {
-            useRotationVector = false;
             accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
             magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
 
@@ -167,14 +164,6 @@ public class OrientationSensor implements SensorEventListener {
      */
     public float[] getRotationMatrix() {
         return rotationMatrix;
-    }
-
-    /**
-     * 获取当前设备的欧拉角 [方位角, 俯仰角, 滚转角]
-     */
-    public float[] getOrientation() {
-        SensorManager.getOrientation(rotationMatrix, orientation);
-        return orientation;
     }
 
     /**

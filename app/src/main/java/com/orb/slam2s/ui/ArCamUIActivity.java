@@ -517,7 +517,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
                                         }
                                     }
                                     if (loadedCount > 0) {
-                                        showHint(getString(R.string.hint_maps_loaded, loadedCount));
+                                        showHint(getResources().getQuantityString(R.plurals.hint_maps_loaded, loadedCount, loadedCount));
                                     }
                                 }
                             })
