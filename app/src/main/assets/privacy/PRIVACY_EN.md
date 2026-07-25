@@ -67,7 +67,7 @@ This project is built upon the following open-source libraries, each with its ow
 | DBoW2 (modified) | Modified BSD (with notification clause) | Bag-of-Words library for place recognition |
 | g2o (modified) | BSD 2-Clause (core) | Graph optimization library for non-linear optimization (some components GPL-3.0/LGPL-3.0) |
 | Eigen3 | MPL-2.0 (mostly) | Linear algebra library (3.4+ portions also Apache-2.0/BSD-3-Clause) |
-| OpenCV 5 (core) | Apache 2.0 | Computer vision library (only necessary core modules extracted; some files BSD-3-Clause) |
+| OpenCV | Apache 2.0 | Computer vision library (some files BSD-3-Clause) |
 | AndroidX / CameraX | Apache 2.0 | Official Android camera and UI components |
 | Google Material Design | Apache 2.0 | UI design library |
 | **srrg_hbst (HBST)** | **BSD 3-Clause** | **Hierarchical Bag of Scalable Trees — fast incremental image matching for relocalization** |
@@ -339,7 +339,7 @@ This project is built upon the following open-source libraries and integrates th
 | **DBoW2 (modified)** | Dorian Galvez-Lopez | Modified BSD (with notification clause) |
 | **g2o (modified)** | Rainer Kuemmerle, Giorgio Grisetti, Hauke Strasdat, Kurt Konolige, Wolfram Burgard | BSD 2-Clause (core); some components GPL-3.0 / LGPL-3.0 |
 | **Eigen3** | Benoît Jacob, Gaël Guennebaud and contributors | MPL-2.0 (core; 3.4+ portions also under Apache-2.0 / BSD-3-Clause / GPL-3.0) |
-| **OpenCV 5 (core)** | Intel Corporation, Willow Garage, Itseez, NVIDIA, AMD, OpenCV Foundation and contributors | Apache 2.0 (some files BSD-3-Clause) |
+| **OpenCV** | Intel Corporation, Willow Garage, Itseez, NVIDIA, AMD, OpenCV Foundation and contributors | Apache 2.0 (some files BSD-3-Clause) |
 | **srrg_hbst (HBST)** | Dominik Schlegel, Giorgio Grisetti — srrg-software | BSD 3-Clause |
 | **Google Filament** | Google LLC | Apache 2.0 |
 | **gltfio / filament-utils** | Google LLC | Apache 2.0 |
