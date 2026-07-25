@@ -147,7 +147,7 @@ ORB-SLAM2核心库以[GPLv3许可证](https://github.com/raulmur/ORB_SLAM2/blob/
 
 本项目的发展离不开众多优秀的开源项目。我们在本项目中集成并使用了以下第三方库，并严格遵守其开源协议：
 
-- **[OpenCV 5 (核心代码)](https://github.com/opencv/opencv)**：采用 **Apache 2.0 许可证**。为保持项目轻量化，我们仅截取了其必要的核心代码。
+- **[OpenCV](https://github.com/opencv/opencv)**：采用 **Apache 2.0 许可证**。
 - **[srrg_hbst](https://gitlab.com/srrg-software/srrg_hbst)**：采用 **BSD 3-Clause 许可证**。用于快速、增量式的可扩展图像匹配与重定位。
 - **[DBoW2](https://github.com/dorian3d/DBoW2)**：采用 **BSD 许可证**。用于特征向量化及基础的局部特征匹配。
 - **[g2o](https://github.com/RainerKuemmerle/g2o)**：采用 **BSD 许可证**（其核心部分）。用于图优化及非线性误差最小化。
@@ -189,7 +189,7 @@ ORB-SLAM2核心库以[GPLv3许可证](https://github.com/raulmur/ORB_SLAM2/blob/
 
 ## OpenCV
 
-我们使用[OpenCV](http://opencv.org)来操作图像和特征。**已更新至OpenCV 5**。注意：为了保持项目轻量化，我们仅截取了OpenCV 5中的必要核心代码，而没有全盘接收整个库。
+我们使用[OpenCV](http://opencv.org)来操作图像和特征。
 
 ## HBST (Hierarchical Bag of Scalable Trees)
 
@@ -202,8 +202,6 @@ g2o所需（见下文）。下载和安装说明可在以下网址找到：http:
 ## DBoW2和g2o（包含在Thirdparty文件夹中）
 
 我们使用[DBoW2](https://github.com/dorian3d/DBoW2)和[g2o](https://github.com/RainerKuemmerle/g2o)库进行算法上的引用。这两个库（包含许可证）都包含在*Thirdparty*文件夹中。
-
-多语言翻译由Qwen3提供。如有错误请见谅并提交问题。
 
 # 关于 惯性导航（IMU）
 
