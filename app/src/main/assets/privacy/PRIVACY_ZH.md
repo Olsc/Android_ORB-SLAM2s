@@ -67,7 +67,7 @@ ORB-SLAM2s（本 Android 适配与增强项目）采用 **GNU General Public Lic
 | DBoW2（已修改） | 修改版 BSD（含通知条款） | 词袋模型库，用于地点识别 |
 | g2o（已修改） | BSD 2-Clause（核心） | 图优化库，用于非线性优化（部分组件 GPL-3.0/LGPL-3.0） |
 | Eigen3 | MPL-2.0（大部分） | 线性代数库（3.4+ 部分组件含 Apache-2.0/BSD-3-Clause 兼容代码） |
-| OpenCV 5（核心代码） | Apache 2.0 | 计算机视觉库（仅截取必要核心代码，保持轻量化；部分文件 BSD-3-Clause） |
+| OpenCV | Apache 2.0 | 计算机视觉库（部分文件 BSD-3-Clause） |
 | AndroidX / CameraX | Apache 2.0 | Android 官方相机和 UI 组件库 |
 | Google Material Design | Apache 2.0 | 用户界面设计库 |
 | **srrg_hbst (HBST)** | **BSD 3-Clause** | **层次化可扩展二叉搜索树 — 用于快速增量式图像匹配与重定位** |
@@ -339,7 +339,7 @@ ORB-SLAM2s（本 Android 适配与增强项目）采用 **GNU General Public Lic
 | **DBoW2（已修改）** | Dorian Galvez-Lopez | 修改版 BSD（含通知条款） |
 | **g2o（已修改）** | Rainer Kuemmerle, Giorgio Grisetti, Hauke Strasdat, Kurt Konolige, Wolfram Burgard | BSD 2-Clause（核心）；部分组件为 GPL-3.0 / LGPL-3.0 |
 | **Eigen3** | Benoît Jacob, Gaël Guennebaud 及贡献者 | MPL-2.0（核心；3.4+ 部分组件包含 Apache-2.0 / BSD-3-Clause / GPL-3.0 兼容代码） |
-| **OpenCV 5（核心代码）** | Intel Corporation, Willow Garage, Itseez, NVIDIA, AMD, OpenCV Foundation 及贡献者 | Apache 2.0（部分文件为 BSD-3-Clause） |
+| **OpenCV** | Intel Corporation, Willow Garage, Itseez, NVIDIA, AMD, OpenCV Foundation 及贡献者 | Apache 2.0（部分文件为 BSD-3-Clause） |
 | **srrg_hbst (HBST)** | Dominik Schlegel, Giorgio Grisetti / srrg-software | BSD 3-Clause |
 | **Google Filament** | Google LLC | Apache 2.0 |
 | **gltfio / filament-utils** | Google LLC | Apache 2.0 |
