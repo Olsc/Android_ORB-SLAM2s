@@ -60,7 +60,9 @@
     <string name="hint_map_save_failed">சேமிப்பு தோல்வி: %1$s</string>
     <string name="hint_map_file_not_found">வரைபட கோப்பு கண்டுபிடிக்கப்படவில்லை</string>
     <string name="hint_map_loaded">வரைபடம் ஏற்றப்பட்டது: %1$s</string>
-    <string name="hint_maps_loaded">%1$d வரைபடங்கள் ஏற்றப்பட்டன</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d வரைபடங்கள் ஏற்றப்பட்டன</item>
+    </plurals>
     <string name="hint_map_load_failed">ஏற்றல் தோல்வி: %1$s</string>
     <string name="permission_camera_storage_required">கேமரா மற்றும் சேமிப்பக அனுமதிகள் தேவை. அமைப்புகளில் அனுமதி வழங்கவும்.</string>
     <string name="btn_mini_world">சிறு காட்சி</string>

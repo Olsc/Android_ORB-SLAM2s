@@ -60,7 +60,9 @@
     <string name="hint_map_save_failed">Falha ao salvar: %1$s</string>
     <string name="hint_map_file_not_found">Arquivo de mapa não encontrado</string>
     <string name="hint_map_loaded">Mapa carregado: %1$s</string>
-    <string name="hint_maps_loaded">%1$d mapas carregados</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d mapas carregados</item>
+    </plurals>
     <string name="hint_map_load_failed">Falha ao carregar: %1$s</string>
     <string name="permission_camera_storage_required">São necessárias permissões de câmera e armazenamento. Conceda-as nas configurações.</string>
     <string name="btn_mini_world">Mini visão</string>

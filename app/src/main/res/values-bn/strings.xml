@@ -60,7 +60,9 @@
     <string name="hint_map_save_failed">সংরক্ষণ ব্যর্থ: %1$s</string>
     <string name="hint_map_file_not_found">মানচিত্র ফাইল পাওয়া যায়নি</string>
     <string name="hint_map_loaded">মানচিত্র লোড হয়েছে: %1$s</string>
-    <string name="hint_maps_loaded">%1$d মানচিত্র লোড হয়েছে</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d মানচিত্র লোড হয়েছে</item>
+    </plurals>
     <string name="hint_map_load_failed">লোড ব্যর্থ: %1$s</string>
     <string name="permission_camera_storage_required">ক্যামেরা ও স্টোরেজ অনুমতি প্রয়োজন। সেটিংসে অনুমতি দিন।</string>
     <string name="btn_mini_world">মিনি ভিউ</string>

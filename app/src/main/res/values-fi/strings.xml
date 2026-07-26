@@ -60,7 +60,9 @@
     <string name="hint_map_save_failed">Tallennus epäonnistui: %1$s</string>
     <string name="hint_map_file_not_found">Kartan tiedostoa ei löydy</string>
     <string name="hint_map_loaded">Kartta ladattu: %1$s</string>
-    <string name="hint_maps_loaded">%1$d karttaa ladattu</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d karttaa ladattu</item>
+    </plurals>
     <string name="hint_map_load_failed">Lataus epäonnistui: %1$s</string>
     <string name="permission_camera_storage_required">Kamera- ja tallennusluvat vaaditaan. Anna luvat asetuksissa.</string>
     <string name="btn_mini_world">Pienoisnäkymä</string>

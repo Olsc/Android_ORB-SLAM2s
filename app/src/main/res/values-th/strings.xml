@@ -60,7 +60,9 @@
     <string name="hint_map_save_failed">การบันทึกล้มเหลว: %1$s</string>
     <string name="hint_map_file_not_found">ไม่พบไฟล์แผนที่</string>
     <string name="hint_map_loaded">โหลดแผนที่แล้ว: %1$s</string>
-    <string name="hint_maps_loaded">โหลด %1$d แผนที่แล้ว</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">โหลด %1$d แผนที่แล้ว</item>
+    </plurals>
     <string name="hint_map_load_failed">การโหลดล้มเหลว: %1$s</string>
     <string name="permission_camera_storage_required">ต้องการสิทธิ์กล้องและที่เก็บข้อมูล กรุณาอนุญาตในการตั้งค่า</string>
     <string name="btn_mini_world">มุมมองย่อ</string>

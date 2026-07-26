@@ -60,7 +60,9 @@
     <string name="hint_map_save_failed">ذخیره ناموفق بود: %1$s</string>
     <string name="hint_map_file_not_found">فایل نقشه پیدا نشد</string>
     <string name="hint_map_loaded">نقشه بارگذاری شد: %1$s</string>
-    <string name="hint_maps_loaded">%1$d نقشه بارگذاری شد</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d نقشه بارگذاری شد</item>
+    </plurals>
     <string name="hint_map_load_failed">بارگذاری ناموفق بود: %1$s</string>
     <string name="permission_camera_storage_required">مجوز دوربین و حافظه لازم است. لطفاً در تنظیمات مجوز دهید.</string>
     <string name="btn_mini_world">نمای کوچک</string>

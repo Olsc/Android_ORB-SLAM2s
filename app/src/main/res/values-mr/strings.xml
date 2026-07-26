@@ -60,7 +60,9 @@
     <string name="hint_map_save_failed">जतन अयशस्वी: %1$s</string>
     <string name="hint_map_file_not_found">नकाशा फाइल सापडली नाही</string>
     <string name="hint_map_loaded">नकाशा लोड झाला: %1$s</string>
-    <string name="hint_maps_loaded">%1$d नकाशे लोड झाले</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d नकाशे लोड झाले</item>
+    </plurals>
     <string name="hint_map_load_failed">लोड अयशस्वी: %1$s</string>
     <string name="permission_camera_storage_required">कॅमेरा आणि स्टोरेज परवानगी आवश्यक आहे. सेटिंग्जमध्ये परवानगी द्या.</string>
     <string name="btn_mini_world">मिनी दृश्य</string>

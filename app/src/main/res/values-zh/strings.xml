@@ -52,7 +52,7 @@
     <string name="map_details_plane_yes">是</string>
     <string name="map_details_plane_no">否</string>
     <string name="button_ok">确定</string>
-    <string name="map_stats_format">KFs: %1$d | MPs: %2$d | Plane: %3$s</string>
+    <string name="map_stats_format">关键帧: %1$d | 地图点: %2$d | 平面: %3$s</string>
     <string name="map_stats_plane_yes">是</string>
     <string name="map_stats_plane_no">否</string>
     <string name="hint_map_load_requested">加载地图已请求</string>
@@ -61,7 +61,9 @@
     <string name="hint_map_file_not_found">地图文件不存在</string>
     <string name="hint_map_loaded">地图已加载: %1$s</string>
     <string name="hint_map_load_failed">加载失败: %1$s</string>
-    <string name="hint_maps_loaded">已加载 %1$d 个地图</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">已加载 %1$d 个地图</item>
+    </plurals>
     <string name="permission_camera_storage_required">需要摄像头和SD卡权限，请在设置中授权。</string>
     <string name="btn_mini_world">小窗预览</string>
     <string name="hint_mini_world_enabled">小窗已启用</string>

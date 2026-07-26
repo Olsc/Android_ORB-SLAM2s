@@ -4,7 +4,9 @@
     <string name="hint_map_save_failed">Échec de l\'enregistrement : %1$s</string>
     <string name="hint_map_file_not_found">Fichier de carte introuvable</string>
     <string name="hint_map_loaded">Carte chargée : %1$s</string>
-    <string name="hint_maps_loaded">%1$d cartes chargées</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d cartes chargées</item>
+    </plurals>
     <string name="hint_map_load_failed">Échec du chargement : %1$s</string>
     <string name="hint_map_load_requested">Chargement de la carte demandé</string>
     <string name="hint_map_deleted">Carte supprimée</string>

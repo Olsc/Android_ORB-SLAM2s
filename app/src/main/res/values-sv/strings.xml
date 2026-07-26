@@ -60,7 +60,9 @@
     <string name="hint_map_save_failed">Sparande misslyckades: %1$s</string>
     <string name="hint_map_file_not_found">Kartfil hittades inte</string>
     <string name="hint_map_loaded">Karta laddad: %1$s</string>
-    <string name="hint_maps_loaded">%1$d kartor laddade</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d kartor laddade</item>
+    </plurals>
     <string name="hint_map_load_failed">Laddning misslyckades: %1$s</string>
     <string name="permission_camera_storage_required">Kamera- och lagringsbehörigheter krävs. Bevilja behörigheter i inställningarna.</string>
     <string name="btn_mini_world">Minivy</string>

@@ -60,7 +60,9 @@
     <string name="hint_map_save_failed">Error al guardar: %1$s</string>
     <string name="hint_map_file_not_found">Archivo de mapa no encontrado</string>
     <string name="hint_map_loaded">Mapa cargado: %1$s</string>
-    <string name="hint_maps_loaded">%1$d mapas cargados</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d mapas cargados</item>
+    </plurals>
     <string name="hint_map_load_failed">Error al cargar: %1$s</string>
     <string name="permission_camera_storage_required">Se requieren permisos de cámara y almacenamiento. Por favor, concédalos en los ajustes.</string>
     <string name="btn_mini_world">Mini vista</string>

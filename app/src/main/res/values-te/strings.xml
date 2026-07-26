@@ -60,7 +60,9 @@
     <string name="hint_map_save_failed">సేవ్ చేయడం విఫలమైంది: %1$s</string>
     <string name="hint_map_file_not_found">మ్యాప్ ఫైల్ కనుగొనబడలేదు</string>
     <string name="hint_map_loaded">మ్యాప్ లోడ్ చేయబడింది: %1$s</string>
-    <string name="hint_maps_loaded">%1$d మ్యాప్‌లు లోడ్ చేయబడ్డాయి</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d మ్యాప్‌లు లోడ్ చేయబడ్డాయి</item>
+    </plurals>
     <string name="hint_map_load_failed">లోడ్ చేయడం విఫలమైంది: %1$s</string>
     <string name="permission_camera_storage_required">కెమెరా మరియు నిల్వ అనుమతులు అవసరం. దయచేసి సెట్టింగ్‌లలో అనుమతించండి.</string>
     <string name="btn_mini_world">మినీ వీక్షణ</string>

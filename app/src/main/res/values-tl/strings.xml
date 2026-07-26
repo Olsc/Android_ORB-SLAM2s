@@ -60,7 +60,9 @@
     <string name="hint_map_save_failed">Nabigo ang pag-save: %1$s</string>
     <string name="hint_map_file_not_found">Hindi nahanap ang file ng mapa</string>
     <string name="hint_map_loaded">Na-load ang mapa: %1$s</string>
-    <string name="hint_maps_loaded">Na-load ang %1$d na mapa</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">Na-load ang %1$d na mapa</item>
+    </plurals>
     <string name="hint_map_load_failed">Nabigo ang pag-load: %1$s</string>
     <string name="permission_camera_storage_required">Kailangan ang mga pahintulot sa camera at storage. Mangyaring ibigay ang pahintulot sa mga setting.</string>
     <string name="btn_mini_world">Mini View</string>

@@ -60,7 +60,9 @@
     <string name="hint_map_save_failed">Lagring mislyktes: %1$s</string>
     <string name="hint_map_file_not_found">Kartfil ikke funnet</string>
     <string name="hint_map_loaded">Kart lastet inn: %1$s</string>
-    <string name="hint_maps_loaded">%1$d kart lastet inn</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d kart lastet inn</item>
+    </plurals>
     <string name="hint_map_load_failed">Lasting mislyktes: %1$s</string>
     <string name="permission_camera_storage_required">Tillatelser til kamera og lagring kreves. Gi tillatelser i innstillinger.</string>
     <string name="btn_mini_world">Minivisning</string>

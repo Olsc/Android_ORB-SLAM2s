@@ -60,7 +60,9 @@
     <string name="hint_map_save_failed">Speichern fehlgeschlagen: %1$s</string>
     <string name="hint_map_file_not_found">Kartendatei nicht gefunden</string>
     <string name="hint_map_loaded">Karte geladen: %1$s</string>
-    <string name="hint_maps_loaded">%1$d Karten geladen</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d Karten geladen</item>
+    </plurals>
     <string name="hint_map_load_failed">Laden fehlgeschlagen: %1$s</string>
     <string name="permission_camera_storage_required">Kamera- und Speicherberechtigung erforderlich. Bitte Berechtigungen in den Einstellungen erteilen.</string>
     <string name="btn_mini_world">Miniansicht</string>

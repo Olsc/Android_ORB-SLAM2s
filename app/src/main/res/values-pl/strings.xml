@@ -60,7 +60,9 @@
     <string name="hint_map_save_failed">Zapis nie powiódł się: %1$s</string>
     <string name="hint_map_file_not_found">Plik mapy nie znaleziony</string>
     <string name="hint_map_loaded">Mapa wczytana: %1$s</string>
-    <string name="hint_maps_loaded">Wczytano map: %1$d</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">Wczytano map: %1$d</item>
+    </plurals>
     <string name="hint_map_load_failed">Wczytanie nie powiodło się: %1$s</string>
     <string name="permission_camera_storage_required">Wymagane uprawnienia kamery i pamięci. Przyznaj uprawnienia w ustawieniach.</string>
     <string name="btn_mini_world">Mini widok</string>

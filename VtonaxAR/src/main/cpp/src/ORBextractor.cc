@@ -113,38 +113,41 @@ static void PrepareLevelStepOffsetLUT(int step)
     }
 }
 
-static inline float Atan2Approx(float y, float x)
-{
-    if (x == 0.0f && y == 0.0f) return 0.0f;
-    
-    float absX = std::abs(x);
-    float absY = std::abs(y);
-    float angle = 0.0f;
-    
-    if (absX >= absY) {
-        float r = absY / absX;
-        angle = r * (45.0f - (r - 1.0f) * (15.637f + 3.961f * r));
-        if (x < 0.0f) {
-            angle = 180.0f - angle;
-        }
-        if (y < 0.0f) {
-            angle = (y != 0.0f || x < 0.0f) ? (360.0f - angle) : 180.0f;
-        }
-    } else {
-        float r = absX / absY;
-        angle = 90.0f - r * (45.0f - (r - 1.0f) * (15.637f + 3.961f * r));
-        if (x < 0.0f) {
-            angle = 180.0f - angle;
-        }
-        if (y < 0.0f) {
-            angle = 360.0f - angle;
-        }
+static uint16_t arctan_table_q10[1025];
+static bool bArctanLUTInit = false;
+
+static void InitArctanLUT() {
+    if (bArctanLUTInit) return;
+    for (int i = 0; i <= 1024; ++i) {
+        double r = (double)i / 1024.0;
+        double rad = std::atan(r);
+        arctan_table_q10[i] = (uint16_t)std::round(rad * (180.0 / CV_PI) * 10.0);
     }
+    bArctanLUTInit = true;
+}
+
+static inline float FastIC_Angle_LUT(int m_01, int m_10)
+{
+    if (m_10 == 0 && m_01 == 0) return 0.0f;
+
+    int abs_m10 = std::abs(m_10);
+    int abs_m01 = std::abs(m_01);
     
-    if (angle < 0.0f) angle += 360.0f;
-    else if (angle >= 360.0f) angle -= 360.0f;
-    
-    return angle;
+    int angle_q10 = 0;
+    if (abs_m10 >= abs_m01) {
+        int idx = (abs_m01 << 10) / abs_m10;
+        angle_q10 = arctan_table_q10[idx];
+    } else {
+        int idx = (abs_m10 << 10) / abs_m01;
+        angle_q10 = 900 - arctan_table_q10[idx];
+    }
+
+    if (m_10 < 0) angle_q10 = 1800 - angle_q10;
+    if (m_01 < 0) angle_q10 = 3600 - angle_q10;
+    if (angle_q10 < 0) angle_q10 += 3600;
+    if (angle_q10 >= 3600) angle_q10 -= 3600;
+
+    return (float)angle_q10 * 0.1f;
 }
 
 static float IC_Angle(const Mat& image, Point2f pt,  const vector<int> & u_max)
@@ -208,7 +211,7 @@ static float IC_Angle(const Mat& image, Point2f pt,  const vector<int> & u_max)
         m_01 += suffix_m01;
     }
 
-    return Atan2Approx((float)m_01, (float)m_10);
+    return FastIC_Angle_LUT(m_01, m_10);
 }
 
 
@@ -548,6 +551,7 @@ void ORBextractor::InitLUT() {
         }
     }
     
+    InitArctanLUT();
     bDescriptorLUTInit = true;
     LOGD("InitLUT: ORB LUT 生成完毕。");
 }
@@ -1109,7 +1113,7 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
 }
 
 // 1D 分离式定点 7x7 高斯卷积 (sigma=2.0, 核权重比 256)
-// [18, 34, 49, 55, 49, 34, 18], sum = 257 (~256)
+// [18, 34, 49, 54, 49, 34, 18], sum = 256
 static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPadded)
 {
     const int rows = srcPadded.rows;
@@ -1128,7 +1132,7 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
         // 边界内像素 (3 到 cols-4)
         for (int c = 3; c < cols - 3; ++c) {
             int val = srcRow[c-3] * 18 + srcRow[c-2] * 34 + srcRow[c-1] * 49 +
-                      srcRow[c]   * 55 +
+                      srcRow[c]   * 54 +
                       srcRow[c+1] * 49 + srcRow[c+2] * 34 + srcRow[c+3] * 18;
             tempRow[c] = val >> 8;
         }
@@ -1138,7 +1142,7 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
             for (int k = -3; k <= 3; ++k) {
                 int colIdx = std::abs(c + k);
                 if (colIdx >= cols) colIdx = 2 * cols - 1 - colIdx;
-                val += srcRow[colIdx] * ((k == 0) ? 55 : ((std::abs(k) == 1) ? 49 : ((std::abs(k) == 2) ? 34 : 18)));
+                val += srcRow[colIdx] * ((k == 0) ? 54 : ((std::abs(k) == 1) ? 49 : ((std::abs(k) == 2) ? 34 : 18)));
             }
             tempRow[c] = val >> 8;
         }
@@ -1149,7 +1153,7 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
                 int colIdx = c + k;
                 if (colIdx >= cols) colIdx = 2 * (cols - 1) - colIdx;
                 if (colIdx < 0) colIdx = -colIdx;
-                val += srcRow[colIdx] * ((k == 0) ? 55 : ((std::abs(k) == 1) ? 49 : ((std::abs(k) == 2) ? 34 : 18)));
+                val += srcRow[colIdx] * ((k == 0) ? 54 : ((std::abs(k) == 1) ? 49 : ((std::abs(k) == 2) ? 34 : 18)));
             }
             tempRow[c] = val >> 8;
         }
@@ -1168,7 +1172,7 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
 
         for (int c = 0; c < cols; ++c) {
             int val = tempRowM3[c] * 18 + tempRowM2[c] * 34 + tempRowM1[c] * 49 +
-                      tempRow0[c]  * 55 +
+                      tempRow0[c]  * 54 +
                       tempRowP1[c] * 49 + tempRowP2[c] * 34 + tempRowP3[c] * 18;
             int pix = val >> 8;
             dstRow[c] = (uchar)(pix > 255 ? 255 : (pix < 0 ? 0 : pix));
@@ -1182,7 +1186,7 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
             for (int k = -3; k <= 3; ++k) {
                 int rowIdx = std::abs(r + k);
                 if (rowIdx >= rows) rowIdx = 2 * rows - 1 - rowIdx;
-                val += tempBuf[rowIdx * cols + c] * ((k == 0) ? 55 : ((std::abs(k) == 1) ? 49 : ((std::abs(k) == 2) ? 34 : 18)));
+                val += tempBuf[rowIdx * cols + c] * ((k == 0) ? 54 : ((std::abs(k) == 1) ? 49 : ((std::abs(k) == 2) ? 34 : 18)));
             }
             int pix = val >> 8;
             dstRow[c] = (uchar)(pix > 255 ? 255 : (pix < 0 ? 0 : pix));
@@ -1196,7 +1200,7 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
                 int rowIdx = r + k;
                 if (rowIdx >= rows) rowIdx = 2 * (rows - 1) - rowIdx;
                 if (rowIdx < 0) rowIdx = -rowIdx;
-                val += tempBuf[rowIdx * cols + c] * ((k == 0) ? 55 : ((std::abs(k) == 1) ? 49 : ((std::abs(k) == 2) ? 34 : 18)));
+                val += tempBuf[rowIdx * cols + c] * ((k == 0) ? 54 : ((std::abs(k) == 1) ? 49 : ((std::abs(k) == 2) ? 34 : 18)));
             }
             int pix = val >> 8;
             dstRow[c] = (uchar)(pix > 255 ? 255 : (pix < 0 ? 0 : pix));
