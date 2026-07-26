@@ -60,7 +60,9 @@
     <string name="hint_map_save_failed">Uložení selhalo: %1$s</string>
     <string name="hint_map_file_not_found">Soubor mapy nebyl nalezen</string>
     <string name="hint_map_loaded">Mapa načtena: %1$s</string>
-    <string name="hint_maps_loaded">Načteno map: %1$d</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">Načteno map: %1$d</item>
+    </plurals>
     <string name="hint_map_load_failed">Načtení selhalo: %1$s</string>
     <string name="permission_camera_storage_required">Jsou vyžadována oprávnění pro kameru a úložiště. Udělte oprávnění v nastavení.</string>
     <string name="btn_mini_world">Mini zobrazení</string>

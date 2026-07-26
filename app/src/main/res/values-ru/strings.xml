@@ -60,7 +60,9 @@
     <string name="hint_map_save_failed">Ошибка сохранения: %1$s</string>
     <string name="hint_map_file_not_found">Файл карты не найден</string>
     <string name="hint_map_loaded">Карта загружена: %1$s</string>
-    <string name="hint_maps_loaded">Загружено карт: %1$d</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">Загружено карт: %1$d</item>
+    </plurals>
     <string name="hint_map_load_failed">Ошибка загрузки: %1$s</string>
     <string name="permission_camera_storage_required">Необходимы разрешения камеры и хранилища. Предоставьте разрешения в настройках.</string>
     <string name="btn_mini_world">Мини-вид</string>

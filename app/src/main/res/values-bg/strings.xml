@@ -60,7 +60,9 @@
     <string name="hint_map_save_failed">Запазването е неуспешно: %1$s</string>
     <string name="hint_map_file_not_found">Файлът на картата не е намерен</string>
     <string name="hint_map_loaded">Картата е заредена: %1$s</string>
-    <string name="hint_maps_loaded">%1$d карти заредени</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d карти заредени</item>
+    </plurals>
     <string name="hint_map_load_failed">Зареждането е неуспешно: %1$s</string>
     <string name="permission_camera_storage_required">Необходими са разрешения за камера и съхранение. Моля, дайте разрешения в настройките.</string>
     <string name="btn_mini_world">Мини изглед</string>

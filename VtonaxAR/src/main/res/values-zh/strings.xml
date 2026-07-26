@@ -4,7 +4,9 @@
     <string name="hint_map_save_failed">保存失败: %1$s</string>
     <string name="hint_map_file_not_found">地图文件不存在</string>
     <string name="hint_map_loaded">地图已加载: %1$s</string>
-    <string name="hint_maps_loaded">已加载 %1$d 个地图</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">已加载 %1$d 个地图</item>
+    </plurals>
     <string name="hint_map_load_failed">加载失败: %1$s</string>
     <string name="hint_map_load_requested">加载地图已请求</string>
     <string name="hint_map_deleted">地图已删除</string>

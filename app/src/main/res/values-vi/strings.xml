@@ -60,7 +60,9 @@
     <string name="hint_map_save_failed">Lưu thất bại: %1$s</string>
     <string name="hint_map_file_not_found">Không tìm thấy file bản đồ</string>
     <string name="hint_map_loaded">Đã tải bản đồ: %1$s</string>
-    <string name="hint_maps_loaded">Đã tải %1$d bản đồ</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">Đã tải %1$d bản đồ</item>
+    </plurals>
     <string name="hint_map_load_failed">Tải thất bại: %1$s</string>
     <string name="permission_camera_storage_required">Cần quyền camera và bộ nhớ. Vui lòng cấp quyền trong cài đặt.</string>
     <string name="btn_mini_world">Xem thu nhỏ</string>

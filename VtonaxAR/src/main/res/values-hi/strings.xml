@@ -4,7 +4,9 @@
     <string name="hint_map_save_failed">सहेजना विफल: %1$s</string>
     <string name="hint_map_file_not_found">मैप फ़ाइल नहीं मिली</string>
     <string name="hint_map_loaded">मैप लोड किया गया: %1$s</string>
-    <string name="hint_maps_loaded">%1$d मैप लोड किए गए</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d मैप लोड किए गए</item>
+    </plurals>
     <string name="hint_map_load_failed">लोड विफल: %1$s</string>
     <string name="hint_map_load_requested">मैप लोड का अनुरोध किया गया</string>
     <string name="hint_map_deleted">मैप हटा दिया गया</string>

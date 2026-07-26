@@ -4,7 +4,9 @@
     <string name="hint_map_save_failed">Kaydetme başarısız: %1$s</string>
     <string name="hint_map_file_not_found">Harita dosyası bulunamadı</string>
     <string name="hint_map_loaded">Harita yüklendi: %1$s</string>
-    <string name="hint_maps_loaded">%1$d harita yüklendi</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d harita yüklendi</item>
+    </plurals>
     <string name="hint_map_load_failed">Yükleme başarısız: %1$s</string>
     <string name="hint_map_load_requested">Harita yükleme istendi</string>
     <string name="hint_map_deleted">Harita silindi</string>

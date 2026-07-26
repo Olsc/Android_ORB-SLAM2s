@@ -52,7 +52,7 @@
     <string name="map_details_plane_yes">是</string>
     <string name="map_details_plane_no">否</string>
     <string name="button_ok">確定</string>
-    <string name="map_stats_format">KFs: %1$d | MPs: %2$d | 平面: %3$s</string>
+    <string name="map_stats_format">關鍵影格: %1$d | 地圖點: %2$d | 平面: %3$s</string>
     <string name="map_stats_plane_yes">是</string>
     <string name="map_stats_plane_no">否</string>
     <string name="hint_map_load_requested">地圖載入請求已送出</string>
@@ -60,7 +60,9 @@
     <string name="hint_map_save_failed">儲存失敗：%1$s</string>
     <string name="hint_map_file_not_found">找不到地圖檔案</string>
     <string name="hint_map_loaded">地圖已載入：%1$s</string>
-    <string name="hint_maps_loaded">已載入 %1$d 個地圖</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">已載入 %1$d 個地圖</item>
+    </plurals>
     <string name="hint_map_load_failed">載入失敗：%1$s</string>
     <string name="permission_camera_storage_required">需要相機與儲存空間權限，請在設定中授權。</string>
     <string name="btn_mini_world">小窗預覽</string>

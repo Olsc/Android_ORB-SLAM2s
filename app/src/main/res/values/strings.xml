@@ -60,7 +60,9 @@
     <string name="hint_map_save_failed">Save failed: %1$s</string>
     <string name="hint_map_file_not_found">Map file not found</string>
     <string name="hint_map_loaded">Map loaded: %1$s</string>
-    <string name="hint_maps_loaded">Loaded %1$d maps</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">Loaded %1$d maps</item>
+    </plurals>
     <string name="hint_map_load_failed">Load failed: %1$s</string>
     <string name="permission_camera_storage_required">Camera and storage permissions are required. Please grant permissions in settings.</string>
     <string name="btn_mini_world">Mini View</string>

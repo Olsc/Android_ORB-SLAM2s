@@ -60,7 +60,9 @@
     <string name="hint_map_save_failed">ਸੇਵ ਕਰਨਾ ਅਸਫਲ ਰਿਹਾ: %1$s</string>
     <string name="hint_map_file_not_found">ਨਕਸ਼ਾ ਫਾਈਲ ਨਹੀਂ ਮਿਲੀ</string>
     <string name="hint_map_loaded">ਨਕਸ਼ਾ ਲੋਡ ਹੋ ਗਿਆ: %1$s</string>
-    <string name="hint_maps_loaded">%1$d ਨਕਸ਼ੇ ਲੋਡ ਹੋ ਗਏ</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d ਨਕਸ਼ੇ ਲੋਡ ਹੋ ਗਏ</item>
+    </plurals>
     <string name="hint_map_load_failed">ਲੋਡ ਕਰਨਾ ਅਸਫਲ ਰਿਹਾ: %1$s</string>
     <string name="permission_camera_storage_required">ਕੈਮਰਾ ਅਤੇ ਸਟੋਰੇਜ ਇਜਾਜ਼ਤਾਂ ਦੀ ਲੋੜ ਹੈ। ਕਿਰਪਾ ਕਰਕੇ ਸੈਟਿੰਗਾਂ ਵਿੱਚ ਇਜਾਜ਼ਤ ਦਿਓ।</string>
     <string name="btn_mini_world">ਮਿੰਨੀ ਵਿਊ</string>

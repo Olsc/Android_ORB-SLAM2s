@@ -60,7 +60,9 @@
     <string name="hint_map_save_failed">فشل الحفظ: %1$s</string>
     <string name="hint_map_file_not_found">ملف الخريطة غير موجود</string>
     <string name="hint_map_loaded">تم تحميل الخريطة: %1$s</string>
-    <string name="hint_maps_loaded">تم تحميل %1$d خريطة</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">تم تحميل %1$d خريطة</item>
+    </plurals>
     <string name="hint_map_load_failed">فشل التحميل: %1$s</string>
     <string name="permission_camera_storage_required">أذونات الكاميرا والتخزين مطلوبة. يرجى منح الأذونات في الإعدادات.</string>
     <string name="btn_mini_world">عرض مصغر</string>

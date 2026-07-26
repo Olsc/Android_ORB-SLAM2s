@@ -60,7 +60,9 @@
     <string name="hint_map_save_failed">सहेजना विफल: %1$s</string>
     <string name="hint_map_file_not_found">मानचित्र फ़ाइल नहीं मिली</string>
     <string name="hint_map_loaded">मानचित्र लोड हुआ: %1$s</string>
-    <string name="hint_maps_loaded">%1$d मानचित्र लोड हुए</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d मानचित्र लोड हुए</item>
+    </plurals>
     <string name="hint_map_load_failed">लोड विफल: %1$s</string>
     <string name="permission_camera_storage_required">कैमरा और संग्रहण अनुमतियाँ आवश्यक हैं। कृपया सेटिंग में अनुमतियाँ दें।</string>
     <string name="btn_mini_world">मिनी दृश्य</string>

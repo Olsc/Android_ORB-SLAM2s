@@ -60,7 +60,9 @@
     <string name="hint_map_save_failed">Penyimpanan gagal: %1$s</string>
     <string name="hint_map_file_not_found">File peta tidak ditemukan</string>
     <string name="hint_map_loaded">Peta dimuat: %1$s</string>
-    <string name="hint_maps_loaded">%1$d peta dimuat</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d peta dimuat</item>
+    </plurals>
     <string name="hint_map_load_failed">Pemuatan gagal: %1$s</string>
     <string name="permission_camera_storage_required">Izin kamera dan penyimpanan diperlukan. Berikan izin di pengaturan.</string>
     <string name="btn_mini_world">Tampilan Mini</string>

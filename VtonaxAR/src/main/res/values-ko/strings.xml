@@ -4,7 +4,9 @@
     <string name="hint_map_save_failed">저장 실패: %1$s</string>
     <string name="hint_map_file_not_found">지도 파일을 찾을 수 없습니다</string>
     <string name="hint_map_loaded">지도 불러옴: %1$s</string>
-    <string name="hint_maps_loaded">지도 %1$d개 불러옴</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">지도 %1$d개 불러옴</item>
+    </plurals>
     <string name="hint_map_load_failed">불러오기 실패: %1$s</string>
     <string name="hint_map_load_requested">지도 불러오기 요청됨</string>
     <string name="hint_map_deleted">지도가 삭제되었습니다</string>

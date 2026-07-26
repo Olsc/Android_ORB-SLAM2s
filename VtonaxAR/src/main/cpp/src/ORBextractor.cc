@@ -113,38 +113,41 @@ static void PrepareLevelStepOffsetLUT(int step)
     }
 }
 
-static inline float Atan2Approx(float y, float x)
-{
-    if (x == 0.0f && y == 0.0f) return 0.0f;
-    
-    float absX = std::abs(x);
-    float absY = std::abs(y);
-    float angle = 0.0f;
-    
-    if (absX >= absY) {
-        float r = absY / absX;
-        angle = r * (45.0f - (r - 1.0f) * (15.637f + 3.961f * r));
-        if (x < 0.0f) {
-            angle = 180.0f - angle;
-        }
-        if (y < 0.0f) {
-            angle = (y != 0.0f || x < 0.0f) ? (360.0f - angle) : 180.0f;
-        }
-    } else {
-        float r = absX / absY;
-        angle = 90.0f - r * (45.0f - (r - 1.0f) * (15.637f + 3.961f * r));
-        if (x < 0.0f) {
-            angle = 180.0f - angle;
-        }
-        if (y < 0.0f) {
-            angle = 360.0f - angle;
-        }
+static uint16_t arctan_table_q10[1025];
+static bool bArctanLUTInit = false;
+
+static void InitArctanLUT() {
+    if (bArctanLUTInit) return;
+    for (int i = 0; i <= 1024; ++i) {
+        double r = (double)i / 1024.0;
+        double rad = std::atan(r);
+        arctan_table_q10[i] = (uint16_t)std::round(rad * (180.0 / CV_PI) * 10.0);
     }
+    bArctanLUTInit = true;
+}
+
+static inline float FastIC_Angle_LUT(int m_01, int m_10)
+{
+    if (m_10 == 0 && m_01 == 0) return 0.0f;
+
+    int abs_m10 = std::abs(m_10);
+    int abs_m01 = std::abs(m_01);
     
-    if (angle < 0.0f) angle += 360.0f;
-    else if (angle >= 360.0f) angle -= 360.0f;
-    
-    return angle;
+    int angle_q10 = 0;
+    if (abs_m10 >= abs_m01) {
+        int idx = (abs_m01 << 10) / abs_m10;
+        angle_q10 = arctan_table_q10[idx];
+    } else {
+        int idx = (abs_m10 << 10) / abs_m01;
+        angle_q10 = 900 - arctan_table_q10[idx];
+    }
+
+    if (m_10 < 0) angle_q10 = 1800 - angle_q10;
+    if (m_01 < 0) angle_q10 = 3600 - angle_q10;
+    if (angle_q10 < 0) angle_q10 += 3600;
+    if (angle_q10 >= 3600) angle_q10 -= 3600;
+
+    return (float)angle_q10 * 0.1f;
 }
 
 static float IC_Angle(const Mat& image, Point2f pt,  const vector<int> & u_max)
@@ -208,7 +211,7 @@ static float IC_Angle(const Mat& image, Point2f pt,  const vector<int> & u_max)
         m_01 += suffix_m01;
     }
 
-    return Atan2Approx((float)m_01, (float)m_10);
+    return FastIC_Angle_LUT(m_01, m_10);
 }
 
 
@@ -548,6 +551,7 @@ void ORBextractor::InitLUT() {
         }
     }
     
+    InitArctanLUT();
     bDescriptorLUTInit = true;
     LOGD("InitLUT: ORB LUT 生成完毕。");
 }
@@ -944,72 +948,96 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
 
         const float inv_wCell = 1.0f / (float)wCell;
         const float inv_hCell = 1.0f / (float)hCell;
+        const uint32_t inv_wCell_q16 = (uint32_t)std::round(65536.0f * inv_wCell);
+        const uint32_t inv_hCell_q16 = (uint32_t)std::round(65536.0f * inv_hCell);
 
-        // 2. 将候选点按网格分箱
-        vector<vector<cv::KeyPoint>> grid(nRows * nCols);
+        // 2. 线程局部平坦 CSR 分箱
+        const int nCells = nRows * nCols;
+        static thread_local std::vector<int> cellCounts;
+        static thread_local std::vector<int> cellOffsets;
+        static thread_local std::vector<int> cellHeads;
+        static thread_local std::vector<int> keyCellIndices;
+        static thread_local std::vector<cv::KeyPoint> sortedKeys;
+
+        if (cellCounts.size() < (size_t)nCells) cellCounts.resize(nCells);
+        std::fill(cellCounts.begin(), cellCounts.begin() + nCells, 0);
+
+        if (keyCellIndices.size() < vAllKeys.size()) keyCellIndices.resize(vAllKeys.size());
+        if (sortedKeys.size() < vAllKeys.size()) sortedKeys.resize(vAllKeys.size());
+
         for(size_t i = 0; i < vAllKeys.size(); ++i)
         {
             const cv::KeyPoint& kp = vAllKeys[i];
-            const float x_glob = kp.pt.x;
-            const float y_glob = kp.pt.y;
-            // 过滤边界之外的点
+            const int x_glob = (int)kp.pt.x;
+            const int y_glob = (int)kp.pt.y;
             if(x_glob < minBorderX || x_glob >= maxBorderX || y_glob < minBorderY || y_glob >= maxBorderY)
+            {
+                keyCellIndices[i] = -1;
                 continue;
+            }
 
-            const float x_rel = x_glob - minBorderX;
-            const float y_rel = y_glob - minBorderY;
-            int c = (int)(x_rel * inv_wCell);
-            int r = (int)(y_rel * inv_hCell);
+            const int x_rel = x_glob - minBorderX;
+            const int y_rel = y_glob - minBorderY;
+            int c = (x_rel * inv_wCell_q16) >> 16;
+            int r = (y_rel * inv_hCell_q16) >> 16;
             if(c < 0) c = 0; else if(c >= nCols) c = nCols - 1;
             if(r < 0) r = 0; else if(r >= nRows) r = nRows - 1;
 
-            grid[r * nCols + c].push_back(kp);
+            int cellIdx = r * nCols + c;
+            keyCellIndices[i] = cellIdx;
+            cellCounts[cellIdx]++;
         }
 
-        // 3. 逐个网格进行二段阈值过滤并存入 vToDistributeKeys
-        for(int r = 0; r < nRows; ++r)
+        if (cellOffsets.size() < (size_t)(nCells + 1)) cellOffsets.resize(nCells + 1);
+        cellOffsets[0] = 0;
+        for (int c = 0; c < nCells; ++c)
+            cellOffsets[c + 1] = cellOffsets[c] + cellCounts[c];
+
+        if (cellHeads.size() < (size_t)nCells) cellHeads.resize(nCells);
+        std::memcpy(cellHeads.data(), cellOffsets.data(), nCells * sizeof(int));
+
+        for (size_t i = 0; i < vAllKeys.size(); ++i)
         {
-            for(int c = 0; c < nCols; ++c)
+            int cellIdx = keyCellIndices[i];
+            if (cellIdx >= 0)
             {
-                const vector<cv::KeyPoint>& cellKeys = grid[r * nCols + c];
-                if(cellKeys.empty())
-                    continue;
+                int pos = cellHeads[cellIdx]++;
+                sortedKeys[pos] = vAllKeys[i];
+            }
+        }
 
-                // 检查该网格内是否有大于等于 iniThFAST 的强角点
-                bool hasStrong = false;
-                for(size_t k = 0; k < cellKeys.size(); ++k)
-                {
-                    if(cellKeys[k].response >= iniThFAST)
-                    {
-                        hasStrong = true;
-                        break;
-                    }
-                }
+        // 3. 逐个网格单次遍历流式过滤 (单次遍历替代原代码双重 Pass，提升缓存命中率)
+        for(int cellIdx = 0; cellIdx < nCells; ++cellIdx)
+        {
+            int start = cellOffsets[cellIdx];
+            int end = cellOffsets[cellIdx + 1];
+            if(start >= end)
+                continue;
 
-                // 如果有强点，则只保留强点并做相对坐标变换
-                if(hasStrong)
+            int strongCount = 0;
+            size_t beforeLen = vToDistributeKeys.size();
+
+            for(int k = start; k < end; ++k)
+            {
+                if(sortedKeys[k].response >= iniThFAST)
                 {
-                    for(size_t k = 0; k < cellKeys.size(); ++k)
-                    {
-                        if(cellKeys[k].response >= iniThFAST)
-                        {
-                            cv::KeyPoint kp = cellKeys[k];
-                            kp.pt.x -= minBorderX;
-                            kp.pt.y -= minBorderY;
-                            vToDistributeKeys.push_back(kp);
-                        }
-                    }
+                    strongCount++;
+                    cv::KeyPoint kp = sortedKeys[k];
+                    kp.pt.x -= minBorderX;
+                    kp.pt.y -= minBorderY;
+                    vToDistributeKeys.push_back(kp);
                 }
-                else
+            }
+
+            // 若无强角点，回退收集弱角点
+            if(strongCount == 0)
+            {
+                for(int k = start; k < end; ++k)
                 {
-                    // 否则保留所有符合 minThFAST 的点
-                    for(size_t k = 0; k < cellKeys.size(); ++k)
-                    {
-                        cv::KeyPoint kp = cellKeys[k];
-                        kp.pt.x -= minBorderX;
-                        kp.pt.y -= minBorderY;
-                        vToDistributeKeys.push_back(kp);
-                    }
+                    cv::KeyPoint kp = sortedKeys[k];
+                    kp.pt.x -= minBorderX;
+                    kp.pt.y -= minBorderY;
+                    vToDistributeKeys.push_back(kp);
                 }
             }
         }
@@ -1109,7 +1137,7 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
 }
 
 // 1D 分离式定点 7x7 高斯卷积 (sigma=2.0, 核权重比 256)
-// [18, 34, 49, 55, 49, 34, 18], sum = 257 (~256)
+// [18, 34, 49, 54, 49, 34, 18], sum = 256
 static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPadded)
 {
     const int rows = srcPadded.rows;
@@ -1128,9 +1156,9 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
         // 边界内像素 (3 到 cols-4)
         for (int c = 3; c < cols - 3; ++c) {
             int val = srcRow[c-3] * 18 + srcRow[c-2] * 34 + srcRow[c-1] * 49 +
-                      srcRow[c]   * 55 +
+                      srcRow[c]   * 54 +
                       srcRow[c+1] * 49 + srcRow[c+2] * 34 + srcRow[c+3] * 18;
-            tempRow[c] = val >> 8;
+            tempRow[c] = (val + 128) >> 8;
         }
         // 左边界处理 (c < 3)
         for (int c = 0; c < 3; ++c) {
@@ -1138,9 +1166,9 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
             for (int k = -3; k <= 3; ++k) {
                 int colIdx = std::abs(c + k);
                 if (colIdx >= cols) colIdx = 2 * cols - 1 - colIdx;
-                val += srcRow[colIdx] * ((k == 0) ? 55 : ((std::abs(k) == 1) ? 49 : ((std::abs(k) == 2) ? 34 : 18)));
+                val += srcRow[colIdx] * ((k == 0) ? 54 : ((std::abs(k) == 1) ? 49 : ((std::abs(k) == 2) ? 34 : 18)));
             }
-            tempRow[c] = val >> 8;
+            tempRow[c] = (val + 128) >> 8;
         }
         // 右边界处理 (c >= cols - 3)
         for (int c = cols - 3; c < cols; ++c) {
@@ -1149,9 +1177,9 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
                 int colIdx = c + k;
                 if (colIdx >= cols) colIdx = 2 * (cols - 1) - colIdx;
                 if (colIdx < 0) colIdx = -colIdx;
-                val += srcRow[colIdx] * ((k == 0) ? 55 : ((std::abs(k) == 1) ? 49 : ((std::abs(k) == 2) ? 34 : 18)));
+                val += srcRow[colIdx] * ((k == 0) ? 54 : ((std::abs(k) == 1) ? 49 : ((std::abs(k) == 2) ? 34 : 18)));
             }
-            tempRow[c] = val >> 8;
+            tempRow[c] = (val + 128) >> 8;
         }
     }
 
@@ -1168,9 +1196,9 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
 
         for (int c = 0; c < cols; ++c) {
             int val = tempRowM3[c] * 18 + tempRowM2[c] * 34 + tempRowM1[c] * 49 +
-                      tempRow0[c]  * 55 +
+                      tempRow0[c]  * 54 +
                       tempRowP1[c] * 49 + tempRowP2[c] * 34 + tempRowP3[c] * 18;
-            int pix = val >> 8;
+            int pix = (val + 128) >> 8;
             dstRow[c] = (uchar)(pix > 255 ? 255 : (pix < 0 ? 0 : pix));
         }
     }
@@ -1182,9 +1210,9 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
             for (int k = -3; k <= 3; ++k) {
                 int rowIdx = std::abs(r + k);
                 if (rowIdx >= rows) rowIdx = 2 * rows - 1 - rowIdx;
-                val += tempBuf[rowIdx * cols + c] * ((k == 0) ? 55 : ((std::abs(k) == 1) ? 49 : ((std::abs(k) == 2) ? 34 : 18)));
+                val += tempBuf[rowIdx * cols + c] * ((k == 0) ? 54 : ((std::abs(k) == 1) ? 49 : ((std::abs(k) == 2) ? 34 : 18)));
             }
-            int pix = val >> 8;
+            int pix = (val + 128) >> 8;
             dstRow[c] = (uchar)(pix > 255 ? 255 : (pix < 0 ? 0 : pix));
         }
     }
@@ -1196,9 +1224,9 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
                 int rowIdx = r + k;
                 if (rowIdx >= rows) rowIdx = 2 * (rows - 1) - rowIdx;
                 if (rowIdx < 0) rowIdx = -rowIdx;
-                val += tempBuf[rowIdx * cols + c] * ((k == 0) ? 55 : ((std::abs(k) == 1) ? 49 : ((std::abs(k) == 2) ? 34 : 18)));
+                val += tempBuf[rowIdx * cols + c] * ((k == 0) ? 54 : ((std::abs(k) == 1) ? 49 : ((std::abs(k) == 2) ? 34 : 18)));
             }
-            int pix = val >> 8;
+            int pix = (val + 128) >> 8;
             dstRow[c] = (uchar)(pix > 255 ? 255 : (pix < 0 ? 0 : pix));
         }
     }

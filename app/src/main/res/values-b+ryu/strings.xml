@@ -60,7 +60,9 @@
     <string name="hint_map_save_failed">しまい失敗: %1$s</string>
     <string name="hint_map_file_not_found">マップファイルめんそーれーびらん</string>
     <string name="hint_map_loaded">マップふぃちだちたびたる: %1$s</string>
-    <string name="hint_maps_loaded">%1$d 枚マップふぃちだちたびたる</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d 枚マップふぃちだちたびたる</item>
+    </plurals>
     <string name="hint_map_load_failed">ふぃちだし失敗: %1$s</string>
     <string name="permission_camera_storage_required">カメラとストレージの権限がいりびーん。設定から権限くぃみそーれー。</string>
     <string name="btn_mini_world">ちーさくみーん</string>

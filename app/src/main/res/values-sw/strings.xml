@@ -60,7 +60,9 @@
     <string name="hint_map_save_failed">Kuhifadhi kumeshindwa: %1$s</string>
     <string name="hint_map_file_not_found">Faili la ramani halipatikani</string>
     <string name="hint_map_loaded">Ramani imepakiwa: %1$s</string>
-    <string name="hint_maps_loaded">Ramani %1$d zimepakiwa</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">Ramani %1$d zimepakiwa</item>
+    </plurals>
     <string name="hint_map_load_failed">Kupakia kumeshindwa: %1$s</string>
     <string name="permission_camera_storage_required">Ruhusa za kamera na hifadhi zinahitajika. Tafadhali toa ruhusa katika mipangilio.</string>
     <string name="btn_mini_world">Mtazamo Mdogo</string>

@@ -60,7 +60,9 @@
     <string name="hint_map_save_failed">محفوظ کرنے میں ناکامی: %1$s</string>
     <string name="hint_map_file_not_found">نقشے کی فائل نہیں ملی</string>
     <string name="hint_map_loaded">نقشہ لوڈ ہو گیا: %1$s</string>
-    <string name="hint_maps_loaded">%1$d نقشے لوڈ ہوئے</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d نقشے لوڈ ہوئے</item>
+    </plurals>
     <string name="hint_map_load_failed">لوڈ کرنے میں ناکامی: %1$s</string>
     <string name="permission_camera_storage_required">کیمرہ اور اسٹوریج کی اجازت درکار ہے۔ ترتیبات میں اجازت دیں۔</string>
     <string name="btn_mini_world">مختصر منظر</string>

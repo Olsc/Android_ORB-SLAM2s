@@ -60,7 +60,9 @@
     <string name="hint_map_save_failed">保存に失敗しました: %1$s</string>
     <string name="hint_map_file_not_found">マップファイルが見つかりません</string>
     <string name="hint_map_loaded">マップが読み込まれました: %1$s</string>
-    <string name="hint_maps_loaded">%1$d 件のマップを読み込みました</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d 件のマップを読み込みました</item>
+    </plurals>
     <string name="hint_map_load_failed">読込に失敗しました: %1$s</string>
     <string name="permission_camera_storage_required">カメラとストレージの権限が必要です。設定から権限を付与してください。</string>
     <string name="btn_mini_world">ミニビュー</string>

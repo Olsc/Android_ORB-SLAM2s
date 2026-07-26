@@ -4,7 +4,9 @@
     <string name="hint_map_save_failed">Salvataggio non riuscito: %1$s</string>
     <string name="hint_map_file_not_found">File della mappa non trovato</string>
     <string name="hint_map_loaded">Mappa caricata: %1$s</string>
-    <string name="hint_maps_loaded">%1$d mappe caricate</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d mappe caricate</item>
+    </plurals>
     <string name="hint_map_load_failed">Caricamento non riuscito: %1$s</string>
     <string name="hint_map_load_requested">Caricamento mappa richiesto</string>
     <string name="hint_map_deleted">Mappa eliminata</string>

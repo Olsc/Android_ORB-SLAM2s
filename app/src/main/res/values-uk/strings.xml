@@ -60,7 +60,9 @@
     <string name="hint_map_save_failed">Збереження не вдалося: %1$s</string>
     <string name="hint_map_file_not_found">Файл карти не знайдено</string>
     <string name="hint_map_loaded">Карту завантажено: %1$s</string>
-    <string name="hint_maps_loaded">Завантажено карт: %1$d</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">Завантажено карт: %1$d</item>
+    </plurals>
     <string name="hint_map_load_failed">Завантаження не вдалося: %1$s</string>
     <string name="permission_camera_storage_required">Необхідні дозволи камери та сховища. Надайте дозволи в налаштуваннях.</string>
     <string name="btn_mini_world">Міні-вид</string>
