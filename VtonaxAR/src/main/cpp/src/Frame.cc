@@ -228,7 +228,7 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
 
     float viewCos = 1.0f;
     int nPredictedLevel = 0;
-    if(!(pMP->mbFromLoadedMap && pMP->GetDescriptor().empty()))
+    if(!pMP->mbFromLoadedMap)
     {
         const float maxDistance = pMP->GetMaxDistanceInvariance();
         const float minDistance = pMP->GetMinDistanceInvariance();
