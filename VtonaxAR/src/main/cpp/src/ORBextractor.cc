@@ -948,6 +948,8 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
 
         const float inv_wCell = 1.0f / (float)wCell;
         const float inv_hCell = 1.0f / (float)hCell;
+        const uint32_t inv_wCell_q16 = (uint32_t)std::round(65536.0f * inv_wCell);
+        const uint32_t inv_hCell_q16 = (uint32_t)std::round(65536.0f * inv_hCell);
 
         // 2. 线程局部平坦 CSR 分箱
         const int nCells = nRows * nCols;
@@ -966,18 +968,18 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
         for(size_t i = 0; i < vAllKeys.size(); ++i)
         {
             const cv::KeyPoint& kp = vAllKeys[i];
-            const float x_glob = kp.pt.x;
-            const float y_glob = kp.pt.y;
+            const int x_glob = (int)kp.pt.x;
+            const int y_glob = (int)kp.pt.y;
             if(x_glob < minBorderX || x_glob >= maxBorderX || y_glob < minBorderY || y_glob >= maxBorderY)
             {
                 keyCellIndices[i] = -1;
                 continue;
             }
 
-            const float x_rel = x_glob - minBorderX;
-            const float y_rel = y_glob - minBorderY;
-            int c = (int)(x_rel * inv_wCell);
-            int r = (int)(y_rel * inv_hCell);
+            const int x_rel = x_glob - minBorderX;
+            const int y_rel = y_glob - minBorderY;
+            int c = (x_rel * inv_wCell_q16) >> 16;
+            int r = (y_rel * inv_hCell_q16) >> 16;
             if(c < 0) c = 0; else if(c >= nCols) c = nCols - 1;
             if(r < 0) r = 0; else if(r >= nRows) r = nRows - 1;
 
@@ -1004,7 +1006,7 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
             }
         }
 
-        // 3. 逐个网格进行二段阈值过滤并存入 vToDistributeKeys
+        // 3. 逐个网格单次遍历流式过滤 (单次遍历替代原代码双重 Pass，提升缓存命中率)
         for(int cellIdx = 0; cellIdx < nCells; ++cellIdx)
         {
             int start = cellOffsets[cellIdx];
@@ -1012,30 +1014,23 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
             if(start >= end)
                 continue;
 
-            bool hasStrong = false;
+            int strongCount = 0;
+            size_t beforeLen = vToDistributeKeys.size();
+
             for(int k = start; k < end; ++k)
             {
                 if(sortedKeys[k].response >= iniThFAST)
                 {
-                    hasStrong = true;
-                    break;
+                    strongCount++;
+                    cv::KeyPoint kp = sortedKeys[k];
+                    kp.pt.x -= minBorderX;
+                    kp.pt.y -= minBorderY;
+                    vToDistributeKeys.push_back(kp);
                 }
             }
 
-            if(hasStrong)
-            {
-                for(int k = start; k < end; ++k)
-                {
-                    if(sortedKeys[k].response >= iniThFAST)
-                    {
-                        cv::KeyPoint kp = sortedKeys[k];
-                        kp.pt.x -= minBorderX;
-                        kp.pt.y -= minBorderY;
-                        vToDistributeKeys.push_back(kp);
-                    }
-                }
-            }
-            else
+            // 若无强角点，回退收集弱角点
+            if(strongCount == 0)
             {
                 for(int k = start; k < end; ++k)
                 {

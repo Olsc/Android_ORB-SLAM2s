@@ -643,22 +643,6 @@ void LocalMapping::SearchInNeighbors()
 
     matcher.Fuse(mpCurrentKeyFrame,vpFuseCandidates);
 
-
-    // 更新点
-    vpMapPointMatches = mpCurrentKeyFrame->GetMapPointMatches();
-    for(size_t i=0, iend=vpMapPointMatches.size(); i<iend; i++)
-    {
-        MapPoint* pMP=vpMapPointMatches[i];
-        if(pMP)
-        {
-            if(!pMP->isBad())
-            {
-                pMP->ComputeDistinctiveDescriptors();
-                pMP->UpdateNormalAndDepth();
-            }
-        }
-    }
-
     // 更新共视步图中的连接
     mpCurrentKeyFrame->UpdateConnections();
 }
