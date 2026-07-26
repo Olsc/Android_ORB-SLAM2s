@@ -162,20 +162,18 @@ void KeyFrame::UpdateBestCovisibles()
     std::unique_lock<std::mutex> lock(mMutexConnections);
     std::vector<std::pair<int,KeyFrame*> > vPairs;
     vPairs.reserve(mConnectedKeyFrameWeights.size());
-    for(std::map<KeyFrame*,int>::iterator mit=mConnectedKeyFrameWeights.begin(), mend=mConnectedKeyFrameWeights.end(); mit!=mend; mit++)
+    for(std::map<KeyFrame*,int>::const_iterator mit=mConnectedKeyFrameWeights.begin(), mend=mConnectedKeyFrameWeights.end(); mit!=mend; ++mit)
        vPairs.push_back(std::make_pair(mit->second,mit->first));
 
-    std::sort(vPairs.begin(),vPairs.end());
-    std::list<KeyFrame*> lKFs;
-    std::list<int> lWs;
-    for(size_t i=0, iend=vPairs.size(); i<iend;i++)
-    {
-        lKFs.push_front(vPairs[i].second);
-        lWs.push_front(vPairs[i].first);
-    }
+    std::sort(vPairs.rbegin(), vPairs.rend());
 
-    mvpOrderedConnectedKeyFrames = std::vector<KeyFrame*>(lKFs.begin(),lKFs.end());
-    mvOrderedWeights = std::vector<int>(lWs.begin(), lWs.end());    
+    mvpOrderedConnectedKeyFrames.resize(vPairs.size());
+    mvOrderedWeights.resize(vPairs.size());
+    for(size_t i=0, iend=vPairs.size(); i<iend; ++i)
+    {
+        mvpOrderedConnectedKeyFrames[i] = vPairs[i].second;
+        mvOrderedWeights[i] = vPairs[i].first;
+    }
 }
 
 std::set<KeyFrame*> KeyFrame::GetConnectedKeyFrames()
@@ -370,22 +368,22 @@ void KeyFrame::UpdateConnections()
         pKFmax->AddConnection(this,nmax);
     }
 
-    sort(vPairs.begin(),vPairs.end());
-    list<KeyFrame*> lKFs;
-    list<int> lWs;
-    for(size_t i=0; i<vPairs.size();i++)
+    std::sort(vPairs.rbegin(), vPairs.rend());
+
+    vector<KeyFrame*> vOrderedKFs(vPairs.size());
+    vector<int> vOrderedWs(vPairs.size());
+    for(size_t i=0, iend=vPairs.size(); i<iend; ++i)
     {
-        lKFs.push_front(vPairs[i].second);
-        lWs.push_front(vPairs[i].first);
+        vOrderedKFs[i] = vPairs[i].second;
+        vOrderedWs[i] = vPairs[i].first;
     }
 
     {
         unique_lock<mutex> lockCon(mMutexConnections);
 
-        // mspConnectedKeyFrames = spConnectedKeyFrames;
         mConnectedKeyFrameWeights = KFcounter;
-        mvpOrderedConnectedKeyFrames = vector<KeyFrame*>(lKFs.begin(),lKFs.end());
-        mvOrderedWeights = vector<int>(lWs.begin(), lWs.end());
+        mvpOrderedConnectedKeyFrames = std::move(vOrderedKFs);
+        mvOrderedWeights = std::move(vOrderedWs);
 
         if(mbFirstConnection && mnId!=0)
         {

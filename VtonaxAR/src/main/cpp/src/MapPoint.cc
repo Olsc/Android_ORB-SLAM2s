@@ -351,33 +351,43 @@ void MapPoint::ComputeDistinctiveDescriptors()
     if(vDescriptors.empty())
         return;
 
-    // 计算它们之间的距离
     const size_t N = vDescriptors.size();
 
-    float Distances[N][N];
-    for(size_t i=0;i<N;i++)
+    // 快速路径：1 个或 2 个观测时无需计算距离矩阵
+    if (N <= 2)
     {
-        Distances[i][i]=0;
-        for(size_t j=i+1;j<N;j++)
+        unique_lock<mutex> lock(mMutexFeatures);
+        mDescriptor = vDescriptors[0].clone();
+        return;
+    }
+
+    // N > 2 时，使用栈内存缓冲区（限制最大 64 个观测）
+    const size_t N_max = std::min(N, (size_t)64);
+    int distsMat[64][64];
+
+    for(size_t i = 0; i < N_max; ++i)
+    {
+        distsMat[i][i] = 0;
+        for(size_t j = i + 1; j < N_max; ++j)
         {
-            int distij = ORBmatcher::DescriptorDistance(vDescriptors[i],vDescriptors[j]);
-            Distances[i][j]=distij;
-            Distances[j][i]=distij;
+            int distij = ORBmatcher::DescriptorDistance(vDescriptors[i], vDescriptors[j]);
+            distsMat[i][j] = distij;
+            distsMat[j][i] = distij;
         }
     }
 
-    // 取与其余部分中值距离最小的描述符
-    // 使用 nth_element 替代 sort 找中值: O(N) vs O(N log N)
     int BestMedian = INT_MAX;
     int BestIdx = 0;
-    for(size_t i=0;i<N;i++)
-    {
-        vector<int> vDists(Distances[i],Distances[i]+N);
-        size_t medianIdx = (N-1) / 2;
-        nth_element(vDists.begin(), vDists.begin() + medianIdx, vDists.end());
-        int median = vDists[medianIdx];
+    int rowDists[64];
 
-        if(median<BestMedian)
+    for(size_t i = 0; i < N_max; ++i)
+    {
+        std::memcpy(rowDists, distsMat[i], N_max * sizeof(int));
+        size_t medianIdx = (N_max - 1) / 2;
+        std::nth_element(rowDists, rowDists + medianIdx, rowDists + N_max);
+        int median = rowDists[medianIdx];
+
+        if(median < BestMedian)
         {
             BestMedian = median;
             BestIdx = i;
