@@ -949,16 +949,30 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
         const float inv_wCell = 1.0f / (float)wCell;
         const float inv_hCell = 1.0f / (float)hCell;
 
-        // 2. 将候选点按网格分箱
-        vector<vector<cv::KeyPoint>> grid(nRows * nCols);
+        // 2. 线程局部平坦 CSR 分箱
+        const int nCells = nRows * nCols;
+        static thread_local std::vector<int> cellCounts;
+        static thread_local std::vector<int> cellOffsets;
+        static thread_local std::vector<int> cellHeads;
+        static thread_local std::vector<int> keyCellIndices;
+        static thread_local std::vector<cv::KeyPoint> sortedKeys;
+
+        if (cellCounts.size() < (size_t)nCells) cellCounts.resize(nCells);
+        std::fill(cellCounts.begin(), cellCounts.begin() + nCells, 0);
+
+        if (keyCellIndices.size() < vAllKeys.size()) keyCellIndices.resize(vAllKeys.size());
+        if (sortedKeys.size() < vAllKeys.size()) sortedKeys.resize(vAllKeys.size());
+
         for(size_t i = 0; i < vAllKeys.size(); ++i)
         {
             const cv::KeyPoint& kp = vAllKeys[i];
             const float x_glob = kp.pt.x;
             const float y_glob = kp.pt.y;
-            // 过滤边界之外的点
             if(x_glob < minBorderX || x_glob >= maxBorderX || y_glob < minBorderY || y_glob >= maxBorderY)
+            {
+                keyCellIndices[i] = -1;
                 continue;
+            }
 
             const float x_rel = x_glob - minBorderX;
             const float y_rel = y_glob - minBorderY;
@@ -967,53 +981,68 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
             if(c < 0) c = 0; else if(c >= nCols) c = nCols - 1;
             if(r < 0) r = 0; else if(r >= nRows) r = nRows - 1;
 
-            grid[r * nCols + c].push_back(kp);
+            int cellIdx = r * nCols + c;
+            keyCellIndices[i] = cellIdx;
+            cellCounts[cellIdx]++;
+        }
+
+        if (cellOffsets.size() < (size_t)(nCells + 1)) cellOffsets.resize(nCells + 1);
+        cellOffsets[0] = 0;
+        for (int c = 0; c < nCells; ++c)
+            cellOffsets[c + 1] = cellOffsets[c] + cellCounts[c];
+
+        if (cellHeads.size() < (size_t)nCells) cellHeads.resize(nCells);
+        std::memcpy(cellHeads.data(), cellOffsets.data(), nCells * sizeof(int));
+
+        for (size_t i = 0; i < vAllKeys.size(); ++i)
+        {
+            int cellIdx = keyCellIndices[i];
+            if (cellIdx >= 0)
+            {
+                int pos = cellHeads[cellIdx]++;
+                sortedKeys[pos] = vAllKeys[i];
+            }
         }
 
         // 3. 逐个网格进行二段阈值过滤并存入 vToDistributeKeys
-        for(int r = 0; r < nRows; ++r)
+        for(int cellIdx = 0; cellIdx < nCells; ++cellIdx)
         {
-            for(int c = 0; c < nCols; ++c)
+            int start = cellOffsets[cellIdx];
+            int end = cellOffsets[cellIdx + 1];
+            if(start >= end)
+                continue;
+
+            bool hasStrong = false;
+            for(int k = start; k < end; ++k)
             {
-                const vector<cv::KeyPoint>& cellKeys = grid[r * nCols + c];
-                if(cellKeys.empty())
-                    continue;
-
-                // 检查该网格内是否有大于等于 iniThFAST 的强角点
-                bool hasStrong = false;
-                for(size_t k = 0; k < cellKeys.size(); ++k)
+                if(sortedKeys[k].response >= iniThFAST)
                 {
-                    if(cellKeys[k].response >= iniThFAST)
-                    {
-                        hasStrong = true;
-                        break;
-                    }
+                    hasStrong = true;
+                    break;
                 }
+            }
 
-                // 如果有强点，则只保留强点并做相对坐标变换
-                if(hasStrong)
+            if(hasStrong)
+            {
+                for(int k = start; k < end; ++k)
                 {
-                    for(size_t k = 0; k < cellKeys.size(); ++k)
+                    if(sortedKeys[k].response >= iniThFAST)
                     {
-                        if(cellKeys[k].response >= iniThFAST)
-                        {
-                            cv::KeyPoint kp = cellKeys[k];
-                            kp.pt.x -= minBorderX;
-                            kp.pt.y -= minBorderY;
-                            vToDistributeKeys.push_back(kp);
-                        }
-                    }
-                }
-                else
-                {
-                    // 否则保留所有符合 minThFAST 的点
-                    for(size_t k = 0; k < cellKeys.size(); ++k)
-                    {
-                        cv::KeyPoint kp = cellKeys[k];
+                        cv::KeyPoint kp = sortedKeys[k];
                         kp.pt.x -= minBorderX;
                         kp.pt.y -= minBorderY;
                         vToDistributeKeys.push_back(kp);
                     }
+                }
+            }
+            else
+            {
+                for(int k = start; k < end; ++k)
+                {
+                    cv::KeyPoint kp = sortedKeys[k];
+                    kp.pt.x -= minBorderX;
+                    kp.pt.y -= minBorderY;
+                    vToDistributeKeys.push_back(kp);
                 }
             }
         }
