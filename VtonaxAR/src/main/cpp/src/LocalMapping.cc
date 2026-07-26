@@ -398,23 +398,101 @@ void LocalMapping::CreateNewMapPoints()
             cv::Mat x3D;
             if(cosParallaxRays<cosParallaxStereo && cosParallaxRays>0 && (bStereo1 || bStereo2 || cosParallaxRays<LOCAL_MAPPING_TRIANGULATION_PARALLAX_TH))
             {
-                // 线性三角化方法
-                // 用标量 xn1x/xn1y/xn2x/xn2y 直接填充 A，避免额外的 xn1/xn2 cv::Mat 分配
-                cv::Mat A(4,4,CV_32F);
-                A.row(0) = xn1x*Tcw1.row(2)-Tcw1.row(0);
-                A.row(1) = xn1y*Tcw1.row(2)-Tcw1.row(1);
-                A.row(2) = xn2x*Tcw2.row(2)-Tcw2.row(0);
-                A.row(3) = xn2y*Tcw2.row(2)-Tcw2.row(1);
+                // 线性三角化方法 (零堆分配 4x4 雅可比求解器)
+                float A[4][4];
+                const float* pTcw1_0 = Tcw1.ptr<float>(0);
+                const float* pTcw1_1 = Tcw1.ptr<float>(1);
+                const float* pTcw1_2 = Tcw1.ptr<float>(2);
+                const float* pTcw2_0 = Tcw2.ptr<float>(0);
+                const float* pTcw2_1 = Tcw2.ptr<float>(1);
+                const float* pTcw2_2 = Tcw2.ptr<float>(2);
 
-                cv::SVD::compute(A,w,u,vt,cv::SVD::MODIFY_A| cv::SVD::FULL_UV);
+                for (int c = 0; c < 4; ++c) {
+                    A[0][c] = xn1x * pTcw1_2[c] - pTcw1_0[c];
+                    A[1][c] = xn1y * pTcw1_2[c] - pTcw1_1[c];
+                    A[2][c] = xn2x * pTcw2_2[c] - pTcw2_0[c];
+                    A[3][c] = xn2y * pTcw2_2[c] - pTcw2_1[c];
+                }
 
-                x3D = vt.row(3).t();
+                float M[4][4];
+                for (int r = 0; r < 4; ++r) {
+                    for (int c = r; c < 4; ++c) {
+                        float val = A[0][r] * A[0][c] + A[1][r] * A[1][c] + A[2][r] * A[2][c] + A[3][r] * A[3][c];
+                        M[r][c] = val;
+                        M[c][r] = val;
+                    }
+                }
 
-                if(x3D.at<float>(3)==0)
+                float V[4][4] = {
+                    {1.0f, 0.0f, 0.0f, 0.0f},
+                    {0.0f, 1.0f, 0.0f, 0.0f},
+                    {0.0f, 0.0f, 1.0f, 0.0f},
+                    {0.0f, 0.0f, 0.0f, 1.0f}
+                };
+
+                for (int it = 0; it < 30; ++it) {
+                    float maxVal = 0.0f;
+                    int p = 0, q = 1;
+                    for (int i = 0; i < 4; ++i) {
+                        for (int j = i + 1; j < 4; ++j) {
+                            float absVal = std::abs(M[i][j]);
+                            if (absVal > maxVal) {
+                                maxVal = absVal;
+                                p = i;
+                                q = j;
+                            }
+                        }
+                    }
+
+                    if (maxVal < 1e-15f) break;
+
+                    float app = M[p][p];
+                    float aqq = M[q][q];
+                    float apq = M[p][q];
+
+                    float phi = 0.5f * std::atan2(2.0f * apq, aqq - app);
+                    float c = std::cos(phi);
+                    float s = std::sin(phi);
+
+                    for (int i = 0; i < 4; ++i) {
+                        if (i != p && i != q) {
+                            float mip = M[i][p];
+                            float miq = M[i][q];
+                            M[i][p] = c * mip - s * miq;
+                            M[p][i] = M[i][p];
+                            M[i][q] = s * mip + c * miq;
+                            M[q][i] = M[i][q];
+                        }
+                    }
+
+                    M[p][p] = c * c * app - 2.0f * s * c * apq + s * s * aqq;
+                    M[q][q] = s * s * app + 2.0f * s * c * apq + c * c * aqq;
+                    M[p][q] = 0.0f;
+                    M[q][p] = 0.0f;
+
+                    for (int i = 0; i < 4; ++i) {
+                        float vip = V[i][p];
+                        float viq = V[i][q];
+                        V[i][p] = c * vip - s * viq;
+                        V[i][q] = s * vip + c * viq;
+                    }
+                }
+
+                int minIdx = 0;
+                float minEval = M[0][0];
+                for (int i = 1; i < 4; ++i) {
+                    if (M[i][i] < minEval) {
+                        minEval = M[i][i];
+                        minIdx = i;
+                    }
+                }
+
+                float invW = V[3][minIdx];
+                if (std::abs(invW) <= 1e-10f)
                     continue;
 
-                // 欧几里得坐标
-                x3D = x3D.rowRange(0,3)/x3D.at<float>(3);
+                invW = 1.0f / invW;
+                x3D = (cv::Mat_<float>(3, 1) << V[0][minIdx] * invW, V[1][minIdx] * invW, V[2][minIdx] * invW);
 
             }
             else

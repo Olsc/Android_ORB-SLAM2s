@@ -1134,7 +1134,7 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
             int val = srcRow[c-3] * 18 + srcRow[c-2] * 34 + srcRow[c-1] * 49 +
                       srcRow[c]   * 54 +
                       srcRow[c+1] * 49 + srcRow[c+2] * 34 + srcRow[c+3] * 18;
-            tempRow[c] = val >> 8;
+            tempRow[c] = (val + 128) >> 8;
         }
         // 左边界处理 (c < 3)
         for (int c = 0; c < 3; ++c) {
@@ -1144,7 +1144,7 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
                 if (colIdx >= cols) colIdx = 2 * cols - 1 - colIdx;
                 val += srcRow[colIdx] * ((k == 0) ? 54 : ((std::abs(k) == 1) ? 49 : ((std::abs(k) == 2) ? 34 : 18)));
             }
-            tempRow[c] = val >> 8;
+            tempRow[c] = (val + 128) >> 8;
         }
         // 右边界处理 (c >= cols - 3)
         for (int c = cols - 3; c < cols; ++c) {
@@ -1155,7 +1155,7 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
                 if (colIdx < 0) colIdx = -colIdx;
                 val += srcRow[colIdx] * ((k == 0) ? 54 : ((std::abs(k) == 1) ? 49 : ((std::abs(k) == 2) ? 34 : 18)));
             }
-            tempRow[c] = val >> 8;
+            tempRow[c] = (val + 128) >> 8;
         }
     }
 
@@ -1174,7 +1174,7 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
             int val = tempRowM3[c] * 18 + tempRowM2[c] * 34 + tempRowM1[c] * 49 +
                       tempRow0[c]  * 54 +
                       tempRowP1[c] * 49 + tempRowP2[c] * 34 + tempRowP3[c] * 18;
-            int pix = val >> 8;
+            int pix = (val + 128) >> 8;
             dstRow[c] = (uchar)(pix > 255 ? 255 : (pix < 0 ? 0 : pix));
         }
     }
@@ -1188,7 +1188,7 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
                 if (rowIdx >= rows) rowIdx = 2 * rows - 1 - rowIdx;
                 val += tempBuf[rowIdx * cols + c] * ((k == 0) ? 54 : ((std::abs(k) == 1) ? 49 : ((std::abs(k) == 2) ? 34 : 18)));
             }
-            int pix = val >> 8;
+            int pix = (val + 128) >> 8;
             dstRow[c] = (uchar)(pix > 255 ? 255 : (pix < 0 ? 0 : pix));
         }
     }
@@ -1202,7 +1202,7 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
                 if (rowIdx < 0) rowIdx = -rowIdx;
                 val += tempBuf[rowIdx * cols + c] * ((k == 0) ? 54 : ((std::abs(k) == 1) ? 49 : ((std::abs(k) == 2) ? 34 : 18)));
             }
-            int pix = val >> 8;
+            int pix = (val + 128) >> 8;
             dstRow[c] = (uchar)(pix > 255 ? 255 : (pix < 0 ? 0 : pix));
         }
     }
