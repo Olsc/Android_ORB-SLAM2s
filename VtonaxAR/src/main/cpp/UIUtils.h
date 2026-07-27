@@ -25,8 +25,11 @@
  * @param vKeys 关键点列表
  * @param vMPs 地图点列表
  * @param im 目标图像
+ * @param cx 相机主点X (用于动态显示缩放, 传0则使用固定2x缩放保持向后兼容)
+ * @param cy 相机主点Y (用于动态显示缩放, 传0则使用固定2x缩放保持向后兼容)
  */
-void drawTrackedPoints(const std::vector<cv::KeyPoint> &vKeys, const std::vector<ORB_SLAM2::MapPoint *> &vMPs, cv::Mat &im);
+void drawTrackedPoints(const std::vector<cv::KeyPoint> &vKeys, const std::vector<ORB_SLAM2::MapPoint *> &vMPs,
+                       cv::Mat &im, float cx = 0.0f, float cy = 0.0f);
 
 /**
  * 绘制所有地图点（用于AR重定位时显示完整点云）

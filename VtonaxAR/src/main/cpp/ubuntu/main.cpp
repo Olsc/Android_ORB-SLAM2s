@@ -63,16 +63,16 @@ void drawARCube(cv::Mat& im, const cv::Mat& Tcw, Plane* plane, float fx, float f
 
 int main(int argc, char** argv) {
     std::cout << "==========================================================" << std::endl;
-    std::cout << "   VtonaxAR 单目 SLAM" << std::endl;
+    std::cout << "   VtonaxAR Monocular SLAM" << std::endl;
     std::cout << "==========================================================" << std::endl;
 
     // 默认相机索引或视频文件路径
     std::string videoSource = "0";
     if (argc > 1) {
         videoSource = argv[1];
-        std::cout << "[Ubuntu GUI] 使用自定义视频源: " << videoSource << std::endl;
+        std::cout << "[Ubuntu GUI] Using custom video source: " << videoSource << std::endl;
     } else {
-        std::cout << "[Ubuntu GUI] 使用默认系统相机 (设备索引: 0)" << std::endl;
+        std::cout << "[Ubuntu GUI] Using default system camera (device index: 0)" << std::endl;
     }
 
     // 从项目内置的 Config.h 加载相机内参
@@ -82,9 +82,9 @@ int main(int argc, char** argv) {
     cy = ORB_SLAM2::CAMERA_CY;
 
     // 采用与 Android 相同的嵌入式资源模式加载 SLAM 系统
-    std::cout << "[Ubuntu GUI] 正在从程序内嵌资源中解压并加载词汇表..." << std::endl;
+    std::cout << "[Ubuntu GUI] Loading vocabulary from embedded resources..." << std::endl;
     slamSys = new ORB_SLAM2::System("", ORB_SLAM2::System::MONOCULAR);
-    std::cout << "[Ubuntu GUI] SLAM 引擎初始化成功，已就绪！" << std::endl;
+    std::cout << "[Ubuntu GUI] SLAM engine initialized successfully!" << std::endl;
 
     // 初始化 OpenCV 视频捕获组件
     cv::VideoCapture cap;
@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
     }
 
     if (!cap.isOpened()) {
-        std::cerr << "[错误] 无法打开指定的相机或视频文件: " << videoSource << std::endl;
+        std::cerr << "[ERROR] Cannot open camera or video file: " << videoSource << std::endl;
         delete slamSys;
         return -1;
     }
@@ -107,9 +107,9 @@ int main(int argc, char** argv) {
     const double TARGET_FPS = 30.0;
     const int frameSkip = isVideoFile ? std::max(1, (int)std::round(inputFps / TARGET_FPS)) : 1;
 
-    std::cout << "[Ubuntu GUI] 输入源 FPS: " << inputFps
-              << ", 固定处理帧率: " << TARGET_FPS << " FPS"
-              << (frameSkip > 1 ? " (跳帧率: " + std::to_string(frameSkip) + ")" : "")
+    std::cout << "[Ubuntu GUI] Input source FPS: " << inputFps
+              << ", fixed processing rate: " << TARGET_FPS << " FPS"
+              << (frameSkip > 1 ? " (frame skip: " + std::to_string(frameSkip) + ")" : "")
               << std::endl;
 
     // 设置视频分辨率为 1280x720 以获得绝佳的高清画质
@@ -125,7 +125,7 @@ int main(int argc, char** argv) {
     auto lastTime = std::chrono::steady_clock::now();
     int frameCounter = 0;
 
-    std::cout << "[Ubuntu GUI] 主处理线程循环已启动。按键盘 'ESC' 或 'q' 退出程序。" << std::endl;
+    std::cout << "[Ubuntu GUI] Main loop started. Press 'ESC' or 'q' to exit." << std::endl;
 
     int skipCounter = 0;
     while (true) {
@@ -156,7 +156,17 @@ int main(int argc, char** argv) {
 
         // 灰度化用于 SLAM 跟踪
         cv::cvtColor(frame, imgGr, cv::COLOR_BGR2GRAY);
-        imgRgba = frame.clone(); // 保留彩色帧用于渲染
+
+        // 限制显示分辨率，防止高分辨率视频导致窗口过大（最大 1280x720=720P）
+        const int MAX_DISPLAY_W = 1280;
+        const int MAX_DISPLAY_H = 720;
+        if (frame.cols > MAX_DISPLAY_W || frame.rows > MAX_DISPLAY_H) {
+            float scale = std::min((float)MAX_DISPLAY_W / frame.cols,
+                                   (float)MAX_DISPLAY_H / frame.rows);
+            cv::resize(frame, imgRgba, cv::Size(), scale, scale, cv::INTER_AREA);
+        } else {
+            imgRgba = frame.clone();
+        }
 
         // 缩放到 SLAM 工作分辨率 (640x360)
         cv::Mat imgSmall;
@@ -202,7 +212,7 @@ int main(int argc, char** argv) {
                 std::vector<ORB_SLAM2::MapPoint*> allMapPoints = slamSys->GetAllMapPoints();
                 drawAllMapPoints(TcwAligned, allMapPoints, imgRgba, fx, fy, cx, cy, true);
             }
-            drawTrackedPoints(vKeys, vMPs, imgRgba);
+            drawTrackedPoints(vKeys, vMPs, imgRgba, cx, cy);
         }
 
         // 若检测到平面，绘制 3D 虚拟 AR 立方体
@@ -227,14 +237,14 @@ int main(int argc, char** argv) {
     }
 
     // 释放资源
-    std::cout << "[Ubuntu GUI] 正在关闭 SLAM 引擎并释放内存..." << std::endl;
+    std::cout << "[Ubuntu GUI] Shutting down SLAM engine..." << std::endl;
     if (slamSys) {
         slamSys->Shutdown();
         delete slamSys;
     }
     if (pPlane) delete pPlane;
 
-    std::cout << "[Ubuntu GUI] 程序正常退出，感谢使用！" << std::endl;
+    std::cout << "[Ubuntu GUI] Program terminated. Goodbye!" << std::endl;
     return 0;
 }
 
@@ -273,9 +283,10 @@ void drawARCube(cv::Mat& im, const cv::Mat& Tcw, Plane* plane, float fx, float f
 
         if (Zc <= 0.01f) return; // 跳过相机后方的裁剪点
 
-        // 将相机坐标投影到图像上，显示画面为处理分辨率的 2 倍（对应 * 2.0f）
-        float u = (fx * Xc / Zc + cx) * 2.0f;
-        float v = (fy * Yc / Zc + cy) * 2.0f;
+        // 将相机坐标投影到图像上，根据实际显示图像大小动态缩放
+        float scaleToDisplay = (2.0f * cx > 0.0f) ? (float)im.cols / (2.0f * cx) : 2.0f;
+        float u = (fx * Xc / Zc + cx) * scaleToDisplay;
+        float v = (fy * Yc / Zc + cy) * scaleToDisplay;
         ptsImg.push_back(cv::Point(u, v));
     }
 
@@ -306,12 +317,12 @@ void initMenu() {
 
     // 第 1 组菜单: AR 互动操作
     MenuSection arSec;
-    arSec.title = "AR 互动操作";
+    arSec.title = "AR Controls";
     arSec.expanded = true;
 
     Button btnPlace;
-    btnPlace.label = "放置 AR 虚拟箱";
-    btnPlace.color = cv::Scalar(30, 150, 20); // 翡翠绿
+    btnPlace.label = "Place AR Cube";
+    btnPlace.color = cv::Scalar(30, 150, 20);
     btnPlace.action = []() {
         std::lock_guard<std::mutex> lock(gSlamStateMutex);
         std::lock_guard<std::mutex> lockData(gMapDataMutex);
@@ -325,46 +336,46 @@ void initMenu() {
             if (pPlane) {
                 if (slamSys && slamSys->MapChanged()) pPlane->Recompute();
                 planeLoadedFromMap = false;
-                std::cout << "[Ubuntu GUI] 成功检测到平面并生成虚拟 AR 场景！" << std::endl;
+                std::cout << "[Ubuntu GUI] Plane detected, AR scene ready!" << std::endl;
             } else {
-                std::cout << "[Ubuntu GUI] 平面检测失败：特征点数量过少或未构成稳定平面。" << std::endl;
+                std::cout << "[Ubuntu GUI] Plane detection failed: insufficient features." << std::endl;
             }
         }
     };
 
     Button btnClear;
-    btnClear.label = "清除所有物体";
-    btnClear.color = cv::Scalar(30, 30, 200); // 胭脂红
+    btnClear.label = "Clear All";
+    btnClear.color = cv::Scalar(30, 30, 200);
     btnClear.action = []() {
         std::lock_guard<std::mutex> lock(gMapDataMutex);
         if (pPlane) {
             delete pPlane;
             pPlane = nullptr;
         }
-        std::cout << "[Ubuntu GUI] 已清除屏幕上所有放置的 AR 虚拟物体。" << std::endl;
+        std::cout << "[Ubuntu GUI] All AR objects cleared." << std::endl;
     };
 
     arSec.buttons.push_back(btnPlace);
     arSec.buttons.push_back(btnClear);
 
-    // 第 2 组菜单: 地图持久化操作
+    // Section 2: Map Persistence
     MenuSection mapSec;
-    mapSec.title = "地图持久化操作";
+    mapSec.title = "Map Persistence";
     mapSec.expanded = false;
 
     Button btnSave;
-    btnSave.label = "保存当前地图";
-    btnSave.color = cv::Scalar(180, 100, 30); // 琥珀黄
+    btnSave.label = "Save Map";
+    btnSave.color = cv::Scalar(180, 100, 30);
     btnSave.action = []() {
         std::lock_guard<std::mutex> lock(gSlamStateMutex);
         if (slamSys) {
-            std::cout << "[Ubuntu GUI] 正在将当前 SLAM 地图序列化输出至 vtonax_map.bin..." << std::endl;
+            std::cout << "[Ubuntu GUI] Saving SLAM map to vtonax_map.bin..." << std::endl;
             slamSys->SaveMap("vtonax_map.bin");
             if (pPlane) {
                 std::string arFile = "vtonax_map.bin.arinfo";
                 std::ofstream ofs(arFile, std::ios::binary);
                 if (ofs.is_open()) {
-                    const uint32_t magic = 0x4152494E; // 'ARIN'
+                    const uint32_t magic = 0x4152494E;
                     const uint32_t version = 1;
                     ofs.write(reinterpret_cast<const char*>(&magic), 4);
                     ofs.write(reinterpret_cast<const char*>(&version), 4);
@@ -378,19 +389,18 @@ void initMenu() {
                     ofs.close();
                 }
             }
-            std::cout << "[Ubuntu GUI] 地图文件及 AR 平面数据保存成功！" << std::endl;
+            std::cout << "[Ubuntu GUI] Map and AR plane data saved successfully!" << std::endl;
         }
     };
 
     Button btnLoad;
-    btnLoad.label = "加载离线地图";
-    btnLoad.color = cv::Scalar(30, 120, 180); // 晴空蓝
+    btnLoad.label = "Load Map";
+    btnLoad.color = cv::Scalar(30, 120, 180);
     btnLoad.action = []() {
         std::lock_guard<std::mutex> lock(gSlamStateMutex);
         if (slamSys) {
-            std::cout << "[Ubuntu GUI] 正在从 vtonax_map.bin 文件中反序列化加载地图..." << std::endl;
+            std::cout << "[Ubuntu GUI] Loading map from vtonax_map.bin..." << std::endl;
             slamSys->LoadMap("vtonax_map.bin", 0, false);
-            // 尝试读取关联的 AR 面元配置信息
             std::ifstream ifs("vtonax_map.bin.arinfo", std::ios::binary);
             if (ifs.is_open()) {
                 uint32_t magic = 0, version = 0;
@@ -412,52 +422,21 @@ void initMenu() {
                 }
                 ifs.close();
             }
-            std::cout << "[Ubuntu GUI] 离线地图与全局环境面元加载完成！" << std::endl;
+            std::cout << "[Ubuntu GUI] Map loaded successfully!" << std::endl;
         }
     };
 
     mapSec.buttons.push_back(btnSave);
     mapSec.buttons.push_back(btnLoad);
 
-    // 第 3 组菜单: SLAM 引擎控制
-    MenuSection slamSec;
-    slamSec.title = "SLAM 引擎控制";
-    slamSec.expanded = false;
-
-    Button btnReset;
-    btnReset.label = "完全重置 SLAM";
-    btnReset.color = cv::Scalar(180, 30, 180); // 紫罗兰
-    btnReset.action = []() {
-        std::lock_guard<std::mutex> lock(gSlamStateMutex);
-        if (slamSys) {
-            slamSys->Reset(false);
-            if (pPlane) {
-                delete pPlane;
-                pPlane = nullptr;
-            }
-            std::cout << "[Ubuntu GUI] 已完全清空当前内存地图并重置 SLAM 跟踪回路！" << std::endl;
-        }
-    };
-
-    Button btnToggleS;
-    btnToggleS.label = "开启/关闭 SLAM";
-    btnToggleS.color = cv::Scalar(150, 100, 30); // 橄榄绿
-    btnToggleS.action = []() {
-        gEnableSLAM = !gEnableSLAM;
-        std::cout << "[Ubuntu GUI] SLAM 引擎控制状态切换: " << (gEnableSLAM ? "开启运行" : "暂停运行") << std::endl;
-    };
-
-    slamSec.buttons.push_back(btnReset);
-    slamSec.buttons.push_back(btnToggleS);
-
-    // 第 4 组菜单: 可视化显示设置
+    // Section 4: Display Settings
     MenuSection dispSec;
-    dispSec.title = "可视化显示设置";
+    dispSec.title = "Display Settings";
     dispSec.expanded = false;
 
     Button btnToggleP;
-    btnToggleP.label = "切换点云显示";
-    btnToggleP.color = cv::Scalar(100, 100, 100); // 经典灰
+    btnToggleP.label = "Toggle Point Cloud";
+    btnToggleP.color = cv::Scalar(100, 100, 100);
     btnToggleP.action = []() {
         gEnablePointCloudDisplay = !gEnablePointCloudDisplay;
     };
@@ -466,7 +445,6 @@ void initMenu() {
 
     menuSections.push_back(arSec);
     menuSections.push_back(mapSec);
-    menuSections.push_back(slamSec);
     menuSections.push_back(dispSec);
 }
 
@@ -481,38 +459,38 @@ void drawGUI(cv::Mat& frame, int trackingState, int fps) {
     cv::rectangle(frame, cv::Rect(15, 15, 280, 140), cv::Scalar(100, 100, 100), 1, cv::LINE_AA);
 
     // 跟踪状态字符映射
-    std::string stateStr = "未开始图像输入";
+    std::string stateStr = "No Input Yet";
     cv::Scalar stateColor(150, 150, 150);
     if (trackingState == 1) {
-        stateStr = "未初始化 (请移动相机)";
+        stateStr = "Not Initialized (move camera)";
         stateColor = cv::Scalar(30, 180, 230); // 橙黄
     } else if (trackingState == 2) {
-        stateStr = "跟踪正常 (工作正常)";
+        stateStr = "Tracking OK";
         stateColor = cv::Scalar(30, 230, 30); // 绿色
     } else if (trackingState == 3) {
-        stateStr = "跟踪丢失 (请缓慢对齐)";
+        stateStr = "Tracking Lost (slow down)";
         stateColor = cv::Scalar(30, 30, 230); // 红色
     }
 
-    cv::putText(frame, "VtonaxAR 桌面状态面板", cv::Point(25, 38), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 1, cv::LINE_AA);
+    cv::putText(frame, "VtonaxAR Status Panel", cv::Point(25, 38), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 1, cv::LINE_AA);
     cv::putText(frame, "---------------------------", cv::Point(25, 48), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(100, 100, 100), 1, cv::LINE_AA);
 
-    cv::putText(frame, "SLAM 状态: ", cv::Point(25, 68), cv::FONT_HERSHEY_SIMPLEX, 0.45, cv::Scalar(220, 220, 220), 1, cv::LINE_AA);
-    cv::putText(frame, stateStr, cv::Point(115, 68), cv::FONT_HERSHEY_SIMPLEX, 0.45, stateColor, 1, cv::LINE_AA);
+    cv::putText(frame, "SLAM: ", cv::Point(25, 68), cv::FONT_HERSHEY_SIMPLEX, 0.45, cv::Scalar(220, 220, 220), 1, cv::LINE_AA);
+    cv::putText(frame, stateStr, cv::Point(80, 68), cv::FONT_HERSHEY_SIMPLEX, 0.45, stateColor, 1, cv::LINE_AA);
 
-    cv::putText(frame, "当前帧率: ", cv::Point(25, 88), cv::FONT_HERSHEY_SIMPLEX, 0.45, cv::Scalar(220, 220, 220), 1, cv::LINE_AA);
-    cv::putText(frame, std::to_string(fps) + " FPS", cv::Point(115, 88), cv::FONT_HERSHEY_SIMPLEX, 0.45, cv::Scalar(0, 217, 255), 1, cv::LINE_AA);
+    cv::putText(frame, "FPS: ", cv::Point(25, 88), cv::FONT_HERSHEY_SIMPLEX, 0.45, cv::Scalar(220, 220, 220), 1, cv::LINE_AA);
+    cv::putText(frame, std::to_string(fps) + " FPS", cv::Point(80, 88), cv::FONT_HERSHEY_SIMPLEX, 0.45, cv::Scalar(0, 217, 255), 1, cv::LINE_AA);
 
     int numKFs = slamSys ? slamSys->GetNumKeyFrames() : 0;
     int numMPs = slamSys ? slamSys->GetNumMapPoints() : 0;
-    std::string statsStr = "关键帧: " + std::to_string(numKFs) + " | 地图点: " + std::to_string(numMPs);
-    cv::putText(frame, "地图统计: ", cv::Point(25, 108), cv::FONT_HERSHEY_SIMPLEX, 0.45, cv::Scalar(220, 220, 220), 1, cv::LINE_AA);
-    cv::putText(frame, statsStr, cv::Point(115, 108), cv::FONT_HERSHEY_SIMPLEX, 0.45, cv::Scalar(0, 255, 136), 1, cv::LINE_AA);
+    std::string statsStr = "KFs: " + std::to_string(numKFs) + " | MPs: " + std::to_string(numMPs);
+    cv::putText(frame, "Map: ", cv::Point(25, 108), cv::FONT_HERSHEY_SIMPLEX, 0.45, cv::Scalar(220, 220, 220), 1, cv::LINE_AA);
+    cv::putText(frame, statsStr, cv::Point(75, 108), cv::FONT_HERSHEY_SIMPLEX, 0.45, cv::Scalar(0, 255, 136), 1, cv::LINE_AA);
 
     bool alignment = slamSys ? slamSys->HasMapAlignment() : false;
-    cv::putText(frame, "AR 状态: ", cv::Point(25, 128), cv::FONT_HERSHEY_SIMPLEX, 0.45, cv::Scalar(220, 220, 220), 1, cv::LINE_AA);
-    cv::putText(frame, (pPlane ? (alignment ? "已重定位平面" : "手动检测到平面") : "正在搜索可用平面..."),
-                cv::Point(115, 128), cv::FONT_HERSHEY_SIMPLEX, 0.42, (pPlane ? cv::Scalar(0, 255, 0) : cv::Scalar(0, 150, 255)), 1, cv::LINE_AA);
+    cv::putText(frame, "AR: ", cv::Point(25, 128), cv::FONT_HERSHEY_SIMPLEX, 0.45, cv::Scalar(220, 220, 220), 1, cv::LINE_AA);
+    cv::putText(frame, (pPlane ? (alignment ? "Relocalized Plane" : "Manual Plane") : "Searching for plane..."),
+                cv::Point(65, 128), cv::FONT_HERSHEY_SIMPLEX, 0.42, (pPlane ? cv::Scalar(0, 255, 0) : cv::Scalar(0, 150, 255)), 1, cv::LINE_AA);
 
     // 2. 绘制右侧的“可滑动收纳按钮控制抽屉”
     int drawerW = 240;
@@ -585,14 +563,14 @@ void onMouse(int event, int x, int y, int flags, void* userdata) {
         for (auto& sec : menuSections) {
             if (sec.rect.contains(mousePos)) {
                 sec.expanded = !sec.expanded;
-                std::cout << "[Ubuntu GUI] 菜单抽屉板块 '" << sec.title << "' 收展状态已切换。" << std::endl;
+                std::cout << "[Ubuntu GUI] Section '" << sec.title << "' toggled." << std::endl;
                 return;
             }
 
             if (sec.expanded) {
                 for (auto& btn : sec.buttons) {
                     if (btn.rect.contains(mousePos)) {
-                        std::cout << "[Ubuntu GUI] 触发按钮动作: '" << btn.label << "'" << std::endl;
+                        std::cout << "[Ubuntu GUI] Button clicked: '" << btn.label << "'" << std::endl;
                         btn.action();
                         return;
                     }
