@@ -9,7 +9,7 @@ VtonaxAR 的单目视觉 SLAM 桌面版本，支持实时摄像头和离线视�
 ```bash
 # 更新系统源并安装基础构建链
 sudo apt-get update
-sudo apt-get install -y build-essential cmake libgtk-3-dev
+sudo apt-get install -y build-essential cmake libgtk-3-dev libtbb-dev
 ```
 
 > **说明**：OpenCV (`Thirdparty/opencv`) 源码已包含在仓库中，构建时会自动编译 (core/imgproc/features2d/flann/calib3d/videoio/imgcodecs/highgui 静态库)，无需系统安装 libopencv-dev。
@@ -21,7 +21,7 @@ sudo apt-get install -y build-essential cmake libgtk-3-dev
 ```bash
 cd ubuntu/build
 cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j$(nproc) VtonaxAR_Ubuntu VtonaxAR_Benchmark
+make -j$(nproc)
 ```
 
 编译完成后，产物在 `build/bin/` 目录下：
@@ -42,7 +42,7 @@ make -j$(nproc) VtonaxAR_Ubuntu VtonaxAR_Benchmark
 ./build/bin/VtonaxAR_Ubuntu
 
 # 本地视频文件
-./build/bin/VtonaxAR_Ubuntu /path/to/video.mp4
+./build/bin/VtonaxAR_Ubuntu /path/to/video.avi
 
 # 指定相机索引
 ./build/bin/VtonaxAR_Ubuntu 1
