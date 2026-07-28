@@ -39,7 +39,7 @@ set(OPENCV_ENABLE_NONFREE OFF CACHE BOOL "Enable non-free" FORCE)
 set(WITH_CUDA OFF CACHE BOOL "With CUDA" FORCE)
 set(WITH_OPENCL OFF CACHE BOOL "With OpenCL" FORCE)
 set(WITH_IPP OFF CACHE BOOL "With IPP" FORCE)
-set(WITH_TBB OFF CACHE BOOL "With TBB" FORCE)
+set(WITH_TBB ON CACHE BOOL "With TBB" FORCE)
 set(WITH_EIGEN ON CACHE BOOL "With Eigen" FORCE)
 set(WITH_PNG ON CACHE BOOL "With PNG" FORCE)
 set(WITH_JPEG ON CACHE BOOL "With JPEG" FORCE)
@@ -56,7 +56,8 @@ add_subdirectory(${OPENCV_SRC_DIR} opencv_build)
 # ----------------------------------------------------------------------------
 # 3. 编译器优化选项与编译定义
 # ----------------------------------------------------------------------------
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native -Wall -pthread")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native -flto -Wall -pthread")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto -s")
 add_compile_definitions(EIGEN_DONT_ALIGN_STATICALLY EIGEN_DISABLE_UNALIGNED_ARRAY_ASSERT EIGEN_MAX_ALIGN_BYTES=16)
 
 # 头文件包含路径列表 (全部使用根目录绝对路径定位，确保无缝解析)

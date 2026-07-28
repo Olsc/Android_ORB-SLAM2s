@@ -16,9 +16,17 @@
  *   - 绿色(0,255,0): 成功匹配到的已加载地图点
  *   - 红色(0,0,255): 未成功匹配的已加载地图点
  */
-void drawTrackedPoints(const std::vector<cv::KeyPoint> &vKeys, const std::vector<ORB_SLAM2::MapPoint *> &vMPs, cv::Mat &im)
+void drawTrackedPoints(const std::vector<cv::KeyPoint> &vKeys, const std::vector<ORB_SLAM2::MapPoint *> &vMPs,
+                       cv::Mat &im, float cx, float cy)
 {
-    const int N = vKeys.size();
+    // 计算从SLAM分辨率到显示分辨率的缩放因子
+    float scaleX = 2.0f, scaleY = 2.0f;
+    if (cx > 0.0f && cy > 0.0f) {
+        scaleX = (float)im.cols / (2.0f * cx);
+        scaleY = (float)im.rows / (2.0f * cy);
+    }
+
+    const int N = (int)vKeys.size();
     for(int i=0; i<N; i++) {
         if(i>=vMPs.size()) break;
         ORB_SLAM2::MapPoint* pMP = vMPs[i];
@@ -26,10 +34,10 @@ void drawTrackedPoints(const std::vector<cv::KeyPoint> &vKeys, const std::vector
             // 根据地图点来源和匹配状态选择颜色
             cv::Scalar color = cv::Scalar(31,188,210);  // 默认：新建点为青色
             if(pMP->mbFromLoadedMap){
-                // 已加载地图点：匹配成功为绿色，未匹配为红色
-                color = pMP->mbMatchedInCurrentFrame ? cv::Scalar(0,255,0) : cv::Scalar(0,0,255);
+                color = cv::Scalar(0,255,0);  // 已加载地图点统一绿色（所有加载点在本帧均为内点，无需红色分支）
             }
-            cv::circle(im,vKeys[i].pt*2,2,color,-1);  // pt*2是因为显示分辨率是原始的2倍
+            // 将关键点从SLAM分辨率缩放到显示分辨率
+            cv::circle(im, cv::Point2f(vKeys[i].pt.x * scaleX, vKeys[i].pt.y * scaleY), 2, color, -1);
         }
     }
 }
@@ -220,11 +228,13 @@ void drawAllMapPoints(const cv::Mat &Tcw, const std::vector<ORB_SLAM2::MapPoint*
     int drawnCount = 0;
     const int maxDrawPoints = 5000;  // 性能保护：限制最大绘制点数
     
-    // 预先计算投影参数（因为显示分辨率是原始的2倍）
-    const float fx2 = fx * 2.0f;
-    const float fy2 = fy * 2.0f;
-    const float cx2 = cx * 2.0f;
-    const float cy2 = cy * 2.0f;
+    // 计算从SLAM分辨率到显示分辨率的动态缩放因子
+    const float dispScaleX = (2.0f * cx > 0.0f) ? (float)im.cols / (2.0f * cx) : 2.0f;
+    const float dispScaleY = (2.0f * cy > 0.0f) ? (float)im.rows / (2.0f * cy) : 2.0f;
+    const float fx2 = fx * dispScaleX;
+    const float fy2 = fy * dispScaleY;
+    const float cx2 = cx * dispScaleX;
+    const float cy2 = cy * dispScaleY;
     
     const cv::Scalar colorLoaded(0, 255, 0);   // 绿色：已加载点
     const cv::Scalar colorNew(255, 200, 0);    // 青色：新建点
