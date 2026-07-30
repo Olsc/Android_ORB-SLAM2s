@@ -21,6 +21,15 @@
 
 > **한 줄 요약**：ORB-SLAM2를 기반으로 한 Android 고급형 공간 컴퓨팅 도구로, 모바일 기기에 안정적인 6DoF 공간 포지셔닝을 제공합니다.
 
+<p align="center">
+<img alt="Java" src="https://img.shields.io/badge/Java-ED8B00?style=flat-square&logo=openjdk&logoColor=white"/>
+<img alt="C++11" src="https://img.shields.io/badge/C++-00599C?style=flat-square&logo=cplusplus&logoColor=white"/>
+<img alt="Android" src="https://img.shields.io/badge/Android-3DDC84?style=flat-square&logo=android&logoColor=white"/>
+<img alt="OpenCV" src="https://img.shields.io/badge/OpenCV-5C3EE8?style=flat-square&logo=opencv&logoColor=white"/>
+<img alt="NDK" src="https://img.shields.io/badge/NDK-0C1E33?style=flat-square&logo=android&logoColor=white"/>
+<img alt="GPL-3.0" src="https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square"/>
+</p>
+
 ---
 
 ## 🙏 감사의 말
