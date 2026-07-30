@@ -1,6 +1,18 @@
-![Banner](banner_1.png)
+![Banner](img/banner_1.png)
+![Banner](img/banner_2.png)
 
 [简体中文](README_zh.md) | [English](../README.md) | [Русский](README_ru.md) | [한국어](README_ko.md) | [日本語](README_ja.md)
+
+---
+
+<div align="center">
+
+# ハッカAR
+
+ほぼすべてのAndroidスマートフォンに対応したビジュアルSLAMソリューション
+</div>
+
+---
 
 ## 【謹んで感謝】元のORB-SLAM2コア:
 
@@ -208,10 +220,6 @@ g2oに必要です（下記参照）。ダウンロードおよびインスト�
 参考：https://github.com/Olsc/Android_3dof <br>
 参考：https://github.com/ZUXTUO/Android_6dof <br>
 本プロジェクトはまだ研究統合が完了していません。
-
-<p align="center">
-  <img src="./aesthetic_visual_causal_flow_en.svg" alt="visual_causal_flow">
-</p>
 
 ---
 

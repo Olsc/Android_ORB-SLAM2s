@@ -1,6 +1,18 @@
-![Banner](banner_1.png)
+![Banner](img/banner_1.png)
+![Banner](img/banner_2.png)
 
 [简体中文](README_zh.md) | [English](../README.md) | [Русский](README_ru.md) | [한국어](README_ko.md) | [日本語](README_ja.md)
+
+---
+
+<div align="center">
+
+# 박하AR
+
+거의 모든 안드로이드 폰과 호환되는 비주얼 SLAM 솔루션
+</div>
+
+---
 
 ## [삼가 고개 숙여 감사] 원본 ORB-SLAM2 코어:
 
@@ -208,10 +220,6 @@ g2o에 필요합니다(아래 참조). 다운로드 및 설치 지침은 다음�
 참고: https://github.com/Olsc/Android_3dof <br>
 참고: https://github.com/ZUXTUO/Android_6dof <br>
 이 프로젝트는 아직 연구 통합이 완료되지 않았습니다.
-
-<p align="center">
-  <img src="./aesthetic_visual_causal_flow_en.svg" alt="visual_causal_flow">
-</p>
 
 ---
 

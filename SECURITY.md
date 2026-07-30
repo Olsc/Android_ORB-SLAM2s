@@ -18,7 +18,7 @@ We recommend always building and running the latest commit from the `main` branc
 Since **ORB-SLAM2s** is a C++/NDK native computer vision application running on Android/Ubuntu platforms, security researchers should pay close attention to the following areas:
 
 1. **Map Deserialization**:
-   - The map saving/loading feature serializes dynamic SLAM keyframes and point clouds into binary map files (`vtonax_map.bin` & `*.arinfo`).
+   - The map saving/loading feature serializes dynamic SLAM keyframes and point clouds into binary map files (`mentha_map.bin` & `*.arinfo`).
    * Loading untrusted or malformed binary map files may trigger **buffer overflows**, **out-of-bounds read/write**, or **arbitrary code execution (RCE)** in the native C++ serialization code.
 2. **Buffer Overruns in OpenCV / Camera Feeds**:
    - The real-time image processing pipeline receives raw camera input frames. Ensure that standard NDK camera APIs and OpenCV resizing/conversions are compiled with proper stack protection.

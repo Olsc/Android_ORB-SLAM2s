@@ -1,6 +1,18 @@
-![Banner](docs/banner_1.png)
+![Banner](docs/img/banner_1.png)
+![Banner](docs/img/banner_2.png)
 
 [简体中文](docs/README_zh.md) | [English](README.md) | [Русский](docs/README_ru.md) | [한국어](docs/README_ko.md) | [日本語](docs/README_ja.md)
+
+---
+
+<div align="center">
+
+# MenthaAR
+
+Visual SLAM solution compatible with almost all Android phones
+</div>
+
+---
 
 ## [Solemn Thanks] Original ORB-SLAM2 Core:
 
@@ -208,10 +220,6 @@ We use modified versions of the [DBoW2](https://github.com/dorian3d/DBoW2) libra
 Reference: https://github.com/Olsc/Android_3dof <br>
 Reference: https://github.com/ZUXTUO/Android_6dof <br>
 This project has not yet completed research and integration.
-
-<p align="center">
-  <img src="docs/aesthetic_visual_causal_flow_en.svg" alt="visual_causal_flow">
-</p>
 
 ---
 

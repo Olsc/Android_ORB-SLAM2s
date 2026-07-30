@@ -1,6 +1,18 @@
-![Banner](banner_1.png)
+![Banner](img/banner_1.png)
+![Banner](img/banner_2.png)
 
 [简体中文](README_zh.md) | [English](../README.md) | [Русский](README_ru.md) | [한국어](README_ko.md) | [日本語](README_ja.md)
+
+---
+
+<div align="center">
+
+# МятаAR
+
+Решение визуального SLAM, совместимое почти со всеми телефонами Android
+</div>
+
+---
 
 ## [Глубокая благодарность] Оригинальное ядро ORB-SLAM2:
 
@@ -208,10 +220,6 @@ ORB-SLAM2 основная библиотека выпущена под [GPLv3 �
 Ссылка: https://github.com/Olsc/Android_3dof <br>
 Ссылка: https://github.com/ZUXTUO/Android_6dof <br>
 Исследование интеграции в проекте еще не завершено.
-
-<p align="center">
-  <img src="./aesthetic_visual_causal_flow_en.svg" alt="visual_causal_flow">
-</p>
 
 ---
 

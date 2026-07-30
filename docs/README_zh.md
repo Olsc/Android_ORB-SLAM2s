@@ -1,6 +1,18 @@
-![Banner](banner_1.png)
+![Banner](img/banner_1.png)
+![Banner](img/banner_2.png)
 
 [简体中文](README_zh.md) | [English](../README.md) | [Русский](README_ru.md) | [한국어](README_ko.md) | [日本語](README_ja.md)
+
+---
+
+<div align="center">
+
+# 薄荷AR
+
+兼容几乎所有安卓手机的视觉SLAM方案
+</div>
+
+---
 
 ## 【郑重感谢】原始ORB-SLAM2核心：
 
@@ -208,10 +220,6 @@ g2o所需（见下文）。下载和安装说明可在以下网址找到：http:
 参考：https://github.com/Olsc/Android_3dof <br>
 参考：https://github.com/ZUXTUO/Android_6dof <br>
 本项目尚未研究整合完成。
-
-<p align="center">
-  <img src="./aesthetic_visual_causal_flow_zh.svg" alt="visual_causal_flow">
-</p>
 
 ---
 

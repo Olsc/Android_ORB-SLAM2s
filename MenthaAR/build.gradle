@@ -1,0 +1,71 @@
+plugins {
+    id 'com.android.library'
+}
+
+android {
+    namespace 'com.olsc.menthar'
+    compileSdk 36
+    ndkVersion "27.0.12077973"
+
+    defaultConfig {
+        minSdk 21
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles "consumer-rules.pro"
+        
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++11 -frtti -fexceptions -fopenmp"
+                arguments "-DANDROID_ARM_NEON=TRUE",
+                        "-DANDROID_TOOLCHAIN=clang",
+                        "-DBUILD_FAT_JAVA_LIBS=ON",
+                        "-DANDROID_STL=c++_static"
+                abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+            }
+        }
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+        }
+        targetSdk 37
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    
+    externalNativeBuild {
+        cmake {
+            path "CMakeLists.txt"
+            version '3.22.1'
+        }
+    }
+    
+    packaging {
+        jniLibs {
+            useLegacyPackaging true
+            excludes += []
+            pickFirsts += ['lib/**/libc++_shared.so']
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    buildToolsVersion '37.0.0'
+    compileSdkMinor 1
+}
+
+dependencies {
+    // OpenCV 改用原生编译（TEMP/opencv），不再需要 Java Library
+}
+
+tasks.configureEach { task ->
+    if (task.name.toLowerCase().contains("lint")) {
+        task.enabled = false
+        task.onlyIf { false }
+    }
+}
