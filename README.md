@@ -250,6 +250,10 @@ Reference: https://github.com/Olsc/Android_3dof
 
 *This project has not yet completed research and integration.*
 
+# 🐳 Mascot
+
+![Mascot](docs/img/mascot-q.png)
+
 ---
 
 <br>
