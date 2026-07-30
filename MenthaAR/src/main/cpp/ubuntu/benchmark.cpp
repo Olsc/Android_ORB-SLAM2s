@@ -28,6 +28,8 @@
 #include <numeric>
 #include <map>
 #include <csignal>
+#include <cstdio>   // popen, pclose, fgets
+#include <cstdlib>  // std::system
 #include <opencv2/opencv.hpp>
 
 #include "include/System.h"
@@ -74,6 +76,37 @@ int gTotalKeyframes = 0;
 // 信号处理：Ctrl+C 提前结束并输出报告
 volatile bool gStopRequested = false;
 void signalHandler(int) { gStopRequested = true; }
+
+// ============================================================
+// 视频格式兼容工具: OpenCV 内置 MJPEG 解析器不支持含音频流的多流 AVI
+// 当检测到此类文件时，自动调用 ffmpeg 剥离音频 (仅 remux，不重编码)
+// ============================================================
+
+static std::string tryStripAudioStream(const std::string& path) {
+    // 仅处理 AVI 文件 (OpenCV 内置 MJPEG 后端只支持 AVI)
+    size_t dot = path.find_last_of('.');
+    if (dot == std::string::npos) return "";
+    std::string ext = path.substr(dot);
+    if (ext != ".avi" && ext != ".AVI") return "";
+
+    // 检查 ffmpeg 是否可用
+    FILE* which = popen("which ffmpeg 2>/dev/null", "r");
+    if (!which) return "";
+    char check[16] = {};
+    bool hasFfmpeg = (fgets(check, sizeof(check), which) != nullptr);
+    pclose(which);
+    if (!hasFfmpeg) return "";
+
+    // ffmpeg -vcodec copy -an: 不解码不重编码，仅复制视频流并丢弃音频
+    // 对于 MJPEG AVI 而言几乎是瞬间完成
+    std::string fixed = path + ".noaudio.avi";
+    std::string cmd = "ffmpeg -y -i \"" + path + "\" -vcodec copy -an \"" + fixed + "\" 2>/dev/null";
+    if (std::system(cmd.c_str()) == 0) {
+        std::cout << "[INFO] 检测到多流 AVI，已自动剥离音频流: " << fixed << "\n";
+        return fixed;
+    }
+    return "";
+}
 
 // ============================================================
 // CSV 输出
@@ -267,9 +300,31 @@ int main(int argc, char** argv) {
     // 打开视频文件
     cv::VideoCapture cap(videoPath);
     if (!cap.isOpened()) {
-        std::cerr << "无法打开视频文件: " << videoPath << "\n";
-        delete slamSys;
-        return 1;
+        // 尝试自动剥离音频流 (OpenCV 内置 MJPEG 解析器不支持含音频的多流 AVI)
+        std::string fixedPath = tryStripAudioStream(videoPath);
+        if (!fixedPath.empty()) {
+            cap.open(fixedPath);
+            if (cap.isOpened()) {
+                videoPath = fixedPath;
+            }
+        }
+
+        if (!cap.isOpened()) {
+            std::cerr << "无法打开视频文件: " << videoPath << "\n";
+            std::cerr << "\n=== 故障排查 ===\n";
+            std::cerr << "OpenCV 内置 MJPEG 解析器存在局限:\n";
+            std::cerr << "  1. 仅支持 MJPEG 编码的 AVI 文件 (不支持 H.264/H.265)\n";
+            std::cerr << "  2. 不支持含音频流的 AVI 文件 (常见于 ffmpeg 默认输出)\n";
+            if (videoPath.find(".avi") != std::string::npos) {
+                std::cerr << "\n修复命令 (剥离音频):\n";
+                std::cerr << "  ffmpeg -i " << videoPath << " -vcodec copy -an fixed.avi\n";
+            } else {
+                std::cerr << "\n转换命令 (转 MJPEG AVI，无音频):\n";
+                std::cerr << "  ffmpeg -i " << videoPath << " -vcodec mjpeg -q:v 5 -an output.avi\n";
+            }
+            delete slamSys;
+            return 1;
+        }
     }
 
     double videoFps = cap.get(cv::CAP_PROP_FPS);

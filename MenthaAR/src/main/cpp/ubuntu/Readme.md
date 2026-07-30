@@ -9,17 +9,17 @@ MenthaAR 的单目视觉 SLAM 桌面版本，支持实时摄像头和离线视�
 ```bash
 # 更新系统源并安装基础构建链
 sudo apt-get update
-sudo apt-get install -y build-essential cmake libgtk-3-dev libtbb-dev
+sudo apt-get install -y build-essential cmake libgtk-3-dev libtbb-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev
+sudo apt-get install -y ffmpeg
 ```
-
-> **说明**：OpenCV (`Thirdparty/opencv`) 源码已包含在仓库中，构建时会自动编译 (core/imgproc/features2d/flann/calib3d/videoio/imgcodecs/highgui 静态库)，无需系统安装 libopencv-dev。
 
 ---
 
 ## 🔨 编译构建
 
 ```bash
-cd ubuntu/build
+mkdir build
+cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j$(nproc)
 ```
@@ -39,13 +39,13 @@ make -j$(nproc)
 
 ```bash
 # 默认系统相机 (设备索引 0)
-./build/bin/MenthaAR_Ubuntu
+./MenthaAR_Ubuntu
 
 # 本地视频文件
-./build/bin/MenthaAR_Ubuntu /path/to/video.avi
+./MenthaAR_Ubuntu /path/to/video.mp4
 
 # 指定相机索引
-./build/bin/MenthaAR_Ubuntu 1
+./MenthaAR_Ubuntu 1
 ```
 
 ### 显示控制
@@ -80,20 +80,7 @@ make -j$(nproc)
 ### 用法
 
 ```bash
-./build/bin/MenthaAR_Benchmark /path/to/video.mp4 [output_report_name]
+./MenthaAR_Benchmark /path/to/video.mp4 [output_report_name]
 ```
 
 输出 `[name].json` 和 `[name].csv` 报告文件。
-
-### 视频格式
-
-OpenCV 静态编译，未链接 FFMPEG/GStreamer，无法直接解码 H.264/H.265 编码。
-
-**支持的格式**：OpenCV 内置 MJPEG 编码的 AVI 文件。
-
-转换命令：
-
-```bash
-ffmpeg -i input.mp4 -vcodec mjpeg -q:v 5 output.avi
-./build/bin/MenthaAR_Benchmark output.avi
-```
