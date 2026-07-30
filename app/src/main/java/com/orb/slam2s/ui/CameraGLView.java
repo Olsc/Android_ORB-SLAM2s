@@ -49,6 +49,8 @@ public class CameraGLView extends CameraGLViewBase {
     private long rgbaMatAddr;     // native Mat 地址 (CV_8UC4)
     private long grayMatAddr;     // native Mat 地址 (CV_8UC1)
 
+    private byte[] mYuvDataCache; // 复用缓冲区，避免每帧 GC 分配
+
     private OrthoFilter ortho;
     private Context context;
     private final Object mAnalyzeLock = new Object();
@@ -119,7 +121,6 @@ public class CameraGLView extends CameraGLViewBase {
                                         java.nio.ByteBuffer yBuf = yPlane.getBuffer();
                                         if (yBuf == null) { image.close(); return; }
                                         int rowStride = yPlane.getRowStride();
-                                        int pixelStride = yPlane.getPixelStride();
 
                                         // 创建 RGBA Mat（仅首次）
                                         if (rgbaMatAddr == 0) {
@@ -130,16 +131,20 @@ public class CameraGLView extends CameraGLViewBase {
                                             grayMatAddr = OpenCVBridge.nativeCreateMat(h, w, OpenCVBridge.CV_8UC1);  // CV_8UC1
                                         }
 
+                                        // 复用 byte[] 缓冲区，避免每帧 new 触发 GC
+                                        int requiredSize = w * h;
+                                        if (mYuvDataCache == null || mYuvDataCache.length < requiredSize) {
+                                            mYuvDataCache = new byte[requiredSize];
+                                        }
                                         // 将 Y-plane 读入平坦 byte[]（逐行拷贝以处理 stride 填充）
-                                        byte[] yData = new byte[w * h];
                                         int bufPos = yBuf.position();
                                         for (int row = 0; row < h; row++) {
                                             yBuf.position(bufPos + row * rowStride);
-                                            yBuf.get(yData, row * w, w);
+                                            yBuf.get(mYuvDataCache, row * w, w);
                                         }
 
                                         // 一次性写入 RGBA + Gray（native 层）
-                                        OpenCVBridge.nativeYPlaneToMats(rgbaMatAddr, grayMatAddr, yData, w, h);
+                                        OpenCVBridge.nativeYPlaneToMats(rgbaMatAddr, grayMatAddr, mYuvDataCache, w, h);
 
                                         image.close();
                                     } else {
