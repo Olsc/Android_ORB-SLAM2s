@@ -252,7 +252,12 @@ Reference: https://github.com/Olsc/Android_3dof
 
 # 🐳 Mascot
 
+<div align="center">
+
 ![Mascot](docs/img/mascot-q.png)
+
+*Character: Mentha*
+</div>
 
 ---
 

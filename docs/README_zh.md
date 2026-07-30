@@ -252,7 +252,12 @@ g2o 所需（见下文）。下载和安装说明可在以下网址找到：http
 
 # 🐳吉祥物
 
+<div align="center">
+
 ![Mascot](img/mascot-q.png)
+
+*角色：薄荷*
+</div>
 
 ---
 

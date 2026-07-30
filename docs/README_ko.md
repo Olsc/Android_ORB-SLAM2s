@@ -252,7 +252,12 @@ g2o에 필요합니다(아래 참조). 다운로드 및 설치 지침은 다음�
 
 # 🐳 마스코트
 
+<div align="center">
+
 ![Mascot](img/mascot-q.png)
+
+*캐릭터: 박하*
+</div>
 
 ---
 

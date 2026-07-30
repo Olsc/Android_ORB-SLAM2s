@@ -252,7 +252,12 @@ ORB-SLAM2 основная библиотека выпущена под [GPLv3 �
 
 # 🐳 Талисман
 
+<div align="center">
+
 ![Mascot](img/mascot-q.png)
+
+*Персонаж: Мята*
+</div>
 
 ---
 

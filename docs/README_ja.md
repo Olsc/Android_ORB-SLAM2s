@@ -252,7 +252,12 @@ g2o に必要です（下記参照）。ダウンロードおよびインスト�
 
 # 🐳 マスコット
 
+<div align="center">
+
 ![Mascot](img/mascot-q.png)
+
+*キャラクター：ハッカ*
+</div>
 
 ---
 
