@@ -247,7 +247,6 @@ g2o에 필요합니다(아래 참조). 다운로드 및 설치 지침은 다음�
 # 🧭 관성 항법(IMU) 정보
 
 참고：https://github.com/Olsc/Android_3dof  
-참고：https://github.com/ZUXTUO/Android_6dof  
 
 *이 프로젝트는 아직 연구 통합이 완료되지 않았습니다.*
 

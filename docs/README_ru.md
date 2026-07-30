@@ -247,7 +247,6 @@ ORB-SLAM2 основная библиотека выпущена под [GPLv3 �
 # 🧭 О инерциальной навигации (IMU)
 
 Ссылка：https://github.com/Olsc/Android_3dof  
-Ссылка：https://github.com/ZUXTUO/Android_6dof  
 
 *Исследование интеграции в проекте еще не завершено.*
 

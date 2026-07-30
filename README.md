@@ -247,7 +247,6 @@ We use modified versions of the [DBoW2](https://github.com/dorian3d/DBoW2) libra
 # 🧭 About Inertial Navigation (IMU)
 
 Reference: https://github.com/Olsc/Android_3dof  
-Reference: https://github.com/ZUXTUO/Android_6dof  
 
 *This project has not yet completed research and integration.*
 

@@ -247,7 +247,6 @@ g2o に必要です（下記参照）。ダウンロードおよびインスト�
 # 🧭 慣性航法（IMU）について
 
 参考：https://github.com/Olsc/Android_3dof  
-参考：https://github.com/ZUXTUO/Android_6dof  
 
 *本プロジェクトはまだ研究統合が完了していません。*
 

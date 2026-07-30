@@ -247,7 +247,6 @@ g2o 所需（见下文）。下载和安装说明可在以下网址找到：http
 # 🧭 关于惯性导航（IMU）
 
 参考：https://github.com/Olsc/Android_3dof  
-参考：https://github.com/ZUXTUO/Android_6dof  
 
 *本项目尚未研究整合完成。*
 
