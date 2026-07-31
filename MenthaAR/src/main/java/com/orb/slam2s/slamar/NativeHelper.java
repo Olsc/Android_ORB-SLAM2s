@@ -101,6 +101,13 @@ public class NativeHelper {
     // 本地方法：处理摄像头帧 (statusBuf=[tracking,shouldDraw,scaleBits])
     public native void nativeProcessFrameMat(long matAddrGr, long matAddrRgba, int[] statusBuf);
 
+    // 本地方法：处理共享内存句柄数据帧
+    public native int nativeProcessFrameSharedMemFd(int fd, int size, int width, int height);
+
+    public int processFrameSharedMemFd(int fd, int size, int width, int height) {
+        return nativeProcessFrameSharedMemFd(fd, size, width, height);
+    }
+
     // 统一获取MVP（替代getM/getV/getP）
     public native void nativeGetMVP(float[] M, float[] V, float[] P, int w, int h);
 

@@ -10,8 +10,6 @@ import com.orb.slam2s.constant.GlobalConstant;
 import com.orb.slam2s.rendering.gles.GLRootView;
 import com.orb.slam2s.utils.TextureUtils;
 
-import com.orb.slam2s.slamar.OpenCVBridge;
-
 import java.util.List;
 
 /**
@@ -29,7 +27,7 @@ public abstract class CameraGLViewBase extends GLRootView{
     private static final int STARTED = 1;
 
     private int mState = STOPPED;
-    private Bitmap mCacheBitmap;
+    protected Bitmap mCacheBitmap;
     private CvCameraViewListener2 mListener;
     protected boolean mSurfaceExist;
     protected Object mSyncObject = new Object();
@@ -233,51 +231,9 @@ public abstract class CameraGLViewBase extends GLRootView{
      * @param frame - 要传递的当前帧
      */
     protected void deliverAndDrawFrame(CvCameraViewFrame frame) {
-        long modifiedAddr;
-
         if (mListener != null) {
-            modifiedAddr = mListener.onCameraFrame(frame);
-        } else {
-            modifiedAddr = frame.rgba();
+            mListener.onCameraFrame(frame);
         }
-
-        boolean bmpValid = true;
-        if (modifiedAddr != 0) {
-            synchronized (mSyncObject) {
-                if (mCacheBitmap != null && !mCacheBitmap.isRecycled()) {
-                    try {
-                        // 通过 JNI 将 native Mat 转为 Bitmap（比 Utils.matToBitmap 更快）
-                        OpenCVBridge.nativeMatToBitmap(modifiedAddr, mCacheBitmap);
-                    } catch(Exception e) {
-                        Log.e(TAG, "nativeMatToBitmap抛出异常: " + e.getMessage());
-                        bmpValid = false;
-                    }
-                } else {
-                    bmpValid = false;
-                }
-            }
-        }
-
-        //Log.d("JNI_", "转换完成");
-        if (bmpValid && mCacheBitmap != null) {
-            //将mCacheBitmap发送到纹理。
-
-            queueEvent(new Runnable() {
-                @Override
-                public void run() {
-                    synchronized (mSyncObject) {
-                        if (mCacheBitmap != null && !mCacheBitmap.isRecycled()) {
-                            //Log.d("JNI_", "发送图像：textureId "+imageTextureId);
-                            TextureUtils.loadTexture(mCacheBitmap, imageTextureId);
-                        }
-                    }
-                }
-            });
-        }
-
-        //Martin: 使用画布绘制位图大约需要40-50毫秒
-        //Log.d("JNI_", "绘制完成");
-
     }
 
     /**

@@ -22,6 +22,7 @@
 #include "MapPoint.h"
 #include "include/Config.h"
 #include "MenthaProfiler.h"
+#include "ipc/ipc_shared_memory.h"
 
 extern "C" {
 
@@ -1033,6 +1034,30 @@ Java_com_orb_slam2s_slamar_NativeHelper_setEnableSLAM(JNIEnv *env, jobject insta
 JNIEXPORT jboolean JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_isEnableSLAM(JNIEnv *env, jobject instance) {
     return (jboolean)gEnableSLAM;
+}
+
+// 共享内存帧 JNI 处理入口 (零拷贝共享内存文件描述符)
+JNIEXPORT jint JNICALL
+Java_com_orb_slam2s_slamar_NativeHelper_nativeProcessFrameSharedMemFd(
+    JNIEnv* env, jobject instance, jint fd, jint size, jint width, jint height)
+{
+    if (fd < 0 || size <= 0 || width <= 0 || height <= 0) return 0;
+
+    void* mappedPtr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (mappedPtr == MAP_FAILED) {
+        LOGE("nativeProcessFrameSharedMemFd: mmap 映射内存失败");
+        return 0;
+    }
+
+    cv::Mat mRgba(height, width, CV_8UC4, mappedPtr);
+    cv::Mat mGr;
+    cv::cvtColor(mRgba, mGr, cv::COLOR_RGBA2GRAY);
+
+    int statusBuf[3] = {0};
+    int trackingResult = processImage(mGr, mRgba, statusBuf);
+
+    munmap(mappedPtr, size);
+    return trackingResult;
 }
 
 }

@@ -23,8 +23,8 @@ import android.util.Log;
 
 import com.orb.slam2s.constant.GlobalConstant;
 import com.orb.slam2s.rendering.gles.FilamentAspectSurfaceView;
-import com.orb.slam2s.slamar.NativeHelper;
 import com.orb.slam2s.utils.TouchHelper;
+import com.orb.slam2s.ipc.SlamIPCClient;
 
 import com.google.android.filament.Engine;
 import com.google.android.filament.Renderer;
@@ -58,7 +58,7 @@ import java.util.List;
 /**
  * 用于在AR环境中渲染3D模型（GLB格式）的包装类（基于 Google Filament 渲染引擎）。
  */
-public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
+public class ModelRendererWrapper implements SlamIPCClient.OnMVPUpdatedCallback {
     private static final String TAG = "ModelRendererWrapper";
 
     static {
@@ -68,7 +68,7 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
 
     private FilamentAspectSurfaceView arObjectView;
     private Context context;
-    private NativeHelper nativeHelper;
+    private SlamIPCClient slamIPCClient;
 
     private String modelPath;
     private float initSize = 1.0f;
@@ -167,8 +167,8 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
         return this;
     }
 
-    public ModelRendererWrapper setNativeHelper(NativeHelper nativeHelper) {
-        this.nativeHelper = nativeHelper;
+    public ModelRendererWrapper setSlamIPCClient(SlamIPCClient client) {
+        this.slamIPCClient = client;
         return this;
     }
 
@@ -193,24 +193,21 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
             return this;
         }
 
-        // 配置 SurfaceView 保持背景透明且在最上层
         arObjectView.getHolder().setFormat(PixelFormat.TRANSLUCENT);
         arObjectView.setZOrderOnTop(true);
 
-        // 添加双指缩放回调
         if (touchHelper != null) {
             touchHelper.addScalingCallback(new TouchHelper.ScalingCallback() {
                 @Override
                 public void updateScale(float scaleFactor) {
-                    if (shouldDraw && nativeHelper != null) {
+                    if (shouldDraw && slamIPCClient != null) {
                         currentScaleFactor *= scaleFactor;
                         if (currentScaleFactor < MIN_SCALE) {
                             currentScaleFactor = MIN_SCALE;
                         } else if (currentScaleFactor > MAX_SCALE) {
                             currentScaleFactor = MAX_SCALE;
                         }
-                        // 同步缩放值到C++，确保保存时正确
-                        nativeHelper.updateArObjectScale(scaleFactor);
+                        slamIPCClient.updateArObjectScale(scaleFactor);
                     }
                 }
             });
@@ -660,12 +657,6 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
         shouldDraw = flag;
         if (!flag) {
             matricesReady = false;
-        } else {
-            if (nativeHelper != null) {
-                nativeHelper.nativeGetMVP(modelMatrix, viewMatrix, projectionMatrix,
-                        GlobalConstant.RESOLUTION_WIDTH, GlobalConstant.RESOLUTION_HEIGHT);
-                matricesReady = true;
-            }
         }
         if (changed && drawStateListener != null) {
             drawStateListener.onDrawStateChanged(flag);

@@ -297,12 +297,13 @@ add_library(MenthaAR_Engine SHARED
         src/main/cpp/src/Sim3Solver.cc
         src/main/cpp/src/Initializer.cc
         
-        # JNI 接口层
+        # JNI 接口层与 IPC 通讯层
         src/main/cpp/native-lib.cpp
         src/main/cpp/UIUtils.cpp
         src/main/cpp/Plane.cpp
         src/main/cpp/Matrix.cpp
         src/main/cpp/bridge/OpenCVBridge.cpp
+        src/main/cpp/ipc/ipc_shared_memory.cpp
 
         )
 
