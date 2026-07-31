@@ -12,6 +12,8 @@
 #include <cmath>
 #include <map>
 #include <vector>
+#include <sys/mman.h>
+#include <unistd.h>
 #include <opencv2/opencv.hpp>
 
 #include "include/System.h"
@@ -22,7 +24,6 @@
 #include "MapPoint.h"
 #include "include/Config.h"
 #include "MenthaProfiler.h"
-#include "ipc/ipc_shared_memory.h"
 
 extern "C" {
 
@@ -466,11 +467,11 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
                 // 持续LOST，检查是否超时
                 double lostDuration = timeStamp - lastOkTime;
                 if(lostDuration >= LOST_RESET_TIMEOUT) {
-                    LOGD("SLAM已丢失%.1f秒，执行轻量重置（保留加载的地图）...", lostDuration);
+                    //LOGD("SLAM已丢失%.1f秒，执行轻量重置（保留加载的地图）...", lostDuration);
                     slamSys->Reset(true);  // 保留地图的重置
                     wasLost = false;
                     lastOkTime = timeStamp;
-                    LOGD("SLAM轻量重置完成，已加载的地图数据已保留");
+                    //LOGD("SLAM轻量重置完成，已加载的地图数据已保留");
                 }
             }
         }
@@ -984,7 +985,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_updateArObjectScale(JNIEnv *env, jobject
     float zoomFac = (scaleFactor - 1.0f) / 5.0f;
     gArObjectScale += zoomFac;
     gArObjectScale = fmax(0.03f, gArObjectScale);  // 最小缩放
-    LOGD("AR对象缩放已更新：%.3f", gArObjectScale);
+    //LOGD("AR对象缩放已更新：%.3f", gArObjectScale);
 }
 
 // 获取当前AR对象缩放
@@ -997,7 +998,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_getArObjectScale(JNIEnv *env, jobject in
 JNIEXPORT void JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_setPointCloudDisplay(JNIEnv *env, jobject instance, jboolean enable) {
     gEnablePointCloudDisplay = (bool)enable;
-    LOGD("点云显示模式：%s", gEnablePointCloudDisplay ? "启用" : "禁用");
+    //LOGD("点云显示模式：%s", gEnablePointCloudDisplay ? "启用" : "禁用");
 }
 
 // 获取点云显示状态
@@ -1023,10 +1024,10 @@ Java_com_orb_slam2s_slamar_NativeHelper_setEnableSLAM(JNIEnv *env, jobject insta
             vKeys.clear();
         }
         gShouldDrawArObject = false;
-        LOGD("SLAM 已关闭");
+        //LOGD("SLAM 已关闭");
     } else if(!wasEnabled && gEnableSLAM) {
         // SLAM 从关闭变为开启
-        LOGD("SLAM 已开启");
+        //LOGD("SLAM 已开启");
     }
 }
 
@@ -1036,28 +1037,76 @@ Java_com_orb_slam2s_slamar_NativeHelper_isEnableSLAM(JNIEnv *env, jobject instan
     return (jboolean)gEnableSLAM;
 }
 
-// 共享内存帧 JNI 处理入口 (零拷贝共享内存文件描述符)
-JNIEXPORT jint JNICALL
-Java_com_orb_slam2s_slamar_NativeHelper_nativeProcessFrameSharedMemFd(
-    JNIEnv* env, jobject instance, jint fd, jint size, jint width, jint height)
+// ========== 共享内存帧持久映射（仅 attach 一次，避免每帧 mmap/munmap 与 fd 传输） ==========
+static void* gSharedFramePtr = nullptr;
+static int gSharedFrameSize = 0;
+static std::mutex gSharedFrameLock;
+
+// 持久映射共享内存帧缓冲。仅在缓冲（重新）创建后由 attachFrameBuffer 调用。
+JNIEXPORT jboolean JNICALL
+Java_com_orb_slam2s_slamar_NativeHelper_nativeAttachFrameBuffer(
+    JNIEnv* env, jobject instance, jint fd, jint size)
 {
-    if (fd < 0 || size <= 0 || width <= 0 || height <= 0) return 0;
+    std::lock_guard<std::mutex> lock(gSharedFrameLock);
+    if (gSharedFramePtr) {
+        munmap(gSharedFramePtr, gSharedFrameSize);
+        gSharedFramePtr = nullptr;
+        gSharedFrameSize = 0;
+    }
+    if (fd < 0 || size <= 0) return JNI_FALSE;
 
     void* mappedPtr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (mappedPtr == MAP_FAILED) {
-        LOGE("nativeProcessFrameSharedMemFd: mmap 映射内存失败");
-        return 0;
+        LOGE("nativeAttachFrameBuffer: mmap 映射内存失败");
+        return JNI_FALSE;
+    }
+    gSharedFramePtr = mappedPtr;
+    gSharedFrameSize = size;
+    return JNI_TRUE;
+}
+
+// 解除持久映射（服务销毁/解绑时调用）
+JNIEXPORT void JNICALL
+Java_com_orb_slam2s_slamar_NativeHelper_nativeDetachFrameBuffer(JNIEnv* env, jobject instance)
+{
+    std::lock_guard<std::mutex> lock(gSharedFrameLock);
+    if (gSharedFramePtr) {
+        munmap(gSharedFramePtr, gSharedFrameSize);
+        gSharedFramePtr = nullptr;
+        gSharedFrameSize = 0;
+    }
+}
+
+// 处理持久映射缓冲中的最新一帧：SLAM 结果（绿/蓝点云）直接绘制回该共享内存供主界面读取。
+// statusBuf[0]=tracking, statusBuf[1]=shouldDraw（沿用 processImage 内 gShouldDrawArObject
+// 语义：需跟踪正常 + 平面存在 + 对齐成功，避免未检测平面时误绘制）。
+JNIEXPORT void JNICALL
+Java_com_orb_slam2s_slamar_NativeHelper_nativeProcessFrameSharedMem(
+    JNIEnv* env, jobject instance, jint width, jint height, jintArray statusBuf_)
+{
+    if (width <= 0 || height <= 0) return;
+    jint* statusBuf = env->GetIntArrayElements(statusBuf_, nullptr);
+    if (!statusBuf) return;
+
+    std::lock_guard<std::mutex> lock(gSharedFrameLock);
+    if (!gSharedFramePtr || gSharedFrameSize < width * height * 4) {
+        LOGE("nativeProcessFrameSharedMem: 共享内存未映射或尺寸不足");
+        statusBuf[0] = 0;
+        statusBuf[1] = 0;
+        env->ReleaseIntArrayElements(statusBuf_, statusBuf, 0);
+        return;
     }
 
-    cv::Mat mRgba(height, width, CV_8UC4, mappedPtr);
+    cv::Mat mRgba(height, width, CV_8UC4, gSharedFramePtr);
     cv::Mat mGr;
     cv::cvtColor(mRgba, mGr, cv::COLOR_RGBA2GRAY);
 
-    int statusBuf[3] = {0};
-    int trackingResult = processImage(mGr, mRgba, statusBuf);
+    int tmpStatus[3] = {0};
+    int trackingResult = processImage(mGr, mRgba, tmpStatus);
+    statusBuf[0] = trackingResult;
+    statusBuf[1] = gShouldDrawArObject ? 1 : 0;
 
-    munmap(mappedPtr, size);
-    return trackingResult;
+    env->ReleaseIntArrayElements(statusBuf_, statusBuf, 0);
 }
 
 }

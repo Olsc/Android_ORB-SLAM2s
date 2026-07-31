@@ -276,7 +276,7 @@ public class ModelRendererWrapper implements SlamIPCClient.OnMVPUpdatedCallback 
         uiHelper.setRenderCallback(new UiHelper.RendererCallback() {
             @Override
             public void onNativeWindowChanged(Surface surface) {
-                Log.d(TAG, "Surface 创建或变更，重新创建 SwapChain");
+                //Log.d(TAG, "Surface 创建或变更，重新创建 SwapChain");
                 if (swapChain != null) {
                     engine.destroySwapChain(swapChain);
                 }
@@ -290,7 +290,7 @@ public class ModelRendererWrapper implements SlamIPCClient.OnMVPUpdatedCallback 
 
             @Override
             public void onDetachedFromSurface() {
-                Log.d(TAG, "Surface 销毁，注销 SwapChain");
+                //Log.d(TAG, "Surface 销毁，注销 SwapChain");
                 if (swapChain != null) {
                     engine.destroySwapChain(swapChain);
                     swapChain = null;
@@ -300,7 +300,7 @@ public class ModelRendererWrapper implements SlamIPCClient.OnMVPUpdatedCallback 
 
             @Override
             public void onResized(int width, int height) {
-                Log.d(TAG, "Surface 大小变更为: " + width + "x" + height);
+                //Log.d(TAG, "Surface 大小变更为: " + width + "x" + height);
                 view.setViewport(new Viewport(0, 0, width, height));
             }
         });
@@ -462,7 +462,7 @@ public class ModelRendererWrapper implements SlamIPCClient.OnMVPUpdatedCallback 
             int primitiveCount = rm.getPrimitiveCount(instance);
             String nodeName = asset.getName(entity);
             if (nodeName == null) nodeName = "";
-            Log.d(TAG, String.format("处理节点: %s (实体 ID: %d, Primitives: %d)", nodeName, entity, primitiveCount));
+            //Log.d(TAG, String.format("处理节点: %s (实体 ID: %d, Primitives: %d)", nodeName, entity, primitiveCount));
 
             for (int i = 0; i < primitiveCount; i++) {
                 MaterialInstance materialInstance = rm.getMaterialInstanceAt(instance, i);
@@ -470,7 +470,7 @@ public class ModelRendererWrapper implements SlamIPCClient.OnMVPUpdatedCallback 
 
                 String matName = materialInstance.getName();
                 if (matName == null) matName = "";
-                Log.d(TAG, String.format("  Primitive %d - 材质: %s", i, matName));
+                //Log.d(TAG, String.format("  Primitive %d - 材质: %s", i, matName));
 
                 try { materialInstance.setParameter("roughnessFactor", 1.0f); } catch (Exception e) {}
                 try { materialInstance.setParameter("metallicFactor", 0.0f); } catch (Exception e) {}
@@ -492,13 +492,13 @@ public class ModelRendererWrapper implements SlamIPCClient.OnMVPUpdatedCallback 
 
         // 2. 将 SLAM 矩阵传给 Camera 与 Model Transform
         if (matricesReady) {
-            // 每隔 150 帧打印一次矩阵日志，用于故障排除
-            if (logCounter++ % 150 == 0) {
-                Log.d(TAG, "Matrix Debug:");
-                Log.d(TAG, "modelMatrix: " + java.util.Arrays.toString(modelMatrix));
-                Log.d(TAG, "viewMatrix: " + java.util.Arrays.toString(viewMatrix));
-                Log.d(TAG, "projectionMatrix: " + java.util.Arrays.toString(projectionMatrix));
-            }
+            // 矩阵调试日志已注释（每 150 帧一次，故障排查时再开启）
+            //if (logCounter++ % 150 == 0) {
+            //    Log.d(TAG, "Matrix Debug:");
+            //    Log.d(TAG, "modelMatrix: " + java.util.Arrays.toString(modelMatrix));
+            //    Log.d(TAG, "viewMatrix: " + java.util.Arrays.toString(viewMatrix));
+            //    Log.d(TAG, "projectionMatrix: " + java.util.Arrays.toString(projectionMatrix));
+            //}
 
             // SLAM 视图矩阵为 world-to-camera，而 Filament 相机要求 camera-to-world (即视图矩阵的逆矩阵)
             if (android.opengl.Matrix.invertM(tempCameraModelMatrix, 0, viewMatrix, 0)) {

@@ -1,3 +1,21 @@
+/**
+ * Copyright (C) 2026 Olsc <OlscStudio@outlook.com>
+ *
+ * This file is part of the Android ORB-SLAM2s project (a fork of ORB-SLAM2).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 package com.orb.slam2s.ipc;
 
 import android.content.ComponentName;
@@ -38,7 +56,7 @@ public class SlamIPCClient {
             if (mvpUpdatedCallback != null) {
                 mvpUpdatedCallback.setDraw(draw);
                 if (draw) {
-                    mvpUpdatedCallback.requestReset();
+                    mvpUpdatedCallback.onUpdateViewMatrix(viewMatrix);
                     mvpUpdatedCallback.onUpdateModelMatrix(modelMatrix);
                     mvpUpdatedCallback.onUpdateProjectionMatrix(projectionMatrix);
                 }
@@ -145,7 +163,7 @@ public class SlamIPCClient {
     }
 
     /**
-     * 将相机帧数据写入 SharedMemory 并通过零拷贝跨进程通知 MenthaAR 后序进程
+     * 将相机帧数据写入 SharedMemory 并跨进程通知 MenthaAR 进程
      */
     public void sendFrameData(byte[] frameData, int width, int height) {
         if (slamService == null || frameData == null) return;
@@ -156,17 +174,33 @@ public class SlamIPCClient {
                 sharedMemoryBuffer.close();
             }
             sharedMemoryBuffer = new SharedMemoryBuffer("MenthaSlamFrameBuffer", requiredSize);
+            attachFrameBuffer();
         }
 
+        if (sharedMemoryBuffer == null) return;
         sharedMemoryBuffer.writeData(frameData, frameData.length);
-        ParcelFileDescriptor pfd = sharedMemoryBuffer.getParcelFileDescriptor();
+        try {
+            slamService.processFrame(width, height);
+        } catch (Exception e) {
+            Log.e(TAG, "sendFrameData 异常: " + e.getMessage());
+        }
+    }
 
-        if (pfd != null) {
-            try {
-                slamService.processFrameSharedMem(ParcelFileDescriptor.dup(pfd.getFileDescriptor()), requiredSize, width, height);
-            } catch (Exception e) {
-                Log.e(TAG, "sendFrameData 异常: " + e.getMessage());
-            }
+    /**
+     * 将当前帧共享内存缓冲的 fd 一次性绑定到 SLAM 进程。
+     * 只在缓冲（重新）创建后调用一次，避免每帧 fd 传输。
+     */
+    private void attachFrameBuffer() {
+        if (slamService == null || sharedMemoryBuffer == null) return;
+        ParcelFileDescriptor pfd = sharedMemoryBuffer.getParcelFileDescriptor();
+        if (pfd == null) return;
+        try {
+            // dup 一次即可：fd 转移后调用方副本由 Binder 框架管理，
+            // 服务端持有其收到的副本并在销毁时关闭。
+            slamService.attachFrameBuffer(ParcelFileDescriptor.dup(pfd.getFileDescriptor()),
+                    sharedMemoryBuffer.getBufferSize());
+        } catch (Exception e) {
+            Log.e(TAG, "attachFrameBuffer 异常: " + e.getMessage());
         }
     }
 
@@ -209,6 +243,29 @@ public class SlamIPCClient {
             }
         }
         return false;
+    }
+
+    /** 读取最新视图矩阵（WebServer 等外部消费者使用） */
+    public void getV(float[] viewMatrix) {
+        if (slamService != null && viewMatrix != null && viewMatrix.length == 16) {
+            try {
+                slamService.getV(viewMatrix);
+            } catch (RemoteException e) {
+                Log.e(TAG, "getV 异常: " + e.getMessage());
+            }
+        }
+    }
+
+    /** 读取最新跟踪状态 */
+    public int getTrackingStatus() {
+        if (slamService != null) {
+            try {
+                return slamService.getTrackingStatus();
+            } catch (RemoteException e) {
+                Log.e(TAG, "getTrackingStatus 异常: " + e.getMessage());
+            }
+        }
+        return 0;
     }
 
     public void setPointCloudDisplay(boolean enable) {

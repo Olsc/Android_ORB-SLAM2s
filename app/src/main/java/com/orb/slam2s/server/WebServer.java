@@ -378,10 +378,13 @@ public class WebServer {
                 buffer.putFloat(f);
             }
 
-            // 4. 写入相机姿态 (View Matrix) 和 跟踪状态
+            // 4. 写入相机姿态 (View Matrix) 和 跟踪状态（通过 IPC 从 SLAM 进程获取）
             float[] viewMatrix = new float[16];
             android.opengl.Matrix.setIdentityM(viewMatrix, 0);
-            int trackingStatus = 0;
+            if (slamIPCClient != null) {
+                slamIPCClient.getV(viewMatrix);
+            }
+            int trackingStatus = slamIPCClient != null ? slamIPCClient.getTrackingStatus() : 0;
 
             buffer.putInt(trackingStatus);
             for (float f : viewMatrix) {

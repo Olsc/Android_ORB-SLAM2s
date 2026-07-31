@@ -1,3 +1,21 @@
+/**
+ * Copyright (C) 2026 Olsc <OlscStudio@outlook.com>
+ *
+ * This file is part of the Android ORB-SLAM2s project (a fork of ORB-SLAM2).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 package com.orb.slam2s.ipc;
 
 import android.os.Build;
@@ -37,14 +55,21 @@ public class SharedMemoryBuffer {
         }
     }
 
+    /**
+     * 获取 SharedMemory 对应的独立 FileDescriptor（真实 dup）。
+     */
     private FileDescriptor getFileDescriptor(SharedMemory sharedMemory) {
         try {
-            Method getFdMethod = SharedMemory.class.getDeclaredMethod("getFd");
+            Method getFdMethod = null;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+                getFdMethod = SharedMemory.class.getDeclaredMethod("getFd");
+            }
             getFdMethod.setAccessible(true);
-            int fdInt = (int) getFdMethod.invoke(sharedMemory);
-            return ParcelFileDescriptor.fromFd(fdInt).getFileDescriptor();
+            int rawFd = (int) getFdMethod.invoke(sharedMemory);
+            if (rawFd < 0) return null;
+            return android.system.Os.dup(ParcelFileDescriptor.fromFd(rawFd).getFileDescriptor());
         } catch (Exception e) {
-            Log.w(TAG, "获取 SharedMemory Fd 异常: " + e.getMessage());
+            Log.w(TAG, "获取 SharedMemory FileDescriptor 异常: " + e.getMessage());
             return null;
         }
     }

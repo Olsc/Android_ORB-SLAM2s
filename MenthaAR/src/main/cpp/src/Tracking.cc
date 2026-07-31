@@ -460,7 +460,7 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
         mRefLastBuildTs = mLastTimestamp;
         mRefGrid = std::move(newGrid); // 一并原子更新网格，无需二次加锁
     }
-    LOGD("BuildLoadedRefCache: 树中已缓存 %d 个点，总地图点数 = %d", mRefCachedMPCount, (int)allMPs.size());
+    //LOGD("BuildLoadedRefCache: 树中已缓存 %d 个点，总地图点数 = %d", mRefCachedMPCount, (int)allMPs.size());
 
     // 通知后台线程参考缓存已就绪（无延时）
     mSnapSeqProduced++;
@@ -1212,7 +1212,7 @@ void Tracking::Track()
         }
         else {
             if(mState == OK) {
-                LOGD("跟踪丢失！立即构建参考缓存以进行快速重定位。");
+                //LOGD("跟踪丢失！立即构建参考缓存以进行快速重定位。");
                 BuildLoadedRefCache();
             }
             mState=LOST;

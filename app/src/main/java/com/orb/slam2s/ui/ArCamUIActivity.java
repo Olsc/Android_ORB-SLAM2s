@@ -150,11 +150,11 @@ public class ArCamUIActivity extends AppCompatActivity implements
 
             int screenWidth = size.x;
             int screenHeight = size.y;
-            Log.d(TAG, "屏幕分辨率: " + screenWidth + "x" + screenHeight);
+            //Log.d(TAG, "屏幕分辨率: " + screenWidth + "x" + screenHeight);
 
             // 计算最佳相机处理分辨率
             GlobalConstant.computeOptimalResolution(screenWidth, screenHeight);
-            Log.d(TAG, "选择相机分辨率: " + GlobalConstant.RESOLUTION_WIDTH + "x" + GlobalConstant.RESOLUTION_HEIGHT);
+            //Log.d(TAG, "选择相机分辨率: " + GlobalConstant.RESOLUTION_WIDTH + "x" + GlobalConstant.RESOLUTION_HEIGHT);
         }
     }
 
@@ -180,11 +180,11 @@ public class ArCamUIActivity extends AppCompatActivity implements
                 if (rotation == Surface.ROTATION_270) {
                     // 右横屏 (reverse landscape)
                     setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
-                    Log.d(TAG, "锁定为右横屏方向 (REVERSE_LANDSCAPE)");
+                    //Log.d(TAG, "锁定为右横屏方向 (REVERSE_LANDSCAPE)");
                 } else {
                     // 默认为左横屏
                     setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                    Log.d(TAG, "锁定为左横屏方向 (LANDSCAPE)");
+                    //Log.d(TAG, "锁定为左横屏方向 (LANDSCAPE)");
                 }
             }
         } catch (Exception e) {
@@ -193,7 +193,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
     }
 
     private void initView() {
-        Log.d(TAG, "initView: 初始化视图与组件");
+        //Log.d(TAG, "initView: 初始化视图与组件");
 
         // 设置全屏与屏幕常亮
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -621,7 +621,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
     }
 
     private void initGLES20Model() {
-        Log.d(TAG, "initGLES20Model: 初始化GLB模型渲染器");
+        //Log.d(TAG, "initGLES20Model: 初始化GLB模型渲染器");
 
         final FilamentAspectSurfaceView glRootView = findViewById(R.id.ar_object_view_gles2_obj);
         glRootView.setAspectRatio(GlobalConstant.RESOLUTION_WIDTH, GlobalConstant.RESOLUTION_HEIGHT);
@@ -708,7 +708,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
             public void run() {
                 try {
                     final String resDir = getExternalFilesDir("SLAM").getAbsolutePath() + "/";
-                    Log.d(TAG, "SLAM资源目录: " + resDir);
+                    //Log.d(TAG, "SLAM资源目录: " + resDir);
                     Log.d(TAG, "开始初始化SLAM（后台线程）...");
 
                     // 耗时操作：通过 IPC 初始化独立 SLAM 进程（词汇表加载约1秒）
@@ -844,7 +844,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
 
     @Override
     public void onCameraViewStopped() {
-        Log.d(TAG, "onCameraViewStopped: 摄像头视图停止");
+        //Log.d(TAG, "onCameraViewStopped: 摄像头视图停止");
     }
 
     @Override
@@ -878,9 +878,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
         webFrameProcessor = new Thread(new Runnable() {
             @Override
             public void run() {
-                Log.d(TAG, "Web图像处理线程已启动");
-                long webRgbaAddr = 0;
-                long webGrayAddr = 0;
+                //Log.d(TAG, "Web图像处理线程已启动");
 
                 while (isProcessingWebFrames) {
                     try {
@@ -894,8 +892,29 @@ public class ArCamUIActivity extends AppCompatActivity implements
                         }
 
                         if (frameData != null && slamInitialized) {
-                            if (slamIPCClient != null && slamIPCClient.isConnected()) {
-                                slamIPCClient.sendFrameData(frameData, GlobalConstant.RESOLUTION_WIDTH, GlobalConstant.RESOLUTION_HEIGHT);
+                            // 浏览器上传的是 JPEG 字节流，必须先解码为位图再送入 SLAM，
+                            // 否则会被当作 RGBA 原始帧处理导致 SLAM 跟踪失败。
+                            android.graphics.Bitmap browserBitmap = android.graphics.BitmapFactory
+                                    .decodeByteArray(frameData, 0, frameData.length);
+                            if (browserBitmap != null) {
+                                // 统一缩放到 SLAM 工作分辨率，与本地相机路径保持一致
+                                android.graphics.Bitmap scaled = browserBitmap;
+                                if (browserBitmap.getWidth() != GlobalConstant.RESOLUTION_WIDTH
+                                        || browserBitmap.getHeight() != GlobalConstant.RESOLUTION_HEIGHT) {
+                                    scaled = android.graphics.Bitmap.createScaledBitmap(browserBitmap,
+                                            GlobalConstant.RESOLUTION_WIDTH, GlobalConstant.RESOLUTION_HEIGHT, true);
+                                }
+                                if (slamIPCClient != null && slamIPCClient.isConnected()) {
+                                    int w = scaled.getWidth();
+                                    int h = scaled.getHeight();
+                                    byte[] rgba = new byte[w * h * 4];
+                                    scaled.copyPixelsToBuffer(java.nio.ByteBuffer.wrap(rgba));
+                                    slamIPCClient.sendFrameData(rgba, w, h);
+                                }
+                                if (scaled != browserBitmap) scaled.recycle();
+                                browserBitmap.recycle();
+                            } else {
+                                Log.e(TAG, "Web线程：JPEG解码失败!");
                             }
 
                             mFpsMeter.measure();
@@ -931,7 +950,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
                     }
                 }
 
-                Log.d(TAG, "Web图像处理线程已停止");
+                //Log.d(TAG, "Web图像处理线程已停止");
             }
         });
         webFrameProcessor.start();
@@ -1004,7 +1023,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
                     }
                 }
             });
-            Log.d(TAG, "摇杆初始化完成");
+            //Log.d(TAG, "摇杆初始化完成");
         }
     }
 
@@ -1087,7 +1106,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
 
         threeDofGLView.setVisibility(View.GONE); // 默认隐藏
 
-        Log.d(TAG, "3DOF传感器和渲染器初始化完成");
+        //Log.d(TAG, "3DOF传感器和渲染器初始化完成");
     }
 
     /**

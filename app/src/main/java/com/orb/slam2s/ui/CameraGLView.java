@@ -75,7 +75,7 @@ public class CameraGLView extends CameraGLViewBase {
     }
 
     protected boolean initializeCamera(int width, int height) {
-        Log.d(TAG, "初始化 CameraX");
+        //Log.d(TAG, "初始化 CameraX");
         try {
             com.google.common.util.concurrent.ListenableFuture<ProcessCameraProvider> future = ProcessCameraProvider.getInstance(getContext());
             future.addListener(() -> {
@@ -118,13 +118,23 @@ public class CameraGLView extends CameraGLViewBase {
                                         return;
                                     }
 
-                                    int requiredSize = w * h * 4;
+                                    int rowStride = mainPlane.getRowStride();
+                                    int pixelStride = mainPlane.getPixelStride();
+                                    int lineBytes = w * pixelStride;
+                                    int requiredSize = w * h * pixelStride;
                                     if (mYuvDataCache == null || mYuvDataCache.length < requiredSize) {
                                         mYuvDataCache = new byte[requiredSize];
                                     }
+
                                     int bufPos = buf.position();
-                                    int bytesToRead = Math.min(buf.remaining(), requiredSize);
-                                    buf.get(mYuvDataCache, 0, bytesToRead);
+                                    if (rowStride == lineBytes) {
+                                        buf.get(mYuvDataCache, 0, Math.min(buf.remaining(), requiredSize));
+                                    } else {
+                                        for (int row = 0; row < h; row++) {
+                                            buf.position(bufPos + row * rowStride);
+                                            buf.get(mYuvDataCache, row * lineBytes, Math.min(lineBytes, buf.remaining()));
+                                        }
+                                    }
                                     buf.position(bufPos);
 
                                     // 1. 通过 SharedMemory 零拷贝将完整 RGBA 帧推送至 MenthaAR SLAM 进程
@@ -180,14 +190,14 @@ public class CameraGLView extends CameraGLViewBase {
 
     @Override
     protected boolean connectCamera(int width, int height) {
-        Log.d(TAG, "正在连接 CameraX");
+        //Log.d(TAG, "正在连接 CameraX");
         if (!initializeCamera(width, height)) return false;
         return true;
     }
 
     @Override
     protected void disconnectCamera() {
-        Log.d(TAG, "正在断开 CameraX");
+        //Log.d(TAG, "正在断开 CameraX");
         if (cameraProvider != null) {
             final ProcessCameraProvider provider = cameraProvider;
             new android.os.Handler(android.os.Looper.getMainLooper()).post(new Runnable() {

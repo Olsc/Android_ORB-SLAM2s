@@ -53,7 +53,7 @@ public abstract class CameraGLViewBase extends GLRootView{
         super(context, attrs);
 
         int count = attrs.getAttributeCount();
-        Log.d(TAG, "属性计数: " + Integer.valueOf(count));
+        //Log.d(TAG, "属性计数: " + Integer.valueOf(count));
 
         mMaxWidth = MAX_UNSPECIFIED;
         mMaxHeight = MAX_UNSPECIFIED;
@@ -153,7 +153,7 @@ public abstract class CameraGLViewBase extends GLRootView{
      * 当持有mSyncObject锁时调用
      */
     protected void checkCurrentState() {
-        Log.d(TAG, "调用checkCurrentState");
+        //Log.d(TAG, "调用checkCurrentState");
         int targetState;
 
         if (mEnabled && mSurfaceExist && getVisibility() == View.VISIBLE) {
@@ -171,7 +171,7 @@ public abstract class CameraGLViewBase extends GLRootView{
     }
 
     private void processEnterState(int state) {
-        Log.d(TAG, "调用processEnterState: " + state);
+        //Log.d(TAG, "调用processEnterState: " + state);
         switch(state) {
         case STARTED:
             onEnterStartedState();
@@ -189,7 +189,7 @@ public abstract class CameraGLViewBase extends GLRootView{
     }
 
     private void processExitState(int state) {
-        Log.d(TAG, "调用processExitState: " + state);
+        //Log.d(TAG, "调用processExitState: " + state);
         switch(state) {
         case STARTED:
             onExitStartedState();
@@ -211,10 +211,10 @@ public abstract class CameraGLViewBase extends GLRootView{
     // 注意：在Android 4.1.x上，bitmap构造函数和相机连接的顺序很重要
     // Bitmap必须在surface之前构造
     private void onEnterStartedState() {
-        Log.d(TAG, "调用onEnterStartedState");
+        //Log.d(TAG, "调用onEnterStartedState");
         /* 连接相机 */
         if (!connectCamera(getWidth(), getHeight())) {
-            Log.d(TAG, "onEnterStartedState: 连接相机失败。");
+            Log.e(TAG, "onEnterStartedState: 连接相机失败。");
         }
     }
 

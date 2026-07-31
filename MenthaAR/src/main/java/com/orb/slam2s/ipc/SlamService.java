@@ -1,3 +1,21 @@
+/**
+ * Copyright (C) 2026 Olsc <OlscStudio@outlook.com>
+ *
+ * This file is part of the Android ORB-SLAM2s project (a fork of ORB-SLAM2).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 package com.orb.slam2s.ipc;
 
 import android.app.Service;
@@ -20,6 +38,12 @@ public class SlamService extends Service {
     private final float[] modelMatrix = new float[16];
     private final float[] viewMatrix = new float[16];
     private final float[] projectionMatrix = new float[16];
+
+    // 持久化帧共享内存：仅 attach 一次，之后每帧只传宽高（见 attachFrameBuffer / processFrame）
+    private ParcelFileDescriptor framePfd;
+    private int frameBufferSize;
+    private final Object frameLock = new Object();
+    private final int[] frameStatus = new int[2];  // [0]=tracking, [1]=shouldDraw
 
     private final ISlamService.Stub binder = new ISlamService.Stub() {
         @Override
@@ -52,18 +76,39 @@ public class SlamService extends Service {
         }
 
         @Override
-        public void processFrameSharedMem(ParcelFileDescriptor pfd, int size, int width, int height) {
-            if (nativeHelper == null || pfd == null) return;
+        public void attachFrameBuffer(ParcelFileDescriptor pfd, int size) {
+            if (nativeHelper == null || pfd == null || size <= 0) return;
             try {
-                int fd = pfd.getFd();
-                int trackingResult = nativeHelper.processFrameSharedMemFd(fd, size, width, height);
-                notifyTrackingStatus(trackingResult);
+                if (framePfd != null) {
+                    try {
+                        framePfd.close();
+                    } catch (Exception ignored) {}
+                }
+                framePfd = pfd;
+                frameBufferSize = size;
+                nativeHelper.attachFrameBuffer(pfd.getFd(), size);
             } catch (Exception e) {
-                Log.e(TAG, "处理共享内存帧异常: " + e.getMessage());
-            } finally {
+                Log.e(TAG, "attachFrameBuffer 异常: " + e.getMessage());
+            }
+        }
+
+        @Override
+        public void processFrame(int width, int height) {
+            if (nativeHelper == null || framePfd == null || width <= 0 || height <= 0) return;
+            // 串行化帧处理：CameraGLView 分析线程与 Web 线程都可能调用，防止并发 mmap/写缓冲
+            synchronized (frameLock) {
                 try {
-                    pfd.close();
-                } catch (Exception ignored) {}
+                    int trackingResult = nativeHelper.processFrameSharedMem(width, height, frameStatus);
+                    notifyTrackingStatus(trackingResult);
+                    // 逐帧推送最新 MVP（含 View 矩阵），等价于旧架构每帧 nativeGetMVP，
+                    // 保证 AR 物体在平面检测后连续跟踪。draw 沿用 native 的
+                    // gShouldDrawArObject 语义（跟踪正常 + 平面存在 + 对齐成功）。
+                    boolean draw = (frameStatus[1] == 1);
+                    nativeHelper.nativeGetMVP(modelMatrix, viewMatrix, projectionMatrix, width, height);
+                    notifyMVPUpdated(modelMatrix, viewMatrix, projectionMatrix, draw);
+                } catch (Exception e) {
+                    Log.e(TAG, "处理共享内存帧异常: " + e.getMessage());
+                }
             }
         }
 
@@ -98,6 +143,18 @@ public class SlamService extends Service {
         @Override
         public boolean isEnableSLAM() {
             return nativeHelper != null && nativeHelper.isEnableSLAM();
+        }
+
+        @Override
+        public void getV(float[] viewMatrix) {
+            if (nativeHelper != null && viewMatrix != null && viewMatrix.length == 16) {
+                nativeHelper.getV(viewMatrix);
+            }
+        }
+
+        @Override
+        public int getTrackingStatus() {
+            return frameStatus[0];
         }
 
         @Override
@@ -175,6 +232,20 @@ public class SlamService extends Service {
     public IBinder onBind(Intent intent) {
         Log.d(TAG, "SlamService onBind 被绑定");
         return binder;
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (nativeHelper != null) {
+            nativeHelper.detachFrameBuffer();
+        }
+        if (framePfd != null) {
+            try {
+                framePfd.close();
+            } catch (Exception ignored) {}
+            framePfd = null;
+        }
     }
 
     private void notifyMVPUpdated(float[] M, float[] V, float[] P, boolean draw) {

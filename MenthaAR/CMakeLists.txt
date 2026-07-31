@@ -303,7 +303,6 @@ add_library(MenthaAR_Engine SHARED
         src/main/cpp/Plane.cpp
         src/main/cpp/Matrix.cpp
         src/main/cpp/bridge/OpenCVBridge.cpp
-        src/main/cpp/ipc/ipc_shared_memory.cpp
 
         )
 
