@@ -5,18 +5,13 @@
     <string name="btn_save">Simpan</string>
     <string name="btn_load">Muat</string>
     <string name="btn_map">Peta</string>
-    <string name="btn_reset">Atur Ulang</string>
     <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓Awan Titik</string>
     <string name="loading_slam_init">Menginisialisasi sistem SLAM…</string>
     <string name="loading_slam_wait">Harap tunggu, ini mungkin memerlukan waktu</string>
     <string name="slam_init_complete">Sistem SLAM diinisialisasi</string>
     <string name="slam_init_failed">Inisialisasi SLAM gagal: %1$s</string>
-    <string name="loading">Memuat…</string>
     <string name="hint_request_sent">Permintaan terkirim</string>
-    <string name="hint_resetting_slam">Mengatur ulang sistem SLAM…</string>
-    <string name="hint_slam_reset">Sistem SLAM diatur ulang</string>
-    <string name="hint_reset_failed">Pengaturan ulang gagal: Sistem belum diinisialisasi</string>
     <string name="hint_pointcloud_enabled">Awan titik diaktifkan</string>
     <string name="hint_pointcloud_disabled">Awan titik dinonaktifkan</string>
     <string name="btn_pointcloud_enabled">✓Awan Titik</string>
@@ -28,15 +23,11 @@
     <string name="dialog_save_map">Simpan Peta</string>
     <string name="button_cancel">Batal</string>
     <string name="hint_no_maps">Tidak ada peta tersimpan</string>
-    <string name="map_stats_keyframes">Bingkai Kunci: %1$d</string>
-    <string name="map_stats_mappoints">Titik Peta: %1$d</string>
-    <string name="map_stats_size">Ukuran: %1$dKB</string>
     <string name="dialog_map_manage">Manajemen Peta</string>
     <string name="dialog_select_map">Pilih Peta</string>
     <string name="action_load">Muat</string>
     <string name="action_delete">Hapus</string>
     <string name="action_view_details">Lihat Detail</string>
-    <string name="action_load_multi">Muat Banyak</string>
     <string name="dialog_confirm_delete">Konfirmasi Hapus</string>
     <string name="dialog_confirm_delete_message">Hapus peta \"%1$s\"?</string>
     <string name="hint_map_deleted">Peta dihapus</string>
@@ -44,18 +35,12 @@
     <string name="button_back">Kembali</string>
     <string name="dialog_map_details">Detail Peta</string>
     <string name="map_details_name">Nama Peta: %1$s</string>
-    <string name="map_details_keyframes">Bingkai Kunci: %1$d</string>
-    <string name="map_details_mappoints">Titik Peta: %1$d</string>
     <string name="map_details_size">Ukuran File: %1$d KB</string>
     <string name="map_details_time">Dibuat: %1$s</string>
-    <string name="map_details_plane">Ada Bidang: %1$s</string>
-    <string name="map_details_plane_yes">Ya</string>
-    <string name="map_details_plane_no">Tidak</string>
     <string name="button_ok">OK</string>
     <string name="map_stats_format">KFs: %1$d | MPs: %2$d | Bidang: %3$s</string>
     <string name="map_stats_plane_yes">Ya</string>
     <string name="map_stats_plane_no">Tidak</string>
-    <string name="hint_map_load_requested">Permintaan muat peta</string>
     <string name="hint_map_saved">Peta disimpan: %1$s</string>
     <string name="hint_map_save_failed">Penyimpanan gagal: %1$s</string>
     <string name="hint_map_file_not_found">File peta tidak ditemukan</string>
@@ -65,9 +50,6 @@
     </plurals>
     <string name="hint_map_load_failed">Pemuatan gagal: %1$s</string>
     <string name="permission_camera_storage_required">Izin kamera dan penyimpanan diperlukan. Berikan izin di pengaturan.</string>
-    <string name="btn_mini_world">Tampilan Mini</string>
-    <string name="hint_mini_world_enabled">Tampilan mini diaktifkan</string>
-    <string name="hint_mini_world_disabled">Tampilan mini dinonaktifkan</string>
 
     <string name="category_ar">Kontrol AR</string>
     <string name="category_map">Peta</string>
@@ -85,20 +67,18 @@
 
     <string name="btn_web_server">Server Web</string>
 
-    <string name="status_enabled">aktif</string>
-    <string name="status_disabled">nonaktif</string>
 
     <string name="title_web_server">Server Web</string>
     <string name="web_fps_label"> (Web)</string>
     <string name="hint_waiting_browser_frame">Menunggu gambar browser…</string>
     <string name="hint_web_server_started">Server web dimulai: %1$s</string>
     <string name="web_url_default">http://0.0.0.0:8080</string>
+    <string name="btn_close_qr">Tutup</string>
+    <string name="qr_code_desc">Kode QR untuk menghubungkan browser</string>
 
-    <string name="privacy_title">Kebijakan Privasi &amp; Ketentuan Penggunaan</string>
     <string name="privacy_scroll_hint">↓ Gulir ke bawah untuk membaca perjanjian lengkap</string>
     <string name="privacy_scroll_done">✓ Anda telah membaca perjanjian lengkap</string>
     <string name="privacy_agree">Setuju &amp; Lanjutkan</string>
-    <string name="privacy_disagree_notice">Jika tidak setuju, silakan keluar dari aplikasi</string>
     <string name="privacy_load_error">Gagal memuat kebijakan privasi. Silakan coba lagi.</string>
 
 </resources>

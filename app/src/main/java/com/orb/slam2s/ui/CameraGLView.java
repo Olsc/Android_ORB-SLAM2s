@@ -6,7 +6,6 @@ import android.graphics.ImageFormat;
 import android.graphics.PixelFormat;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
-import android.os.Build;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.SurfaceHolder;
@@ -45,7 +44,7 @@ public class CameraGLView extends CameraGLViewBase {
     private byte[] mYuvDataCache; // 复用缓冲区，避免每帧 GC 分配
 
     private OrthoFilter ortho;
-    private Context context;
+    private final Context context;
     private final Object mAnalyzeLock = new Object();
     private com.orb.slam2s.ipc.SlamIPCClient slamIPCClient;
     private volatile boolean mPendingDetectPlane; // 待处理的平面检测请求（下一帧触发）
@@ -76,13 +75,11 @@ public class CameraGLView extends CameraGLViewBase {
         setRenderer(new CameraGLRender());
 
         setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            setPreserveEGLContextOnPause(true);
-        }
+        setPreserveEGLContextOnPause(true);
         ortho = new OrthoFilter(context);
     }
 
-    protected boolean initializeCamera(int width, int height) {
+    protected boolean initializeCamera() {
         //Log.d(TAG, "初始化 CameraX");
         try {
             com.google.common.util.concurrent.ListenableFuture<ProcessCameraProvider> future = ProcessCameraProvider.getInstance(getContext());
@@ -208,8 +205,7 @@ public class CameraGLView extends CameraGLViewBase {
     @Override
     protected boolean connectCamera(int width, int height) {
         //Log.d(TAG, "正在连接 CameraX");
-        if (!initializeCamera(width, height)) return false;
-        return true;
+        return initializeCamera();
     }
 
     @Override
@@ -270,7 +266,7 @@ public class CameraGLView extends CameraGLViewBase {
         @Override
         public void onSurfaceChanged(GL10 gl, int width, int height) {
             Log.d(TAG, "触发 surfaceChanged 事件");
-            ortho.onSurfaceChanged(gl,width,height);
+            ortho.onSurfaceChanged(width,height);
             synchronized(mSyncObject) {
                 if (!mSurfaceExist) {
                     mSurfaceExist = true;

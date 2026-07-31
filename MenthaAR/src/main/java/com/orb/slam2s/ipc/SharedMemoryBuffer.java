@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2026 Olsc <OlscStudio@outlook.com>
  *
  * This file is part of the Android ORB-SLAM2s project (a fork of ORB-SLAM2).
@@ -68,9 +68,12 @@ public class SharedMemoryBuffer {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
                 getFdMethod = SharedMemory.class.getDeclaredMethod("getFd");
             }
-            assert getFdMethod != null;
+            if (getFdMethod == null) {
+                return -1;
+            }
             getFdMethod.setAccessible(true);
-            return (int) getFdMethod.invoke(sharedMemory);
+            Object fdObj = getFdMethod.invoke(sharedMemory);
+            return (fdObj != null) ? (int) fdObj : -1;
         } catch (Exception e) {
             Log.w(TAG, "获取 SharedMemory fd 异常: " + e.getMessage());
             return -1;

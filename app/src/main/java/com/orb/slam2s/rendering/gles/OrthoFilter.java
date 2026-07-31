@@ -8,14 +8,12 @@ import com.orb.slam2s.rendering.geometry.Plain;
 import com.orb.slam2s.R;
 import com.orb.slam2s.utils.TextureUtils;
 
-import javax.microedition.khronos.opengles.GL10;
-
 public class OrthoFilter{
 
-    private GLPassThroughProgram glPassThroughProgram;
-    private Plain plain;
+    private final GLPassThroughProgram glPassThroughProgram;
+    private final Plain plain;
 
-    private float[] projectionMatrix = new float[16];
+    private final float[] projectionMatrix = new float[16];
     private int surfaceWidth,surfaceHeight;
     public OrthoFilter(Context context) {
         glPassThroughProgram=new GLPassThroughProgram(context, R.raw.vertex_shader_pass_through,R.raw.fragment_shader_pass_through);
@@ -31,7 +29,7 @@ public class OrthoFilter{
         glPassThroughProgram.onDestroy();
     }
 
-    public void onSurfaceChanged(GL10 gl, int width, int height){
+    public void onSurfaceChanged(int width, int height){
         this.surfaceWidth=width;
         this.surfaceHeight=height;
     }

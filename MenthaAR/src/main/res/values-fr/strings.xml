@@ -8,7 +8,6 @@
         <item quantity="other">%1$d cartes chargées</item>
     </plurals>
     <string name="hint_map_load_failed">Échec du chargement : %1$s</string>
-    <string name="hint_map_load_requested">Chargement de la carte demandé</string>
     <string name="hint_map_deleted">Carte supprimée</string>
     <string name="hint_map_delete_failed">Échec de la suppression</string>
 </resources>

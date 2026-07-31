@@ -8,7 +8,6 @@
         <item quantity="other">%1$d peta dimuat</item>
     </plurals>
     <string name="hint_map_load_failed">Gagal memuat: %1$s</string>
-    <string name="hint_map_load_requested">Pemuatan peta diminta</string>
     <string name="hint_map_deleted">Peta dihapus</string>
     <string name="hint_map_delete_failed">Gagal menghapus</string>
 </resources>

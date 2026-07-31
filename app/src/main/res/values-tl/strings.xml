@@ -5,18 +5,13 @@
     <string name="btn_save">I-save</string>
     <string name="btn_load">I-load</string>
     <string name="btn_map">Mapa</string>
-    <string name="btn_reset">I-reset</string>
     <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓Point Cloud</string>
     <string name="loading_slam_init">Sinisimulan ang SLAM system…</string>
     <string name="loading_slam_wait">Mangyaring maghintay, maaaring tumagal ito ng ilang sandali</string>
     <string name="slam_init_complete">Nasimulan na ang SLAM system</string>
     <string name="slam_init_failed">Nabigo ang pagsisimula ng SLAM: %1$s</string>
-    <string name="loading">Naglo-load…</string>
     <string name="hint_request_sent">Naipadala ang kahilingan</string>
-    <string name="hint_resetting_slam">Ino-reset ang SLAM system…</string>
-    <string name="hint_slam_reset">Na-reset na ang SLAM system</string>
-    <string name="hint_reset_failed">Nabigo ang pag-reset: Hindi pa nasimulan ang system</string>
     <string name="hint_pointcloud_enabled">Point cloud pinagana</string>
     <string name="hint_pointcloud_disabled">Point cloud hindi pinagana</string>
     <string name="btn_pointcloud_enabled">✓Point Cloud</string>
@@ -28,15 +23,11 @@
     <string name="dialog_save_map">I-save ang Mapa</string>
     <string name="button_cancel">Kanselahin</string>
     <string name="hint_no_maps">Walang naka-save na mapa</string>
-    <string name="map_stats_keyframes">Mga Keyframe: %1$d</string>
-    <string name="map_stats_mappoints">Mga Puntos ng Mapa: %1$d</string>
-    <string name="map_stats_size">Laki: %1$dKB</string>
     <string name="dialog_map_manage">Pamamahala ng Mapa</string>
     <string name="dialog_select_map">Pumili ng Mapa</string>
     <string name="action_load">I-load</string>
     <string name="action_delete">Burahin</string>
     <string name="action_view_details">Tingnan ang Detalye</string>
-    <string name="action_load_multi">Multi-Load</string>
     <string name="dialog_confirm_delete">Kumpirmahin ang Pagbura</string>
     <string name="dialog_confirm_delete_message">Burahin ang mapa na \"%1$s\"?</string>
     <string name="hint_map_deleted">Nabura ang mapa</string>
@@ -44,18 +35,12 @@
     <string name="button_back">Bumalik</string>
     <string name="dialog_map_details">Detalye ng Mapa</string>
     <string name="map_details_name">Pangalan ng Mapa: %1$s</string>
-    <string name="map_details_keyframes">Mga Keyframe: %1$d</string>
-    <string name="map_details_mappoints">Mga Puntos ng Mapa: %1$d</string>
     <string name="map_details_size">Laki ng File: %1$d KB</string>
     <string name="map_details_time">Nilikha: %1$s</string>
-    <string name="map_details_plane">May Eroplano: %1$s</string>
-    <string name="map_details_plane_yes">Oo</string>
-    <string name="map_details_plane_no">Hindi</string>
     <string name="button_ok">OK</string>
     <string name="map_stats_format">KFs: %1$d | MPs: %2$d | Eroplano: %3$s</string>
     <string name="map_stats_plane_yes">Oo</string>
     <string name="map_stats_plane_no">Hindi</string>
-    <string name="hint_map_load_requested">Hiniling na mag-load ng mapa</string>
     <string name="hint_map_saved">Nai-save ang mapa: %1$s</string>
     <string name="hint_map_save_failed">Nabigo ang pag-save: %1$s</string>
     <string name="hint_map_file_not_found">Hindi nahanap ang file ng mapa</string>
@@ -65,9 +50,6 @@
     </plurals>
     <string name="hint_map_load_failed">Nabigo ang pag-load: %1$s</string>
     <string name="permission_camera_storage_required">Kailangan ang mga pahintulot sa camera at storage. Mangyaring ibigay ang pahintulot sa mga setting.</string>
-    <string name="btn_mini_world">Mini View</string>
-    <string name="hint_mini_world_enabled">Pinagana ang mini view</string>
-    <string name="hint_mini_world_disabled">Hindi pinagana ang mini view</string>
 
     <string name="category_ar">Mga Kontrol ng AR</string>
     <string name="category_map">Mapa</string>
@@ -85,8 +67,6 @@
 
     <string name="btn_web_server">Web Server</string>
 
-    <string name="status_enabled">pinagana</string>
-    <string name="status_disabled">hindi pinagana</string>
 
     <string name="title_web_server">Web Server</string>
     <string name="web_fps_label"> (Web)</string>
@@ -94,11 +74,9 @@
     <string name="hint_web_server_started">Nagsimula na ang web server: %1$s</string>
     <string name="web_url_default">http://0.0.0.0:8080</string>
 
-    <string name="privacy_title">Patakaran sa Privacy &amp; Mga Tuntunin ng Paggamit</string>
     <string name="privacy_scroll_hint">↓ Mangyaring mag-scroll pababa para mabasa ang buong kasunduan</string>
     <string name="privacy_scroll_done">✓ Nabasa mo na ang buong kasunduan</string>
     <string name="privacy_agree">Sumasang-ayon &amp; Magpatuloy</string>
-    <string name="privacy_disagree_notice">Kung hindi sumasang-ayon, mangyaring lumabas sa application</string>
     <string name="privacy_load_error">Nabigo ang pag-load ng patakaran sa privacy. Subukan muli.</string>
 
 </resources>

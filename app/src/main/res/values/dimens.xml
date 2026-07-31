@@ -1,5 +1,0 @@
-<resources>
-    <dimen name="title_text_size">26sp</dimen>
-    <dimen name="tool_bar_height">56dp</dimen>
-    <dimen name="card_padding">60dp</dimen>
-</resources>

@@ -8,7 +8,6 @@
         <item quantity="other">Đã tải %1$d bản đồ</item>
     </plurals>
     <string name="hint_map_load_failed">Tải thất bại: %1$s</string>
-    <string name="hint_map_load_requested">Đã yêu cầu tải bản đồ</string>
     <string name="hint_map_deleted">Đã xóa bản đồ</string>
     <string name="hint_map_delete_failed">Xóa thất bại</string>
 </resources>

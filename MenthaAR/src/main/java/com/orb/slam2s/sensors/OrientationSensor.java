@@ -26,7 +26,6 @@ public class OrientationSensor implements SensorEventListener {
 
     private final float[] rawRotationMatrix = new float[16];      // 原始旋转矩阵
     private final float[] rotationMatrix = new float[16];         // 重映射后的旋转矩阵
-    private final float[] orientation = new float[3];
 
     private final float[] gravity = new float[3];
     private final float[] geomagnetic = new float[3];

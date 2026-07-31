@@ -5,18 +5,13 @@
     <string name="btn_save">சேமிக்கவும்</string>
     <string name="btn_load">ஏற்றவும்</string>
     <string name="btn_map">வரைபடம்</string>
-    <string name="btn_reset">மீட்டமை</string>
     <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓புள்ளி மேகம்</string>
     <string name="loading_slam_init">SLAM அமைப்பை துவக்குகிறது…</string>
     <string name="loading_slam_wait">தயவுசெய்து காத்திருங்கள், இது சிறிது நேரம் எடுக்கலாம்</string>
     <string name="slam_init_complete">SLAM அமைப்பு துவக்கப்பட்டது</string>
     <string name="slam_init_failed">SLAM துவக்கம் தோல்வி: %1$s</string>
-    <string name="loading">ஏற்றுகிறது…</string>
     <string name="hint_request_sent">கோரிக்கை அனுப்பப்பட்டது</string>
-    <string name="hint_resetting_slam">SLAM அமைப்பை மீட்டமைக்கிறது…</string>
-    <string name="hint_slam_reset">SLAM அமைப்பு மீட்டமைக்கப்பட்டது</string>
-    <string name="hint_reset_failed">மீட்டமைவு தோல்வி: அமைப்பு துவக்கப்படவில்லை</string>
     <string name="hint_pointcloud_enabled">புள்ளி மேகம் இயக்கப்பட்டது</string>
     <string name="hint_pointcloud_disabled">புள்ளி மேகம் முடக்கப்பட்டது</string>
     <string name="btn_pointcloud_enabled">✓புள்ளி மேகம்</string>
@@ -28,15 +23,11 @@
     <string name="dialog_save_map">வரைபடத்தை சேமிக்கவும்</string>
     <string name="button_cancel">ரத்துசெய்</string>
     <string name="hint_no_maps">சேமிக்கப்பட்ட வரைபடங்கள் இல்லை</string>
-    <string name="map_stats_keyframes">முக்கிய சட்டங்கள்: %1$d</string>
-    <string name="map_stats_mappoints">வரைபட புள்ளிகள்: %1$d</string>
-    <string name="map_stats_size">அளவு: %1$dKB</string>
     <string name="dialog_map_manage">வரைபட நிர்வாகம்</string>
     <string name="dialog_select_map">வரைபடத்தை தேர்ந்தெடுக்கவும்</string>
     <string name="action_load">ஏற்றவும்</string>
     <string name="action_delete">நீக்கவும்</string>
     <string name="action_view_details">விவரங்கள் பார்க்கவும்</string>
-    <string name="action_load_multi">பல ஏற்றல்</string>
     <string name="dialog_confirm_delete">நீக்கலை உறுதிப்படுத்தவும்</string>
     <string name="dialog_confirm_delete_message">வரைபடம் \"%1$s\" நீக்கவும்?</string>
     <string name="hint_map_deleted">வரைபடம் நீக்கப்பட்டது</string>
@@ -44,18 +35,12 @@
     <string name="button_back">பின்செல்</string>
     <string name="dialog_map_details">வரைபட விவரங்கள்</string>
     <string name="map_details_name">வரைபட பெயர்: %1$s</string>
-    <string name="map_details_keyframes">முக்கிய சட்டங்கள்: %1$d</string>
-    <string name="map_details_mappoints">வரைபட புள்ளிகள்: %1$d</string>
     <string name="map_details_size">கோப்பு அளவு: %1$d KB</string>
     <string name="map_details_time">உருவாக்கப்பட்டது: %1$s</string>
-    <string name="map_details_plane">தளம் உள்ளதா: %1$s</string>
-    <string name="map_details_plane_yes">ஆம்</string>
-    <string name="map_details_plane_no">இல்லை</string>
     <string name="button_ok">சரி</string>
     <string name="map_stats_format">KFs: %1$d | MPs: %2$d | தளம்: %3$s</string>
     <string name="map_stats_plane_yes">ஆம்</string>
     <string name="map_stats_plane_no">இல்லை</string>
-    <string name="hint_map_load_requested">வரைபட ஏற்றல் கோரிக்கை</string>
     <string name="hint_map_saved">வரைபடம் சேமிக்கப்பட்டது: %1$s</string>
     <string name="hint_map_save_failed">சேமிப்பு தோல்வி: %1$s</string>
     <string name="hint_map_file_not_found">வரைபட கோப்பு கண்டுபிடிக்கப்படவில்லை</string>
@@ -65,9 +50,6 @@
     </plurals>
     <string name="hint_map_load_failed">ஏற்றல் தோல்வி: %1$s</string>
     <string name="permission_camera_storage_required">கேமரா மற்றும் சேமிப்பக அனுமதிகள் தேவை. அமைப்புகளில் அனுமதி வழங்கவும்.</string>
-    <string name="btn_mini_world">சிறு காட்சி</string>
-    <string name="hint_mini_world_enabled">சிறு காட்சி இயக்கப்பட்டது</string>
-    <string name="hint_mini_world_disabled">சிறு காட்சி முடக்கப்பட்டது</string>
 
     <string name="category_ar">AR கட்டுப்பாடுகள்</string>
     <string name="category_map">வரைபடம்</string>
@@ -85,8 +67,6 @@
 
     <string name="btn_web_server">இணைய சேவையகம்</string>
 
-    <string name="status_enabled">இயக்கப்பட்டது</string>
-    <string name="status_disabled">முடக்கப்பட்டது</string>
 
     <string name="title_web_server">இணைய சேவையகம்</string>
     <string name="web_fps_label"> (இணையம்)</string>
@@ -94,11 +74,9 @@
     <string name="hint_web_server_started">இணைய சேவையகம் தொடங்கியது: %1$s</string>
     <string name="web_url_default">http://0.0.0.0:8080</string>
 
-    <string name="privacy_title">தனியுரிமை கொள்கை &amp; பயன்பாட்டு விதிமுறைகள்</string>
     <string name="privacy_scroll_hint">↓ முழு ஒப்பந்தத்தையும் படிக்க கீழே உருட்டவும்</string>
     <string name="privacy_scroll_done">✓ முழு ஒப்பந்தத்தையும் படித்தீர்கள்</string>
     <string name="privacy_agree">ஒப்புக்கொள்கிறேன் &amp; தொடர்கிறேன்</string>
-    <string name="privacy_disagree_notice">ஒப்புக்கொள்ளவில்லை என்றால், பயன்பாட்டிலிருந்து வெளியேறவும்</string>
     <string name="privacy_load_error">தனியுரிமை கொள்கையை ஏற்றுவதில் தோல்வி. மீண்டும் முயற்சிக்கவும்.</string>
 
 </resources>

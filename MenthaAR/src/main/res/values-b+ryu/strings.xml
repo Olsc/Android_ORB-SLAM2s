@@ -8,7 +8,6 @@
         <item quantity="other">%1$d個のマップ読み込んだびたる</item>
     </plurals>
     <string name="hint_map_load_failed">読み込み出来んかったー: %1$s</string>
-    <string name="hint_map_load_requested">マップ読み込み頼んだびる</string>
     <string name="hint_map_deleted">マップ消したびたる</string>
     <string name="hint_map_delete_failed">消せんかったーびたん</string>
 </resources>

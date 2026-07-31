@@ -8,7 +8,6 @@
         <item quantity="other">Загружено карт: %1$d</item>
     </plurals>
     <string name="hint_map_load_failed">Сбой загрузки: %1$s</string>
-    <string name="hint_map_load_requested">Запрошена загрузка карты</string>
     <string name="hint_map_deleted">Карта удалена</string>
     <string name="hint_map_delete_failed">Сбой удаления</string>
 </resources>

@@ -28,6 +28,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
+                android:layout_toStartOf="@id/btn_close_qr"
+                android:maxLines="1"
+                android:ellipsize="end"
                 android:text="@string/title_web_server"
                 android:textColor="#FFFFFF"
                 android:textStyle="bold"
@@ -44,7 +47,8 @@
                 app:tint="#CCCCCC"
                 android:clickable="true"
                 android:focusable="true"
-                android:background="?attr/selectableItemBackgroundBorderless"/>
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/btn_close_qr" />
         </RelativeLayout>
 
         <LinearLayout
@@ -60,7 +64,8 @@
                 android:layout_height="160dp"
                 android:scaleType="fitCenter"
                 android:background="#FFFFFF"
-                android:padding="8dp"/>
+                android:padding="8dp"
+                android:contentDescription="@string/qr_code_desc" />
 
             <TextView
                 android:id="@+id/tv_web_url"

@@ -71,7 +71,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
 
 
     private Button btn3DofCube;
-    private android.os.Handler uiHandler = new android.os.Handler();
+    private final android.os.Handler uiHandler = new android.os.Handler();
     private androidx.appcompat.app.AlertDialog loadingDialog;
     private boolean slamInitialized = false;
 
@@ -86,11 +86,9 @@ public class ArCamUIActivity extends AppCompatActivity implements
     private WebServer webServer;
     private Button btnStartWeb;
     private boolean isWebRunning = false;
-    private Thread pointsUpdater;
 
     // 摇杆控制AR物体旋转
     private JoystickView joystickView;
-    private float lastJoystickAngle = -1.0f;  // 上一帧的摇杆角度，用于计算增量
 
     // 3DOF功能相关
     private OrientationSensor orientationSensor;
@@ -101,7 +99,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
     // 浏览器图像帧相关 (Web 服务器使用)
     private volatile byte[] browserFrameData = null;
     private final Object browserFrameLock = new Object();
-    private boolean useWebCamera = false; // Web模式：使用浏览器相机而不是本地相机
     private Thread webFrameProcessor; // Web图像处理线程
     private volatile boolean isProcessingWebFrames = false;
 
@@ -222,7 +219,11 @@ public class ArCamUIActivity extends AppCompatActivity implements
         touchView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                return touchHelper.handleTouchEvent(event);
+                boolean handled = touchHelper.handleTouchEvent(event);
+                if (event.getAction() == MotionEvent.ACTION_UP) {
+                    v.performClick();
+                }
+                return handled;
             }
         });
 
@@ -252,7 +253,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
         fpsText = findViewById(R.id.text_fps);
         textMapStats = findViewById(R.id.text_map_stats);
         mFpsMeter = new FpsMeter();
-        mFpsMeter.setResolution(GlobalConstant.RESOLUTION_WIDTH, GlobalConstant.RESOLUTION_HEIGHT);
 
         // 启动地图状态更新线程
         startMapStatsUpdater();
@@ -349,6 +349,9 @@ public class ArCamUIActivity extends AppCompatActivity implements
                                     .setDuration(0)
                                     .start();
                             break;
+                        case MotionEvent.ACTION_UP:
+                            view.performClick();
+                            return false;
                         default:
                             return false;
                     }
@@ -814,10 +817,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
         if (webServer != null) {
             webServer.stop();
         }
-        if (pointsUpdater != null) {
-            pointsUpdater.interrupt();
-        }
-        
+
         // 销毁 Filament 资源
         if (modelRendererWrapper != null) {
             modelRendererWrapper.destroy();
@@ -1212,7 +1212,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
 
             webServer.start();
             isWebRunning = true;
-            useWebCamera = true; // 切换到Web模式：本地相机继续运行但不处理数据
 
             // 启动Web图像处理线程
             startWebFrameProcessing();
@@ -1246,7 +1245,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
                 webServer.stop();
             }
             isWebRunning = false;
-            useWebCamera = false; // 切换回本地相机模式
 
             // 清空浏览器图像数据
             synchronized (browserFrameLock) {

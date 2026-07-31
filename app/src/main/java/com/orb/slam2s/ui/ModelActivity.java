@@ -4,7 +4,6 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.os.Build;
 import android.os.Bundle;
 
 import android.widget.Toast;
@@ -43,21 +42,18 @@ public class ModelActivity extends Activity {
      * @return 是否有权限
      */
     private boolean checkPermission(){
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-                    != PackageManager.PERMISSION_GRANTED) {
-                if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)) {
-                    showHint(getString(R.string.permission_camera_storage_required));
-                    finish();
-                } else {
-                    ActivityCompat.requestPermissions(this,
-                            new String[]{ Manifest.permission.CAMERA },
-                            REQUEST_PERMISSION);
-                }
-                return false;
-            } else return true;
-        }
-        return true;
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)) {
+                showHint(getString(R.string.permission_camera_storage_required));
+                finish();
+            } else {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{ Manifest.permission.CAMERA },
+                        REQUEST_PERMISSION);
+            }
+            return false;
+        } else return true;
     }
 
     @Override

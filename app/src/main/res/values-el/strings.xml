@@ -5,18 +5,13 @@
     <string name="btn_save">Αποθήκευση</string>
     <string name="btn_load">Φόρτωση</string>
     <string name="btn_map">Χάρτης</string>
-    <string name="btn_reset">Επαναφορά</string>
     <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓Νέφος σημείων</string>
     <string name="loading_slam_init">Αρχικοποίηση συστήματος SLAM…</string>
     <string name="loading_slam_wait">Παρακαλώ περιμένετε, αυτό μπορεί να πάρει λίγο χρόνο</string>
     <string name="slam_init_complete">Το σύστημα SLAM αρχικοποιήθηκε</string>
     <string name="slam_init_failed">Αποτυχία αρχικοποίησης SLAM: %1$s</string>
-    <string name="loading">Φόρτωση…</string>
     <string name="hint_request_sent">Αίτημα εστάλη</string>
-    <string name="hint_resetting_slam">Επαναφορά συστήματος SLAM…</string>
-    <string name="hint_slam_reset">Το σύστημα SLAM επαναφέρθηκε</string>
-    <string name="hint_reset_failed">Αποτυχία επαναφοράς: Το σύστημα δεν έχει αρχικοποιηθεί</string>
     <string name="hint_pointcloud_enabled">Νέφος σημείων ενεργοποιήθηκε</string>
     <string name="hint_pointcloud_disabled">Νέφος σημείων απενεργοποιήθηκε</string>
     <string name="btn_pointcloud_enabled">✓Νέφος σημείων</string>
@@ -28,15 +23,11 @@
     <string name="dialog_save_map">Αποθήκευση χάρτη</string>
     <string name="button_cancel">Ακύρωση</string>
     <string name="hint_no_maps">Δεν υπάρχουν αποθηκευμένοι χάρτες</string>
-    <string name="map_stats_keyframes">Βασικά πλαίσια: %1$d</string>
-    <string name="map_stats_mappoints">Σημεία χάρτη: %1$d</string>
-    <string name="map_stats_size">Μέγεθος: %1$dKB</string>
     <string name="dialog_map_manage">Διαχείριση χαρτών</string>
     <string name="dialog_select_map">Επιλογή χάρτη</string>
     <string name="action_load">Φόρτωση</string>
     <string name="action_delete">Διαγραφή</string>
     <string name="action_view_details">Προβολή λεπτομερειών</string>
-    <string name="action_load_multi">Πολλαπλή φόρτωση</string>
     <string name="dialog_confirm_delete">Επιβεβαίωση διαγραφής</string>
     <string name="dialog_confirm_delete_message">Διαγραφή χάρτη \"%1$s\";</string>
     <string name="hint_map_deleted">Ο χάρτης διαγράφηκε</string>
@@ -44,18 +35,12 @@
     <string name="button_back">Πίσω</string>
     <string name="dialog_map_details">Λεπτομέρειες χάρτη</string>
     <string name="map_details_name">Όνομα χάρτη: %1$s</string>
-    <string name="map_details_keyframes">Βασικά πλαίσια: %1$d</string>
-    <string name="map_details_mappoints">Σημεία χάρτη: %1$d</string>
     <string name="map_details_size">Μέγεθος αρχείου: %1$d KB</string>
     <string name="map_details_time">Δημιουργήθηκε: %1$s</string>
-    <string name="map_details_plane">Έχει επίπεδο: %1$s</string>
-    <string name="map_details_plane_yes">Ναι</string>
-    <string name="map_details_plane_no">Όχι</string>
     <string name="button_ok">Εντάξει</string>
     <string name="map_stats_format">ΒΠ: %1$d | ΣΧ: %2$d | Επίπ.: %3$s</string>
     <string name="map_stats_plane_yes">Ναι</string>
     <string name="map_stats_plane_no">Όχι</string>
-    <string name="hint_map_load_requested">Αίτημα φόρτωσης χάρτη</string>
     <string name="hint_map_saved">Ο χάρτης αποθηκεύτηκε: %1$s</string>
     <string name="hint_map_save_failed">Αποτυχία αποθήκευσης: %1$s</string>
     <string name="hint_map_file_not_found">Το αρχείο χάρτη δεν βρέθηκε</string>
@@ -65,9 +50,6 @@
     </plurals>
     <string name="hint_map_load_failed">Αποτυχία φόρτωσης: %1$s</string>
     <string name="permission_camera_storage_required">Απαιτούνται άδειες κάμερας και αποθηκευτικού χώρου. Παρακαλώ χορηγήστε άδειες στις ρυθμίσεις.</string>
-    <string name="btn_mini_world">Μικρή προβολή</string>
-    <string name="hint_mini_world_enabled">Η μικρή προβολή ενεργοποιήθηκε</string>
-    <string name="hint_mini_world_disabled">Η μικρή προβολή απενεργοποιήθηκε</string>
 
     <string name="category_ar">Έλεγχοι AR</string>
     <string name="category_map">Χάρτης</string>
@@ -85,8 +67,6 @@
 
     <string name="btn_web_server">Διακομιστής web</string>
 
-    <string name="status_enabled">ενεργοποιημένο</string>
-    <string name="status_disabled">απενεργοποιημένο</string>
 
     <string name="title_web_server">Διακομιστής web</string>
     <string name="web_fps_label"> (Web)</string>
@@ -94,11 +74,9 @@
     <string name="hint_web_server_started">Ο διακομιστής web ξεκίνησε: %1$s</string>
     <string name="web_url_default">http://0.0.0.0:8080</string>
 
-    <string name="privacy_title">Πολιτική Απορρήτου &amp; Όροι Χρήσης</string>
     <string name="privacy_scroll_hint">↓ Παρακαλώ κάντε κύλιση μέχρι κάτω για να διαβάσετε τη συμφωνία</string>
     <string name="privacy_scroll_done">✓ Διαβάσατε τη συμφωνία ολόκληρη</string>
     <string name="privacy_agree">Συμφωνώ &amp; Συνέχεια</string>
-    <string name="privacy_disagree_notice">Αν δεν συμφωνείτε, παρακαλώ βγείτε από την εφαρμογή</string>
     <string name="privacy_load_error">Αποτυχία φόρτωσης πολιτικής απορρήτου. Παρακαλώ δοκιμάστε ξανά.</string>
 
 </resources>

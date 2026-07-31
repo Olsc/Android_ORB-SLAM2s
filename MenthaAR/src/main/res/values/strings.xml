@@ -8,7 +8,6 @@
         <item quantity="other">Loaded %1$d maps</item>
     </plurals>
     <string name="hint_map_load_failed">Load failed: %1$s</string>
-    <string name="hint_map_load_requested">Map load requested</string>
     <string name="hint_map_deleted">Map deleted</string>
     <string name="hint_map_delete_failed">Delete failed</string>
 </resources>

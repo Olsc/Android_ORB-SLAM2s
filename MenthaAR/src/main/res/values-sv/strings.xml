@@ -8,7 +8,6 @@
         <item quantity="other">%1$d kartor inlästa</item>
     </plurals>
     <string name="hint_map_load_failed">Inläsning misslyckades: %1$s</string>
-    <string name="hint_map_load_requested">Kartinläsning begärd</string>
     <string name="hint_map_deleted">Karta raderad</string>
     <string name="hint_map_delete_failed">Radering misslyckades</string>
 </resources>

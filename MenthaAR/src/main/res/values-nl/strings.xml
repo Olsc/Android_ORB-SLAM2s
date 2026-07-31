@@ -8,7 +8,6 @@
         <item quantity="other">%1$d kaarten geladen</item>
     </plurals>
     <string name="hint_map_load_failed">Laden mislukt: %1$s</string>
-    <string name="hint_map_load_requested">Kaart laden aangevraagd</string>
     <string name="hint_map_deleted">Kaart verwijderd</string>
     <string name="hint_map_delete_failed">Verwijderen mislukt</string>
 </resources>

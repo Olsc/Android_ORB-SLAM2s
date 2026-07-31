@@ -24,7 +24,7 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
     private static final String TAG = "ThreeDofCubeRenderer";
 
     private boolean mInitialized = false;
-    private float[] mObjectWorldPos = new float[3];
+    private final float[] mObjectWorldPos = new float[3];
 
     private final OrientationSensor orientationSensor;
     private int program;

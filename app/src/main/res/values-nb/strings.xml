@@ -5,18 +5,13 @@
     <string name="btn_save">Lagre</string>
     <string name="btn_load">Last inn</string>
     <string name="btn_map">Kart</string>
-    <string name="btn_reset">Tilbakestill</string>
     <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓Punktsky</string>
     <string name="loading_slam_init">Initialiserer SLAM-system…</string>
     <string name="loading_slam_wait">Vennligst vent, dette kan ta litt tid</string>
     <string name="slam_init_complete">SLAM-system initialisert</string>
     <string name="slam_init_failed">SLAM-initialisering mislyktes: %1$s</string>
-    <string name="loading">Laster…</string>
     <string name="hint_request_sent">Forespørsel sendt</string>
-    <string name="hint_resetting_slam">Tilbakestiller SLAM-system…</string>
-    <string name="hint_slam_reset">SLAM-system tilbakestilt</string>
-    <string name="hint_reset_failed">Tilbakestilling mislyktes: System ikke initialisert</string>
     <string name="hint_pointcloud_enabled">Punktsky aktivert</string>
     <string name="hint_pointcloud_disabled">Punktsky deaktivert</string>
     <string name="btn_pointcloud_enabled">✓Punktsky</string>
@@ -28,15 +23,11 @@
     <string name="dialog_save_map">Lagre kart</string>
     <string name="button_cancel">Avbryt</string>
     <string name="hint_no_maps">Ingen lagrede kart</string>
-    <string name="map_stats_keyframes">Nøkkelbilder: %1$d</string>
-    <string name="map_stats_mappoints">Kartpunkter: %1$d</string>
-    <string name="map_stats_size">Størrelse: %1$dKB</string>
     <string name="dialog_map_manage">Kartstyring</string>
     <string name="dialog_select_map">Velg kart</string>
     <string name="action_load">Last inn</string>
     <string name="action_delete">Slett</string>
     <string name="action_view_details">Vis detaljer</string>
-    <string name="action_load_multi">Last inn flere</string>
     <string name="dialog_confirm_delete">Bekreft sletting</string>
     <string name="dialog_confirm_delete_message">Slette kartet \"%1$s\"?</string>
     <string name="hint_map_deleted">Kart slettet</string>
@@ -44,18 +35,12 @@
     <string name="button_back">Tilbake</string>
     <string name="dialog_map_details">Kartdetaljer</string>
     <string name="map_details_name">Kartnavn: %1$s</string>
-    <string name="map_details_keyframes">Nøkkelbilder: %1$d</string>
-    <string name="map_details_mappoints">Kartpunkter: %1$d</string>
     <string name="map_details_size">Filstørrelse: %1$d KB</string>
     <string name="map_details_time">Opprettet: %1$s</string>
-    <string name="map_details_plane">Har plan: %1$s</string>
-    <string name="map_details_plane_yes">Ja</string>
-    <string name="map_details_plane_no">Nei</string>
     <string name="button_ok">OK</string>
     <string name="map_stats_format">NB: %1$d | KP: %2$d | Plan: %3$s</string>
     <string name="map_stats_plane_yes">Ja</string>
     <string name="map_stats_plane_no">Nei</string>
-    <string name="hint_map_load_requested">Kartlasting forespurt</string>
     <string name="hint_map_saved">Kart lagret: %1$s</string>
     <string name="hint_map_save_failed">Lagring mislyktes: %1$s</string>
     <string name="hint_map_file_not_found">Kartfil ikke funnet</string>
@@ -65,9 +50,6 @@
     </plurals>
     <string name="hint_map_load_failed">Lasting mislyktes: %1$s</string>
     <string name="permission_camera_storage_required">Tillatelser til kamera og lagring kreves. Gi tillatelser i innstillinger.</string>
-    <string name="btn_mini_world">Minivisning</string>
-    <string name="hint_mini_world_enabled">Minivisning aktivert</string>
-    <string name="hint_mini_world_disabled">Minivisning deaktivert</string>
 
     <string name="category_ar">AR-kontroller</string>
     <string name="category_map">Kart</string>
@@ -85,8 +67,6 @@
 
     <string name="btn_web_server">Webserver</string>
 
-    <string name="status_enabled">aktivert</string>
-    <string name="status_disabled">deaktivert</string>
 
     <string name="title_web_server">Webserver</string>
     <string name="web_fps_label"> (Web)</string>
@@ -94,11 +74,9 @@
     <string name="hint_web_server_started">Webserver startet: %1$s</string>
     <string name="web_url_default">http://0.0.0.0:8080</string>
 
-    <string name="privacy_title">Personvernpolicy &amp; Bruksvilkår</string>
     <string name="privacy_scroll_hint">↓ Bla ned for å lese hele avtalen</string>
     <string name="privacy_scroll_done">✓ Du har lest hele avtalen</string>
     <string name="privacy_agree">Godta &amp; Fortsett</string>
-    <string name="privacy_disagree_notice">Hvis du ikke godtar, vennligst avslutt applikasjonen</string>
     <string name="privacy_load_error">Lasting av personvernpolicy mislyktes. Prøv igjen.</string>
 
 </resources>

@@ -8,7 +8,6 @@
         <item quantity="other">Cargados %1$d mapas</item>
     </plurals>
     <string name="hint_map_load_failed">Error al cargar: %1$s</string>
-    <string name="hint_map_load_requested">Carga de mapa solicitada</string>
     <string name="hint_map_deleted">Mapa eliminado</string>
     <string name="hint_map_delete_failed">Error al eliminar</string>
 </resources>

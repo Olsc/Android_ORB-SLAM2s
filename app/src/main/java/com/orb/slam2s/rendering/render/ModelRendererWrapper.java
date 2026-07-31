@@ -87,7 +87,6 @@ public class ModelRendererWrapper implements SlamIPCClient.OnMVPUpdatedCallback 
     private final float[] modelHalfExtent = new float[3];
     private float autoScaleFactor = 1.0f;
     private boolean hasBoundingBox = false;
-    private int logCounter = 0;
 
     // 双指缩放相关
     private float currentScaleFactor = 1.0f;  // 当前累积的缩放因子
@@ -492,13 +491,7 @@ public class ModelRendererWrapper implements SlamIPCClient.OnMVPUpdatedCallback 
 
         // 2. 将 SLAM 矩阵传给 Camera 与 Model Transform
         if (matricesReady) {
-            // 矩阵调试日志已注释（每 150 帧一次，故障排查时再开启）
-            //if (logCounter++ % 150 == 0) {
-            //    Log.d(TAG, "Matrix Debug:");
-            //    Log.d(TAG, "modelMatrix: " + java.util.Arrays.toString(modelMatrix));
-            //    Log.d(TAG, "viewMatrix: " + java.util.Arrays.toString(viewMatrix));
-            //    Log.d(TAG, "projectionMatrix: " + java.util.Arrays.toString(projectionMatrix));
-            //}
+            // 矩阵调试日志已注释（故障排查时再开启）
 
             // SLAM 视图矩阵为 world-to-camera，而 Filament 相机要求 camera-to-world (即视图矩阵的逆矩阵)
             if (android.opengl.Matrix.invertM(tempCameraModelMatrix, 0, viewMatrix, 0)) {

@@ -37,9 +37,8 @@ ORB_SLAM2::System* slamSys;
 float fx, fy, cx, cy;
 float gBaseFx, gBaseFy, gBaseCx, gBaseCy;  // 基准内参 (640x360校准值)
 float gScaledFx, gScaledFy, gScaledCx, gScaledCy;  // 缩放后的内参
-int gCameraWidth = 0, gCameraHeight = 0;  // 相机实际输出分辨率
 double timeStamp;
-bool slamInited = false;
+bool slamInitialized = false;
 
 std::vector<ORB_SLAM2::MapPoint*> vMPs;
 std::vector<cv::KeyPoint> vKeys;
@@ -48,7 +47,6 @@ std::vector<cv::KeyPoint> vKeys;
 std::mutex gMapPointsMutex;
 
 int gLoadedMapPointCount = 0;            // 加载的地图点数量
-const int MIN_NEW_POINTS_BEFORE_AR = ORB_SLAM2::MIN_NEW_POINTS_BEFORE_AR; // 至少需要新建50个地图点才启用AR模式
 
 // 点云显示开关（同时控制绿色和蓝色点云）
 bool gEnablePointCloudDisplay = true;  // 默认启用点云显示
@@ -286,7 +284,7 @@ void SavePlaneAndArInfo(const std::string& filename)
     }
 
     // 保存AR对象
-    uint32_t numObjects = static_cast<uint32_t>(gAnchor.objects.size());
+    auto numObjects = static_cast<uint32_t>(gAnchor.objects.size());
     ofs.write(reinterpret_cast<const char*>(&numObjects), sizeof(numObjects));
 
     for (const auto& obj : gAnchor.objects)
@@ -296,12 +294,12 @@ void SavePlaneAndArInfo(const std::string& filename)
         ofs.write(reinterpret_cast<const char*>(obj.modelMatrix), sizeof(obj.modelMatrix));
         ofs.write(reinterpret_cast<const char*>(&obj.scale), sizeof(obj.scale));
 
-        uint32_t idLen = static_cast<uint32_t>(obj.objectId.length());
+        auto idLen = static_cast<uint32_t>(obj.objectId.length());
         ofs.write(reinterpret_cast<const char*>(&idLen), sizeof(idLen));
 
         if (idLen > 0)
         {
-            ofs.write(obj.objectId.c_str(), idLen);
+            ofs.write(obj.objectId.c_str(), static_cast<std::streamsize>(idLen));
         }
     }
     
@@ -374,7 +372,7 @@ void LoadPlaneAndArInfo(const std::string& filename, int mapId)
         ifs.read(reinterpret_cast<char*>(&idLen), sizeof(idLen));
         if(idLen > 0) {
             std::vector<char> buf(idLen);
-            ifs.read(buf.data(), idLen);
+            ifs.read(buf.data(), static_cast<std::streamsize>(idLen));
             obj.objectId = std::string(buf.data(), idLen);
         }
         obj.isValid = true;
@@ -420,7 +418,9 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
             LOGE("processImage: 输入图像为空，跳帧处理");
             return 0;
         }
-        cv::resize(image, imgSmall, cv::Size(cvRound(image.cols / DOWNSCALE), cvRound(image.rows / DOWNSCALE)), 0, 0, cv::INTER_LINEAR);
+        const int scaledW = cvRound(static_cast<double>(image.cols) / DOWNSCALE);
+        const int scaledH = cvRound(static_cast<double>(image.rows) / DOWNSCALE);
+        cv::resize(image, imgSmall, cv::Size(scaledW, scaledH), 0, 0, cv::INTER_LINEAR);
 
         // ===== 读写锁优化：不再全程持有全局锁 =====
         ORB_SLAM2::System* currentSlamSys = nullptr;
@@ -557,11 +557,11 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
 JNIEXPORT void JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_initSLAM(JNIEnv* env, jobject instance, jstring path_)
 {
-    const char* path = env->GetStringUTFChars(path_, 0);
-    
-    if (slamInited) return;
-    
-    slamInited = true;
+    const char* path = env->GetStringUTFChars(path_, nullptr);
+
+    if (slamInitialized) return;
+
+    slamInitialized = true;
     modelPath = path;
     
     env->ReleaseStringUTFChars(path_, path);
@@ -577,8 +577,6 @@ Java_com_orb_slam2s_slamar_NativeHelper_initSLAM(JNIEnv* env, jobject instance, 
     gBaseCy = cy;
 
     // 默认使用640x360 (初始未设置相机分辨率时)
-    gCameraWidth = 640;
-    gCameraHeight = 360;
     gScaledFx = fx;
     gScaledFy = fy;
     gScaledCx = cx;
@@ -601,9 +599,6 @@ Java_com_orb_slam2s_slamar_NativeHelper_initSLAM(JNIEnv* env, jobject instance, 
  */
 void updateScaledIntrinsics(int cameraWidth, int cameraHeight) {
     if (cameraWidth <= 0 || cameraHeight <= 0) return;
-
-    gCameraWidth = cameraWidth;
-    gCameraHeight = cameraHeight;
 
     // 内部SLAM工作分辨率 = 相机分辨率的一半
     int slamWidth = cameraWidth / 2;
@@ -655,16 +650,16 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeUpdateResolution(JNIEnv* env, jobj
 JNIEXPORT void JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_saveMap(JNIEnv* env, jobject instance, jstring path_)
 {
-    const char* path = env->GetStringUTFChars(path_, 0);
-    
+    const char* path = env->GetStringUTFChars(path_, nullptr);
+
     if (slamSys)
     {
 
-        double t0 = static_cast<double>(cv::getTickCount());
+        auto t0 = static_cast<double>(cv::getTickCount());
         slamSys->SaveMap(std::string(path));
         SavePlaneAndArInfo(std::string(path)); // 保存平面和AR信息
-        
-        double t1 = static_cast<double>(cv::getTickCount());
+
+        auto t1 = static_cast<double>(cv::getTickCount());
         double ms = (t1 - t0) * 1000.0 / cv::getTickFrequency();
         
         //     slamSys->GetNumKeyFrames(), slamSys->GetNumMapPoints());
@@ -676,8 +671,8 @@ Java_com_orb_slam2s_slamar_NativeHelper_saveMap(JNIEnv* env, jobject instance, j
 JNIEXPORT void JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_loadMap(JNIEnv* env, jobject instance, jstring path_)
 {
-    const char* path = env->GetStringUTFChars(path_, 0);
-    
+    const char* path = env->GetStringUTFChars(path_, nullptr);
+
     if (slamSys)
     {
         // 写锁协议：
@@ -697,11 +692,11 @@ Java_com_orb_slam2s_slamar_NativeHelper_loadMap(JNIEnv* env, jobject instance, j
 
         LOGD("JNI加载地图开始：%s", path);
 
-        double t0 = static_cast<double>(cv::getTickCount());
+        auto t0 = static_cast<double>(cv::getTickCount());
         slamSys->LoadMap(std::string(path), 0, false); // 默认ID=0，覆盖模式
         LoadPlaneAndArInfo(std::string(path), 0); // 加载平面和AR信息
-        
-        double t1 = static_cast<double>(cv::getTickCount());
+
+        auto t1 = static_cast<double>(cv::getTickCount());
         double ms = (t1 - t0) * 1000.0 / cv::getTickFrequency();
         
         // 统计加载的地图点数量
@@ -726,7 +721,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_loadMap(JNIEnv* env, jobject instance, j
 JNIEXPORT void JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_loadMapWithId(JNIEnv *env, jobject instance,
                                                jstring path_, jint mapId, jboolean append) {
-    const char *path = env->GetStringUTFChars(path_, 0);
+    const char *path = env->GetStringUTFChars(path_, nullptr);
     if(slamSys){
         // 写锁协议：与 loadMap 一致
         std::unique_lock<std::mutex> lock(gSlamPtrLock);
@@ -734,7 +729,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_loadMapWithId(JNIEnv *env, jobject insta
             return gProcessingFrames.load(std::memory_order_acquire) == 0;
         });
 
-        double t0 = (double)cv::getTickCount();
+        auto t0 = static_cast<double>(cv::getTickCount());
         
         // 如果不是追加模式，清理旧的全局数据（含当前锚点，修复"加载新地图后残留旧地图平面"的陈旧 bug）
         if (!append) {
@@ -748,8 +743,8 @@ Java_com_orb_slam2s_slamar_NativeHelper_loadMapWithId(JNIEnv *env, jobject insta
 
         slamSys->LoadMap(std::string(path), mapId, append);
         LoadPlaneAndArInfo(std::string(path), mapId);
-        
-        double t1 = (double)cv::getTickCount();
+
+        auto t1 = static_cast<double>(cv::getTickCount());
         double ms = (t1 - t0) * 1000.0 / cv::getTickFrequency();
         
     }
@@ -764,12 +759,12 @@ Java_com_orb_slam2s_slamar_NativeHelper_getCurrentMapId(JNIEnv* env, jobject ins
 
 JNIEXPORT void JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_nativeProcessFrameMat(
-    JNIEnv* env, jobject instance, jlong matAddrGr, jlong matAddrRgba, jintArray statusBuf_)
+    JNIEnv* env, jobject instance, jlong matGrPtr, jlong matRgbaPtr, jintArray statusBuf_)
 {
     jint* statusBuf = env->GetIntArrayElements(statusBuf_, nullptr);
 
-    cv::Mat& mGr = *(cv::Mat*)matAddrGr;
-    cv::Mat& mRgba = *(cv::Mat*)matAddrRgba;
+    cv::Mat& mGr = *(cv::Mat*)matGrPtr;
+    cv::Mat& mRgba = *(cv::Mat*)matRgbaPtr;
 
     // statusBuf: [0]=tracking, [1]=shouldDraw, [2]=scaleBits
     statusBuf[0] = processImage(mGr, mRgba, statusBuf);
@@ -781,7 +776,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeProcessFrameMat(
 JNIEXPORT void JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_detect(JNIEnv *env, jobject instance,
                                                jintArray statusBuf_) {
-    jint *statusBuf = env->GetIntArrayElements(statusBuf_, NULL);
+    jint *statusBuf = env->GetIntArrayElements(statusBuf_, nullptr);
 
     // 从线程安全缓存读取最新 Tcw，无需阻塞跟踪线程
     cv::Mat currentTcw;
@@ -823,9 +818,9 @@ JNIEXPORT void JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_nativeGetMVP(JNIEnv *env, jobject instance,
     jfloatArray modelM_, jfloatArray viewM_, jfloatArray projM_, jint imageWidth, jint imageHeight)
 {
-    jfloat *modelM = env->GetFloatArrayElements(modelM_, NULL);
-    jfloat *viewM  = env->GetFloatArrayElements(viewM_, NULL);
-    jfloat *projM  = env->GetFloatArrayElements(projM_, NULL);
+    jfloat *modelM = env->GetFloatArrayElements(modelM_, nullptr);
+    jfloat *viewM  = env->GetFloatArrayElements(viewM_, nullptr);
+    jfloat *projM  = env->GetFloatArrayElements(projM_, nullptr);
 
     // Model + View
     {
@@ -845,7 +840,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeGetMVP(JNIEnv *env, jobject instan
 // getV保留供WebServer使用
 JNIEXPORT void JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_getV(JNIEnv *env, jobject instance, jfloatArray viewM_) {
-    jfloat *viewM = env->GetFloatArrayElements(viewM_, NULL);
+    jfloat *viewM = env->GetFloatArrayElements(viewM_, nullptr);
     {
         std::lock_guard<std::mutex> lk(gMapDataMutex);
         for(int i=0; i<16; i++) viewM[i] = gCurrentViewMatrix[i];
@@ -975,8 +970,8 @@ Java_com_orb_slam2s_slamar_NativeHelper_getAllArObjectsData(JNIEnv *env, jobject
 
     for(const auto& obj : gAnchor.objects) {
         if(!obj.isValid) continue;
-        for(int i=0; i<16; i++) {
-            data.push_back(obj.modelMatrix[i]);
+        for(float m : obj.modelMatrix) {
+            data.push_back(m);
         }
         data.push_back(obj.scale);
     }
@@ -1063,7 +1058,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeAttachFrameBuffer(
     }
     if (fd < 0 || size <= 0) return JNI_FALSE;
 
-    void* mappedPtr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    void* mappedPtr = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (mappedPtr == MAP_FAILED) {
         LOGE("nativeAttachFrameBuffer: mmap 映射内存失败");
         return JNI_FALSE;

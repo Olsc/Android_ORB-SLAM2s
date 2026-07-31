@@ -5,7 +5,7 @@
         <service
             android:name="com.orb.slam2s.ipc.SlamService"
             android:process=":slam_process"
-            android:exported="true">
+            android:exported="false">
             <intent-filter>
                 <action android:name="com.olsc.menthar.ACTION_BIND_SLAM_SERVICE" />
             </intent-filter>

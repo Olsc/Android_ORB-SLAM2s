@@ -5,18 +5,13 @@
     <string name="btn_save">Speichern</string>
     <string name="btn_load">Laden</string>
     <string name="btn_map">Karte</string>
-    <string name="btn_reset">Zurücksetzen</string>
     <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓Punktwolke</string>
     <string name="loading_slam_init">SLAM-System wird initialisiert…</string>
     <string name="loading_slam_wait">Bitte warten, das kann einen Moment dauern</string>
     <string name="slam_init_complete">SLAM-System initialisiert</string>
     <string name="slam_init_failed">SLAM-Initialisierung fehlgeschlagen: %1$s</string>
-    <string name="loading">Laden…</string>
     <string name="hint_request_sent">Anfrage gesendet</string>
-    <string name="hint_resetting_slam">SLAM-System wird zurückgesetzt…</string>
-    <string name="hint_slam_reset">SLAM-System zurückgesetzt</string>
-    <string name="hint_reset_failed">Zurücksetzen fehlgeschlagen: System nicht initialisiert</string>
     <string name="hint_pointcloud_enabled">Punktwolke aktiviert</string>
     <string name="hint_pointcloud_disabled">Punktwolke deaktiviert</string>
     <string name="btn_pointcloud_enabled">✓Punktwolke</string>
@@ -28,15 +23,11 @@
     <string name="dialog_save_map">Karte speichern</string>
     <string name="button_cancel">Abbrechen</string>
     <string name="hint_no_maps">Keine gespeicherten Karten</string>
-    <string name="map_stats_keyframes">Schlüsselbilder: %1$d</string>
-    <string name="map_stats_mappoints">Kartenpunkte: %1$d</string>
-    <string name="map_stats_size">Größe: %1$dKB</string>
     <string name="dialog_map_manage">Kartenverwaltung</string>
     <string name="dialog_select_map">Karte auswählen</string>
     <string name="action_load">Laden</string>
     <string name="action_delete">Löschen</string>
     <string name="action_view_details">Details anzeigen</string>
-    <string name="action_load_multi">Mehrfachladen</string>
     <string name="dialog_confirm_delete">Löschen bestätigen</string>
     <string name="dialog_confirm_delete_message">Karte \"%1$s\" löschen?</string>
     <string name="hint_map_deleted">Karte gelöscht</string>
@@ -44,18 +35,12 @@
     <string name="button_back">Zurück</string>
     <string name="dialog_map_details">Kartendetails</string>
     <string name="map_details_name">Kartenname: %1$s</string>
-    <string name="map_details_keyframes">Schlüsselbilder: %1$d</string>
-    <string name="map_details_mappoints">Kartenpunkte: %1$d</string>
     <string name="map_details_size">Dateigröße: %1$d KB</string>
     <string name="map_details_time">Erstellt: %1$s</string>
-    <string name="map_details_plane">Hat Ebene: %1$s</string>
-    <string name="map_details_plane_yes">Ja</string>
-    <string name="map_details_plane_no">Nein</string>
     <string name="button_ok">OK</string>
     <string name="map_stats_format">KFs: %1$d | MPs: %2$d | Ebene: %3$s</string>
     <string name="map_stats_plane_yes">Ja</string>
     <string name="map_stats_plane_no">Nein</string>
-    <string name="hint_map_load_requested">Kartenladen angefordert</string>
     <string name="hint_map_saved">Karte gespeichert: %1$s</string>
     <string name="hint_map_save_failed">Speichern fehlgeschlagen: %1$s</string>
     <string name="hint_map_file_not_found">Kartendatei nicht gefunden</string>
@@ -65,9 +50,6 @@
     </plurals>
     <string name="hint_map_load_failed">Laden fehlgeschlagen: %1$s</string>
     <string name="permission_camera_storage_required">Kamera- und Speicherberechtigung erforderlich. Bitte Berechtigungen in den Einstellungen erteilen.</string>
-    <string name="btn_mini_world">Miniansicht</string>
-    <string name="hint_mini_world_enabled">Miniansicht aktiviert</string>
-    <string name="hint_mini_world_disabled">Miniansicht deaktiviert</string>
 
     <string name="category_ar">AR-Steuerung</string>
     <string name="category_map">Karte</string>
@@ -85,8 +67,6 @@
 
     <string name="btn_web_server">Webserver</string>
 
-    <string name="status_enabled">aktiviert</string>
-    <string name="status_disabled">deaktiviert</string>
 
     <string name="title_web_server">Webserver</string>
     <string name="web_fps_label"> (Web)</string>
@@ -94,11 +74,9 @@
     <string name="hint_web_server_started">Webserver gestartet: %1$s</string>
     <string name="web_url_default">http://0.0.0.0:8080</string>
 
-    <string name="privacy_title">Datenschutzrichtlinie &amp; Nutzungsbedingungen</string>
     <string name="privacy_scroll_hint">↓ Bitte zum Ende scrollen, um die vollständige Vereinbarung zu lesen</string>
     <string name="privacy_scroll_done">✓ Sie haben die vollständige Vereinbarung gelesen</string>
     <string name="privacy_agree">Zustimmen &amp; Weiter</string>
-    <string name="privacy_disagree_notice">Falls Sie nicht zustimmen, verlassen Sie bitte die Anwendung</string>
     <string name="privacy_load_error">Datenschutzrichtlinie konnte nicht geladen werden. Bitte erneut versuchen.</string>
 
 </resources>

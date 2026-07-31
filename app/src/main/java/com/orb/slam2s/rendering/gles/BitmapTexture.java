@@ -9,7 +9,7 @@ import com.orb.slam2s.utils.TextureUtils;
 
 public class BitmapTexture {
     private int imageTextureId;
-    private int imageSize[];
+    private final int imageSize[];
 
     public BitmapTexture() {
         imageSize=new int[2];

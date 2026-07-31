@@ -30,11 +30,11 @@ import javax.net.ssl.SSLServerSocketFactory;
 
 public class WebServer {
     private static final String TAG = "WebServer";
-    private int port;
+    private final int port;
     private ServerSocket serverSocket;
     private volatile boolean isRunning;
-    private com.orb.slam2s.ipc.SlamIPCClient slamIPCClient;
-    private android.content.Context context;
+    private final com.orb.slam2s.ipc.SlamIPCClient slamIPCClient;
+    private final android.content.Context context;
 
     // 活跃的MJPEG流
     private final List<OutputStream> streamClients = Collections.synchronizedList(new ArrayList<>());
@@ -195,7 +195,7 @@ public class WebServer {
     }
 
     private class ClientHandler implements Runnable {
-        private Socket socket;
+        private final Socket socket;
 
         public ClientHandler(Socket socket) {
             this.socket = socket;

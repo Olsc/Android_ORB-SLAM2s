@@ -25,7 +25,7 @@ public abstract class CameraGLViewBase extends GLRootView{
     protected Bitmap mCacheBitmap;
     private CvCameraViewListener2 mListener;
     protected boolean mSurfaceExist;
-    protected Object mSyncObject = new Object();
+    protected final Object mSyncObject = new Object();
 
     protected int mFrameWidth;
     protected int mFrameHeight;
