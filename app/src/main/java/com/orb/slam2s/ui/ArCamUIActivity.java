@@ -59,8 +59,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
     private TouchHelper touchHelper;
     private ModelRendererWrapper modelRendererWrapper;
 
-    private boolean detectPlane;
-
     private FpsMeter mFpsMeter = null;
     private TextView fpsText;
     private TextView textMapStats;
@@ -268,7 +266,12 @@ public class ArCamUIActivity extends AppCompatActivity implements
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "点击按钮：创建AR物体");
-                detectPlane = true;
+                // 平面检测由 analyzer 每帧消费 requestPlaneDetection() 触发
+                // （onCameraFrame 回调现仅用于 FPS 等统计）。
+                if (mOpenCvCameraView != null) {
+                    mOpenCvCameraView.requestPlaneDetection();
+                    showHint(getString(R.string.hint_request_sent));
+                }
             }
         });
 
@@ -838,7 +841,9 @@ public class ArCamUIActivity extends AppCompatActivity implements
     public void onCameraViewStarted(int width, int height) {
         Log.d(TAG, "onCameraViewStarted: 摄像头视图启动，宽度=" + width + " 高度=" + height);
         if (slamIPCClient != null) {
-            slamIPCClient.updateResolution(width, height);
+            int w = (width > 0) ? width : GlobalConstant.RESOLUTION_WIDTH;
+            int h = (height > 0) ? height : GlobalConstant.RESOLUTION_HEIGHT;
+            slamIPCClient.updateResolution(w, h);
         }
     }
 
@@ -849,15 +854,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
 
     @Override
     public long onCameraFrame(CameraGLViewBase.CvCameraViewFrame inputFrame) {
-        if (initFinished && slamInitialized && detectPlane) {
-            showHint(getString(R.string.hint_request_sent));
-            Log.d(TAG, "onCameraFrame: 通过 IPC 请求平面检测");
-            if (slamIPCClient != null) {
-                slamIPCClient.detectPlane();
-            }
-            detectPlane = false;
-        }
-
+        // 每帧回调：本地相机模式的帧率统计（帧内容已由 CameraGLView analyzer 处理）
         mFpsMeter.measure();
         runOnUiThread(new Runnable() {
             @Override

@@ -188,17 +188,13 @@ public class SlamIPCClient {
 
     /**
      * 将当前帧共享内存缓冲的 fd 一次性绑定到 SLAM 进程。
-     * 只在缓冲（重新）创建后调用一次，避免每帧 fd 传输。
      */
     private void attachFrameBuffer() {
         if (slamService == null || sharedMemoryBuffer == null) return;
         ParcelFileDescriptor pfd = sharedMemoryBuffer.getParcelFileDescriptor();
         if (pfd == null) return;
         try {
-            // dup 一次即可：fd 转移后调用方副本由 Binder 框架管理，
-            // 服务端持有其收到的副本并在销毁时关闭。
-            slamService.attachFrameBuffer(ParcelFileDescriptor.dup(pfd.getFileDescriptor()),
-                    sharedMemoryBuffer.getBufferSize());
+            slamService.attachFrameBuffer(pfd, sharedMemoryBuffer.getBufferSize());
         } catch (Exception e) {
             Log.e(TAG, "attachFrameBuffer 异常: " + e.getMessage());
         }

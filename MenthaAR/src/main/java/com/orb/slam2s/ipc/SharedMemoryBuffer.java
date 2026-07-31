@@ -18,6 +18,7 @@
  */
 package com.orb.slam2s.ipc;
 
+import android.annotation.SuppressLint;
 import android.os.Build;
 import android.os.MemoryFile;
 import android.os.ParcelFileDescriptor;
@@ -35,7 +36,8 @@ public class SharedMemoryBuffer {
     private MemoryFile memoryFile;
     private ByteBuffer mappedBuffer;
     private ParcelFileDescriptor pfd;
-    private int bufferSize;
+    private ParcelFileDescriptor mFdOwner;
+    private final int bufferSize;
 
     public SharedMemoryBuffer(String name, int size) {
         this.bufferSize = size;
@@ -43,10 +45,11 @@ public class SharedMemoryBuffer {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) { // API 27+
                 sharedMemory = SharedMemory.create(name, size);
                 mappedBuffer = sharedMemory.mapReadWrite();
-                pfd = ParcelFileDescriptor.dup(getFileDescriptor(sharedMemory));
+                mFdOwner = ParcelFileDescriptor.fromFd(getRawFd(sharedMemory));
+                pfd = ParcelFileDescriptor.dup(mFdOwner.getFileDescriptor());
             } else {
                 memoryFile = new MemoryFile(name, size);
-                Method getFdMethod = MemoryFile.class.getDeclaredMethod("getFileDescriptor");
+                @SuppressLint("DiscouragedPrivateApi") Method getFdMethod = MemoryFile.class.getDeclaredMethod("getFileDescriptor");
                 FileDescriptor fd = (FileDescriptor) getFdMethod.invoke(memoryFile);
                 pfd = ParcelFileDescriptor.dup(fd);
             }
@@ -56,21 +59,21 @@ public class SharedMemoryBuffer {
     }
 
     /**
-     * 获取 SharedMemory 对应的独立 FileDescriptor（真实 dup）。
+     * 通过反射获取 SharedMemory 底层 fd（getFd 在高版本系统上仍被允许访问）。
      */
-    private FileDescriptor getFileDescriptor(SharedMemory sharedMemory) {
+    @SuppressLint("DiscouragedPrivateApi")
+    private int getRawFd(SharedMemory sharedMemory) {
         try {
             Method getFdMethod = null;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
                 getFdMethod = SharedMemory.class.getDeclaredMethod("getFd");
             }
+            assert getFdMethod != null;
             getFdMethod.setAccessible(true);
-            int rawFd = (int) getFdMethod.invoke(sharedMemory);
-            if (rawFd < 0) return null;
-            return android.system.Os.dup(ParcelFileDescriptor.fromFd(rawFd).getFileDescriptor());
+            return (int) getFdMethod.invoke(sharedMemory);
         } catch (Exception e) {
-            Log.w(TAG, "获取 SharedMemory FileDescriptor 异常: " + e.getMessage());
-            return null;
+            Log.w(TAG, "获取 SharedMemory fd 异常: " + e.getMessage());
+            return -1;
         }
     }
 
@@ -112,6 +115,12 @@ public class SharedMemoryBuffer {
             if (memoryFile != null) {
                 memoryFile.close();
                 memoryFile = null;
+            }
+            if (mFdOwner != null) {
+                try {
+                    mFdOwner.close();
+                } catch (Exception ignored) {}
+                mFdOwner = null;
             }
             if (pfd != null) {
                 pfd.close();

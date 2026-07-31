@@ -48,9 +48,17 @@ public class CameraGLView extends CameraGLViewBase {
     private Context context;
     private final Object mAnalyzeLock = new Object();
     private com.orb.slam2s.ipc.SlamIPCClient slamIPCClient;
+    private volatile boolean mPendingDetectPlane; // 待处理的平面检测请求（下一帧触发）
 
     public void setSlamIPCClient(com.orb.slam2s.ipc.SlamIPCClient client) {
         this.slamIPCClient = client;
+    }
+
+    /**
+     * 请求在下一帧触发平面检测
+     */
+    public void requestPlaneDetection() {
+        mPendingDetectPlane = true;
     }
 
     public CameraGLView(Context context, AttributeSet attrs) {
@@ -140,6 +148,12 @@ public class CameraGLView extends CameraGLViewBase {
                                     // 1. 通过 SharedMemory 零拷贝将完整 RGBA 帧推送至 MenthaAR SLAM 进程
                                     if (slamIPCClient != null && slamIPCClient.isConnected()) {
                                         slamIPCClient.sendFrameData(mYuvDataCache, w, h);
+
+                                        // 2. 消费"创建AR物体"请求：在下一帧触发平面检测
+                                        if (mPendingDetectPlane) {
+                                            mPendingDetectPlane = false;
+                                            slamIPCClient.detectPlane();
+                                        }
                                     }
 
                                     // 2. 实时从 SharedMemory 映射的 ByteBuffer 中提取由 C++ SLAM 引擎绘制了绿/蓝色点云与特征点的 RGBA 图像
@@ -159,6 +173,9 @@ public class CameraGLView extends CameraGLViewBase {
                                             }
                                         });
                                     }
+
+                                    // 3. 通过帧回调通知宿主（ArCamUIActivity.onCameraFrame 用于 FPS 等统计）
+                                    deliverAndDrawFrame(new XCameraFrame());
 
                                     image.close();
                                 } catch (Throwable e) {
@@ -275,16 +292,11 @@ public class CameraGLView extends CameraGLViewBase {
         }
     }
 
-    private static class XCameraFrame implements CvCameraViewFrame {
-        private final long rgbaAddr;
-        private final long grayAddr;
-        XCameraFrame(long rgbaAddr, long grayAddr) {
-            this.rgbaAddr = rgbaAddr;
-            this.grayAddr = grayAddr;
-        }
+    // 供 onCameraFrame 回调使用的帧载体（CameraX 路径无原生 Mat 地址，onCameraFrame 仅用于统计）
+    private static class XCameraFrame implements CameraGLViewBase.CvCameraViewFrame {
         @Override
-        public long rgba() { return rgbaAddr; }
+        public long rgba() { return 0; }
         @Override
-        public long gray() { return grayAddr; }
+        public long gray() { return 0; }
     }
 }

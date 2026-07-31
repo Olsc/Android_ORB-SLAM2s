@@ -3132,8 +3132,8 @@ void Tracking::ClearRelocCacheForMapSwitch()
 
 void Tracking::ClearRelocCache()
 {
-    LOGD("跟踪::清除重定位缓存: 仅清除重定位相关缓存，保持跟踪状态");
-    
+    //LOGD("跟踪::清除重定位缓存: 仅清除重定位相关缓存，保持跟踪状态");
+
     // 清除对齐状态和重定位缓冲区
     {
         std::unique_lock<std::mutex> lk(mMutexReloc);
@@ -3175,9 +3175,7 @@ void Tracking::ClearRelocCache()
     mRelocMatchScore.store(0.0f);
     mRelocCooldownFrames = 0;
     mConsecutiveFail = 0;
-    
-    
-    LOGD("跟踪::清除重定位缓存: 完成");
+    //LOGD("跟踪::清除重定位缓存: 完成");
 }
 
 void Tracking::ChangeCalibration(const string &strSettingPath)
