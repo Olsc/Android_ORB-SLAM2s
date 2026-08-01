@@ -7,7 +7,7 @@ import android.util.Log;
 import android.view.WindowManager;
 
 import com.orb.slam2s.sensors.OrientationSensor;
-import android.opengl.Matrix;
+import com.orb.slam2s.slamar.NativeHelper;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -19,12 +19,13 @@ import javax.microedition.khronos.opengles.GL10;
 
 /**
  * 3DOF立方体渲染器
+ * 在视角前方指定距离处生成一个彩色立方体，并进行3DOF跟踪
  */
 public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
     private static final String TAG = "ThreeDofCubeRenderer";
 
     private boolean mInitialized = false;
-    private final float[] mObjectWorldPos = new float[3];
+    private float[] mObjectWorldPos = new float[3];
 
     private final OrientationSensor orientationSensor;
     private int program;
@@ -39,13 +40,15 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
 
     private static final int CUBE_INDEX_COUNT = 36;
     private final Context context;
+    private NativeHelper nativeHelper;
 
     // 控制是否显示立方体
     private boolean mShowCube = false;
 
-    public ThreeDofCubeRenderer(Context context, OrientationSensor sensor) {
+    public ThreeDofCubeRenderer(Context context, OrientationSensor sensor, NativeHelper nativeHelper) {
         this.context = context;
         this.orientationSensor = sensor;
+        this.nativeHelper = nativeHelper;
     }
 
     /**
@@ -53,7 +56,7 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
      */
     public void spawnCubeAtDistance(float distance) {
         this.mDistance = distance;
-        this.mInitialized = false;
+        this.mInitialized = false; // 重置，下一帧会重新计算位置
         this.mShowCube = true;
         Log.d(TAG, "请求在前方 " + distance + " 米处生成立方体");
     }
@@ -122,38 +125,31 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
             return;
         }
 
+        int rotation = getDisplayRotation();
+
         float[] rotationMatrix = orientationSensor.getRotationMatrix();
 
+        // 检查旋转矩阵是否有效
         boolean isIdentity = true;
         for (int i = 1; i < 4; i++) {
             if (rotationMatrix[i] != 0) isIdentity = false;
         }
 
+        // 延迟初始化：当获取到有效的传感器数据后，在相机前方固定距离生成物体
         if (!mInitialized && !isIdentity) {
-            float[] invRot = new float[16];
-            Matrix.invertM(invRot, 0, rotationMatrix, 0);
-            float[] dir = new float[]{0, 0, -mDistance, 1};
-            float[] pos = new float[4];
-            Matrix.multiplyMV(pos, 0, invRot, 0, dir, 0);
-            mObjectWorldPos[0] = pos[0];
-            mObjectWorldPos[1] = pos[1];
-            mObjectWorldPos[2] = pos[2];
+            mObjectWorldPos = nativeHelper.calculate3DofInsertionPoint(rotationMatrix, rotation, mDistance);
             mInitialized = true;
+            Log.d(TAG, String.format("立方体世界坐标已初始化: [%.2f, %.2f, %.2f]",
+                    mObjectWorldPos[0], mObjectWorldPos[1], mObjectWorldPos[2]));
         }
 
         if (mInitialized) {
-            float[] proj = new float[16];
-            float[] model = new float[16];
-            float[] mv = new float[16];
+            float[] newMvpMatrix = nativeHelper.compute3DofMVP(rotationMatrix, rotation, mRatio, mObjectWorldPos);
 
-            Matrix.perspectiveM(proj, 0, 60.0f, mRatio, 0.1f, 100.0f);
-            Matrix.setIdentityM(model, 0);
-            Matrix.translateM(model, 0, mObjectWorldPos[0], mObjectWorldPos[1], mObjectWorldPos[2]);
-
-            Matrix.multiplyMM(mv, 0, rotationMatrix, 0, model, 0);
-            Matrix.multiplyMM(mvpMatrix, 0, proj, 0, mv, 0);
-
-            drawCube();
+            if (newMvpMatrix != null && newMvpMatrix.length == 16) {
+                System.arraycopy(newMvpMatrix, 0, mvpMatrix, 0, 16);
+                drawCube();
+            }
         }
     }
 

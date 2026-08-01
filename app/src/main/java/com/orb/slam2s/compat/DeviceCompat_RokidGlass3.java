@@ -1,6 +1,9 @@
 package com.orb.slam2s.compat;
 
 import android.os.Build;
+import android.util.Log;
+
+import com.orb.slam2s.slamar.OpenCVBridge;
 
 /**
  * 设备兼容性处理类
@@ -9,6 +12,13 @@ import android.os.Build;
 public class DeviceCompat_RokidGlass3 {
     private static final String TAG = "DeviceCompat_RokidGlass3";
 
+    // 目标设备信息
+    private static final String TARGET_MANUFACTURER = "Rokid";
+    private static final String TARGET_MODEL = "RG-glasses";
+    private static final String TARGET_PRODUCT = "glasses";
+    private static final String TARGET_CODENAME = "glasses";
+
+    // 缓存：设备信息不会在运行时改变，只需检测一次
     private static Boolean sIsRokidGlasses = null;
 
     /**
@@ -32,5 +42,19 @@ public class DeviceCompat_RokidGlass3 {
 
         sIsRokidGlasses = isManufacturerMatch && (isModelMatch || isProductMatch);
         return sIsRokidGlasses;
+    }
+
+    /**
+     * 如果是 Rokid 设备，则对相机画面进行镜像处理。
+     * 用户要求：画面需要上下镜像 + 左右镜像。
+     *
+     * @param matAddr 需要处理的 native Mat 地址
+     */
+    public static void checkAndFlipFrame(long matAddr) {
+        if (matAddr == 0) return;
+
+        if (isRokidGlasses()) {
+            OpenCVBridge.nativeFlipBoth(matAddr);
+        }
     }
 }

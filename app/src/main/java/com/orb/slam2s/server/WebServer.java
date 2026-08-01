@@ -33,7 +33,7 @@ public class WebServer {
     private final int port;
     private ServerSocket serverSocket;
     private volatile boolean isRunning;
-    private final com.orb.slam2s.ipc.SlamIPCClient slamIPCClient;
+    private com.orb.slam2s.slamar.NativeHelper nativeHelper;
     private final android.content.Context context;
 
     // 活跃的MJPEG流
@@ -46,9 +46,9 @@ public class WebServer {
 
     private OnFrameReceivedListener frameReceivedListener;
 
-    public WebServer(int port, com.orb.slam2s.ipc.SlamIPCClient slamIPCClient, android.content.Context context) {
+    public WebServer(int port, com.orb.slam2s.slamar.NativeHelper nativeHelper, android.content.Context context) {
         this.port = port;
-        this.slamIPCClient = slamIPCClient;
+        this.nativeHelper = nativeHelper;
         this.context = context;
     }
 
@@ -312,24 +312,24 @@ public class WebServer {
         }
 
         private void handleData(OutputStream os) throws IOException {
-            if (slamIPCClient == null) {
+            if (nativeHelper == null) {
                 send404(os);
                 return;
             }
 
-            // 1. 从 IPC 获取数据
+            // 1. 从本地获取数据
             // 当前跟踪点（蓝色）
-            float[] trackedPoints = slamIPCClient.getTrackedPoints(5000);
+            float[] trackedPoints = nativeHelper.getTrackedPoints(5000);
             if (trackedPoints == null)
                 trackedPoints = new float[0];
 
             // 地图点（绿色）
-            float[] mapPoints = slamIPCClient.getMiniMapPoints(20000);
+            float[] mapPoints = nativeHelper.getMiniMapPoints(20000);
             if (mapPoints == null)
                 mapPoints = new float[0];
 
             // AR对象
-            float[] arObjectsRaw = slamIPCClient.getAllArObjectsData();
+            float[] arObjectsRaw = nativeHelper.getAllArObjectsData();
             // 格式：[count, m0...m15, scale, m0...m15, scale...]
 
             int arObjCount = 0;
@@ -352,6 +352,9 @@ public class WebServer {
             }
 
             // 计算总大小
+            // 跟踪点：4 (计数) + len * 4
+            // 地图点：4 (计数) + len * 4
+            // AR：4 (计数) + (count * 16 * 4)
             int totalSize = 4 + (trackedPoints.length * 4) +
                     4 + (mapPoints.length * 4) +
                     4 + (arObjList.size() * 4) +
@@ -378,15 +381,15 @@ public class WebServer {
                 buffer.putFloat(f);
             }
 
-            // 4. 写入相机姿态 (View Matrix) 和 跟踪状态（通过 IPC 从 SLAM 进程获取）
+            // 4. 写入相机姿态 (View Matrix) 和 跟踪状态
             float[] viewMatrix = new float[16];
-            android.opengl.Matrix.setIdentityM(viewMatrix, 0);
-            if (slamIPCClient != null) {
-                slamIPCClient.getV(viewMatrix);
-            }
-            int trackingStatus = slamIPCClient != null ? slamIPCClient.getTrackingStatus() : 0;
+            nativeHelper.getV(viewMatrix);
+            int trackingStatus = nativeHelper.getLastTrackingResult();
 
             buffer.putInt(trackingStatus);
+            FloatBuffer fbView = buffer.asFloatBuffer(); // 使用FloatBuffer写入以提高性能 (buffer position必须对齐)
+            // 注意: buffer.putFloat会推进位置，混合使用putInt和FloatBuffer需小心 position
+            // 这里直接用 putFloat 循环写入比较安全，或者重新切片
             for (float f : viewMatrix) {
                 buffer.putFloat(f);
             }

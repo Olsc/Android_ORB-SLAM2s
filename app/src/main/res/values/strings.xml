@@ -35,9 +35,17 @@
     <string name="button_back">Back</string>
     <string name="dialog_map_details">Map Details</string>
     <string name="map_details_name">Map Name: %1$s</string>
+    <string name="map_details_keyframes">Keyframes: %1$d</string>
+    <string name="map_details_mappoints">Map Points: %1$d</string>
     <string name="map_details_size">File Size: %1$d KB</string>
     <string name="map_details_time">Created: %1$s</string>
+    <string name="map_details_plane">Has Plane: %1$s</string>
+    <string name="map_details_plane_yes">Yes</string>
+    <string name="map_details_plane_no">No</string>
     <string name="button_ok">OK</string>
+    <string name="map_stats_keyframes">Keyframes: %1$d</string>
+    <string name="map_stats_mappoints">Map Points: %1$d</string>
+    <string name="map_stats_size">Size: %1$dKB</string>
     <string name="map_stats_format">KFs: %1$d | MPs: %2$d | Plane: %3$s</string>
     <string name="map_stats_plane_yes">Yes</string>
     <string name="map_stats_plane_no">No</string>
