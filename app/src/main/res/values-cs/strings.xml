@@ -5,18 +5,13 @@
     <string name="btn_save">Uložit</string>
     <string name="btn_load">Načíst</string>
     <string name="btn_map">Mapa</string>
-    <string name="btn_reset">Resetovat</string>
     <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓Mrak bodů</string>
     <string name="loading_slam_init">Inicializace systému SLAM…</string>
     <string name="loading_slam_wait">Prosím čekejte, může to chvíli trvat</string>
     <string name="slam_init_complete">Systém SLAM inicializován</string>
     <string name="slam_init_failed">Inicializace SLAM selhala: %1$s</string>
-    <string name="loading">Načítání…</string>
     <string name="hint_request_sent">Požadavek odeslán</string>
-    <string name="hint_resetting_slam">Resetování systému SLAM…</string>
-    <string name="hint_slam_reset">Systém SLAM resetován</string>
-    <string name="hint_reset_failed">Resetování selhalo: Systém není inicializován</string>
     <string name="hint_pointcloud_enabled">Mrak bodů aktivován</string>
     <string name="hint_pointcloud_disabled">Mrak bodů deaktivován</string>
     <string name="btn_pointcloud_enabled">✓Mrak bodů</string>
@@ -28,15 +23,11 @@
     <string name="dialog_save_map">Uložit mapu</string>
     <string name="button_cancel">Zrušit</string>
     <string name="hint_no_maps">Žádné uložené mapy</string>
-    <string name="map_stats_keyframes">Klíčové snímky: %1$d</string>
-    <string name="map_stats_mappoints">Body mapy: %1$d</string>
-    <string name="map_stats_size">Velikost: %1$dKB</string>
     <string name="dialog_map_manage">Správa map</string>
     <string name="dialog_select_map">Vybrat mapu</string>
     <string name="action_load">Načíst</string>
     <string name="action_delete">Smazat</string>
     <string name="action_view_details">Zobrazit podrobnosti</string>
-    <string name="action_load_multi">Načíst více</string>
     <string name="dialog_confirm_delete">Potvrdit smazání</string>
     <string name="dialog_confirm_delete_message">Smazat mapu \"%1$s\"?</string>
     <string name="hint_map_deleted">Mapa smazána</string>
@@ -44,18 +35,12 @@
     <string name="button_back">Zpět</string>
     <string name="dialog_map_details">Podrobnosti mapy</string>
     <string name="map_details_name">Název mapy: %1$s</string>
-    <string name="map_details_keyframes">Klíčové snímky: %1$d</string>
-    <string name="map_details_mappoints">Body mapy: %1$d</string>
     <string name="map_details_size">Velikost souboru: %1$d KB</string>
     <string name="map_details_time">Vytvořeno: %1$s</string>
-    <string name="map_details_plane">Má rovinu: %1$s</string>
-    <string name="map_details_plane_yes">Ano</string>
-    <string name="map_details_plane_no">Ne</string>
     <string name="button_ok">OK</string>
     <string name="map_stats_format">KS: %1$d | BM: %2$d | Rov.: %3$s</string>
     <string name="map_stats_plane_yes">Ano</string>
     <string name="map_stats_plane_no">Ne</string>
-    <string name="hint_map_load_requested">Požadavek na načtení mapy</string>
     <string name="hint_map_saved">Mapa uložena: %1$s</string>
     <string name="hint_map_save_failed">Uložení selhalo: %1$s</string>
     <string name="hint_map_file_not_found">Soubor mapy nebyl nalezen</string>
@@ -65,9 +50,6 @@
     </plurals>
     <string name="hint_map_load_failed">Načtení selhalo: %1$s</string>
     <string name="permission_camera_storage_required">Jsou vyžadována oprávnění pro kameru a úložiště. Udělte oprávnění v nastavení.</string>
-    <string name="btn_mini_world">Mini zobrazení</string>
-    <string name="hint_mini_world_enabled">Mini zobrazení aktivováno</string>
-    <string name="hint_mini_world_disabled">Mini zobrazení deaktivováno</string>
 
     <string name="category_ar">Ovládání AR</string>
     <string name="category_map">Mapa</string>
@@ -85,8 +67,6 @@
 
     <string name="btn_web_server">Webový server</string>
 
-    <string name="status_enabled">aktivováno</string>
-    <string name="status_disabled">deaktivováno</string>
 
     <string name="title_web_server">Webový server</string>
     <string name="web_fps_label"> (Web)</string>
@@ -94,11 +74,9 @@
     <string name="hint_web_server_started">Webový server spuštěn: %1$s</string>
     <string name="web_url_default">http://0.0.0.0:8080</string>
 
-    <string name="privacy_title">Zásady ochrany soukromí &amp; Podmínky použití</string>
     <string name="privacy_scroll_hint">↓ Přejděte dolů a přečtěte si celou dohodu</string>
     <string name="privacy_scroll_done">✓ Přečetli jste celou dohodu</string>
     <string name="privacy_agree">Souhlasím &amp; Pokračovat</string>
-    <string name="privacy_disagree_notice">Pokud nesouhlasíte, prosím opusťte aplikaci</string>
     <string name="privacy_load_error">Načtení zásad ochrany soukromí selhalo. Zkuste to znovu.</string>
 
 </resources>

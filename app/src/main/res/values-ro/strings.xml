@@ -5,18 +5,13 @@
     <string name="btn_save">Salvare</string>
     <string name="btn_load">Încărcare</string>
     <string name="btn_map">Hartă</string>
-    <string name="btn_reset">Resetare</string>
     <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓Nor de puncte</string>
     <string name="loading_slam_init">Se inițializează sistemul SLAM…</string>
     <string name="loading_slam_wait">Vă rugăm așteptați, poate dura câteva momente</string>
     <string name="slam_init_complete">Sistemul SLAM inițializat</string>
     <string name="slam_init_failed">Inițializare SLAM eșuată: %1$s</string>
-    <string name="loading">Se încarcă…</string>
     <string name="hint_request_sent">Cerere trimisă</string>
-    <string name="hint_resetting_slam">Se resetează sistemul SLAM…</string>
-    <string name="hint_slam_reset">Sistemul SLAM resetat</string>
-    <string name="hint_reset_failed">Resetare eșuată: Sistem neinițializat</string>
     <string name="hint_pointcloud_enabled">Nor de puncte activat</string>
     <string name="hint_pointcloud_disabled">Nor de puncte dezactivat</string>
     <string name="btn_pointcloud_enabled">✓Nor de puncte</string>
@@ -28,15 +23,11 @@
     <string name="dialog_save_map">Salvare hartă</string>
     <string name="button_cancel">Anulare</string>
     <string name="hint_no_maps">Nicio hartă salvată</string>
-    <string name="map_stats_keyframes">Cadre cheie: %1$d</string>
-    <string name="map_stats_mappoints">Puncte hartă: %1$d</string>
-    <string name="map_stats_size">Dimensiune: %1$dKB</string>
     <string name="dialog_map_manage">Administrare hărți</string>
     <string name="dialog_select_map">Selectare hartă</string>
     <string name="action_load">Încărcare</string>
     <string name="action_delete">Ștergere</string>
     <string name="action_view_details">Vizualizare detalii</string>
-    <string name="action_load_multi">Încărcare multiplă</string>
     <string name="dialog_confirm_delete">Confirmare ștergere</string>
     <string name="dialog_confirm_delete_message">Ștergeți harta \"%1$s\"?</string>
     <string name="hint_map_deleted">Hartă ștearsă</string>
@@ -44,18 +35,12 @@
     <string name="button_back">Înapoi</string>
     <string name="dialog_map_details">Detalii hartă</string>
     <string name="map_details_name">Nume hartă: %1$s</string>
-    <string name="map_details_keyframes">Cadre cheie: %1$d</string>
-    <string name="map_details_mappoints">Puncte hartă: %1$d</string>
     <string name="map_details_size">Dimensiune fișier: %1$d KB</string>
     <string name="map_details_time">Creat: %1$s</string>
-    <string name="map_details_plane">Are plan: %1$s</string>
-    <string name="map_details_plane_yes">Da</string>
-    <string name="map_details_plane_no">Nu</string>
     <string name="button_ok">OK</string>
     <string name="map_stats_format">CF: %1$d | PH: %2$d | Plan: %3$s</string>
     <string name="map_stats_plane_yes">Da</string>
     <string name="map_stats_plane_no">Nu</string>
-    <string name="hint_map_load_requested">Încărcare hartă solicitată</string>
     <string name="hint_map_saved">Hartă salvată: %1$s</string>
     <string name="hint_map_save_failed">Salvare eșuată: %1$s</string>
     <string name="hint_map_file_not_found">Fișier hartă negăsit</string>
@@ -65,9 +50,6 @@
     </plurals>
     <string name="hint_map_load_failed">Încărcare eșuată: %1$s</string>
     <string name="permission_camera_storage_required">Sunt necesare permisiuni pentru cameră și stocare. Acordați permisiunile în setări.</string>
-    <string name="btn_mini_world">Mini vizualizare</string>
-    <string name="hint_mini_world_enabled">Mini vizualizare activată</string>
-    <string name="hint_mini_world_disabled">Mini vizualizare dezactivată</string>
 
     <string name="category_ar">Controale AR</string>
     <string name="category_map">Hartă</string>
@@ -85,8 +67,6 @@
 
     <string name="btn_web_server">Server web</string>
 
-    <string name="status_enabled">activat</string>
-    <string name="status_disabled">dezactivat</string>
 
     <string name="title_web_server">Server web</string>
     <string name="web_fps_label"> (Web)</string>
@@ -94,11 +74,9 @@
     <string name="hint_web_server_started">Server web pornit: %1$s</string>
     <string name="web_url_default">http://0.0.0.0:8080</string>
 
-    <string name="privacy_title">Politică de confidențialitate &amp; Termeni de utilizare</string>
     <string name="privacy_scroll_hint">↓ Derulați până la capăt pentru a citi acordul complet</string>
     <string name="privacy_scroll_done">✓ Ați citit acordul complet</string>
     <string name="privacy_agree">De acord &amp; Continuare</string>
-    <string name="privacy_disagree_notice">Dacă nu sunteți de acord, vă rugăm ieșiți din aplicație</string>
     <string name="privacy_load_error">Eroare la încărcarea politicii de confidențialitate. Încercați din nou.</string>
 
 </resources>

@@ -8,7 +8,6 @@
         <item quantity="other">지도 %1$d개 적재됨</item>
     </plurals>
     <string name="hint_map_load_failed">적재실패: %1$s</string>
-    <string name="hint_map_load_requested">지도적재가 요청되였습니다</string>
     <string name="hint_map_deleted">지도가 삭제되였습니다</string>
     <string name="hint_map_delete_failed">삭제실패</string>
 </resources>

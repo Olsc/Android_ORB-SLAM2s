@@ -5,18 +5,13 @@
     <string name="btn_save">حفظ</string>
     <string name="btn_load">تحميل</string>
     <string name="btn_map">خريطة</string>
-    <string name="btn_reset">إعادة ضبط</string>
     <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓سحابة نقطية</string>
     <string name="loading_slam_init">جارٍ تهيئة نظام SLAM…</string>
     <string name="loading_slam_wait">يرجى الانتظار، قد يستغرق هذا بعض الوقت</string>
     <string name="slam_init_complete">تمت تهيئة نظام SLAM</string>
     <string name="slam_init_failed">فشل تهيئة SLAM: %1$s</string>
-    <string name="loading">جارٍ التحميل…</string>
     <string name="hint_request_sent">تم إرسال الطلب</string>
-    <string name="hint_resetting_slam">جارٍ إعادة ضبط نظام SLAM…</string>
-    <string name="hint_slam_reset">تمت إعادة ضبط نظام SLAM</string>
-    <string name="hint_reset_failed">فشلت إعادة الضبط: النظام غير مُهيَّأ</string>
     <string name="hint_pointcloud_enabled">السحابة النقطية مُفعَّلة</string>
     <string name="hint_pointcloud_disabled">السحابة النقطية مُعطَّلة</string>
     <string name="btn_pointcloud_enabled">✓سحابة نقطية</string>
@@ -28,15 +23,11 @@
     <string name="dialog_save_map">حفظ الخريطة</string>
     <string name="button_cancel">إلغاء</string>
     <string name="hint_no_maps">لا توجد خرائط محفوظة</string>
-    <string name="map_stats_keyframes">الإطارات الرئيسية: %1$d</string>
-    <string name="map_stats_mappoints">نقاط الخريطة: %1$d</string>
-    <string name="map_stats_size">الحجم: %1$dكيلوبايت</string>
     <string name="dialog_map_manage">إدارة الخرائط</string>
     <string name="dialog_select_map">اختيار خريطة</string>
     <string name="action_load">تحميل</string>
     <string name="action_delete">حذف</string>
     <string name="action_view_details">عرض التفاصيل</string>
-    <string name="action_load_multi">تحميل متعدد</string>
     <string name="dialog_confirm_delete">تأكيد الحذف</string>
     <string name="dialog_confirm_delete_message">حذف الخريطة \"%1$s\"؟</string>
     <string name="hint_map_deleted">تم حذف الخريطة</string>
@@ -44,18 +35,12 @@
     <string name="button_back">رجوع</string>
     <string name="dialog_map_details">تفاصيل الخريطة</string>
     <string name="map_details_name">اسم الخريطة: %1$s</string>
-    <string name="map_details_keyframes">الإطارات الرئيسية: %1$d</string>
-    <string name="map_details_mappoints">نقاط الخريطة: %1$d</string>
     <string name="map_details_size">حجم الملف: %1$d كيلوبايت</string>
     <string name="map_details_time">تاريخ الإنشاء: %1$s</string>
-    <string name="map_details_plane">يحتوي على مستوى: %1$s</string>
-    <string name="map_details_plane_yes">نعم</string>
-    <string name="map_details_plane_no">لا</string>
     <string name="button_ok">موافق</string>
     <string name="map_stats_format">IR: %1$d | NQ: %2$d | مستوى: %3$s</string>
     <string name="map_stats_plane_yes">نعم</string>
     <string name="map_stats_plane_no">لا</string>
-    <string name="hint_map_load_requested">تم طلب تحميل الخريطة</string>
     <string name="hint_map_saved">تم حفظ الخريطة: %1$s</string>
     <string name="hint_map_save_failed">فشل الحفظ: %1$s</string>
     <string name="hint_map_file_not_found">ملف الخريطة غير موجود</string>
@@ -65,9 +50,6 @@
     </plurals>
     <string name="hint_map_load_failed">فشل التحميل: %1$s</string>
     <string name="permission_camera_storage_required">أذونات الكاميرا والتخزين مطلوبة. يرجى منح الأذونات في الإعدادات.</string>
-    <string name="btn_mini_world">عرض مصغر</string>
-    <string name="hint_mini_world_enabled">العرض المصغر مُفعَّل</string>
-    <string name="hint_mini_world_disabled">العرض المصغر مُعطَّل</string>
 
     <string name="category_ar">أدوات AR</string>
     <string name="category_map">الخريطة</string>
@@ -85,8 +67,6 @@
 
     <string name="btn_web_server">خادم الويب</string>
 
-    <string name="status_enabled">مُفعَّل</string>
-    <string name="status_disabled">مُعطَّل</string>
 
     <string name="title_web_server">خادم الويب</string>
     <string name="web_fps_label"> (ويب)</string>
@@ -94,11 +74,9 @@
     <string name="hint_web_server_started">تم تشغيل خادم الويب: %1$s</string>
     <string name="web_url_default">http://0.0.0.0:8080</string>
 
-    <string name="privacy_title">سياسة الخصوصية &amp; شروط الاستخدام</string>
     <string name="privacy_scroll_hint">↓ يرجى التمرير إلى الأسفل لقراءة الاتفاقية كاملة</string>
     <string name="privacy_scroll_done">✓ لقد قرأت الاتفاقية كاملة</string>
     <string name="privacy_agree">موافقة &amp; متابعة</string>
-    <string name="privacy_disagree_notice">إذا كنت لا توافق، يرجى الخروج من التطبيق</string>
     <string name="privacy_load_error">فشل تحميل سياسة الخصوصية. يرجى المحاولة مرة أخرى.</string>
 
 </resources>

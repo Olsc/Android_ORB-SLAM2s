@@ -5,18 +5,13 @@
     <string name="btn_save">Запазване</string>
     <string name="btn_load">Зареждане</string>
     <string name="btn_map">Карта</string>
-    <string name="btn_reset">Нулиране</string>
     <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓Облак от точки</string>
     <string name="loading_slam_init">Инициализация на SLAM системата…</string>
     <string name="loading_slam_wait">Моля, изчакайте, може да отнеме малко</string>
     <string name="slam_init_complete">SLAM системата е инициализирана</string>
     <string name="slam_init_failed">Инициализацията на SLAM е неуспешна: %1$s</string>
-    <string name="loading">Зареждане…</string>
     <string name="hint_request_sent">Заявката е изпратена</string>
-    <string name="hint_resetting_slam">Нулиране на SLAM системата…</string>
-    <string name="hint_slam_reset">SLAM системата е нулирана</string>
-    <string name="hint_reset_failed">Нулирането е неуспешно: Системата не е инициализирана</string>
     <string name="hint_pointcloud_enabled">Облакът от точки е активиран</string>
     <string name="hint_pointcloud_disabled">Облакът от точки е деактивиран</string>
     <string name="btn_pointcloud_enabled">✓Облак от точки</string>
@@ -28,15 +23,11 @@
     <string name="dialog_save_map">Запазване на карта</string>
     <string name="button_cancel">Отказ</string>
     <string name="hint_no_maps">Няма запазени карти</string>
-    <string name="map_stats_keyframes">Ключови кадри: %1$d</string>
-    <string name="map_stats_mappoints">Точки на картата: %1$d</string>
-    <string name="map_stats_size">Размер: %1$dKB</string>
     <string name="dialog_map_manage">Управление на карти</string>
     <string name="dialog_select_map">Избор на карта</string>
     <string name="action_load">Зареждане</string>
     <string name="action_delete">Изтриване</string>
     <string name="action_view_details">Преглед на подробности</string>
-    <string name="action_load_multi">Многократно зареждане</string>
     <string name="dialog_confirm_delete">Потвърждаване на изтриване</string>
     <string name="dialog_confirm_delete_message">Изтриване на карта \"%1$s\"?</string>
     <string name="hint_map_deleted">Картата е изтрита</string>
@@ -44,18 +35,12 @@
     <string name="button_back">Назад</string>
     <string name="dialog_map_details">Подробности за картата</string>
     <string name="map_details_name">Име на карта: %1$s</string>
-    <string name="map_details_keyframes">Ключови кадри: %1$d</string>
-    <string name="map_details_mappoints">Точки на картата: %1$d</string>
     <string name="map_details_size">Размер на файла: %1$d KB</string>
     <string name="map_details_time">Създадена: %1$s</string>
-    <string name="map_details_plane">Има равнина: %1$s</string>
-    <string name="map_details_plane_yes">Да</string>
-    <string name="map_details_plane_no">Не</string>
     <string name="button_ok">OK</string>
     <string name="map_stats_format">КК: %1$d | ТК: %2$d | Равнина: %3$s</string>
     <string name="map_stats_plane_yes">Да</string>
     <string name="map_stats_plane_no">Не</string>
-    <string name="hint_map_load_requested">Заявка за зареждане на карта</string>
     <string name="hint_map_saved">Картата е запазена: %1$s</string>
     <string name="hint_map_save_failed">Запазването е неуспешно: %1$s</string>
     <string name="hint_map_file_not_found">Файлът на картата не е намерен</string>
@@ -65,9 +50,6 @@
     </plurals>
     <string name="hint_map_load_failed">Зареждането е неуспешно: %1$s</string>
     <string name="permission_camera_storage_required">Необходими са разрешения за камера и съхранение. Моля, дайте разрешения в настройките.</string>
-    <string name="btn_mini_world">Мини изглед</string>
-    <string name="hint_mini_world_enabled">Мини изгледът е активиран</string>
-    <string name="hint_mini_world_disabled">Мини изгледът е деактивиран</string>
 
     <string name="category_ar">AR контроли</string>
     <string name="category_map">Карта</string>
@@ -85,8 +67,6 @@
 
     <string name="btn_web_server">Уеб сървър</string>
 
-    <string name="status_enabled">активиран</string>
-    <string name="status_disabled">деактивиран</string>
 
     <string name="title_web_server">Уеб сървър</string>
     <string name="web_fps_label"> (Уеб)</string>
@@ -94,11 +74,9 @@
     <string name="hint_web_server_started">Уеб сървърът е стартиран: %1$s</string>
     <string name="web_url_default">http://0.0.0.0:8080</string>
 
-    <string name="privacy_title">Политика за поверителност &amp; Условия за ползване</string>
     <string name="privacy_scroll_hint">↓ Моля, превъртете до дъното, за да прочетете цялото споразумение</string>
     <string name="privacy_scroll_done">✓ Прочели сте цялото споразумение</string>
     <string name="privacy_agree">Приемам &amp; Продължавам</string>
-    <string name="privacy_disagree_notice">Ако не сте съгласни, моля, излезте от приложението</string>
     <string name="privacy_load_error">Зареждането на политиката за поверителност е неуспешно. Моля, опитайте отново.</string>
 
 </resources>

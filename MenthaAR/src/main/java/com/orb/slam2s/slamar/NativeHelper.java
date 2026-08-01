@@ -101,6 +101,26 @@ public class NativeHelper {
     // 本地方法：处理摄像头帧 (statusBuf=[tracking,shouldDraw,scaleBits])
     public native void nativeProcessFrameMat(long matAddrGr, long matAddrRgba, int[] statusBuf);
 
+    // 本地方法：持久映射共享内存帧缓冲（仅在缓冲创建/尺寸变化时调用一次）
+    public native boolean nativeAttachFrameBuffer(int fd, int size);
+    public native void nativeDetachFrameBuffer();
+    // 本地方法：处理持久映射缓冲中的最新一帧（每帧只传宽高，无 fd 开销）
+    // statusBuf: [0]=tracking, [1]=shouldDraw
+    public native void nativeProcessFrameSharedMem(int width, int height, int[] statusBuf);
+
+    public boolean attachFrameBuffer(int fd, int size) {
+        return nativeAttachFrameBuffer(fd, size);
+    }
+
+    public void detachFrameBuffer() {
+        nativeDetachFrameBuffer();
+    }
+
+    public int processFrameSharedMem(int width, int height, int[] statusBuf) {
+        nativeProcessFrameSharedMem(width, height, statusBuf);
+        return statusBuf[0];
+    }
+
     // 统一获取MVP（替代getM/getV/getP）
     public native void nativeGetMVP(float[] M, float[] V, float[] P, int w, int h);
 

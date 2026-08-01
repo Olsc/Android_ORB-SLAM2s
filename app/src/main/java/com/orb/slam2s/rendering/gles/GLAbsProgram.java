@@ -7,8 +7,8 @@ import com.orb.slam2s.utils.ShaderUtils;
 
 public abstract class GLAbsProgram {
     private int mProgramId;
-    private String mVertexShader;
-    private String mFragmentShader;
+    private final String mVertexShader;
+    private final String mFragmentShader;
 
     private int maPositionHandle;
     private int maTextureHandle;

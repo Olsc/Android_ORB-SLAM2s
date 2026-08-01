@@ -23,8 +23,6 @@ import android.view.View;
  */
 public class JoystickView extends View {
 
-    private static final String TAG = "JoystickView";
-
     // 绘制元素
     private final Paint mBgPaint;
     private final Paint mHandlePaint;
@@ -53,7 +51,6 @@ public class JoystickView extends View {
     // 常量
     private static final float HANDLE_RATIO = 0.28f;    // 手柄半径 / 底座半径
     private static final float DEAD_ZONE_RATIO = 0.08f; // 死区半径 / 底座半径
-    private static final int DEFAULT_COLOR = 0x80FFFFFF; // 半透明白色
     private static final int HANDLE_COLOR = 0xCCFFFFFF;  // 较亮白色
     private static final int RING_COLOR = 0x60FFFFFF;    // 淡白色环
 
@@ -181,6 +178,7 @@ public class JoystickView extends View {
                 if (mIsDragging) {
                     mIsDragging = false;
                     resetHandle();
+                    performClick();
                     return true;
                 }
                 break;

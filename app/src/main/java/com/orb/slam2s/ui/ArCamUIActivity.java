@@ -32,13 +32,11 @@ import com.orb.slam2s.constant.GlobalConstant;
 import com.orb.slam2s.rendering.render.ModelRendererWrapper;
 import com.orb.slam2s.rendering.render.ThreeDofCubeRenderer;
 import com.orb.slam2s.sensors.OrientationSensor;
-import com.orb.slam2s.slamar.NativeHelper;
 import com.orb.slam2s.R;
 import com.orb.slam2s.rendering.gles.FilamentAspectSurfaceView;
 import com.orb.slam2s.utils.FpsMeter;
 import com.orb.slam2s.utils.TouchHelper;
-
-import com.orb.slam2s.slamar.OpenCVBridge;
+import com.orb.slam2s.ipc.SlamIPCClient;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.activity.OnBackPressedCallback;
@@ -54,18 +52,12 @@ public class ArCamUIActivity extends AppCompatActivity implements
 
     private static final String TAG = "SlamCamActivity";
 
-    private long mRgbaAddr;     // native Mat 地址 (CV_8UC4)
-    private long mGrayAddr;     // native Mat 地址 (CV_8UC1)
-
     private CameraGLView mOpenCvCameraView;
     private boolean initFinished;
 
-    private NativeHelper nativeHelper;
-    private NativeHelper.MapManager mapManager;
+    private SlamIPCClient slamIPCClient;
     private TouchHelper touchHelper;
     private ModelRendererWrapper modelRendererWrapper;
-
-    private boolean detectPlane;
 
     private FpsMeter mFpsMeter = null;
     private TextView fpsText;
@@ -79,7 +71,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
 
 
     private Button btn3DofCube;
-    private android.os.Handler uiHandler = new android.os.Handler();
+    private final android.os.Handler uiHandler = new android.os.Handler();
     private androidx.appcompat.app.AlertDialog loadingDialog;
     private boolean slamInitialized = false;
 
@@ -94,11 +86,9 @@ public class ArCamUIActivity extends AppCompatActivity implements
     private WebServer webServer;
     private Button btnStartWeb;
     private boolean isWebRunning = false;
-    private Thread pointsUpdater;
 
     // 摇杆控制AR物体旋转
     private JoystickView joystickView;
-    private float lastJoystickAngle = -1.0f;  // 上一帧的摇杆角度，用于计算增量
 
     // 3DOF功能相关
     private OrientationSensor orientationSensor;
@@ -109,7 +99,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
     // 浏览器图像帧相关 (Web 服务器使用)
     private volatile byte[] browserFrameData = null;
     private final Object browserFrameLock = new Object();
-    private boolean useWebCamera = false; // Web模式：使用浏览器相机而不是本地相机
     private Thread webFrameProcessor; // Web图像处理线程
     private volatile boolean isProcessingWebFrames = false;
 
@@ -156,11 +145,11 @@ public class ArCamUIActivity extends AppCompatActivity implements
 
             int screenWidth = size.x;
             int screenHeight = size.y;
-            Log.d(TAG, "屏幕分辨率: " + screenWidth + "x" + screenHeight);
+            //Log.d(TAG, "屏幕分辨率: " + screenWidth + "x" + screenHeight);
 
             // 计算最佳相机处理分辨率
             GlobalConstant.computeOptimalResolution(screenWidth, screenHeight);
-            Log.d(TAG, "选择相机分辨率: " + GlobalConstant.RESOLUTION_WIDTH + "x" + GlobalConstant.RESOLUTION_HEIGHT);
+            //Log.d(TAG, "选择相机分辨率: " + GlobalConstant.RESOLUTION_WIDTH + "x" + GlobalConstant.RESOLUTION_HEIGHT);
         }
     }
 
@@ -186,11 +175,11 @@ public class ArCamUIActivity extends AppCompatActivity implements
                 if (rotation == Surface.ROTATION_270) {
                     // 右横屏 (reverse landscape)
                     setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
-                    Log.d(TAG, "锁定为右横屏方向 (REVERSE_LANDSCAPE)");
+                    //Log.d(TAG, "锁定为右横屏方向 (REVERSE_LANDSCAPE)");
                 } else {
                     // 默认为左横屏
                     setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                    Log.d(TAG, "锁定为左横屏方向 (LANDSCAPE)");
+                    //Log.d(TAG, "锁定为左横屏方向 (LANDSCAPE)");
                 }
             }
         } catch (Exception e) {
@@ -199,20 +188,21 @@ public class ArCamUIActivity extends AppCompatActivity implements
     }
 
     private void initView() {
-        Log.d(TAG, "initView: 初始化视图与组件");
+        //Log.d(TAG, "initView: 初始化视图与组件");
 
         // 设置全屏与屏幕常亮
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        // 初始化NativeHelper，用于调用本地SLAM库
-        nativeHelper = new NativeHelper(this);
-        mapManager = new NativeHelper.MapManager(this, nativeHelper);
+        // 初始化 IPC 客户端
+        slamIPCClient = new com.orb.slam2s.ipc.SlamIPCClient(this);
+        slamIPCClient.bindService();
 
         // 初始化相机视图
         mOpenCvCameraView = (CameraGLView) findViewById(R.id.my_fake_glsurface_view);
         mOpenCvCameraView.setVisibility(View.VISIBLE);
         mOpenCvCameraView.setCvCameraViewListener(this);
+        mOpenCvCameraView.setSlamIPCClient(slamIPCClient);
         mOpenCvCameraView.init();
 
         initFinished = false;
@@ -229,7 +219,11 @@ public class ArCamUIActivity extends AppCompatActivity implements
         touchView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                return touchHelper.handleTouchEvent(event);
+                boolean handled = touchHelper.handleTouchEvent(event);
+                if (event.getAction() == MotionEvent.ACTION_UP) {
+                    v.performClick();
+                }
+                return handled;
             }
         });
 
@@ -259,7 +253,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
         fpsText = findViewById(R.id.text_fps);
         textMapStats = findViewById(R.id.text_map_stats);
         mFpsMeter = new FpsMeter();
-        mFpsMeter.setResolution(GlobalConstant.RESOLUTION_WIDTH, GlobalConstant.RESOLUTION_HEIGHT);
 
         // 启动地图状态更新线程
         startMapStatsUpdater();
@@ -273,7 +266,12 @@ public class ArCamUIActivity extends AppCompatActivity implements
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "点击按钮：创建AR物体");
-                detectPlane = true;
+                // 平面检测由 analyzer 每帧消费 requestPlaneDetection() 触发
+                // （onCameraFrame 回调现仅用于 FPS 等统计）。
+                if (mOpenCvCameraView != null) {
+                    mOpenCvCameraView.requestPlaneDetection();
+                    showHint(getString(R.string.hint_request_sent));
+                }
             }
         });
 
@@ -351,6 +349,9 @@ public class ArCamUIActivity extends AppCompatActivity implements
                                     .setDuration(0)
                                     .start();
                             break;
+                        case MotionEvent.ACTION_UP:
+                            view.performClick();
+                            return false;
                         default:
                             return false;
                     }
@@ -445,12 +446,39 @@ public class ArCamUIActivity extends AppCompatActivity implements
             target.setVisibility(View.VISIBLE);
     }
 
+    private static class MapItemInfo {
+        String name;
+        java.io.File file;
+        long fileSize;
+        long lastModified;
+    }
+
+    private java.util.List<MapItemInfo> getLocalMapList() {
+        java.util.List<MapItemInfo> list = new java.util.ArrayList<>();
+        java.io.File dir = new java.io.File(getExternalFilesDir("SLAM"), "maps");
+        if (dir.exists() && dir.isDirectory()) {
+            java.io.File[] files = dir.listFiles();
+            if (files != null) {
+                for (java.io.File f : files) {
+                    if (f.isFile() && f.getName().endsWith(".bin")) {
+                        MapItemInfo info = new MapItemInfo();
+                        info.name = f.getName().replace(".bin", "");
+                        info.file = f;
+                        info.fileSize = f.length();
+                        info.lastModified = f.lastModified();
+                        list.add(info);
+                    }
+                }
+            }
+        }
+        return list;
+    }
+
     // 显示保存地图对话框
     private void showSaveMapDialog() {
         final android.widget.EditText input = new android.widget.EditText(this);
         input.setHint(getString(R.string.input_map_name));
 
-        // 生成默认地图名
         String defaultName = "map_" + new java.text.SimpleDateFormat("MMdd_HHmm",
                 java.util.Locale.getDefault()).format(new java.util.Date());
         input.setText(defaultName);
@@ -464,7 +492,13 @@ public class ArCamUIActivity extends AppCompatActivity implements
                         String mapName = input.getText().toString().trim();
                         if (mapName.isEmpty())
                             mapName = defaultName;
-                        mapManager.saveMap(mapName);
+                        java.io.File dir = new java.io.File(getExternalFilesDir("SLAM"), "maps");
+                        if (!dir.exists()) dir.mkdirs();
+                        String mapPath = new java.io.File(dir, mapName + ".bin").getAbsolutePath();
+                        if (slamIPCClient != null) {
+                            slamIPCClient.saveMap(mapPath);
+                            showHint(getString(R.string.hint_map_saved));
+                        }
                     }
                 })
                 .setNegativeButton(getString(R.string.button_cancel), null)
@@ -473,7 +507,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
 
     // 显示地图列表对话框
     private void showMapListDialog(final boolean showManage) {
-        final java.util.ArrayList<NativeHelper.MapManager.MapInfo> maps = mapManager.getAllMaps();
+        final java.util.List<MapItemInfo> maps = getLocalMapList();
 
         if (maps.isEmpty()) {
             showHint(getString(R.string.hint_no_maps));
@@ -482,15 +516,11 @@ public class ArCamUIActivity extends AppCompatActivity implements
 
         String[] mapNames = new String[maps.size()];
         for (int i = 0; i < maps.size(); i++) {
-            NativeHelper.MapManager.MapInfo info = maps.get(i);
-            mapNames[i] = info.name + "\n" +
-                    getString(R.string.map_stats_keyframes, info.keyFrames) + " | " +
-                    getString(R.string.map_stats_mappoints, info.mapPoints) + " | " +
-                    getString(R.string.map_stats_size, info.fileSize / 1024);
+            MapItemInfo info = maps.get(i);
+            mapNames[i] = info.name + " (" + (info.fileSize / 1024) + " KB)";
         }
 
         if (!showManage) {
-            // 加载模式：支持多选
             final boolean[] checkedItems = new boolean[maps.size()];
             new androidx.appcompat.app.AlertDialog.Builder(this)
                     .setTitle(getString(R.string.dialog_select_map))
@@ -509,10 +539,10 @@ public class ArCamUIActivity extends AppCompatActivity implements
                                     int loadedCount = 0;
                                     for (int i = 0; i < maps.size(); i++) {
                                         if (checkedItems[i]) {
-                                            // 第一个地图清空旧数据，后续地图追加
                                             boolean append = (loadedCount > 0);
-                                            // 使用递增的ID：0, 1, 2...
-                                            mapManager.loadMapWithId(maps.get(i).name, loadedCount, append);
+                                            if (slamIPCClient != null) {
+                                                slamIPCClient.loadMapWithId(maps.get(i).file.getAbsolutePath(), loadedCount, append);
+                                            }
                                             loadedCount++;
                                         }
                                     }
@@ -524,13 +554,12 @@ public class ArCamUIActivity extends AppCompatActivity implements
                     .setNeutralButton(getString(R.string.button_cancel), null)
                     .show();
         } else {
-            // 管理模式：单选操作
             new androidx.appcompat.app.AlertDialog.Builder(this)
                     .setTitle(getString(R.string.dialog_map_manage))
                     .setItems(mapNames, new android.content.DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(android.content.DialogInterface dialog, int which) {
-                            final NativeHelper.MapManager.MapInfo selectedMap = maps.get(which);
+                            final MapItemInfo selectedMap = maps.get(which);
                             showMapOptionsDialog(selectedMap);
                         }
                     })
@@ -540,7 +569,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
     }
 
     // 显示地图操作对话框
-    private void showMapOptionsDialog(final NativeHelper.MapManager.MapInfo mapInfo) {
+    private void showMapOptionsDialog(final MapItemInfo mapInfo) {
         String[] options = { getString(R.string.action_load), getString(R.string.action_delete),
                 getString(R.string.action_view_details) };
         new androidx.appcompat.app.AlertDialog.Builder(this)
@@ -550,7 +579,10 @@ public class ArCamUIActivity extends AppCompatActivity implements
                     public void onClick(android.content.DialogInterface dialog, int which) {
                         switch (which) {
                             case 0: // 加载
-                                mapManager.loadMap(mapInfo.name);
+                                if (slamIPCClient != null) {
+                                    slamIPCClient.loadMapWithId(mapInfo.file.getAbsolutePath(), 0, false);
+                                    showHint(getString(R.string.hint_map_loaded));
+                                }
                                 break;
                             case 1: // 删除
                                 new androidx.appcompat.app.AlertDialog.Builder(ArCamUIActivity.this)
@@ -561,7 +593,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
                                                     @Override
                                                     public void onClick(android.content.DialogInterface dialog,
                                                             int which) {
-                                                        if (mapManager.deleteMap(mapInfo.name)) {
+                                                        if (mapInfo.file.delete()) {
                                                             showHint(getString(R.string.hint_map_deleted));
                                                         } else {
                                                             showHint(getString(R.string.hint_map_delete_failed));
@@ -581,17 +613,11 @@ public class ArCamUIActivity extends AppCompatActivity implements
                 .show();
     }
 
-    // 显示地图详情
-    private void showMapDetails(NativeHelper.MapManager.MapInfo mapInfo) {
+    private void showMapDetails(MapItemInfo mapInfo) {
         String details = getString(R.string.map_details_name, mapInfo.name) + "\n" +
-                getString(R.string.map_details_keyframes, mapInfo.keyFrames) + "\n" +
-                getString(R.string.map_details_mappoints, mapInfo.mapPoints) + "\n" +
                 getString(R.string.map_details_size, mapInfo.fileSize / 1024) + "\n" +
                 getString(R.string.map_details_time, new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss",
-                        java.util.Locale.getDefault()).format(new java.util.Date(mapInfo.createTime)))
-                + "\n" +
-                getString(R.string.map_details_plane, mapInfo.hasPlane ? getString(R.string.map_details_plane_yes)
-                        : getString(R.string.map_details_plane_no));
+                        java.util.Locale.getDefault()).format(new java.util.Date(mapInfo.lastModified)));
 
         new androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle(getString(R.string.dialog_map_details))
@@ -601,14 +627,14 @@ public class ArCamUIActivity extends AppCompatActivity implements
     }
 
     private void initGLES20Model() {
-        Log.d(TAG, "initGLES20Model: 初始化GLB模型渲染器");
+        //Log.d(TAG, "initGLES20Model: 初始化GLB模型渲染器");
 
         final FilamentAspectSurfaceView glRootView = findViewById(R.id.ar_object_view_gles2_obj);
         glRootView.setAspectRatio(GlobalConstant.RESOLUTION_WIDTH, GlobalConstant.RESOLUTION_HEIGHT);
 
         modelRendererWrapper = ModelRendererWrapper.newInstance()
                 .setArObjectView(glRootView)
-                .setNativeHelper(nativeHelper)
+                .setSlamIPCClient(slamIPCClient)
                 .setContext(this)
                 .setModelPath("model.glb")
                 .setInitSize(0.20f)
@@ -627,7 +653,9 @@ public class ArCamUIActivity extends AppCompatActivity implements
                 })
                 .init(touchHelper);
 
-        nativeHelper.addOnMVPUpdatedCallback(modelRendererWrapper);
+        if (slamIPCClient != null) {
+            slamIPCClient.setOnMVPUpdatedCallback(modelRendererWrapper);
+        }
     }
 
     @Override
@@ -686,11 +714,13 @@ public class ArCamUIActivity extends AppCompatActivity implements
             public void run() {
                 try {
                     final String resDir = getExternalFilesDir("SLAM").getAbsolutePath() + "/";
-                    Log.d(TAG, "SLAM资源目录: " + resDir);
+                    //Log.d(TAG, "SLAM资源目录: " + resDir);
                     Log.d(TAG, "开始初始化SLAM（后台线程）...");
 
-                    // 耗时操作：初始化SLAM（词汇表加载约1秒）
-                    nativeHelper.initSLAM(resDir);
+                    // 耗时操作：通过 IPC 初始化独立 SLAM 进程（词汇表加载约1秒）
+                    if (slamIPCClient != null) {
+                        slamIPCClient.initSLAM(resDir);
+                    }
 
                     slamInitialized = true;
                     Log.d(TAG, "SLAM初始化完成");
@@ -787,14 +817,16 @@ public class ArCamUIActivity extends AppCompatActivity implements
         if (webServer != null) {
             webServer.stop();
         }
-        if (pointsUpdater != null) {
-            pointsUpdater.interrupt();
-        }
-        
+
         // 销毁 Filament 资源
         if (modelRendererWrapper != null) {
             modelRendererWrapper.destroy();
             modelRendererWrapper = null;
+        }
+
+        if (slamIPCClient != null) {
+            slamIPCClient.unbindService();
+            slamIPCClient = null;
         }
 
         super.onDestroy();
@@ -808,48 +840,21 @@ public class ArCamUIActivity extends AppCompatActivity implements
     @Override
     public void onCameraViewStarted(int width, int height) {
         Log.d(TAG, "onCameraViewStarted: 摄像头视图启动，宽度=" + width + " 高度=" + height);
-        mRgbaAddr = OpenCVBridge.nativeCreateMat(height, width, OpenCVBridge.CV_8UC4);
-        mGrayAddr = OpenCVBridge.nativeCreateMat(height, width, OpenCVBridge.CV_8UC1);
-        // 通知native层更新内参和投影矩阵
-        if (nativeHelper != null) {
-            nativeHelper.updateResolution(width, height);
+        if (slamIPCClient != null) {
+            int w = (width > 0) ? width : GlobalConstant.RESOLUTION_WIDTH;
+            int h = (height > 0) ? height : GlobalConstant.RESOLUTION_HEIGHT;
+            slamIPCClient.updateResolution(w, h);
         }
     }
 
     @Override
     public void onCameraViewStopped() {
-        Log.d(TAG, "onCameraViewStopped: 摄像头视图停止");
-        if (mRgbaAddr != 0) { OpenCVBridge.nativeReleaseMat(mRgbaAddr); mRgbaAddr = 0; }
-        if (mGrayAddr != 0) { OpenCVBridge.nativeReleaseMat(mGrayAddr); mGrayAddr = 0; }
+        //Log.d(TAG, "onCameraViewStopped: 摄像头视图停止");
     }
 
     @Override
     public long onCameraFrame(CameraGLViewBase.CvCameraViewFrame inputFrame) {
-        // Web模式：完全停止本地处理，显示黑屏
-        if (useWebCamera) {
-            mRgbaAddr = inputFrame.rgba();
-            // 填充黑色
-            OpenCVBridge.nativeMatSetTo(mRgbaAddr, 0, 0, 0, 255);
-            return mRgbaAddr;
-        }
-
-        // 传统模式：使用本地相机进行SLAM
-        mRgbaAddr = inputFrame.rgba();
-        mGrayAddr = inputFrame.gray();
-
-        // 确保SLAM已经初始化完成才处理帧
-        if (initFinished && slamInitialized) {
-            int trackingResult = nativeHelper.processCameraFrame(mGrayAddr, mRgbaAddr);
-
-            if (detectPlane) {
-                showHint(getString(R.string.hint_request_sent));
-                Log.d(TAG, "onCameraFrame: 请求平面检测");
-                int detectResult = nativeHelper.detectPlane();
-                detectPlane = false;
-                Log.d(TAG, "detectPlane 结果: " + detectResult);
-            }
-        }
-
+        // 每帧回调：本地相机模式的帧率统计（帧内容已由 CameraGLView analyzer 处理）
         mFpsMeter.measure();
         runOnUiThread(new Runnable() {
             @Override
@@ -857,7 +862,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
                 fpsText.setText(mFpsMeter.getText());
             }
         });
-        return mRgbaAddr;
+        return 0;
     }
 
     // 启动Web图像处理线程
@@ -870,9 +875,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
         webFrameProcessor = new Thread(new Runnable() {
             @Override
             public void run() {
-                Log.d(TAG, "Web图像处理线程已启动");
-                long webRgbaAddr = 0;
-                long webGrayAddr = 0;
+                //Log.d(TAG, "Web图像处理线程已启动");
 
                 while (isProcessingWebFrames) {
                     try {
@@ -886,45 +889,43 @@ public class ArCamUIActivity extends AppCompatActivity implements
                         }
 
                         if (frameData != null && slamInitialized) {
-                            // 解码JPEG图像
-                            android.graphics.Bitmap browserBitmap = android.graphics.BitmapFactory.decodeByteArray(
-                                    frameData, 0, frameData.length);
-
+                            // 浏览器上传的是 JPEG 字节流，必须先解码为位图再送入 SLAM，
+                            // 否则会被当作 RGBA 原始帧处理导致 SLAM 跟踪失败。
+                            android.graphics.Bitmap browserBitmap = android.graphics.BitmapFactory
+                                    .decodeByteArray(frameData, 0, frameData.length);
                             if (browserBitmap != null) {
-                                // 仅在尺寸变化时重新创建 native Mat
-                                if (webRgbaAddr == 0) {
-                                    webRgbaAddr = OpenCVBridge.nativeCreateMat(
-                                            browserBitmap.getHeight(), browserBitmap.getWidth(), OpenCVBridge.CV_8UC4);
-                                    webGrayAddr = OpenCVBridge.nativeCreateMat(
-                                            browserBitmap.getHeight(), browserBitmap.getWidth(), OpenCVBridge.CV_8UC1);
+                                // 统一缩放到 SLAM 工作分辨率，与本地相机路径保持一致
+                                android.graphics.Bitmap scaled = browserBitmap;
+                                if (browserBitmap.getWidth() != GlobalConstant.RESOLUTION_WIDTH
+                                        || browserBitmap.getHeight() != GlobalConstant.RESOLUTION_HEIGHT) {
+                                    scaled = android.graphics.Bitmap.createScaledBitmap(browserBitmap,
+                                            GlobalConstant.RESOLUTION_WIDTH, GlobalConstant.RESOLUTION_HEIGHT, true);
                                 }
-
-                                // 将 Bitmap 转为 native Mat
-                                OpenCVBridge.nativeBitmapToMat(browserBitmap, webRgbaAddr);
-                                OpenCVBridge.nativeRGBA2Gray(webRgbaAddr, webGrayAddr);
+                                if (slamIPCClient != null && slamIPCClient.isConnected()) {
+                                    int w = scaled.getWidth();
+                                    int h = scaled.getHeight();
+                                    byte[] rgba = new byte[w * h * 4];
+                                    scaled.copyPixelsToBuffer(java.nio.ByteBuffer.wrap(rgba));
+                                    slamIPCClient.sendFrameData(rgba, w, h);
+                                }
+                                if (scaled != browserBitmap) scaled.recycle();
                                 browserBitmap.recycle();
-
-                                // 处理SLAM
-                                int trackingResult = nativeHelper.processCameraFrame(
-                                        webGrayAddr, webRgbaAddr);
-
-                                // 更新FPS
-                                mFpsMeter.measure();
-                                final String fpsTextStr = mFpsMeter.getText() + getString(R.string.web_fps_label);
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        ArCamUIActivity.this.fpsText.setText(fpsTextStr);
-                                    }
-                                });
                             } else {
                                 Log.e(TAG, "Web线程：JPEG解码失败!");
                             }
+
+                            mFpsMeter.measure();
+                            final String fpsTextStr = mFpsMeter.getText() + getString(R.string.web_fps_label);
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    ArCamUIActivity.this.fpsText.setText(fpsTextStr);
+                                }
+                            });
                         } else {
                             if (!slamInitialized) {
                                 Log.w(TAG, "Web线程：等待SLAM初始化...");
                             }
-                            // 没有数据时等待
                             final String waitText = getString(R.string.hint_waiting_browser_frame);
                             runOnUiThread(new Runnable() {
                                 @Override
@@ -934,7 +935,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
                             });
                         }
 
-                        // 控制处理频率（约30fps）
                         Thread.sleep(33);
 
                     } catch (Exception e) {
@@ -947,12 +947,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
                     }
                 }
 
-                // 清理 native Mat 资源
-                if (webRgbaAddr != 0)
-                    OpenCVBridge.nativeReleaseMat(webRgbaAddr);
-                if (webGrayAddr != 0)
-                    OpenCVBridge.nativeReleaseMat(webGrayAddr);
-                Log.d(TAG, "Web图像处理线程已停止");
+                //Log.d(TAG, "Web图像处理线程已停止");
             }
         });
         webFrameProcessor.start();
@@ -987,8 +982,8 @@ public class ArCamUIActivity extends AppCompatActivity implements
         final Runnable updater = new Runnable() {
             @Override
             public void run() {
-                if (nativeHelper != null && textMapStats != null) {
-                    int[] stats = nativeHelper.getMapStats();
+                if (slamIPCClient != null && textMapStats != null) {
+                    int[] stats = slamIPCClient.getMapStats();
                     if (stats != null && stats.length == 3) {
                         final String statsText = getString(R.string.map_stats_format,
                                 stats[0], stats[1], stats[2] > 0 ? getString(R.string.map_stats_plane_yes)
@@ -1025,18 +1020,17 @@ public class ArCamUIActivity extends AppCompatActivity implements
                     }
                 }
             });
-            Log.d(TAG, "摇杆初始化完成");
+            //Log.d(TAG, "摇杆初始化完成");
         }
     }
 
     // 切换点云显示状态
     private void togglePointCloudDisplay() {
-        if (nativeHelper != null && btnTogglePointCloud != null) {
-            boolean currentState = nativeHelper.isPointCloudDisplayEnabled();
+        if (slamIPCClient != null && btnTogglePointCloud != null) {
+            boolean currentState = slamIPCClient.isPointCloudDisplayEnabled();
             boolean newState = !currentState;
-            nativeHelper.setPointCloudDisplay(newState);
+            slamIPCClient.setPointCloudDisplay(newState);
 
-            // 更新按钮文字
             if (newState) {
                 btnTogglePointCloud.setText(getString(R.string.btn_pointcloud_enabled));
                 showHint(getString(R.string.hint_pointcloud_enabled));
@@ -1046,20 +1040,16 @@ public class ArCamUIActivity extends AppCompatActivity implements
                 showHint(getString(R.string.hint_pointcloud_disabled));
                 Log.d(TAG, "点云显示已禁用");
             }
-
-        } else {
-            Log.e(TAG, "无法切换点云显示：NativeHelper为null");
         }
     }
 
     // 切换 SLAM 开关状态
     private void toggleSLAM() {
-        if (nativeHelper != null && btnToggleSlam != null) {
-            boolean currentState = nativeHelper.isEnableSLAM();
+        if (slamIPCClient != null && btnToggleSlam != null) {
+            boolean currentState = slamIPCClient.isEnableSLAM();
             boolean newState = !currentState;
-            nativeHelper.setEnableSLAM(newState);
+            slamIPCClient.setEnableSLAM(newState);
 
-            // 更新按钮文字和UI反馈
             if (newState) {
                 btnToggleSlam.setText(getString(R.string.btn_slam));
                 showHint(getString(R.string.hint_slam_enabled));
@@ -1069,8 +1059,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
                 showHint(getString(R.string.hint_slam_disabled));
                 Log.d(TAG, "SLAM已关闭");
             }
-        } else {
-            Log.e(TAG, "无法切换SLAM：NativeHelper为null");
         }
     }
 
@@ -1099,7 +1087,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
         threeDofGLView.setZOrderOnTop(true);
 
         // 创建渲染器
-        threeDofRenderer = new ThreeDofCubeRenderer(this, orientationSensor, nativeHelper);
+        threeDofRenderer = new ThreeDofCubeRenderer(this, orientationSensor);
         threeDofGLView.setRenderer(threeDofRenderer);
         threeDofGLView.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
 
@@ -1115,7 +1103,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
 
         threeDofGLView.setVisibility(View.GONE); // 默认隐藏
 
-        Log.d(TAG, "3DOF传感器和渲染器初始化完成");
+        //Log.d(TAG, "3DOF传感器和渲染器初始化完成");
     }
 
     /**
@@ -1209,7 +1197,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
 
     private void toggleWebServer() {
         if (!isWebRunning) {
-            webServer = new WebServer(8080, nativeHelper, this);
+            webServer = new WebServer(8080, slamIPCClient, this);
 
             // 设置接收浏览器图像帧的回调
             webServer.setOnFrameReceivedListener(new WebServer.OnFrameReceivedListener() {
@@ -1224,7 +1212,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
 
             webServer.start();
             isWebRunning = true;
-            useWebCamera = true; // 切换到Web模式：本地相机继续运行但不处理数据
 
             // 启动Web图像处理线程
             startWebFrameProcessing();
@@ -1258,7 +1245,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
                 webServer.stop();
             }
             isWebRunning = false;
-            useWebCamera = false; // 切换回本地相机模式
 
             // 清空浏览器图像数据
             synchronized (browserFrameLock) {

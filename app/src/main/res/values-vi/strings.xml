@@ -5,18 +5,13 @@
     <string name="btn_save">Lưu</string>
     <string name="btn_load">Tải</string>
     <string name="btn_map">Bản đồ</string>
-    <string name="btn_reset">Đặt lại</string>
     <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓Đám mây điểm</string>
     <string name="loading_slam_init">Đang khởi tạo hệ thống SLAM…</string>
     <string name="loading_slam_wait">Vui lòng chờ, quá trình này có thể mất một lúc</string>
     <string name="slam_init_complete">Hệ thống SLAM đã sẵn sàng</string>
     <string name="slam_init_failed">Khởi tạo SLAM thất bại: %1$s</string>
-    <string name="loading">Đang tải…</string>
     <string name="hint_request_sent">Yêu cầu đã gửi</string>
-    <string name="hint_resetting_slam">Đang đặt lại hệ thống SLAM…</string>
-    <string name="hint_slam_reset">Hệ thống SLAM đã đặt lại</string>
-    <string name="hint_reset_failed">Đặt lại thất bại: Hệ thống chưa được khởi tạo</string>
     <string name="hint_pointcloud_enabled">Đám mây điểm đã bật</string>
     <string name="hint_pointcloud_disabled">Đám mây điểm đã tắt</string>
     <string name="btn_pointcloud_enabled">✓Đám mây điểm</string>
@@ -28,15 +23,11 @@
     <string name="dialog_save_map">Lưu bản đồ</string>
     <string name="button_cancel">Hủy</string>
     <string name="hint_no_maps">Không có bản đồ nào được lưu</string>
-    <string name="map_stats_keyframes">Khung hình chính: %1$d</string>
-    <string name="map_stats_mappoints">Điểm bản đồ: %1$d</string>
-    <string name="map_stats_size">Kích thước: %1$dKB</string>
     <string name="dialog_map_manage">Quản lý bản đồ</string>
     <string name="dialog_select_map">Chọn bản đồ</string>
     <string name="action_load">Tải</string>
     <string name="action_delete">Xóa</string>
     <string name="action_view_details">Xem chi tiết</string>
-    <string name="action_load_multi">Tải nhiều</string>
     <string name="dialog_confirm_delete">Xác nhận xóa</string>
     <string name="dialog_confirm_delete_message">Xóa bản đồ \"%1$s\"?</string>
     <string name="hint_map_deleted">Đã xóa bản đồ</string>
@@ -44,18 +35,12 @@
     <string name="button_back">Quay lại</string>
     <string name="dialog_map_details">Chi tiết bản đồ</string>
     <string name="map_details_name">Tên bản đồ: %1$s</string>
-    <string name="map_details_keyframes">Khung hình chính: %1$d</string>
-    <string name="map_details_mappoints">Điểm bản đồ: %1$d</string>
     <string name="map_details_size">Kích thước file: %1$d KB</string>
     <string name="map_details_time">Ngày tạo: %1$s</string>
-    <string name="map_details_plane">Có mặt phẳng: %1$s</string>
-    <string name="map_details_plane_yes">Có</string>
-    <string name="map_details_plane_no">Không</string>
     <string name="button_ok">OK</string>
     <string name="map_stats_format">KFs: %1$d | MPs: %2$d | MP: %3$s</string>
     <string name="map_stats_plane_yes">Có</string>
     <string name="map_stats_plane_no">Không</string>
-    <string name="hint_map_load_requested">Yêu cầu tải bản đồ</string>
     <string name="hint_map_saved">Đã lưu bản đồ: %1$s</string>
     <string name="hint_map_save_failed">Lưu thất bại: %1$s</string>
     <string name="hint_map_file_not_found">Không tìm thấy file bản đồ</string>
@@ -65,9 +50,6 @@
     </plurals>
     <string name="hint_map_load_failed">Tải thất bại: %1$s</string>
     <string name="permission_camera_storage_required">Cần quyền camera và bộ nhớ. Vui lòng cấp quyền trong cài đặt.</string>
-    <string name="btn_mini_world">Xem thu nhỏ</string>
-    <string name="hint_mini_world_enabled">Xem thu nhỏ đã bật</string>
-    <string name="hint_mini_world_disabled">Xem thu nhỏ đã tắt</string>
 
     <string name="category_ar">Điều khiển AR</string>
     <string name="category_map">Bản đồ</string>
@@ -85,8 +67,6 @@
 
     <string name="btn_web_server">Máy chủ web</string>
 
-    <string name="status_enabled">đã bật</string>
-    <string name="status_disabled">đã tắt</string>
 
     <string name="title_web_server">Máy chủ web</string>
     <string name="web_fps_label"> (Web)</string>
@@ -94,11 +74,9 @@
     <string name="hint_web_server_started">Máy chủ web đã khởi động: %1$s</string>
     <string name="web_url_default">http://0.0.0.0:8080</string>
 
-    <string name="privacy_title">Chính sách bảo mật &amp; Điều khoản sử dụng</string>
     <string name="privacy_scroll_hint">↓ Vui lòng cuộn xuống để đọc toàn bộ thỏa thuận</string>
     <string name="privacy_scroll_done">✓ Bạn đã đọc toàn bộ thỏa thuận</string>
     <string name="privacy_agree">Đồng ý &amp; Tiếp tục</string>
-    <string name="privacy_disagree_notice">Nếu không đồng ý, vui lòng thoát khỏi ứng dụng</string>
     <string name="privacy_load_error">Không thể tải chính sách bảo mật. Vui lòng thử lại.</string>
 
 </resources>

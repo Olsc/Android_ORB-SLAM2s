@@ -8,7 +8,6 @@
         <item quantity="other">تم تحميل %1$d خرائط</item>
     </plurals>
     <string name="hint_map_load_failed">فشل التحميل: %1$s</string>
-    <string name="hint_map_load_requested">تم طلب تحميل الخريطة</string>
     <string name="hint_map_deleted">تم حذف الخريطة</string>
     <string name="hint_map_delete_failed">فشل الحذف</string>
 </resources>

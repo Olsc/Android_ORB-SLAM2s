@@ -8,7 +8,6 @@
         <item quantity="other">โหลดแผนที่ %1$d แผนที่แล้ว</item>
     </plurals>
     <string name="hint_map_load_failed">การโหลดล้มเหลว: %1$s</string>
-    <string name="hint_map_load_requested">ร้องขอการโหลดแผนที่แล้ว</string>
     <string name="hint_map_deleted">ลบแผนที่แล้ว</string>
     <string name="hint_map_delete_failed">การลบล้มเหลว</string>
 </resources>

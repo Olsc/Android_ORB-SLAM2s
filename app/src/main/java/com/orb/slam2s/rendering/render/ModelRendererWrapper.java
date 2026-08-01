@@ -23,8 +23,8 @@ import android.util.Log;
 
 import com.orb.slam2s.constant.GlobalConstant;
 import com.orb.slam2s.rendering.gles.FilamentAspectSurfaceView;
-import com.orb.slam2s.slamar.NativeHelper;
 import com.orb.slam2s.utils.TouchHelper;
+import com.orb.slam2s.ipc.SlamIPCClient;
 
 import com.google.android.filament.Engine;
 import com.google.android.filament.Renderer;
@@ -58,7 +58,7 @@ import java.util.List;
 /**
  * 用于在AR环境中渲染3D模型（GLB格式）的包装类（基于 Google Filament 渲染引擎）。
  */
-public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
+public class ModelRendererWrapper implements SlamIPCClient.OnMVPUpdatedCallback {
     private static final String TAG = "ModelRendererWrapper";
 
     static {
@@ -68,7 +68,7 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
 
     private FilamentAspectSurfaceView arObjectView;
     private Context context;
-    private NativeHelper nativeHelper;
+    private SlamIPCClient slamIPCClient;
 
     private String modelPath;
     private float initSize = 1.0f;
@@ -87,7 +87,6 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
     private final float[] modelHalfExtent = new float[3];
     private float autoScaleFactor = 1.0f;
     private boolean hasBoundingBox = false;
-    private int logCounter = 0;
 
     // 双指缩放相关
     private float currentScaleFactor = 1.0f;  // 当前累积的缩放因子
@@ -167,8 +166,8 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
         return this;
     }
 
-    public ModelRendererWrapper setNativeHelper(NativeHelper nativeHelper) {
-        this.nativeHelper = nativeHelper;
+    public ModelRendererWrapper setSlamIPCClient(SlamIPCClient client) {
+        this.slamIPCClient = client;
         return this;
     }
 
@@ -193,24 +192,21 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
             return this;
         }
 
-        // 配置 SurfaceView 保持背景透明且在最上层
         arObjectView.getHolder().setFormat(PixelFormat.TRANSLUCENT);
         arObjectView.setZOrderOnTop(true);
 
-        // 添加双指缩放回调
         if (touchHelper != null) {
             touchHelper.addScalingCallback(new TouchHelper.ScalingCallback() {
                 @Override
                 public void updateScale(float scaleFactor) {
-                    if (shouldDraw && nativeHelper != null) {
+                    if (shouldDraw && slamIPCClient != null) {
                         currentScaleFactor *= scaleFactor;
                         if (currentScaleFactor < MIN_SCALE) {
                             currentScaleFactor = MIN_SCALE;
                         } else if (currentScaleFactor > MAX_SCALE) {
                             currentScaleFactor = MAX_SCALE;
                         }
-                        // 同步缩放值到C++，确保保存时正确
-                        nativeHelper.updateArObjectScale(scaleFactor);
+                        slamIPCClient.updateArObjectScale(scaleFactor);
                     }
                 }
             });
@@ -279,7 +275,7 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
         uiHelper.setRenderCallback(new UiHelper.RendererCallback() {
             @Override
             public void onNativeWindowChanged(Surface surface) {
-                Log.d(TAG, "Surface 创建或变更，重新创建 SwapChain");
+                //Log.d(TAG, "Surface 创建或变更，重新创建 SwapChain");
                 if (swapChain != null) {
                     engine.destroySwapChain(swapChain);
                 }
@@ -293,7 +289,7 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
 
             @Override
             public void onDetachedFromSurface() {
-                Log.d(TAG, "Surface 销毁，注销 SwapChain");
+                //Log.d(TAG, "Surface 销毁，注销 SwapChain");
                 if (swapChain != null) {
                     engine.destroySwapChain(swapChain);
                     swapChain = null;
@@ -303,7 +299,7 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
 
             @Override
             public void onResized(int width, int height) {
-                Log.d(TAG, "Surface 大小变更为: " + width + "x" + height);
+                //Log.d(TAG, "Surface 大小变更为: " + width + "x" + height);
                 view.setViewport(new Viewport(0, 0, width, height));
             }
         });
@@ -465,7 +461,7 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
             int primitiveCount = rm.getPrimitiveCount(instance);
             String nodeName = asset.getName(entity);
             if (nodeName == null) nodeName = "";
-            Log.d(TAG, String.format("处理节点: %s (实体 ID: %d, Primitives: %d)", nodeName, entity, primitiveCount));
+            //Log.d(TAG, String.format("处理节点: %s (实体 ID: %d, Primitives: %d)", nodeName, entity, primitiveCount));
 
             for (int i = 0; i < primitiveCount; i++) {
                 MaterialInstance materialInstance = rm.getMaterialInstanceAt(instance, i);
@@ -473,7 +469,7 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
 
                 String matName = materialInstance.getName();
                 if (matName == null) matName = "";
-                Log.d(TAG, String.format("  Primitive %d - 材质: %s", i, matName));
+                //Log.d(TAG, String.format("  Primitive %d - 材质: %s", i, matName));
 
                 try { materialInstance.setParameter("roughnessFactor", 1.0f); } catch (Exception e) {}
                 try { materialInstance.setParameter("metallicFactor", 0.0f); } catch (Exception e) {}
@@ -495,13 +491,7 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
 
         // 2. 将 SLAM 矩阵传给 Camera 与 Model Transform
         if (matricesReady) {
-            // 每隔 150 帧打印一次矩阵日志，用于故障排除
-            if (logCounter++ % 150 == 0) {
-                Log.d(TAG, "Matrix Debug:");
-                Log.d(TAG, "modelMatrix: " + java.util.Arrays.toString(modelMatrix));
-                Log.d(TAG, "viewMatrix: " + java.util.Arrays.toString(viewMatrix));
-                Log.d(TAG, "projectionMatrix: " + java.util.Arrays.toString(projectionMatrix));
-            }
+            // 矩阵调试日志已注释（故障排查时再开启）
 
             // SLAM 视图矩阵为 world-to-camera，而 Filament 相机要求 camera-to-world (即视图矩阵的逆矩阵)
             if (android.opengl.Matrix.invertM(tempCameraModelMatrix, 0, viewMatrix, 0)) {
@@ -660,12 +650,6 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
         shouldDraw = flag;
         if (!flag) {
             matricesReady = false;
-        } else {
-            if (nativeHelper != null) {
-                nativeHelper.nativeGetMVP(modelMatrix, viewMatrix, projectionMatrix,
-                        GlobalConstant.RESOLUTION_WIDTH, GlobalConstant.RESOLUTION_HEIGHT);
-                matricesReady = true;
-            }
         }
         if (changed && drawStateListener != null) {
             drawStateListener.onDrawStateChanged(flag);

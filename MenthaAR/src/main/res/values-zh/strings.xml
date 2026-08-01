@@ -8,7 +8,6 @@
         <item quantity="other">已加载 %1$d 个地图</item>
     </plurals>
     <string name="hint_map_load_failed">加载失败: %1$s</string>
-    <string name="hint_map_load_requested">加载地图已请求</string>
     <string name="hint_map_deleted">地图已删除</string>
     <string name="hint_map_delete_failed">删除失败</string>
 </resources>

@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    compileSdk 36
+    compileSdk 37
     ndkVersion "27.0.12077973"
 
     defaultConfig {
@@ -11,7 +11,7 @@ android {
         minSdk 23
         targetSdk 37
         versionCode 1
-        versionName "0.0.6"
+        versionName "0.0.7"
 
         multiDexEnabled true
     }
@@ -78,6 +78,7 @@ android {
 
     buildFeatures {
         buildConfig = true
+        aidl = true
     }
 
     splits {

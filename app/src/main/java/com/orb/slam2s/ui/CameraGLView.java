@@ -6,10 +6,8 @@ import android.graphics.ImageFormat;
 import android.graphics.PixelFormat;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
-import android.os.Build;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.Surface;
 import android.view.SurfaceHolder;
 
 import androidx.camera.core.Camera;
@@ -20,10 +18,8 @@ import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LifecycleOwner;
 
-import com.orb.slam2s.compat.DeviceCompat_RokidGlass3;
 import com.orb.slam2s.constant.GlobalConstant;
 import com.orb.slam2s.rendering.gles.OrthoFilter;
-import com.orb.slam2s.slamar.OpenCVBridge;
 import com.orb.slam2s.utils.TextureUtils;
 
 import java.util.concurrent.ExecutorService;
@@ -33,12 +29,11 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 /**
- * 相机 GL 视图 — 使用 CameraX + OpenCVBridge 处理帧
+ * 相机 GL 视图 — 100% 纯 Java SDK 图像采集与 SharedMemory 帧推送
  */
 @SuppressWarnings("deprecation")
 public class CameraGLView extends CameraGLViewBase {
 
-    private static final int MAGIC_TEXTURE_ID = 10;
     private static final String TAG = "JavaCameraView";
 
     private ProcessCameraProvider cameraProvider;
@@ -46,22 +41,32 @@ public class CameraGLView extends CameraGLViewBase {
     private ImageAnalysis imageAnalysis;
     private ExecutorService analyzerExecutor;
 
-    private long rgbaMatAddr;     // native Mat 地址 (CV_8UC4)
-    private long grayMatAddr;     // native Mat 地址 (CV_8UC1)
-
     private byte[] mYuvDataCache; // 复用缓冲区，避免每帧 GC 分配
 
     private OrthoFilter ortho;
-    private Context context;
+    private final Context context;
     private final Object mAnalyzeLock = new Object();
+    private com.orb.slam2s.ipc.SlamIPCClient slamIPCClient;
+    private volatile boolean mPendingDetectPlane; // 待处理的平面检测请求（下一帧触发）
+
+    public void setSlamIPCClient(com.orb.slam2s.ipc.SlamIPCClient client) {
+        this.slamIPCClient = client;
+    }
+
+    /**
+     * 请求在下一帧触发平面检测
+     */
+    public void requestPlaneDetection() {
+        mPendingDetectPlane = true;
+    }
 
     public CameraGLView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        this.context=context;
+        this.context = context;
     }
 
-    public void init(){
-        setAspectRatio(GlobalConstant.RESOLUTION_WIDTH,GlobalConstant.RESOLUTION_HEIGHT);
+    public void init() {
+        setAspectRatio(GlobalConstant.RESOLUTION_WIDTH, GlobalConstant.RESOLUTION_HEIGHT);
         setEGLContextClientVersion(2);
         setEGLConfigChooser(8, 8, 8, 8, 16, 0);
         getHolder().setFormat(PixelFormat.TRANSLUCENT);
@@ -70,13 +75,12 @@ public class CameraGLView extends CameraGLViewBase {
         setRenderer(new CameraGLRender());
 
         setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
-        if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.HONEYCOMB){
-            setPreserveEGLContextOnPause(true);
-        }
-        ortho=new OrthoFilter(context);
+        setPreserveEGLContextOnPause(true);
+        ortho = new OrthoFilter(context);
     }
-    protected boolean initializeCamera(int width, int height) {
-        Log.d(TAG, "初始化 CameraX");
+
+    protected boolean initializeCamera() {
+        //Log.d(TAG, "初始化 CameraX");
         try {
             com.google.common.util.concurrent.ListenableFuture<ProcessCameraProvider> future = ProcessCameraProvider.getInstance(getContext());
             future.addListener(() -> {
@@ -106,84 +110,76 @@ public class CameraGLView extends CameraGLViewBase {
                                 try {
                                     int w = image.getWidth();
                                     int h = image.getHeight();
-                                    int format = image.getFormat();
                                     ImageProxy.PlaneProxy[] planes = image.getPlanes();
                                     if (planes == null || planes.length == 0) {
                                         image.close();
                                         return;
                                     }
 
-                                    // Log.d(TAG, "相机帧: " + w + "x" + h + " format=" + format + " planes=" + planes.length + " stride=" + planes[0].getRowStride() + " pixStride=" + planes[0].getPixelStride());
-
-                                    if (format == ImageFormat.YUV_420_888 || format == ImageFormat.NV21 || planes.length >= 2) {
-                                        // YUV 格式：Y-plane 本身就是灰度图
-                                        ImageProxy.PlaneProxy yPlane = planes[0];
-                                        java.nio.ByteBuffer yBuf = yPlane.getBuffer();
-                                        if (yBuf == null) { image.close(); return; }
-                                        int rowStride = yPlane.getRowStride();
-
-                                        // 创建 RGBA Mat（仅首次）
-                                        if (rgbaMatAddr == 0) {
-                                            rgbaMatAddr = OpenCVBridge.nativeCreateMat(h, w, OpenCVBridge.CV_8UC4);  // CV_8UC4
-                                        }
-                                        // 创建 Gray Mat（仅首次）
-                                        if (grayMatAddr == 0) {
-                                            grayMatAddr = OpenCVBridge.nativeCreateMat(h, w, OpenCVBridge.CV_8UC1);  // CV_8UC1
-                                        }
-
-                                        // 复用 byte[] 缓冲区，避免每帧 new 触发 GC
-                                        int requiredSize = w * h;
-                                        if (mYuvDataCache == null || mYuvDataCache.length < requiredSize) {
-                                            mYuvDataCache = new byte[requiredSize];
-                                        }
-                                        // 将 Y-plane 读入平坦 byte[]（逐行拷贝以处理 stride 填充）
-                                        int bufPos = yBuf.position();
-                                        for (int row = 0; row < h; row++) {
-                                            yBuf.position(bufPos + row * rowStride);
-                                            yBuf.get(mYuvDataCache, row * w, w);
-                                        }
-
-                                        // 一次性写入 RGBA + Gray（native 层）
-                                        OpenCVBridge.nativeYPlaneToMats(rgbaMatAddr, grayMatAddr, mYuvDataCache, w, h);
-
+                                    ImageProxy.PlaneProxy mainPlane = planes[0];
+                                    java.nio.ByteBuffer buf = mainPlane.getBuffer();
+                                    if (buf == null) {
                                         image.close();
+                                        return;
+                                    }
+
+                                    int rowStride = mainPlane.getRowStride();
+                                    int pixelStride = mainPlane.getPixelStride();
+                                    int lineBytes = w * pixelStride;
+                                    int requiredSize = w * h * pixelStride;
+                                    if (mYuvDataCache == null || mYuvDataCache.length < requiredSize) {
+                                        mYuvDataCache = new byte[requiredSize];
+                                    }
+
+                                    int bufPos = buf.position();
+                                    if (rowStride == lineBytes) {
+                                        buf.get(mYuvDataCache, 0, Math.min(buf.remaining(), requiredSize));
                                     } else {
-                                        // RGBA 或其他格式 — 原有逻辑
-                                        java.nio.ByteBuffer buf = planes[0].getBuffer();
-                                        if (buf == null) { image.close(); return; }
-
-                                        // 创建 RGBA Mat（仅首次）
-                                        if (rgbaMatAddr == 0) {
-                                            rgbaMatAddr = OpenCVBridge.nativeCreateMat(h, w, OpenCVBridge.CV_8UC4);  // CV_8UC4
+                                        for (int row = 0; row < h; row++) {
+                                            buf.position(bufPos + row * rowStride);
+                                            buf.get(mYuvDataCache, row * lineBytes, Math.min(lineBytes, buf.remaining()));
                                         }
-                                        // 将 ByteBuffer 直接写入 native Mat（零 Java 中间拷贝）
-                                        OpenCVBridge.nativePutBuffer(rgbaMatAddr, buf);
+                                    }
+                                    buf.position(bufPos);
 
-                                        // 数据拷贝到 native 层后立即关闭 Image，释放 CameraX 缓冲区
-                                        image.close();
+                                    // 1. 通过 SharedMemory 零拷贝将完整 RGBA 帧推送至 MenthaAR SLAM 进程
+                                    if (slamIPCClient != null && slamIPCClient.isConnected()) {
+                                        slamIPCClient.sendFrameData(mYuvDataCache, w, h);
 
-                                        // 创建 Gray Mat（仅首次）
-                                        if (grayMatAddr == 0) {
-                                            grayMatAddr = OpenCVBridge.nativeCreateMat(h, w, OpenCVBridge.CV_8UC1);  // CV_8UC1
+                                        // 2. 消费"创建AR物体"请求：在下一帧触发平面检测
+                                        if (mPendingDetectPlane) {
+                                            mPendingDetectPlane = false;
+                                            slamIPCClient.detectPlane();
                                         }
-                                        // RGBA→Gray 纯 C++ 层完成，无需 Java 介入
-                                        OpenCVBridge.nativeRGBA2Gray(rgbaMatAddr, grayMatAddr);
                                     }
 
-                                    // 如果是右横屏 (ROTATION_270)，需要旋转180度补偿
-                                    if (GlobalConstant.DISPLAY_ROTATION == Surface.ROTATION_270) {
-                                        OpenCVBridge.nativeRotate180(rgbaMatAddr);
-                                        OpenCVBridge.nativeRotate180(grayMatAddr);
+                                    // 2. 实时从 SharedMemory 映射的 ByteBuffer 中提取由 C++ SLAM 引擎绘制了绿/蓝色点云与特征点的 RGBA 图像
+                                    java.nio.ByteBuffer sharedBuf = (slamIPCClient != null) ? slamIPCClient.getSharedMemoryBuffer() : null;
+                                    if (mCacheBitmap != null && !mCacheBitmap.isRecycled()) {
+                                        if (sharedBuf != null) {
+                                            sharedBuf.position(0);
+                                            mCacheBitmap.copyPixelsFromBuffer(sharedBuf);
+                                        } else {
+                                            mCacheBitmap.copyPixelsFromBuffer(java.nio.ByteBuffer.wrap(mYuvDataCache));
+                                        }
+                                        queueEvent(() -> {
+                                            synchronized (mSyncObject) {
+                                                if (mCacheBitmap != null && !mCacheBitmap.isRecycled()) {
+                                                    TextureUtils.loadTexture(mCacheBitmap, imageTextureId);
+                                                }
+                                            }
+                                        });
                                     }
 
-                                    // 针对特定设备的兼容性处理
-                                    DeviceCompat_RokidGlass3.checkAndFlipFrame(rgbaMatAddr);
-                                    DeviceCompat_RokidGlass3.checkAndFlipFrame(grayMatAddr);
+                                    // 3. 通过帧回调通知宿主（ArCamUIActivity.onCameraFrame 用于 FPS 等统计）
+                                    deliverAndDrawFrame(new XCameraFrame());
 
-                                    deliverAndDrawFrame(new XCameraFrame(rgbaMatAddr, grayMatAddr));
+                                    image.close();
                                 } catch (Throwable e) {
-                                    Log.e(TAG, "分析错误: " + e.getMessage());
-                                    try { image.close(); } catch (Exception ignored) {}
+                                    Log.e(TAG, "相机帧分析与点云图层更新错误: " + e.getMessage());
+                                    try {
+                                        image.close();
+                                    } catch (Exception ignored) {}
                                 }
                             }
                         }
@@ -208,14 +204,13 @@ public class CameraGLView extends CameraGLViewBase {
 
     @Override
     protected boolean connectCamera(int width, int height) {
-        Log.d(TAG, "正在连接 CameraX");
-        if (!initializeCamera(width, height)) return false;
-        return true;
+        //Log.d(TAG, "正在连接 CameraX");
+        return initializeCamera();
     }
 
     @Override
     protected void disconnectCamera() {
-        Log.d(TAG, "正在断开 CameraX");
+        //Log.d(TAG, "正在断开 CameraX");
         if (cameraProvider != null) {
             final ProcessCameraProvider provider = cameraProvider;
             new android.os.Handler(android.os.Looper.getMainLooper()).post(new Runnable() {
@@ -234,8 +229,6 @@ public class CameraGLView extends CameraGLViewBase {
                 analyzerExecutor.shutdown();
                 analyzerExecutor = null;
             }
-            if (rgbaMatAddr != 0) { OpenCVBridge.nativeReleaseMat(rgbaMatAddr); rgbaMatAddr = 0; }
-            if (grayMatAddr != 0) { OpenCVBridge.nativeReleaseMat(grayMatAddr); grayMatAddr = 0; }
         }
     }
 
@@ -273,7 +266,7 @@ public class CameraGLView extends CameraGLViewBase {
         @Override
         public void onSurfaceChanged(GL10 gl, int width, int height) {
             Log.d(TAG, "触发 surfaceChanged 事件");
-            ortho.onSurfaceChanged(gl,width,height);
+            ortho.onSurfaceChanged(width,height);
             synchronized(mSyncObject) {
                 if (!mSurfaceExist) {
                     mSurfaceExist = true;
@@ -295,16 +288,11 @@ public class CameraGLView extends CameraGLViewBase {
         }
     }
 
-    private static class XCameraFrame implements CvCameraViewFrame {
-        private final long rgbaAddr;
-        private final long grayAddr;
-        XCameraFrame(long rgbaAddr, long grayAddr) {
-            this.rgbaAddr = rgbaAddr;
-            this.grayAddr = grayAddr;
-        }
+    // 供 onCameraFrame 回调使用的帧载体（CameraX 路径无原生 Mat 地址，onCameraFrame 仅用于统计）
+    private static class XCameraFrame implements CameraGLViewBase.CvCameraViewFrame {
         @Override
-        public long rgba() { return rgbaAddr; }
+        public long rgba() { return 0; }
         @Override
-        public long gray() { return grayAddr; }
+        public long gray() { return 0; }
     }
 }

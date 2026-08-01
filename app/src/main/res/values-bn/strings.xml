@@ -5,18 +5,13 @@
     <string name="btn_save">সংরক্ষণ</string>
     <string name="btn_load">লোড</string>
     <string name="btn_map">মানচিত্র</string>
-    <string name="btn_reset">রিসেট</string>
     <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓পয়েন্ট ক্লাউড</string>
     <string name="loading_slam_init">SLAM সিস্টেম শুরু হচ্ছে…</string>
     <string name="loading_slam_wait">অনুগ্রহ করে অপেক্ষা করুন, এটি কিছু সময় নিতে পারে</string>
     <string name="slam_init_complete">SLAM সিস্টেম শুরু হয়েছে</string>
     <string name="slam_init_failed">SLAM শুরু ব্যর্থ: %1$s</string>
-    <string name="loading">লোড হচ্ছে…</string>
     <string name="hint_request_sent">অনুরোধ পাঠানো হয়েছে</string>
-    <string name="hint_resetting_slam">SLAM সিস্টেম রিসেট হচ্ছে…</string>
-    <string name="hint_slam_reset">SLAM সিস্টেম রিসেট হয়েছে</string>
-    <string name="hint_reset_failed">রিসেট ব্যর্থ: সিস্টেম শুরু হয়নি</string>
     <string name="hint_pointcloud_enabled">পয়েন্ট ক্লাউড সক্রিয়</string>
     <string name="hint_pointcloud_disabled">পয়েন্ট ক্লাউড নিষ্ক্রিয়</string>
     <string name="btn_pointcloud_enabled">✓পয়েন্ট ক্লাউড</string>
@@ -28,15 +23,11 @@
     <string name="dialog_save_map">মানচিত্র সংরক্ষণ</string>
     <string name="button_cancel">বাতিল</string>
     <string name="hint_no_maps">কোনো সংরক্ষিত মানচিত্র নেই</string>
-    <string name="map_stats_keyframes">কীফ্রেম: %1$d</string>
-    <string name="map_stats_mappoints">মানচিত্র পয়েন্ট: %1$d</string>
-    <string name="map_stats_size">আকার: %1$dKB</string>
     <string name="dialog_map_manage">মানচিত্র ব্যবস্থাপনা</string>
     <string name="dialog_select_map">মানচিত্র নির্বাচন করুন</string>
     <string name="action_load">লোড</string>
     <string name="action_delete">মুছুন</string>
     <string name="action_view_details">বিস্তারিত দেখুন</string>
-    <string name="action_load_multi">একাধিক লোড</string>
     <string name="dialog_confirm_delete">মুছে ফেলা নিশ্চিত করুন</string>
     <string name="dialog_confirm_delete_message">মানচিত্র \"%1$s\" মুছবেন?</string>
     <string name="hint_map_deleted">মানচিত্র মুছে গেছে</string>
@@ -44,18 +35,12 @@
     <string name="button_back">পিছনে</string>
     <string name="dialog_map_details">মানচিত্র বিস্তারিত</string>
     <string name="map_details_name">মানচিত্রের নাম: %1$s</string>
-    <string name="map_details_keyframes">কীফ্রেম: %1$d</string>
-    <string name="map_details_mappoints">মানচিত্র পয়েন্ট: %1$d</string>
     <string name="map_details_size">ফাইলের আকার: %1$d KB</string>
     <string name="map_details_time">তৈরি: %1$s</string>
-    <string name="map_details_plane">প্লেন আছে: %1$s</string>
-    <string name="map_details_plane_yes">হ্যাঁ</string>
-    <string name="map_details_plane_no">না</string>
     <string name="button_ok">ঠিক আছে</string>
     <string name="map_stats_format">KFs: %1$d | MPs: %2$d | প্লেন: %3$s</string>
     <string name="map_stats_plane_yes">হ্যাঁ</string>
     <string name="map_stats_plane_no">না</string>
-    <string name="hint_map_load_requested">মানচিত্র লোডের অনুরোধ করা হয়েছে</string>
     <string name="hint_map_saved">মানচিত্র সংরক্ষিত: %1$s</string>
     <string name="hint_map_save_failed">সংরক্ষণ ব্যর্থ: %1$s</string>
     <string name="hint_map_file_not_found">মানচিত্র ফাইল পাওয়া যায়নি</string>
@@ -65,9 +50,6 @@
     </plurals>
     <string name="hint_map_load_failed">লোড ব্যর্থ: %1$s</string>
     <string name="permission_camera_storage_required">ক্যামেরা ও স্টোরেজ অনুমতি প্রয়োজন। সেটিংসে অনুমতি দিন।</string>
-    <string name="btn_mini_world">মিনি ভিউ</string>
-    <string name="hint_mini_world_enabled">মিনি ভিউ সক্রিয়</string>
-    <string name="hint_mini_world_disabled">মিনি ভিউ নিষ্ক্রিয়</string>
 
     <string name="category_ar">AR নিয়ন্ত্রণ</string>
     <string name="category_map">মানচিত্র</string>
@@ -85,8 +67,6 @@
 
     <string name="btn_web_server">ওয়েব সার্ভার</string>
 
-    <string name="status_enabled">সক্রিয়</string>
-    <string name="status_disabled">নিষ্ক্রিয়</string>
 
     <string name="title_web_server">ওয়েব সার্ভার</string>
     <string name="web_fps_label"> (ওয়েব)</string>
@@ -94,11 +74,9 @@
     <string name="hint_web_server_started">ওয়েব সার্ভার শুরু হয়েছে: %1$s</string>
     <string name="web_url_default">http://0.0.0.0:8080</string>
 
-    <string name="privacy_title">গোপনীয়তা নীতি &amp; ব্যবহারের শর্তাবলী</string>
     <string name="privacy_scroll_hint">↓ সম্পূর্ণ চুক্তি পড়তে নিচে স্ক্রোল করুন</string>
     <string name="privacy_scroll_done">✓ আপনি সম্পূর্ণ চুক্তি পড়েছেন</string>
     <string name="privacy_agree">সম্মত &amp; চালিয়ে যান</string>
-    <string name="privacy_disagree_notice">যদি সম্মত না হন, অনুগ্রহ করে অ্যাপটি থেকে বের হন</string>
     <string name="privacy_load_error">গোপনীয়তা নীতি লোড করতে ব্যর্থ। পুনরায় চেষ্টা করুন।</string>
 
 </resources>

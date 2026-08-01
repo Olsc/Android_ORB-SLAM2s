@@ -5,18 +5,13 @@
     <string name="btn_save">Mentés</string>
     <string name="btn_load">Betöltés</string>
     <string name="btn_map">Térkép</string>
-    <string name="btn_reset">Visszaállítás</string>
     <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓Pontfelhő</string>
     <string name="loading_slam_init">SLAM rendszer inicializálása…</string>
     <string name="loading_slam_wait">Kérjük, várjon, ez egy pillanatot vehet igénybe</string>
     <string name="slam_init_complete">SLAM rendszer inicializálva</string>
     <string name="slam_init_failed">SLAM inicializálás sikertelen: %1$s</string>
-    <string name="loading">Betöltés…</string>
     <string name="hint_request_sent">Kérelem elküldve</string>
-    <string name="hint_resetting_slam">SLAM rendszer visszaállítása…</string>
-    <string name="hint_slam_reset">SLAM rendszer visszaállítva</string>
-    <string name="hint_reset_failed">Visszaállítás sikertelen: A rendszer nincs inicializálva</string>
     <string name="hint_pointcloud_enabled">Pontfelhő engedélyezve</string>
     <string name="hint_pointcloud_disabled">Pontfelhő letiltva</string>
     <string name="btn_pointcloud_enabled">✓Pontfelhő</string>
@@ -28,15 +23,11 @@
     <string name="dialog_save_map">Térkép mentése</string>
     <string name="button_cancel">Mégse</string>
     <string name="hint_no_maps">Nincs mentett térkép</string>
-    <string name="map_stats_keyframes">Kulcsképek: %1$d</string>
-    <string name="map_stats_mappoints">Térképpontok: %1$d</string>
-    <string name="map_stats_size">Méret: %1$dKB</string>
     <string name="dialog_map_manage">Térképkezelés</string>
     <string name="dialog_select_map">Térkép kiválasztása</string>
     <string name="action_load">Betöltés</string>
     <string name="action_delete">Törlés</string>
     <string name="action_view_details">Részletek megtekintése</string>
-    <string name="action_load_multi">Több betöltése</string>
     <string name="dialog_confirm_delete">Törlés megerősítése</string>
     <string name="dialog_confirm_delete_message">Törli a(z) \"%1$s\" térképet?</string>
     <string name="hint_map_deleted">Térkép törölve</string>
@@ -44,18 +35,12 @@
     <string name="button_back">Vissza</string>
     <string name="dialog_map_details">Térkép részletei</string>
     <string name="map_details_name">Térkép neve: %1$s</string>
-    <string name="map_details_keyframes">Kulcsképek: %1$d</string>
-    <string name="map_details_mappoints">Térképpontok: %1$d</string>
     <string name="map_details_size">Fájlméret: %1$d KB</string>
     <string name="map_details_time">Létrehozva: %1$s</string>
-    <string name="map_details_plane">Van síkja: %1$s</string>
-    <string name="map_details_plane_yes">Igen</string>
-    <string name="map_details_plane_no">Nem</string>
     <string name="button_ok">OK</string>
     <string name="map_stats_format">KK: %1$d | TP: %2$d | Sík: %3$s</string>
     <string name="map_stats_plane_yes">Igen</string>
     <string name="map_stats_plane_no">Nem</string>
-    <string name="hint_map_load_requested">Térkép betöltése kérve</string>
     <string name="hint_map_saved">Térkép mentve: %1$s</string>
     <string name="hint_map_save_failed">Mentés sikertelen: %1$s</string>
     <string name="hint_map_file_not_found">A térképfájl nem található</string>
@@ -65,9 +50,6 @@
     </plurals>
     <string name="hint_map_load_failed">Betöltés sikertelen: %1$s</string>
     <string name="permission_camera_storage_required">Kamera és tárolási engedélyek szükségesek. Kérjük, adjon engedélyeket a beállításokban.</string>
-    <string name="btn_mini_world">Mini nézet</string>
-    <string name="hint_mini_world_enabled">Mini nézet engedélyezve</string>
-    <string name="hint_mini_world_disabled">Mini nézet letiltva</string>
 
     <string name="category_ar">AR vezérlők</string>
     <string name="category_map">Térkép</string>
@@ -85,8 +67,6 @@
 
     <string name="btn_web_server">Webszerver</string>
 
-    <string name="status_enabled">engedélyezve</string>
-    <string name="status_disabled">letiltva</string>
 
     <string name="title_web_server">Webszerver</string>
     <string name="web_fps_label"> (Web)</string>
@@ -94,11 +74,9 @@
     <string name="hint_web_server_started">Webszerver elindítva: %1$s</string>
     <string name="web_url_default">http://0.0.0.0:8080</string>
 
-    <string name="privacy_title">Adatvédelmi irányelvek &amp; Felhasználási feltételek</string>
     <string name="privacy_scroll_hint">↓ Görgessen le a teljes megállapodás elolvasásához</string>
     <string name="privacy_scroll_done">✓ Elolvasta a teljes megállapodást</string>
     <string name="privacy_agree">Elfogadom &amp; Folytatom</string>
-    <string name="privacy_disagree_notice">Ha nem egyezik bele, kérjük, lépjen ki az alkalmazásból</string>
     <string name="privacy_load_error">Az adatvédelmi irányelv betöltése sikertelen. Kérjük, próbálja újra.</string>
 
 </resources>

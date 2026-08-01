@@ -5,18 +5,13 @@
     <string name="btn_save">שמור</string>
     <string name="btn_load">טען</string>
     <string name="btn_map">מפה</string>
-    <string name="btn_reset">איפוס</string>
     <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓ענן נקודות</string>
     <string name="loading_slam_init">מאתחל את מערכת SLAM…</string>
     <string name="loading_slam_wait">אנא המתן, זה עשוי לקחת זמן מה</string>
     <string name="slam_init_complete">מערכת SLAM אותחלה</string>
     <string name="slam_init_failed">אתחול SLAM נכשל: %1$s</string>
-    <string name="loading">טוען…</string>
     <string name="hint_request_sent">הבקשה נשלחה</string>
-    <string name="hint_resetting_slam">מאפס את מערכת SLAM…</string>
-    <string name="hint_slam_reset">מערכת SLAM אופסה</string>
-    <string name="hint_reset_failed">איפוס נכשל: המערכת לא אותחלה</string>
     <string name="hint_pointcloud_enabled">ענן נקודות הופעל</string>
     <string name="hint_pointcloud_disabled">ענן נקודות הושבת</string>
     <string name="btn_pointcloud_enabled">✓ענן נקודות</string>
@@ -28,15 +23,11 @@
     <string name="dialog_save_map">שמור מפה</string>
     <string name="button_cancel">ביטול</string>
     <string name="hint_no_maps">אין מפות שמורות</string>
-    <string name="map_stats_keyframes">מסגרות מפתח: %1$d</string>
-    <string name="map_stats_mappoints">נקודות מפה: %1$d</string>
-    <string name="map_stats_size">גודל: %1$dKB</string>
     <string name="dialog_map_manage">ניהול מפות</string>
     <string name="dialog_select_map">בחר מפה</string>
     <string name="action_load">טען</string>
     <string name="action_delete">מחק</string>
     <string name="action_view_details">הצג פרטים</string>
-    <string name="action_load_multi">טעינה מרובה</string>
     <string name="dialog_confirm_delete">אישור מחיקה</string>
     <string name="dialog_confirm_delete_message">למחוק את המפה \"%1$s\"?</string>
     <string name="hint_map_deleted">המפה נמחקה</string>
@@ -44,18 +35,12 @@
     <string name="button_back">חזרה</string>
     <string name="dialog_map_details">פרטי מפה</string>
     <string name="map_details_name">שם מפה: %1$s</string>
-    <string name="map_details_keyframes">מסגרות מפתח: %1$d</string>
-    <string name="map_details_mappoints">נקודות מפה: %1$d</string>
     <string name="map_details_size">גודל קובץ: %1$d KB</string>
     <string name="map_details_time">נוצר: %1$s</string>
-    <string name="map_details_plane">יש מישור: %1$s</string>
-    <string name="map_details_plane_yes">כן</string>
-    <string name="map_details_plane_no">לא</string>
     <string name="button_ok">אישור</string>
     <string name="map_stats_format">KFs: %1$d | MPs: %2$d | מישור: %3$s</string>
     <string name="map_stats_plane_yes">כן</string>
     <string name="map_stats_plane_no">לא</string>
-    <string name="hint_map_load_requested">בקשת טעינת מפה</string>
     <string name="hint_map_saved">המפה נשמרה: %1$s</string>
     <string name="hint_map_save_failed">שמירה נכשלה: %1$s</string>
     <string name="hint_map_file_not_found">קובץ המפה לא נמצא</string>
@@ -65,9 +50,6 @@
     </plurals>
     <string name="hint_map_load_failed">טעינה נכשלה: %1$s</string>
     <string name="permission_camera_storage_required">נדרשות הרשאות מצלמה ואחסון. אנא אשר הרשאות בהגדרות.</string>
-    <string name="btn_mini_world">תצוגה מוקטנת</string>
-    <string name="hint_mini_world_enabled">תצוגה מוקטנת הופעלה</string>
-    <string name="hint_mini_world_disabled">תצוגה מוקטנת הושבתה</string>
 
     <string name="category_ar">פקדי AR</string>
     <string name="category_map">מפה</string>
@@ -85,8 +67,6 @@
 
     <string name="btn_web_server">שרת אינטרנט</string>
 
-    <string name="status_enabled">מופעל</string>
-    <string name="status_disabled">מושבת</string>
 
     <string name="title_web_server">שרת אינטרנט</string>
     <string name="web_fps_label"> (אינטרנט)</string>
@@ -94,11 +74,9 @@
     <string name="hint_web_server_started">שרת האינטרנט הופעל: %1$s</string>
     <string name="web_url_default">http://0.0.0.0:8080</string>
 
-    <string name="privacy_title">מדיניות פרטיות &amp; תנאי שימוש</string>
     <string name="privacy_scroll_hint">↓ אנא גלול לתחתית כדי לקרוא את ההסכם המלא</string>
     <string name="privacy_scroll_done">✓ קראת את ההסכם המלא</string>
     <string name="privacy_agree">מסכים &amp; ממשיך</string>
-    <string name="privacy_disagree_notice">אם אינך מסכים, אנא צא מהאפליקציה</string>
     <string name="privacy_load_error">טעינת מדיניות הפרטיות נכשלה. אנא נסה שוב.</string>
 
 </resources>

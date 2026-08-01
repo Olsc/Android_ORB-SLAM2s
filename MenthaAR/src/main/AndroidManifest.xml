@@ -1,4 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <application>
+        <service
+            android:name="com.orb.slam2s.ipc.SlamService"
+            android:process=":slam_process"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.olsc.menthar.ACTION_BIND_SLAM_SERVICE" />
+            </intent-filter>
+        </service>
+    </application>
+
 </manifest>

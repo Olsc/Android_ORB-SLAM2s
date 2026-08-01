@@ -5,18 +5,13 @@
     <string name="btn_save">保存</string>
     <string name="btn_load">加载</string>
     <string name="btn_map">地图</string>
-    <string name="btn_reset">重置</string>
     <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓点云</string>
     <string name="loading_slam_init">正在初始化SLAM系统…</string>
     <string name="loading_slam_wait">请稍候，这可能需要一些时间</string>
     <string name="slam_init_complete">SLAM系统初始化完成</string>
     <string name="slam_init_failed">SLAM初始化失败: %1$s</string>
-    <string name="loading">加载中…</string>
     <string name="hint_request_sent">请求已发送</string>
-    <string name="hint_resetting_slam">正在重置SLAM系统…</string>
-    <string name="hint_slam_reset">SLAM系统已重置</string>
-    <string name="hint_reset_failed">重置失败：系统未初始化</string>
     <string name="hint_pointcloud_enabled">点云已显示</string>
     <string name="hint_pointcloud_disabled">点云已隐藏</string>
     <string name="btn_pointcloud_enabled">✓点云</string>
@@ -28,15 +23,11 @@
     <string name="dialog_save_map">保存地图</string>
     <string name="button_cancel">取消</string>
     <string name="hint_no_maps">暂无已保存的地图</string>
-    <string name="map_stats_keyframes">关键帧: %1$d</string>
-    <string name="map_stats_mappoints">地图点: %1$d</string>
-    <string name="map_stats_size">大小: %1$dKB</string>
     <string name="dialog_map_manage">地图管理</string>
     <string name="dialog_select_map">选择地图</string>
     <string name="action_load">加载</string>
     <string name="action_delete">删除</string>
     <string name="action_view_details">查看详情</string>
-    <string name="action_load_multi">多重加载</string>
     <string name="dialog_confirm_delete">确认删除</string>
     <string name="dialog_confirm_delete_message">确定要删除地图 \"%1$s\" 吗？</string>
     <string name="hint_map_deleted">地图已删除</string>
@@ -44,18 +35,12 @@
     <string name="button_back">返回</string>
     <string name="dialog_map_details">地图详情</string>
     <string name="map_details_name">地图名称: %1$s</string>
-    <string name="map_details_keyframes">关键帧数: %1$d</string>
-    <string name="map_details_mappoints">地图点数: %1$d</string>
     <string name="map_details_size">文件大小: %1$d KB</string>
     <string name="map_details_time">创建时间: %1$s</string>
-    <string name="map_details_plane">包含平面: %1$s</string>
-    <string name="map_details_plane_yes">是</string>
-    <string name="map_details_plane_no">否</string>
     <string name="button_ok">确定</string>
     <string name="map_stats_format">关键帧: %1$d | 地图点: %2$d | 平面: %3$s</string>
     <string name="map_stats_plane_yes">是</string>
     <string name="map_stats_plane_no">否</string>
-    <string name="hint_map_load_requested">加载地图已请求</string>
     <string name="hint_map_saved">地图已保存: %1$s</string>
     <string name="hint_map_save_failed">保存失败: %1$s</string>
     <string name="hint_map_file_not_found">地图文件不存在</string>
@@ -65,9 +50,6 @@
         <item quantity="other">已加载 %1$d 个地图</item>
     </plurals>
     <string name="permission_camera_storage_required">需要摄像头和SD卡权限，请在设置中授权。</string>
-    <string name="btn_mini_world">小窗预览</string>
-    <string name="hint_mini_world_enabled">小窗已启用</string>
-    <string name="hint_mini_world_disabled">小窗已关闭</string>
 
     <string name="category_ar">AR控制</string>
     <string name="category_map">地图管理</string>
@@ -87,19 +69,15 @@
 
     <string name="title_web_server">Web服务器</string>
 
-    <string name="status_enabled">已启用</string>
-    <string name="status_disabled">已禁用</string>
 
     <string name="web_fps_label"> (Web端)</string>
     <string name="hint_waiting_browser_frame">正在等待浏览器图像…</string>
     <string name="hint_web_server_started">Web服务器已启动: %1$s</string>
     <string name="web_url_default">http://0.0.0.0:8080</string>
 
-    <string name="privacy_title">隐私政策与使用条款</string>
     <string name="privacy_scroll_hint">↓ 请滑动至底部阅读完整协议</string>
     <string name="privacy_scroll_done">✓ 您已阅读完整协议</string>
     <string name="privacy_agree">同意并继续</string>
-    <string name="privacy_disagree_notice">如不同意，请退出应用</string>
     <string name="privacy_load_error">加载隐私政策失败，请重试。</string>
 
 </resources>

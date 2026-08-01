@@ -572,11 +572,11 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
         ifs.close();
         return;
     }
-    LOGD("加载地图: 格式 MAP1 v%u", version);
-    uint32_t nKFs=0, nMPs=0; 
-    ifs.read(reinterpret_cast<char*>(&nKFs),4); 
+    //LOGD("加载地图: 格式 MAP1 v%u", version);
+    uint32_t nKFs=0, nMPs=0;
+    ifs.read(reinterpret_cast<char*>(&nKFs),4);
     ifs.read(reinterpret_cast<char*>(&nMPs),4);
-    LOGD("加载地图: 关键帧=%u 地图点=%u", nKFs, nMPs);
+    //LOGD("加载地图: 关键帧=%u 地图点=%u", nKFs, nMPs);
 
     // 内存保护：检查地图大小，防止加载过大地图导致崩溃
     const uint32_t MAX_KFS = SYSTEM_MAX_KFS_LOAD;  // 最大关键帧数
@@ -664,7 +664,7 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
         // 依靠正常跟踪流程在恢复后重建关键帧连接
         readKFs++;
     }
-    LOGD("加载地图: 已读关键帧=%u", readKFs);
+    //LOGD("加载地图: 已读关键帧=%u", readKFs);
 
     // 加载地图点：创建点并恢复完整的描述子和几何信息用于匹配
     uint32_t createdMPs = 0;
@@ -721,17 +721,17 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
                 if(!p->GetNormal().empty()) cntLoadedWithNormal++;
             }
         }
-        LOGD("加载地图: 点数=%d, 描述子=%d (%.1f%%), 法线=%d (%.1f%%)", 
-             cntLoaded, cntLoadedWithDesc, 
-             cntLoaded > 0 ? (100.0f * cntLoadedWithDesc / cntLoaded) : 0.0f,
-             cntLoadedWithNormal,
-             cntLoaded > 0 ? (100.0f * cntLoadedWithNormal / cntLoaded) : 0.0f);
+        //LOGD("加载地图: 点数=%d, 描述子=%d (%.1f%%), 法线=%d (%.1f%%)",
+        //     cntLoaded, cntLoadedWithDesc,
+        //     cntLoaded > 0 ? (100.0f * cntLoadedWithDesc / cntLoaded) : 0.0f,
+        //     cntLoadedWithNormal,
+        //     cntLoaded > 0 ? (100.0f * cntLoadedWithNormal / cntLoaded) : 0.0f);
     }
-    
+
     // 立即重建参考缓存，避免需要多次点击才生效
-    if(mpTracker){ 
-        mpTracker->BuildLoadedRefCache(); 
-        LOGD("加载地图: 参考缓存已重建");
+    if(mpTracker){
+        mpTracker->BuildLoadedRefCache();
+        //LOGD("加载地图: 参考缓存已重建");
     }
     
     // 确保仍处于SLAM建图模式（不是仅定位），继续正常扫描与建图

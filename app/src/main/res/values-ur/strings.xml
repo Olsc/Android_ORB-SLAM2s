@@ -5,18 +5,13 @@
     <string name="btn_save">محفوظ کریں</string>
     <string name="btn_load">لوڈ کریں</string>
     <string name="btn_map">نقشہ</string>
-    <string name="btn_reset">دوبارہ ترتیب دیں</string>
     <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓پوائنٹ کلاؤڈ</string>
     <string name="loading_slam_init">SLAM سسٹم شروع ہو رہا ہے…</string>
     <string name="loading_slam_wait">برائے کرم انتظار کریں، اس میں کچھ وقت لگ سکتا ہے</string>
     <string name="slam_init_complete">SLAM سسٹم شروع ہو گیا</string>
     <string name="slam_init_failed">SLAM شروع کرنے میں ناکامی: %1$s</string>
-    <string name="loading">لوڈ ہو رہا ہے…</string>
     <string name="hint_request_sent">درخواست بھیج دی گئی</string>
-    <string name="hint_resetting_slam">SLAM سسٹم دوبارہ ترتیب دیا جا رہا ہے…</string>
-    <string name="hint_slam_reset">SLAM سسٹم دوبارہ ترتیب دے دیا گیا</string>
-    <string name="hint_reset_failed">دوبارہ ترتیب ناکام: سسٹم شروع نہیں ہوا</string>
     <string name="hint_pointcloud_enabled">پوائنٹ کلاؤڈ فعال</string>
     <string name="hint_pointcloud_disabled">پوائنٹ کلاؤڈ غیر فعال</string>
     <string name="btn_pointcloud_enabled">✓پوائنٹ کلاؤڈ</string>
@@ -28,15 +23,11 @@
     <string name="dialog_save_map">نقشہ محفوظ کریں</string>
     <string name="button_cancel">منسوخ کریں</string>
     <string name="hint_no_maps">کوئی محفوظ نقشہ نہیں</string>
-    <string name="map_stats_keyframes">کلیدی فریم: %1$d</string>
-    <string name="map_stats_mappoints">نقشے کے نقاط: %1$d</string>
-    <string name="map_stats_size">سائز: %1$dKB</string>
     <string name="dialog_map_manage">نقشے کا انتظام</string>
     <string name="dialog_select_map">نقشہ منتخب کریں</string>
     <string name="action_load">لوڈ کریں</string>
     <string name="action_delete">حذف کریں</string>
     <string name="action_view_details">تفصیلات دیکھیں</string>
-    <string name="action_load_multi">متعدد لوڈ</string>
     <string name="dialog_confirm_delete">حذف کی تصدیق کریں</string>
     <string name="dialog_confirm_delete_message">نقشہ \"%1$s\" حذف کریں؟</string>
     <string name="hint_map_deleted">نقشہ حذف کر دیا گیا</string>
@@ -44,18 +35,12 @@
     <string name="button_back">واپس</string>
     <string name="dialog_map_details">نقشے کی تفصیلات</string>
     <string name="map_details_name">نقشے کا نام: %1$s</string>
-    <string name="map_details_keyframes">کلیدی فریم: %1$d</string>
-    <string name="map_details_mappoints">نقشے کے نقاط: %1$d</string>
     <string name="map_details_size">فائل سائز: %1$d KB</string>
     <string name="map_details_time">بنایا گیا: %1$s</string>
-    <string name="map_details_plane">طیارہ موجود: %1$s</string>
-    <string name="map_details_plane_yes">ہاں</string>
-    <string name="map_details_plane_no">نہیں</string>
     <string name="button_ok">ٹھیک ہے</string>
     <string name="map_stats_format">KFs: %1$d | MPs: %2$d | طیارہ: %3$s</string>
     <string name="map_stats_plane_yes">ہاں</string>
     <string name="map_stats_plane_no">نہیں</string>
-    <string name="hint_map_load_requested">نقشہ لوڈ کرنے کی درخواست کی گئی</string>
     <string name="hint_map_saved">نقشہ محفوظ: %1$s</string>
     <string name="hint_map_save_failed">محفوظ کرنے میں ناکامی: %1$s</string>
     <string name="hint_map_file_not_found">نقشے کی فائل نہیں ملی</string>
@@ -65,9 +50,6 @@
     </plurals>
     <string name="hint_map_load_failed">لوڈ کرنے میں ناکامی: %1$s</string>
     <string name="permission_camera_storage_required">کیمرہ اور اسٹوریج کی اجازت درکار ہے۔ ترتیبات میں اجازت دیں۔</string>
-    <string name="btn_mini_world">مختصر منظر</string>
-    <string name="hint_mini_world_enabled">مختصر منظر فعال</string>
-    <string name="hint_mini_world_disabled">مختصر منظر غیر فعال</string>
 
     <string name="category_ar">AR کنٹرول</string>
     <string name="category_map">نقشہ</string>
@@ -85,8 +67,6 @@
 
     <string name="btn_web_server">ویب سرور</string>
 
-    <string name="status_enabled">فعال</string>
-    <string name="status_disabled">غیر فعال</string>
 
     <string name="title_web_server">ویب سرور</string>
     <string name="web_fps_label"> (ویب)</string>
@@ -94,11 +74,9 @@
     <string name="hint_web_server_started">ویب سرور شروع ہو گیا: %1$s</string>
     <string name="web_url_default">http://0.0.0.0:8080</string>
 
-    <string name="privacy_title">رازداری کی پالیسی &amp; استعمال کی شرائط</string>
     <string name="privacy_scroll_hint">↓ مکمل معاہدہ پڑھنے کے لیے نیچے سکرول کریں</string>
     <string name="privacy_scroll_done">✓ آپ نے مکمل معاہدہ پڑھ لیا ہے</string>
     <string name="privacy_agree">متفق &amp; جاری رکھیں</string>
-    <string name="privacy_disagree_notice">اگر آپ متفق نہیں ہیں، براہ کرم ایپ سے باہر نکلیں</string>
     <string name="privacy_load_error">رازداری کی پالیسی لوڈ کرنے میں ناکامی۔ دوبارہ کوشش کریں۔</string>
 
 </resources>

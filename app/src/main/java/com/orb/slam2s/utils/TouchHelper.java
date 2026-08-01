@@ -14,14 +14,13 @@ import java.util.ArrayList;
  * 由Olsc于2025/8/25开始进行修改
  */
 public class TouchHelper {
-    private static final String TAG = "TouchHelper";
     private GestureDetector gestureDetector;
     private ScaleGestureDetector scaleGestureDetector;
 
     private static final float sDensity =  Resources.getSystem().getDisplayMetrics().density;
     private static final float sDamping = 0.2f;
 
-    private Context context;
+    private final Context context;
     private ArrayList<ScalingCallback> scalingCallbacks;
 
     public TouchHelper(Context context) {
@@ -41,7 +40,6 @@ public class TouchHelper {
 
             @Override
             public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-                float dy=distanceY / sDensity * sDamping;
                 // Log.d(TAG, "onScroll: scroll");  // 高频日志已注释，避免刷屏
                 return super.onScroll(e1, e2, distanceX, distanceY);
             }

@@ -5,18 +5,13 @@
     <string name="btn_save">Spara</string>
     <string name="btn_load">Ladda</string>
     <string name="btn_map">Karta</string>
-    <string name="btn_reset">Återställ</string>
     <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓Punktmoln</string>
     <string name="loading_slam_init">Initierar SLAM-system…</string>
     <string name="loading_slam_wait">Vänta, detta kan ta en stund</string>
     <string name="slam_init_complete">SLAM-system initierat</string>
     <string name="slam_init_failed">SLAM-initiering misslyckades: %1$s</string>
-    <string name="loading">Laddar…</string>
     <string name="hint_request_sent">Begäran skickad</string>
-    <string name="hint_resetting_slam">Återställer SLAM-system…</string>
-    <string name="hint_slam_reset">SLAM-system återställt</string>
-    <string name="hint_reset_failed">Återställning misslyckades: System inte initierat</string>
     <string name="hint_pointcloud_enabled">Punktmoln aktiverat</string>
     <string name="hint_pointcloud_disabled">Punktmoln inaktiverat</string>
     <string name="btn_pointcloud_enabled">✓Punktmoln</string>
@@ -28,15 +23,11 @@
     <string name="dialog_save_map">Spara karta</string>
     <string name="button_cancel">Avbryt</string>
     <string name="hint_no_maps">Inga sparade kartor</string>
-    <string name="map_stats_keyframes">Nyckelbilder: %1$d</string>
-    <string name="map_stats_mappoints">Kartpunkter: %1$d</string>
-    <string name="map_stats_size">Storlek: %1$dKB</string>
     <string name="dialog_map_manage">Karthantering</string>
     <string name="dialog_select_map">Välj karta</string>
     <string name="action_load">Ladda</string>
     <string name="action_delete">Ta bort</string>
     <string name="action_view_details">Visa detaljer</string>
-    <string name="action_load_multi">Flerladdning</string>
     <string name="dialog_confirm_delete">Bekräfta borttagning</string>
     <string name="dialog_confirm_delete_message">Ta bort kartan \"%1$s\"?</string>
     <string name="hint_map_deleted">Karta borttagen</string>
@@ -44,18 +35,12 @@
     <string name="button_back">Tillbaka</string>
     <string name="dialog_map_details">Kartdetaljer</string>
     <string name="map_details_name">Kartans namn: %1$s</string>
-    <string name="map_details_keyframes">Nyckelbilder: %1$d</string>
-    <string name="map_details_mappoints">Kartpunkter: %1$d</string>
     <string name="map_details_size">Filstorlek: %1$d KB</string>
     <string name="map_details_time">Skapad: %1$s</string>
-    <string name="map_details_plane">Har plan: %1$s</string>
-    <string name="map_details_plane_yes">Ja</string>
-    <string name="map_details_plane_no">Nej</string>
     <string name="button_ok">OK</string>
     <string name="map_stats_format">NB: %1$d | KP: %2$d | Plan: %3$s</string>
     <string name="map_stats_plane_yes">Ja</string>
     <string name="map_stats_plane_no">Nej</string>
-    <string name="hint_map_load_requested">Kartnedladdning begärd</string>
     <string name="hint_map_saved">Karta sparad: %1$s</string>
     <string name="hint_map_save_failed">Sparande misslyckades: %1$s</string>
     <string name="hint_map_file_not_found">Kartfil hittades inte</string>
@@ -65,9 +50,6 @@
     </plurals>
     <string name="hint_map_load_failed">Laddning misslyckades: %1$s</string>
     <string name="permission_camera_storage_required">Kamera- och lagringsbehörigheter krävs. Bevilja behörigheter i inställningarna.</string>
-    <string name="btn_mini_world">Minivy</string>
-    <string name="hint_mini_world_enabled">Minivy aktiverad</string>
-    <string name="hint_mini_world_disabled">Minivy inaktiverad</string>
 
     <string name="category_ar">AR-styrning</string>
     <string name="category_map">Karta</string>
@@ -85,8 +67,6 @@
 
     <string name="btn_web_server">Webbserver</string>
 
-    <string name="status_enabled">aktiverad</string>
-    <string name="status_disabled">inaktiverad</string>
 
     <string name="title_web_server">Webbserver</string>
     <string name="web_fps_label"> (Webb)</string>
@@ -94,11 +74,9 @@
     <string name="hint_web_server_started">Webbserver startad: %1$s</string>
     <string name="web_url_default">http://0.0.0.0:8080</string>
 
-    <string name="privacy_title">Integritetspolicy &amp; Användarvillkor</string>
     <string name="privacy_scroll_hint">↓ Bläddra till botten för att läsa hela avtalet</string>
     <string name="privacy_scroll_done">✓ Du har läst hela avtalet</string>
     <string name="privacy_agree">Godkänn &amp; Fortsätt</string>
-    <string name="privacy_disagree_notice">Om du inte godkänner, vänligen avsluta applikationen</string>
     <string name="privacy_load_error">Det gick inte att läsa in integritetspolicyn. Försök igen.</string>
 
 </resources>

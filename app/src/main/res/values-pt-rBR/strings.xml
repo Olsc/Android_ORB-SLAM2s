@@ -5,18 +5,13 @@
     <string name="btn_save">Salvar</string>
     <string name="btn_load">Carregar</string>
     <string name="btn_map">Mapa</string>
-    <string name="btn_reset">Redefinir</string>
     <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓Nuvem de pontos</string>
     <string name="loading_slam_init">Inicializando sistema SLAM…</string>
     <string name="loading_slam_wait">Aguarde, isso pode levar um momento</string>
     <string name="slam_init_complete">Sistema SLAM inicializado</string>
     <string name="slam_init_failed">Falha na inicialização SLAM: %1$s</string>
-    <string name="loading">Carregando…</string>
     <string name="hint_request_sent">Solicitação enviada</string>
-    <string name="hint_resetting_slam">Redefinindo sistema SLAM…</string>
-    <string name="hint_slam_reset">Sistema SLAM redefinido</string>
-    <string name="hint_reset_failed">Falha ao redefinir: Sistema não inicializado</string>
     <string name="hint_pointcloud_enabled">Nuvem de pontos ativada</string>
     <string name="hint_pointcloud_disabled">Nuvem de pontos desativada</string>
     <string name="btn_pointcloud_enabled">✓Nuvem de pontos</string>
@@ -28,15 +23,11 @@
     <string name="dialog_save_map">Salvar mapa</string>
     <string name="button_cancel">Cancelar</string>
     <string name="hint_no_maps">Nenhum mapa salvo</string>
-    <string name="map_stats_keyframes">Quadros-chave: %1$d</string>
-    <string name="map_stats_mappoints">Pontos do mapa: %1$d</string>
-    <string name="map_stats_size">Tamanho: %1$dKB</string>
     <string name="dialog_map_manage">Gerenciamento de mapas</string>
     <string name="dialog_select_map">Selecionar mapa</string>
     <string name="action_load">Carregar</string>
     <string name="action_delete">Excluir</string>
     <string name="action_view_details">Ver detalhes</string>
-    <string name="action_load_multi">Carreg. múltiplo</string>
     <string name="dialog_confirm_delete">Confirmar exclusão</string>
     <string name="dialog_confirm_delete_message">Excluir mapa \"%1$s\"?</string>
     <string name="hint_map_deleted">Mapa excluído</string>
@@ -44,18 +35,12 @@
     <string name="button_back">Voltar</string>
     <string name="dialog_map_details">Detalhes do mapa</string>
     <string name="map_details_name">Nome do mapa: %1$s</string>
-    <string name="map_details_keyframes">Quadros-chave: %1$d</string>
-    <string name="map_details_mappoints">Pontos do mapa: %1$d</string>
     <string name="map_details_size">Tamanho do arquivo: %1$d KB</string>
     <string name="map_details_time">Criado em: %1$s</string>
-    <string name="map_details_plane">Tem plano: %1$s</string>
-    <string name="map_details_plane_yes">Sim</string>
-    <string name="map_details_plane_no">Não</string>
     <string name="button_ok">OK</string>
     <string name="map_stats_format">KFs: %1$d | MPs: %2$d | Plano: %3$s</string>
     <string name="map_stats_plane_yes">Sim</string>
     <string name="map_stats_plane_no">Não</string>
-    <string name="hint_map_load_requested">Carregamento de mapa solicitado</string>
     <string name="hint_map_saved">Mapa salvo: %1$s</string>
     <string name="hint_map_save_failed">Falha ao salvar: %1$s</string>
     <string name="hint_map_file_not_found">Arquivo de mapa não encontrado</string>
@@ -65,9 +50,6 @@
     </plurals>
     <string name="hint_map_load_failed">Falha ao carregar: %1$s</string>
     <string name="permission_camera_storage_required">São necessárias permissões de câmera e armazenamento. Conceda-as nas configurações.</string>
-    <string name="btn_mini_world">Mini visão</string>
-    <string name="hint_mini_world_enabled">Mini visão ativada</string>
-    <string name="hint_mini_world_disabled">Mini visão desativada</string>
 
     <string name="category_ar">Controles AR</string>
     <string name="category_map">Mapa</string>
@@ -85,8 +67,6 @@
 
     <string name="btn_web_server">Servidor web</string>
 
-    <string name="status_enabled">ativado</string>
-    <string name="status_disabled">desativado</string>
 
     <string name="title_web_server">Servidor web</string>
     <string name="web_fps_label"> (Web)</string>
@@ -94,11 +74,9 @@
     <string name="hint_web_server_started">Servidor web iniciado: %1$s</string>
     <string name="web_url_default">http://0.0.0.0:8080</string>
 
-    <string name="privacy_title">Política de Privacidade &amp; Termos de Uso</string>
     <string name="privacy_scroll_hint">↓ Role até o final para ler o acordo completo</string>
     <string name="privacy_scroll_done">✓ Você leu o acordo completo</string>
     <string name="privacy_agree">Aceitar &amp; Continuar</string>
-    <string name="privacy_disagree_notice">Se não concordar, por favor saia do aplicativo</string>
     <string name="privacy_load_error">Falha ao carregar a política de privacidade. Por favor tente novamente.</string>
 
 </resources>

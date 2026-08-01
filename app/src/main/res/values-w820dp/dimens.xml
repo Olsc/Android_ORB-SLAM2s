@@ -1,5 +1,0 @@
-<resources>
-    <!-- 为宽度超过820dp的屏幕自定义尺寸示例，这些尺寸最初在res/values/dimens.xml中定义
-         （例如屏幕边距）。这包括横向模式下的7英寸和10英寸设备（分别约为960dp和1280dp）。 -->
-    <dimen name="activity_horizontal_margin">64dp</dimen>
-</resources>
