@@ -110,19 +110,6 @@ public:
     void UpdateCalibration(float fx, float fy, float cx, float cy);
 
     /**
-     * 激活纯定位模式
-     * 停止局部建图线程，仅执行相机跟踪
-     * 适用于已有完整地图、只需定位的场景
-     */
-    void ActivateLocalizationMode();
-    
-    /**
-     * 停用纯定位模式
-     * 恢复局部建图线程，重新执行完整SLAM
-     */
-    void DeactivateLocalizationMode();
-
-    /**
      * 检查地图是否发生重大变化
      * 
      * @return true-自上次调用以来发生了闭环或全局BA，false-无重大变化
@@ -260,12 +247,6 @@ public:
      */
     void SwitchToMap(Map* pMap);
 
-    /**
-     * 设置是否启用回环检测
-     * @param enable true-启用, false-关闭
-     */
-    void SetLoopClosing(bool enable);
-
 //public:
 private:
     // 多地图容器
@@ -302,11 +283,6 @@ private:
     bool mbReset;
     bool mbResetKeepMap;  // 重置时是否保留地图
 
-    // 模式更改标志
-    std::mutex mMutexMode;
-    bool mbActivateLocalizationMode;
-    bool mbDeactivateLocalizationMode;
-
     // 跟踪状态
     int mTrackingState;
     std::vector<MapPoint*> mTrackedMapPoints;
@@ -316,8 +292,6 @@ private:
     // CreateNewMap 限频保护：防止高性能机器上频繁丢失导致连续触发新建子地图
     std::mutex mMutexNewMap;
     std::chrono::steady_clock::time_point mLastNewMapTime;
-
-    const bool USE_BINARY=true;
 };
 
 }// namespace ORB_SLAM2

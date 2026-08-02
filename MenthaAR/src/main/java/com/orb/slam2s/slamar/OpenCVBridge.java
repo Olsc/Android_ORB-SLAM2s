@@ -33,10 +33,7 @@ public class OpenCVBridge {
 
     // ==================== Mat 数据操作 ====================
 
-    /**
-     * 将 byte 数组填入 Mat
-     */
-    public static native void nativePutData(long matAddr, byte[] data);
+    // public static native void nativePutData(long matAddr, byte[] data);  // 暂未使用；C++ 侧实现仍被 nativePutBuffer 的 fallback 路径调用，勿删
 
     /**
      * 将 ByteBuffer 直填入 Mat（减少 Java byte[] 中间拷贝）
@@ -90,13 +87,6 @@ public class OpenCVBridge {
 
     // ==================== 时间测量 ====================
 
-    /**
-     * 获取计时器频率（每秒 tick 数）
-     */
-    public static native double nativeGetTickFrequency();
-
-    /**
-     * 获取当前 tick 计数
-     */
-    public static native long nativeGetTickCount();
+    // public static native double nativeGetTickFrequency();  // 暂未使用（app 无调用点）
+    // public static native long nativeGetTickCount();        // 暂未使用（app 无调用点）
 }

@@ -775,10 +775,6 @@ void Tracking::GlobalRelocLoop(int sessionId)
 
             for(auto m : query_matchables) delete m;
             
-            if (!treeMatches.empty()) {
-                // LOGD("GlobalRelocLoop: treeMatches size = %d with threshold 75", (int)treeMatches.size());
-            }
-
             pts2d.reserve(treeMatches.size());
             pts3d.reserve(treeMatches.size());
             qIdx.reserve(treeMatches.size());
@@ -1300,8 +1296,7 @@ void Tracking::Track()
                 if (mLastNewMapFrameId > 0 &&
                     mCurrentFrame.mnId < mLastNewMapFrameId + TRACKING_NEW_MAP_COOLDOWN_FRAMES)
                 {
-                    LOGD("跟踪: 处于子地图冷却期 (距上次创建 %u 帧 < %d)，跳过 CreateNewMap",
-                         mCurrentFrame.mnId - mLastNewMapFrameId, TRACKING_NEW_MAP_COOLDOWN_FRAMES);
+                    // 冷却期内跳过 CreateNewMap（原高频日志已移除）
                 }
                 else
                 {
@@ -1849,7 +1844,6 @@ bool Tracking::TrackLocalMap()
                     mCurrentFrame.mpReferenceKF = pKFcur;
                     mpLastKeyFrame = pKFcur;
                     mnLastKeyFrameId = mCurrentFrame.mnId;
-                    LOGD("局部地图跟踪: 自举恢复建图 匹配=%d", validMatches);
                 }
             }
         }
@@ -2470,7 +2464,11 @@ bool Tracking::Relocalization()
 
     // 当跟踪丢失时执行重定位
     // 跟踪丢失：查询关键帧数据库以获取重定位的候选关键帧
-    vector<KeyFrame*> vpCandidateKFs = mpKeyFrameDB->DetectRelocalizationCandidates(&mCurrentFrame);
+    std::vector<KeyFrame*> vpCandidateKFs;
+    {
+        VT_PROFILE_SCOPE("Reloc_DetectCandidates");
+        vpCandidateKFs = mpKeyFrameDB->DetectRelocalizationCandidates(&mCurrentFrame);
+    }
 
     if(vpCandidateKFs.empty())
         return false;
@@ -2507,6 +2505,7 @@ bool Tracking::Relocalization()
 
     for(int i=0; i<nKFs; i++)
     {
+        VT_PROFILE_SCOPE("Reloc_SearchByHBST");
         try {
             KeyFrame* pKF = vpCandidateKFs[i];
             if(!pKF || pKF->isBad())
@@ -2543,15 +2542,17 @@ bool Tracking::Relocalization()
     bool bMatch = false;
     ORBmatcher matcher2(0.9,true);
 
-    auto start_time = std::chrono::steady_clock::now();
-    while(nCandidates>0 && !bMatch)
     {
-        auto current_time = std::chrono::steady_clock::now();
-        if (std::chrono::duration_cast<std::chrono::milliseconds>(current_time - start_time).count() > 1000) {
-            break; // 超时强制退出
-        }
+        VT_PROFILE_SCOPE("Reloc_PnP_RANSAC");
+        auto start_time = std::chrono::steady_clock::now();
+        while(nCandidates>0 && !bMatch)
+        {
+            auto current_time = std::chrono::steady_clock::now();
+            if (std::chrono::duration_cast<std::chrono::milliseconds>(current_time - start_time).count() > 1000) {
+                break; // 超时强制退出
+            }
 
-        for(int i=0; i<nKFs; i++)
+            for(int i=0; i<nKFs; i++)
         {
             if(vbDiscarded[i])
                 continue;
@@ -2599,7 +2600,11 @@ bool Tracking::Relocalization()
                         mCurrentFrame.mvpMapPoints[j]=NULL;
                 }
 
-                int nGood = Optimizer::PoseOptimization(&mCurrentFrame);
+                int nGood;
+                {
+                    VT_PROFILE_SCOPE("Reloc_PoseOpt");
+                    nGood = Optimizer::PoseOptimization(&mCurrentFrame);
+                }
 
                 if(nGood<TRACKING_POSE_OPT_MIN_INLIERS)
                     continue;
@@ -2648,6 +2653,7 @@ bool Tracking::Relocalization()
             }
         }
     }
+    }
 
     // 清理 PnP 求解器，防止内存泄漏。由于 Relocalization 每帧都可能调用，此处泄露会导致内存迅速耗尽。
     for(int i=0; i<nKFs; i++)
@@ -2673,30 +2679,19 @@ bool Tracking::Relocalization()
             refSnaps = mRefSnapshots;
         }
 
-        if (!pTree) {
-            // LOGD("Fallback Reloc: pTree is null. Cannot perform fallback relocalization.");
-        } else if (mCurrentFrame.mDescriptors.empty()) {
-            // LOGD("Fallback Reloc: Current frame descriptors are empty.");
-        } else if (refDesc.rows <= 0) {
-            // LOGD("Fallback Reloc: refDesc rows is 0.");
-        } else if (refDesc.rows != (int)refSnaps.size()) {
-            // LOGD("Fallback Reloc: Size mismatch! refDesc.rows = %d, refSnaps.size = %d", refDesc.rows, (int)refSnaps.size());
-        }
-
         if (pTree && !mCurrentFrame.mDescriptors.empty() && refDesc.rows > 0 && refDesc.rows == (int)refSnaps.size()) {
+            VT_PROFILE_SCOPE("Reloc_Fallback");
             std::vector<size_t> query_objects;
             query_objects.reserve(mCurrentFrame.N);
             for(int i=0; i<mCurrentFrame.N; i++) query_objects.push_back(i);
-            
+
             HBSTTree::MatchableVector query_matchables = HBSTTree::getMatchables(mCurrentFrame.mDescriptors, query_objects, 0);
-            
+
             HBSTTree::MatchVector treeMatches;
             pTree->match(query_matchables, treeMatches, 75); // 最大描述子距离 75
-            
+
             for(auto m : query_matchables) delete m;
-            
-            // LOGD("Fallback Reloc: treeMatches size = %d (threshold 75)", (int)treeMatches.size());
-            
+
             if(treeMatches.size() >= 12) {
                 // 收集2D-3D点对应关系
                 std::vector<cv::Point2f> pts2d; pts2d.reserve(treeMatches.size());
@@ -2718,15 +2713,11 @@ bool Tracking::Relocalization()
                     }
                 }
                 
-                // LOGD("Fallback Reloc: initial 2D-3D pairs count = %d", (int)pts3d.size());
-                
                 // 过滤输入并求解PnP
                 if(pts3d.size() >= 6) {
                     std::vector<cv::Point3f> f3d; std::vector<cv::Point2f> f2d;
                     std::vector<int> fq, fr;
                     FilterPnPInputsSync(pts3d, pts2d, qIdx, refIdx, f3d, f2d, fq, fr);
-                    
-                    // LOGD("Fallback Reloc: Grid-filtered 2D-3D pairs count = %d", (int)f3d.size());
                     
                     if(f3d.size() >= 6) {
                         cv::Mat K = mK;
@@ -2734,8 +2725,6 @@ bool Tracking::Relocalization()
                         cv::Mat rvec, tvec;
                         std::vector<int> inliers;
                         bool ok = SolvePnPSafe(f3d, f2d, K, distCoeffs, rvec, tvec, inliers);
-                        
-                        // LOGD("Fallback Reloc: SolvePnPSafe returned %d, inliers size = %d", ok ? 1 : 0, (int)inliers.size());
                         
                         if(ok && inliers.size() >= 15) {
                             cv::Mat R;
@@ -2768,7 +2757,6 @@ bool Tracking::Relocalization()
                             mCurrentFrame.mvbOutlier = std::vector<bool>(mCurrentFrame.N, false);
                             
                             int nGood = Optimizer::PoseOptimization(&mCurrentFrame);
-                            // LOGD("Fallback Reloc: PoseOptimization returned %d good inliers (required >= 10)", nGood);
                             
                             if(nGood >= 10) {
                                 for(int io=0; io<mCurrentFrame.N; io++) {
@@ -3180,37 +3168,6 @@ void Tracking::ClearRelocCache()
     LOGD("跟踪::清除重定位缓存: 完成");
 }
 
-void Tracking::ChangeCalibration(const string &strSettingPath)
-{
-    float fx = CAMERA_FX;
-    float fy = CAMERA_FY;
-    float cx = CAMERA_CX;
-    float cy = CAMERA_CY;
-
-    cv::Mat K = cv::Mat::eye(3,3,CV_32F);
-    K.at<float>(0,0) = fx;
-    K.at<float>(1,1) = fy;
-    K.at<float>(0,2) = cx;
-    K.at<float>(1,2) = cy;
-    K.copyTo(mK);
-
-    cv::Mat DistCoef(4,1,CV_32F);
-    DistCoef.at<float>(0) = CAMERA_K1;
-    DistCoef.at<float>(1) = CAMERA_K2;
-    DistCoef.at<float>(2) = CAMERA_P1;
-    DistCoef.at<float>(3) = CAMERA_P2;
-    const float k3 = CAMERA_K3;
-    if(k3!=0)
-    {
-        DistCoef.resize(5);
-        DistCoef.at<float>(4) = k3;
-    }
-    DistCoef.copyTo(mDistCoef);
-
-    mbf = 0; // bf 参数在单目相机中不使用
-
-    Frame::mbInitialComputations = true;
-}
 
 void Tracking::UpdateCalibration(float fx, float fy, float cx, float cy)
 {

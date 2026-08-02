@@ -69,14 +69,6 @@ public class Plain {
         return mTexCoordinateBuffer;
     }
 
-    public void setTexCoordinateBuffer(FloatBuffer mTexCoordinateBuffer) {
-        this.mTexCoordinateBuffer = mTexCoordinateBuffer;
-    }
-
-    public void setVerticesBuffer(FloatBuffer mVerticesBuffer) {
-        this.mVerticesBuffer = mVerticesBuffer;
-    }
-
     public void draw() {
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
     }

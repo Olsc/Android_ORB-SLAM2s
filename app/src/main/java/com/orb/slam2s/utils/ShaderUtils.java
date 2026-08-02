@@ -94,56 +94,6 @@ public class ShaderUtils {
         }
         return null;
     }
-    /**
-     * 将保存为资源的原始文本文件转换为OpenGL ES着色器。
-     *
-     * @param type 我们将要创建的着色器类型。
-     * @param resId 即将转换为着色器的原始文本文件的资源ID。
-     * @return 着色器对象句柄。
-     */
-    public static int loadGLShader(String tag, Context context, int type, int resId) {
-        String code = readRawTextFile(context, resId);
-        int shader = GLES20.glCreateShader(type);
-        GLES20.glShaderSource(shader, code);
-        GLES20.glCompileShader(shader);
-
-        // 获取编译状态。
-        final int[] compileStatus = new int[1];
-        GLES20.glGetShaderiv(shader, GLES20.GL_COMPILE_STATUS, compileStatus, 0);
-
-        // 如果编译失败，删除着色器。
-        if (compileStatus[0] == 0) {
-            Log.e(tag, "编译着色器时出错: " + GLES20.glGetShaderInfoLog(shader));
-            GLES20.glDeleteShader(shader);
-            shader = 0;
-        }
-
-        if (shader == 0) {
-            throw new RuntimeException("创建着色器时出错。");
-        }
-
-        return shader;
-    }
-
-
-    /**
-     * 检查OpenGL ES内部是否发生错误，如果发生错误则报告错误信息。
-     *
-     * @param label 发生错误时要报告的标签。
-     * @throws RuntimeException 如果检测到OpenGL错误。
-     */
-    public static void checkGLError(String tag, String label) {
-        int lastError = GLES20.GL_NO_ERROR;
-        // 清空所有错误队列。
-        int error;
-        while ((error = GLES20.glGetError()) != GLES20.GL_NO_ERROR) {
-            Log.e(tag, label + ": OpenGL错误 " + error);
-            lastError = error;
-        }
-        if (lastError != GLES20.GL_NO_ERROR) {
-            throw new RuntimeException(label + ": OpenGL错误 " + lastError);
-        }
-    }
 
 
 }

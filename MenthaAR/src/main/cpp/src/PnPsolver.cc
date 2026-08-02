@@ -239,18 +239,19 @@ cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInlie
                     mBestTcw = cv::Mat::eye(4,4,CV_32F);
                     Rcw.copyTo(mBestTcw.rowRange(0,3).colRange(0,3));
                     tcw.copyTo(mBestTcw.rowRange(0,3).col(3));
-                }
 
-                if(Refine())
-                {
-                    nInliers = mnRefinedInliers;
-                    vbInliers = vector<bool>(mvpMapPointMatches.size(),false);
-                    for(int i=0; i<N; i++)
+                    // 仅在新最佳解时 Refine
+                    if(Refine())
                     {
-                        if(mvbRefinedInliers[i])
-                            vbInliers[mvKeyPointIndices[i]] = true;
+                        nInliers = mnRefinedInliers;
+                        vbInliers = vector<bool>(mvpMapPointMatches.size(),false);
+                        for(int i=0; i<N; i++)
+                        {
+                            if(mvbRefinedInliers[i])
+                                vbInliers[mvKeyPointIndices[i]] = true;
+                        }
+                        return mRefinedTcw.clone();
                     }
-                    return mRefinedTcw.clone();
                 }
 
             }

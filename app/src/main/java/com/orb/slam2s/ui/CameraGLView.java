@@ -6,7 +6,6 @@ import android.graphics.ImageFormat;
 import android.graphics.PixelFormat;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
-import android.os.Build;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Surface;
@@ -38,7 +37,6 @@ import javax.microedition.khronos.opengles.GL10;
 @SuppressWarnings("deprecation")
 public class CameraGLView extends CameraGLViewBase {
 
-    private static final int MAGIC_TEXTURE_ID = 10;
     private static final String TAG = "JavaCameraView";
 
     private ProcessCameraProvider cameraProvider;
@@ -110,8 +108,6 @@ public class CameraGLView extends CameraGLViewBase {
                                         image.close();
                                         return;
                                     }
-
-                                    // Log.d(TAG, "相机帧: " + w + "x" + h + " format=" + format + " planes=" + planes.length + " stride=" + planes[0].getRowStride() + " pixStride=" + planes[0].getPixelStride());
 
                                     if (format == ImageFormat.YUV_420_888 || format == ImageFormat.NV21 || planes.length >= 2) {
                                         // YUV 格式：Y-plane 本身就是灰度图

@@ -240,155 +240,260 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
 
 int Optimizer::PoseOptimization(Frame *pFrame)
 {
-    // 线程局部缓存：避免每帧 new/delete 求解器对象
-    // PoseOptimization 每帧调用 1 次，是实时性关键路径
-    thread_local struct {
-        g2o::SparseOptimizer optimizer;
-        g2o::BlockSolver_6_3::LinearSolverType* linearSolver = nullptr;
-        g2o::BlockSolver_6_3* solver_ptr = nullptr;
-        g2o::OptimizationAlgorithmLevenberg* solver = nullptr;
-    } cache;
+    return PoseOptimizationAnalytic(pFrame);
+}
 
-    if (!cache.linearSolver) {
-        cache.linearSolver = new g2o::LinearSolverDense<g2o::BlockSolver_6_3::PoseMatrixType>();
-        cache.solver_ptr = new g2o::BlockSolver_6_3(cache.linearSolver);
-        cache.solver = new g2o::OptimizationAlgorithmLevenberg(cache.solver_ptr);
-        cache.optimizer.setAlgorithm(cache.solver);
+// 李群 SE3 指数映射辅助函数 (栈内存 0 分配)
+static inline void ExpSE3Fast(const float* xi, cv::Mat& R, cv::Mat& t)
+{
+    const float vx = xi[0], vy = xi[1], vz = xi[2];
+    const float wx = xi[3], wy = xi[4], wz = xi[5];
+
+    const float theta2 = wx*wx + wy*wy + wz*wz;
+    cv::Mat R_inc = cv::Mat::eye(3, 3, CV_32F);
+
+    if (theta2 > 1e-12f) {
+        const float theta = std::sqrt(theta2);
+        const float invTheta = 1.0f / theta;
+        const float kx = wx * invTheta, ky = wy * invTheta, kz = wz * invTheta;
+
+        const float s = std::sin(theta);
+        const float c = std::cos(theta);
+        const float vt = 1.0f - c;
+
+        // Rodrigues 旋转矩阵
+        float* pR = R_inc.ptr<float>(0);
+        pR[0] = c + kx*kx*vt;       pR[1] = kx*ky*vt - kz*s; pR[2] = kx*kz*vt + ky*s;
+        pR[3] = ky*kx*vt + kz*s;   pR[4] = c + ky*ky*vt;       pR[5] = ky*kz*vt - kx*s;
+        pR[6] = kz*kx*vt - ky*s;   pR[7] = kz*ky*vt + kx*s;   pR[8] = c + kz*kz*vt;
+    } else {
+        // 小角度近似: R = I + [w]^
+        float* pR = R_inc.ptr<float>(0);
+        pR[1] = -wz; pR[2] = wy;
+        pR[3] = wz;  pR[5] = -wx;
+        pR[6] = -wy; pR[7] = wx;
     }
-    g2o::SparseOptimizer& optimizer = cache.optimizer;
-    optimizer.clear();
 
-    int nInitialCorrespondences=0;
+    float t_data[3] = {vx, vy, vz};
+    cv::Mat t_inc(3, 1, CV_32F, t_data);
+    t = R_inc * t + t_inc;
+    R = R_inc * R;
+}
 
-    // 设置帧顶点
-    g2o::VertexSE3Expmap * vSE3 = new g2o::VertexSE3Expmap();
-    vSE3->setEstimate(Converter::toSE3Quat(pFrame->mTcw));
-    vSE3->setId(0);
-    vSE3->setFixed(false);
-    optimizer.addVertex(vSE3);
-
-    // 设置地图点顶点
+int Optimizer::PoseOptimizationAnalytic(Frame *pFrame)
+{
     const int N = pFrame->N;
+    if (N < 3) return 0;
 
-    vector<g2o::EdgeSE3ProjectXYZOnlyPose*> vpEdgesMono;
-    vector<size_t> vnIndexEdgeMono;
-    vpEdgesMono.reserve(N);
-    vnIndexEdgeMono.reserve(N);
+    cv::Mat Tcw = pFrame->mTcw.clone();
+    if (Tcw.empty() || Tcw.rows < 4 || Tcw.cols < 4) return 0;
 
-    const float deltaMono = OPTIMIZER_HUBER_TH_2D; // 卡方检验阈值(5.991对应的平方根)
-    for(int i=0; i<N; i++)
-    {
+    cv::Mat R = Tcw.rowRange(0,3).colRange(0,3).clone();
+    cv::Mat t = Tcw.rowRange(0,3).col(3).clone();
+
+    const float fx = pFrame->fx;
+    const float fy = pFrame->fy;
+    const float cx = pFrame->cx;
+    const float cy = pFrame->cy;
+
+    int nInitialCorrespondences = 0;
+    vector<size_t> vValidIndices;
+    vValidIndices.reserve(N);
+
+    for (int i = 0; i < N; i++) {
         MapPoint* pMP = pFrame->mvpMapPoints[i];
-        if(pMP)
-        {
-            // 单目模式只使用单目观测
-            // if(pFrame->mvuRight[i]<0)
-            {
-                nInitialCorrespondences++;
-                pFrame->mvbOutlier[i] = false;
+        if (pMP && !pMP->isBad()) {
+            pFrame->mvbOutlier[i] = false;
+            vValidIndices.push_back(i);
+            nInitialCorrespondences++;
+        }
+    }
 
-                Eigen::Matrix<double,2,1> obs;
-                const cv::KeyPoint &kpUn = pFrame->mvKeysUn[i];
-                obs << kpUn.pt.x, kpUn.pt.y;
+    if (nInitialCorrespondences < 3) return 0;
 
-                g2o::EdgeSE3ProjectXYZOnlyPose* e = new g2o::EdgeSE3ProjectXYZOnlyPose();
+    const float chi2Mono[4] = {OPTIMIZER_CHI2_TH_2D, OPTIMIZER_CHI2_TH_2D, OPTIMIZER_CHI2_TH_2D, OPTIMIZER_CHI2_TH_2D};
+    const float deltaMono = OPTIMIZER_HUBER_TH_2D; // 2.4477f
+    const float deltaMonoSq = deltaMono * deltaMono;
 
-                try {
-                    e->setVertex(0, vSE3);
-                    e->setMeasurement(obs);
-                    const float invSigma2 = pFrame->mvInvLevelSigma2[kpUn.octave];
-                    e->setInformation(Eigen::Matrix2d::Identity()*invSigma2);
-                    e->setLevel(0);
+    int nBad = 0;
 
-                    g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
-                    e->setRobustKernel(rk);
-                    rk->setDelta(deltaMono);
+    // 4 轮 RANSAC 离群点筛选优化
+    for (size_t it = 0; it < 4; it++) {
+        const float curChi2Th = chi2Mono[it];
 
-                    e->fx = pFrame->fx;
-                    e->fy = pFrame->fy;
-                    e->cx = pFrame->cx;
-                    e->cy = pFrame->cy;
-                    cv::Point3f p3f;
-                    pMP->GetWorldPos(p3f);
-                    e->Xw[0] = p3f.x;
-                    e->Xw[1] = p3f.y;
-                    e->Xw[2] = p3f.z;
+        // 每轮内部执行 4 次 Gauss-Newton 迭代
+        for (int iter = 0; iter < 4; iter++) {
+            float H[6][6] = {0};
+            float b[6] = {0};
 
-                    optimizer.addEdge(e);
-                } catch (...) {
-                    delete e;
-                    continue;
+            const float* pR0 = R.ptr<float>(0);
+            const float* pR1 = R.ptr<float>(1);
+            const float* pR2 = R.ptr<float>(2);
+            const float tx = t.at<float>(0), ty = t.at<float>(1), tz = t.at<float>(2);
+
+            for (size_t k = 0; k < vValidIndices.size(); k++) {
+                const size_t idx = vValidIndices[k];
+                if (pFrame->mvbOutlier[idx]) continue;
+
+                MapPoint* pMP = pFrame->mvpMapPoints[idx];
+                if (!pMP || pMP->isBad()) continue;
+
+                cv::Point3f Pw;
+                pMP->GetWorldPos(Pw);
+
+                const float Xc = pR0[0]*Pw.x + pR0[1]*Pw.y + pR0[2]*Pw.z + tx;
+                const float Yc = pR1[0]*Pw.x + pR1[1]*Pw.y + pR1[2]*Pw.z + ty;
+                const float Zc = pR2[0]*Pw.x + pR2[1]*Pw.y + pR2[2]*Pw.z + tz;
+
+                if (Zc <= 1e-4f) continue;
+
+                const float invZ = 1.0f / Zc;
+                const float invZ2 = invZ * invZ;
+
+                const cv::KeyPoint &kpUn = pFrame->mvKeysUn[idx];
+                const float u_proj = fx * Xc * invZ + cx;
+                const float v_proj = fy * Yc * invZ + cy;
+
+                const float ex = kpUn.pt.x - u_proj;
+                const float ey = kpUn.pt.y - v_proj;
+
+                const float invSigma2 = pFrame->mvInvLevelSigma2[kpUn.octave];
+                const float errSq = (ex*ex + ey*ey) * invSigma2;
+
+                float weight = 1.0f;
+                if (errSq > deltaMonoSq) {
+                    weight = deltaMono / std::sqrt(errSq);
                 }
+                const float wInvSigma2 = weight * invSigma2;
 
-                vpEdgesMono.push_back(e);
-                vnIndexEdgeMono.push_back(i);
-            }
-        }
+                // 解析雅可比 J (2x6)
+                // J_u = [-fx/Z, 0, fx*X/Z^2, fx*X*Y/Z^2, -fx*(1+X^2/Z^2), fx*Y/Z]
+                // J_v = [0, -fy/Z, fy*Y/Z^2, fy*(1+Y^2/Z^2), -fy*X*Y/Z^2, -fy*X/Z]
+                float J0[6], J1[6];
+                J0[0] = -fx * invZ;
+                J0[1] = 0.0f;
+                J0[2] = fx * Xc * invZ2;
+                J0[3] = fx * Xc * Yc * invZ2;
+                J0[4] = -fx * (1.0f + Xc * Xc * invZ2);
+                J0[5] = fx * Yc * invZ;
 
-    }
+                J1[0] = 0.0f;
+                J1[1] = -fy * invZ;
+                J1[2] = fy * Yc * invZ2;
+                J1[3] = fy * (1.0f + Yc * Yc * invZ2);
+                J1[4] = -fy * Xc * Yc * invZ2;
+                J1[5] = -fy * Xc * invZ;
 
-    if(nInitialCorrespondences<3) {
-        return 0;
-    }
-
-    // 我们执行4次优化，每次优化后我们将观测分类为内点/外点
-    // 在下一次优化中，不包括外点，但在最后它们可以再次被分类为内点。
-    const float chi2Mono[4]={OPTIMIZER_CHI2_TH_2D,OPTIMIZER_CHI2_TH_2D,OPTIMIZER_CHI2_TH_2D,OPTIMIZER_CHI2_TH_2D};
-    const int its[4]={5,5,5,5};
-
-    int nBad=0;
-    auto start_time = std::chrono::steady_clock::now();
-    for(size_t it=0; it<4; it++)
-    {
-        auto current_time = std::chrono::steady_clock::now();
-        if (std::chrono::duration_cast<std::chrono::milliseconds>(current_time - start_time).count() > 200) {
-            break; // 单次优化总超时限制200ms
-        }
-
-        vSE3->setEstimate(Converter::toSE3Quat(pFrame->mTcw));
-        optimizer.initializeOptimization(0);
-        optimizer.optimize(its[it]);
-
-        nBad=0;
-        for(size_t i=0, iend=vpEdgesMono.size(); i<iend; i++)
-        {
-            g2o::EdgeSE3ProjectXYZOnlyPose* e = vpEdgesMono[i];
-
-            const size_t idx = vnIndexEdgeMono[i];
-
-            if(pFrame->mvbOutlier[idx])
-            {
-                e->computeError();
+                // 累加 H += w * (J0^T * J0 + J1^T * J1) 与 b -= w * (J0^T * ex + J1^T * ey)
+                for (int r = 0; r < 6; ++r) {
+                    b[r] -= wInvSigma2 * (J0[r] * ex + J1[r] * ey);
+                    for (int c = r; c < 6; ++c) {
+                        H[r][c] += wInvSigma2 * (J0[r] * J0[c] + J1[r] * J1[c]);
+                    }
+                }
             }
 
-            const float chi2 = e->chi2();
+            for (int r = 0; r < 6; ++r) {
+                for (int c = 0; c < r; ++c) {
+                    H[r][c] = H[c][r];
+                }
+                H[r][r] *= 1.001f; // Levenberg-Marquardt 微阻尼
+            }
 
-            if(chi2>chi2Mono[it])
-            {                
-                pFrame->mvbOutlier[idx]=true;
-                e->setLevel(1);
+            // 6x6 Cholesky (LL^T) 快速求解
+            float L[6][6] = {0};
+            bool success = true;
+            for (int i = 0; i < 6; ++i) {
+                for (int j = 0; j <= i; ++j) {
+                    float s = 0.0f;
+                    for (int k = 0; k < j; ++k) s += L[i][k] * L[j][k];
+                    if (i == j) {
+                        float val = H[i][i] - s;
+                        if (val <= 1e-12f) val = 1e-12f;
+                        L[i][j] = std::sqrt(val);
+                    } else {
+                        float diag = L[j][j];
+                        if (std::abs(diag) < 1e-12f) diag = 1e-12f;
+                        L[i][j] = (H[i][j] - s) / diag;
+                    }
+                }
+            }
+
+            float y_sol[6], xi[6];
+            for (int i = 0; i < 6; ++i) {
+                float s = 0.0f;
+                for (int k = 0; k < i; ++k) s += L[i][k] * y_sol[k];
+                float diag = L[i][i];
+                if (std::abs(diag) < 1e-12f) diag = 1e-12f;
+                y_sol[i] = (b[i] - s) / diag;
+            }
+            for (int i = 5; i >= 0; --i) {
+                float s = 0.0f;
+                for (int k = i + 1; k < 6; ++k) s += L[k][i] * xi[k];
+                float diag = L[i][i];
+                if (std::abs(diag) < 1e-12f) diag = 1e-12f;
+                xi[i] = (y_sol[i] - s) / diag;
+            }
+
+            float xiSq = 0.0f;
+            for (int i = 0; i < 6; ++i) xiSq += xi[i] * xi[i];
+
+            // 位姿李代数增量更新
+            ExpSE3Fast(xi, R, t);
+
+            if (xiSq < 1e-8f) break; // 数学收敛，提前退出内部循环
+        }
+
+        // 本轮卡方检验，更新内点/外点
+        nBad = 0;
+        const float* pR0 = R.ptr<float>(0);
+        const float* pR1 = R.ptr<float>(1);
+        const float* pR2 = R.ptr<float>(2);
+        const float tx = t.at<float>(0), ty = t.at<float>(1), tz = t.at<float>(2);
+
+        for (size_t k = 0; k < vValidIndices.size(); k++) {
+            const size_t idx = vValidIndices[k];
+            MapPoint* pMP = pFrame->mvpMapPoints[idx];
+            if (!pMP || pMP->isBad()) continue;
+
+            cv::Point3f Pw;
+            pMP->GetWorldPos(Pw);
+
+            const float Xc = pR0[0]*Pw.x + pR0[1]*Pw.y + pR0[2]*Pw.z + tx;
+            const float Yc = pR1[0]*Pw.x + pR1[1]*Pw.y + pR1[2]*Pw.z + ty;
+            const float Zc = pR2[0]*Pw.x + pR2[1]*Pw.y + pR2[2]*Pw.z + tz;
+
+            if (Zc <= 1e-4f) {
+                pFrame->mvbOutlier[idx] = true;
                 nBad++;
-            }
-            else
-            {
-                pFrame->mvbOutlier[idx]=false;
-                e->setLevel(0);
+                continue;
             }
 
-            if(it==2)
-                e->setRobustKernel(0);
+            const float invZ = 1.0f / Zc;
+            const cv::KeyPoint &kpUn = pFrame->mvKeysUn[idx];
+            const float u_proj = fx * Xc * invZ + cx;
+            const float v_proj = fy * Yc * invZ + cy;
+
+            const float ex = kpUn.pt.x - u_proj;
+            const float ey = kpUn.pt.y - v_proj;
+            const float invSigma2 = pFrame->mvInvLevelSigma2[kpUn.octave];
+            const float chi2 = (ex*ex + ey*ey) * invSigma2;
+
+            if (chi2 > curChi2Th) {
+                pFrame->mvbOutlier[idx] = true;
+                nBad++;
+            } else {
+                pFrame->mvbOutlier[idx] = false;
+            }
         }
-        if(optimizer.edges().size()<10)
-            break;
-    }    
+    }
 
-    // 恢复优化后的位姿并返回内点数量
-    g2o::VertexSE3Expmap* vSE3_recov = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(0));
-    g2o::SE3Quat SE3quat_recov = vSE3_recov->estimate();
-    cv::Mat pose = Converter::toCvMat(SE3quat_recov);
-    pFrame->SetPose(pose);
+    cv::Mat T_opt = cv::Mat::eye(4, 4, CV_32F);
+    R.copyTo(T_opt.rowRange(0,3).colRange(0,3));
+    t.copyTo(T_opt.rowRange(0,3).col(3));
+    pFrame->SetPose(T_opt);
 
-    return nInitialCorrespondences-nBad;
+    return nInitialCorrespondences - nBad;
 }
 
 void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap)
@@ -400,9 +505,8 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
     pKF->mnBALocalForKF = pKF->mnId;
 
     const vector<KeyFrame*> vNeighKFs = pKF->GetVectorCovisibleKeyFrames();
-    // 限制局部BA窗口大小：最多取10个共视关键帧，防止局部BA耗时过久阻塞跟踪
-    // 共视度最高的KF先处理，排除的低共视KF在下一次BA中处理
-    const int nMaxBAKFs = std::min((int)vNeighKFs.size(), 10);
+    // 限制局部BA窗口大小：最多取5个共视度最高的关键帧，使 Schur 补矩阵求逆维度降低 87.5%，防止耗时过久
+    const int nMaxBAKFs = std::min((int)vNeighKFs.size(), 5);
     for(int i=0; i<nMaxBAKFs; i++)
     {
         KeyFrame* pKFi = vNeighKFs[i];

@@ -414,6 +414,7 @@ void LocalMapping::CreateNewMapPoints()
                     A[3][c] = xn2y * pTcw2_2[c] - pTcw2_1[c];
                 }
 
+                // 4x4 实对称矩阵 A^T A 快速极小特征向量求解器 (栈内存 0 分配，替换 30 步 Jacobi 旋转)
                 float M[4][4];
                 for (int r = 0; r < 4; ++r) {
                     for (int c = r; c < 4; ++c) {
@@ -422,77 +423,55 @@ void LocalMapping::CreateNewMapPoints()
                         M[c][r] = val;
                     }
                 }
+                for (int d = 0; d < 4; ++d) M[d][d] += 1e-8f;
 
-                float V[4][4] = {
-                    {1.0f, 0.0f, 0.0f, 0.0f},
-                    {0.0f, 1.0f, 0.0f, 0.0f},
-                    {0.0f, 0.0f, 1.0f, 0.0f},
-                    {0.0f, 0.0f, 0.0f, 1.0f}
-                };
-
-                for (int it = 0; it < 30; ++it) {
-                    float maxVal = 0.0f;
-                    int p = 0, q = 1;
-                    for (int i = 0; i < 4; ++i) {
-                        for (int j = i + 1; j < 4; ++j) {
-                            float absVal = std::abs(M[i][j]);
-                            if (absVal > maxVal) {
-                                maxVal = absVal;
-                                p = i;
-                                q = j;
-                            }
+                // 4x4 Cholesky 分解 LL^T
+                float L[4][4] = {0};
+                for (int i = 0; i < 4; ++i) {
+                    for (int j = 0; j <= i; ++j) {
+                        float sum = 0.0f;
+                        for (int k = 0; k < j; ++k) sum += L[i][k] * L[j][k];
+                        if (i == j) {
+                            float val = M[i][i] - sum;
+                            if (val <= 1e-12f) val = 1e-12f;
+                            L[i][j] = std::sqrt(val);
+                        } else {
+                            float diag = L[j][j];
+                            if (std::abs(diag) < 1e-12f) diag = 1e-12f;
+                            L[i][j] = (M[i][j] - sum) / diag;
                         }
-                    }
-
-                    if (maxVal < 1e-15f) break;
-
-                    float app = M[p][p];
-                    float aqq = M[q][q];
-                    float apq = M[p][q];
-
-                    float phi = 0.5f * std::atan2(2.0f * apq, aqq - app);
-                    float c = std::cos(phi);
-                    float s = std::sin(phi);
-
-                    for (int i = 0; i < 4; ++i) {
-                        if (i != p && i != q) {
-                            float mip = M[i][p];
-                            float miq = M[i][q];
-                            M[i][p] = c * mip - s * miq;
-                            M[p][i] = M[i][p];
-                            M[i][q] = s * mip + c * miq;
-                            M[q][i] = M[i][q];
-                        }
-                    }
-
-                    M[p][p] = c * c * app - 2.0f * s * c * apq + s * s * aqq;
-                    M[q][q] = s * s * app + 2.0f * s * c * apq + c * c * aqq;
-                    M[p][q] = 0.0f;
-                    M[q][p] = 0.0f;
-
-                    for (int i = 0; i < 4; ++i) {
-                        float vip = V[i][p];
-                        float viq = V[i][q];
-                        V[i][p] = c * vip - s * viq;
-                        V[i][q] = s * vip + c * viq;
                     }
                 }
 
-                int minIdx = 0;
-                float minEval = M[0][0];
-                for (int i = 1; i < 4; ++i) {
-                    if (M[i][i] < minEval) {
-                        minEval = M[i][i];
-                        minIdx = i;
+                // 2 次反幂迭代求解极小特征向量 X
+                float X_vec[4] = {0.5f, 0.5f, 0.5f, 0.5f};
+                for (int iter = 0; iter < 2; ++iter) {
+                    float y[4], x_next[4];
+                    for (int i = 0; i < 4; ++i) {
+                        float s = 0.0f;
+                        for (int k = 0; k < i; ++k) s += L[i][k] * y[k];
+                        float diag = L[i][i];
+                        if (std::abs(diag) < 1e-12f) diag = 1e-12f;
+                        y[i] = (X_vec[i] - s) / diag;
                     }
+                    for (int i = 3; i >= 0; --i) {
+                        float s = 0.0f;
+                        for (int k = i + 1; k < 4; ++k) s += L[k][i] * x_next[k];
+                        float diag = L[i][i];
+                        if (std::abs(diag) < 1e-12f) diag = 1e-12f;
+                        x_next[i] = (y[i] - s) / diag;
+                    }
+                    float normSq = x_next[0]*x_next[0] + x_next[1]*x_next[1] + x_next[2]*x_next[2] + x_next[3]*x_next[3];
+                    float invNorm = 1.0f / std::sqrt(std::max(normSq, 1e-12f));
+                    for (int i = 0; i < 4; ++i) X_vec[i] = x_next[i] * invNorm;
                 }
 
-                float invW = V[3][minIdx];
+                float invW = X_vec[3];
                 if (std::abs(invW) <= 1e-10f)
                     continue;
 
                 invW = 1.0f / invW;
-                x3D = (cv::Mat_<float>(3, 1) << V[0][minIdx] * invW, V[1][minIdx] * invW, V[2][minIdx] * invW);
+                x3D = (cv::Mat_<float>(3, 1) << X_vec[0] * invW, X_vec[1] * invW, X_vec[2] * invW);
 
             }
             else
@@ -557,8 +536,6 @@ void LocalMapping::CreateNewMapPoints()
             const float ratioDist = dist2/dist1;
             const float ratioOctave = mpCurrentKeyFrame->mvScaleFactors[kp1.octave]/pKF2->mvScaleFactors[kp2.octave];
 
-            /*if(fabs(ratioDist-ratioOctave)>ratioFactor)
-                continue;*/
             if(ratioDist*ratioFactor<ratioOctave || ratioDist>ratioOctave*ratioFactor)
                 continue;
 

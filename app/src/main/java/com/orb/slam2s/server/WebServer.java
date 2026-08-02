@@ -174,26 +174,6 @@ public class WebServer {
         }
     }
 
-    @SuppressWarnings("unused")
-    public void broadcastFrame(byte[] frame) {
-        synchronized (streamClients) {
-            Iterator<OutputStream> it = streamClients.iterator();
-            while (it.hasNext()) {
-                OutputStream os = it.next();
-                try {
-                    os.write(("--boundary\r\n" +
-                            "Content-Type: image/jpeg\r\n" +
-                            "Content-Length: " + frame.length + "\r\n\r\n").getBytes());
-                    os.write(frame);
-                    os.write("\r\n".getBytes());
-                    os.flush();
-                } catch (IOException e) {
-                    it.remove();
-                }
-            }
-        }
-    }
-
     private class ClientHandler implements Runnable {
         private final Socket socket;
 
@@ -387,7 +367,6 @@ public class WebServer {
             int trackingStatus = nativeHelper.getLastTrackingResult();
 
             buffer.putInt(trackingStatus);
-            FloatBuffer fbView = buffer.asFloatBuffer(); // 使用FloatBuffer写入以提高性能 (buffer position必须对齐)
             // 注意: buffer.putFloat会推进位置，混合使用putInt和FloatBuffer需小心 position
             // 这里直接用 putFloat 循环写入比较安全，或者重新切片
             for (float f : viewMatrix) {

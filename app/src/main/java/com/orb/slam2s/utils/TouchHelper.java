@@ -34,13 +34,11 @@ public class TouchHelper {
 
             @Override
             public boolean onSingleTapConfirmed(MotionEvent e) {
-                // Log.d(TAG, "onScroll: tap");  // 高频日志已注释，避免刷屏
                 return super.onSingleTapConfirmed(e);
             }
 
             @Override
             public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-                // Log.d(TAG, "onScroll: scroll");  // 高频日志已注释，避免刷屏
                 return super.onScroll(e1, e2, distanceX, distanceY);
             }
         });
@@ -51,7 +49,6 @@ public class TouchHelper {
                 float scaleFactor=detector.getScaleFactor();
                 for(ScalingCallback scalingCallback:scalingCallbacks)
                     scalingCallback.updateScale(scaleFactor);
-                // Log.d(TAG, "onScale: "+scaleFactor);  // 高频日志已注释，避免刷屏
                 return true;
             }
 

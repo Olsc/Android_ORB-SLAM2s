@@ -126,7 +126,7 @@ public class NativeHelper {
     // 本地方法：保存/加载地图
     public native void saveMap(String path);
     public native void loadMapWithId(String path, int mapId, boolean append);
-    public native int getCurrentMapId();
+    // public native int getCurrentMapId();  // 暂未使用（app 无调用点），需要时取消注释
     public native int[] getMapStats();
 
     // 点云显示控制（控制绿色和蓝色点云）
@@ -144,7 +144,7 @@ public class NativeHelper {
     
     // AR对象缩放
     public native void updateArObjectScale(float scaleFactor);
-    public native float getArObjectScale();
+    // public native float getArObjectScale();  // 暂未使用（app 无调用点），需要时取消注释
 
     public native float[] getMiniMapPoints(int maxPoints);
     public native float[] getTrackedPoints(int maxPoints);

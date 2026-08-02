@@ -52,8 +52,7 @@
 namespace ORB_SLAM2
 {
 
-System::System(const std::string &strSettingsFile, const eSensor sensor):mSensor(sensor),  mbReset(false),mbResetKeepMap(false),mbActivateLocalizationMode(false),
-        mbDeactivateLocalizationMode(false)
+System::System(const std::string &strSettingsFile, const eSensor sensor):mSensor(sensor),  mbReset(false),mbResetKeepMap(false)
 {
     {
         cv::setNumThreads(0);
@@ -119,33 +118,6 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
         exit(-1);
     }
 
-    // 检查模式更改
-    {
-        std::unique_lock<std::mutex> lock(mMutexMode);
-        if(mbActivateLocalizationMode)
-        {
-            mpLocalMapper->RequestStop();
-
-            // 仅在 LM 已停止时切换模式，否则等下一帧再检查
-            if(mpLocalMapper->isStopped())
-            {
-                mpTracker->InformOnlyTracking(true);
-                mbActivateLocalizationMode = false;
-                // 释放 LM 线程，使其从 Stopped 状态恢复。
-                // 进入仅定位模式后 Tracking 不会再创建新关键帧，
-                // LM 会在无新 KF 时空闲等待（3ms 事件循环），不会消耗 CPU。
-                mpLocalMapper->Release();
-            }
-            // 未停止时不清除标志，下一帧继续等待
-        }
-        if(mbDeactivateLocalizationMode)
-        {
-            mpTracker->InformOnlyTracking(false);
-            mpLocalMapper->Release();
-            mbDeactivateLocalizationMode = false;
-        }
-    }
-
     // 检查重置
     {
         std::unique_lock<std::mutex> lock(mMutexReset);
@@ -176,18 +148,6 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
     mTrackedMapPoints = mpTracker->mCurrentFrame.mvpMapPoints;
     mTrackedKeyPointsUn = mpTracker->mCurrentFrame.mvKeysUn;
     return Tcw;
-}
-
-void System::ActivateLocalizationMode()
-{
-    std::unique_lock<std::mutex> lock(mMutexMode);
-    mbActivateLocalizationMode = true;
-}
-
-void System::DeactivateLocalizationMode()
-{
-    std::unique_lock<std::mutex> lock(mMutexMode);
-    mbDeactivateLocalizationMode = true;
 }
 
 bool System::MapChanged()
@@ -339,14 +299,8 @@ void System::CreateNewMap()
         mpTracker->ClearRelocCacheForMapSwitch();
     }
 
-    // ===== 4. 退出仅定位模式 =====
-    // CreateNewMap 后需要在新地图上正常建图，不能停留在仅定位模式。
-    {
-        std::unique_lock<std::mutex> lock(mMutexMode);
-        mbActivateLocalizationMode = false;
-        mbDeactivateLocalizationMode = false;
-    }
     if (mpTracker) {
+        // 确保新地图上正常建图（无操作时也无害）
         mpTracker->InformOnlyTracking(false);
     }
 

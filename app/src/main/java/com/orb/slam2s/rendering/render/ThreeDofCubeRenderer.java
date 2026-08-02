@@ -68,13 +68,6 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
         this.mShowCube = false;
     }
 
-    /**
-     * 检查立方体是否显示
-     */
-    public boolean isCubeVisible() {
-        return mShowCube;
-    }
-
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);

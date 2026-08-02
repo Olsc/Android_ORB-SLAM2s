@@ -58,6 +58,7 @@ public:
                                        const unsigned long nLoopKF=0, const bool bRobust = true);
     void static LocalBundleAdjustment(KeyFrame* pKF, bool *pbStopFlag, Map *pMap);
     int static PoseOptimization(Frame* pFrame);
+    int static PoseOptimizationAnalytic(Frame* pFrame);
 
     // 优化Sim3（单目）
     void static OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* pCurKF,

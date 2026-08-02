@@ -81,7 +81,6 @@ public:
     void SetMap(Map* pMap);
 
     // 加载新设置：焦距应相似，否则投影时尺度预测会失败。TODO: 修改MapPoint::PredictScale以考虑焦距
-    void ChangeCalibration(const string &strSettingPath);
     void UpdateCalibration(float fx, float fy, float cx, float cy);
 
     // 如果您已停用局部建图并且只想定位相机，请使用此函数。

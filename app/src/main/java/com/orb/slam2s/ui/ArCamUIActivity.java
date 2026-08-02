@@ -94,11 +94,9 @@ public class ArCamUIActivity extends AppCompatActivity implements
     private WebServer webServer;
     private Button btnStartWeb;
     private boolean isWebRunning = false;
-    private Thread pointsUpdater;
 
     // 摇杆控制AR物体旋转
     private JoystickView joystickView;
-    private float lastJoystickAngle = -1.0f;  // 上一帧的摇杆角度，用于计算增量
 
     // 3DOF功能相关
     private OrientationSensor orientationSensor;
@@ -112,6 +110,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
     private boolean useWebCamera = false; // Web模式：使用浏览器相机而不是本地相机
     private Thread webFrameProcessor; // Web图像处理线程
     private volatile boolean isProcessingWebFrames = false;
+    private boolean webWaitLogged = false; // 等待SLAM初始化提示只打印一次
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -699,7 +698,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
                     nativeHelper.initSLAM(resDir);
 
                     slamInitialized = true;
-                    Log.d(TAG, "SLAM初始化完成");
 
                     // 在主线程更新UI并启动相机
                     runOnUiThread(new Runnable() {
@@ -792,9 +790,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
 
         if (webServer != null) {
             webServer.stop();
-        }
-        if (pointsUpdater != null) {
-            pointsUpdater.interrupt();
         }
         
         // 销毁 Filament 资源
@@ -927,7 +922,8 @@ public class ArCamUIActivity extends AppCompatActivity implements
                                 Log.e(TAG, "Web线程：JPEG解码失败!");
                             }
                         } else {
-                            if (!slamInitialized) {
+                            if (!slamInitialized && !webWaitLogged) {
+                                webWaitLogged = true; // 只打印一次，避免初始化期间刷屏
                                 Log.w(TAG, "Web线程：等待SLAM初始化...");
                             }
                             // 没有数据时等待

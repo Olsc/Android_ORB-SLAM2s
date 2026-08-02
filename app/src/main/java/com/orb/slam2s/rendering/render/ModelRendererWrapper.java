@@ -87,7 +87,6 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
     private final float[] modelHalfExtent = new float[3];
     private float autoScaleFactor = 1.0f;
     private boolean hasBoundingBox = false;
-    private int logCounter = 0;
 
     // 双指缩放相关
     private float currentScaleFactor = 1.0f;  // 当前累积的缩放因子
@@ -495,14 +494,6 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
 
         // 2. 将 SLAM 矩阵传给 Camera 与 Model Transform
         if (matricesReady) {
-            // 每隔 150 帧打印一次矩阵日志，用于故障排除
-            if (logCounter++ % 150 == 0) {
-                Log.d(TAG, "Matrix Debug:");
-                Log.d(TAG, "modelMatrix: " + java.util.Arrays.toString(modelMatrix));
-                Log.d(TAG, "viewMatrix: " + java.util.Arrays.toString(viewMatrix));
-                Log.d(TAG, "projectionMatrix: " + java.util.Arrays.toString(projectionMatrix));
-            }
-
             // SLAM 视图矩阵为 world-to-camera，而 Filament 相机要求 camera-to-world (即视图矩阵的逆矩阵)
             if (android.opengl.Matrix.invertM(tempCameraModelMatrix, 0, viewMatrix, 0)) {
                 camera.setModelMatrix(tempCameraModelMatrix);
@@ -617,26 +608,6 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
         if (userRotationX < 0) userRotationX += 360.0f;
     }
 
-    /**
-     * 仅更新Y轴旋转（兼容旧接口）
-     */
-    public void addUserRotation(float deltaDegrees) {
-        addUserRotation(deltaDegrees, 0.0f);
-    }
-
-    /**
-     * 直接设置旋转角度
-     */
-    public void setUserRotation(float yawDeg, float pitchDeg) {
-        userRotationY = yawDeg % 360.0f;
-        if (userRotationY < 0) userRotationY += 360.0f;
-        userRotationX = pitchDeg % 360.0f;
-        if (userRotationX < 0) userRotationX += 360.0f;
-    }
-
-    public float getUserRotationY() { return userRotationY; }
-    public float getUserRotationX() { return userRotationX; }
-
     @Override
     public void requestReset() {
         Log.d(TAG, "重置渲染状态");
@@ -644,14 +615,6 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
         matricesReady = false;
         currentScaleFactor = 1.0f;
         // 帧循环在 init 后常开，由 render() 中的 TransformManager 控制显隐
-    }
-
-    public void onUpdateScale(float scale) {
-        // 从加载的地图恢复缩放（仅在通过NativeHelper回调时使用）
-        if (scale > MIN_SCALE && scale < MAX_SCALE) {
-            currentScaleFactor = scale;
-            Log.d(TAG, "从地图恢复AR物体缩放: " + scale);
-        }
     }
 
     @Override

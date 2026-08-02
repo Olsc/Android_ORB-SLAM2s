@@ -60,20 +60,12 @@ public:
     // 更新最后处理帧的信息
     void Update(Tracking *pTracker);
 
-    // 绘制最后处理的帧
-    cv::Mat DrawFrame();
-
 protected:
-
-    void DrawTextInfo(cv::Mat &im, int nState, cv::Mat &imText);
-
     // 要绘制的帧信息
-    cv::Mat mIm;
     int N;
     std::vector<cv::KeyPoint> mvCurrentKeys;
     std::vector<bool> mvbMap, mvbVO;
     bool mbOnlyTracking;
-    int mnTracked, mnTrackedVO;
     std::vector<cv::KeyPoint> mvIniKeys;
     std::vector<int> mvIniMatches;
     int mState;
