@@ -438,20 +438,20 @@ void System::SaveMap(const std::string &filename)
         // 行优先 4x4矩阵
         for(int r=0;r<4;r++) for(int c=0;c<4;c++) data[r*4+c] = Tcwm.at<float>(r,c);
         ofs.write(reinterpret_cast<const char*>(data), sizeof(data));
-        
+
         // 保存关键点和描述子（用于更好的重定位）
         const std::vector<cv::KeyPoint>& vKeys = pKF->mvKeysUn;
         const cv::Mat& descriptors = pKF->mDescriptors;
         uint32_t numKeys = static_cast<uint32_t>(vKeys.size());
         ofs.write(reinterpret_cast<const char*>(&numKeys), sizeof(numKeys));
-        
+
         if(numKeys > 0) {
             // 保存关键点（仅保存位置、尺度、角度）
             for(const auto& kp : vKeys) {
                 float kpData[4] = {kp.pt.x, kp.pt.y, kp.size, kp.angle};
                 ofs.write(reinterpret_cast<const char*>(kpData), sizeof(kpData));
             }
-            
+
             // 保存描述子
             if(!descriptors.empty() && descriptors.rows == numKeys) {
                 uint32_t descCols = descriptors.cols;
@@ -463,7 +463,7 @@ void System::SaveMap(const std::string &filename)
                 ofs.write(reinterpret_cast<const char*>(&descCols), sizeof(descCols));
             }
         }
-        
+
         writtenKFs++;
     }
 
@@ -513,7 +513,7 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
     uint32_t magic=0, version=0; 
     ifs.read(reinterpret_cast<char*>(&magic),4); 
     ifs.read(reinterpret_cast<char*>(&version),4);
-    
+
     // 只支持MAP1格式
     if(magic != SYSTEM_MAP_FILE_MAGIC) {
         LOGE("加载地图: 无效的地图文件格式 (魔数=0x%08X)，只支持MAP1格式", magic);
@@ -545,9 +545,9 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
         LOGD("加载地图: 建议：将地图分割或精简后再加载");
         // 但仍尝试加载，只是警告
     }
-    
+
     // 只清除之前加载的地图点，保留当前扫描的点，保持跟踪状态连续，新点直接添加到现有地图
-    
+
     if(!bAppend)
     {
         // 只清除之前加载的地图点，保留当前扫描建立的点
@@ -559,20 +559,20 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
                 removedLoadedMPs++;
             }
         }
-        
+
         if(removedLoadedMPs > 0) {
             LOGD("加载地图: 已清除旧的加载地图点=%d，保留当前扫描点", removedLoadedMPs);
         }
-        
+
         // 清除旧的重定位缓存，但不清除跟踪状态
         if(mpTracker) {
             mpTracker->ClearRelocCache();
         }
     }
-    
+
     // 注意：不完全清空KeyFrameDatabase，保留当前扫描建立的关键帧
     // mpKeyFrameDatabase->clear(); // 暂时注释，避免影响当前跟踪
-    
+
     // 优化重定位配置以提高加载地图后的跟踪稳定性
     mpTracker->SetRelocConfig(SYSTEM_RELOC_CONFIG_TOP_K, SYSTEM_RELOC_CONFIG_MAX_CANDIDATES, SYSTEM_RELOC_CONFIG_MATCH_CHUNK, SYSTEM_RELOC_CONFIG_BG_SLEEP_US, SYSTEM_RELOC_CONFIG_MAX_BIND_INLIERS, SYSTEM_RELOC_CONFIG_MAX_PROJ_BINDS);
 
@@ -584,11 +584,11 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
         ifs.read(reinterpret_cast<char*>(&id),4);
         ifs.read(reinterpret_cast<char*>(&ts),sizeof(ts));
         ifs.read(reinterpret_cast<char*>(data),sizeof(data));
-        
+
         // 读取关键点和描述子
         uint32_t numKeys = 0;
         ifs.read(reinterpret_cast<char*>(&numKeys), sizeof(numKeys));
-        
+
         if(numKeys > 0) {
             // 读取关键点
             std::vector<cv::KeyPoint> vKeys;
@@ -603,7 +603,7 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
                 kp.angle = kpData[3];
                 vKeys.push_back(kp);
             }
-            
+
             // 读取描述子
             uint32_t descCols = 0;
             ifs.read(reinterpret_cast<char*>(&descCols), sizeof(descCols));
@@ -613,7 +613,7 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
                         numKeys * descCols * sizeof(uchar));
             }
         }
-        
+
         // 注意：暂时只读取数据，不创建KeyFrame对象
         // 依靠正常跟踪流程在恢复后重建关键帧连接
         readKFs++;
@@ -631,7 +631,7 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
         MapPoint* pMP = new MapPoint(Pw, mpMap);
         pMP->mbFromLoadedMap = true;
         pMP->SetMapId(mapId);
-        
+
         // 读取描述子
         uint32_t dlen=0; ifs.read(reinterpret_cast<char*>(&dlen),4);
         if(dlen>0){
@@ -640,7 +640,7 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
             cv::Mat desc(1, dlen, CV_8U, buf.data());
             pMP->SetDescriptor(desc);
         }
-        
+
         // 读取法线和深度范围
         float n3[3]; ifs.read(reinterpret_cast<char*>(n3), sizeof(n3));
         float mind=0, maxd=0; 
@@ -648,7 +648,7 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
         ifs.read(reinterpret_cast<char*>(&maxd),4);
         cv::Mat nrm = (cv::Mat_<float>(3,1) << n3[0], n3[1], n3[2]);
         pMP->SetNormalAndDepth(nrm, mind, maxd);
-        
+
         // 初始化可见性统计，保持Found/Visible比例为1.0以避免被MapPointCulling删除
         // 同时增加Found和Visible，让GetFoundRatio()=1.0 (远大于0.25阈值)
         if(!pMP->GetDescriptor().empty()) {
@@ -662,7 +662,7 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
         createdMPs++;
     }
     ifs.close();
-    
+
     // 验证加载的地图点
     {
         const std::vector<MapPoint*> vAll = mpMap->GetAllMapPoints();
@@ -681,17 +681,17 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
              cntLoadedWithNormal,
              cntLoaded > 0 ? (100.0f * cntLoadedWithNormal / cntLoaded) : 0.0f);
     }
-    
+
     // 立即重建参考缓存，避免需要多次点击才生效
     if(mpTracker){ 
         mpTracker->BuildLoadedRefCache(); 
         LOGD("加载地图: 参考缓存已重建");
     }
-    
+
     // 确保仍处于SLAM建图模式（不是仅定位），继续正常扫描与建图
     if(mpTracker) mpTracker->InformOnlyTracking(false);
     if(mpLocalMapper) mpLocalMapper->Release();
-    
+
     LOGD("加载地图: 完成 KF=%lu MP=%lu", 
          mpMap->KeyFramesInMap(), mpMap->MapPointsInMap());
 }

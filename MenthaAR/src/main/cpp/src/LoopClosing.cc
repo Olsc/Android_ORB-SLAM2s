@@ -47,7 +47,6 @@
 #include<thread>
 #include<chrono>
 
-
 namespace ORB_SLAM2
 {
 
@@ -215,7 +214,6 @@ bool LoopClosing::DetectLoop()
 
     // 更新共视一致性组
     mvConsistentGroups = vCurrentConsistentGroups;
-
 
     // 将当前关键帧添加到数据库
     mpKeyFrameDB->add(mpCurrentKF);
@@ -616,7 +614,6 @@ void LoopClosing::SearchAndFuse(const KeyFrameAndPose &CorrectedPosesMap)
     }
 }
 
-
 void LoopClosing::ClearQueue()
 {
     unique_lock<mutex> lock(mMutexLoopQueue);
@@ -762,7 +759,7 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
 
                     pMP->SetWorldPos(Rwc*Xc+twc);
                 }
-                
+
                 pMP->UpdateNormalAndDepth();
             }            
 
@@ -806,6 +803,5 @@ bool LoopClosing::isFinished()
     unique_lock<mutex> lock(mMutexFinish);
     return mbFinished;
 }
-
 
 } //namespace ORB_SLAM2

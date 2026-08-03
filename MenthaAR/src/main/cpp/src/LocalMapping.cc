@@ -78,8 +78,6 @@ void LocalMapping::ClearQueues()
     mlpRecentAddedMapPoints.clear();
 }
 
-
-
 void LocalMapping::Run()
 {
     VT_PROFILE_FUNCTION();
@@ -196,7 +194,6 @@ void LocalMapping::InsertKeyFrame(KeyFrame *pKF)
     mbAbortBA.store(true);
     mCvEvent.notify_one();
 }
-
 
 bool LocalMapping::CheckNewKeyFrames()
 {
@@ -352,7 +349,7 @@ void LocalMapping::CreateNewMapPoints()
 
         // 对每个匹配进行三角化
         const int nmatches = vMatchedIndices.size();
-        
+
         cv::Mat w,u,vt;
 
         for(int ikp=0; ikp<nmatches; ikp++)
@@ -392,7 +389,6 @@ void LocalMapping::CreateNewMapPoints()
             float cosParallaxStereo1 = cosParallaxStereo;
             float cosParallaxStereo2 = cosParallaxStereo;
 
-
             cosParallaxStereo = min(cosParallaxStereo1,cosParallaxStereo2);
 
             cv::Mat x3D;
@@ -414,7 +410,7 @@ void LocalMapping::CreateNewMapPoints()
                     A[3][c] = xn2y * pTcw2_2[c] - pTcw2_1[c];
                 }
 
-                // 4x4 实对称矩阵 A^T A 快速极小特征向量求解器 (栈内存 0 分配，替换 30 步 Jacobi 旋转)
+                // 4x4 实对称矩阵 A^T A 正交 Jacobi 旋转特征分解 (栈内存零分配，精确且数值极其稳定)
                 float M[4][4];
                 for (int r = 0; r < 4; ++r) {
                     for (int c = r; c < 4; ++c) {
@@ -423,55 +419,77 @@ void LocalMapping::CreateNewMapPoints()
                         M[c][r] = val;
                     }
                 }
-                for (int d = 0; d < 4; ++d) M[d][d] += 1e-8f;
 
-                // 4x4 Cholesky 分解 LL^T
-                float L[4][4] = {0};
-                for (int i = 0; i < 4; ++i) {
-                    for (int j = 0; j <= i; ++j) {
-                        float sum = 0.0f;
-                        for (int k = 0; k < j; ++k) sum += L[i][k] * L[j][k];
-                        if (i == j) {
-                            float val = M[i][i] - sum;
-                            if (val <= 1e-12f) val = 1e-12f;
-                            L[i][j] = std::sqrt(val);
-                        } else {
-                            float diag = L[j][j];
-                            if (std::abs(diag) < 1e-12f) diag = 1e-12f;
-                            L[i][j] = (M[i][j] - sum) / diag;
+                float V[4][4] = {
+                    {1.0f, 0.0f, 0.0f, 0.0f},
+                    {0.0f, 1.0f, 0.0f, 0.0f},
+                    {0.0f, 0.0f, 1.0f, 0.0f},
+                    {0.0f, 0.0f, 0.0f, 1.0f}
+                };
+
+                for (int it = 0; it < 30; ++it) {
+                    float maxVal = 0.0f;
+                    int p = 0, q = 1;
+                    for (int i = 0; i < 4; ++i) {
+                        for (int j = i + 1; j < 4; ++j) {
+                            float absVal = std::abs(M[i][j]);
+                            if (absVal > maxVal) {
+                                maxVal = absVal;
+                                p = i;
+                                q = j;
+                            }
                         }
                     }
-                }
 
-                // 3 次反幂迭代求解极小特征向量 X (数学证明 100% 等价于 30 次 Jacobi 旋转，近乎零开销)
-                float X_vec[4] = {0.5f, 0.5f, 0.5f, 0.5f};
-                for (int iter = 0; iter < 3; ++iter) {
-                    float y[4], x_next[4];
+                    if (maxVal < 1e-15f) break;
+
+                    float app = M[p][p];
+                    float aqq = M[q][q];
+                    float apq = M[p][q];
+
+                    float phi = 0.5f * std::atan2(2.0f * apq, aqq - app);
+                    float c = std::cos(phi);
+                    float s = std::sin(phi);
+
                     for (int i = 0; i < 4; ++i) {
-                        float s = 0.0f;
-                        for (int k = 0; k < i; ++k) s += L[i][k] * y[k];
-                        float diag = L[i][i];
-                        if (std::abs(diag) < 1e-12f) diag = 1e-12f;
-                        y[i] = (X_vec[i] - s) / diag;
+                        if (i != p && i != q) {
+                            float mip = M[i][p];
+                            float miq = M[i][q];
+                            M[i][p] = c * mip - s * miq;
+                            M[p][i] = M[i][p];
+                            M[i][q] = s * mip + c * miq;
+                            M[q][i] = M[i][q];
+                        }
                     }
-                    for (int i = 3; i >= 0; --i) {
-                        float s = 0.0f;
-                        for (int k = i + 1; k < 4; ++k) s += L[k][i] * x_next[k];
-                        float diag = L[i][i];
-                        if (std::abs(diag) < 1e-12f) diag = 1e-12f;
-                        x_next[i] = (y[i] - s) / diag;
+
+                    M[p][p] = c * c * app - 2.0f * s * c * apq + s * s * aqq;
+                    M[q][q] = s * s * app + 2.0f * s * c * apq + c * c * aqq;
+                    M[p][q] = 0.0f;
+                    M[q][p] = 0.0f;
+
+                    for (int i = 0; i < 4; ++i) {
+                        float vip = V[i][p];
+                        float viq = V[i][q];
+                        V[i][p] = c * vip - s * viq;
+                        V[i][q] = s * vip + c * viq;
                     }
-                    float normSq = x_next[0]*x_next[0] + x_next[1]*x_next[1] + x_next[2]*x_next[2] + x_next[3]*x_next[3];
-                    float invNorm = 1.0f / std::sqrt(std::max(normSq, 1e-12f));
-                    for (int i = 0; i < 4; ++i) X_vec[i] = x_next[i] * invNorm;
                 }
 
-                float invW = X_vec[3];
+                int minIdx = 0;
+                float minEval = M[0][0];
+                for (int i = 1; i < 4; ++i) {
+                    if (M[i][i] < minEval) {
+                        minEval = M[i][i];
+                        minIdx = i;
+                    }
+                }
+
+                float invW = V[3][minIdx];
                 if (std::abs(invW) <= 1e-10f)
                     continue;
 
                 invW = 1.0f / invW;
-                x3D = (cv::Mat_<float>(3, 1) << X_vec[0] * invW, X_vec[1] * invW, X_vec[2] * invW);
+                x3D = (cv::Mat_<float>(3, 1) << V[0][minIdx] * invW, V[1][minIdx] * invW, V[2][minIdx] * invW);
 
             }
             else
@@ -528,7 +546,7 @@ void LocalMapping::CreateNewMapPoints()
 
             if(dist1Sq < 1e-12f || dist2Sq < 1e-12f)
                 continue;
-            
+
             // 只在需要时计算实际距离
             float dist1 = sqrt(dist1Sq);
             float dist2 = sqrt(dist2Sq);
@@ -584,7 +602,6 @@ void LocalMapping::SearchInNeighbors()
             vpTargetKFs.push_back(pKFi2);
         }
     }
-
 
     // 通过从当前关键帧投影到目标关键帧来搜索匹配
     ORBmatcher matcher;
@@ -653,7 +670,6 @@ cv::Mat LocalMapping::ComputeF12(KeyFrame *&pKF1, KeyFrame *&pKF2)
 
     const cv::Mat &K1 = pKF1->mK;
     const cv::Mat &K2 = pKF2->mK;
-
 
     return K1.t().inv()*t12x*R12*K2.inv();
 }
@@ -733,7 +749,7 @@ bool LocalMapping::AcceptKeyFrames()
 {
     if(mbAcceptKeyFrames.load())
         return true;
-        
+
     // 即使建图线程正忙，如果队列中积压的关键帧较少（少于3帧），也允许继续插入，以极大地提升跟踪稳定性，避免运动卡顿
     unique_lock<mutex> lockQueue(mMutexNewKFs);
     return mlNewKeyFrames.size() < LOCAL_MAPPING_MAX_QUEUED_KFS;
@@ -912,73 +928,73 @@ void LocalMapping::CheckLimits()
     {
         // 获取所有关键帧
         vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();
-        
+
         // 按 ID 排序（最旧的在前）
         sort(vpKFs.begin(), vpKFs.end(), KeyFrame::lId);
-        
+
         int nToErase = nKFs - MAX_KEYFRAMES + KEYFRAME_CULL_BATCH_SIZE;
         int nErased = 0;
-        
+
         // 获取局部关键帧（当前的邻居）以保护它们
         set<KeyFrame*> spLocalKFs;
         vector<KeyFrame*> vpLocalKFs = mpCurrentKeyFrame->GetVectorCovisibleKeyFrames();
         for(size_t i=0; i<vpLocalKFs.size(); i++) spLocalKFs.insert(vpLocalKFs[i]);
         spLocalKFs.insert(mpCurrentKeyFrame);
-        
+
         // 遍历并移除安全候选者
         for(size_t i=0; i<vpKFs.size(); i++)
         {
             KeyFrame* pKF = vpKFs[i];
-            
+
             // 保护规则：
             if(pKF->mnId == 0) continue; // 不要删除第一个关键帧（原点）
             if(spLocalKFs.count(pKF)) continue; // 不要删除局部关键帧（跟踪需要）
-            
+
             // 标记为 bad（这将触发从地图中删除并清理观测）
             pKF->SetBadFlag();
             nErased++;
-            
+
             if(nErased >= nToErase) break;
         }
     }
-    
+
     // 2. 地图点限制检查（统一管理）
     long unsigned int nMPs = mpMap->MapPointsInMap();
     if(nMPs > MAX_MAPPOINTS)
     {
         vector<MapPoint*> vpMPs = mpMap->GetAllMapPoints();
-        
+
         // 使用 nth_element 代替 sort，将最旧的 nToEraseMP 个点放到前面
         int nToEraseMP = nMPs - MAX_MAPPOINTS + MAPPOINT_CULL_BATCH_SIZE;
         if(nToEraseMP > (int)vpMPs.size()) nToEraseMP = vpMPs.size();
-        
+
         std::nth_element(vpMPs.begin(), vpMPs.begin() + nToEraseMP, vpMPs.end(), [](MapPoint* a, MapPoint* b){
             return a->mnId < b->mnId;
         });
         int nErasedMP = 0;
-        
+
         // 获取当前帧观测到的地图点以保护它们
         set<MapPoint*> spLocalMPs;
         if(mpCurrentKeyFrame) {
              vector<MapPoint*> currentMPs = mpCurrentKeyFrame->GetMapPointMatches();
              for(auto mp : currentMPs) if(mp) spLocalMPs.insert(mp);
         }
-        
+
         for(size_t i=0; i<vpMPs.size(); i++)
         {
              MapPoint* pMP = vpMPs[i];
              if(!pMP || pMP->isBad()) continue;
              if(pMP->mbFromLoadedMap) continue; // 保护加载的地图点（绿点）
-             
+
              // 保护当前关键帧看到的点
              if(spLocalMPs.count(pMP)) continue;
-             
+
              // 保护最近看到的点（在最近 N 帧内）
              if(pMP->mnLastFrameSeen >= mpCurrentKeyFrame->mnFrameId - LOCAL_MAPPING_CULL_PROTECT_FRAMES) continue; 
 
              pMP->SetBadFlag();
              nErasedMP++;
-             
+
              if(nErasedMP >= nToEraseMP) break;
         }
     }

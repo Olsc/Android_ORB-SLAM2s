@@ -43,7 +43,6 @@
 #include"KeyFrame.h"
 #include"Frame.h"
 
-
 namespace ORB_SLAM2
 {
 

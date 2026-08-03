@@ -26,7 +26,7 @@ struct Profiler::Impl {
     std::mutex mutex;      // 互斥锁，保护队列和映射表
     std::unordered_map<std::string, uint32_t> nameMap; // 函数名与ID的映射
     uint32_t nextNameId = 0;
-    
+
     std::atomic<bool> running{false}; // 运行标志
     std::thread writerThread;         // 后台写入线程
     std::queue<EventRecord> eventQueue; // 事件缓冲区队列
@@ -41,7 +41,7 @@ struct Profiler::Impl {
                 cv.wait_for(lock, std::chrono::milliseconds(100), [this] {
                     return !eventQueue.empty() || !running;
                 });
-                
+
                 // 批量提取事件记录，减少IO调用次数
                 while (!eventQueue.empty() && batch.size() < 1000) {
                     batch.push_back(eventQueue.front());
@@ -70,13 +70,13 @@ void Profiler::Initialize(const std::string& outputFile) {
     if (pImpl) return;
     pImpl = new Impl();
     pImpl->outFile.open(outputFile, std::ios::binary);
-    
+
     // 写入文件头：幻数 'VPRO'，版本号 1
     uint32_t magic = 0x4F525056; // 'VPRO'
     uint32_t version = 1;
     pImpl->outFile.write(reinterpret_cast<const char*>(&magic), 4);
     pImpl->outFile.write(reinterpret_cast<const char*>(&version), 4);
-    
+
     pImpl->running = true;
     pImpl->writerThread = std::thread(&Impl::WriterLoop, pImpl);
 }
@@ -91,7 +91,7 @@ void Profiler::Shutdown() {
     if (pImpl->writerThread.joinable()) {
         pImpl->writerThread.join();
     }
-    
+
     pImpl->outFile.close();
     delete pImpl;
     pImpl = nullptr;
@@ -102,7 +102,7 @@ void Profiler::WriteEvent(const char* name, EventType type) {
 
     // 获取当前线程ID (使用 hash 确保唯一性)
     static thread_local uint32_t tid = static_cast<uint32_t>(std::hash<std::thread::id>{}(std::this_thread::get_id()));
-    
+
     uint32_t nameId;
     {
         std::lock_guard<std::mutex> lock(pImpl->mutex);
@@ -110,7 +110,7 @@ void Profiler::WriteEvent(const char* name, EventType type) {
         if (it == pImpl->nameMap.end()) {
             nameId = pImpl->nextNameId++;
             pImpl->nameMap[name] = nameId;
-            
+
             // 立即将字符串映射写入文件，确保崩溃后仍可解析
             uint8_t mapMarker = 0xFF; // 名称映射记录标记
             pImpl->outFile.write(reinterpret_cast<const char*>(&mapMarker), 1);
@@ -121,7 +121,7 @@ void Profiler::WriteEvent(const char* name, EventType type) {
         } else {
             nameId = it->second;
         }
-        
+
         pImpl->eventQueue.push({nameId, tid, GetTimestampNS(), type});
     }
     pImpl->cv.notify_one();

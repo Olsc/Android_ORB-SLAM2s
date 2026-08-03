@@ -126,7 +126,6 @@ public:
         return pKF1->mnId<pKF2->mnId;
     }
 
-
     // 以下变量仅由一个线程访问或从不更改（无需互斥锁）。
 public:
 

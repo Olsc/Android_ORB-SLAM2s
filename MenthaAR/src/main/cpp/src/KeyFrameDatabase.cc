@@ -49,7 +49,6 @@ KeyFrameDatabase::KeyFrameDatabase ():
 {
 }
 
-
 void KeyFrameDatabase::add(KeyFrame *pKF)
 {
     unique_lock<mutex> lock(mMutex);
@@ -58,7 +57,7 @@ void KeyFrameDatabase::add(KeyFrame *pKF)
 
     std::vector<size_t> objects(pKF->N);
     for(int i=0; i<pKF->N; i++) objects[i] = i;
-    
+
     HBSTTree::MatchableVector matchables = HBSTTree::getMatchables(pKF->mDescriptors, objects, pKF->mnId);
     mpTree->add(matchables);
 
@@ -86,7 +85,6 @@ void KeyFrameDatabase::clear()
     mnErasedCount = 0;
 }
 
-
 vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float minScore)
 {
     set<KeyFrame*> spConnectedKeyFrames = pKF->GetConnectedKeyFrames();
@@ -99,29 +97,29 @@ vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float mi
 
         std::vector<size_t> objects(pKF->N);
         for(int i=0; i<pKF->N; i++) objects[i] = i;
-        
+
         HBSTTree::MatchableVector query_matchables = HBSTTree::getMatchables(pKF->mDescriptors, objects, pKF->mnId);
-        
+
         HBSTTree::MatchVectorMap matches;
         mpTree->match(query_matchables, matches, 50);
-        
+
         for (auto m : query_matchables) delete m;
 
         for (const auto& match_pair : matches) {
             long unsigned int id = match_pair.first;
             if (id == pKF->mnId) continue;
-            
+
             if (mhmKeyFrames.count(id) == 0) continue; 
-            
+
             KeyFrame* pKFi = mhmKeyFrames[id];
             if (spConnectedKeyFrames.count(pKFi)) continue;
 
             int num_matches = match_pair.second.size();
             float score = (float)num_matches / (float)pKF->N;
-            
+
             pKFi->mLoopScore = score;
             pKFi->mnLoopQuery = pKF->mnId;
-            
+
             if (num_matches >= 15) {
                 lScoreAndMatch.push_back(make_pair(score, pKFi));
             }
@@ -194,26 +192,26 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
 
         std::vector<size_t> objects(F->N);
         for(int i=0; i<F->N; i++) objects[i] = i;
-        
+
         HBSTTree::MatchableVector query_matchables = HBSTTree::getMatchables(F->mDescriptors, objects, F->mnId);
-        
+
         HBSTTree::MatchVectorMap matches;
         mpTree->match(query_matchables, matches, 50);
-        
+
         for (auto m : query_matchables) delete m;
 
         for (const auto& match_pair : matches) {
             long unsigned int id = match_pair.first;
             if (mhmKeyFrames.count(id) == 0) continue;
-            
+
             KeyFrame* pKFi = mhmKeyFrames[id];
 
             int num_matches = match_pair.second.size();
             float score = (float)num_matches / (float)F->N;
-            
+
             pKFi->mRelocScore = score;
             pKFi->mnRelocQuery = F->mnId;
-            
+
             if (num_matches > 15) {
                 lScoreAndMatch.push_back(make_pair(score, pKFi));
             }

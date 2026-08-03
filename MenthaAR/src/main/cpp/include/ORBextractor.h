@@ -39,7 +39,6 @@
 #include <list>
 #include <opencv2/opencv.hpp>
 
-
 namespace ORB_SLAM2
 {
 
@@ -59,7 +58,7 @@ public:
 class ORBextractor
 {
 public:
-    
+
     enum {HARRIS_SCORE=0, FAST_SCORE=1 };
 
     ORBextractor(int nfeatures, float scaleFactor, int nlevels,
@@ -137,4 +136,3 @@ protected:
 } //namespace ORB_SLAM2
 
 #endif
-

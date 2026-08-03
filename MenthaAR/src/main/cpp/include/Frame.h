@@ -168,7 +168,6 @@ public:
 
     static bool mbInitialComputations;
 
-
 private:
 
     // 计算去失真图像的边界（在构造函数中调用）。

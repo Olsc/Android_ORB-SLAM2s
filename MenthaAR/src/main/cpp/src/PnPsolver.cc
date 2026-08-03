@@ -78,7 +78,6 @@ using namespace std;
 namespace ORB_SLAM2
 {
 
-
 PnPsolver::PnPsolver(const Frame &F, const vector<MapPoint*> &vpMapPointMatches):
     pws(0), us(0), alphas(0), pcs(0), maximum_number_of_correspondences(0), number_of_correspondences(0), mnInliersi(0),
     mnIterations(0), mnBestInliers(0), N(0), mLcg(0)
@@ -131,7 +130,6 @@ PnPsolver::~PnPsolver()
   delete [] alphas;
   delete [] pcs;
 }
-
 
 void PnPsolver::SetRansacParameters(double probability, int minInliers, int maxIterations, int minSet, float epsilon, float th2)
 {
@@ -355,7 +353,6 @@ bool PnPsolver::Refine()
     return false;
 }
 
-
 void PnPsolver::CheckInliers()
 {
     mnInliersi=0;
@@ -393,7 +390,6 @@ void PnPsolver::CheckInliers()
         }
     }
 }
-
 
 void PnPsolver::set_maximum_number_of_correspondences(int n)
 {
@@ -438,7 +434,6 @@ void PnPsolver::choose_control_points(void)
 
   for(int j = 0; j < 3; j++)
     cws[0][j] /= number_of_correspondences;
-
 
   // 从参考点的PCA中获取C1、C2和C3：
   m_PW0_buffer.resize(number_of_correspondences * 3);
@@ -1023,8 +1018,6 @@ void PnPsolver::qr_solve(CvMat * A, CvMat * b, CvMat * X)
     pX[i] = (pb[i] - sum) / A2[i];
   }
 }
-
-
 
 void PnPsolver::relative_error(double & rot_err, double & transl_err,
 			  const double Rtrue[3][3], const double ttrue[3],

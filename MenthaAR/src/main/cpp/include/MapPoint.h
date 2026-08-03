@@ -150,8 +150,6 @@ public:
     cv::Mat mPosGBA;
     long unsigned int mnBAGlobalForKF;
 
-
-
 protected:    
 
      // 绝对坐标位置

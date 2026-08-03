@@ -151,7 +151,7 @@ public:
      * @param filename 地图文件路径
      */
     void SaveMap(const string &filename);
-    
+
     /**
      * 加载地图
      * @param filename 地图文件路径
@@ -165,13 +165,13 @@ public:
      * @return 关键帧总数
      */
     int GetNumKeyFrames();
-    
+
     /**
      * 获取地图中的地图点数量
      * @return 地图点总数
      */
     int GetNumMapPoints();
-    
+
     /**
      * 获取所有地图点
      * @return 地图点指针列表
@@ -185,19 +185,19 @@ public:
      * @return 状态值: -1=未初始化, 0=丢失, 1=跟踪中, 2=OK
      */
     int GetTrackingState();
-    
+
     /**
      * 获取当前帧跟踪到的地图点
      * @return 地图点指针列表
      */
     std::vector<MapPoint*> GetTrackedMapPoints();
-    
+
     /**
      * 获取当前帧跟踪到的关键点（去畸变后）
      * @return 关键点列表
      */
     std::vector<cv::KeyPoint> GetTrackedKeyPointsUn();
-    
+
     /**
      * 获取重定位对齐置信度
      * 用于UI显示，反映当前位姿与加载地图的对齐程度
@@ -205,7 +205,7 @@ public:
      * @return 置信度值（0.0-1.0）
      */
     float GetRelocAlignConfidence();
-    
+
     /**
      * 获取重定位匹配分数
      * 不依赖PnP求解，可以更早地提示是否进入目标区域
@@ -213,13 +213,13 @@ public:
      * @return 匹配分数（0.0-1.0）
      */
     float GetRelocMatchScore();
-    
+
     /**
      * 检查是否已建立地图对齐
      * @return true-已对齐, false-未对齐
      */
     bool HasMapAlignment();
-    
+
     /**
      * 获取对齐后的相机位姿
      * 将SLAM坐标系下的位姿转换到加载地图的坐标系
@@ -228,7 +228,7 @@ public:
      * @return 对齐后的位姿
      */
     cv::Mat GetMapAlignedPose(const cv::Mat &TcwSlam);
-    
+
     /**
      * 检查是否已加载地图
      * 
@@ -240,7 +240,7 @@ public:
      * 创建新地图（子地图），用于跟踪丢失时的恢复
      */
     void CreateNewMap();
-    
+
     /**
      * 切换到指定地图
      * @param pMap 目标地图指针

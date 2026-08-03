@@ -249,7 +249,6 @@ const int LOOP_RANSAC_MAX_ITERS = 300;
 const float OPTIMIZER_HUBER_TH_2D = 2.4476519f;  // Huber核函数delta参数
 const float OPTIMIZER_HUBER_TH_3D = 2.79553215f;
 
-
 // 卡方检验阈值：2DoF=5.991, 1DoF=3.841
 const float OPTIMIZER_CHI2_TH_2D = 5.991f;
 const float OPTIMIZER_CHI2_TH_1D = 3.841f;

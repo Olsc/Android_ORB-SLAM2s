@@ -136,7 +136,6 @@ bool Initializer::Initialize(const Frame &CurrentFrame, const vector<int> &vMatc
     return false;
 }
 
-
 void Initializer::FindHomography(vector<bool> &vbMatchesInliers, float &score, cv::Mat &H21)
 {
     const int N = mvMatches12.size();
@@ -185,7 +184,6 @@ void Initializer::FindHomography(vector<bool> &vbMatchesInliers, float &score, c
         }
     }
 }
-
 
 void Initializer::FindFundamental(vector<bool> &vbMatchesInliers, float &score, cv::Mat &F21)
 {
@@ -236,111 +234,12 @@ void Initializer::FindFundamental(vector<bool> &vbMatchesInliers, float &score, 
     }
 }
 
-
-// 专为 9x9 实对称矩阵 A^T A 设计的反幂迭代 (Inverse Power Iteration) 求解器
-// 3 次迭代即可精准求得极小特征值对应的特征向量，完全消除重型 SVD 分解与堆分配
-static void SolveMinEigenvector9x9(const float* A_data, int rows, float* out_v9)
-{
-    // 1. 计算 M = A^T * A (9x9 实对称矩阵)
-    float M[9][9] = {0};
-    for (int r = 0; r < 9; ++r) {
-        for (int c = r; c < 9; ++c) {
-            float sum = 0.0f;
-            for (int i = 0; i < rows; ++i) {
-                sum += A_data[i * 9 + r] * A_data[i * 9 + c];
-            }
-            M[r][c] = sum;
-            M[c][r] = sum;
-        }
-    }
-
-    // 2. 对角线增加正则项 eps = 1e-7f，使零特征值微位移，确保数值稳定
-    for (int i = 0; i < 9; ++i) {
-        M[i][i] += 1e-7f;
-    }
-
-    // 3. 对 M 进行 LU 分解 (带部分主元选择)
-    float LU[9][9];
-    std::memcpy(LU, M, sizeof(LU));
-    int pivot[9];
-
-    for (int i = 0; i < 9; ++i) {
-        pivot[i] = i;
-    }
-
-    for (int i = 0; i < 9; ++i) {
-        float maxVal = std::abs(LU[i][i]);
-        int maxRow = i;
-        for (int r = i + 1; r < 9; ++r) {
-            float val = std::abs(LU[r][i]);
-            if (val > maxVal) {
-                maxVal = val;
-                maxRow = r;
-            }
-        }
-        if (maxRow != i) {
-            std::swap(pivot[i], pivot[maxRow]);
-            for (int c = 0; c < 9; ++c) {
-                std::swap(LU[i][c], LU[maxRow][c]);
-            }
-        }
-
-        float pivotVal = LU[i][i];
-        if (std::abs(pivotVal) < 1e-12f) pivotVal = 1e-12f;
-        float invPivot = 1.0f / pivotVal;
-
-        for (int r = i + 1; r < 9; ++r) {
-            LU[r][i] *= invPivot;
-            float factor = LU[r][i];
-            for (int c = i + 1; c < 9; ++c) {
-                LU[r][c] -= factor * LU[i][c];
-            }
-        }
-    }
-
-    // 4. 反幂迭代: (A^T A + eps*I)^(-1) 快速收敛至极小特征向量 (3 次迭代)
-    float x[9];
-    const float initVal = 1.0f / 3.0f; // 1 / sqrt(9)
-    for (int i = 0; i < 9; ++i) x[i] = initVal;
-
-    for (int iter = 0; iter < 3; ++iter) {
-        // 前向替换 L y = P x
-        float y[9];
-        for (int i = 0; i < 9; ++i) {
-            float sum = x[pivot[i]];
-            for (int j = 0; j < i; ++j) {
-                sum -= LU[i][j] * y[j];
-            }
-            y[i] = sum;
-        }
-
-        // 后向替换 U x_next = y
-        float x_next[9];
-        for (int i = 8; i >= 0; --i) {
-            float sum = y[i];
-            for (int j = i + 1; j < 9; ++j) {
-                sum -= LU[i][j] * x_next[j];
-            }
-            float diag = LU[i][i];
-            if (std::abs(diag) < 1e-12f) diag = 1e-12f;
-            x_next[i] = sum / diag;
-        }
-
-        // 归一化 x
-        float normSq = 0.0f;
-        for (int i = 0; i < 9; ++i) normSq += x_next[i] * x_next[i];
-        float invNorm = 1.0f / std::sqrt(std::max(normSq, 1e-12f));
-        for (int i = 0; i < 9; ++i) x[i] = x_next[i] * invNorm;
-    }
-
-    std::memcpy(out_v9, x, 9 * sizeof(float));
-}
-
 cv::Mat Initializer::ComputeH21(const vector<cv::Point2f> &vP1, const vector<cv::Point2f> &vP2)
 {
     const int N = vP1.size();
 
-    float a_data[16 * 9];
+    cv::Mat A(2*N, 9, CV_32F);
+
     for(int i=0; i<N; i++)
     {
         const float u1 = vP1[i].x;
@@ -348,30 +247,39 @@ cv::Mat Initializer::ComputeH21(const vector<cv::Point2f> &vP1, const vector<cv:
         const float u2 = vP2[i].x;
         const float v2 = vP2[i].y;
 
-        float* r0 = a_data + (2*i) * 9;
-        r0[0] = 0.0f; r0[1] = 0.0f; r0[2] = 0.0f;
-        r0[3] = -u1; r0[4] = -v1; r0[5] = -1.0f;
-        r0[6] = v2*u1; r0[7] = v2*v1; r0[8] = v2;
+        A.at<float>(2*i,0) = 0.0f;
+        A.at<float>(2*i,1) = 0.0f;
+        A.at<float>(2*i,2) = 0.0f;
+        A.at<float>(2*i,3) = -u1;
+        A.at<float>(2*i,4) = -v1;
+        A.at<float>(2*i,5) = -1.0f;
+        A.at<float>(2*i,6) = v2*u1;
+        A.at<float>(2*i,7) = v2*v1;
+        A.at<float>(2*i,8) = v2;
 
-        float* r1 = a_data + (2*i+1) * 9;
-        r1[0] = u1; r1[1] = v1; r1[2] = 1.0f;
-        r1[3] = 0.0f; r1[4] = 0.0f; r1[5] = 0.0f;
-        r1[6] = -u2*u1; r1[7] = -u2*v1; r1[8] = -u2;
+        A.at<float>(2*i+1,0) = u1;
+        A.at<float>(2*i+1,1) = v1;
+        A.at<float>(2*i+1,2) = 1.0f;
+        A.at<float>(2*i+1,3) = 0.0f;
+        A.at<float>(2*i+1,4) = 0.0f;
+        A.at<float>(2*i+1,5) = 0.0f;
+        A.at<float>(2*i+1,6) = -u2*u1;
+        A.at<float>(2*i+1,7) = -u2*v1;
+        A.at<float>(2*i+1,8) = -u2;
     }
 
-    float h9[9];
-    SolveMinEigenvector9x9(a_data, 2*N, h9);
+    cv::Mat u, w, vt;
+    cv::SVD::compute(A, w, u, vt, cv::SVD::MODIFY_A | cv::SVD::FULL_UV);
 
-    cv::Mat H(3, 3, CV_32F);
-    std::memcpy(H.data, h9, 9 * sizeof(float));
-    return H.clone();
+    return vt.row(8).reshape(0, 3).clone();
 }
 
 cv::Mat Initializer::ComputeF21(const vector<cv::Point2f> &vP1,const vector<cv::Point2f> &vP2)
 {
     const int N = vP1.size();
 
-    float a_data[8 * 9];
+    cv::Mat A(N, 9, CV_32F);
+
     for(int i=0; i<N; i++)
     {
         const float u1 = vP1[i].x;
@@ -379,21 +287,24 @@ cv::Mat Initializer::ComputeF21(const vector<cv::Point2f> &vP1,const vector<cv::
         const float u2 = vP2[i].x;
         const float v2 = vP2[i].y;
 
-        float* r = a_data + i * 9;
-        r[0] = u2*u1; r[1] = u2*v1; r[2] = u2;
-        r[3] = v2*u1; r[4] = v2*v1; r[5] = v2;
-        r[6] = u1;    r[7] = v1;    r[8] = 1.0f;
+        A.at<float>(i,0) = u2*u1;
+        A.at<float>(i,1) = u2*v1;
+        A.at<float>(i,2) = u2;
+        A.at<float>(i,3) = v2*u1;
+        A.at<float>(i,4) = v2*v1;
+        A.at<float>(i,5) = v2;
+        A.at<float>(i,6) = u1;
+        A.at<float>(i,7) = v1;
+        A.at<float>(i,8) = 1.0f;
     }
 
-    float f9[9];
-    SolveMinEigenvector9x9(a_data, N, f9);
+    cv::Mat u, w, vt;
+    cv::SVD::compute(A, w, u, vt, cv::SVD::MODIFY_A | cv::SVD::FULL_UV);
 
-    cv::Mat Fpre(3, 3, CV_32F);
-    std::memcpy(Fpre.data, f9, 9 * sizeof(float));
+    cv::Mat Fpre = vt.row(8).reshape(0, 3);
 
-    // 对 3x3 基础矩阵施加秩 2 约束
-    cv::Mat w, u, vt;
     cv::SVDecomp(Fpre, w, u, vt, cv::SVD::MODIFY_A | cv::SVD::FULL_UV);
+
     w.at<float>(2) = 0.0f;
 
     return u * cv::Mat::diag(w) * vt;
@@ -783,7 +694,6 @@ bool Initializer::ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv:
         vn.push_back(n);
     }
 
-
     int bestGood = 0;
     int secondBestGood = 0;    
     int bestSolutionIdx = -1;
@@ -813,7 +723,6 @@ bool Initializer::ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv:
             secondBestGood = nGood;
         }
     }
-
 
     if(secondBestGood<0.75*bestGood && bestParallax>=minParallax && bestGood>minTri && bestGood>minGoodRatio*N)
     {
@@ -942,7 +851,6 @@ void Initializer::Normalize(const vector<cv::KeyPoint> &vKeys, vector<cv::Point2
         meanY += vKeys[i].pt.y;
     }
 
-
     const float invN = 1.0f / N;
     meanX *= invN;
     meanY *= invN;
@@ -954,7 +862,7 @@ void Initializer::Normalize(const vector<cv::KeyPoint> &vKeys, vector<cv::Point2
     {
         float dx = vKeys[i].pt.x - meanX;
         float dy = vKeys[i].pt.y - meanY;
-        
+
         vNormalizedPoints[i].x = dx;
         vNormalizedPoints[i].y = dy;
 
@@ -981,7 +889,6 @@ void Initializer::Normalize(const vector<cv::KeyPoint> &vKeys, vector<cv::Point2
     T.at<float>(0,2) = -meanX*sX;
     T.at<float>(1,2) = -meanY*sY;
 }
-
 
 int Initializer::CheckRT(const cv::Mat &R, const cv::Mat &t, const vector<cv::KeyPoint> &vKeys1, const vector<cv::KeyPoint> &vKeys2,
                        const vector<Match> &vMatches12, vector<bool> &vbMatchesInliers,
@@ -1041,7 +948,7 @@ int Initializer::CheckRT(const cv::Mat &R, const cv::Mat &t, const vector<cv::Ke
         const float dist1Sq = n1x*n1x + n1y*n1y + n1z*n1z;
         const float dist2Sq = n2x*n2x + n2y*n2y + n2z*n2z;
         const float dotProd = n1x*n2x + n1y*n2y + n1z*n2z;
-        
+
         float cosParallax = dotProd / sqrt(dist1Sq * dist2Sq);
         float dist1 = sqrt(dist1Sq);
 

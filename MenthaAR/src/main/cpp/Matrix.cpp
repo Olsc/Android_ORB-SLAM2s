@@ -61,7 +61,7 @@ void multiplyMV(float* resultVec, int resultVecOffset, const float* lhsMat, int 
     float y = rhsVec[rhsVecOffset + 1];
     float z = rhsVec[rhsVecOffset + 2];
     float w = rhsVec[rhsVecOffset + 3];
-    
+
     resultVec[resultVecOffset + 0] = lhsMat[lhsMatOffset + 0]*x + lhsMat[lhsMatOffset + 4]*y + lhsMat[lhsMatOffset + 8]*z + lhsMat[lhsMatOffset + 12]*w;
     resultVec[resultVecOffset + 1] = lhsMat[lhsMatOffset + 1]*x + lhsMat[lhsMatOffset + 5]*y + lhsMat[lhsMatOffset + 9]*z + lhsMat[lhsMatOffset + 13]*w;
     resultVec[resultVecOffset + 2] = lhsMat[lhsMatOffset + 2]*x + lhsMat[lhsMatOffset + 6]*y + lhsMat[lhsMatOffset + 10]*z + lhsMat[lhsMatOffset + 14]*w;
@@ -105,11 +105,11 @@ void setRotateM(float rm[], int rmOffset,
     rm[rmOffset + 13]= 0;
     rm[rmOffset + 14]= 0;
     rm[rmOffset + 15]= 1;
-    
+
     a *= (float) (PI / 180.0f);  // 角度转弧度
     float s = (float) sin(a);
     float c = (float) cos(a);
-    
+
     // 特殊情况优化：绕X轴旋转
     if (1.0f == x && 0.0f == y && 0.0f == z) {
         rm[rmOffset + 5] = c;   rm[rmOffset + 10]= c;
@@ -172,7 +172,7 @@ void rotateM(float rm[], float m[],
     // 使用局部变量确保线程安全（避免多线程竞争）
     float sTemp[16];
     setRotateM(sTemp, 0, a, x, y, z);
-    
+
     // 检查原地操作
     if (rm == m) {
         float tmpResult[16];
@@ -243,30 +243,29 @@ void setIdentityM(float m[])
     m[12] = 0.0f; m[13] = 0.0f; m[14] = 0.0f; m[15] = 1.0f;
 }
 
-
 void getRUBViewMatrixFromRDF(float inM[],float outM[]){
     // OpenGL 视图矩阵 = Rx(180) * OpenCV 视图矩阵 * Rx(180)
     // Rx(180) 翻转 Y 和 Z 轴。
     // 手机AR渲染需要双重变换：不仅相机坐标系变换(左乘)，世界坐标系也变换(右乘)。
     // 这样可以确保AR物体(RUB模型)在RUB世界中被RUB相机正确观察。
-    
+
     if(inM != outM) {
         memcpy(outM, inM, 16 * sizeof(float));
     }
-    
+
     // 我们需要取反以下索引：
     // Row 1 (indices 1, 5, 9, 13) 被左乘取反
     // Row 2 (indices 2, 6, 10, 14) 被左乘取反
     // Col 1 (indices 4, 5, 6, 7) 被右乘取反
     // Col 2 (indices 8, 9, 10, 11) 被右乘取反
-    
+
     // 重叠部分(Row 1/2 AND Col 1/2)被取反两次 -> 保持不变
     // 重叠索引：5, 9, 6, 10
-    
+
     // 最终需要取反的索引列表：
     // 仅行：1, 13, 2, 14
     // 仅列：4, 7, 8, 11
-    
+
     outM[1] = -outM[1];
     outM[2] = -outM[2];
     outM[4] = -outM[4];
@@ -281,7 +280,7 @@ void getRUBModelMatrixFromRDF(float inM[],float outM[]){
     if(inM != outM) {
         memcpy(outM, inM, 16 * sizeof(float));
     }
-    
+
     // R_x(180) * inM: inM的第1行和第2行取反，第0行和第3行保持不变
     // 第1行索引: 1, 5, 9, 13
     // 第2行索引: 2, 6, 10, 14
@@ -294,5 +293,3 @@ void getRUBModelMatrixFromRDF(float inM[],float outM[]){
     outM[13] = -outM[13];
     outM[14] = -outM[14];
 }
-
-
