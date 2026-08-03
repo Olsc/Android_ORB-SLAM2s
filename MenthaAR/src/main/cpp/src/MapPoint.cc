@@ -216,7 +216,7 @@ int MapPoint::GetRedundantObservationsCount(KeyFrame* pKF, int scaleLevel)
         if(mit->second >= pKFi->mvKeysUn.size())
             continue;
         const int &scaleLeveli = pKFi->mvKeysUn[mit->second].octave;
-        if(scaleLeveli<=scaleLevel+1)
+        if(scaleLeveli<=scaleLevel+MAPPOINT_SCALE_LEVEL_TOL)
         {
             count++;
         }
@@ -362,7 +362,7 @@ void MapPoint::ComputeDistinctiveDescriptors()
 
     // N > 2 时，使用栈内存缓冲区（限制最大 64 个观测）
     const size_t N_max = std::min(N, (size_t)64);
-    int distsMat[64][64];
+    int distsMat[MAPPOINT_DESC_MAX_OBS][MAPPOINT_DESC_MAX_OBS];
 
     for(size_t i = 0; i < N_max; ++i)
     {
@@ -377,7 +377,7 @@ void MapPoint::ComputeDistinctiveDescriptors()
 
     int BestMedian = INT_MAX;
     int BestIdx = 0;
-    int rowDists[64];
+    int rowDists[MAPPOINT_DESC_MAX_OBS];
 
     for(size_t i = 0; i < N_max; ++i)
     {

@@ -137,7 +137,7 @@ static bool SolvePnPSafe(const std::vector<cv::Point3f>& pts3d,
     EnsureCvErrorRedirect();
 
     // 严格检查点数：为避免OpenCV内部DLT断言，统一要求至少6点
-    if (pts3d.size() < 6 || pts2d.size() < 6 || pts3d.size() != pts2d.size())
+    if (pts3d.size() < ORB_SLAM2::PNP_MIN_SAMPLES_RANSAC || pts2d.size() < ORB_SLAM2::PNP_MIN_SAMPLES_RANSAC || pts3d.size() != pts2d.size())
     {
         LOGE("安全PnP求解: 点数不足或数量不匹配 3D=%d 2D=%d", (int)pts3d.size(), (int)pts2d.size());
         return false;
@@ -446,7 +446,7 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
     // 构建空间网格索引（在锁外、swap前构建，避免使用 swap 后已失效的 newRefSnapshots）
     // swap 后 newRefSnapshots 持有的是旧数据，必须在 swap 之前构建
     LoadedMapGrid newGrid;
-    newGrid.Build(newRefSnapshots, 10.0f);
+    newGrid.Build(newRefSnapshots, LOADED_MAP_GRID_CELL_SIZE);
 
     // 交换到正式对象（短锁保护）
     {
@@ -516,9 +516,9 @@ void ORB_SLAM2::Tracking::UpdateAlignmentSmooth(const cv::Mat &T_new, int inlier
 
     // 指数移动平均（EMA）
     // alpha 根据质量动态调整：质量越高，新值权重越大
-    float qualityScore = std::min(100.0f, static_cast<float>(inliers));
-    float alpha = std::min(0.5f, confidence * qualityScore / 100.0f);
-    alpha = std::max(0.1f, alpha);  // 限制在 0.1-0.5 之间
+    float qualityScore = std::min(ALIGN_QUALITY_SCORE_CAP, static_cast<float>(inliers));
+    float alpha = std::min(ALIGN_EMA_MAX_ALPHA, confidence * qualityScore / ALIGN_QUALITY_SCORE_CAP);
+    alpha = std::max(ALIGN_EMA_MIN_ALPHA, alpha);  // 限制在 0.1-0.5 之间
 
     // 直接在原矩阵上更新，避免克隆（关键优化点）
     cv::Mat& smoothed = mSmoothedT_map_from_slam;
@@ -559,8 +559,8 @@ Tracking::Tracking(System *pSys, FrameDrawer *pFrameDrawer,  Map *pMap, KeyFrame
     mState(NO_IMAGES_YET), mSensor(sensor), mbOnlyTracking(false), mbVO(false),
     mpKeyFrameDB(pKFDB), mpInitializer(static_cast<Initializer*>(NULL)), mLastInitAttemptTime(0.0), mpSystem(pSys),
     mpFrameDrawer(pFrameDrawer),  mpMap(pMap), mnLastRelocFrameId(0), mnCurrentMapId(0),
-    mCfgTopKWords(20), mCfgMaxCandidates(5000), mCfgMatchChunk(1000),
-    mCfgMaxBindInliers(100), mCfgMaxProjBinds(50), mConsecutiveLostFrames(0)
+    mCfgTopKWords(SYSTEM_RELOC_CONFIG_TOP_K), mCfgMaxCandidates(SYSTEM_RELOC_CONFIG_MAX_CANDIDATES), mCfgMatchChunk(SYSTEM_RELOC_CONFIG_MATCH_CHUNK),
+    mCfgMaxBindInliers(SYSTEM_RELOC_CONFIG_MAX_BIND_INLIERS), mCfgMaxProjBinds(SYSTEM_RELOC_CONFIG_MAX_PROJ_BINDS), mConsecutiveLostFrames(0)
 {
     // 设置OpenCV的错误处理为非致命，防止硬崩
     cv::redirectError(SeeCvErrorCallback);
@@ -594,7 +594,7 @@ Tracking::Tracking(System *pSys, FrameDrawer *pFrameDrawer,  Map *pMap, KeyFrame
 
     float fps = CAMERA_FPS;
     if(fps==0)
-        fps=30;
+        fps=SYSTEM_FPS;
 
     // 插入关键帧和检查重定位的最大/最小帧数
     mMinFrames = 0;
@@ -612,7 +612,7 @@ Tracking::Tracking(System *pSys, FrameDrawer *pFrameDrawer,  Map *pMap, KeyFrame
     mpORBextractorLeft = new ORBextractor(nFeatures,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
 
     // 仅支持单目模式
-    mpIniORBextractor = new ORBextractor(2*nFeatures,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
+    mpIniORBextractor = new ORBextractor(INITIALIZER_FEATURE_MULTIPLIER*nFeatures,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
 
     // 单目模式不需要深度阈值和深度图因子
 
@@ -668,7 +668,7 @@ void Tracking::GlobalRelocLoop(int sessionId)
             if (!lk.owns_lock()) {
                 // 跟踪线程正在持有锁（正在更新快照），等待释放后立即重新尝试
                 std::unique_lock<std::mutex> waitLock(mMutexReloc);
-                mCvReloc.wait_for(waitLock, std::chrono::milliseconds(1));
+                mCvReloc.wait_for(waitLock, std::chrono::milliseconds(RELOC_RETRY_WAIT_MS));
                 continue;
             }
 
@@ -692,7 +692,7 @@ void Tracking::GlobalRelocLoop(int sessionId)
                     mRefCacheRetryCount++;
                     {
                         std::unique_lock<std::mutex> waitLock(mMutexReloc);
-                        mCvReloc.wait_for(waitLock, std::chrono::milliseconds(500));
+                        mCvReloc.wait_for(waitLock, std::chrono::milliseconds(RELOC_CACHE_RETRY_WAIT_MS));
                     }
                     continue;
                 }
@@ -704,7 +704,7 @@ void Tracking::GlobalRelocLoop(int sessionId)
                      mRefCacheRetryCount++;
                      {
                          std::unique_lock<std::mutex> waitLock(mMutexReloc);
-                         mCvReloc.wait_for(waitLock, std::chrono::seconds(2));
+                         mCvReloc.wait_for(waitLock, std::chrono::seconds(RELOC_NO_MAP_WAIT_SEC));
                      }
                      continue;
                 }
@@ -717,7 +717,7 @@ void Tracking::GlobalRelocLoop(int sessionId)
                     std::unique_lock<std::mutex> lk2(mMutexReloc);
                     if(mRefDesc.empty()) {
                         mRefCacheRetryCount++;
-                        mCvReloc.wait_for(lk2, std::chrono::milliseconds(500));
+                        mCvReloc.wait_for(lk2, std::chrono::milliseconds(RELOC_CACHE_RETRY_WAIT_MS));
                     } else {
                         mRefCacheRetryCount = 0;
                     }
@@ -767,7 +767,7 @@ void Tracking::GlobalRelocLoop(int sessionId)
             HBSTTree::MatchableVector query_matchables = HBSTTree::getMatchables(desc, query_objects, 0);
 
             HBSTTree::MatchVector treeMatches;
-            pTree->match(query_matchables, treeMatches, 75);
+            pTree->match(query_matchables, treeMatches, HBST_MATCH_MAX_DIST);
 
             for(auto m : query_matchables) delete m;
 
@@ -834,15 +834,15 @@ void Tracking::GlobalRelocLoop(int sessionId)
         if(mRelocCooldownFrames>0){ mRelocCooldownFrames--; continue; }
 
         // PnP求解策略：6+ 使用RANSAC；4-5 使用P3P/EPNP并做重投影验证，严禁在<6时进入RANSAC路径
-        if(pts3d.size()>=4){
+        if(pts3d.size()>=PNP_MIN_SAMPLES_P3P){
             std::vector<cv::Point3f> f3d; std::vector<cv::Point2f> f2d; std::vector<int> fq, fr;
             FilterPnPInputsSync(pts3d, pts2d, qIdx, refIdx, f3d, f2d, fq, fr);
-            if(f3d.size()<4){
+            if(f3d.size()<PNP_MIN_SAMPLES_P3P){
                 continue;
             }
             cv::Mat K = mK; cv::Mat distCoeffs = cv::Mat::zeros(4,1,CV_32F);
             cv::Mat rvec, tvec; std::vector<int> inliers; bool ok=false;
-            if(f3d.size()>=6){
+            if(f3d.size()>=PNP_MIN_SAMPLES_RANSAC){
                 ok = SolvePnPSafe(f3d, f2d, K, distCoeffs, rvec, tvec, inliers);
                 inliersCnt = (int)inliers.size();
             } else {
@@ -850,7 +850,7 @@ void Tracking::GlobalRelocLoop(int sessionId)
                 try{
                     cv::Mat Kd; K.convertTo(Kd, CV_64F);
                     cv::Mat Dd; distCoeffs.convertTo(Dd, CV_64F);
-                    int method = (f3d.size()==4? cv::SOLVEPNP_P3P : cv::SOLVEPNP_EPNP);
+                    int method = (f3d.size()==PNP_MIN_SAMPLES_P3P? cv::SOLVEPNP_P3P : cv::SOLVEPNP_EPNP);
                     ok = cv::solvePnP(f3d, f2d, Kd, Dd, rvec, tvec, false, method);
                     if(ok){
                         // 计算重投影误差，阈值按像素（例如 5px）
@@ -867,7 +867,7 @@ void Tracking::GlobalRelocLoop(int sessionId)
                             sumErr += std::sqrt(du*du+dv*dv);
                         }
                         double meanErr = sumErr / std::max(1, cnt);
-                        if(meanErr>5.0){ ok=false; }
+                        if(meanErr>PNP_REPROJ_ERROR_TH){ ok=false; }
                         inliers.clear(); inliersCnt = ok? cnt : 0;
                     }
                 }catch(const cv::Exception& e){ LOGE("RelocBG: PnP异常: %s", e.what()); ok=false; inliers.clear(); }
@@ -876,7 +876,7 @@ void Tracking::GlobalRelocLoop(int sessionId)
             // Reset后如果立即匹配到少量点（比如10-20个），很可能是错误匹配，不应该接受
             if(ok && inliersCnt>=TRACKING_RELOC_PNP_MIN_INLIERS){
                 cv::Mat R; 
-                try { cv::Rodrigues(rvec, R); } catch(const cv::Exception& e){ LOGE("RelocBG: Rodrigues异常: %s", e.what()); mRelocCooldownFrames=5; continue; }
+                try { cv::Rodrigues(rvec, R); } catch(const cv::Exception& e){ LOGE("RelocBG: Rodrigues异常: %s", e.what()); mRelocCooldownFrames=TRACKING_RELOC_COOLDOWN_FRAMES; continue; }
                 cv::Mat Tcw_map = cv::Mat::eye(4,4,CV_32F);
                 R.copyTo(Tcw_map.rowRange(0,3).colRange(0,3));
                 tvec.copyTo(Tcw_map.rowRange(0,3).col(3));
@@ -884,7 +884,7 @@ void Tracking::GlobalRelocLoop(int sessionId)
                 if(!TcwSlam.empty()){
                     cv::Mat Twc_slam = TcwSlam.inv();
                     cv::Mat T_map_from_slam = Tcw_map * Twc_slam;
-                    float conf = std::min(1.0f, inliersCnt/50.0f);
+                    float conf = std::min(1.0f, inliersCnt/RELOC_CONF_NORM_INLIERS);
 
                     // 根据内点确定地图ID
                     std::map<int, int> mapVotes;
@@ -913,7 +913,7 @@ void Tracking::GlobalRelocLoop(int sessionId)
                     }
 
                     // 仅在最佳地图优胜（内点>=15且多于第二名20%）且内点足够时发布
-                    if (bestMapId != -1 && maxVote >= RELOC_MIN_INLIERS_FOR_ALIGN && (maxVote > secondMaxVote * 1.2)) {
+                    if (bestMapId != -1 && maxVote >= RELOC_MIN_INLIERS_FOR_ALIGN && (maxVote > secondMaxVote * RELOC_MAP_VOTE_MARGIN)) {
                         // 使用平滑更新机制，减少单帧抖动
                         UpdateAlignmentSmooth(T_map_from_slam, inliersCnt, conf, ts);
 
@@ -972,7 +972,7 @@ void Tracking::SetRelocConfig(int topKWords, int maxCandidates, int matchChunk, 
 
     // 设置合理的默认值，确保后台线程不会过于频繁地运行
     {}// // 至少50ms间隔
-    if(mCfgMaxCandidates > 10000) mCfgMaxCandidates = 10000; // 限制候选数量
+    if(mCfgMaxCandidates > RELOC_MAX_CANDIDATES_HARD_CAP) mCfgMaxCandidates = RELOC_MAX_CANDIDATES_HARD_CAP; // 限制候选数量
 }
 
 void Tracking::ClearMapAlignment()
@@ -1277,7 +1277,7 @@ void Tracking::Track()
         if(mState==LOST)
         {
             // 初始化后的前20帧内，即使丢失也不立即重置，给予重定位及加载点绑定的机会
-            if(mpMap->KeyFramesInMap()<=5 && mCurrentFrame.mnId > mnLastKeyFrameId + 20)
+            if(mpMap->KeyFramesInMap()<=RESET_PROTECT_MAX_KFS && mCurrentFrame.mnId > mnLastKeyFrameId + RESET_PROTECT_AFTER_KF_FRAMES)
             {
                 mpSystem->Reset();
                 return;
@@ -1285,7 +1285,7 @@ void Tracking::Track()
 
             // 多地图模式：如果丢失时间过长，创建新地图（子地图）继续扫描
             // System::CreateNewMap() 内部已处理已加载点迁移到新地图，无需在此拦截
-            if (mConsecutiveLostFrames > TRACKING_LOST_FRAMES_FOR_NEW_MAP && mpMap->KeyFramesInMap() > 10)
+            if (mConsecutiveLostFrames > TRACKING_LOST_FRAMES_FOR_NEW_MAP && mpMap->KeyFramesInMap() > TRACKING_NEW_MAP_MIN_KFS)
             {
                 // 冷却保护：限频防止高性能机器反复触发CreateNewMap导致主线程卡死
                 if (mLastNewMapFrameId > 0 &&
@@ -1401,7 +1401,7 @@ void Tracking::MonocularInitialization()
             if(mpInitializer)
                 delete mpInitializer;
 
-            mpInitializer =  new Initializer(mCurrentFrame,1.0,200);
+            mpInitializer =  new Initializer(mCurrentFrame, INITIALIZER_SIGMA, INITIALIZER_RANSAC_ITERS);
 
             fill(mvIniMatches.begin(),mvIniMatches.end(),-1);
 
@@ -1420,8 +1420,8 @@ void Tracking::MonocularInitialization()
         }
 
         // 查找对应点
-        ORBmatcher matcher(0.9,true);
-        int nmatches = matcher.SearchForInitialization(mInitialFrame,mCurrentFrame,mvbPrevMatched,mvIniMatches,100);
+        ORBmatcher matcher(ORB_MATCHER_NNRATIO_MOTION,true);
+        int nmatches = matcher.SearchForInitialization(mInitialFrame,mCurrentFrame,mvbPrevMatched,mvIniMatches,INITIALIZER_SEARCH_WINDOW);
 
         // 检查是否有足够的对应点
         if(nmatches<TRACKING_INIT_MIN_MATCHES)
@@ -1536,10 +1536,10 @@ void Tracking::CreateInitialMapMonocular()
     pKFcur->UpdateConnections();
 
     // 初始化BA优化：恢复20次迭代，确保初始地图精度，提高后续帧跟踪稳定性
-    Optimizer::GlobalBundleAdjustemnt(mpMap, 20);
+    Optimizer::GlobalBundleAdjustemnt(mpMap, GBA_INIT_ITERATIONS);
 
     // 设置中位深度为1
-    float medianDepth = pKFini->ComputeSceneMedianDepth(2);
+    float medianDepth = pKFini->ComputeSceneMedianDepth(TRIANGULATION_DEPTH_PERCENTILE);
     float invMedianDepth = 1.0f/medianDepth;
 
     if(medianDepth<0 || pKFcur->TrackedMapPoints(1)<INITIALIZER_MIN_TRIANGULATED)
@@ -1617,7 +1617,7 @@ bool Tracking::TrackReferenceKeyFrame()
 
     // 首先对参考关键帧进行ORB匹配
     // 如果找到足够多的匹配点，我们就设置PnP求解器
-    ORBmatcher matcher(0.7,true);
+    ORBmatcher matcher(ORB_MATCHER_NNRATIO_REFKF,true);
     vector<MapPoint*> vpMapPointMatches;
 
     int nmatches = matcher.SearchByHBST(mpReferenceKF,mCurrentFrame,vpMapPointMatches);
@@ -1699,7 +1699,7 @@ bool Tracking::TrackWithMotionModel()
     if(mLastFrame.mTcw.empty())
         return false;
 
-    ORBmatcher matcher(0.9,true);
+    ORBmatcher matcher(ORB_MATCHER_NNRATIO_MOTION,true);
 
     // 根据参考关键帧更新上一帧位姿
     // 如果处于定位模式则创建"视觉里程计"点
@@ -1754,8 +1754,8 @@ bool Tracking::TrackWithMotionModel()
 
     if(mbOnlyTracking)
     {
-        mbVO = nmatchesMap<10;
-        return nmatches>20;
+        mbVO = nmatchesMap<TRACKING_VO_MIN_MATCHES;
+        return nmatches>TRACKING_MOTION_MIN_MATCHES;
     }
 
     return nmatchesMap>=TRACKING_SUCCESS_LOADED;
@@ -1777,10 +1777,10 @@ bool Tracking::TrackLocalMap()
 
     // 避免遍历全局已加载的地图点，这会导致严重卡顿且过早进行地图匹配。
     // 必须等待SLAM建立一定规模的新地图（稳定）后，再尝试混合已加载的地图点。
-    if((int)mvpLocalMapPoints.size()<50)
+    if((int)mvpLocalMapPoints.size()<LOCAL_MAP_SUPPLEMENT_TRIGGER)
     {
         // 此时跳过全局搜索，不仅节省性能，也符合"先建图稳了再匹配"的逻辑
-        bool bSkipGlobalWithLoadedMap = (mpMap->MapPointsInMap() > 5000 && mpMap->KeyFramesInMap() < 20 && !mbHaveMapAlign);
+        bool bSkipGlobalWithLoadedMap = (mpMap->MapPointsInMap() > TRACKING_SKIP_GLOBAL_MAX_MPS && mpMap->KeyFramesInMap() < TRACKING_SKIP_GLOBAL_MAX_KFS && !mbHaveMapAlign);
 
         if(!bSkipGlobalWithLoadedMap) 
         {
@@ -1812,7 +1812,7 @@ bool Tracking::TrackLocalMap()
         if((nKFs==0 || mpReferenceKF==nullptr)){
             int validMatches = 0;
             for(int i=0;i<mCurrentFrame.N;i++){ if(mCurrentFrame.mvpMapPoints[i] && !mCurrentFrame.mvbOutlier[i]) validMatches++; }
-            if(validMatches>=10){
+            if(validMatches>=BOOTSTRAP_KF_MIN_MATCHES){
                 // 确保mCurrentFrame有有效的位姿才能创建KeyFrame
                 // Reset后或LoadMap后，mTcw可能为空或无效，必须检查
                 if(mCurrentFrame.mTcw.empty() || mCurrentFrame.mTcw.rows < 4 || mCurrentFrame.mTcw.cols < 4){
@@ -1870,7 +1870,7 @@ bool Tracking::TrackLocalMap()
                     mPendingMapCount = 0;
                     mNoCurMapLoadedInliersFrames = 0;
 
-                    if(mAlignConfidence >= 0.9f && !mCurrentFrame.mTcw.empty()){
+                    if(mAlignConfidence >= RELOC_STRONG_BIND_CONFIDENCE && !mCurrentFrame.mTcw.empty()){
                         cv::Mat Tcw_map = mT_map_from_slam * mCurrentFrame.mTcw;
                         cv::Mat Rcw = Tcw_map.rowRange(0,3).colRange(0,3);
                         cv::Mat tcw = Tcw_map.rowRange(0,3).col(3);
@@ -1940,14 +1940,14 @@ bool Tracking::TrackLocalMap()
                             }
                         }
 
-                        const int needCount = 3;
-                        const int needInliers = std::max(60, (int)std::ceil(std::max(1.0f, (float)mLastAcceptedAlignInliers) * 1.25f));
+                        const int needCount = MAP_SWITCH_THRESHOLD;
+                        const int needInliers = std::max(MAP_SWITCH_MIN_INLIERS, (int)std::ceil(std::max(1.0f, (float)mLastAcceptedAlignInliers) * MAP_SWITCH_INLIERS_FACTOR));
                         if(mPendingMapCount >= needCount && mPendingAlign.inliers >= needInliers){
                             const int newMapId = mPendingAlign.mapId;
                             const int confirmCount = mPendingMapCount;
                             const int confirmInliers = mPendingAlign.inliers;
                             applyAlign(mPendingAlign);
-                            mMapSwitchCooldownFrames = 20;
+                            mMapSwitchCooldownFrames = MAP_SWITCH_COOLDOWN_FRAMES;
                             //      curMapId, newMapId, confirmCount, confirmInliers);
                         }
                     }
@@ -2023,7 +2023,7 @@ bool Tracking::TrackLocalMap()
     }
 
     if(mbHaveMapAlign){
-        if(mnLoadedMapInliersCurMap < 5) {
+        if(mnLoadedMapInliersCurMap < RELOC_KEEP_ALIGN_MIN_CURMAP_INLIERS) {
             ClearMapAlignment();
         } else {
             mNoCurMapLoadedInliersFrames = 0;
@@ -2074,8 +2074,8 @@ bool Tracking::NeedNewKeyFrame()
 
     // 参考关键帧中跟踪的地图点
     int nMinObs = REFKF_MIN_OBSERVATIONS;
-    if(nKFs<=2)
-        nMinObs=2;
+    if(nKFs<=NEW_MAP_KF_COUNT)
+        nMinObs=MAPPOINT_MIN_OBSERVATIONS_MONO;
     if(mpReferenceKF==nullptr) return false;
     int nRefMatches = mpReferenceKF->TrackedMapPoints(nMinObs);
 
@@ -2098,7 +2098,7 @@ bool Tracking::NeedNewKeyFrame()
     // 条件1b：已过去超过"MinFrames"且局部建图空闲
     const bool c1b = (mCurrentFrame.mnId>=mnLastKeyFrameId+mMinFrames && bLocalMappingIdle);
     // 初期建图特例：如果地图中只有很少关键帧(<=2)，强制放宽闲置要求，允许频繁插入以迅速扩大地图
-    const bool c1_init = (nKFs<=2 && mCurrentFrame.mnId>=mnLastKeyFrameId+mMinFrames);
+    const bool c1_init = (nKFs<=NEW_MAP_KF_COUNT && mCurrentFrame.mnId>=mnLastKeyFrameId+mMinFrames);
     // 条件1c：跟踪较弱（单目模式不适用）
     const bool c1c = false;
     // 条件2：与参考关键帧相比跟踪点较少。与地图匹配相比有很多视觉里程计。
@@ -2115,9 +2115,9 @@ bool Tracking::NeedNewKeyFrame()
         else
         {
             mpLocalMapper->InterruptBA();
-            if (mSensor != System::MONOCULAR || nKFs <= 2)
+            if (mSensor != System::MONOCULAR || nKFs <= NEW_MAP_KF_COUNT)
             {
-                if (mpLocalMapper->KeyframesInQueue() < 3)
+                if (mpLocalMapper->KeyframesInQueue() < KEYFRAME_QUEUE_ACCEPT_LIMIT)
                     return true;
                 else
                     return false;
@@ -2201,14 +2201,14 @@ void Tracking::SearchLocalPoints()
 
     if(nToMatch>0)
     {
-        ORBmatcher matcher(0.8);
+        ORBmatcher matcher(ORB_MATCHER_NNRATIO_LOCAL);
         int th;
 
         // 动态搜索半径：根据跟踪状态自适应调整
         if (mState == LOST) {
             // 丢失状态：用最大搜索半径提高找回概率
             th = TRACKING_LOCAL_SEARCH_TH_LOST;
-        } else if (mCurrentFrame.mnId < mnLastRelocFrameId + 10) {
+        } else if (mCurrentFrame.mnId < mnLastRelocFrameId + RELOC_POST_FRAMES_WINDOW) {
             // 重定位后短期内：中等搜索半径快速建立匹配
             th = TRACKING_LOCAL_SEARCH_TH_RELOC;
         } else {
@@ -2227,7 +2227,7 @@ void Tracking::SearchLocalPoints()
         const int totalKeys = mCurrentFrame.N;
         int additionalMatches = 0;
         // 大幅提升额外匹配上限，确保充分利用加载的地图点，维持稳定跟踪
-        const int maxAdditionalMatches = mbHaveMapAlign ? 500 : 200;
+        const int maxAdditionalMatches = mbHaveMapAlign ? LOADED_MATCH_MAX_ALIGNED : LOADED_MATCH_MAX;
 
         for(size_t idx=0; idx<mvpLocalMapPoints.size(); idx++)
         {
@@ -2243,7 +2243,7 @@ void Tracking::SearchLocalPoints()
             const float v = pMP->mTrackProjY;
             const int predictedLevel = pMP->mnTrackScaleLevel;
             // 在已对齐时适当放宽半径，提升召回；否则使用默认
-            float radiusScale = mbHaveMapAlign ? 1.8f : 1.0f;
+            float radiusScale = mbHaveMapAlign ? LOADED_MATCH_RADIUS_SCALE_ALIGNED : 1.0f;
             const float baseRadius = radiusScale * th * mCurrentFrame.mvScaleFactors[predictedLevel];
 
             int bestIdx = -1;
@@ -2467,7 +2467,7 @@ bool Tracking::Relocalization()
 
     // 我们首先对每个候选帧进行ORB匹配
     // 如果找到足够多的匹配点，我们就设置PnP求解器
-    ORBmatcher matcher(0.75,true);
+    ORBmatcher matcher(ORB_MATCHER_NNRATIO_RELOC,true);
 
     vector<PnPsolver*> vpPnPsolvers;
     vpPnPsolvers.resize(nKFs);
@@ -2482,7 +2482,7 @@ bool Tracking::Relocalization()
     int nCandidates=0;
 
     // 限制最大候选数量，防止计算量过大导致卡死
-    const int MAX_RELOC_CANDIDATES = 3;
+    const int MAX_RELOC_CANDIDATES = RELOC_MAX_CANDIDATE_KFS;
     if(nKFs > MAX_RELOC_CANDIDATES) {
         // 简单截断，因为候选帧通常按BoW分数排序
         nKFs = MAX_RELOC_CANDIDATES; 
@@ -2504,7 +2504,7 @@ bool Tracking::Relocalization()
             else
             {
                 // 使用局部 ORBmatcher
-                ORBmatcher matcher(0.75,true);
+                ORBmatcher matcher(ORB_MATCHER_NNRATIO_RELOC,true);
                 int nmatches = matcher.SearchByHBST(pKF,mCurrentFrame,vvpMapPointMatches[i]);
                 if(nmatches<TRACKING_REFKF_MIN_MATCHES)
                 {
@@ -2529,7 +2529,7 @@ bool Tracking::Relocalization()
 
     // 或者执行一些P4P RANSAC迭代，直到找到由足够内点支持的相机姿态
     bool bMatch = false;
-    ORBmatcher matcher2(0.9,true);
+    ORBmatcher matcher2(ORB_MATCHER_NNRATIO_MOTION,true);
 
     {
         VT_PROFILE_SCOPE("Reloc_PnP_RANSAC");
@@ -2537,7 +2537,7 @@ bool Tracking::Relocalization()
         while(nCandidates>0 && !bMatch)
         {
             auto current_time = std::chrono::steady_clock::now();
-            if (std::chrono::duration_cast<std::chrono::milliseconds>(current_time - start_time).count() > 1000) {
+            if (std::chrono::duration_cast<std::chrono::milliseconds>(current_time - start_time).count() > RELOC_PNP_TIMEOUT_MS) {
                 break; // 超时强制退出
             }
 
@@ -2560,7 +2560,7 @@ bool Tracking::Relocalization()
                 continue;
             }
 
-            cv::Mat Tcw = pSolver->iterate(5,bNoMore,vbInliers,nInliers);
+            cv::Mat Tcw = pSolver->iterate(RELOC_RANSAC_ROUND_ITERS,bNoMore,vbInliers,nInliers);
 
             // 如果Ransac达到最大迭代次数，则丢弃关键帧
             if(bNoMore)
@@ -2603,24 +2603,24 @@ bool Tracking::Relocalization()
                         mCurrentFrame.mvpMapPoints[io]=static_cast<MapPoint*>(NULL);
 
                 // 如果内点较少，在粗窗口中通过投影搜索并再次优化
-                if(nGood<50)
+                if(nGood<RELOC_SUCCESS_INLIERS)
                 {
-                    int nadditional =matcher2.SearchByProjection(mCurrentFrame,vpCandidateKFs[i],sFound,10,100);
+                    int nadditional =matcher2.SearchByProjection(mCurrentFrame,vpCandidateKFs[i],sFound,RELOC_PROJ_TH_COARSE,RELOC_PROJ_MAX_COARSE);
 
-                    if(nadditional+nGood>=50)
+                    if(nadditional+nGood>=RELOC_SUCCESS_INLIERS)
                     {
                         nGood = Optimizer::PoseOptimization(&mCurrentFrame);
 
                         // 如果内点较多但仍不够，在更窄的窗口中再次通过投影搜索
-                        if(nGood>30 && nGood<50)
+                        if(nGood>RELOC_NARROW_TRIGGER_INLIERS && nGood<RELOC_SUCCESS_INLIERS)
                         {
                             sFound.clear();
                             for(int ip =0; ip<mCurrentFrame.N; ip++)
                                 if(mCurrentFrame.mvpMapPoints[ip])
                                     sFound.insert(mCurrentFrame.mvpMapPoints[ip]);
-                            nadditional =matcher2.SearchByProjection(mCurrentFrame,vpCandidateKFs[i],sFound,3,64);
+                            nadditional =matcher2.SearchByProjection(mCurrentFrame,vpCandidateKFs[i],sFound,RELOC_PROJ_TH_NARROW,RELOC_PROJ_MAX_NARROW);
 
-                            if(nGood+nadditional>=50)
+                            if(nGood+nadditional>=RELOC_SUCCESS_INLIERS)
                             {
                                 nGood = Optimizer::PoseOptimization(&mCurrentFrame);
 
@@ -2633,7 +2633,7 @@ bool Tracking::Relocalization()
                 }
 
                 // 如果姿态由足够的内点支持，则停止ransac并继续
-                if(nGood>=50)
+                if(nGood>=RELOC_SUCCESS_INLIERS)
                 {
                     bMatch = true;
                     break;
@@ -2676,11 +2676,11 @@ bool Tracking::Relocalization()
             HBSTTree::MatchableVector query_matchables = HBSTTree::getMatchables(mCurrentFrame.mDescriptors, query_objects, 0);
 
             HBSTTree::MatchVector treeMatches;
-            pTree->match(query_matchables, treeMatches, 75); // 最大描述子距离 75
+            pTree->match(query_matchables, treeMatches, HBST_MATCH_MAX_DIST); // 最大描述子距离 75
 
             for(auto m : query_matchables) delete m;
 
-            if(treeMatches.size() >= 12) {
+            if(treeMatches.size() >= HBST_RELOC_MIN_MATCHES) {
                 // 收集2D-3D点对应关系
                 std::vector<cv::Point2f> pts2d; pts2d.reserve(treeMatches.size());
                 std::vector<cv::Point3f> pts3d; pts3d.reserve(treeMatches.size());
@@ -2702,19 +2702,19 @@ bool Tracking::Relocalization()
                 }
 
                 // 过滤输入并求解PnP
-                if(pts3d.size() >= 6) {
+                if(pts3d.size() >= PNP_MIN_SAMPLES_RANSAC) {
                     std::vector<cv::Point3f> f3d; std::vector<cv::Point2f> f2d;
                     std::vector<int> fq, fr;
                     FilterPnPInputsSync(pts3d, pts2d, qIdx, refIdx, f3d, f2d, fq, fr);
 
-                    if(f3d.size() >= 6) {
+                    if(f3d.size() >= PNP_MIN_SAMPLES_RANSAC) {
                         cv::Mat K = mK;
                         cv::Mat distCoeffs = cv::Mat::zeros(4,1,CV_32F);
                         cv::Mat rvec, tvec;
                         std::vector<int> inliers;
                         bool ok = SolvePnPSafe(f3d, f2d, K, distCoeffs, rvec, tvec, inliers);
 
-                        if(ok && inliers.size() >= 15) {
+                        if(ok && inliers.size() >= RELOC_MIN_INLIERS_FOR_ALIGN) {
                             cv::Mat R;
                             cv::Rodrigues(rvec, R);
                             cv::Mat Tcw = cv::Mat::eye(4,4,CV_32F);
@@ -2746,7 +2746,7 @@ bool Tracking::Relocalization()
 
                             int nGood = Optimizer::PoseOptimization(&mCurrentFrame);
 
-                            if(nGood >= 10) {
+                            if(nGood >= TRACKING_POSE_OPT_MIN_INLIERS) {
                                 for(int io=0; io<mCurrentFrame.N; io++) {
                                     if(mCurrentFrame.mvbOutlier[io]) {
                                         mCurrentFrame.mvpMapPoints[io] = static_cast<MapPoint*>(NULL);
@@ -2758,7 +2758,7 @@ bool Tracking::Relocalization()
                                     mbHaveMapAlign = true;
                                     mT_map_from_slam = cv::Mat::eye(4, 4, CV_32F);
                                     mSmoothedT_map_from_slam = cv::Mat::eye(4, 4, CV_32F);
-                                    mAlignConfidence = 1.0f;
+                                    mAlignConfidence = RELOC_FALLBACK_CONFIDENCE;
                                     mLastAlignTs = mLastTimestamp;
                                     mAlignUpdateCount++;
                                 }
@@ -3048,7 +3048,7 @@ void Tracking::PrepareForNewMap()
     mTrackingOK.store(false);
     mLastTrackingInliers.store(0);
     mRelocMatchScore.store(0.0f);
-    mRelocCooldownFrames = 30;  // 给一段冷却，避免立即触发重定位匹配到错误区域
+    mRelocCooldownFrames = RESET_COOLDOWN_FRAMES;  // 给一段冷却，避免立即触发重定位匹配到错误区域
     mRefCacheRetryCount = 0;
 }
 
@@ -3211,10 +3211,10 @@ void Tracking::LoadedMapGrid::Build(const std::vector<RefMPSnapshot>& snaps, flo
     nSlices = (int)((maxZ - minZ) / cellSize) + 1;
 
     // 限制网格大小以防内存爆炸（虽然不太可能，除非坐标系错误）
-    if((long long)nCols * nRows * nSlices > 10000000) {
+    if((long long)nCols * nRows * nSlices > GRID_CELLS_HARD_CAP) {
         // 如果空间太大，增加 cellSize
         float maxSide = std::max({maxX-minX, maxY-minY, maxZ-minZ});
-        cellSize = maxSide / 100.0f; // 限制每个维度最多100格
+        cellSize = maxSide / GRID_MAX_DIM_CELLS; // 限制每个维度最多100格
         nCols = (int)((maxX - minX) / cellSize) + 1;
         nRows = (int)((maxY - minY) / cellSize) + 1;
         nSlices = (int)((maxZ - minZ) / cellSize) + 1;

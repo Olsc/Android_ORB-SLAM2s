@@ -185,7 +185,7 @@ void System::Shutdown()
     while(!mpLocalMapper->isFinished() || !mpLoopCloser->isFinished()
           || mpLoopCloser->isRunningGBA())
     {
-        cv.wait_for(lock, std::chrono::milliseconds(5));
+        cv.wait_for(lock, std::chrono::milliseconds(THREAD_POLL_WAIT_MS));
     }
 
 }
@@ -652,11 +652,11 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
         // 初始化可见性统计，保持Found/Visible比例为1.0以避免被MapPointCulling删除
         // 同时增加Found和Visible，让GetFoundRatio()=1.0 (远大于0.25阈值)
         if(!pMP->GetDescriptor().empty()) {
-            pMP->IncreaseVisible(10);  // 有描述子的点
-            pMP->IncreaseFound(10);    // 保持比例=1.0
+            pMP->IncreaseVisible(LOADED_MP_INIT_VISIBLE);  // 有描述子的点
+            pMP->IncreaseFound(LOADED_MP_INIT_VISIBLE);    // 保持比例=1.0
         } else {
-            pMP->IncreaseVisible(5);   // 无描述子的点
-            pMP->IncreaseFound(5);     // 保持比例=1.0
+            pMP->IncreaseVisible(LOADED_MP_INIT_VISIBLE_NO_DESC);   // 无描述子的点
+            pMP->IncreaseFound(LOADED_MP_INIT_VISIBLE_NO_DESC);     // 保持比例=1.0
         }
         mpMap->AddMapPoint(pMP);
         createdMPs++;

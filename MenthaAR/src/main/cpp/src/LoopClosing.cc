@@ -103,7 +103,7 @@ void LoopClosing::Run()
         // 等待事件（新 KF/Finish/Reset），有事件立即唤醒，最多等 5ms
         {
             std::unique_lock<std::mutex> lock(mMutexEvent);
-            mCvEvent.wait_for(lock, std::chrono::milliseconds(5));
+            mCvEvent.wait_for(lock, std::chrono::milliseconds(THREAD_POLL_WAIT_MS));
         }
     }
 
@@ -235,7 +235,7 @@ bool LoopClosing::ComputeSim3()
 
     // 我们首先为每个候选计算 ORB 匹配
     // 如果找到足够的匹配，我们将设置 Sim3Solver
-    ORBmatcher matcher(0.75,true);
+    ORBmatcher matcher(ORB_MATCHER_NNRATIO_LOOP,true);
 
     vector<Sim3Solver*> vpSim3Solvers;
     vpSim3Solvers.resize(nInitialCandidates);
@@ -297,7 +297,7 @@ bool LoopClosing::ComputeSim3()
             bool bNoMore;
 
             Sim3Solver* pSolver = vpSim3Solvers[i];
-            cv::Mat Scm  = pSolver->iterate(5,bNoMore,vbInliers,nInliers);
+            cv::Mat Scm  = pSolver->iterate(SIM3_RANSAC_ITER_PER_PASS,bNoMore,vbInliers,nInliers);
 
             // 如果 Ransac 达到最大迭代次数，则丢弃关键帧
             if(bNoMore)
@@ -319,10 +319,10 @@ bool LoopClosing::ComputeSim3()
                 cv::Mat R = pSolver->GetEstimatedRotation();
                 cv::Mat t = pSolver->GetEstimatedTranslation();
                 const float s = pSolver->GetEstimatedScale();
-                matcher.SearchBySim3(mpCurrentKF,pKF,vpMapPointMatches,s,R,t,7.5);
+                matcher.SearchBySim3(mpCurrentKF,pKF,vpMapPointMatches,s,R,t,LOOP_SEARCH_RADIUS_SIM3);
 
                 g2o::Sim3 gScm(Converter::toMatrix3d(R),Converter::toVector3d(t),s);
-                const int nInliers = Optimizer::OptimizeSim3(mpCurrentKF, pKF, vpMapPointMatches, gScm, 10);
+                const int nInliers = Optimizer::OptimizeSim3(mpCurrentKF, pKF, vpMapPointMatches, gScm, SIM3_OPT_CHI2_TH);
 
                 // 如果优化成功，停止 ransacs 并继续
                 if(nInliers>=LOOP_RANSAC_MIN_INLIERS)
@@ -371,7 +371,7 @@ bool LoopClosing::ComputeSim3()
     }
 
     // 使用计算出的 Sim3 投影查找更多匹配
-    matcher.SearchByProjection(mpCurrentKF, mScw, mvpLoopMapPoints, mvpCurrentMatchedPoints,10);
+    matcher.SearchByProjection(mpCurrentKF, mScw, mvpLoopMapPoints, mvpCurrentMatchedPoints,LOOP_PROJ_SEARCH_TH);
 
     // 如果有足够的匹配，接受闭环
     int nTotalMatches = 0;
@@ -588,7 +588,7 @@ void LoopClosing::CorrectLoop()
 
 void LoopClosing::SearchAndFuse(const KeyFrameAndPose &CorrectedPosesMap)
 {
-    ORBmatcher matcher(0.8);
+    ORBmatcher matcher(ORB_MATCHER_NNRATIO_FUSE);
 
     for(KeyFrameAndPose::const_iterator mit=CorrectedPosesMap.begin(), mend=CorrectedPosesMap.end(); mit!=mend;mit++)
     {
@@ -598,7 +598,7 @@ void LoopClosing::SearchAndFuse(const KeyFrameAndPose &CorrectedPosesMap)
         cv::Mat cvScw = Converter::toCvMat(g2oScw);
 
         vector<MapPoint*> vpReplacePoints(mvpLoopMapPoints.size(),static_cast<MapPoint*>(NULL));
-        matcher.Fuse(pKF,cvScw,mvpLoopMapPoints,4,vpReplacePoints);
+        matcher.Fuse(pKF,cvScw,mvpLoopMapPoints,LOOP_FUSE_SEARCH_TH,vpReplacePoints);
 
         // 获取地图互斥锁
         unique_lock<mutex> lock(mpMap->mMutexMapUpdate);
@@ -657,7 +657,7 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
     // cout << "开始全局 Bundle Adjustment" << endl;
 
     int idx =  mnFullBAIdx;
-    Optimizer::GlobalBundleAdjustemnt(mpMap,10,&mbStopGBA,nLoopKF,false);
+    Optimizer::GlobalBundleAdjustemnt(mpMap,GBA_ITERATIONS,&mbStopGBA,nLoopKF,false);
 
     // 全局BA未覆盖新关键帧，需通过生成树传播校正
     {

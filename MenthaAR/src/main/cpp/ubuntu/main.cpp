@@ -102,9 +102,9 @@ int main(int argc, char** argv) {
 
     // 计算输入源的 FPS，用于帧率控制
     double inputFps = cap.get(cv::CAP_PROP_FPS);
-    if (inputFps <= 0) inputFps = 30.0;
+    if (inputFps <= 0) inputFps = ORB_SLAM2::SYSTEM_FPS;
     bool isVideoFile = !(videoSource == "0" || videoSource == "1" || videoSource == "2");
-    const double TARGET_FPS = 30.0;
+    const double TARGET_FPS = ORB_SLAM2::SYSTEM_FPS;
     const int frameSkip = isVideoFile ? std::max(1, (int)std::round(inputFps / TARGET_FPS)) : 1;
 
     std::cout << "[Ubuntu GUI] Input source FPS: " << inputFps
@@ -113,8 +113,8 @@ int main(int argc, char** argv) {
               << std::endl;
 
     // 设置视频分辨率为 1280x720 以获得绝佳的高清画质
-    cap.set(cv::CAP_PROP_FRAME_WIDTH, 1280);
-    cap.set(cv::CAP_PROP_FRAME_HEIGHT, 720);
+    cap.set(cv::CAP_PROP_FRAME_WIDTH, ORB_SLAM2::UBUNTU_CAPTURE_WIDTH);
+    cap.set(cv::CAP_PROP_FRAME_HEIGHT, ORB_SLAM2::UBUNTU_CAPTURE_HEIGHT);
 
     cv::namedWindow("MenthaAR SLAM Engine", cv::WINDOW_AUTOSIZE);
     initMenu();
@@ -158,8 +158,8 @@ int main(int argc, char** argv) {
         cv::cvtColor(frame, imgGr, cv::COLOR_BGR2GRAY);
 
         // 限制显示分辨率，防止高分辨率视频导致窗口过大（最大 1280x720=720P）
-        const int MAX_DISPLAY_W = 1280;
-        const int MAX_DISPLAY_H = 720;
+        const int MAX_DISPLAY_W = ORB_SLAM2::UBUNTU_MAX_DISPLAY_W;
+        const int MAX_DISPLAY_H = ORB_SLAM2::UBUNTU_MAX_DISPLAY_H;
         if (frame.cols > MAX_DISPLAY_W || frame.rows > MAX_DISPLAY_H) {
             float scale = std::min((float)MAX_DISPLAY_W / frame.cols,
                                    (float)MAX_DISPLAY_H / frame.rows);
@@ -202,12 +202,12 @@ int main(int argc, char** argv) {
             if (pPlane && planeLoadedFromMap) {
                 alignmentOK = slamSys->HasMapAlignment();
             }
-            gShouldDrawArObject = (status == 2) && (pPlane != nullptr) && alignmentOK;
+            gShouldDrawArObject = (status == ORB_SLAM2::Tracking::OK) && (pPlane != nullptr) && alignmentOK;
         }
 
         // 可视化显示点云（绿色表示已加载点，青色表示新建点）
         if (gEnablePointCloudDisplay) {
-            if (status == 2 && slamSys->HasMapAlignment()) {
+            if (status == ORB_SLAM2::Tracking::OK && slamSys->HasMapAlignment()) {
                 cv::Mat TcwAligned = slamSys->GetMapAlignedPose(Tcw);
                 std::vector<ORB_SLAM2::MapPoint*> allMapPoints = slamSys->GetAllMapPoints();
                 drawAllMapPoints(TcwAligned, allMapPoints, imgRgba, fx, fy, cx, cy, true);
@@ -230,7 +230,7 @@ int main(int argc, char** argv) {
         cv::imshow("MenthaAR SLAM Engine", imgRgba);
 
         // 键盘按键捕获
-        char key = (char)cv::waitKey(33);  // ~30 FPS 显示刷新
+        char key = (char)cv::waitKey(1000/(int)ORB_SLAM2::SYSTEM_FPS);  // ~30 FPS 显示刷新
         if (key == 27 || key == 'q') {
             break;
         }
@@ -256,8 +256,8 @@ void drawARCube(cv::Mat& im, const cv::Mat& Tcw, Plane* plane, float fx, float f
     cv::Mat Twp = plane->Tpw.inv();
 
     // 根据平面测量的范围来自适应缩放立方体大小
-    float s = 0.1f * plane->rang;
-    if (s <= 0.01f) s = 0.05f;
+    float s = ORB_SLAM2::AR_CUBE_SCALE_FACTOR * plane->rang;
+    if (s <= ORB_SLAM2::AR_CUBE_MIN_SIZE) s = ORB_SLAM2::AR_CUBE_FALLBACK_SIZE;
 
     // 平面局部坐标系下的 8 个立方体顶点
     std::vector<cv::Mat> ptsPlane = {
@@ -281,10 +281,10 @@ void drawARCube(cv::Mat& im, const cv::Mat& Tcw, Plane* plane, float fx, float f
         float Yc = ptC.at<float>(1);
         float Zc = ptC.at<float>(2);
 
-        if (Zc <= 0.01f) return; // 跳过相机后方的裁剪点
+        if (Zc <= ORB_SLAM2::PROJECT_MIN_DEPTH) return; // 跳过相机后方的裁剪点
 
         // 将相机坐标投影到图像上，根据实际显示图像大小动态缩放
-        float scaleToDisplay = (2.0f * cx > 0.0f) ? (float)im.cols / (2.0f * cx) : 2.0f;
+        float scaleToDisplay = (ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR * cx > 0.0f) ? (float)im.cols / (ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR * cx) : ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR;
         float u = (fx * Xc / Zc + cx) * scaleToDisplay;
         float v = (fy * Yc / Zc + cy) * scaleToDisplay;
         ptsImg.push_back(cv::Point(u, v));
@@ -332,7 +332,7 @@ void initMenu() {
                 TcwAligned = slamSys->GetMapAlignedPose(Tcw);
             }
             if (pPlane) delete pPlane;
-            pPlane = detectPlane(TcwAligned, vMPs, 50);
+            pPlane = detectPlane(TcwAligned, vMPs, ORB_SLAM2::PLANE_DETECT_RANSAC_ITERS);
             if (pPlane) {
                 if (slamSys && slamSys->MapChanged()) pPlane->Recompute();
                 planeLoadedFromMap = false;
@@ -375,8 +375,8 @@ void initMenu() {
                 std::string arFile = "mentha_map.bin.arinfo";
                 std::ofstream ofs(arFile, std::ios::binary);
                 if (ofs.is_open()) {
-                    const uint32_t magic = 0x4152494E;
-                    const uint32_t version = 1;
+                    const uint32_t magic = ORB_SLAM2::AR_INFO_FILE_MAGIC;
+                    const uint32_t version = ORB_SLAM2::AR_INFO_FILE_VERSION;
                     ofs.write(reinterpret_cast<const char*>(&magic), 4);
                     ofs.write(reinterpret_cast<const char*>(&version), 4);
                     uint8_t hasPlane = 1;
@@ -406,7 +406,7 @@ void initMenu() {
                 uint32_t magic = 0, version = 0;
                 ifs.read(reinterpret_cast<char*>(&magic), 4);
                 ifs.read(reinterpret_cast<char*>(&version), 4);
-                if (magic == 0x4152494E) {
+                if (magic == ORB_SLAM2::AR_INFO_FILE_MAGIC) {
                     uint8_t hasPlane = 0;
                     ifs.read(reinterpret_cast<char*>(&hasPlane), 1);
                     if (hasPlane) {
@@ -461,13 +461,13 @@ void drawGUI(cv::Mat& frame, int trackingState, int fps) {
     // 跟踪状态字符映射
     std::string stateStr = "No Input Yet";
     cv::Scalar stateColor(150, 150, 150);
-    if (trackingState == 1) {
+    if (trackingState == ORB_SLAM2::Tracking::NOT_INITIALIZED) {
         stateStr = "Not Initialized (move camera)";
         stateColor = cv::Scalar(30, 180, 230); // 橙黄
-    } else if (trackingState == 2) {
+    } else if (trackingState == ORB_SLAM2::Tracking::OK) {
         stateStr = "Tracking OK";
         stateColor = cv::Scalar(30, 230, 30); // 绿色
-    } else if (trackingState == 3) {
+    } else if (trackingState == ORB_SLAM2::Tracking::LOST) {
         stateStr = "Tracking Lost (slow down)";
         stateColor = cv::Scalar(30, 30, 230); // 红色
     }

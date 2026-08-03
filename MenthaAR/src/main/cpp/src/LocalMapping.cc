@@ -121,7 +121,7 @@ void LocalMapping::Run()
             if(!CheckNewKeyFrames() && !stopRequested())
             {
                 // 局部 BA
-                if(mpMap->KeyFramesInMap()>2)
+                if(mpMap->KeyFramesInMap()>=LOCAL_BA_MIN_KEYFRAMES)
                 {
                     VT_PROFILE_SCOPE("LocalMapping::LocalBundleAdjustment");
                     Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame, reinterpret_cast<bool*>(&mbAbortBA), mpMap);
@@ -154,7 +154,7 @@ void LocalMapping::Run()
                 while(isStopped() && !CheckFinish())
                 {
                     // 阻塞等待 Release() 唤醒
-                    if(mCvEvent.wait_for(lock, std::chrono::seconds(5))
+                    if(mCvEvent.wait_for(lock, std::chrono::milliseconds(LOCAL_MAPPING_STOP_WAIT_TIMEOUT_MS))
                             == std::cv_status::timeout)
                     {
                         // 超时了还没人 Release — 自动恢复，避免 LM 永久卡死
@@ -180,7 +180,7 @@ void LocalMapping::Run()
         // 等待事件（新 KF/Stop/Finish/Reset），有事件立即唤醒，最多等 3ms
         {
             std::unique_lock<std::mutex> lock(mMutexEvent);
-            mCvEvent.wait_for(lock, std::chrono::milliseconds(3));
+            mCvEvent.wait_for(lock, std::chrono::milliseconds(LOCAL_MAPPING_EVENT_WAIT_MS));
         }
     }
 
@@ -266,12 +266,12 @@ void LocalMapping::MapPointCulling()
             pMP->SetBadFlag();
             lit = mlpRecentAddedMapPoints.erase(lit);
         }
-        else if(((int)nCurrentKFid-(int)pMP->mnFirstKFid)>=2 && pMP->Observations()<=cnThObs)
+        else if(((int)nCurrentKFid-(int)pMP->mnFirstKFid)>=MAPPOINT_CULL_KF_GAP_CHECK && pMP->Observations()<=cnThObs)
         {
             pMP->SetBadFlag();
             lit = mlpRecentAddedMapPoints.erase(lit);
         }
-        else if(((int)nCurrentKFid-(int)pMP->mnFirstKFid)>=3)
+        else if(((int)nCurrentKFid-(int)pMP->mnFirstKFid)>=MAPPOINT_CULL_KF_GAP_REMOVE)
             lit = mlpRecentAddedMapPoints.erase(lit);
         else
             lit++;
@@ -284,7 +284,7 @@ void LocalMapping::CreateNewMapPoints()
     int nn = LOCAL_MAPPING_TRIANGULATION_NEIGHBORS;
     const vector<KeyFrame*> vpNeighKFs = mpCurrentKeyFrame->GetBestCovisibilityKeyFrames(nn);
 
-    ORBmatcher matcher(0.6,false);
+    ORBmatcher matcher(ORB_MATCHER_NNRATIO_TRIANGULATION,false);
 
     cv::Mat Rcw1 = mpCurrentKeyFrame->GetRotation();
     cv::Mat Rwc1 = Rcw1.t();
@@ -319,7 +319,7 @@ void LocalMapping::CreateNewMapPoints()
         const float baseline = cv::norm(vBaseline);
 
         {
-            const float medianDepthKF2 = pKF2->ComputeSceneMedianDepth(2);
+            const float medianDepthKF2 = pKF2->ComputeSceneMedianDepth(TRIANGULATION_DEPTH_PERCENTILE);
             const float ratioBaselineDepth = baseline/medianDepthKF2;
 
             if(ratioBaselineDepth<LOCAL_MAPPING_TRIANGULATION_BASELINE_RATIO)
@@ -427,7 +427,7 @@ void LocalMapping::CreateNewMapPoints()
                     {0.0f, 0.0f, 0.0f, 1.0f}
                 };
 
-                for (int it = 0; it < 30; ++it) {
+                for (int it = 0; it < TRIANGULATION_JACOBI_MAX_ITERS; ++it) {
                     float maxVal = 0.0f;
                     int p = 0, q = 1;
                     for (int i = 0; i < 4; ++i) {
@@ -600,6 +600,7 @@ void LocalMapping::SearchInNeighbors()
             if(pKFi2->isBad() || pKFi2->mnFuseTargetForKF==mpCurrentKeyFrame->mnId || pKFi2->mnId==mpCurrentKeyFrame->mnId)
                 continue;
             vpTargetKFs.push_back(pKFi2);
+            pKFi2->mnFuseTargetForKF = mpCurrentKeyFrame->mnId;
         }
     }
 
@@ -784,7 +785,7 @@ void LocalMapping::KeyFrameCulling()
 
     // 每次最多处理 KEYFRAME_CULLING_MAX_KFS 个关键帧，防止单次耗时过久阻塞跟踪线程
     // 剩余关键帧将在下一次 KeyFrameCulling 调用中处理
-    const int KEYFRAME_CULLING_MAX_KFS = 5;
+    const int KEYFRAME_CULLING_MAX_KFS = KEYFRAME_CULL_BATCH_SIZE;
     int nProcessed = 0;
 
     for(vector<KeyFrame*>::iterator vit=vpLocalKeyFrames.begin(), vend=vpLocalKeyFrames.end(); vit!=vend; vit++)

@@ -38,6 +38,7 @@
 #include<opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
 #include "Frame.h"
+#include "Config.h"
 
 using namespace std;
 
@@ -52,7 +53,7 @@ class Initializer
 public:
 
     // 固定参考帧
-    Initializer(const Frame &ReferenceFrame, float sigma = 1.0, int iterations = 200);
+    Initializer(const Frame &ReferenceFrame, float sigma = INITIALIZER_SIGMA, int iterations = INITIALIZER_RANSAC_ITERS);
 
     // 并行计算基础矩阵和单应矩阵
     // 选择模型并尝试恢复运动和运动结构

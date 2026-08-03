@@ -112,8 +112,8 @@ void SavePlaneAndArInfo(const std::string& filename)
     if (!ofs.is_open()) return;
 
     // 文件头：魔数和版本号
-    const uint32_t magic = 0x4152494E; // 'ARIN'（AR信息）
-    const uint32_t version = 1;
+    const uint32_t magic = ORB_SLAM2::AR_INFO_FILE_MAGIC; // 'ARIN'（AR信息）
+    const uint32_t version = ORB_SLAM2::AR_INFO_FILE_VERSION;
     ofs.write(reinterpret_cast<const char*>(&magic), sizeof(magic));
     ofs.write(reinterpret_cast<const char*>(&version), sizeof(version));
 
@@ -172,7 +172,7 @@ void LoadPlaneAndArInfo(const std::string& filename, int mapId)
     ifs.read(reinterpret_cast<char*>(&magic), 4);
     ifs.read(reinterpret_cast<char*>(&version), 4);
 
-    if (magic != 0x4152494E)
+    if (magic != ORB_SLAM2::AR_INFO_FILE_MAGIC)
     {
         LOGE("加载平面和AR信息：错误的魔数");
         ifs.close();
@@ -400,7 +400,7 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
         }
 
         // 如果SLAM正在跟踪，更新AR对象视图矩阵
-        if(status == 2) {  // SLAM正常工作
+        if(status == ORB_SLAM2::Tracking::OK) {  // SLAM正常工作
             // 如果有对齐，使用对齐后的位姿更新AR对象的视图矩阵
             cv::Mat TcwForAR = localTcw;
             if(slamSys->HasMapAlignment()) {
@@ -413,8 +413,6 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
                 getRUBViewMatrixFromRDF(tmpM, gCurrentViewMatrix);
             }
         }
-
-        // AR对象显示条件
         // - SLAM正常跟踪 (status == 2)
         // - 平面存在 (pPlane != nullptr)
         // - 对齐检查：
@@ -435,12 +433,12 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
                 alignmentOK = slamSys->HasMapAlignment();
             }
             // 如果没有地图也没有平面，alignmentOK保持为true（允许正常显示）
-            gShouldDrawArObject.store((status == 2) && (pPlane != nullptr) && alignmentOK);
+            gShouldDrawArObject.store((status == ORB_SLAM2::Tracking::OK) && (pPlane != nullptr) && alignmentOK);
         }
 
         // 检测SLAM丢失状态并自动重置（保留加载的地图）
         // status: 0=NO_IMAGES_YET, 1=NOT_INITIALIZED, 2=OK, 3=LOST
-        bool isLost = (status == 3);
+        bool isLost = (status == ORB_SLAM2::Tracking::LOST);
 
         if(!isLost) {
             // SLAM正常工作，更新最后正常时间
@@ -465,21 +463,18 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
             }
         }
 
-        // AR模式：显示完整地图点云（绿色）
-        if(status==2) {
-            // 一旦对齐成功，立即显示完整地图点云，无需等待新点数量
-            bool hasAlignment = slamSys->HasMapAlignment();
-
-            if(hasAlignment)
-            {
-                // 获取对齐后的相机位姿（在地图坐标系下）
-                cv::Mat TcwForProjection = slamSys->GetMapAlignedPose(localTcw);
-
-                // 获取所有地图点并绘制（绿色点云）- 受点云显示开关控制
-                if(gEnablePointCloudDisplay.load()) {
-                    vector<ORB_SLAM2::MapPoint*> allMapPoints = slamSys->GetAllMapPoints();
-                    drawAllMapPoints(TcwForProjection, allMapPoints, outputImage, fx, fy, cx, cy, true);
+        // 3D扫描建模与AR模式：显示完整地图点云
+        if(status==ORB_SLAM2::Tracking::OK) {
+            if(gEnablePointCloudDisplay.load()) {
+                // 获取相机位姿（若有地图对齐则使用对齐后的位姿）
+                cv::Mat TcwForProjection = localTcw;
+                if(slamSys->HasMapAlignment()) {
+                    TcwForProjection = slamSys->GetMapAlignedPose(localTcw);
                 }
+
+                // 获取所有地图点并绘制全图点云 (drawOnlyLoaded = false 允许在线扫描点完整渲染)
+                vector<ORB_SLAM2::MapPoint*> allMapPoints = slamSys->GetAllMapPoints();
+                drawAllMapPoints(TcwForProjection, allMapPoints, outputImage, fx, fy, cx, cy, false);
             }
         }
 
@@ -523,7 +518,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_initSLAM(JNIEnv* env, jobject instance, 
     timeStamp = 0.0;
 
     // 预计算投影矩阵（基于缩放后的内参）
-    frustumM_RUB(640, 360, gScaledFx, gScaledFy, gScaledCx, gScaledCy, ORB_SLAM2::PROJECTION_ZNEAR, ORB_SLAM2::PROJECTION_ZFAR, gCurrentProjectionMatrix);
+    frustumM_RUB((int)ORB_SLAM2::BASE_SLAM_WIDTH, (int)ORB_SLAM2::BASE_SLAM_HEIGHT, gScaledFx, gScaledFy, gScaledCx, gScaledCy, ORB_SLAM2::PROJECTION_ZNEAR, ORB_SLAM2::PROJECTION_ZFAR, gCurrentProjectionMatrix);
 
     // 初始化分析器 (仅在开发模式下生效)
     VT_PROFILE_INITIALIZE(std::string(path) + "/mentha_profile.bin");
@@ -540,8 +535,8 @@ void updateScaledIntrinsics(int cameraWidth, int cameraHeight) {
     if (cameraWidth <= 0 || cameraHeight <= 0) return;
 
     // 内部SLAM工作分辨率 = 相机分辨率的一半
-    int slamWidth = cameraWidth / 2;
-    int slamHeight = cameraHeight / 2;
+    int slamWidth = (int)(cameraWidth / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR);
+    int slamHeight = (int)(cameraHeight / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR);
     if (slamWidth < 1) slamWidth = 1;
     if (slamHeight < 1) slamHeight = 1;
 
@@ -570,8 +565,8 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeUpdateResolution(JNIEnv* env, jobj
                                                                jint cameraWidth, jint cameraHeight) {
     updateScaledIntrinsics(cameraWidth, cameraHeight);
 
-    int slamWidth = cameraWidth / 2;
-    int slamHeight = cameraHeight / 2;
+    int slamWidth = (int)(cameraWidth / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR);
+    int slamHeight = (int)(cameraHeight / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR);
     if (slamWidth < 1) slamWidth = 1;
     if (slamHeight < 1) slamHeight = 1;
 
@@ -746,7 +741,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeGetMVP(JNIEnv *env, jobject instan
         }
     }
     // Projection
-    frustumM_RUB(imageWidth/2, imageHeight/2, fx, fy, cx, cy,
+    frustumM_RUB((int)(imageWidth/ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR), (int)(imageHeight/ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR), fx, fy, cx, cy,
                  ORB_SLAM2::PROJECTION_ZNEAR, ORB_SLAM2::PROJECTION_ZFAR, projM);
 
     env->ReleaseFloatArrayElements(modelM_, modelM, 0);
@@ -792,18 +787,8 @@ Java_com_orb_slam2s_slamar_NativeHelper_getMapStats(JNIEnv *env, jobject instanc
     return result;
 }
 
-// 比较器，用于按MapPoint的ID排序
-struct MapPointComparator {
-    bool operator()(const ORB_SLAM2::MapPoint* a, const ORB_SLAM2::MapPoint* b) const {
-        // 通常 ORB-SLAM2 中 mnId 是 public
-        return a->mnId > b->mnId; // 降序，ID 大的在前（最新的）
-    }
-};
-
 JNIEXPORT jfloatArray JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_getMiniMapPoints(JNIEnv *env, jobject instance, jint maxPoints) {
-    // 直接读取 slamSys（Map 内部已有 mMutexMap 保护 GetAllMapPoints）
-    // 无需 gSlamStateMutex，不再阻塞跟踪线程
     if(!slamSys) {
         return env->NewFloatArray(0);
     }
@@ -812,40 +797,20 @@ Java_com_orb_slam2s_slamar_NativeHelper_getMiniMapPoints(JNIEnv *env, jobject in
     std::vector<float> out;
     size_t total = v.size();
 
-    // 使用 Top-K 算法获取最新的 maxPoints 个点（按 ID 降序）
-
+    // 全地图均匀采样，确保全物体/多视角点云均匀保留，不丢弃旧视角点
     if (total > 0) {
-        if (total > (size_t)maxPoints) {
-            // 使用 partial_sort 找出前 maxPoints 个最大的（最新的）点
-            std::partial_sort(v.begin(), v.begin() + maxPoints, v.end(), MapPointComparator());
+        size_t limit = (maxPoints > 0 && (size_t)maxPoints < total) ? (size_t)maxPoints : total;
+        size_t step = (total > limit) ? (total / limit) : 1;
 
-            // 只取前 maxPoints 个
-            out.reserve((size_t)maxPoints * 3);
-            for(size_t i=0; i<(size_t)maxPoints; ++i) {
-                ORB_SLAM2::MapPoint* p = v[i];
-                // 访问前再次检查指针有效性
-                if(!p) continue;
-                if(p->isBad()) continue;
-                cv::Mat P = p->GetWorldPos();
-                if(P.empty()) continue;  // 检查空矩阵的安全性检查
-                out.push_back(P.at<float>(0));
-                out.push_back(P.at<float>(1));
-                out.push_back(P.at<float>(2));
-            }
-        } else {
-            // 点数不足，全部返回
-            out.reserve(total * 3);
-            for(size_t i=0; i<total; ++i) {
-                ORB_SLAM2::MapPoint* p = v[i];
-                // 访问前再次检查指针有效性
-                if(!p) continue;
-                if(p->isBad()) continue;
-                cv::Mat P = p->GetWorldPos();
-                if(P.empty()) continue;  // 检查空矩阵的安全性检查
-                out.push_back(P.at<float>(0));
-                out.push_back(P.at<float>(1));
-                out.push_back(P.at<float>(2));
-            }
+        out.reserve(limit * 3);
+        for(size_t i=0; i<total && out.size() < limit * 3; i += step) {
+            ORB_SLAM2::MapPoint* p = v[i];
+            if(!p || p->isBad()) continue;
+            cv::Mat P = p->GetWorldPos();
+            if(P.empty()) continue;
+            out.push_back(P.at<float>(0));
+            out.push_back(P.at<float>(1));
+            out.push_back(P.at<float>(2));
         }
     }
 
@@ -913,11 +878,11 @@ Java_com_orb_slam2s_slamar_NativeHelper_getAllArObjectsData(JNIEnv *env, jobject
 // 更新AR对象缩放（当用户进行捏合缩放时从Java调用）
 JNIEXPORT void JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_updateArObjectScale(JNIEnv *env, jobject instance, jfloat scaleFactor) {
-    float zoomFac = (scaleFactor - 1.0f) / 5.0f;
+    float zoomFac = (scaleFactor - 1.0f) / ORB_SLAM2::AR_SCALE_ZOOM_DIVISOR;
     // 原子读-改-写（UI 线程写、分析线程读，消除数据竞争）
     float cur = gArObjectScale.load();
     cur += zoomFac;
-    cur = fmax(0.03f, cur);  // 最小缩放
+    cur = fmax(ORB_SLAM2::AR_SCALE_MIN, cur);  // 最小缩放
     gArObjectScale.store(cur);
     LOGD("AR对象缩放已更新：%.3f", gArObjectScale.load());
 }

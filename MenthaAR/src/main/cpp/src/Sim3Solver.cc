@@ -144,7 +144,7 @@ void Sim3Solver::SetRansacParameters(double probability, int minInliers, int max
     if(mRansacMinInliers==N)
         nIterations=1;
     else
-        nIterations = ceil(log(1-mRansacProb)/log(1-pow(epsilon,3)));
+        nIterations = ceil(log(1-mRansacProb)/log(1-pow(epsilon,SIM3_RANSAC_MIN_SET)));
 
     mRansacMaxIts = max(1,min(nIterations,mRansacMaxIts));
 
@@ -177,7 +177,7 @@ cv::Mat Sim3Solver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInli
         vAvailableIndices = mvAllIndices;
 
         // 获取最小点集
-        for(short i = 0; i < 3; ++i)
+        for(short i = 0; i < SIM3_RANSAC_MIN_SET; ++i)
         {
             int randi = rand() % vAvailableIndices.size();
 

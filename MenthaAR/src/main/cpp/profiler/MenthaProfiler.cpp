@@ -1,4 +1,5 @@
 #include "MenthaProfiler.h"
+#include "../include/Config.h"
 #include <fstream>
 #include <mutex>
 #include <unordered_map>
@@ -38,12 +39,12 @@ struct Profiler::Impl {
             std::vector<EventRecord> batch;
             {
                 std::unique_lock<std::mutex> lock(mutex);
-                cv.wait_for(lock, std::chrono::milliseconds(100), [this] {
+                cv.wait_for(lock, std::chrono::milliseconds(ORB_SLAM2::PROFILER_WAIT_TIMEOUT_MS), [this] {
                     return !eventQueue.empty() || !running;
                 });
 
                 // 批量提取事件记录，减少IO调用次数
-                while (!eventQueue.empty() && batch.size() < 1000) {
+                while (!eventQueue.empty() && batch.size() < ORB_SLAM2::PROFILER_BATCH_MAX) {
                     batch.push_back(eventQueue.front());
                     eventQueue.pop();
                 }
@@ -51,7 +52,7 @@ struct Profiler::Impl {
 
             if (!batch.empty()) {
                 for (const auto& event : batch) {
-                    uint8_t eventMarker = 0xEE; // 事件标记
+                    uint8_t eventMarker = ORB_SLAM2::PROFILER_EVENT_MARKER; // 事件标记
                     outFile.write(reinterpret_cast<const char*>(&eventMarker), 1);
                     outFile.write(reinterpret_cast<const char*>(&event), sizeof(EventRecord));
                 }
@@ -72,8 +73,8 @@ void Profiler::Initialize(const std::string& outputFile) {
     pImpl->outFile.open(outputFile, std::ios::binary);
 
     // 写入文件头：幻数 'VPRO'，版本号 1
-    uint32_t magic = 0x4F525056; // 'VPRO'
-    uint32_t version = 1;
+    uint32_t magic = ORB_SLAM2::PROFILER_MAGIC; // 'VPRO'
+    uint32_t version = ORB_SLAM2::PROFILER_VERSION;
     pImpl->outFile.write(reinterpret_cast<const char*>(&magic), 4);
     pImpl->outFile.write(reinterpret_cast<const char*>(&version), 4);
 
@@ -112,7 +113,7 @@ void Profiler::WriteEvent(const char* name, EventType type) {
             pImpl->nameMap[name] = nameId;
 
             // 立即将字符串映射写入文件，确保崩溃后仍可解析
-            uint8_t mapMarker = 0xFF; // 名称映射记录标记
+            uint8_t mapMarker = ORB_SLAM2::PROFILER_MAP_MARKER; // 名称映射记录标记
             pImpl->outFile.write(reinterpret_cast<const char*>(&mapMarker), 1);
             pImpl->outFile.write(reinterpret_cast<const char*>(&nameId), 4);
             uint32_t len = strlen(name);

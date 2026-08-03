@@ -3,6 +3,7 @@
 #include <string.h>
 #include <android/log.h>
 #include "Matrix.h"
+#include "include/Config.h"
 
 #ifndef LOG_TAG
 #define LOG_TAG "3DOF"
@@ -76,14 +77,14 @@ Java_com_orb_slam2s_slamar_NativeHelper_compute3DofMVP(JNIEnv* env, jobject thiz
 
     // 计算投影矩阵
     float projectionMatrix[16];
-    frustumM(projectionMatrix, 0, -ratio, ratio, -1, 1, 1.0f, 100.0f);
+    frustumM(projectionMatrix, 0, -ratio, ratio, -1, 1, ORB_SLAM2::PROJECTION_ZNEAR, ORB_SLAM2::PROJECTION_ZFAR);
 
     // 计算模型矩阵 (平移到指定的世界坐标并添加固定自转)
     float modelMatrix[16];
     setIdentityM(modelMatrix);
     translateM(modelMatrix, 0, worldPos[0], worldPos[1], worldPos[2]);
-    rotateM(modelMatrix, modelMatrix, 45.0f, 0.0f, 1.0f, 0.0f);
-    rotateM(modelMatrix, modelMatrix, 30.0f, 1.0f, 0.0f, 0.0f);
+    rotateM(modelMatrix, modelMatrix, ORB_SLAM2::AR_OBJECT_SPIN_Y_DEG, 0.0f, 1.0f, 0.0f);
+    rotateM(modelMatrix, modelMatrix, ORB_SLAM2::AR_OBJECT_TILT_X_DEG, 1.0f, 0.0f, 0.0f);
 
     // 组合变换: MVP = Projection * View * Model
     float tempMatrix[16];

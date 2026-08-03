@@ -70,7 +70,7 @@ void KeyFrameDatabase::erase(KeyFrame* pKF)
     if (mhmKeyFrames.erase(pKF->mnId) > 0) {
         mnErasedCount++;
         // 当删除数量达到设定的阈值时，触发树重建，彻底清理残留特征点
-        if (mnErasedCount >= 20) {
+        if (mnErasedCount >= KFD_REBUILD_ERASE_TH) {
             rebuild();
             mnErasedCount = 0;
         }
@@ -101,7 +101,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float mi
         HBSTTree::MatchableVector query_matchables = HBSTTree::getMatchables(pKF->mDescriptors, objects, pKF->mnId);
 
         HBSTTree::MatchVectorMap matches;
-        mpTree->match(query_matchables, matches, 50);
+        mpTree->match(query_matchables, matches, KFD_HBST_MATCH_LIMIT);
 
         for (auto m : query_matchables) delete m;
 
@@ -120,7 +120,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float mi
             pKFi->mLoopScore = score;
             pKFi->mnLoopQuery = pKF->mnId;
 
-            if (num_matches >= 15) {
+            if (num_matches >= KFD_LOOP_MIN_WORD_MATCHES) {
                 lScoreAndMatch.push_back(make_pair(score, pKFi));
             }
         }
@@ -135,7 +135,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float mi
     for(list<pair<float,KeyFrame*> >::iterator it=lScoreAndMatch.begin(), itend=lScoreAndMatch.end(); it!=itend; it++)
     {
         KeyFrame* pKFi = it->second;
-        vector<KeyFrame*> vpNeighs = pKFi->GetBestCovisibilityKeyFrames(10);
+        vector<KeyFrame*> vpNeighs = pKFi->GetBestCovisibilityKeyFrames(COVISIBILITY_NEIGHBOR_COUNT);
 
         float bestScore = it->first;
         float accScore = it->first;
@@ -159,7 +159,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float mi
             bestAccScore=accScore;
     }
 
-    float minScoreToRetain = 0.75f*bestAccScore;
+    float minScoreToRetain = KFD_SCORE_RETAIN_RATIO*bestAccScore;
 
     set<KeyFrame*> spAlreadyAddedKF;
     vector<KeyFrame*> vpLoopCandidates;
@@ -196,7 +196,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
         HBSTTree::MatchableVector query_matchables = HBSTTree::getMatchables(F->mDescriptors, objects, F->mnId);
 
         HBSTTree::MatchVectorMap matches;
-        mpTree->match(query_matchables, matches, 50);
+        mpTree->match(query_matchables, matches, KFD_HBST_MATCH_LIMIT);
 
         for (auto m : query_matchables) delete m;
 
@@ -212,7 +212,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
             pKFi->mRelocScore = score;
             pKFi->mnRelocQuery = F->mnId;
 
-            if (num_matches > 15) {
+            if (num_matches > KFD_RELOC_MIN_WORD_MATCHES) {
                 lScoreAndMatch.push_back(make_pair(score, pKFi));
             }
         }
@@ -227,7 +227,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
     for(list<pair<float,KeyFrame*> >::iterator it=lScoreAndMatch.begin(), itend=lScoreAndMatch.end(); it!=itend; it++)
     {
         KeyFrame* pKFi = it->second;
-        vector<KeyFrame*> vpNeighs = pKFi->GetBestCovisibilityKeyFrames(10);
+        vector<KeyFrame*> vpNeighs = pKFi->GetBestCovisibilityKeyFrames(COVISIBILITY_NEIGHBOR_COUNT);
 
         float bestScore = it->first;
         float accScore = bestScore;
@@ -250,7 +250,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
             bestAccScore=accScore;
     }
 
-    float minScoreToRetain = 0.75f*bestAccScore;
+    float minScoreToRetain = KFD_SCORE_RETAIN_RATIO*bestAccScore;
     set<KeyFrame*> spAlreadyAddedKF;
     vector<KeyFrame*> vpRelocCandidates;
     vpRelocCandidates.reserve(lAccScoreAndMatch.size());

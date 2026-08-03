@@ -320,21 +320,21 @@ int Optimizer::PoseOptimization(Frame *pFrame)
         }
     }
 
-    if(nInitialCorrespondences<3) {
+    if(nInitialCorrespondences<POSE_OPT_MIN_CORRESPONDENCES) {
         return 0;
     }
 
     // 我们执行4次优化，每次优化后我们将观测分类为内点/外点
     // 在下一次优化中，不包括外点，但在最后它们可以再次被分类为内点。
     const float chi2Mono[4]={OPTIMIZER_CHI2_TH_2D,OPTIMIZER_CHI2_TH_2D,OPTIMIZER_CHI2_TH_2D,OPTIMIZER_CHI2_TH_2D};
-    const int its[4]={5,5,5,5};
+    const int its[POSE_OPT_PASSES]={POSE_OPT_PASS_ITERS,POSE_OPT_PASS_ITERS,POSE_OPT_PASS_ITERS,POSE_OPT_PASS_ITERS};
 
     int nBad=0;
     auto start_time = std::chrono::steady_clock::now();
-    for(size_t it=0; it<4; it++)
+    for(size_t it=0; it<POSE_OPT_PASSES; it++)
     {
         auto current_time = std::chrono::steady_clock::now();
-        if (std::chrono::duration_cast<std::chrono::milliseconds>(current_time - start_time).count() > 200) {
+        if (std::chrono::duration_cast<std::chrono::milliseconds>(current_time - start_time).count() > POSE_OPT_TIMEOUT_MS) {
             break; // 单次优化总超时限制200ms
         }
 
@@ -371,7 +371,7 @@ int Optimizer::PoseOptimization(Frame *pFrame)
             if(it==2)
                 e->setRobustKernel(0);
         }
-        if(optimizer.edges().size()<10)
+        if(optimizer.edges().size()<POSE_OPT_MIN_EDGES)
             break;
     }    
 
@@ -394,7 +394,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
 
     const vector<KeyFrame*> vNeighKFs = pKF->GetVectorCovisibleKeyFrames();
     // 限制局部BA窗口大小：最多取10个共视关键帧，防止局部BA耗时过久阻塞跟踪
-    const int nMaxBAKFs = std::min((int)vNeighKFs.size(), 10);
+    const int nMaxBAKFs = std::min((int)vNeighKFs.size(), LOCAL_BA_MAX_KFS);
     for(int i=0; i<nMaxBAKFs; i++)
     {
         KeyFrame* pKFi = vNeighKFs[i];
@@ -577,7 +577,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
             return;
 
     optimizer.initializeOptimization();
-    optimizer.optimize(5);
+    optimizer.optimize(LOCAL_BA_ITERATIONS);
 
     bool bDoMore= true;
 
@@ -605,9 +605,9 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
         e->setRobustKernel(0);
     }
 
-    // 在没有外点的情况下再次优化
+    // 在没有外点的情况下再次精细优化
     optimizer.initializeOptimization(0);
-    optimizer.optimize(10);
+    optimizer.optimize(LOCAL_BA_ITERATIONS);
 
     }
 
@@ -1028,7 +1028,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
 
     // 优化
     optimizer.initializeOptimization();
-    optimizer.optimize(20);
+    optimizer.optimize(ESSENTIAL_GRAPH_BA_ITERS);
 
     // SE3 位姿恢复 并 缓存相机中心以加速后续点更新
     std::map<KeyFrame*, cv::Mat> mapCameraCenters;
@@ -1266,7 +1266,7 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
 
     // 优化
     optimizer.initializeOptimization();
-    optimizer.optimize(5);
+    optimizer.optimize(SIM3_OPT_ITERS);
 
     // 检查内点
     int nBad=0;
@@ -1291,11 +1291,11 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
 
     int nMoreIterations;
     if(nBad>0)
-        nMoreIterations=10;
+        nMoreIterations=SIM3_OPT_EXTRA_ITERS;
     else
-        nMoreIterations=5;
+        nMoreIterations=SIM3_OPT_ITERS;
 
-    if(nCorrespondences-nBad<10)
+    if(nCorrespondences-nBad<SIM3_OPT_MIN_INLIERS)
         return 0;
 
     // 仅使用内点再次优化

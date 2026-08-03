@@ -90,12 +90,12 @@ struct DescriptorOffset {
     int dx;  // x方向偏移 (列偏移)
 };
 // [360个角度][512个采样点] = 184320 个预计算偏移量
-static DescriptorOffset descriptorOffsetLUT[360][512];
+static DescriptorOffset descriptorOffsetLUT[360][ORB_BRIEF_NUM_POINTS];
 static bool bDescriptorLUTInit = false;
 
 // 线程局部缓存：按当前图像 step 预先缩放的单字节偏移查找表，完全消除循环内 dy * step 乘法
 static thread_local int cachedStep = -1;
-static thread_local int levelStepOffsetLUT[360][512];
+static thread_local int levelStepOffsetLUT[360][ORB_BRIEF_NUM_POINTS];
 
 static void PrepareLevelStepOffsetLUT(int step)
 {
@@ -104,7 +104,7 @@ static void PrepareLevelStepOffsetLUT(int step)
     for (int a = 0; a < 360; ++a) {
         const DescriptorOffset* src = descriptorOffsetLUT[a];
         int* dst = levelStepOffsetLUT[a];
-        for (int i = 0; i < 512; ++i) {
+        for (int i = 0; i < ORB_BRIEF_NUM_POINTS; ++i) {
             dst[i] = src[i].dy * step + src[i].dx;
         }
     }
@@ -234,7 +234,7 @@ static void computeOrbDescriptor(const KeyPoint& kpt,
 
     #define GET_VALUE(idx) center[lut_ptr[idx]]
 
-    for (int i = 0; i < 32; ++i, lut_ptr += 16)
+    for (int i = 0; i < ORB_DESC_COLS; ++i, lut_ptr += 16)
     {
         int t0, t1, val;
         t0 = GET_VALUE(0); t1 = GET_VALUE(1);
@@ -260,7 +260,7 @@ static void computeOrbDescriptor(const KeyPoint& kpt,
     #undef GET_VALUE
 }
 
-static int bit_pattern_31_[256*4] =
+static int bit_pattern_31_[ORB_BRIEF_NUM_PAIRS*4] =
 {
     8,-3, 9,5/*mean (0), correlation (0)*/,
     4,2, 7,-12/*mean (1.12461e-05), correlation (0.0437584)*/,
@@ -534,7 +534,7 @@ void ORBextractor::InitLUT() {
         const float b = sin(rad);
 
         // 对每个采样点 (512个点)
-        for(int i = 0; i < 512; i++) {
+        for(int i = 0; i < ORB_BRIEF_NUM_POINTS; i++) {
             const float x = (float)pattern[i].x;
             const float y = (float)pattern[i].y;
 
@@ -590,7 +590,7 @@ ORBextractor::ORBextractor(int _nfeatures, float _scaleFactor, int _nlevels,
     }
     mnFeaturesPerLevel[nlevels-1] = std::max(nfeatures - sumFeatures, 0);
 
-    const int npoints = 512;
+    const int npoints = ORB_BRIEF_NUM_POINTS;
     const Point* pattern0 = (const Point*)bit_pattern_31_;
     std::copy(pattern0, pattern0 + npoints, std::back_inserter(pattern));
 
@@ -917,16 +917,16 @@ vector<cv::KeyPoint> ORBextractor::DistributeOctTree(const vector<cv::KeyPoint>&
 void ORBextractor::detectAndOrientLevels(const cv::Range& range,
                                           vector<vector<KeyPoint>>& allKeypoints)
 {
-    const float W = 30;
+    const float W = ORB_FAST_GRID_CELL;
     for (int level = range.start; level < range.end; ++level)
     {
-        const int minBorderX = ORB_EDGE_THRESHOLD-3;
+        const int minBorderX = ORB_EDGE_THRESHOLD-ORB_FAST_BORDER_MARGIN;
         const int minBorderY = minBorderX;
-        const int maxBorderX = mvImagePyramid[level].cols-ORB_EDGE_THRESHOLD+3;
+        const int maxBorderX = mvImagePyramid[level].cols-ORB_EDGE_THRESHOLD+ORB_FAST_BORDER_MARGIN;
         const int maxBorderY = mvImagePyramid[level].rows-ORB_EDGE_THRESHOLD+3;
 
         vector<cv::KeyPoint> vToDistributeKeys;
-        vToDistributeKeys.reserve(nfeatures*10);
+        vToDistributeKeys.reserve(nfeatures*ORB_CANDIDATE_RESERVE_FACTOR);
 
         const float width = (maxBorderX-minBorderX);
         const float height = (maxBorderY-minBorderY);
@@ -1097,7 +1097,7 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
         return;
     }
 
-    _descriptors.create(nkeypoints, 32, CV_8U);
+    _descriptors.create(nkeypoints, ORB_DESC_COLS, CV_8U);
     Mat descriptors = _descriptors.getMat();
 
     // 顺序地将结果收集到连续数组，并建立 level → 描述子行号的偏移映射

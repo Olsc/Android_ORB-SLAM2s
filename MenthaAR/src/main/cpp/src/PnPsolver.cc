@@ -160,7 +160,7 @@ void PnPsolver::SetRansacParameters(double probability, int minInliers, int maxI
     if(mRansacMinInliers==N)
         nIterations=1;
     else
-        nIterations = ceil(log(1-mRansacProb)/log(1-pow(mRansacEpsilon,3)));
+        nIterations = ceil(log(1-mRansacProb)/log(1-pow(mRansacEpsilon,PNP_RANSAC_POWER)));
 
     mRansacMaxIts = max(1,min(nIterations,mRansacMaxIts));
 
@@ -921,7 +921,7 @@ void PnPsolver::compute_A_and_b_gauss_newton(const double * l_6x10, const double
 void PnPsolver::gauss_newton(const CvMat * L_6x10, const CvMat * Rho,
 			double betas[4])
 {
-  const int iterations_number = 5;
+  const int iterations_number = PNP_GN_ITERS;
 
   double a[6*4], b[6], x[4];
   CvMat A = cvMat(6, 4, CV_64F, a);

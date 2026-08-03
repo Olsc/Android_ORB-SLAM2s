@@ -160,18 +160,18 @@ void writeJsonReport(const std::string& path, const std::vector<FrameRecord>& re
     for (size_t i = 1; i < records.size(); ++i) {
         if (records[i].trackingState != currentState) {
             int length = i - currentStart;
-            if (currentState == 2)
+            if (currentState == ORB_SLAM2::Tracking::OK)
                 okSegments.push_back({currentStart, length});
-            else if (currentState == 3)
+            else if (currentState == ORB_SLAM2::Tracking::LOST)
                 lostSegments.push_back({currentStart, length});
             currentStart = i;
             currentState = records[i].trackingState;
         }
     }
     int finalLength = records.size() - currentStart;
-    if (currentState == 2)
+    if (currentState == ORB_SLAM2::Tracking::OK)
         okSegments.push_back({currentStart, finalLength});
-    else if (currentState == 3)
+    else if (currentState == ORB_SLAM2::Tracking::LOST)
         lostSegments.push_back({currentStart, finalLength});
 
     int maxOk = 0, maxLost = 0;
@@ -181,9 +181,9 @@ void writeJsonReport(const std::string& path, const std::vector<FrameRecord>& re
     // 计算场景难度分类
     int goodCount = 0, mediumCount = 0, hardCount = 0, severeCount = 0;
     for (const auto& r : records) {
-        if (r.trackingState == 2) goodCount++;
-        else if (r.trackingState == 3) severeCount++;
-        else if (r.trackingState == 1) mediumCount++;
+        if (r.trackingState == ORB_SLAM2::Tracking::OK) goodCount++;
+        else if (r.trackingState == ORB_SLAM2::Tracking::LOST) severeCount++;
+        else if (r.trackingState == ORB_SLAM2::Tracking::NOT_INITIALIZED) mediumCount++;
     }
 
     std::ofstream ofs(path);
@@ -232,9 +232,9 @@ void writeJsonReport(const std::string& path, const std::vector<FrameRecord>& re
 void printReport(const std::vector<FrameRecord>& records, int totalProcessed, double videoFps) {
     int okCt = 0, lostCt = 0, initCt = 0;
     for (const auto& r : records) {
-        if (r.trackingState == 2) okCt++;
-        else if (r.trackingState == 3) lostCt++;
-        else if (r.trackingState == 1) initCt++;
+        if (r.trackingState == ORB_SLAM2::Tracking::OK) okCt++;
+        else if (r.trackingState == ORB_SLAM2::Tracking::LOST) lostCt++;
+        else if (r.trackingState == ORB_SLAM2::Tracking::NOT_INITIALIZED) initCt++;
     }
 
     std::vector<double> times;
@@ -328,14 +328,14 @@ int main(int argc, char** argv) {
     }
 
     double videoFps = cap.get(cv::CAP_PROP_FPS);
-    if (videoFps <= 0) videoFps = 30.0;
+    if (videoFps <= 0) videoFps = ORB_SLAM2::SYSTEM_FPS;
     int totalInputFrames = (int)cap.get(cv::CAP_PROP_FRAME_COUNT);
     std::cout << "视频信息: " << videoPath
               << "  " << totalInputFrames << " 帧 @ " << videoFps << " FPS\n"
               << "处理帧率: 固定 30 FPS (输入帧跳过保持匀速)\n";
 
     // 帧率控制：根据输入 FPS 计算跳帧比率，强制 30 FPS
-    const double TARGET_FPS = 30.0;
+    const double TARGET_FPS = ORB_SLAM2::SYSTEM_FPS;
     const int frameSkip = std::max(1, (int)std::round(videoFps / TARGET_FPS));
 
     // 主循环
@@ -343,7 +343,7 @@ int main(int argc, char** argv) {
     timeStamp = 0.0;
     int frameId = 0;
     int totalProcessed = 0;
-    gRecords.reserve(totalInputFrames > 0 ? totalInputFrames / frameSkip + 1 : 10000);
+    gRecords.reserve(totalInputFrames > 0 ? totalInputFrames / frameSkip + 1 : ORB_SLAM2::BENCH_RESERVE_DEFAULT);
 
     auto startWall = std::chrono::steady_clock::now();
 
@@ -398,7 +398,7 @@ int main(int argc, char** argv) {
         frameId++;
 
         // 进度输出
-        if (totalProcessed % 100 == 0) {
+        if (totalProcessed % ORB_SLAM2::BENCH_PROGRESS_INTERVAL == 0) {
             auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
                 std::chrono::steady_clock::now() - startWall).count();
             std::cout << "\r处理进度: " << totalProcessed << " 帧"
@@ -416,8 +416,8 @@ end_loop:
     // 输出报告
     int okFrames = 0, lostFrames = 0;
     for (const auto& r : gRecords) {
-        if (r.trackingState == 2) okFrames++;
-        else if (r.trackingState == 3) lostFrames++;
+        if (r.trackingState == ORB_SLAM2::Tracking::OK) okFrames++;
+        else if (r.trackingState == ORB_SLAM2::Tracking::LOST) lostFrames++;
     }
 
     printReport(gRecords, totalProcessed, videoFps);

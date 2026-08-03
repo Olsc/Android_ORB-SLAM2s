@@ -474,8 +474,8 @@ bool Initializer::ReconstructF(vector<bool> &vbMatchesInliers, cv::Mat &F21, cv:
         if(vbMatchesInliers[i])
             N++;
 
-    const float minGoodRatio = (N < 150) ? 0.6f : 0.9f;
-    const int minTri = std::min(minTriangulated, std::max(30, N/2));
+    const float minGoodRatio = (N < INITIALIZER_GOOD_RATIO_SMALL_N) ? INITIALIZER_GOOD_RATIO_SMALL : INITIALIZER_GOOD_RATIO_LARGE;
+    const int minTri = std::min(minTriangulated, std::max(INITIALIZER_MIN_TRI_HARD, N/2));
 
     // 从基础矩阵计算本质矩阵
     cv::Mat E21 = K.t()*F21*K;
@@ -493,10 +493,10 @@ bool Initializer::ReconstructF(vector<bool> &vbMatchesInliers, cv::Mat &F21, cv:
     vector<bool> vbTriangulated1,vbTriangulated2,vbTriangulated3, vbTriangulated4;
     float parallax1,parallax2, parallax3, parallax4;
 
-    int nGood1 = CheckRT(R1,t1,mvKeys1,mvKeys2,mvMatches12,vbMatchesInliers,K, vP3D1, 4.0*mSigma2, vbTriangulated1, parallax1);
-    int nGood2 = CheckRT(R2,t1,mvKeys1,mvKeys2,mvMatches12,vbMatchesInliers,K, vP3D2, 4.0*mSigma2, vbTriangulated2, parallax2);
-    int nGood3 = CheckRT(R1,t2,mvKeys1,mvKeys2,mvMatches12,vbMatchesInliers,K, vP3D3, 4.0*mSigma2, vbTriangulated3, parallax3);
-    int nGood4 = CheckRT(R2,t2,mvKeys1,mvKeys2,mvMatches12,vbMatchesInliers,K, vP3D4, 4.0*mSigma2, vbTriangulated4, parallax4);
+    int nGood1 = CheckRT(R1,t1,mvKeys1,mvKeys2,mvMatches12,vbMatchesInliers,K, vP3D1, INITIALIZER_REPROJ_TH_FACTOR*mSigma2, vbTriangulated1, parallax1);
+    int nGood2 = CheckRT(R2,t1,mvKeys1,mvKeys2,mvMatches12,vbMatchesInliers,K, vP3D2, INITIALIZER_REPROJ_TH_FACTOR*mSigma2, vbTriangulated2, parallax2);
+    int nGood3 = CheckRT(R1,t2,mvKeys1,mvKeys2,mvMatches12,vbMatchesInliers,K, vP3D3, INITIALIZER_REPROJ_TH_FACTOR*mSigma2, vbTriangulated3, parallax3);
+    int nGood4 = CheckRT(R2,t2,mvKeys1,mvKeys2,mvMatches12,vbMatchesInliers,K, vP3D4, INITIALIZER_REPROJ_TH_FACTOR*mSigma2, vbTriangulated4, parallax4);
 
     int maxGood = max(nGood1,max(nGood2,max(nGood3,nGood4)));
 
@@ -506,13 +506,13 @@ bool Initializer::ReconstructF(vector<bool> &vbMatchesInliers, cv::Mat &F21, cv:
     int nMinGood = max(static_cast<int>(minGoodRatio*N),minTri);
 
     int nsimilar = 0;
-    if(nGood1>0.7*maxGood)
+    if(nGood1>INITIALIZER_NGOOD_SIMILAR_RATIO*maxGood)
         nsimilar++;
-    if(nGood2>0.7*maxGood)
+    if(nGood2>INITIALIZER_NGOOD_SIMILAR_RATIO*maxGood)
         nsimilar++;
-    if(nGood3>0.7*maxGood)
+    if(nGood3>INITIALIZER_NGOOD_SIMILAR_RATIO*maxGood)
         nsimilar++;
-    if(nGood4>0.7*maxGood)
+    if(nGood4>INITIALIZER_NGOOD_SIMILAR_RATIO*maxGood)
         nsimilar++;
 
     // 如果没有明显的优胜者或三角测量点不足，则拒绝初始化
@@ -579,8 +579,8 @@ bool Initializer::ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv:
         if(vbMatchesInliers[i])
             N++;
 
-    const float minGoodRatio = (N < 150) ? 0.6f : 0.9f;
-    const int minTri = std::min(minTriangulated, std::max(30, N/2));
+    const float minGoodRatio = (N < INITIALIZER_GOOD_RATIO_SMALL_N) ? INITIALIZER_GOOD_RATIO_SMALL : INITIALIZER_GOOD_RATIO_LARGE;
+    const int minTri = std::min(minTriangulated, std::max(INITIALIZER_MIN_TRI_HARD, N/2));
 
     // 使用Faugeras (1988) 平面场景方法恢复8种运动假设
 
@@ -597,7 +597,7 @@ bool Initializer::ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv:
     float d2 = w.at<float>(1);
     float d3 = w.at<float>(2);
 
-    if(d1/d2<1.00001 || d2/d3<1.00001)
+    if(d1/d2<INITIALIZER_SINGULAR_RATIO || d2/d3<INITIALIZER_SINGULAR_RATIO)
     {
         return false;
     }
@@ -707,7 +707,7 @@ bool Initializer::ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv:
         float parallaxi;
         vector<cv::Point3f> vP3Di;
         vector<bool> vbTriangulatedi;
-        int nGood = CheckRT(vR[i],vt[i],mvKeys1,mvKeys2,mvMatches12,vbMatchesInliers,K,vP3Di, 4.0*mSigma2, vbTriangulatedi, parallaxi);
+        int nGood = CheckRT(vR[i],vt[i],mvKeys1,mvKeys2,mvMatches12,vbMatchesInliers,K,vP3Di, INITIALIZER_REPROJ_TH_FACTOR*mSigma2, vbTriangulatedi, parallaxi);
 
         if(nGood>bestGood)
         {
@@ -724,7 +724,7 @@ bool Initializer::ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv:
         }
     }
 
-    if(secondBestGood<0.75*bestGood && bestParallax>=minParallax && bestGood>minTri && bestGood>minGoodRatio*N)
+    if(secondBestGood<INITIALIZER_BEST_RATIO*bestGood && bestParallax>=minParallax && bestGood>minTri && bestGood>minGoodRatio*N)
     {
         vR[bestSolutionIdx].copyTo(R21);
         vt[bestSolutionIdx].copyTo(t21);
@@ -771,7 +771,7 @@ void Initializer::Triangulate(const cv::KeyPoint &kp1, const cv::KeyPoint &kp2, 
         {0.0f, 0.0f, 0.0f, 1.0f}
     };
 
-    for (int it = 0; it < 30; ++it) {
+    for (int it = 0; it < INITIALIZER_JACOBI_ITERS; ++it) {
         float maxVal = 0.0f;
         int p = 0, q = 1;
         for (int i = 0; i < 4; ++i) {
@@ -953,13 +953,13 @@ int Initializer::CheckRT(const cv::Mat &R, const cv::Mat &t, const vector<cv::Ke
         float dist1 = sqrt(dist1Sq);
 
         // 检查第一个相机前方的深度（仅当有足够的视差时，因为"无限远"点容易变为负深度）
-        if(p3dC1.at<float>(2)<=0 && cosParallax<0.99998)
+        if(p3dC1.at<float>(2)<=0 && cosParallax<INITIALIZER_PARALLAX_COS_TH)
             continue;
 
         // 检查第二个相机前方的深度（仅当有足够的视差时，因为"无限远"点容易变为负深度）
         cv::Mat p3dC2 = R*p3dC1+t;
 
-        if(p3dC2.at<float>(2)<=0 && cosParallax<0.99998)
+        if(p3dC2.at<float>(2)<=0 && cosParallax<INITIALIZER_PARALLAX_COS_TH)
             continue;
 
         // 检查第一幅图像中的重投影误差
@@ -988,7 +988,7 @@ int Initializer::CheckRT(const cv::Mat &R, const cv::Mat &t, const vector<cv::Ke
         vP3D[vMatches12[i].first] = cv::Point3f(p3dC1.at<float>(0),p3dC1.at<float>(1),p3dC1.at<float>(2));
         nGood++;
 
-        if(cosParallax<0.99998)
+        if(cosParallax<INITIALIZER_PARALLAX_COS_TH)
             vbGood[vMatches12[i].first]=true;
     }
 
@@ -996,7 +996,7 @@ int Initializer::CheckRT(const cv::Mat &R, const cv::Mat &t, const vector<cv::Ke
     {
         sort(vCosParallax.begin(),vCosParallax.end());
 
-        size_t idx = min(50,int(vCosParallax.size()-1));
+        size_t idx = min(INITIALIZER_PARALLAX_PERCENTILE,int(vCosParallax.size()-1));
         parallax = acos(vCosParallax[idx])*180/CV_PI;
     }
     else
