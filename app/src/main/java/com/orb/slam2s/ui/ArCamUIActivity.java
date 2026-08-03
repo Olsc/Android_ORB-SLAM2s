@@ -649,6 +649,14 @@ public class ArCamUIActivity extends AppCompatActivity implements
                 threeDofGLView.onPause();
             }
         }
+
+        // 暂停Web服务：避免退后台后线程继续解码/处理浏览器帧（耗电、发热）
+        if (isWebRunning) {
+            stopWebFrameProcessing();
+            if (webServer != null) {
+                webServer.stop();
+            }
+        }
     }
 
     @Override
@@ -673,6 +681,14 @@ public class ArCamUIActivity extends AppCompatActivity implements
             orientationSensor.start(this);
             if (threeDofGLView != null) {
                 threeDofGLView.onResume();
+            }
+        }
+
+        // 恢复Web服务（从后台返回时重启帧处理与HTTP服务）
+        if (isWebRunning) {
+            startWebFrameProcessing();
+            if (webServer != null) {
+                webServer.start();
             }
         }
     }
@@ -1228,6 +1244,12 @@ public class ArCamUIActivity extends AppCompatActivity implements
             isWebRunning = true;
             useWebCamera = true; // 切换到Web模式：本地相机继续运行但不处理数据
 
+            // Web模式下隐藏AR物体：浏览器相机SLAM姿态与本地相机坐标系不一致，
+            // 继续渲染会导致物体漂浮在错误的空间位置（黑屏+漂浮物体的bug来源）
+            if (modelRendererWrapper != null) {
+                modelRendererWrapper.setDraw(false);
+            }
+
             // 启动Web图像处理线程
             startWebFrameProcessing();
 
@@ -1261,6 +1283,11 @@ public class ArCamUIActivity extends AppCompatActivity implements
             }
             isWebRunning = false;
             useWebCamera = false; // 切换回本地相机模式
+
+            // 恢复AR物体渲染（本地相机重新驱动SLAM，坐标系恢复一致）
+            if (modelRendererWrapper != null) {
+                modelRendererWrapper.setDraw(true);
+            }
 
             // 清空浏览器图像数据
             synchronized (browserFrameLock) {

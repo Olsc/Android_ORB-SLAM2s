@@ -77,7 +77,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_compute3DofMVP(JNIEnv* env, jobject thiz
 
     // 计算投影矩阵
     float projectionMatrix[16];
-    frustumM(projectionMatrix, 0, -ratio, ratio, -1, 1, ORB_SLAM2::PROJECTION_ZNEAR, ORB_SLAM2::PROJECTION_ZFAR);
+    frustumM(projectionMatrix, 0, -ratio, ratio, -1, 1, ORB_SLAM2::AR_3DOF_ZNEAR, ORB_SLAM2::AR_3DOF_ZFAR);
 
     // 计算模型矩阵 (平移到指定的世界坐标并添加固定自转)
     float modelMatrix[16];

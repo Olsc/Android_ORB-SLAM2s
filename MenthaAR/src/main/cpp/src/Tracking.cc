@@ -333,6 +333,18 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
     // 并发保护：避免多次重入导致refDesc与索引不同步
     bool expected=false; if(!mRefBuilding.compare_exchange_strong(expected, true)) return;
 
+    // 节流：缓存已可用且距上次构建 < 冷却时间时直接复用旧缓存。
+    {
+        std::unique_lock<std::mutex> lk(mMutexReloc);
+        if(!mRefDesc.empty() && !mRefIdxToMP.empty() &&
+           (mLastTimestamp - mRefLastBuildTs) < (TRACKING_REF_CACHE_BUILD_COOLDOWN_MS / 1000.0))
+        {
+            lk.unlock();
+            mRefBuilding.store(false);
+            return;
+        }
+    }
+
     // 使用双缓冲在锁外构建，锁内一次性交换，降低锁竞争
     cv::Mat newRefDesc; 
     std::vector<MapPoint*> newRefIdxToMP; 
@@ -630,122 +642,71 @@ void Tracking::GlobalRelocLoop(int sessionId)
     mLastBgRunTime = std::chrono::steady_clock::now();
 
     while(true){
-        // 等待事件：新快照或停止信号
-        {
-            std::unique_lock<std::mutex> lk(mMutexReloc);
-            mCvReloc.wait(lk, [this, sessionId]{ return mbRelocThreadStop || mRelocThreadSessionId.load() != sessionId || mSnapSeqProduced!=mSnapSeqConsumed; });
-            if(mbRelocThreadStop || mRelocThreadSessionId.load() != sessionId) break;
-        }
-
-        // 使用 try_lock 复制快照，避免阻塞主跟踪线程
-        cv::Mat desc; std::vector<cv::KeyPoint> keys; int N=0; double ts=0.0; cv::Mat TcwSlam;
-        {
-            std::unique_lock<std::mutex> lk(mMutexReloc, std::try_to_lock);
-            if (!lk.owns_lock()) {
-                // 跟踪线程正在更新快照，跳过一次
-                mSnapSeqConsumed.store(mSnapSeqProduced.load());
-                continue;
-            }
-            if(!mLastDesc.empty()) desc = mLastDesc.clone();
-            keys = mLastKeysUn; N = mLastN; ts = mLastTimestamp;
-            if(!mLastTcwSlam.empty()) TcwSlam = mLastTcwSlam.clone();
-            // 消费本次快照（使用原子load/store避免赋值原子对象）
-            mSnapSeqConsumed.store(mSnapSeqProduced.load());
-        }
-
-        if(desc.empty() || N<=0 || TcwSlam.empty()){
-            continue;
-        }
+        cv::Mat desc; 
+        std::vector<cv::KeyPoint> keys; 
+        int N = 0; 
+        double ts = 0.0; 
+        cv::Mat TcwSlam;
 
         cv::Mat refDesc;
         std::vector<RefMPSnapshot> refSnaps;
         std::vector<int> valToRef;
+        std::shared_ptr<HBSTTree> pTree;
 
-        // 重试循环以确保所有参考数据的一致快照（refDesc, refSnaps, mRefInverted）
-        // 使用 try_lock 确保后台线程不会阻塞主跟踪线程
-        while(true) {
-            std::unique_lock<std::mutex> lk(mMutexReloc, std::try_to_lock);
-            if (!lk.owns_lock()) {
-                // 跟踪线程正在持有锁（正在更新快照），等待释放后立即重新尝试
-                std::unique_lock<std::mutex> waitLock(mMutexReloc);
-                mCvReloc.wait_for(waitLock, std::chrono::milliseconds(RELOC_RETRY_WAIT_MS));
+        // 1. 确定性事件等待：有新帧快照或停止信号时被唤醒，绝无任何 sleep 猜测
+        {
+            std::unique_lock<std::mutex> lk(mMutexReloc);
+            mCvReloc.wait(lk, [this, sessionId]{
+                return mbRelocThreadStop || 
+                       mRelocThreadSessionId.load() != sessionId || 
+                       mSnapSeqProduced != mSnapSeqConsumed; 
+            });
+
+            if(mbRelocThreadStop || mRelocThreadSessionId.load() != sessionId) 
+                break;
+
+            // 标记已消费最新快照
+            mSnapSeqConsumed.store(mSnapSeqProduced.load());
+
+            // 状态检查：系统未初始化或地图无点时跳过，等待下一次快照事件
+            if(mState == NO_IMAGES_YET || mState == NOT_INITIALIZED || mpMap->MapPointsInMap() == 0) {
                 continue;
             }
 
-            // 在内部重试循环中检查退出标志
-            if(mbRelocThreadStop || mRelocThreadSessionId.load() != sessionId) break;
+            // 提取当前帧快照
+            if(!mLastDesc.empty()) desc = mLastDesc.clone();
+            keys = mLastKeysUn; 
+            N = mLastN; 
+            ts = mLastTimestamp;
+            if(!mLastTcwSlam.empty()) TcwSlam = mLastTcwSlam.clone();
 
-            // 检查重retry次数，防止死循环
-            if(mRefCacheRetryCount >= TRACKING_MAX_REF_CACHE_RETRIES) {
-                LOGD("GlobalRelocLoop: 缓存重建连续失败%d次，跳过本次处理", mRefCacheRetryCount);
-                mRefCacheRetryCount = 0;
-                // 消费快照，继续等待下一次机会
-                mSnapSeqConsumed.store(mSnapSeqProduced.load());
-                break;  // 退出重试循环，回到外层等待
-            }
-
-            // 检查是否需要构建/重建缓存，确保描述符和快照间的一致性
-            if(mRefDesc.empty() || mRefDesc.rows!=(int)mRefSnapshots.size()) {
-                // 1. 检查状态：系统必须已初始化
-                if(mState==NO_IMAGES_YET || mState==NOT_INITIALIZED) {
-                    lk.unlock();
-                    mRefCacheRetryCount++;
-                    {
-                        std::unique_lock<std::mutex> waitLock(mMutexReloc);
-                        mCvReloc.wait_for(waitLock, std::chrono::milliseconds(RELOC_CACHE_RETRY_WAIT_MS));
-                    }
-                    continue;
-                }
-
-                // 2. 检查是否有任何地图点，如果没有，则不需要构建缓存，避免死循环空转
-                int totalMps = mpMap->MapPointsInMap();
-                if(totalMps == 0) {
-                     lk.unlock();
-                     mRefCacheRetryCount++;
-                     {
-                         std::unique_lock<std::mutex> waitLock(mMutexReloc);
-                         mCvReloc.wait_for(waitLock, std::chrono::seconds(RELOC_NO_MAP_WAIT_SEC));
-                     }
-                     continue;
-                }
-
+            // 若尚未构建参考缓存，且地图存在点，解锁后精准构建
+            if(mRefDesc.empty() || mRefDesc.rows != (int)mRefSnapshots.size()) {
                 lk.unlock();
                 BuildLoadedRefCache();
+                lk.lock();
+            }
 
-                // 如果重建后仍然为空，暂停一会避免死循环空转
-                {
-                    std::unique_lock<std::mutex> lk2(mMutexReloc);
-                    if(mRefDesc.empty()) {
-                        mRefCacheRetryCount++;
-                        mCvReloc.wait_for(lk2, std::chrono::milliseconds(RELOC_CACHE_RETRY_WAIT_MS));
-                    } else {
-                        mRefCacheRetryCount = 0;
-                    }
+            if(mbRelocThreadStop || mRelocThreadSessionId.load() != sessionId) 
+                break;
+
+            // 提取有效且严格一致的参考地图快照数据
+            if(!mRefDesc.empty() && !mRefSnapshots.empty() && mpRefTree) {
+                refDesc = mRefDesc;
+                refSnaps = mRefSnapshots;
+                pTree = mpRefTree;
+
+                valToRef.resize(refSnaps.size());
+                for(size_t i = 0; i < refSnaps.size(); ++i) {
+                    valToRef[i] = (int)i;
                 }
-                continue; // 重试
             }
-
-            // 成功获取有效缓存，重置计数
-            mRefCacheRetryCount = 0;
-
-            // 复制一致的数据
-            refDesc = mRefDesc; // 浅拷贝可以（cv::Mat引用计数）
-            refSnaps = mRefSnapshots; // 快照的深拷贝
-            std::shared_ptr<HBSTTree> pTree = mpRefTree;
-
-            // 初始化 valToRef 恒等映射
-            valToRef.resize(refSnaps.size());
-            for(size_t i = 0; i < refSnaps.size(); ++i) {
-                valToRef[i] = (int)i;
-            }
-
-            // 立即释放锁
-            lk.unlock();
-            break; // 完成 (此时锁已释放，安全退出循环)
         }
 
-        // 验证检查
-        if(refDesc.empty() || refDesc.cols!=desc.cols || mbRelocThreadStop || mRelocThreadSessionId.load() != sessionId){ continue; }
+        // 数据合法性校验
+        if(desc.empty() || N <= 0 || TcwSlam.empty() || refDesc.empty() || refDesc.cols != desc.cols || !pTree) {
+            continue;
+        }
 
         std::vector<cv::Point2f> pts2d;
         std::vector<cv::Point3f> pts3d;
@@ -753,12 +714,6 @@ void Tracking::GlobalRelocLoop(int sessionId)
         std::vector<int> refIdx;
         std::vector<int> descDist;
         int keptPairs = 0;
-
-        std::shared_ptr<HBSTTree> pTree;
-        {
-            std::unique_lock<std::mutex> lk(mMutexReloc);
-            pTree = mpRefTree;
-        }
 
         if (pTree && !desc.empty() && refDesc.rows > 0 && refDesc.rows == (int)refSnaps.size()) {
             std::vector<size_t> query_objects;

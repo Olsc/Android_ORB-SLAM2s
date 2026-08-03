@@ -124,6 +124,10 @@ const int TRACKING_ALIGN_SMOOTH_SKIP_FRAMES = 3;
 const int TRACKING_MAX_REF_CACHE_RETRIES = 5;
 const int TRACKING_REF_CACHE_LIMIT = 30000;
 
+// 参考缓存（HBST 树）重建冷却时间（毫秒）：跟踪丢失→重建→重定位循环中，
+// 避免频繁重建整棵 HBST 树导致帧率骤降；缓存可用且未超冷却时直接复用旧缓存
+const int TRACKING_REF_CACHE_BUILD_COOLDOWN_MS = 2000;
+
 // 主线程绑定加载点的网格搜索半径（米）
 const float TRACKING_GRID_SEARCH_RADIUS = 40.0f;
 
@@ -859,6 +863,11 @@ const float AR_SCALE_MIN = 0.03f;
 // 3DOF 物体绕 Y 轴自转 / 绕 X 轴倾斜角度
 const float AR_OBJECT_SPIN_Y_DEG = 45.0f;
 const float AR_OBJECT_TILT_X_DEG = 30.0f;
+
+// 3DOF 模式投影裁剪面：此模式下 frustumM 边界为 ±ratio/±1（不乘 near），
+// near 直接参与透视缩放（ndc ∝ near/d）。near=1.0 为原设计值
+const float AR_3DOF_ZNEAR = 1.0f;
+const float AR_3DOF_ZFAR = 100.0f;
 
 // ==========================================
 // UI 绘制

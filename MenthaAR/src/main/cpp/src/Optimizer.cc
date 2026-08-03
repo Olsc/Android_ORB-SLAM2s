@@ -62,6 +62,10 @@ void Optimizer::GlobalBundleAdjustemnt(Map* pMap, int nIterations, bool* pbStopF
 void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<MapPoint *> &vpMP,
                                  int nIterations, bool* pbStopFlag, const unsigned long nLoopKF, const bool bRobust)
 {
+    // 空优化保护：无关键帧或无地图点时直接返回，避免 g2o 空跑
+    if(vpKFs.empty() || vpMP.empty())
+        return;
+
     vector<bool> vbNotIncludedMP;
     vbNotIncludedMP.resize(vpMP.size());
 
@@ -185,6 +189,9 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
     }
 
     optimizer.initializeOptimization();
+    // 空优化保护：active（非固定）顶点为 0 时跳过，避免 g2o 空跑
+    if(optimizer.activeVertices().empty())
+        return;
     optimizer.optimize(nIterations);
 
     // 恢复优化后的数据
@@ -340,6 +347,8 @@ int Optimizer::PoseOptimization(Frame *pFrame)
 
         vSE3->setEstimate(Converter::toSE3Quat(pFrame->mTcw));
         optimizer.initializeOptimization(0);
+        if(optimizer.activeVertices().empty())
+            return 0;
         optimizer.optimize(its[it]);
 
         nBad=0;
@@ -576,7 +585,13 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
         if(*pbStopFlag)
             return;
 
+    // 空优化保护：无有效顶点时跳过，避免 g2o 空跑浪费
+    if(optimizer.vertices().empty())
+        return;
+
     optimizer.initializeOptimization();
+    if(optimizer.activeVertices().empty())
+        return;
     optimizer.optimize(LOCAL_BA_ITERATIONS);
 
     bool bDoMore= true;
@@ -607,6 +622,8 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
 
     // 在没有外点的情况下再次精细优化
     optimizer.initializeOptimization(0);
+    if(optimizer.activeVertices().empty())
+        return;
     optimizer.optimize(LOCAL_BA_ITERATIONS);
 
     }
@@ -1028,6 +1045,8 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
 
     // 优化
     optimizer.initializeOptimization();
+    if(optimizer.activeVertices().empty())
+        return;
     optimizer.optimize(ESSENTIAL_GRAPH_BA_ITERS);
 
     // SE3 位姿恢复 并 缓存相机中心以加速后续点更新
@@ -1266,6 +1285,8 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
 
     // 优化
     optimizer.initializeOptimization();
+    if(optimizer.activeVertices().empty())
+        return 0;
     optimizer.optimize(SIM3_OPT_ITERS);
 
     // 检查内点
@@ -1301,6 +1322,8 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
     // 仅使用内点再次优化
 
     optimizer.initializeOptimization();
+    if(optimizer.activeVertices().empty())
+        return 0;
     optimizer.optimize(nMoreIterations);
 
     int nIn = 0;
