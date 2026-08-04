@@ -825,8 +825,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
     @Override
     public void onCameraViewStarted(int width, int height) {
         Log.d(TAG, "onCameraViewStarted: 摄像头视图启动，宽度=" + width + " 高度=" + height);
-        mRgbaAddr = OpenCVBridge.nativeCreateMat(height, width, OpenCVBridge.CV_8UC4);
-        mGrayAddr = OpenCVBridge.nativeCreateMat(height, width, OpenCVBridge.CV_8UC1);
         // 通知native层更新内参和投影矩阵
         if (nativeHelper != null) {
             nativeHelper.updateResolution(width, height);
@@ -836,8 +834,8 @@ public class ArCamUIActivity extends AppCompatActivity implements
     @Override
     public void onCameraViewStopped() {
         Log.d(TAG, "onCameraViewStopped: 摄像头视图停止");
-        if (mRgbaAddr != 0) { OpenCVBridge.nativeReleaseMat(mRgbaAddr); mRgbaAddr = 0; }
-        if (mGrayAddr != 0) { OpenCVBridge.nativeReleaseMat(mGrayAddr); mGrayAddr = 0; }
+        mRgbaAddr = 0;
+        mGrayAddr = 0;
     }
 
     @Override
