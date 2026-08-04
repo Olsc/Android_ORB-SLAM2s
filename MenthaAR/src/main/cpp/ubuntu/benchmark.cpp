@@ -395,6 +395,11 @@ void printTerminalReport(const ScoreCard& card) {
 }
 
 void resetBenchmarkState() {
+    {
+        std::lock_guard<std::mutex> lockData(gMapDataMutex);
+        vMPs.clear();
+        vKeys.clear();
+    }
     gRecords.clear();
     gRssHistory.clear();
     gCurrentLoop = 1;
@@ -593,8 +598,13 @@ int main(int argc, char** argv) {
                         status = slamSys->GetTrackingState();
 
                         std::lock_guard<std::mutex> lockPoints(gMapDataMutex);
-                        vMPs = slamSys->GetTrackedMapPoints();
-                        vKeys = slamSys->GetTrackedKeyPointsUn();
+                        if (status == ORB_SLAM2::Tracking::OK) {
+                            vMPs = slamSys->GetTrackedMapPoints();
+                            vKeys = slamSys->GetTrackedKeyPointsUn();
+                        } else {
+                            vMPs.clear();
+                            vKeys.clear();
+                        }
                     }
                 }
                 auto t1 = std::chrono::steady_clock::now();
@@ -632,14 +642,17 @@ int main(int argc, char** argv) {
             gShouldDrawArObject = (status == ORB_SLAM2::Tracking::OK) && (pPlane != nullptr) && alignmentOK;
         }
 
-        // 可视化点云渲染
+        // 可视化点云渲染 (加锁保护 vMPs 与地图数据)
         if (gEnablePointCloudDisplay) {
+            std::lock_guard<std::mutex> lockPoints(gMapDataMutex);
             if (status == ORB_SLAM2::Tracking::OK && slamSys->HasMapAlignment()) {
                 cv::Mat TcwAligned = slamSys->GetMapAlignedPose(Tcw);
                 std::vector<ORB_SLAM2::MapPoint*> allMapPoints = slamSys->GetAllMapPoints();
                 drawAllMapPoints(TcwAligned, allMapPoints, imgRgba, fx, fy, cx, cy, true);
             }
-            drawTrackedPoints(vKeys, vMPs, imgRgba, cx, cy);
+            if (status == ORB_SLAM2::Tracking::OK && !vMPs.empty()) {
+                drawTrackedPoints(vKeys, vMPs, imgRgba, cx, cy);
+            }
         }
 
         // 绘制 3D 虚拟 AR 立方体
