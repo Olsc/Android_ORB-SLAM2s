@@ -94,11 +94,9 @@ public class ArCamUIActivity extends AppCompatActivity implements
     private WebServer webServer;
     private Button btnStartWeb;
     private boolean isWebRunning = false;
-    private Thread pointsUpdater;
 
     // 摇杆控制AR物体旋转
     private JoystickView joystickView;
-    private float lastJoystickAngle = -1.0f;  // 上一帧的摇杆角度，用于计算增量
 
     // 3DOF功能相关
     private OrientationSensor orientationSensor;
@@ -112,6 +110,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
     private boolean useWebCamera = false; // Web模式：使用浏览器相机而不是本地相机
     private Thread webFrameProcessor; // Web图像处理线程
     private volatile boolean isProcessingWebFrames = false;
+    private boolean webWaitLogged = false; // 等待SLAM初始化提示只打印一次
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -650,6 +649,14 @@ public class ArCamUIActivity extends AppCompatActivity implements
                 threeDofGLView.onPause();
             }
         }
+
+        // 暂停Web服务：避免退后台后线程继续解码/处理浏览器帧（耗电、发热）
+        if (isWebRunning) {
+            stopWebFrameProcessing();
+            if (webServer != null) {
+                webServer.stop();
+            }
+        }
     }
 
     @Override
@@ -676,6 +683,14 @@ public class ArCamUIActivity extends AppCompatActivity implements
                 threeDofGLView.onResume();
             }
         }
+
+        // 恢复Web服务（从后台返回时重启帧处理与HTTP服务）
+        if (isWebRunning) {
+            startWebFrameProcessing();
+            if (webServer != null) {
+                webServer.start();
+            }
+        }
     }
 
     /**
@@ -699,7 +714,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
                     nativeHelper.initSLAM(resDir);
 
                     slamInitialized = true;
-                    Log.d(TAG, "SLAM初始化完成");
 
                     // 在主线程更新UI并启动相机
                     runOnUiThread(new Runnable() {
@@ -793,9 +807,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
         if (webServer != null) {
             webServer.stop();
         }
-        if (pointsUpdater != null) {
-            pointsUpdater.interrupt();
-        }
         
         // 销毁 Filament 资源
         if (modelRendererWrapper != null) {
@@ -814,8 +825,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
     @Override
     public void onCameraViewStarted(int width, int height) {
         Log.d(TAG, "onCameraViewStarted: 摄像头视图启动，宽度=" + width + " 高度=" + height);
-        mRgbaAddr = OpenCVBridge.nativeCreateMat(height, width, OpenCVBridge.CV_8UC4);
-        mGrayAddr = OpenCVBridge.nativeCreateMat(height, width, OpenCVBridge.CV_8UC1);
         // 通知native层更新内参和投影矩阵
         if (nativeHelper != null) {
             nativeHelper.updateResolution(width, height);
@@ -825,8 +834,8 @@ public class ArCamUIActivity extends AppCompatActivity implements
     @Override
     public void onCameraViewStopped() {
         Log.d(TAG, "onCameraViewStopped: 摄像头视图停止");
-        if (mRgbaAddr != 0) { OpenCVBridge.nativeReleaseMat(mRgbaAddr); mRgbaAddr = 0; }
-        if (mGrayAddr != 0) { OpenCVBridge.nativeReleaseMat(mGrayAddr); mGrayAddr = 0; }
+        mRgbaAddr = 0;
+        mGrayAddr = 0;
     }
 
     @Override
@@ -927,7 +936,8 @@ public class ArCamUIActivity extends AppCompatActivity implements
                                 Log.e(TAG, "Web线程：JPEG解码失败!");
                             }
                         } else {
-                            if (!slamInitialized) {
+                            if (!slamInitialized && !webWaitLogged) {
+                                webWaitLogged = true; // 只打印一次，避免初始化期间刷屏
                                 Log.w(TAG, "Web线程：等待SLAM初始化...");
                             }
                             // 没有数据时等待
@@ -1232,6 +1242,12 @@ public class ArCamUIActivity extends AppCompatActivity implements
             isWebRunning = true;
             useWebCamera = true; // 切换到Web模式：本地相机继续运行但不处理数据
 
+            // Web模式下隐藏AR物体：浏览器相机SLAM姿态与本地相机坐标系不一致，
+            // 继续渲染会导致物体漂浮在错误的空间位置（黑屏+漂浮物体的bug来源）
+            if (modelRendererWrapper != null) {
+                modelRendererWrapper.setDraw(false);
+            }
+
             // 启动Web图像处理线程
             startWebFrameProcessing();
 
@@ -1265,6 +1281,11 @@ public class ArCamUIActivity extends AppCompatActivity implements
             }
             isWebRunning = false;
             useWebCamera = false; // 切换回本地相机模式
+
+            // 恢复AR物体渲染（本地相机重新驱动SLAM，坐标系恢复一致）
+            if (modelRendererWrapper != null) {
+                modelRendererWrapper.setDraw(true);
+            }
 
             // 清空浏览器图像数据
             synchronized (browserFrameLock) {

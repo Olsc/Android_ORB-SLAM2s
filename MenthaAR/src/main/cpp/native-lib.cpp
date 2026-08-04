@@ -9,6 +9,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <atomic>
+#include <cstring>
 #include <cmath>
 #include <map>
 #include <vector>
@@ -44,14 +45,11 @@ std::vector<cv::KeyPoint> vKeys;
 // 用于vMPs和vKeys线程安全访问的互斥锁
 std::mutex gMapPointsMutex;
 
-int gLoadedMapPointCount = 0;            // 加载的地图点数量
-
 // 点云显示开关（同时控制绿色和蓝色点云）
-bool gEnablePointCloudDisplay = true;  // 默认启用点云显示
+std::atomic<bool> gEnablePointCloudDisplay{true};  // 默认启用点云显示
 
 // SLAM 开关控制
-bool gEnableSLAM = true;  // 默认启用 SLAM
-
+std::atomic<bool> gEnableSLAM{true};  // 默认启用 SLAM
 
 // SLAM丢失自动重置相关变量
 double lastOkTime = 0.0;            // 上次SLAM正常工作的时间
@@ -76,7 +74,7 @@ static std::atomic<int> gProcessingFrames{0};      // 正在处理的帧数（�
 static std::condition_variable gCvProcessingFrames; // gProcessingFrames 归零时通知写操作
 static std::mutex gTcwLock;                        // 保护 Tcw 缓存
 static cv::Mat gCachedTcw;                         // 线程安全的 Tcw 缓存
-static int gCachedTrackingState = 0;               // 线程安全的跟踪状态缓存
+static std::atomic<int> gCachedTrackingState{0};   // 无锁原子的跟踪状态缓存
 std::map<int, Plane*> gMapPlanes;
 std::map<int, std::vector<ArObjectInfo>> gMapArObjects;
 int gActiveMapId = 0;
@@ -85,17 +83,11 @@ int gMapSwitchCounter = 0;
 const int MAP_SWITCH_THRESHOLD = ORB_SLAM2::MAP_SWITCH_THRESHOLD; // 至少连续3帧识别到新地图才切换
 
 // AR对象渲染状态
-bool gShouldDrawArObject = false;
-float gArObjectScale = ORB_SLAM2::AR_OBJECT_SCALE_DEFAULT;  // 默认缩放
+std::atomic<bool> gShouldDrawArObject{false};
+std::atomic<float> gArObjectScale{ORB_SLAM2::AR_OBJECT_SCALE_DEFAULT};  // 默认缩放
 float gCurrentModelMatrix[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
 float gCurrentViewMatrix[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
 float gCurrentProjectionMatrix[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
-
-
-// 记录SLAM最后有效的世界坐标（Twc平移），用于3DOF/6DOF回退保持位置
-float gLastTwcPosX = 0.0f, gLastTwcPosY = 0.0f, gLastTwcPosZ = 0.0f;
-bool gHasLastTwcPos = false;
-
 
 /**
  * 保存平面和AR对象信息到文件
@@ -114,21 +106,21 @@ bool gHasLastTwcPos = false;
 void SavePlaneAndArInfo(const std::string& filename)
 {
     std::lock_guard<std::mutex> lock(gMapDataMutex);
-    
+
     std::string infoFile = filename + ".arinfo";
     std::ofstream ofs(infoFile, std::ios::binary);
     if (!ofs.is_open()) return;
-    
+
     // 文件头：魔数和版本号
-    const uint32_t magic = 0x4152494E; // 'ARIN'（AR信息）
-    const uint32_t version = 1;
+    const uint32_t magic = ORB_SLAM2::AR_INFO_FILE_MAGIC; // 'ARIN'（AR信息）
+    const uint32_t version = ORB_SLAM2::AR_INFO_FILE_VERSION;
     ofs.write(reinterpret_cast<const char*>(&magic), sizeof(magic));
     ofs.write(reinterpret_cast<const char*>(&version), sizeof(version));
-    
+
     // 保存平面信息
     uint8_t hasPlane = (pPlane != nullptr) ? 1 : 0;
     ofs.write(reinterpret_cast<const char*>(&hasPlane), sizeof(hasPlane));
-    
+
     if (pPlane)
     {
         // 保存平面的原点坐标和法向量
@@ -138,11 +130,11 @@ void SavePlaneAndArInfo(const std::string& filename)
         ofs.write(reinterpret_cast<const char*>(n3), sizeof(n3));
         ofs.write(reinterpret_cast<const char*>(&pPlane->rang), sizeof(pPlane->rang));
     }
-    
+
     // 保存AR对象
     auto numObjects = static_cast<uint32_t>(gArObjects.size());
     ofs.write(reinterpret_cast<const char*>(&numObjects), sizeof(numObjects));
-    
+
     for (const auto& obj : gArObjects)
     {
         if (!obj.isValid) continue;
@@ -158,7 +150,7 @@ void SavePlaneAndArInfo(const std::string& filename)
             ofs.write(obj.objectId.c_str(), static_cast<std::streamsize>(idLen));
         }
     }
-    
+
     ofs.close();
     LOGD("保存平面和AR信息：已保存到%s", infoFile.c_str());
 }
@@ -166,27 +158,27 @@ void SavePlaneAndArInfo(const std::string& filename)
 // 从文件加载平面和AR对象信息
 void LoadPlaneAndArInfo(const std::string& filename, int mapId)
 {
-    
+
     std::string infoFile = filename + ".arinfo";
     std::ifstream ifs(infoFile, std::ios::binary);
-    
+
     if (!ifs.is_open())
     {
         LOGD("加载平面和AR信息：未找到AR信息文件(%s)", infoFile.c_str());
         return;
     }
-    
+
     uint32_t magic = 0, version = 0;
     ifs.read(reinterpret_cast<char*>(&magic), 4);
     ifs.read(reinterpret_cast<char*>(&version), 4);
-    
-    if (magic != 0x4152494E)
+
+    if (magic != ORB_SLAM2::AR_INFO_FILE_MAGIC)
     {
         LOGE("加载平面和AR信息：错误的魔数");
         ifs.close();
         return;
     }
-    
+
     // 临时存储加载的数据
     Plane* loadedPlane = nullptr;
     std::vector<ArObjectInfo> loadedObjects;
@@ -199,7 +191,7 @@ void LoadPlaneAndArInfo(const std::string& filename, int mapId)
         ifs.read(reinterpret_cast<char*>(o3), sizeof(o3));
         ifs.read(reinterpret_cast<char*>(n3), sizeof(n3));
         ifs.read(reinterpret_cast<char*>(&rang), sizeof(rang));
-        
+
         // 验证数据有效性
         bool dataValid = true;
         for(int i=0; i<3; i++) {
@@ -209,14 +201,14 @@ void LoadPlaneAndArInfo(const std::string& filename, int mapId)
                 break;
             }
         }
-        
+
         if(dataValid) {
             loadedPlane = new Plane(n3[0], n3[1], n3[2], o3[0], o3[1], o3[2]);
             loadedPlane->rang = rang;
             LOGD("加载平面和AR信息：为地图%d加载平面", mapId);
         }
     }
-    
+
     // 加载AR对象
     uint32_t numObjects = 0;
     ifs.read(reinterpret_cast<char*>(&numObjects), sizeof(numObjects));
@@ -252,9 +244,9 @@ void LoadPlaneAndArInfo(const std::string& filename, int mapId)
             if(pPlane) delete pPlane;
             pPlane = loadedPlane ? new Plane(*loadedPlane) : nullptr;
             planeLoadedFromMap = (pPlane != nullptr);
-            
+
             gArObjects = loadedObjects;
-            
+
             if(pPlane) {
                 getRUBModelMatrixFromRDF(pPlane->glTpw, gCurrentModelMatrix);
                 // 投影矩阵在SLAM初始化时已预计算，无需重复计算
@@ -268,27 +260,27 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
 {
     VT_PROFILE_FUNCTION(); // 跟踪主图像处理循环
     timeStamp += 1.0 / ORB_SLAM2::SYSTEM_FPS;
-    
+
     // SLAM 开关控制：如果 SLAM 被关闭，跳过 SLAM 处理
     int status = 0;  // 默认状态：NO_IMAGES_YET
-    
-    if (!gEnableSLAM)
+
+    if (!gEnableSLAM.load())
     {
         // SLAM 已关闭，不进行跟踪，直接返回状态
         status = 0;  // 返回 NO_IMAGES_YET 状态
-        
+
         {
             std::lock_guard<std::mutex> lock(gMapPointsMutex);
             vMPs.clear();
             vKeys.clear();
         }
-        
-        gShouldDrawArObject = false;  // 关闭 AR 对象显示
+
+        gShouldDrawArObject.store(false);  // 关闭 AR 对象显示
     }
     else
     {
         // SLAM 正常运行
-        
+
         const float DOWNSCALE = ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR;
         // 使用静态线程局部变量复用内存，避免每帧 resize 时重新分配内存
         static thread_local cv::Mat imgSmall;
@@ -319,9 +311,9 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
             // 线程安全地缓存跟踪结果，供其他 JNI 函数无锁读取
             {
                 std::lock_guard<std::mutex> _tcwLock(gTcwLock);
-                gCachedTcw = localTcw.clone();
-                gCachedTrackingState = localStatus;
+                gCachedTcw = localTcw;  // 共享引用赋值 O(1)
             }
+            gCachedTrackingState.store(localStatus, std::memory_order_relaxed);
             {
                 std::lock_guard<std::mutex> _mpLock(gMapPointsMutex);
                 vMPs = currentSlamSys->GetTrackedMapPoints();
@@ -336,20 +328,20 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
             {
                 std::lock_guard<std::mutex> _tcwLock(gTcwLock);
                 gCachedTcw = cv::Mat();
-                gCachedTrackingState = 0;
             }
+            gCachedTrackingState.store(0, std::memory_order_relaxed);
             status = 0;
         }
-        
+
         // 确保 vMPs 在任何情况下都处于安全状态
-        
+
         // 确保slamSys仍然有效
         if(!slamSys) {
             // slamSys已失效，提前返回
             // 此情况罕见（仅在系统销毁时），但需要保护
             return status;
         }
-        
+
         // 检查是否切换了地图
         int currentMapId = slamSys->GetCurrentMapId();
         if (currentMapId != gActiveMapId) {
@@ -364,7 +356,7 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
             if (gMapSwitchCounter >= MAP_SWITCH_THRESHOLD) {
                 std::lock_guard<std::mutex> lock(gMapDataMutex);
                 LOGD("检测到并确认地图切换：%d -> %d", gActiveMapId, currentMapId);
-                
+
                 // 保存当前状态到旧地图ID
                 if (pPlane) {
                     if (gMapPlanes.count(gActiveMapId) && gMapPlanes[gActiveMapId]) {
@@ -373,29 +365,29 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
                     gMapPlanes[gActiveMapId] = new Plane(*pPlane);
                 }
                 gMapArObjects[gActiveMapId] = gArObjects;
-                
+
                 gActiveMapId = currentMapId;
-                
+
                 // 切换AR上下文
                 if (pPlane) {
                     delete pPlane;
                     pPlane = nullptr;
                 }
-                
+
                 if (gMapPlanes.count(currentMapId) && gMapPlanes[currentMapId]) {
                     pPlane = new Plane(*gMapPlanes[currentMapId]); // 克隆一份作为当前活跃平面
                     planeLoadedFromMap = true;
                 } else {
                     planeLoadedFromMap = false;
                 }
-                
+
                 // 切换AR对象列表
                 if (gMapArObjects.count(currentMapId)) {
                     gArObjects = gMapArObjects[currentMapId]; // 复制vector
                 } else {
                     gArObjects.clear();
                 }
-                
+
                 // 更新模型矩阵（投影矩阵已在初始化时预计算）
                 if (pPlane) {
                     getRUBModelMatrixFromRDF(pPlane->glTpw, gCurrentModelMatrix);
@@ -408,7 +400,7 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
         }
 
         // 如果SLAM正在跟踪，更新AR对象视图矩阵
-        if(status == 2) {  // SLAM正常工作
+        if(status == ORB_SLAM2::Tracking::OK) {  // SLAM正常工作
             // 如果有对齐，使用对齐后的位姿更新AR对象的视图矩阵
             cv::Mat TcwForAR = localTcw;
             if(slamSys->HasMapAlignment()) {
@@ -421,8 +413,6 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
                 getRUBViewMatrixFromRDF(tmpM, gCurrentViewMatrix);
             }
         }
-        
-        // AR对象显示条件
         // - SLAM正常跟踪 (status == 2)
         // - 平面存在 (pPlane != nullptr)
         // - 对齐检查：
@@ -443,14 +433,13 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
                 alignmentOK = slamSys->HasMapAlignment();
             }
             // 如果没有地图也没有平面，alignmentOK保持为true（允许正常显示）
-            gShouldDrawArObject = (status == 2) && (pPlane != nullptr) && alignmentOK;
+            gShouldDrawArObject.store((status == ORB_SLAM2::Tracking::OK) && (pPlane != nullptr) && alignmentOK);
         }
 
-        
         // 检测SLAM丢失状态并自动重置（保留加载的地图）
         // status: 0=NO_IMAGES_YET, 1=NOT_INITIALIZED, 2=OK, 3=LOST
-        bool isLost = (status == 3);
-        
+        bool isLost = (status == ORB_SLAM2::Tracking::LOST);
+
         if(!isLost) {
             // SLAM正常工作，更新最后正常时间
             lastOkTime = timeStamp;
@@ -473,32 +462,28 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
                 }
             }
         }
-        
-        // AR模式：显示完整地图点云（绿色）
-        if(status==2) {
-            // 一旦对齐成功，立即显示完整地图点云，无需等待新点数量
-            bool hasAlignment = slamSys->HasMapAlignment();
 
-            if(hasAlignment)
-            {
-                // 获取对齐后的相机位姿（在地图坐标系下）
-                cv::Mat TcwForProjection = slamSys->GetMapAlignedPose(localTcw);
-                
-                // 获取所有地图点并绘制（绿色点云）- 受点云显示开关控制
-                if(gEnablePointCloudDisplay) {
-                    vector<ORB_SLAM2::MapPoint*> allMapPoints = slamSys->GetAllMapPoints();
-                    drawAllMapPoints(TcwForProjection, allMapPoints, outputImage, fx, fy, cx, cy, true);
+        // 3D扫描建模与AR模式：显示完整地图点云
+        if(status==ORB_SLAM2::Tracking::OK) {
+            if(gEnablePointCloudDisplay.load()) {
+                // 获取相机位姿（若有地图对齐则使用对齐后的位姿）
+                cv::Mat TcwForProjection = localTcw;
+                if(slamSys->HasMapAlignment()) {
+                    TcwForProjection = slamSys->GetMapAlignedPose(localTcw);
                 }
+
+                // 获取所有地图点并绘制全图点云 (drawOnlyLoaded = false 允许在线扫描点完整渲染)
+                vector<ORB_SLAM2::MapPoint*> allMapPoints = slamSys->GetAllMapPoints();
+                drawAllMapPoints(TcwForProjection, allMapPoints, outputImage, fx, fy, cx, cy, false);
             }
         }
-        
+
         // 最后绘制跟踪到的特征点（蓝色点云）- 受点云显示开关控制
-        if(gEnablePointCloudDisplay) {
+        if(gEnablePointCloudDisplay.load()) {
             drawTrackedPoints(vKeys,vMPs,outputImage);
         }
     }
 
-    //cv::imwrite(modelPath+"/lala2.jpg",outputImage);
     return status;
 }
 
@@ -511,9 +496,9 @@ Java_com_orb_slam2s_slamar_NativeHelper_initSLAM(JNIEnv* env, jobject instance, 
 
     slamInitialized = true;
     modelPath = path;
-    
+
     env->ReleaseStringUTFChars(path_, path);
-    
+
     // 从Config.h加载相机参数 (基准值: 640x360校准)
     fx = ORB_SLAM2::CAMERA_FX;
     fy = ORB_SLAM2::CAMERA_FY;
@@ -533,8 +518,8 @@ Java_com_orb_slam2s_slamar_NativeHelper_initSLAM(JNIEnv* env, jobject instance, 
     timeStamp = 0.0;
 
     // 预计算投影矩阵（基于缩放后的内参）
-    frustumM_RUB(640, 360, gScaledFx, gScaledFy, gScaledCx, gScaledCy, ORB_SLAM2::PROJECTION_ZNEAR, ORB_SLAM2::PROJECTION_ZFAR, gCurrentProjectionMatrix);
-    
+    frustumM_RUB((int)ORB_SLAM2::BASE_SLAM_WIDTH, (int)ORB_SLAM2::BASE_SLAM_HEIGHT, gScaledFx, gScaledFy, gScaledCx, gScaledCy, ORB_SLAM2::PROJECTION_ZNEAR, ORB_SLAM2::PROJECTION_ZFAR, gCurrentProjectionMatrix);
+
     // 初始化分析器 (仅在开发模式下生效)
     VT_PROFILE_INITIALIZE(std::string(path) + "/mentha_profile.bin");
     LOGD("Create SLAM System...");
@@ -550,8 +535,8 @@ void updateScaledIntrinsics(int cameraWidth, int cameraHeight) {
     if (cameraWidth <= 0 || cameraHeight <= 0) return;
 
     // 内部SLAM工作分辨率 = 相机分辨率的一半
-    int slamWidth = cameraWidth / 2;
-    int slamHeight = cameraHeight / 2;
+    int slamWidth = (int)(cameraWidth / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR);
+    int slamHeight = (int)(cameraHeight / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR);
     if (slamWidth < 1) slamWidth = 1;
     if (slamHeight < 1) slamHeight = 1;
 
@@ -580,8 +565,8 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeUpdateResolution(JNIEnv* env, jobj
                                                                jint cameraWidth, jint cameraHeight) {
     updateScaledIntrinsics(cameraWidth, cameraHeight);
 
-    int slamWidth = cameraWidth / 2;
-    int slamHeight = cameraHeight / 2;
+    int slamWidth = (int)(cameraWidth / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR);
+    int slamHeight = (int)(cameraHeight / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR);
     if (slamWidth < 1) slamWidth = 1;
     if (slamHeight < 1) slamHeight = 1;
 
@@ -599,23 +584,24 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeUpdateResolution(JNIEnv* env, jobj
 }
 
 JNIEXPORT void JNICALL
-Java_com_orb_slam2s_slamar_NativeHelper_saveMap(JNIEnv* env, jobject instance, jstring path_)
+Java_com_orb_slam2s_slamar_NativeHelper_saveMap(JNIEnv* env, jobject instance, jstring path_, jint maxPoints)
 {
     const char* path = env->GetStringUTFChars(path_, nullptr);
-    
+
     if (slamSys)
     {
-
         auto t0 = static_cast<double>(cv::getTickCount());
-        slamSys->SaveMap(std::string(path));
+        if (maxPoints > 0) {
+            slamSys->SaveMap(std::string(path), maxPoints);
+        } else {
+            slamSys->SaveMap(std::string(path)); // 使用默认 SYSTEM_MAX_MPS_SAVE 上限
+        }
         SavePlaneAndArInfo(std::string(path)); // 保存平面和AR信息
-        
+
         auto t1 = static_cast<double>(cv::getTickCount());
         double ms = (t1 - t0) * 1000.0 / cv::getTickFrequency();
-        
-        //     slamSys->GetNumKeyFrames(), slamSys->GetNumMapPoints());
     }
-    
+
     env->ReleaseStringUTFChars(path_, path);
 }
 
@@ -631,7 +617,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_loadMapWithId(JNIEnv *env, jobject insta
         });
 
         auto t0 = static_cast<double>(cv::getTickCount());
-        
+
         // 如果不是追加模式，清理旧的全局数据
         if (!append) {
              std::lock_guard<std::mutex> lock(gMapDataMutex);
@@ -647,10 +633,10 @@ Java_com_orb_slam2s_slamar_NativeHelper_loadMapWithId(JNIEnv *env, jobject insta
 
         slamSys->LoadMap(std::string(path), mapId, append);
         LoadPlaneAndArInfo(std::string(path), mapId);
-        
+
         auto t1 = static_cast<double>(cv::getTickCount());
         double ms = (t1 - t0) * 1000.0 / cv::getTickFrequency();
-        
+
     }
     env->ReleaseStringUTFChars(path_, path);
 }
@@ -672,8 +658,9 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeProcessFrameMat(
 
     // statusBuf: [0]=tracking, [1]=shouldDraw, [2]=scaleBits
     statusBuf[0] = processImage(mGr, mRgba, statusBuf);
-    statusBuf[1] = gShouldDrawArObject ? 1 : 0;
-    statusBuf[2] = *reinterpret_cast<jint*>(&gArObjectScale);
+    statusBuf[1] = gShouldDrawArObject.load() ? 1 : 0;
+    float scaleBits = gArObjectScale.load();
+    std::memcpy(&statusBuf[2], &scaleBits, sizeof(scaleBits));
 
     env->ReleaseIntArrayElements(statusBuf_, statusBuf, 0);
 }
@@ -684,11 +671,9 @@ Java_com_orb_slam2s_slamar_NativeHelper_detect(JNIEnv *env, jobject instance,
 
     // 从线程安全缓存读取最新 Tcw，无需阻塞跟踪线程
     cv::Mat currentTcw;
-    int currentStatus = 0;
     {
         std::lock_guard<std::mutex> tcwLock(gTcwLock);
         currentTcw = gCachedTcw.clone();
-        currentStatus = gCachedTrackingState;
     }
 
     // 同时也需要 gMapDataMutex 保护平面数据
@@ -704,19 +689,19 @@ Java_com_orb_slam2s_slamar_NativeHelper_detect(JNIEnv *env, jobject instance,
         if(slamSys->HasMapAlignment()) {
             TcwForPlane = slamSys->GetMapAlignedPose(currentTcw);
         }
-        
+
         pPlane=detectPlane(TcwForPlane,vMPs,ORB_SLAM2::PLANE_DETECT_RANSAC_ITERS);
         if(pPlane && slamSys->MapChanged())
             pPlane->Recompute();
         statusBuf[1]=pPlane? ORB_SLAM2::PLANE_DETECTED : ORB_SLAM2::PLANE_NOT_DETECTED;
-        
+
         // 检测到平面时更新AR对象矩阵
         if(pPlane) {
             planeLoadedFromMap = false;  // 手动检测的平面，标记为非地图加载
-            
+
             // 更新模型矩阵（投影矩阵已在SLAM初始化时预计算）
             getRUBModelMatrixFromRDF(pPlane->glTpw, gCurrentModelMatrix);
-            
+
         }
     }
     env->ReleaseIntArrayElements(statusBuf_, statusBuf, 0);
@@ -742,7 +727,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeGetMVP(JNIEnv *env, jobject instan
         cv::Mat TcwForView;
         {
             std::lock_guard<std::mutex> tcwLock(gTcwLock);
-            if(gCachedTrackingState==2 && !gCachedTcw.empty()) {
+            if(gCachedTrackingState.load(std::memory_order_relaxed)==2 && !gCachedTcw.empty()) {
                 useSlam = true; TcwForView = gCachedTcw.clone();
             }
         }
@@ -757,7 +742,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeGetMVP(JNIEnv *env, jobject instan
         }
     }
     // Projection
-    frustumM_RUB(imageWidth/2, imageHeight/2, fx, fy, cx, cy,
+    frustumM_RUB((int)(imageWidth/ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR), (int)(imageHeight/ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR), fx, fy, cx, cy,
                  ORB_SLAM2::PROJECTION_ZNEAR, ORB_SLAM2::PROJECTION_ZFAR, projM);
 
     env->ReleaseFloatArrayElements(modelM_, modelM, 0);
@@ -772,7 +757,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_getV(JNIEnv *env, jobject instance, jflo
     bool useSlam = false; cv::Mat TcwForView;
     {
         std::lock_guard<std::mutex> tcwLock(gTcwLock);
-        if(gCachedTrackingState==2 && !gCachedTcw.empty()) {
+        if(gCachedTrackingState.load(std::memory_order_relaxed)==2 && !gCachedTcw.empty()) {
             useSlam = true; TcwForView = gCachedTcw.clone();
         }
     }
@@ -803,63 +788,33 @@ Java_com_orb_slam2s_slamar_NativeHelper_getMapStats(JNIEnv *env, jobject instanc
     return result;
 }
 
-// 比较器，用于按MapPoint的ID排序
-struct MapPointComparator {
-    bool operator()(const ORB_SLAM2::MapPoint* a, const ORB_SLAM2::MapPoint* b) const {
-        // 通常 ORB-SLAM2 中 mnId 是 public
-        return a->mnId > b->mnId; // 降序，ID 大的在前（最新的）
-    }
-};
-
 JNIEXPORT jfloatArray JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_getMiniMapPoints(JNIEnv *env, jobject instance, jint maxPoints) {
-    // 直接读取 slamSys（Map 内部已有 mMutexMap 保护 GetAllMapPoints）
-    // 无需 gSlamStateMutex，不再阻塞跟踪线程
     if(!slamSys) {
         return env->NewFloatArray(0);
     }
     std::vector<ORB_SLAM2::MapPoint*> v = slamSys->GetAllMapPoints();
-    
+
     std::vector<float> out;
     size_t total = v.size();
-    
-    // 使用 Top-K 算法获取最新的 maxPoints 个点（按 ID 降序）
-    
+
+    // 全地图均匀采样，确保全物体/多视角点云均匀保留，不丢弃旧视角点
     if (total > 0) {
-        if (total > (size_t)maxPoints) {
-            // 使用 partial_sort 找出前 maxPoints 个最大的（最新的）点
-            std::partial_sort(v.begin(), v.begin() + maxPoints, v.end(), MapPointComparator());
-            
-            // 只取前 maxPoints 个
-            out.reserve((size_t)maxPoints * 3);
-            for(size_t i=0; i<(size_t)maxPoints; ++i) {
-                ORB_SLAM2::MapPoint* p = v[i];
-                // 访问前再次检查指针有效性
-                if(!p) continue;
-                if(p->isBad()) continue;
-                cv::Mat P = p->GetWorldPos();
-                if(P.empty()) continue;  // 检查空矩阵的安全性检查
-                out.push_back(P.at<float>(0));
-                out.push_back(P.at<float>(1));
-                out.push_back(P.at<float>(2));
-            }
-        } else {
-            // 点数不足，全部返回
-            out.reserve(total * 3);
-            for(size_t i=0; i<total; ++i) {
-                ORB_SLAM2::MapPoint* p = v[i];
-                // 访问前再次检查指针有效性
-                if(!p) continue;
-                if(p->isBad()) continue;
-                cv::Mat P = p->GetWorldPos();
-                if(P.empty()) continue;  // 检查空矩阵的安全性检查
-                out.push_back(P.at<float>(0));
-                out.push_back(P.at<float>(1));
-                out.push_back(P.at<float>(2));
-            }
+        size_t limit = (maxPoints > 0 && (size_t)maxPoints < total) ? (size_t)maxPoints : total;
+        size_t step = (total > limit) ? (total / limit) : 1;
+
+        out.reserve(limit * 3);
+        for(size_t i=0; i<total && out.size() < limit * 3; i += step) {
+            ORB_SLAM2::MapPoint* p = v[i];
+            if(!p || p->isBad()) continue;
+            cv::Mat P = p->GetWorldPos();
+            if(P.empty()) continue;
+            out.push_back(P.at<float>(0));
+            out.push_back(P.at<float>(1));
+            out.push_back(P.at<float>(2));
         }
     }
- 
+
     jfloatArray arr = env->NewFloatArray((jsize)out.size());
     if(arr && !out.empty()) env->SetFloatArrayRegion(arr, 0, (jsize)out.size(), out.data());
     return arr;
@@ -869,19 +824,19 @@ Java_com_orb_slam2s_slamar_NativeHelper_getMiniMapPoints(JNIEnv *env, jobject in
 JNIEXPORT jfloatArray JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_getTrackedPoints(JNIEnv *env, jobject instance, jint maxPoints) {
     std::vector<float> out;
-    
+
     // 线程安全地复制vMPs以防止与SLAM线程的竞态条件
     std::vector<ORB_SLAM2::MapPoint*> localMPs;
     {
         std::lock_guard<std::mutex> lock(gMapPointsMutex);
         localMPs = vMPs;  // 持有锁时创建副本
     }
-    
+
     size_t total = localMPs.size();
-    
+
     // 限制点数（如果需要）
     size_t limit = (maxPoints > 0 && (size_t)maxPoints < total) ? (size_t)maxPoints : total;
-    
+
     out.reserve(limit * 3);
     for(size_t i=0; i<limit; ++i) {
         ORB_SLAM2::MapPoint* p = localMPs[i];
@@ -894,7 +849,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_getTrackedPoints(JNIEnv *env, jobject in
         out.push_back(Pw.y);
         out.push_back(Pw.z);
     }
- 
+
     jfloatArray arr = env->NewFloatArray((jsize)out.size());
     if(arr && !out.empty()) env->SetFloatArrayRegion(arr, 0, (jsize)out.size(), out.data());
     return arr;
@@ -907,7 +862,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_getAllArObjectsData(JNIEnv *env, jobject
     std::lock_guard<std::mutex> lock(gMapDataMutex);
     std::vector<float> data;
     data.push_back((float)gArObjects.size());
-    
+
     for(const auto& obj : gArObjects) {
         if(!obj.isValid) continue;
         for(int i=0; i<16; i++) {
@@ -915,60 +870,61 @@ Java_com_orb_slam2s_slamar_NativeHelper_getAllArObjectsData(JNIEnv *env, jobject
         }
         data.push_back(obj.scale);
     }
-    
+
     jfloatArray arr = env->NewFloatArray((jsize)data.size());
     if(arr && !data.empty()) env->SetFloatArrayRegion(arr, 0, (jsize)data.size(), data.data());
     return arr;
 }
 
-
 // 更新AR对象缩放（当用户进行捏合缩放时从Java调用）
 JNIEXPORT void JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_updateArObjectScale(JNIEnv *env, jobject instance, jfloat scaleFactor) {
-    float zoomFac = (scaleFactor - 1.0f) / 5.0f;
-    gArObjectScale += zoomFac;
-    gArObjectScale = fmax(0.03f, gArObjectScale);  // 最小缩放
-    LOGD("AR对象缩放已更新：%.3f", gArObjectScale);
+    float zoomFac = (scaleFactor - 1.0f) / ORB_SLAM2::AR_SCALE_ZOOM_DIVISOR;
+    // 原子读-改-写（UI 线程写、分析线程读，消除数据竞争）
+    float cur = gArObjectScale.load();
+    cur += zoomFac;
+    cur = fmax(ORB_SLAM2::AR_SCALE_MIN, cur);  // 最小缩放
+    gArObjectScale.store(cur);
+    LOGD("AR对象缩放已更新：%.3f", gArObjectScale.load());
 }
 
 // 获取当前AR对象缩放
 JNIEXPORT jfloat JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_getArObjectScale(JNIEnv *env, jobject instance) {
-    return gArObjectScale;
+    return gArObjectScale.load();
 }
 
 // 设置点云显示开关（控制绿色和蓝色点云）
 JNIEXPORT void JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_setPointCloudDisplay(JNIEnv *env, jobject instance, jboolean enable) {
-    gEnablePointCloudDisplay = (bool)enable;
-    LOGD("点云显示模式：%s", gEnablePointCloudDisplay ? "启用" : "禁用");
+    gEnablePointCloudDisplay.store((bool)enable);
+    LOGD("点云显示模式：%s", gEnablePointCloudDisplay.load() ? "启用" : "禁用");
 }
 
 // 获取点云显示状态
 JNIEXPORT jboolean JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_isPointCloudDisplayEnabled(JNIEnv *env, jobject instance) {
-    return (jboolean)gEnablePointCloudDisplay;
+    return (jboolean)gEnablePointCloudDisplay.load();
 }
-
 
 // ========== SLAM 开关控制接口 ==========
 
 // 启用/禁用 SLAM
 JNIEXPORT void JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_setEnableSLAM(JNIEnv *env, jobject instance, jboolean enable) {
-    bool wasEnabled = gEnableSLAM;
-    gEnableSLAM = (bool)enable;
-    
-    if(wasEnabled && !gEnableSLAM) {
+    bool wasEnabled = gEnableSLAM.load();
+    gEnableSLAM.store((bool)enable);
+
+    if(wasEnabled && !gEnableSLAM.load()) {
         // SLAM 从开启变为关闭，清理相关状态
         {
             std::lock_guard<std::mutex> lock(gMapPointsMutex);
             vMPs.clear();
             vKeys.clear();
         }
-        gShouldDrawArObject = false;
+        gShouldDrawArObject.store(false);
         LOGD("SLAM 已关闭");
-    } else if(!wasEnabled && gEnableSLAM) {
+    } else if(!wasEnabled && gEnableSLAM.load()) {
         // SLAM 从关闭变为开启
         LOGD("SLAM 已开启");
     }
@@ -977,7 +933,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_setEnableSLAM(JNIEnv *env, jobject insta
 // 获取 SLAM 启用状态
 JNIEXPORT jboolean JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_isEnableSLAM(JNIEnv *env, jobject instance) {
-    return (jboolean)gEnableSLAM;
+    return (jboolean)gEnableSLAM.load();
 }
 
 }

@@ -38,6 +38,7 @@
 #include<opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
 #include "Frame.h"
+#include "Config.h"
 
 using namespace std;
 
@@ -52,13 +53,12 @@ class Initializer
 public:
 
     // 固定参考帧
-    Initializer(const Frame &ReferenceFrame, float sigma = 1.0, int iterations = 200);
+    Initializer(const Frame &ReferenceFrame, float sigma = INITIALIZER_SIGMA, int iterations = INITIALIZER_RANSAC_ITERS);
 
     // 并行计算基础矩阵和单应矩阵
     // 选择模型并尝试恢复运动和运动结构
     bool Initialize(const Frame &CurrentFrame, const vector<int> &vMatches12,
                     cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated);
-
 
 private:
 
@@ -87,7 +87,6 @@ private:
                        const cv::Mat &K, vector<cv::Point3f> &vP3D, float th2, vector<bool> &vbGood, float &parallax);
 
     void DecomposeE(const cv::Mat &E, cv::Mat &R1, cv::Mat &R2, cv::Mat &t);
-
 
     // 参考帧中的关键点(帧1)
     vector<cv::KeyPoint> mvKeys1;

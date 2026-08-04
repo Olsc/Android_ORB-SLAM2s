@@ -272,7 +272,7 @@ std::vector<size_t> Frame::GetFeaturesInArea(const float &x, const float  &y, co
     // 半径搜索预留16槽位替代原来的全量reserve(N≈1000)
 
     // TODO: 临时数值，待测试和优化
-    vIndices.reserve(16);
+    vIndices.reserve(FRAME_SEARCH_RESERVE);
 
     const int nMinCellX = max(0,(int)floor((x-mnMinX-r)*mfGridElementWidthInv));
     if(nMinCellX>=FRAME_GRID_COLS)
@@ -344,7 +344,6 @@ bool Frame::PosInGrid(const cv::KeyPoint &kp, int &posX, int &posY)
 
     return true;
 }
-
 
 void Frame::ComputeImageBounds(const cv::Mat &imLeft)
 {

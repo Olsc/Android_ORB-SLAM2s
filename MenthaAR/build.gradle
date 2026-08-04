@@ -18,7 +18,6 @@ android {
                 cppFlags "-std=c++11 -frtti -fexceptions -fopenmp"
                 arguments "-DANDROID_ARM_NEON=TRUE",
                         "-DANDROID_TOOLCHAIN=clang",
-                        "-DBUILD_FAT_JAVA_LIBS=ON",
                         "-DANDROID_STL=c++_static"
                 abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
             }

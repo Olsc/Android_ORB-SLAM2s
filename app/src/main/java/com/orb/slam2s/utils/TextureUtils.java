@@ -3,7 +3,6 @@ package com.orb.slam2s.utils;
 import android.graphics.Bitmap;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
-import android.util.Log;
 
 
 /**
@@ -12,7 +11,6 @@ import android.util.Log;
  */
 
 public class TextureUtils{
-    private static final String TAG = "TextureUtils";
 
     public static int loadTexture(final Bitmap img, final int usedTexId) {
         int textures[] = new int[1];
@@ -39,40 +37,15 @@ public class TextureUtils{
     }
 
 
-    public static int getTextureFromBitmap(Bitmap bitmap,int imageSize[]){
-        final int[] textureObjectIds=new int[1];
-        GLES20.glGenTextures(1,textureObjectIds,0);
-        if (textureObjectIds[0]==0){
-            Log.d(TAG,"Failed at glGenTextures");
+    public static int getTextureFromBitmap(final Bitmap img, int[] outSize) {
+        if (img == null || img.isRecycled()) {
             return 0;
         }
-
-        if (bitmap==null){
-            Log.d(TAG,"Failed at decoding bitmap");
-            GLES20.glDeleteTextures(1,textureObjectIds,0);
-            return 0;
+        if (outSize != null && outSize.length >= 2) {
+            outSize[0] = img.getWidth();
+            outSize[1] = img.getHeight();
         }
-
-        if(imageSize!=null && imageSize.length>=2){
-            imageSize[0]=bitmap.getWidth();
-            imageSize[1]=bitmap.getHeight();
-        }
-
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,textureObjectIds[0]);
-
-        GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D,
-                GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
-        GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D,
-                GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
-        GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D,
-                GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
-        GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D,
-                GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
-        GLUtils.texImage2D(GLES20.GL_TEXTURE_2D,0,bitmap,0);
-        bitmap.recycle();
-
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,0);
-        return textureObjectIds[0];
+        return loadTexture(img, 0);
     }
 
     public static void bindTexture2D(int textureId,int activeTextureID,int handle,int idx){

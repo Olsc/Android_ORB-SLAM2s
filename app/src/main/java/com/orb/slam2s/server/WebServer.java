@@ -121,7 +121,10 @@ public class WebServer {
         SSLServerSocketFactory ssf = sslContext.getServerSocketFactory();
         
         // 8. 创建并返回SSLServerSocket
-        return (SSLServerSocket) ssf.createServerSocket(port);
+        SSLServerSocket sslServerSocket = (SSLServerSocket) ssf.createServerSocket(port);
+        sslServerSocket.setNeedClientAuth(false);
+        sslServerSocket.setWantClientAuth(false);
+        return sslServerSocket;
     }
 
     /**
@@ -174,26 +177,6 @@ public class WebServer {
         }
     }
 
-    @SuppressWarnings("unused")
-    public void broadcastFrame(byte[] frame) {
-        synchronized (streamClients) {
-            Iterator<OutputStream> it = streamClients.iterator();
-            while (it.hasNext()) {
-                OutputStream os = it.next();
-                try {
-                    os.write(("--boundary\r\n" +
-                            "Content-Type: image/jpeg\r\n" +
-                            "Content-Length: " + frame.length + "\r\n\r\n").getBytes());
-                    os.write(frame);
-                    os.write("\r\n".getBytes());
-                    os.flush();
-                } catch (IOException e) {
-                    it.remove();
-                }
-            }
-        }
-    }
-
     private class ClientHandler implements Runnable {
         private final Socket socket;
 
@@ -236,6 +219,12 @@ public class WebServer {
                     }
                 }
 
+            } catch (javax.net.ssl.SSLException e) {
+                // SSL 握手或协议错误（通常是客户端/浏览器未信任自签名证书而拒绝 TLS 握手）
+                Log.w(TAG, "客户端 SSL 握手失败 (证书未信任或客户端断开): " + e.getMessage());
+            } catch (java.net.SocketException e) {
+                // 客户端连接中断或重置
+                Log.w(TAG, "客户端 Socket 异常: " + e.getMessage());
             } catch (IOException e) {
                 Log.e(TAG, "客户端处理器错误", e);
             }
@@ -387,7 +376,6 @@ public class WebServer {
             int trackingStatus = nativeHelper.getLastTrackingResult();
 
             buffer.putInt(trackingStatus);
-            FloatBuffer fbView = buffer.asFloatBuffer(); // 使用FloatBuffer写入以提高性能 (buffer position必须对齐)
             // 注意: buffer.putFloat会推进位置，混合使用putInt和FloatBuffer需小心 position
             // 这里直接用 putFloat 循环写入比较安全，或者重新切片
             for (float f : viewMatrix) {

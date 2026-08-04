@@ -48,6 +48,7 @@
 #include"ORBextractor.h"
 #include "Initializer.h"
 #include "System.h"
+#include "Config.h"
 
 #include <deque>
 
@@ -81,7 +82,6 @@ public:
     void SetMap(Map* pMap);
 
     // 加载新设置：焦距应相似，否则投影时尺度预测会失败。TODO: 修改MapPoint::PredictScale以考虑焦距
-    void ChangeCalibration(const string &strSettingPath);
     void UpdateCalibration(float fx, float fy, float cx, float cy);
 
     // 如果您已停用局部建图并且只想定位相机，请使用此函数。
@@ -104,10 +104,10 @@ public:
     }
     // 背景匹配分数（0-1），即使未完成PnP也能反映进入目标区域的可能性
     float GetRelocMatchScore() const { return mRelocMatchScore.load(); }
-    
+
     // 平滑对齐更新：减少单帧抖动
     void UpdateAlignmentSmooth(const cv::Mat &T_new, int inliers, float confidence, double ts);
-    
+
     // 为加载的地图点构建/重建缓存的参考描述符
     void BuildLoadedRefCache();
 
@@ -222,10 +222,10 @@ protected:
     KeyFrame* mpReferenceKF;
     std::vector<KeyFrame*> mvpLocalKeyFrames;
     std::vector<MapPoint*> mvpLocalMapPoints;
-    
+
     // 系统
     System* mpSystem;
-    
+
     //绘制器
     FrameDrawer* mpFrameDrawer;
 
@@ -279,7 +279,7 @@ protected:
     float mAlignConfidence = 0.0f;
     double mLastAlignTs = 0.0;
     std::atomic<float> mRelocMatchScore{0.0f};
-    
+
     // 平滑对齐更新机制：使用EMA（指数移动平均）减少抖动
     cv::Mat mSmoothedT_map_from_slam;  // 平滑后的对齐变换
     int mAlignUpdateCount = 0;  // 对齐更新计数
@@ -301,17 +301,17 @@ protected:
         int mapId = 0;
     };
     std::vector<RefMPSnapshot> mRefSnapshots;
-    
+
     // 简单的3D网格索引，用于加速空间查询
     struct LoadedMapGrid {
         float minX=0, maxX=0, minY=0, maxY=0, minZ=0, maxZ=0;
-        float cellSize = 10.0f; // 默认10米
+        float cellSize = LOADED_MAP_GRID_CELL_SIZE; // 默认10米
         int nCols=0, nRows=0, nSlices=0;
         std::vector<std::vector<int>> cells;
-        
+
         void Clear() { cells.clear(); }
         // 构建网格
-        void Build(const std::vector<RefMPSnapshot>& snaps, float size = 10.0f);
+        void Build(const std::vector<RefMPSnapshot>& snaps, float size = LOADED_MAP_GRID_CELL_SIZE);
         // 获取包围盒内的候选点 (原始版本,返回矩形区域)
         void GetCandidatesInBBox(const cv::Point3f& center, float radius, std::vector<int>& outIndices) const;
         // 获取包围盒内的候选点 (优化版本,精确圆形过滤)
@@ -343,11 +343,11 @@ protected:
     bool TryConsumeRelocAlignment(RelocAlignResult &out);
 
     // ===== 配置旋钮 =====
-    int mCfgTopKWords = 6;
-    int mCfgMaxCandidates = 8000;
-    int mCfgMatchChunk = 2000;
-    int mCfgMaxBindInliers = 120;
-    int mCfgMaxProjBinds = 200;
+    int mCfgTopKWords = SYSTEM_RELOC_CONFIG_TOP_K;
+    int mCfgMaxCandidates = SYSTEM_RELOC_CONFIG_MAX_CANDIDATES;
+    int mCfgMatchChunk = SYSTEM_RELOC_CONFIG_MATCH_CHUNK;
+    int mCfgMaxBindInliers = SYSTEM_RELOC_CONFIG_MAX_BIND_INLIERS;
+    int mCfgMaxProjBinds = SYSTEM_RELOC_CONFIG_MAX_PROJ_BINDS;
     // 重定位冷却以避免在明显不匹配时进行重型PnP
     int mRelocCooldownFrames = 0;
 
@@ -357,17 +357,17 @@ protected:
     int mMapSwitchCooldownFrames = 0;
     int mNoCurMapLoadedInliersFrames = 0;
     int mLastAcceptedAlignInliers = 0;
-    
+
     // 最近一次跟踪的内点数（原子变量，供后台线程读取）
     std::atomic<int> mLastTrackingInliers{0};
     // 最近一次跟踪状态（供后台线程判断是否需要运行）
     std::atomic<bool> mTrackingOK{false};
     // 后台线程上次运行时间戳
     std::chrono::steady_clock::time_point mLastBgRunTime;
-    
+
     // 重试计数器，防止GlobalRelocLoop死循环
     int mRefCacheRetryCount = 0;
-    static constexpr int MAX_REF_CACHE_RETRIES = 10;
+    // 重试上限见 Config.h 的 TRACKING_MAX_REF_CACHE_RETRIES
 
     // 最近一次成功触发 CreateNewMap 时的当前帧 id，用于做冷却限频。
     // 配合 TRACKING_NEW_MAP_COOLDOWN_FRAMES 使用，避免高频丢失导致连续触发新建子地图。

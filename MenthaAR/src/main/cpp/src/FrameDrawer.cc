@@ -46,7 +46,6 @@ namespace ORB_SLAM2
 FrameDrawer::FrameDrawer(Map* pMap):mpMap(pMap)
 {
     mState=Tracking::SYSTEM_NOT_READY;
-    mIm = cv::Mat(480,640,CV_8UC3, cv::Scalar(0,0,0));
 }
 
 void FrameDrawer::SetMap(Map* pMap)
@@ -55,107 +54,14 @@ void FrameDrawer::SetMap(Map* pMap)
     mpMap = pMap;
 }
 
-
-cv::Mat FrameDrawer::DrawFrame()
-{
-    cv::Mat im;
-    vector<cv::KeyPoint> vIniKeys; // 初始化：参考帧中的关键点
-    vector<int> vMatches; // 初始化：与参考关键点的对应关系
-    vector<cv::KeyPoint> vCurrentKeys; // 当前帧中的关键点
-    vector<bool> vbVO, vbMap; // 当前帧中跟踪的地图点
-    int state; // 跟踪状态
-
-    // 在作用域锁内复制变量
-    {
-        unique_lock<mutex> lock(mMutex);
-        state=mState;
-        if(mState==Tracking::SYSTEM_NOT_READY)
-            mState=Tracking::NO_IMAGES_YET;
-
-        mIm.copyTo(im);
-
-        if(mState==Tracking::NOT_INITIALIZED)
-        {
-            vCurrentKeys = mvCurrentKeys;
-            vIniKeys = mvIniKeys;
-            vMatches = mvIniMatches;
-        }
-        else if(mState==Tracking::OK)
-        {
-            vCurrentKeys = mvCurrentKeys;
-            vbVO = mvbVO;
-            vbMap = mvbMap;
-        }
-        else if(mState==Tracking::LOST)
-        {
-            vCurrentKeys = mvCurrentKeys;
-        }
-    } // 销毁作用域锁 -> 释放互斥锁
-
-    if(im.channels()<3) // 这应该总是成立
-        cvtColor(im,im,CV_GRAY2BGR);
-
-    // 绘制
-    if(state==Tracking::NOT_INITIALIZED) // 初始化中
-    {
-        for(unsigned int i=0; i<vMatches.size(); i++)
-        {
-            if(vMatches[i]>=0)
-            {
-                cv::line(im,vIniKeys[i].pt,vCurrentKeys[vMatches[i]].pt,
-                        cv::Scalar(0,255,0));
-            }
-        }        
-    }
-    else if(state==Tracking::OK) // 跟踪中
-    {
-        mnTracked=0;
-        mnTrackedVO=0;
-        const float r = 5;
-        for(int i=0;i<N;i++)
-        {
-            if(vbVO[i] || vbMap[i])
-            {
-                cv::Point2f pt1,pt2;
-                pt1.x=vCurrentKeys[i].pt.x-r;
-                pt1.y=vCurrentKeys[i].pt.y-r;
-                pt2.x=vCurrentKeys[i].pt.x+r;
-                pt2.y=vCurrentKeys[i].pt.y+r;
-
-                // 这是与地图中地图点的匹配
-                if(vbMap[i])
-                {
-                    cv::rectangle(im,pt1,pt2,cv::Scalar(0,255,0));
-                    cv::circle(im,vCurrentKeys[i].pt,2,cv::Scalar(0,255,0),-1);
-                    mnTracked++;
-                }
-                else // 这是与上一帧创建的"视觉里程计"地图点的匹配
-                {
-                    cv::rectangle(im,pt1,pt2,cv::Scalar(255,0,0));
-                    cv::circle(im,vCurrentKeys[i].pt,2,cv::Scalar(255,0,0),-1);
-                    mnTrackedVO++;
-                }
-            }
-        }
-    }
-
-    cv::Mat imWithInfo;
-    // DrawTextInfo(im,state, imWithInfo);
-
-    return imWithInfo;
-}
-
-
 void FrameDrawer::Update(Tracking *pTracker)
 {
     unique_lock<mutex> lock(mMutex);
-    pTracker->mImGray.copyTo(mIm);
     mvCurrentKeys=pTracker->mCurrentFrame.mvKeys;
     N = mvCurrentKeys.size();
     mvbVO = vector<bool>(N,false);
     mvbMap = vector<bool>(N,false);
     mbOnlyTracking = pTracker->mbOnlyTracking;
-
 
     if(pTracker->mLastProcessedState==Tracking::NOT_INITIALIZED)
     {

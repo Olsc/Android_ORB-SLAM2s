@@ -6,13 +6,10 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
 
-import com.orb.slam2s.constant.GlobalConstant;
 import com.orb.slam2s.rendering.gles.GLRootView;
 import com.orb.slam2s.utils.TextureUtils;
 
 import com.orb.slam2s.slamar.OpenCVBridge;
-
-import java.util.List;
 
 /**
  * 这是一个基础类，实现与相机和OpenCV库的交互。
@@ -24,7 +21,6 @@ import java.util.List;
 public abstract class CameraGLViewBase extends GLRootView{
 
     private static final String TAG = "CameraGLViewBase";
-    private static final int MAX_UNSPECIFIED = -1;
     private static final int STOPPED = 0;
     private static final int STARTED = 1;
 
@@ -36,19 +32,11 @@ public abstract class CameraGLViewBase extends GLRootView{
 
     protected int mFrameWidth;
     protected int mFrameHeight;
-    protected int mMaxHeight;
-    protected int mMaxWidth;
-    protected int mPreviewFormat = RGBA;
     protected boolean mEnabled;
-
-    public static final int RGBA = 1;
-    public static final int GRAY = 2;
 
     protected int imageTextureId;
     public CameraGLViewBase(Context context) {
         super(context);
-        mMaxWidth = MAX_UNSPECIFIED;
-        mMaxHeight = MAX_UNSPECIFIED;
     }
 
     public CameraGLViewBase(Context context, AttributeSet attrs) {
@@ -56,9 +44,6 @@ public abstract class CameraGLViewBase extends GLRootView{
 
         int count = attrs.getAttributeCount();
         Log.d(TAG, "属性计数: " + Integer.valueOf(count));
-
-        mMaxWidth = MAX_UNSPECIFIED;
-        mMaxHeight = MAX_UNSPECIFIED;
     }
     
     public interface CvCameraViewListener2 {
@@ -129,26 +114,6 @@ public abstract class CameraGLViewBase extends GLRootView{
 
     public void setCvCameraViewListener(CvCameraViewListener2 listener) {
         mListener = listener;
-    }
-
-    /**
-     * 此方法设置允许的相机帧的最大大小。在选择大小时，
-     * 将选择小于或等于设定大小的最大尺寸。
-     * 例如 - 我们设置setMaxFrameSize(200,200)，我们有176x152和320x240尺寸。
-     * 预览帧将选择176x152尺寸。
-     * 当需要出于某种原因限制预览帧大小时，此方法很有用(例如用于视频录制)
-     * @param maxWidth - 相机帧允许的最大宽度
-     * @param maxHeight - 相机帧允许的最大高度
-     */
-    public void setMaxFrameSize(int maxWidth, int maxHeight) {
-        mMaxWidth = maxWidth;
-        mMaxHeight = maxHeight;
-    }
-
-    public void SetCaptureFormat(int format)
-    {
-        mPreviewFormat = format;
-        // 旧式 CvCameraViewListener 已移除
     }
 
     /**
@@ -258,7 +223,6 @@ public abstract class CameraGLViewBase extends GLRootView{
             }
         }
 
-        //Log.d("JNI_", "转换完成");
         if (bmpValid && mCacheBitmap != null) {
             //将mCacheBitmap发送到纹理。
 
@@ -267,7 +231,6 @@ public abstract class CameraGLViewBase extends GLRootView{
                 public void run() {
                     synchronized (mSyncObject) {
                         if (mCacheBitmap != null && !mCacheBitmap.isRecycled()) {
-                            //Log.d("JNI_", "发送图像：textureId "+imageTextureId);
                             TextureUtils.loadTexture(mCacheBitmap, imageTextureId);
                         }
                     }
@@ -276,7 +239,6 @@ public abstract class CameraGLViewBase extends GLRootView{
         }
 
         //Martin: 使用画布绘制位图大约需要40-50毫秒
-        //Log.d("JNI_", "绘制完成");
 
     }
 
@@ -301,42 +263,4 @@ public abstract class CameraGLViewBase extends GLRootView{
         mCacheBitmap = Bitmap.createBitmap(mFrameWidth, mFrameHeight, Bitmap.Config.ARGB_8888);
     }
 
-    public interface ListItemAccessor {
-        public int getWidth(Object obj);
-        public int getHeight(Object obj);
-    };
-
-    /**
-     * 子类可以调用此辅助方法来选择相机预览大小。
-     * 它会遍历支持的预览大小列表，并选择最大的一个，
-     * 该大小同时适合通过setMaxFrameSize()设置的值和为此视图分配的表面帧
-     * @param supportedSizes
-     * @param surfaceWidth
-     * @param surfaceHeight
-     * @return 最佳帧大小
-     */
-    protected android.util.Size calculateCameraFrameSize(List<?> supportedSizes, ListItemAccessor accessor, int surfaceWidth, int surfaceHeight) {
-        int calcWidth = 0;
-        int calcHeight = 0;
-
-        int maxAllowedWidth = (mMaxWidth != MAX_UNSPECIFIED && mMaxWidth < surfaceWidth)? mMaxWidth : surfaceWidth;
-        int maxAllowedHeight = (mMaxHeight != MAX_UNSPECIFIED && mMaxHeight < surfaceHeight)? mMaxHeight : surfaceHeight;
-
-        for (Object size : supportedSizes) {
-            int width = accessor.getWidth(size);
-            int height = accessor.getHeight(size);
-
-            if (width <= maxAllowedWidth && height <= maxAllowedHeight) {
-                if (width >= calcWidth && height >= calcHeight) {
-                    calcWidth = width;
-                    calcHeight = height;
-                }
-            }
-        }
-        // 使用动态计算的分辨率
-        if (calcWidth > 0 && calcHeight > 0) {
-            return new android.util.Size(calcWidth, calcHeight);
-        }
-        return new android.util.Size(GlobalConstant.RESOLUTION_WIDTH, GlobalConstant.RESOLUTION_HEIGHT);
-    }
 }

@@ -77,7 +77,7 @@ KeyFrame::KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB):
 void KeyFrame::SetPose(const cv::Mat &Tcw_)
 {
     std::unique_lock<std::mutex> lock(mMutexPose);
-    
+
     // 验证输入位姿的有效性，防止崩溃
     if(Tcw_.empty() || Tcw_.rows < 4 || Tcw_.cols < 4){
         // 位姿无效时设为单位矩阵避免崩溃
@@ -86,7 +86,7 @@ void KeyFrame::SetPose(const cv::Mat &Tcw_)
     } else {
         Tcw_.copyTo(Tcw);
     }
-    
+
     // 确保Tcw是有效的4x4矩阵
     if(Tcw.empty() || Tcw.rows < 4 || Tcw.cols < 4){
         LOGE("关键帧::设置位姿: 复制后Tcw仍然无效，使用单位矩阵");
@@ -475,7 +475,7 @@ void KeyFrame::SetBadFlag()
     // 1. 拷贝连接关系
     map<KeyFrame*,int> connectedWeightsCopy;
     vector<MapPoint*> mapPointsCopy;
-    
+
     {
         unique_lock<mutex> lock(mMutexConnections);
         if(mnId==0)
@@ -512,11 +512,11 @@ void KeyFrame::SetBadFlag()
 
     {
         unique_lock<mutex> lock(mMutexConnections);
-        
+
         mvpOrderedConnectedKeyFrames.clear();
         mspChildrensCopy = mspChildrens;
         pParentCopy = mpParent;
-        
+
         mspChildrens.clear();
     }
 
@@ -591,7 +591,6 @@ void KeyFrame::SetBadFlag()
             mTcp = Tcw * pParentCopy->GetPoseInverse();
         mbBad = true;
     }
-
 
     mpMap->EraseKeyFrame(this);
     mpKeyFrameDB->erase(this);
@@ -680,10 +679,10 @@ float KeyFrame::ComputeSceneMedianDepth(const int q)
     {
         std::unique_lock<std::mutex> lock(mMutexFeatures, std::defer_lock);
         std::unique_lock<std::mutex> lock2(mMutexPose, std::defer_lock);
-        
+
         // 同时锁定以避免死锁
         std::lock(lock, lock2);
-        
+
         vpMapPoints = mvpMapPoints;
         Tcw_ = Tcw.clone();
     }

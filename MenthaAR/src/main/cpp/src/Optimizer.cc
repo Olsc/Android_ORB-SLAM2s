@@ -52,7 +52,6 @@
 namespace ORB_SLAM2
 {
 
-
 void Optimizer::GlobalBundleAdjustemnt(Map* pMap, int nIterations, bool* pbStopFlag, const unsigned long nLoopKF, const bool bRobust)
 {
     vector<KeyFrame*> vpKFs = pMap->GetAllKeyFrames();
@@ -60,10 +59,13 @@ void Optimizer::GlobalBundleAdjustemnt(Map* pMap, int nIterations, bool* pbStopF
     BundleAdjustment(vpKFs,vpMP,nIterations,pbStopFlag, nLoopKF, bRobust);
 }
 
-
 void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<MapPoint *> &vpMP,
                                  int nIterations, bool* pbStopFlag, const unsigned long nLoopKF, const bool bRobust)
 {
+    // 空优化保护：无关键帧或无地图点时直接返回，避免 g2o 空跑
+    if(vpKFs.empty() || vpMP.empty())
+        return;
+
     vector<bool> vbNotIncludedMP;
     vbNotIncludedMP.resize(vpMP.size());
 
@@ -137,18 +139,18 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
             // 在创建 Edge 之前先验证 vertices 是否存在
             g2o::OptimizableGraph::Vertex* v0 = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id));
             g2o::OptimizableGraph::Vertex* v1 = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pKF->mnId));
-            
+
             if(!v0 || !v1)
             {
                 continue;
             }
-            
+
             g2o::EdgeSE3ProjectXYZ* e = new g2o::EdgeSE3ProjectXYZ();
             if(!e)
             {
                 continue;
             }
-            
+
             try {
                 e->setVertex(0, v0);
                 e->setVertex(1, v1);
@@ -187,6 +189,9 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
     }
 
     optimizer.initializeOptimization();
+    // 空优化保护：active（非固定）顶点为 0 时跳过，避免 g2o 空跑
+    if(optimizer.activeVertices().empty())
+        return;
     optimizer.optimize(nIterations);
 
     // 恢复优化后的数据
@@ -241,7 +246,7 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
 int Optimizer::PoseOptimization(Frame *pFrame)
 {
     // 线程局部缓存：避免每帧 new/delete 求解器对象
-    // PoseOptimization 每帧调用 1 次，是实时性关键路径
+    // PoseOptimization 每帧调用 1 次，是实时性的关键路径
     thread_local struct {
         g2o::SparseOptimizer optimizer;
         g2o::BlockSolver_6_3::LinearSolverType* linearSolver = nullptr;
@@ -281,72 +286,69 @@ int Optimizer::PoseOptimization(Frame *pFrame)
         MapPoint* pMP = pFrame->mvpMapPoints[i];
         if(pMP)
         {
-            // 单目模式只使用单目观测
-            // if(pFrame->mvuRight[i]<0)
-            {
-                nInitialCorrespondences++;
-                pFrame->mvbOutlier[i] = false;
+            nInitialCorrespondences++;
+            pFrame->mvbOutlier[i] = false;
 
-                Eigen::Matrix<double,2,1> obs;
-                const cv::KeyPoint &kpUn = pFrame->mvKeysUn[i];
-                obs << kpUn.pt.x, kpUn.pt.y;
+            Eigen::Matrix<double,2,1> obs;
+            const cv::KeyPoint &kpUn = pFrame->mvKeysUn[i];
+            obs << kpUn.pt.x, kpUn.pt.y;
 
-                g2o::EdgeSE3ProjectXYZOnlyPose* e = new g2o::EdgeSE3ProjectXYZOnlyPose();
+            g2o::EdgeSE3ProjectXYZOnlyPose* e = new g2o::EdgeSE3ProjectXYZOnlyPose();
 
-                try {
-                    e->setVertex(0, vSE3);
-                    e->setMeasurement(obs);
-                    const float invSigma2 = pFrame->mvInvLevelSigma2[kpUn.octave];
-                    e->setInformation(Eigen::Matrix2d::Identity()*invSigma2);
-                    e->setLevel(0);
+            try {
+                e->setVertex(0, vSE3);
+                e->setMeasurement(obs);
+                const float invSigma2 = pFrame->mvInvLevelSigma2[kpUn.octave];
+                e->setInformation(Eigen::Matrix2d::Identity()*invSigma2);
+                e->setLevel(0);
 
-                    g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
-                    e->setRobustKernel(rk);
-                    rk->setDelta(deltaMono);
+                g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
+                e->setRobustKernel(rk);
+                rk->setDelta(deltaMono);
 
-                    e->fx = pFrame->fx;
-                    e->fy = pFrame->fy;
-                    e->cx = pFrame->cx;
-                    e->cy = pFrame->cy;
-                    cv::Point3f p3f;
-                    pMP->GetWorldPos(p3f);
-                    e->Xw[0] = p3f.x;
-                    e->Xw[1] = p3f.y;
-                    e->Xw[2] = p3f.z;
+                e->fx = pFrame->fx;
+                e->fy = pFrame->fy;
+                e->cx = pFrame->cx;
+                e->cy = pFrame->cy;
+                cv::Point3f p3f;
+                pMP->GetWorldPos(p3f);
+                e->Xw[0] = p3f.x;
+                e->Xw[1] = p3f.y;
+                e->Xw[2] = p3f.z;
 
-                    optimizer.addEdge(e);
-                } catch (...) {
-                    delete e;
-                    continue;
-                }
-
-                vpEdgesMono.push_back(e);
-                vnIndexEdgeMono.push_back(i);
+                optimizer.addEdge(e);
+            } catch (...) {
+                delete e;
+                continue;
             }
-        }
 
+            vpEdgesMono.push_back(e);
+            vnIndexEdgeMono.push_back(i);
+        }
     }
 
-    if(nInitialCorrespondences<3) {
+    if(nInitialCorrespondences<POSE_OPT_MIN_CORRESPONDENCES) {
         return 0;
     }
 
     // 我们执行4次优化，每次优化后我们将观测分类为内点/外点
     // 在下一次优化中，不包括外点，但在最后它们可以再次被分类为内点。
     const float chi2Mono[4]={OPTIMIZER_CHI2_TH_2D,OPTIMIZER_CHI2_TH_2D,OPTIMIZER_CHI2_TH_2D,OPTIMIZER_CHI2_TH_2D};
-    const int its[4]={5,5,5,5};
+    const int its[POSE_OPT_PASSES]={POSE_OPT_PASS_ITERS,POSE_OPT_PASS_ITERS,POSE_OPT_PASS_ITERS,POSE_OPT_PASS_ITERS};
 
     int nBad=0;
     auto start_time = std::chrono::steady_clock::now();
-    for(size_t it=0; it<4; it++)
+    for(size_t it=0; it<POSE_OPT_PASSES; it++)
     {
         auto current_time = std::chrono::steady_clock::now();
-        if (std::chrono::duration_cast<std::chrono::milliseconds>(current_time - start_time).count() > 200) {
+        if (std::chrono::duration_cast<std::chrono::milliseconds>(current_time - start_time).count() > POSE_OPT_TIMEOUT_MS) {
             break; // 单次优化总超时限制200ms
         }
 
         vSE3->setEstimate(Converter::toSE3Quat(pFrame->mTcw));
         optimizer.initializeOptimization(0);
+        if(optimizer.activeVertices().empty())
+            return 0;
         optimizer.optimize(its[it]);
 
         nBad=0;
@@ -378,7 +380,7 @@ int Optimizer::PoseOptimization(Frame *pFrame)
             if(it==2)
                 e->setRobustKernel(0);
         }
-        if(optimizer.edges().size()<10)
+        if(optimizer.edges().size()<POSE_OPT_MIN_EDGES)
             break;
     }    
 
@@ -401,8 +403,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
 
     const vector<KeyFrame*> vNeighKFs = pKF->GetVectorCovisibleKeyFrames();
     // 限制局部BA窗口大小：最多取10个共视关键帧，防止局部BA耗时过久阻塞跟踪
-    // 共视度最高的KF先处理，排除的低共视KF在下一次BA中处理
-    const int nMaxBAKFs = std::min((int)vNeighKFs.size(), 10);
+    const int nMaxBAKFs = std::min((int)vNeighKFs.size(), LOCAL_BA_MAX_KFS);
     for(int i=0; i<nMaxBAKFs; i++)
     {
         KeyFrame* pKFi = vNeighKFs[i];
@@ -539,18 +540,18 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
                     // 在创建 Edge 之前先验证 vertices 是否存在
                     g2o::OptimizableGraph::Vertex* v0 = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id));
                     g2o::OptimizableGraph::Vertex* v1 = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pKFi->mnId));
-                    
+
                     if(!v0 || !v1)
                     {
                         continue;
                     }
-                    
+
                     g2o::EdgeSE3ProjectXYZ* e = new g2o::EdgeSE3ProjectXYZ();
                     if(!e)
                     {
                         continue;
                     }
-                    
+
                     try {
                         e->setVertex(0, v0);
                         e->setVertex(1, v1);
@@ -584,8 +585,14 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
         if(*pbStopFlag)
             return;
 
+    // 空优化保护：无有效顶点时跳过，避免 g2o 空跑浪费
+    if(optimizer.vertices().empty())
+        return;
+
     optimizer.initializeOptimization();
-    optimizer.optimize(5);
+    if(optimizer.activeVertices().empty())
+        return;
+    optimizer.optimize(LOCAL_BA_ITERATIONS);
 
     bool bDoMore= true;
 
@@ -613,9 +620,11 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
         e->setRobustKernel(0);
     }
 
-    // 在没有外点的情况下再次优化
+    // 在没有外点的情况下再次精细优化
     optimizer.initializeOptimization(0);
-    optimizer.optimize(10);
+    if(optimizer.activeVertices().empty())
+        return;
+    optimizer.optimize(LOCAL_BA_ITERATIONS);
 
     }
 
@@ -681,7 +690,6 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
     }
 }
 
-
 void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* pCurKF,
                                        const LoopClosing::KeyFrameAndPose &NonCorrectedSim3,
                                        const LoopClosing::KeyFrameAndPose &CorrectedSim3,
@@ -718,7 +726,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
         g2o::VertexSim3Expmap* VSim3 = new g2o::VertexSim3Expmap();
 
         const int nIDi = pKF->mnId;
-        
+
         // 检查ID是否在有效范围内
         if(nIDi > nMaxKFid)
         {
@@ -754,7 +762,6 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
         vpVertices[nIDi]=VSim3;
     }
 
-
     set<pair<long unsigned int,long unsigned int> > sInsertedEdges;
 
     const Eigen::Matrix<double,7,7> matLambda = Eigen::Matrix<double,7,7>::Identity();
@@ -766,16 +773,16 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
         // 添加空指针和isBad检查，防止访问已删除的KeyFrame
         if(!pKF || pKF->isBad())
             continue;
-            
+
         const long unsigned int nIDi = pKF->mnId;
         const set<KeyFrame*> &spConnections = mit->second;
-        
+
         // 边界检查
         if(nIDi > nMaxKFid)
         {
             continue;
         }
-        
+
         const g2o::Sim3 Siw = vScw[nIDi];
         const g2o::Sim3 Swi = Siw.inverse();
 
@@ -785,9 +792,9 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
             // 检查KeyFrame指针是否有效
             if(!pKFj || pKFj->isBad())
                 continue;
-                
+
             const long unsigned int nIDj = pKFj->mnId;
-            
+
             //  使用pKFj代替*sit，避免重复解引用
             if((nIDi!=pCurKF->mnId || nIDj!=pLoopKF->mnId) && pKF->GetWeight(pKFj)<minFeat)
                 continue;
@@ -797,27 +804,27 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
             {
                 continue;
             }
-            
+
             const g2o::Sim3 Sjw = vScw[nIDj];
             const g2o::Sim3 Sji = Sjw * Swi;
 
             // 在创建 Edge 之前先验证 vertices 是否存在
             g2o::OptimizableGraph::Vertex* vj = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(nIDj));
             g2o::OptimizableGraph::Vertex* vi = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(nIDi));
-            
+
             //  只有当两个顶点都存在时才创建 Edge
             if(!vj || !vi)
             {
                 continue;
             }
-            
+
             g2o::EdgeSim3* e = new g2o::EdgeSim3();
             if(!e)
             {
                 // 内存分配失败
                 continue;
             }
-            
+
             try {
                 e->setVertex(1, vj);
                 e->setVertex(0, vi);
@@ -845,7 +852,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
             continue;
 
         const int nIDi = pKF->mnId;
-        
+
         // 边界检查
         if(nIDi > nMaxKFid)
         {
@@ -867,7 +874,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
         if(pParentKF)
         {
             int nIDj = pParentKF->mnId;
-            
+
             // 边界检查
             if(nIDj > nMaxKFid)
             {
@@ -888,7 +895,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
             // 在创建 Edge 之前先验证 vertices 是否存在
             g2o::OptimizableGraph::Vertex* vj = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(nIDj));
             g2o::OptimizableGraph::Vertex* vi = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(nIDi));
-            
+
             if(vj && vi)
             {
                 g2o::EdgeSim3* e = new g2o::EdgeSim3();
@@ -897,13 +904,13 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
                     // 内存分配失败
                     continue;
                 }
-                
+
                 try {
                     e->setVertex(1, vj);
                     e->setVertex(0, vi);
                     e->setMeasurement(Sji);
                     e->information() = matLambda;
-                    
+
                     // 直接添加 Edge（g2o::addEdge 返回 void）
                     // 在添加之前已经验证了 vertices 存在
                     optimizer.addEdge(e);
@@ -923,7 +930,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
             // 添加空指针和isBad检查，防止访问已删除的KeyFrame
             if(!pLKF || pLKF->isBad())
                 continue;
-                
+
             if(pLKF->mnId<pKF->mnId)
             {
                 // 边界检查
@@ -931,7 +938,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
                 {
                     continue;
                 }
-                
+
                 g2o::Sim3 Slw;
 
                 LoopClosing::KeyFrameAndPose::const_iterator itl = NonCorrectedSim3.find(pLKF);
@@ -942,11 +949,11 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
                     Slw = vScw[pLKF->mnId];
 
                 g2o::Sim3 Sli = Slw * Swi;
-                
+
                 // 在创建 Edge 之前先验证 vertices 是否存在
                 g2o::OptimizableGraph::Vertex* vl = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pLKF->mnId));
                 g2o::OptimizableGraph::Vertex* vi = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(nIDi));
-                
+
                 if(vl && vi)
                 {
                     g2o::EdgeSim3* el = new g2o::EdgeSim3();
@@ -955,13 +962,13 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
                         // 内存分配失败
                         continue;
                     }
-                    
+
                     try {
                         el->setVertex(1, vl);
                         el->setVertex(0, vi);
                         el->setMeasurement(Sli);
                         el->information() = matLambda;
-                        
+
                         // 直接添加 Edge（g2o::addEdge 返回 void）
                         // 在添加之前已经验证了 vertices 存在
                         optimizer.addEdge(el);
@@ -991,7 +998,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
                     {
                         continue;
                     }
-                    
+
                     g2o::Sim3 Snw;
 
                     LoopClosing::KeyFrameAndPose::const_iterator itn = NonCorrectedSim3.find(pKFn);
@@ -1006,7 +1013,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
                     // 在创建 Edge 之前先验证 vertices 是否存在
                     g2o::OptimizableGraph::Vertex* vn = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pKFn->mnId));
                     g2o::OptimizableGraph::Vertex* vi = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(nIDi));
-                    
+
                     if(vn && vi)
                     {
                         g2o::EdgeSim3* en = new g2o::EdgeSim3();
@@ -1015,13 +1022,13 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
                             // 内存分配失败
                             continue;
                         }
-                        
+
                         try {
                             en->setVertex(1, vn);
                             en->setVertex(0, vi);
                             en->setMeasurement(Sni);
                             en->information() = matLambda;
-                            
+
                             // 直接添加 Edge（g2o::addEdge 返回 void）
                             // 在添加之前已经验证了 vertices 存在
                             optimizer.addEdge(en);
@@ -1038,7 +1045,9 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
 
     // 优化
     optimizer.initializeOptimization();
-    optimizer.optimize(20);
+    if(optimizer.activeVertices().empty())
+        return;
+    optimizer.optimize(ESSENTIAL_GRAPH_BA_ITERS);
 
     // SE3 位姿恢复 并 缓存相机中心以加速后续点更新
     std::map<KeyFrame*, cv::Mat> mapCameraCenters;
@@ -1052,18 +1061,18 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
 
         g2o::VertexSim3Expmap* VSim3 = static_cast<g2o::VertexSim3Expmap*>(optimizer.vertex(nIDi));
         if(!VSim3) continue;
-        
+
         g2o::Sim3 CorrectedSiw =  VSim3->estimate();
         vCorrectedSwc[nIDi]=CorrectedSiw.inverse();
         Eigen::Matrix3d eigR = CorrectedSiw.rotation().toRotationMatrix();
         Eigen::Vector3d eigt = CorrectedSiw.translation();
         double s = CorrectedSiw.scale();
-        
+
         if(std::abs(s) < 1e-10) continue;
         eigt *=(1./s); //[R t/s;0 1]
         cv::Mat Tiw = Converter::toCvSE3(eigR,eigt);
         pKFi->SetPose(Tiw);
-        
+
         // 缓存更新后的相机中心
         mapCameraCenters[pKFi] = pKFi->GetCameraCenter();
     }
@@ -1094,12 +1103,12 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
 
         cv::Mat P3Dw = pMP->GetWorldPos();
         if(P3Dw.empty()) continue;
-            
+
         Eigen::Matrix<double,3,1> eigP3Dw = Converter::toVector3d(P3Dw);
         Eigen::Matrix<double,3,1> eigCorrectedP3Dw = correctedSwr.map(Srw.map(eigP3Dw));
 
         cv::Mat cvCorrectedP3Dw = Converter::toCvMat(eigCorrectedP3Dw);
-        
+
         {
             // 对于单个点的更新，使用点自身的锁，减少全局锁占用
             pMP->SetWorldPos(cvCorrectedP3Dw);
@@ -1211,19 +1220,19 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
         g2o::OptimizableGraph::Vertex* v0_id2 = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id2));
         g2o::OptimizableGraph::Vertex* v1_id0 = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(0));
         g2o::OptimizableGraph::Vertex* v0_id1 = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id1));
-        
+
         // 只有当所有必要的顶点都存在时才创建和添加 Edge
         if(!v0_id2 || !v1_id0 || !v0_id1)
         {
             continue;
         }
-        
+
         g2o::EdgeSim3ProjectXYZ* e12 = new g2o::EdgeSim3ProjectXYZ();
         if(!e12)
         {
             continue;
         }
-        
+
         try {
             e12->setVertex(0, v0_id2);
             e12->setVertex(1, v1_id0);
@@ -1276,7 +1285,9 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
 
     // 优化
     optimizer.initializeOptimization();
-    optimizer.optimize(5);
+    if(optimizer.activeVertices().empty())
+        return 0;
+    optimizer.optimize(SIM3_OPT_ITERS);
 
     // 检查内点
     int nBad=0;
@@ -1301,16 +1312,18 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
 
     int nMoreIterations;
     if(nBad>0)
-        nMoreIterations=10;
+        nMoreIterations=SIM3_OPT_EXTRA_ITERS;
     else
-        nMoreIterations=5;
+        nMoreIterations=SIM3_OPT_ITERS;
 
-    if(nCorrespondences-nBad<10)
+    if(nCorrespondences-nBad<SIM3_OPT_MIN_INLIERS)
         return 0;
 
     // 仅使用内点再次优化
 
     optimizer.initializeOptimization();
+    if(optimizer.activeVertices().empty())
+        return 0;
     optimizer.optimize(nMoreIterations);
 
     int nIn = 0;
@@ -1336,6 +1349,5 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
 
     return nIn;
 }
-
 
 } //namespace ORB_SLAM2

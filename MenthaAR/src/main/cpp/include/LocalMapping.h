@@ -45,7 +45,6 @@
 #include <condition_variable>
 #include <atomic>
 
-
 namespace ORB_SLAM2
 {
 

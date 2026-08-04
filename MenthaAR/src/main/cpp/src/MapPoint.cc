@@ -43,7 +43,6 @@ namespace ORB_SLAM2
 
 long unsigned int MapPoint::nNextId=0;
 
-
 MapPoint::MapPoint(const cv::Mat &Pos, KeyFrame *pRefKF, Map* pMap):
     mnFirstKFid(pRefKF->mnId), mnFirstFrame(pRefKF->mnFrameId), nObs(0), mnTrackReferenceForFrame(0),
     mnLastFrameSeen(0), mnBALocalForKF(0), mnFuseCandidateForKF(0), mnLoopPointForKF(0), mnCorrectedByKF(0),
@@ -67,7 +66,7 @@ MapPoint::MapPoint(const cv::Mat &Pos, Map* pMap, Frame* pFrame, const int &idxF
     Pos.copyTo(mWorldPos);
     cv::Mat Ow = pFrame->GetCameraCenter();
     cv::Mat PC = Pos - Ow;
-    
+
     // 内联计算距离和法向量归一化，避免多次cv::norm调用
     const float pcx = PC.at<float>(0);
     const float pcy = PC.at<float>(1);
@@ -75,7 +74,7 @@ MapPoint::MapPoint(const cv::Mat &Pos, Map* pMap, Frame* pFrame, const int &idxF
     const float distSq = pcx*pcx + pcy*pcy + pcz*pcz;
     const float dist = sqrt(distSq);
     const float invDist = (dist > 1e-10f) ? (1.0f / dist) : 0.0f;
-    
+
     mNormalVector = (cv::Mat_<float>(3,1) << pcx * invDist, pcy * invDist, pcz * invDist);
 
     const int level = pFrame->mvKeysUn[idxF].octave;
@@ -217,7 +216,7 @@ int MapPoint::GetRedundantObservationsCount(KeyFrame* pKF, int scaleLevel)
         if(mit->second >= pKFi->mvKeysUn.size())
             continue;
         const int &scaleLeveli = pKFi->mvKeysUn[mit->second].octave;
-        if(scaleLeveli<=scaleLevel+1)
+        if(scaleLeveli<=scaleLevel+MAPPOINT_SCALE_LEVEL_TOL)
         {
             count++;
         }
@@ -363,7 +362,7 @@ void MapPoint::ComputeDistinctiveDescriptors()
 
     // N > 2 时，使用栈内存缓冲区（限制最大 64 个观测）
     const size_t N_max = std::min(N, (size_t)64);
-    int distsMat[64][64];
+    int distsMat[MAPPOINT_DESC_MAX_OBS][MAPPOINT_DESC_MAX_OBS];
 
     for(size_t i = 0; i < N_max; ++i)
     {
@@ -378,7 +377,7 @@ void MapPoint::ComputeDistinctiveDescriptors()
 
     int BestMedian = INT_MAX;
     int BestIdx = 0;
-    int rowDists[64];
+    int rowDists[MAPPOINT_DESC_MAX_OBS];
 
     for(size_t i = 0; i < N_max; ++i)
     {
@@ -459,7 +458,7 @@ void MapPoint::UpdateNormalAndDepth()
         KeyFrame* pKF = mit->first;
         cv::Mat Owi = pKF->GetCameraCenter();
         cv::Mat normali = Pos - Owi;
-        
+
         // 内联计算向量范数，避免cv::norm调用
         const float nx = normali.at<float>(0);
         const float ny = normali.at<float>(1);
@@ -475,13 +474,13 @@ void MapPoint::UpdateNormalAndDepth()
     }
 
     cv::Mat PC = Pos - pRefKF->GetCameraCenter();
-    
+
     // 内联计算距离，避免cv::norm调用
     const float pcx = PC.at<float>(0);
     const float pcy = PC.at<float>(1);
     const float pcz = PC.at<float>(2);
     const float dist = sqrt(pcx*pcx + pcy*pcy + pcz*pcz);
-    
+
     const int level = pRefKF->mvKeysUn[observations[pRefKF]].octave;
     const float levelScaleFactor =  pRefKF->mvScaleFactors[level];
     const int nLevels = pRefKF->mnScaleLevels;

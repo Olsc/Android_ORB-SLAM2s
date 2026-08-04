@@ -1,4 +1,5 @@
 #include "OpenCVBridge.h"
+#include "../include/Config.h"
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <android/bitmap.h>
@@ -120,7 +121,7 @@ JNIEXPORT void JNICALL Java_com_orb_slam2s_slamar_OpenCVBridge_nativeYPlaneToMat
         dst[i * 4]     = src[i];  // R
         dst[i * 4 + 1] = src[i];  // G
         dst[i * 4 + 2] = src[i];  // B
-        dst[i * 4 + 3] = 255;     // A
+        dst[i * 4 + 3] = ORB_SLAM2::RGBA_ALPHA_OPAQUE;     // A
     }
 
     env->ReleaseByteArrayElements(yData, data, JNI_ABORT);

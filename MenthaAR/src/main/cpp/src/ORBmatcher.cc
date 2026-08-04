@@ -156,11 +156,10 @@ int ORBmatcher::SearchByProjection(Frame &F, const vector<MapPoint*> &vpMapPoint
 float ORBmatcher::RadiusByViewingCos(const float &viewCos)
 {
     if(viewCos>ORB_MATCHER_VIEW_COS_TH)
-        return 2.5;
+        return MATCH_RADIUS_NEAR;
     else
-        return 4.0;
+        return MATCH_RADIUS_FAR;
 }
-
 
 bool ORBmatcher::CheckDistEpipolarLine(const cv::KeyPoint &kp1,const cv::KeyPoint &kp2,const cv::Mat &F12,const KeyFrame* pKF2)
 {
@@ -194,7 +193,7 @@ int ORBmatcher::SearchByHBST(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoi
 
     vector<int> rotHist[HISTO_LENGTH];
     for(int i=0;i<HISTO_LENGTH;i++)
-        rotHist[i].reserve(500);
+        rotHist[i].reserve(ROT_HIST_RESERVE);
     const float factor = 1.0f/HISTO_LENGTH;
 
     if(pKF->mDescriptors.empty() || F.mDescriptors.empty())
@@ -231,9 +230,9 @@ int ORBmatcher::SearchByHBST(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoi
 
         const auto& candidates = node_current->getMatchables();
 
-        int bestDist1 = 256;
+        int bestDist1 = ORB_MAX_DISTANCE;
         int bestIdxF = -1;
-        int bestDist2 = 256;
+        int bestDist2 = ORB_MAX_DISTANCE;
 
         for (const auto* candidate : candidates) {
             size_t realIdxF = candidate->objects.begin()->second;
@@ -259,14 +258,14 @@ int ORBmatcher::SearchByHBST(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoi
                 int scaleKF_i = pKF->mvKeysUn[iKF].octave;
                 int scaleF_i = F.mvKeys[bestIdxF].octave;
                 float scaleDiff = fabs(static_cast<float>(scaleKF_i - scaleF_i));
-                if (scaleDiff > 2.0f) {
+                if (scaleDiff > MATCH_SCALE_DIFF_TH) {
                     // 尺度差异过大，增加等效距离减少其被选中的概率
-                    float effectiveDist = bestDist1 * (1.0f + scaleDiff * 0.15f);
+                    float effectiveDist = bestDist1 * (1.0f + scaleDiff * MATCH_SCALE_PENALTY);
                     if (effectiveDist > TH_LOW) {
                         continue;  // 等效距离超过阈值，丢弃此匹配
                     }
                     // 仍接受但降低ratio test的实际约束
-                    if (static_cast<float>(bestDist1) < mfNNratio * static_cast<float>(bestDist2) * (1.0f + scaleDiff * 0.1f)) {
+                    if (static_cast<float>(bestDist1) < mfNNratio * static_cast<float>(bestDist2) * (1.0f + scaleDiff * MATCH_SCALE_RATIO_RELAX)) {
                         vpMapPointMatches[bestIdxF] = pMP;
                         float rot = pKF->mvKeysUn[iKF].angle - F.mvKeys[bestIdxF].angle;
                         if (rot < 0.0) rot += 360.0f;
@@ -387,7 +386,7 @@ int ORBmatcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapP
         // 深度必须在点的尺度不变区域内
         const float maxDistance = pMP->GetMaxDistanceInvariance();
         const float minDistance = pMP->GetMinDistanceInvariance();
-        
+
         const float POx = p3Dw.x - Ox;
         const float POy = p3Dw.y - Oy;
         const float POz = p3Dw.z - Oz;
@@ -395,12 +394,12 @@ int ORBmatcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapP
 
         if(distSq < minDistance*minDistance || distSq > maxDistance*maxDistance)
             continue;
-        
+
         // 观察角度过滤：使用栈获取法向，先进行平方不等式判定，再决定是否计算 sqrt
         cv::Point3f Pn;
         pMP->GetNormal(Pn);
         const float dotVal = POx*Pn.x + POy*Pn.y + POz*Pn.z;
-        if(dotVal < 0.0f || dotVal*dotVal < 0.25f*distSq)
+        if(dotVal < 0.0f || dotVal*dotVal < MATCH_VIEW_COS_SQ_TH*distSq)
             continue;
 
         const float dist = sqrt(distSq);
@@ -418,7 +417,7 @@ int ORBmatcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapP
         // 匹配半径内最相似的关键点
         const cv::Mat dMP = pMP->GetDescriptor();
 
-        int bestDist = 256;
+        int bestDist = ORB_MAX_DISTANCE;
         int bestIdx = -1;
         for(vector<size_t>::const_iterator vit=vIndices.begin(), vend=vIndices.end(); vit!=vend; vit++)
         {
@@ -461,7 +460,7 @@ int ORBmatcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f
 
     vector<int> rotHist[HISTO_LENGTH];
     for(int i=0;i<HISTO_LENGTH;i++)
-        rotHist[i].reserve(500);
+        rotHist[i].reserve(ROT_HIST_RESERVE);
     const float factor = 1.0f/HISTO_LENGTH;
 
     vector<int> vMatchedDistance(F2.mvKeysUn.size(),INT_MAX);
@@ -589,7 +588,7 @@ int ORBmatcher::SearchByHBST(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> 
 
     vector<int> rotHist[HISTO_LENGTH];
     for (int i = 0; i < HISTO_LENGTH; i++)
-        rotHist[i].reserve(500);
+        rotHist[i].reserve(ROT_HIST_RESERVE);
 
     const float factor = 1.0f / HISTO_LENGTH;
 
@@ -630,9 +629,9 @@ int ORBmatcher::SearchByHBST(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> 
 
         const auto& candidates = node_current->getMatchables();
 
-        int bestDist1 = 256;
+        int bestDist1 = ORB_MAX_DISTANCE;
         int bestIdx2 = -1;
-        int bestDist2 = 256;
+        int bestDist2 = ORB_MAX_DISTANCE;
 
         for (const auto* candidate : candidates) {
             size_t idx2 = candidate->objects.begin()->second;
@@ -659,12 +658,12 @@ int ORBmatcher::SearchByHBST(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> 
                 int scaleKP1 = vKeysUn1[idx1].octave;
                 int scaleKP2 = vKeysUn2[bestIdx2].octave;
                 float scaleDiff = fabs(static_cast<float>(scaleKP1 - scaleKP2));
-                if (scaleDiff > 2.0f) {
-                    float effectiveDist = bestDist1 * (1.0f + scaleDiff * 0.15f);
+                if (scaleDiff > MATCH_SCALE_DIFF_TH) {
+                    float effectiveDist = bestDist1 * (1.0f + scaleDiff * MATCH_SCALE_PENALTY);
                     if (effectiveDist > TH_LOW) {
                         continue;
                     }
-                    if (static_cast<float>(bestDist1) < mfNNratio * static_cast<float>(bestDist2) * (1.0f + scaleDiff * 0.1f)) {
+                    if (static_cast<float>(bestDist1) < mfNNratio * static_cast<float>(bestDist2) * (1.0f + scaleDiff * MATCH_SCALE_RATIO_RELAX)) {
                         vpMatches12[idx1] = vpMapPoints2[bestIdx2];
                         vbMatched2[bestIdx2] = true;
                         float rot = vKeysUn1[idx1].angle - vKeysUn2[bestIdx2].angle;
@@ -751,7 +750,7 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
 
     vector<int> rotHist[HISTO_LENGTH];
     for(int i=0;i<HISTO_LENGTH;i++)
-        rotHist[i].reserve(500);
+        rotHist[i].reserve(ROT_HIST_RESERVE);
 
     const float factor = 1.0f/HISTO_LENGTH;
 
@@ -766,7 +765,7 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
             continue;
 
         const cv::KeyPoint &kp1 = pKF1->mvKeysUn[idx1];
-        
+
         // 直接从关键帧1预构建的 HBST 树中获取 bitset 描述子，避免重复进行二进制转换
         const HBSTMatchable::Descriptor &desc1 = matchables1[idx1]->descriptor;
 
@@ -801,7 +800,7 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
             if (!bStereo1 && !bStereo2) {
                 const float distex = ex - kp2.pt.x;
                 const float distey = ey - kp2.pt.y;
-                if (distex * distex + distey * distey < 100 * pKF2->mvScaleFactors[kp2.octave])
+                if (distex * distex + distey * distey < TRIANGULATION_EPIPOLE_DIST_SQ * pKF2->mvScaleFactors[kp2.octave])
                     continue;
             }
 
@@ -921,12 +920,12 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
 
         const float maxDistance = pMP->GetMaxDistanceInvariance();
         const float minDistance = pMP->GetMinDistanceInvariance();
-        
+
         // PO = p3Dw - Ow (使用纯标量减法)
         const float POx = p3Dw.x - Ox;
         const float POy = p3Dw.y - Oy;
         const float POz = p3Dw.z - Oz;
-        
+
         // 使用平方距离进行快速范围检查
         const float dist3DSq = POx*POx + POy*POy + POz*POz;
         const float maxDistSq = maxDistance * maxDistance;
@@ -935,7 +934,7 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
         // 深度必须在图像的尺度金字塔内
         if(dist3DSq < minDistSq || dist3DSq > maxDistSq)
             continue;
-        
+
         // 只在需要时计算实际距离
         const float dist3D = sqrt(dist3DSq);
 
@@ -945,7 +944,7 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
 
         // 使用纯标量点乘
         const float dotProd = POx*Pn.x + POy*Pn.y + POz*Pn.z;
-        if(dotProd < 0.5f*dist3D)
+        if(dotProd < MATCH_VIEW_COS_TH*dist3D)
             continue;
 
         int nPredictedLevel = pMP->PredictScale(dist3D,pKF);
@@ -962,7 +961,7 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
 
         const cv::Mat dMP = pMP->GetDescriptor();
 
-        int bestDist = 256;
+        int bestDist = ORB_MAX_DISTANCE;
         int bestIdx = -1;
         for(vector<size_t>::const_iterator vit=vIndices.begin(), vend=vIndices.end(); vit!=vend; vit++)
         {
@@ -982,7 +981,7 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
             const float ey = v-kpy;
             const float e2 = ex*ex+ey*ey;
 
-            if(e2*pKF->mvInvLevelSigma2[kpLevel]>5.99)
+            if(e2*pKF->mvInvLevelSigma2[kpLevel]>OPTIMIZER_CHI2_TH_2D)
                 continue;
 
             const cv::Mat &dKF = pKF->mDescriptors.row(idx);
@@ -1091,7 +1090,7 @@ int ORBmatcher::Fuse(KeyFrame *pKF, cv::Mat Scw, const vector<MapPoint *> &vpPoi
         // 深度必须在图像的尺度金字塔内
         const float maxDistance = pMP->GetMaxDistanceInvariance();
         const float minDistance = pMP->GetMinDistanceInvariance();
-        
+
         const float POx = p3Dw.x - Ox;
         const float POy = p3Dw.y - Oy;
         const float POz = p3Dw.z - Oz;
@@ -1099,7 +1098,7 @@ int ORBmatcher::Fuse(KeyFrame *pKF, cv::Mat Scw, const vector<MapPoint *> &vpPoi
 
         if(dist3DSq < minDistance*minDistance || dist3DSq > maxDistance*maxDistance)
             continue;
-        
+
         // 观察角度过滤：使用栈获取法向，先进行平方不等式判定，再决定是否计算 sqrt
         cv::Point3f Pn;
         pMP->GetNormal(Pn);
@@ -1266,7 +1265,7 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
 
         const float maxDistance = pMP->GetMaxDistanceInvariance();
         const float minDistance = pMP->GetMinDistanceInvariance();
-        
+
         // 使用平方距离进行快速范围检查
         const float dist3DSq = p3Dc2X*p3Dc2X + p3Dc2Y*p3Dc2Y + p3Dc2Z*p3Dc2Z;
         const float maxDistSq = maxDistance * maxDistance;
@@ -1275,7 +1274,7 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
         // 深度必须在尺度不变区域内
         if(dist3DSq < minDistSq || dist3DSq > maxDistSq)
             continue;
-        
+
         // 只在需要时计算实际距离
         const float dist3D = sqrt(dist3DSq);
 
@@ -1373,7 +1372,7 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
 
         const float maxDistance = pMP->GetMaxDistanceInvariance();
         const float minDistance = pMP->GetMinDistanceInvariance();
-        
+
         // 使用平方距离进行快速范围检查
         const float dist3DSq = p3Dc1X*p3Dc1X + p3Dc1Y*p3Dc1Y + p3Dc1Z*p3Dc1Z;
         const float maxDistSq = maxDistance * maxDistance;
@@ -1382,7 +1381,7 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
         // 深度必须在图像的尺度金字塔内
         if(dist3DSq < minDistSq || dist3DSq > maxDistSq)
             continue;
-        
+
         // 只在需要时计算实际距离
         const float dist3D = sqrt(dist3DSq);
 
@@ -1456,7 +1455,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
     // 旋转直方图（用于检查旋转一致性）
     vector<int> rotHist[HISTO_LENGTH];
     for(int i=0;i<HISTO_LENGTH;i++)
-        rotHist[i].reserve(500);
+        rotHist[i].reserve(ROT_HIST_RESERVE);
     const float factor = 1.0f/HISTO_LENGTH;
 
     const cv::Mat Rcw = CurrentFrame.mTcw.rowRange(0,3).colRange(0,3);
@@ -1525,7 +1524,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
 
                 const cv::Mat dMP = pMP->GetDescriptor();
 
-                int bestDist = 256;
+                int bestDist = ORB_MAX_DISTANCE;
                 int bestIdx2 = -1;
 
                 for(vector<size_t>::const_iterator vit=vIndices2.begin(), vend=vIndices2.end(); vit!=vend; vit++)
@@ -1607,7 +1606,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const set
     // 旋转直方图（用于检查旋转一致性）
     vector<int> rotHist[HISTO_LENGTH];
     for(int i=0;i<HISTO_LENGTH;i++)
-        rotHist[i].reserve(500);
+        rotHist[i].reserve(ROT_HIST_RESERVE);
     const float factor = 1.0f/HISTO_LENGTH;
 
     const vector<MapPoint*> vpMPs = pKF->GetMapPointMatches();
@@ -1653,7 +1652,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const set
                 // 深度必须在图像的尺度金字塔内
                 if(dist3DSq < minDistSq || dist3DSq > maxDistSq)
                     continue;
-                
+
                 // 只在需要时计算实际距离
                 float dist3D = sqrt(dist3DSq);
 
@@ -1669,7 +1668,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const set
 
                 const cv::Mat dMP = pMP->GetDescriptor();
 
-                int bestDist = 256;
+                int bestDist = ORB_MAX_DISTANCE;
                 int bestIdx2 = -1;
 
                 for(vector<size_t>::const_iterator vit=vIndices2.begin(); vit!=vIndices2.end(); vit++)
@@ -1768,17 +1767,16 @@ void ORBmatcher::ComputeThreeMaxima(vector<int>* histo, const int L, int &ind1, 
     }
 
     // 使用整数乘法代替浮点乘法
-    if(max2*10 < max1)
+    if(max2*ROT_HIST_DOMINANT_FACTOR < max1)
     {
         ind2=-1;
         ind3=-1;
     }
-    else if(max3*10 < max1)
+    else if(max3*ROT_HIST_DOMINANT_FACTOR < max1)
     {
         ind3=-1;
     }
 }
-
 
 // 位集计数来自 bithacks (CountBitsSetParallel)
 int ORBmatcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)
@@ -1824,6 +1822,5 @@ int ORBmatcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)
            __builtin_popcountll(va[3] ^ vb[3]);
 #endif
 }
-
 
 } //namespace ORB_SLAM2

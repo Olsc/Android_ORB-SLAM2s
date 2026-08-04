@@ -130,7 +130,6 @@ protected:
     Tracking* mpTracker;
 
     KeyFrameDatabase* mpKeyFrameDB;
-    // ORBVocabulary* mpORBVocabulary;
 
     LocalMapping *mpLocalMapper;
 

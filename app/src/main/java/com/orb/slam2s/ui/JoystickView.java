@@ -2,7 +2,6 @@ package com.orb.slam2s.ui;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RadialGradient;
 import android.graphics.Shader;
@@ -253,19 +252,5 @@ public class JoystickView extends View {
         }
 
         invalidate();
-    }
-
-    /**
-     * 获取当前旋转角度（度，0~360）
-     */
-    public float getRotationAngle() {
-        return mRotationAngle;
-    }
-
-    /**
-     * 获取当前力度（0~1）
-     */
-    public float getIntensity() {
-        return mIntensity;
     }
 }

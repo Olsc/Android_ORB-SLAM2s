@@ -115,7 +115,6 @@ class PnPsolver {
 
   void mat_to_quat(const double R[3][3], double q[4]);
 
-
   double uc, vc, fu, fv;
 
   double * pws, * us, * alphas, * pcs;

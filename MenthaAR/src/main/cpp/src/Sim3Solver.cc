@@ -48,7 +48,6 @@
 namespace ORB_SLAM2
 {
 
-
 Sim3Solver::Sim3Solver(KeyFrame *pKF1, KeyFrame *pKF2, const vector<MapPoint *> &vpMatched12):
     mnIterations(0), mnBestInliers(0)
 {
@@ -145,7 +144,7 @@ void Sim3Solver::SetRansacParameters(double probability, int minInliers, int max
     if(mRansacMinInliers==N)
         nIterations=1;
     else
-        nIterations = ceil(log(1-mRansacProb)/log(1-pow(epsilon,3)));
+        nIterations = ceil(log(1-mRansacProb)/log(1-pow(epsilon,SIM3_RANSAC_MIN_SET)));
 
     mRansacMaxIts = max(1,min(nIterations,mRansacMaxIts));
 
@@ -178,7 +177,7 @@ cv::Mat Sim3Solver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInli
         vAvailableIndices = mvAllIndices;
 
         // 获取最小点集
-        for(short i = 0; i < 3; ++i)
+        for(short i = 0; i < SIM3_RANSAC_MIN_SET; ++i)
         {
             int randi = rand() % vAvailableIndices.size();
 
@@ -279,7 +278,6 @@ void Sim3Solver::ComputeSim3(cv::Mat &P1, cv::Mat &P2)
                                  N13, N23, N33, N34,
                                  N14, N24, N34, N44);
 
-
     // 步骤4：最大特征值的特征向量
 
     cv::Mat eval, evec;
@@ -344,7 +342,6 @@ void Sim3Solver::ComputeSim3(cv::Mat &P1, cv::Mat &P2)
     tinv.copyTo(mT21i.rowRange(0,3).col(3));
 }
 
-
 void Sim3Solver::CheckInliers()
 {
     vector<cv::Point2f> vP1im2, vP2im1;
@@ -374,7 +371,6 @@ void Sim3Solver::CheckInliers()
     }
 }
 
-
 cv::Mat Sim3Solver::GetEstimatedRotation()
 {
     return mBestRotation.clone();
@@ -395,11 +391,11 @@ void Sim3Solver::Project(const vector<cv::Mat> &vP3Dw, vector<cv::Point2f> &vP2D
     // 提取矩阵元素为标量，避免循环内创建临时Mat对象
     cv::Mat Rcw = Tcw.rowRange(0,3).colRange(0,3);
     cv::Mat tcw = Tcw.rowRange(0,3).col(3);
-    
+
     const float r00 = Rcw.at<float>(0,0); const float r01 = Rcw.at<float>(0,1); const float r02 = Rcw.at<float>(0,2);
     const float r10 = Rcw.at<float>(1,0); const float r11 = Rcw.at<float>(1,1); const float r12 = Rcw.at<float>(1,2);
     const float r20 = Rcw.at<float>(2,0); const float r21 = Rcw.at<float>(2,1); const float r22 = Rcw.at<float>(2,2);
-    
+
     const float tx = tcw.at<float>(0);
     const float ty = tcw.at<float>(1);
     const float tz = tcw.at<float>(2);
@@ -417,11 +413,11 @@ void Sim3Solver::Project(const vector<cv::Mat> &vP3Dw, vector<cv::Point2f> &vP2D
         const float X = vP3Dw[i].at<float>(0);
         const float Y = vP3Dw[i].at<float>(1);
         const float Z = vP3Dw[i].at<float>(2);
-        
+
         const float Xc = r00*X + r01*Y + r02*Z + tx;
         const float Yc = r10*X + r11*Y + r12*Z + ty;
         const float Zc = r20*X + r21*Y + r22*Z + tz;
-        
+
         const float invz = 1.0f/Zc;
         const float u = fx*Xc*invz+cx;
         const float v = fy*Yc*invz+cy;

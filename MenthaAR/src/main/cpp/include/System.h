@@ -41,6 +41,7 @@
 #include<chrono>
 #include<opencv2/core/core.hpp>
 
+#include "Config.h"
 #include "Tracking.h"
 #include "FrameDrawer.h"
 #include "Map.h"
@@ -110,19 +111,6 @@ public:
     void UpdateCalibration(float fx, float fy, float cx, float cy);
 
     /**
-     * 激活纯定位模式
-     * 停止局部建图线程，仅执行相机跟踪
-     * 适用于已有完整地图、只需定位的场景
-     */
-    void ActivateLocalizationMode();
-    
-    /**
-     * 停用纯定位模式
-     * 恢复局部建图线程，重新执行完整SLAM
-     */
-    void DeactivateLocalizationMode();
-
-    /**
      * 检查地图是否发生重大变化
      * 
      * @return true-自上次调用以来发生了闭环或全局BA，false-无重大变化
@@ -162,9 +150,10 @@ public:
      * 序列化地图点、关键帧等数据
      * 
      * @param filename 地图文件路径
+     * @param maxMapPoints 保存的最大地图特征点数（超出时按时间线从早到晚裁剪，保留最新点）
      */
-    void SaveMap(const string &filename);
-    
+    void SaveMap(const string &filename, int maxMapPoints = SYSTEM_MAX_MPS_SAVE);
+
     /**
      * 加载地图
      * @param filename 地图文件路径
@@ -178,13 +167,13 @@ public:
      * @return 关键帧总数
      */
     int GetNumKeyFrames();
-    
+
     /**
      * 获取地图中的地图点数量
      * @return 地图点总数
      */
     int GetNumMapPoints();
-    
+
     /**
      * 获取所有地图点
      * @return 地图点指针列表
@@ -198,19 +187,19 @@ public:
      * @return 状态值: -1=未初始化, 0=丢失, 1=跟踪中, 2=OK
      */
     int GetTrackingState();
-    
+
     /**
      * 获取当前帧跟踪到的地图点
      * @return 地图点指针列表
      */
     std::vector<MapPoint*> GetTrackedMapPoints();
-    
+
     /**
      * 获取当前帧跟踪到的关键点（去畸变后）
      * @return 关键点列表
      */
     std::vector<cv::KeyPoint> GetTrackedKeyPointsUn();
-    
+
     /**
      * 获取重定位对齐置信度
      * 用于UI显示，反映当前位姿与加载地图的对齐程度
@@ -218,7 +207,7 @@ public:
      * @return 置信度值（0.0-1.0）
      */
     float GetRelocAlignConfidence();
-    
+
     /**
      * 获取重定位匹配分数
      * 不依赖PnP求解，可以更早地提示是否进入目标区域
@@ -226,13 +215,13 @@ public:
      * @return 匹配分数（0.0-1.0）
      */
     float GetRelocMatchScore();
-    
+
     /**
      * 检查是否已建立地图对齐
      * @return true-已对齐, false-未对齐
      */
     bool HasMapAlignment();
-    
+
     /**
      * 获取对齐后的相机位姿
      * 将SLAM坐标系下的位姿转换到加载地图的坐标系
@@ -241,7 +230,7 @@ public:
      * @return 对齐后的位姿
      */
     cv::Mat GetMapAlignedPose(const cv::Mat &TcwSlam);
-    
+
     /**
      * 检查是否已加载地图
      * 
@@ -253,18 +242,12 @@ public:
      * 创建新地图（子地图），用于跟踪丢失时的恢复
      */
     void CreateNewMap();
-    
+
     /**
      * 切换到指定地图
      * @param pMap 目标地图指针
      */
     void SwitchToMap(Map* pMap);
-
-    /**
-     * 设置是否启用回环检测
-     * @param enable true-启用, false-关闭
-     */
-    void SetLoopClosing(bool enable);
 
 //public:
 private:
@@ -302,11 +285,6 @@ private:
     bool mbReset;
     bool mbResetKeepMap;  // 重置时是否保留地图
 
-    // 模式更改标志
-    std::mutex mMutexMode;
-    bool mbActivateLocalizationMode;
-    bool mbDeactivateLocalizationMode;
-
     // 跟踪状态
     int mTrackingState;
     std::vector<MapPoint*> mTrackedMapPoints;
@@ -316,8 +294,6 @@ private:
     // CreateNewMap 限频保护：防止高性能机器上频繁丢失导致连续触发新建子地图
     std::mutex mMutexNewMap;
     std::chrono::steady_clock::time_point mLastNewMapTime;
-
-    const bool USE_BINARY=true;
 };
 
 }// namespace ORB_SLAM2

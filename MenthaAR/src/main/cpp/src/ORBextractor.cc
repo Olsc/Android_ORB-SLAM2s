@@ -78,14 +78,11 @@
 #include "Common.h"
 #include "MenthaProfiler.h" // 性能分析器
 
-
 using namespace cv;
 using namespace std;
 
 namespace ORB_SLAM2
 {
-
-
 
 // 描述子旋转偏移量查找表 (LUT)
 struct DescriptorOffset {
@@ -93,12 +90,12 @@ struct DescriptorOffset {
     int dx;  // x方向偏移 (列偏移)
 };
 // [360个角度][512个采样点] = 184320 个预计算偏移量
-static DescriptorOffset descriptorOffsetLUT[360][512];
+static DescriptorOffset descriptorOffsetLUT[360][ORB_BRIEF_NUM_POINTS];
 static bool bDescriptorLUTInit = false;
 
 // 线程局部缓存：按当前图像 step 预先缩放的单字节偏移查找表，完全消除循环内 dy * step 乘法
 static thread_local int cachedStep = -1;
-static thread_local int levelStepOffsetLUT[360][512];
+static thread_local int levelStepOffsetLUT[360][ORB_BRIEF_NUM_POINTS];
 
 static void PrepareLevelStepOffsetLUT(int step)
 {
@@ -107,7 +104,7 @@ static void PrepareLevelStepOffsetLUT(int step)
     for (int a = 0; a < 360; ++a) {
         const DescriptorOffset* src = descriptorOffsetLUT[a];
         int* dst = levelStepOffsetLUT[a];
-        for (int i = 0; i < 512; ++i) {
+        for (int i = 0; i < ORB_BRIEF_NUM_POINTS; ++i) {
             dst[i] = src[i].dy * step + src[i].dx;
         }
     }
@@ -132,7 +129,7 @@ static inline float FastIC_Angle_LUT(int m_01, int m_10)
 
     int abs_m10 = std::abs(m_10);
     int abs_m01 = std::abs(m_01);
-    
+
     int angle_q10 = 0;
     if (abs_m10 >= abs_m01) {
         int idx = (abs_m01 << 10) / abs_m10;
@@ -214,7 +211,6 @@ static float IC_Angle(const Mat& image, Point2f pt,  const vector<int> & u_max)
     return FastIC_Angle_LUT(m_01, m_10);
 }
 
-
 const float factorPI = (float)(CV_PI/180.f);
 static void computeOrbDescriptor(const KeyPoint& kpt,
                                  const Mat& img, const Point* pattern,
@@ -223,7 +219,7 @@ static void computeOrbDescriptor(const KeyPoint& kpt,
     int angleIdx = (int)(kpt.angle + 0.5f);
     if(angleIdx < 0) angleIdx += 360;
     if(angleIdx >= 360) angleIdx -= 360;
-    
+
     // 快速舍入优化
     const int kpy = (int)(kpt.pt.y + 0.5f);
     const int kpx = (int)(kpt.pt.x + 0.5f);
@@ -238,8 +234,7 @@ static void computeOrbDescriptor(const KeyPoint& kpt,
 
     #define GET_VALUE(idx) center[lut_ptr[idx]]
 
-
-    for (int i = 0; i < 32; ++i, lut_ptr += 16)
+    for (int i = 0; i < ORB_DESC_COLS; ++i, lut_ptr += 16)
     {
         int t0, t1, val;
         t0 = GET_VALUE(0); t1 = GET_VALUE(1);
@@ -265,8 +260,7 @@ static void computeOrbDescriptor(const KeyPoint& kpt,
     #undef GET_VALUE
 }
 
-
-static int bit_pattern_31_[256*4] =
+static int bit_pattern_31_[ORB_BRIEF_NUM_PAIRS*4] =
 {
     8,-3, 9,5/*mean (0), correlation (0)*/,
     4,2, 7,-12/*mean (1.12461e-05), correlation (0.0437584)*/,
@@ -529,28 +523,28 @@ static int bit_pattern_31_[256*4] =
 // 初始化描述子偏移量查找表 (内存预生成)
 void ORBextractor::InitLUT() {
     if(bDescriptorLUTInit) return;
-    
+
     LOGD("InitLUT: 开始在内存中生成 ORB LUT...");
     const Point* pattern = (const Point*)bit_pattern_31_;
-    
+
     // 对每个角度 (0-359度)
     for(int angle = 0; angle < 360; angle++) {
         const float rad = angle * (float)CV_PI / 180.0f;
         const float a = cos(rad);
         const float b = sin(rad);
-        
+
         // 对每个采样点 (512个点)
-        for(int i = 0; i < 512; i++) {
+        for(int i = 0; i < ORB_BRIEF_NUM_POINTS; i++) {
             const float x = (float)pattern[i].x;
             const float y = (float)pattern[i].y;
-            
+
             // 预计算旋转后的坐标偏移
             // 原始公式: x' = x*a - y*b, y' = x*b + y*a
             descriptorOffsetLUT[angle][i].dy = (int)(x * b + y * a + 0.5f);
             descriptorOffsetLUT[angle][i].dx = (int)(x * a - y * b + 0.5f);
         }
     }
-    
+
     InitArctanLUT();
     bDescriptorLUTInit = true;
     LOGD("InitLUT: ORB LUT 生成完毕。");
@@ -596,7 +590,7 @@ ORBextractor::ORBextractor(int _nfeatures, float _scaleFactor, int _nlevels,
     }
     mnFeaturesPerLevel[nlevels-1] = std::max(nfeatures - sumFeatures, 0);
 
-    const int npoints = 512;
+    const int npoints = ORB_BRIEF_NUM_POINTS;
     const Point* pattern0 = (const Point*)bit_pattern_31_;
     std::copy(pattern0, pattern0 + npoints, std::back_inserter(pattern));
 
@@ -923,16 +917,16 @@ vector<cv::KeyPoint> ORBextractor::DistributeOctTree(const vector<cv::KeyPoint>&
 void ORBextractor::detectAndOrientLevels(const cv::Range& range,
                                           vector<vector<KeyPoint>>& allKeypoints)
 {
-    const float W = 30;
+    const float W = ORB_FAST_GRID_CELL;
     for (int level = range.start; level < range.end; ++level)
     {
-        const int minBorderX = ORB_EDGE_THRESHOLD-3;
+        const int minBorderX = ORB_EDGE_THRESHOLD-ORB_FAST_BORDER_MARGIN;
         const int minBorderY = minBorderX;
-        const int maxBorderX = mvImagePyramid[level].cols-ORB_EDGE_THRESHOLD+3;
+        const int maxBorderX = mvImagePyramid[level].cols-ORB_EDGE_THRESHOLD+ORB_FAST_BORDER_MARGIN;
         const int maxBorderY = mvImagePyramid[level].rows-ORB_EDGE_THRESHOLD+3;
 
         vector<cv::KeyPoint> vToDistributeKeys;
-        vToDistributeKeys.reserve(nfeatures*10);
+        vToDistributeKeys.reserve(nfeatures*ORB_CANDIDATE_RESERVE_FACTOR);
 
         const float width = (maxBorderX-minBorderX);
         const float height = (maxBorderY-minBorderY);
@@ -1084,7 +1078,6 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
     // 预计算尺度金字塔 (SLAM依赖它进行后续操作，必须保留)
     ComputePyramid(image);
 
-
     vector < vector<KeyPoint> > allKeypoints;
     allKeypoints.resize(nlevels);
 
@@ -1104,7 +1097,7 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
         return;
     }
 
-    _descriptors.create(nkeypoints, 32, CV_8U);
+    _descriptors.create(nkeypoints, ORB_DESC_COLS, CV_8U);
     Mat descriptors = _descriptors.getMat();
 
     // 顺序地将结果收集到连续数组，并建立 level → 描述子行号的偏移映射

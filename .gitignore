@@ -65,3 +65,15 @@ TEMP
 
 # Wiki
 Android_ORB-SLAM2s.wiki/
+
+
+reasonix.toml
+.reasonix/
+.claude/
+# profiler 测试目录：忽略 WSL 编译产物（无扩展名二进制），保留源码
+docs/profiler_tools/tests/*
+!docs/profiler_tools/tests/*.py
+!docs/profiler_tools/tests/*.cpp
+!docs/profiler_tools/tests/*.md
+docs/ALGORITHM_OPTIMIZATION_ANALYSIS.md
+docs/profiler_tools/tests/

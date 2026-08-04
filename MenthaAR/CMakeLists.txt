@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.10.2)
 
 set(CMAKE_VERBOSE_MAKEFILE on)
-set(libs "${CMAKE_SOURCE_DIR}/src/main/jniLibs")
 
 # Find OpenMP to enable multi-threading acceleration
 project(MenthaAR C CXX)
@@ -199,63 +198,7 @@ include_directories(
         src/main/cpp/Thirdparty
         src/main/cpp/Thirdparty/g2o
         src/main/cpp/Thirdparty/srrg_hbst
-        src/main/ncnn-android-vulkan-shared/${ANDROID_ABI}/include
 )
-
-#------------------------------------------------ 嵌入资源 ------------------------------------------------#
-# 使用汇编 .incbin 指令将二进制文件直接嵌入到目标文件（比生成C数组快得多）
-set(RESOURCE_DIR ${CMAKE_SOURCE_DIR}/src/main/other)
-set(EMBEDDED_DIR ${CMAKE_CURRENT_BINARY_DIR}/embedded)
-file(MAKE_DIRECTORY ${EMBEDDED_DIR})
-
-# 函数：将二进制文件转换为目标文件
-# 使用汇编包装器来创建明确命名的符号
-function(embed_resource input_file symbol_base output_obj)
-    set(bin_file ${EMBEDDED_DIR}/${symbol_base}.bin)
-    set(asm_file ${EMBEDDED_DIR}/${symbol_base}.S)
-    
-    # 步骤1: 复制二进制文件
-    add_custom_command(
-        OUTPUT ${bin_file}
-        COMMAND ${CMAKE_COMMAND} -E copy ${input_file} ${bin_file}
-        DEPENDS ${input_file}
-        COMMENT "Copying ${input_file}"
-        VERBATIM
-    )
-    
-    # 步骤2: 生成汇编包装器文件
-    add_custom_command(
-        OUTPUT ${asm_file}
-        COMMAND ${CMAKE_COMMAND} -E echo ".section .rodata" > ${asm_file}
-        COMMAND ${CMAKE_COMMAND} -E echo ".global _binary_${symbol_base}_start" >> ${asm_file}
-        COMMAND ${CMAKE_COMMAND} -E echo ".global _binary_${symbol_base}_end" >> ${asm_file}
-        COMMAND ${CMAKE_COMMAND} -E echo ".balign 16" >> ${asm_file}
-        COMMAND ${CMAKE_COMMAND} -E echo "_binary_${symbol_base}_start:" >> ${asm_file}
-        COMMAND ${CMAKE_COMMAND} -E echo ".incbin \"${bin_file}\"" >> ${asm_file}
-        COMMAND ${CMAKE_COMMAND} -E echo "_binary_${symbol_base}_end:" >> ${asm_file}
-        DEPENDS ${bin_file}
-        COMMENT "Generating assembly wrapper for ${symbol_base}"
-        VERBATIM
-    )
-    
-    # 步骤3: 汇编生成目标文件 (使用正确的Android目标架构)
-    add_custom_command(
-        OUTPUT ${output_obj}
-        COMMAND ${CMAKE_C_COMPILER}
-            --target=${CMAKE_C_COMPILER_TARGET}
-            --sysroot=${CMAKE_SYSROOT}
-            -c ${asm_file} -o ${output_obj}
-        DEPENDS ${asm_file}
-        COMMENT "Assembling ${symbol_base} (fast method)"
-        VERBATIM
-    )
-endfunction()
-
-# 嵌入资源文件 (已清理，采用内存预生成)
-set(EMBEDDED_OBJS)
-
-# 创建自定义目标以确保在链接前生成所有对象文件
-add_custom_target(generate_embedded_resources DEPENDS "${EMBEDDED_OBJS}")
 
 
 # ========== 整合所有组件到一个 SO：libMenthaAR_Engine.so ==========
@@ -326,9 +269,6 @@ else()
 endif()
 
 find_library(log-lib log)
-
-# 确保在编译前生成嵌入的资源对象文件
-add_dependencies(MenthaAR_Engine generate_embedded_resources)
 
 
 target_link_libraries(MenthaAR_Engine

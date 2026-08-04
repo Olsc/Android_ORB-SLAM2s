@@ -174,7 +174,6 @@ void Map::clear()
 
 } //namespace ORB_SLAM2
 
-
 long unsigned int ORB_SLAM2::Map::GetLoadedMapMPCount()
 {
     unique_lock<mutex> lock(mMutexMap);
@@ -188,4 +187,3 @@ long unsigned int ORB_SLAM2::Map::GetLoadedMapMPCount()
     }
     return count;
 }
-

@@ -78,7 +78,6 @@ using namespace std;
 namespace ORB_SLAM2
 {
 
-
 PnPsolver::PnPsolver(const Frame &F, const vector<MapPoint*> &vpMapPointMatches):
     pws(0), us(0), alphas(0), pcs(0), maximum_number_of_correspondences(0), number_of_correspondences(0), mnInliersi(0),
     mnIterations(0), mnBestInliers(0), N(0), mLcg(0)
@@ -132,7 +131,6 @@ PnPsolver::~PnPsolver()
   delete [] pcs;
 }
 
-
 void PnPsolver::SetRansacParameters(double probability, int minInliers, int maxIterations, int minSet, float epsilon, float th2)
 {
     mRansacProb = probability;
@@ -162,7 +160,7 @@ void PnPsolver::SetRansacParameters(double probability, int minInliers, int maxI
     if(mRansacMinInliers==N)
         nIterations=1;
     else
-        nIterations = ceil(log(1-mRansacProb)/log(1-pow(mRansacEpsilon,3)));
+        nIterations = ceil(log(1-mRansacProb)/log(1-pow(mRansacEpsilon,PNP_RANSAC_POWER)));
 
     mRansacMaxIts = max(1,min(nIterations,mRansacMaxIts));
 
@@ -239,18 +237,19 @@ cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInlie
                     mBestTcw = cv::Mat::eye(4,4,CV_32F);
                     Rcw.copyTo(mBestTcw.rowRange(0,3).colRange(0,3));
                     tcw.copyTo(mBestTcw.rowRange(0,3).col(3));
-                }
 
-                if(Refine())
-                {
-                    nInliers = mnRefinedInliers;
-                    vbInliers = vector<bool>(mvpMapPointMatches.size(),false);
-                    for(int i=0; i<N; i++)
+                    // 仅在新最佳解时 Refine
+                    if(Refine())
                     {
-                        if(mvbRefinedInliers[i])
-                            vbInliers[mvKeyPointIndices[i]] = true;
+                        nInliers = mnRefinedInliers;
+                        vbInliers = vector<bool>(mvpMapPointMatches.size(),false);
+                        for(int i=0; i<N; i++)
+                        {
+                            if(mvbRefinedInliers[i])
+                                vbInliers[mvKeyPointIndices[i]] = true;
+                        }
+                        return mRefinedTcw.clone();
                     }
-                    return mRefinedTcw.clone();
                 }
 
             }
@@ -354,7 +353,6 @@ bool PnPsolver::Refine()
     return false;
 }
 
-
 void PnPsolver::CheckInliers()
 {
     mnInliersi=0;
@@ -392,7 +390,6 @@ void PnPsolver::CheckInliers()
         }
     }
 }
-
 
 void PnPsolver::set_maximum_number_of_correspondences(int n)
 {
@@ -437,7 +434,6 @@ void PnPsolver::choose_control_points(void)
 
   for(int j = 0; j < 3; j++)
     cws[0][j] /= number_of_correspondences;
-
 
   // 从参考点的PCA中获取C1、C2和C3：
   m_PW0_buffer.resize(number_of_correspondences * 3);
@@ -925,7 +921,7 @@ void PnPsolver::compute_A_and_b_gauss_newton(const double * l_6x10, const double
 void PnPsolver::gauss_newton(const CvMat * L_6x10, const CvMat * Rho,
 			double betas[4])
 {
-  const int iterations_number = 5;
+  const int iterations_number = PNP_GN_ITERS;
 
   double a[6*4], b[6], x[4];
   CvMat A = cvMat(6, 4, CV_64F, a);
@@ -1022,8 +1018,6 @@ void PnPsolver::qr_solve(CvMat * A, CvMat * b, CvMat * X)
     pX[i] = (pb[i] - sum) / A2[i];
   }
 }
-
-
 
 void PnPsolver::relative_error(double & rot_err, double & transl_err,
 			  const double Rtrue[3][3], const double ttrue[3],

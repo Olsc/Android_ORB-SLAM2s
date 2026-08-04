@@ -19,7 +19,6 @@ android {
     packaging {
         jniLibs {
             useLegacyPackaging true
-            excludes += []
             pickFirsts += ['lib/**/libc++_shared.so']
         }
         resources {
@@ -35,10 +34,6 @@ android {
 
     aaptOptions {
         noCompress "tflite", "mindir", "glb", "mtl"
-    }
-
-    sourceSets {
-
     }
 
     // 加载签名密钥

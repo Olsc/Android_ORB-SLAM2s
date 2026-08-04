@@ -42,7 +42,7 @@
 #include"MapPoint.h"
 #include"KeyFrame.h"
 #include"Frame.h"
-
+#include"Config.h"
 
 namespace ORB_SLAM2
 {
@@ -56,7 +56,7 @@ class ORBmatcher
 {    
 public:
 
-    ORBmatcher(float nnratio=0.6, bool checkOri=true);
+    ORBmatcher(float nnratio=ORB_MATCHER_DEFAULT_NN_RATIO, bool checkOri=true);
 
     // 计算两个ORB描述子之间的汉明距离
     static int DescriptorDistance(const cv::Mat &a, const cv::Mat &b);
@@ -76,7 +76,7 @@ public:
 
     // 在帧关键点和投影地图点之间搜索匹配，返回匹配数量
     // 用于跟踪局部地图(跟踪)
-    int SearchByProjection(Frame &F, const std::vector<MapPoint*> &vpMapPoints, const float th=3);
+    int SearchByProjection(Frame &F, const std::vector<MapPoint*> &vpMapPoints, const float th=ORB_MATCHER_DEFAULT_PROJ_TH);
 
     // 将上一帧中跟踪的地图点投影到当前帧并搜索匹配
     // 用于从前一帧跟踪(跟踪)
@@ -91,7 +91,7 @@ public:
     int SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const std::vector<MapPoint*> &vpPoints, std::vector<MapPoint*> &vpMatched, int th);
 
     // 地图初始化的匹配(仅用于单目情况)
-    int SearchForInitialization(Frame &F1, Frame &F2, std::vector<cv::Point2f> &vbPrevMatched, std::vector<int> &vnMatches12, int windowSize=10);
+    int SearchForInitialization(Frame &F1, Frame &F2, std::vector<cv::Point2f> &vbPrevMatched, std::vector<int> &vnMatches12, int windowSize=ORB_MATCHER_INIT_WINDOW);
 
     // 匹配以三角化新的地图点，检查对极约束
     int SearchForTriangulation(KeyFrame *pKF1, KeyFrame* pKF2, cv::Mat F12,
@@ -102,7 +102,7 @@ public:
     int SearchBySim3(KeyFrame* pKF1, KeyFrame* pKF2, std::vector<MapPoint *> &vpMatches12, const float &s12, const cv::Mat &R12, const cv::Mat &t12, const float th);
 
     // 将地图点投影到关键帧并搜索重复的地图点
-    int Fuse(KeyFrame* pKF, const vector<MapPoint *> &vpMapPoints, const float th=3.0);
+    int Fuse(KeyFrame* pKF, const vector<MapPoint *> &vpMapPoints, const float th=ORB_MATCHER_DEFAULT_FUSE_TH);
 
     // 使用给定的Sim3将地图点投影到关键帧并搜索重复的地图点
     int Fuse(KeyFrame* pKF, cv::Mat Scw, const std::vector<MapPoint*> &vpPoints, float th, vector<MapPoint *> &vpReplacePoint);
