@@ -313,9 +313,10 @@ const float MAPPOINT_DEFAULT_MAX_DIST = 100.0f;
 const int MAPPOINT_MIN_OBS_FOR_BAD = 2;
 const float MAPPOINT_MIN_FOUND_RATIO = 0.25f;
 
-// 系统加载地图的容量上限
+// 系统加载与保存地图的容量上限
 const int SYSTEM_MAX_KFS_LOAD = 10000;
-const int SYSTEM_MAX_MPS_LOAD = 500000;
+const int SYSTEM_MAX_MPS_LOAD = 10000;
+const int SYSTEM_MAX_MPS_SAVE = 10000;
 
 // 地图文件格式魔数和版本号
 const uint32_t SYSTEM_MAP_FILE_MAGIC = 0x4D415031;

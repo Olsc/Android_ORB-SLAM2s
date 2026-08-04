@@ -584,21 +584,22 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeUpdateResolution(JNIEnv* env, jobj
 }
 
 JNIEXPORT void JNICALL
-Java_com_orb_slam2s_slamar_NativeHelper_saveMap(JNIEnv* env, jobject instance, jstring path_)
+Java_com_orb_slam2s_slamar_NativeHelper_saveMap(JNIEnv* env, jobject instance, jstring path_, jint maxPoints)
 {
     const char* path = env->GetStringUTFChars(path_, nullptr);
 
     if (slamSys)
     {
-
         auto t0 = static_cast<double>(cv::getTickCount());
-        slamSys->SaveMap(std::string(path));
+        if (maxPoints > 0) {
+            slamSys->SaveMap(std::string(path), maxPoints);
+        } else {
+            slamSys->SaveMap(std::string(path)); // 使用默认 SYSTEM_MAX_MPS_SAVE 上限
+        }
         SavePlaneAndArInfo(std::string(path)); // 保存平面和AR信息
 
         auto t1 = static_cast<double>(cv::getTickCount());
         double ms = (t1 - t0) * 1000.0 / cv::getTickFrequency();
-
-        //     slamSys->GetNumKeyFrames(), slamSys->GetNumMapPoints());
     }
 
     env->ReleaseStringUTFChars(path_, path);

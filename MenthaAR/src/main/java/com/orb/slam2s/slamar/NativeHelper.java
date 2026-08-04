@@ -124,7 +124,10 @@ public class NativeHelper {
     }
 
     // 本地方法：保存/加载地图
-    public native void saveMap(String path);
+    public native void saveMap(String path, int maxPoints);
+    public void saveMap(String path) {
+        saveMap(path, -1);
+    }
     public native void loadMapWithId(String path, int mapId, boolean append);
     // public native int getCurrentMapId();  // 暂未使用（app 无调用点），需要时取消注释
     public native int[] getMapStats();
@@ -200,12 +203,21 @@ public class NativeHelper {
          * @param mapName 地图名称
          */
         public void saveMap(String mapName) {
+            saveMap(mapName, -1);
+        }
+
+        /**
+         * 保存地图（指定特征点上限）
+         * @param mapName 地图名称
+         * @param maxPoints 特征点上限，<=0 表示使用默认配置
+         */
+        public void saveMap(String mapName, int maxPoints) {
             try {
                 // 清理文件名
                 mapName = mapName.replaceAll("[^a-zA-Z0-9_\\-]", "_");
                 
                 String mapPath = new File(mapDirectory, mapName + ".bin").getAbsolutePath();
-                nativeHelper.saveMap(mapPath);
+                nativeHelper.saveMap(mapPath, maxPoints);
                 
                 // 获取地图统计信息
                 int[] stats = nativeHelper.getMapStats();

@@ -41,6 +41,7 @@
 #include<chrono>
 #include<opencv2/core/core.hpp>
 
+#include "Config.h"
 #include "Tracking.h"
 #include "FrameDrawer.h"
 #include "Map.h"
@@ -149,8 +150,9 @@ public:
      * 序列化地图点、关键帧等数据
      * 
      * @param filename 地图文件路径
+     * @param maxMapPoints 保存的最大地图特征点数（超出时按时间线从早到晚裁剪，保留最新点）
      */
-    void SaveMap(const string &filename);
+    void SaveMap(const string &filename, int maxMapPoints = SYSTEM_MAX_MPS_SAVE);
 
     /**
      * 加载地图

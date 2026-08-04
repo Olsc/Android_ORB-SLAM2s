@@ -400,13 +400,44 @@ int System::GetNumKeyFrames(){ return static_cast<int>(mpMap->KeyFramesInMap());
 int System::GetNumMapPoints(){ return static_cast<int>(mpMap->MapPointsInMap()); }
 std::vector<MapPoint*> System::GetAllMapPoints(){ return mpMap->GetAllMapPoints(); }
 
-void System::SaveMap(const std::string &filename)
+void System::SaveMap(const std::string &filename, int maxMapPoints)
 {
     // 增强的二进制序列化：保存完整的KF和MP信息以提高重定位精度
-    LOGD("保存地图: 开始保存地图到 %s", filename.c_str());
+    LOGD("保存地图: 开始保存地图到 %s (特征点上限=%d)", filename.c_str(), maxMapPoints);
     std::vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();
     std::vector<MapPoint*> vpMPs = mpMap->GetAllMapPoints();
-    std::sort(vpKFs.begin(), vpKFs.end(), KeyFrame::lId);
+
+    // 1. 过滤无效(null/bad)的关键帧与地图点
+    std::vector<KeyFrame*> vpValidKFs;
+    vpValidKFs.reserve(vpKFs.size());
+    for(KeyFrame* pKF : vpKFs) {
+        if(pKF && !pKF->isBad())
+            vpValidKFs.push_back(pKF);
+    }
+    std::sort(vpValidKFs.begin(), vpValidKFs.end(), KeyFrame::lId);
+
+    std::vector<MapPoint*> vpValidMPs;
+    vpValidMPs.reserve(vpMPs.size());
+    for(MapPoint* pMP : vpMPs) {
+        if(pMP && !pMP->isBad())
+            vpValidMPs.push_back(pMP);
+    }
+
+    // 2. 将地图特征点按时间线排序（mnId递增：从早期旧点到晚期新点）
+    std::sort(vpValidMPs.begin(), vpValidMPs.end(), [](MapPoint* a, MapPoint* b){
+        return a->mnId < b->mnId;
+    });
+
+    // 3. 检查特征点数量是否超过上限；若超出，从早期到晚期时间线裁剪，优先保留最新点
+    size_t totalValidMPs = vpValidMPs.size();
+    if(maxMapPoints > 0 && totalValidMPs > static_cast<size_t>(maxMapPoints)) {
+        size_t numToPrune = totalValidMPs - static_cast<size_t>(maxMapPoints);
+        LOGD("保存地图: 有效特征点数=%zu 超过上限=%d，从早期时间线裁剪掉 %zu 个旧点，保留最新 %d 个点",
+             totalValidMPs, maxMapPoints, numToPrune, maxMapPoints);
+        vpValidMPs.erase(vpValidMPs.begin(), vpValidMPs.begin() + numToPrune);
+    } else {
+        LOGD("保存地图: 有效特征点数=%zu (未超上限 %d)", totalValidMPs, maxMapPoints);
+    }
 
     std::ofstream ofs(filename, std::ios::binary);
     if(!ofs.is_open()){
@@ -417,17 +448,17 @@ void System::SaveMap(const std::string &filename)
     const uint32_t version = SYSTEM_MAP_FILE_VERSION;
     ofs.write(reinterpret_cast<const char*>(&magic), sizeof(magic));
     ofs.write(reinterpret_cast<const char*>(&version), sizeof(version));
-    uint32_t nKFs = static_cast<uint32_t>(vpKFs.size());
-    uint32_t nMPs = static_cast<uint32_t>(vpMPs.size());
+
+    // 写入实际保存的关键帧与地图点数量（保证二进制序列化头准确）
+    uint32_t nKFs = static_cast<uint32_t>(vpValidKFs.size());
+    uint32_t nMPs = static_cast<uint32_t>(vpValidMPs.size());
     ofs.write(reinterpret_cast<const char*>(&nKFs), sizeof(nKFs));
     ofs.write(reinterpret_cast<const char*>(&nMPs), sizeof(nMPs));
-    LOGD("保存地图: 关键帧=%u 地图点=%u", nKFs, nMPs);
+    LOGD("保存地图: 实际写入 关键帧=%u 地图点=%u", nKFs, nMPs);
 
     // 关键帧：[id][时间戳][位姿 16个浮点数][关键点数量][关键点及描述子]
-    uint32_t writtenKFs = 0;
-    for(KeyFrame* pKF : vpKFs)
+    for(KeyFrame* pKF : vpValidKFs)
     {
-        if(!pKF || pKF->isBad()) continue;
         uint32_t id = static_cast<uint32_t>(pKF->mnId);
         ofs.write(reinterpret_cast<const char*>(&id), sizeof(id));
         double ts = pKF->mTimeStamp;
@@ -463,16 +494,11 @@ void System::SaveMap(const std::string &filename)
                 ofs.write(reinterpret_cast<const char*>(&descCols), sizeof(descCols));
             }
         }
-
-        writtenKFs++;
     }
 
     // 地图点格式: [id][坐标 3浮点][描述符长度+数据][法向量 3浮点][最小距离][最大距离]
-    // 实际上只保存 [id][pos][desc][normal]
-    uint32_t writtenMPs = 0;
-    for(MapPoint* pMP : vpMPs)
+    for(MapPoint* pMP : vpValidMPs)
     {
-        if(!pMP || pMP->isBad()) continue;
         // 确保描述符存在以进行持久化
         if(pMP->GetDescriptor().empty()) pMP->ComputeDistinctiveDescriptors();
         uint32_t id = static_cast<uint32_t>(pMP->mnId);
@@ -497,9 +523,9 @@ void System::SaveMap(const std::string &filename)
         float maxd = pMP->GetMaxDistanceInvariance();
         ofs.write(reinterpret_cast<const char*>(&mind), sizeof(mind));
         ofs.write(reinterpret_cast<const char*>(&maxd), sizeof(maxd));
-        writtenMPs++;
     }
     ofs.close();
+    LOGD("保存地图: 完成写入 %s (KF=%u, MP=%u)", filename.c_str(), nKFs, nMPs);
 }
 
 void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
