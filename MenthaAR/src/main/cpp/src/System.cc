@@ -55,7 +55,7 @@ namespace ORB_SLAM2
 System::System(const std::string &strSettingsFile, const eSensor sensor):mSensor(sensor),  mbReset(false),mbResetKeepMap(false)
 {
     {
-        cv::setNumThreads(0);
+        cv::setNumThreads(-1);
     }
 
     // 输出欢迎消息-此处虽注释掉但要保留！
