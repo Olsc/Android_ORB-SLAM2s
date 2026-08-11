@@ -1778,49 +1778,35 @@ void ORBmatcher::ComputeThreeMaxima(vector<int>* histo, const int L, int &ind1, 
     }
 }
 
-// 位集计数来自 bithacks (CountBitsSetParallel)
-int ORBmatcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)
-{
-    const uint8_t* pa = a.ptr<uint8_t>();
-    const uint8_t* pb = b.ptr<uint8_t>();
-
-#if defined(__ARM_NEON) || defined(__ARM_NEON__)
-    // ARM NEON 路径: vcntq_u8 + vaddlvq_u8
-    // 单指令 16 字节 popcount, 2 次加载覆盖全部 32 字节
-    const uint8x16_t va0 = vld1q_u8(pa);
-    const uint8x16_t vb0 = vld1q_u8(pb);
-    const uint8x16_t va1 = vld1q_u8(pa + 16);
-    const uint8x16_t vb1 = vld1q_u8(pb + 16);
-
-    const uint8x16_t xor0 = veorq_u8(va0, vb0);
-    const uint8x16_t xor1 = veorq_u8(va1, vb1);
-
-    // vcntq_u8: 每条指令对 16 个字节同时计算 popcount
-    // vaddlvq_u8: 将 16 字节的 popcount 水平累加为单个 u32
-    const uint8x16_t pop0 = vcntq_u8(xor0);
-    const uint8x16_t pop1 = vcntq_u8(xor1);
-
-    // vaddlvq_u8 是 AArch64 特有指令，Armv7 回退到 vpaddlq
-    #if defined(__aarch64__)
-        return (int)(vaddlvq_u8(pop0) + vaddlvq_u8(pop1));
-    #else
-        // Armv7 NEON: 使用 vpaddlq 逐步归约
-        uint16x8_t sum16 = vpaddlq_u8(vaddq_u8(pop0, pop1));
-        uint32x4_t sum32 = vpaddlq_u16(sum16);
-        uint64x2_t sum64 = vpaddlq_u32(sum32);
-        return (int)(vgetq_lane_u64(sum64, 0) + vgetq_lane_u64(sum64, 1));
-    #endif
+static inline int Popcount64(uint64_t v) {
+#if defined(_MSC_VER)
+    return (int)__popcnt64(v);
+#elif defined(__GNUC__) || defined(__clang__)
+    return __builtin_popcountll(v);
 #else
-    // 标量回退: 4 × 64 位 popcount (与之前相同)
+    v = v - ((v >> 1) & 0x5555555555555555ULL);
+    v = (v & 0x3333333333333333ULL) + ((v >> 2) & 0x3333333333333333ULL);
+    v = (v + (v >> 4)) & 0x0F0F0F0F0F0F0F0FULL;
+    return (int)((v * 0x0101010101010101ULL) >> 56);
+#endif
+}
+
+// 跨平台 64-bit 并行 Bitwise Popcount
+int ORBmatcher::DescriptorDistance(const uint8_t* pa, const uint8_t* pb)
+{
     uint64_t va[4], vb[4];
     std::memcpy(va, pa, 32);
     std::memcpy(vb, pb, 32);
 
-    return __builtin_popcountll(va[0] ^ vb[0]) +
-           __builtin_popcountll(va[1] ^ vb[1]) +
-           __builtin_popcountll(va[2] ^ vb[2]) +
-           __builtin_popcountll(va[3] ^ vb[3]);
-#endif
+    return Popcount64(va[0] ^ vb[0]) +
+           Popcount64(va[1] ^ vb[1]) +
+           Popcount64(va[2] ^ vb[2]) +
+           Popcount64(va[3] ^ vb[3]);
+}
+
+int ORBmatcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)
+{
+    return DescriptorDistance(a.ptr<uint8_t>(), b.ptr<uint8_t>());
 }
 
 } //namespace ORB_SLAM2

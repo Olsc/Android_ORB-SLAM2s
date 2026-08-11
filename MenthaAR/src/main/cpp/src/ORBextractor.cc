@@ -110,11 +110,16 @@ static void PrepareLevelStepOffsetLUT(int step)
     }
 }
 
+static uint32_t reciprocal_table_q24[1025];
 static uint16_t arctan_table_q10[1025];
 static bool bArctanLUTInit = false;
 
 static void InitArctanLUT() {
     if (bArctanLUTInit) return;
+    reciprocal_table_q24[0] = 0;
+    for (int i = 1; i <= 1024; ++i) {
+        reciprocal_table_q24[i] = (uint32_t)((1ULL << 24) / i);
+    }
     for (int i = 0; i <= 1024; ++i) {
         double r = (double)i / 1024.0;
         double rad = std::atan(r);
@@ -132,10 +137,12 @@ static inline float FastIC_Angle_LUT(int m_01, int m_10)
 
     int angle_q10 = 0;
     if (abs_m10 >= abs_m01) {
-        int idx = (abs_m01 << 10) / abs_m10;
+        int idx = (abs_m10 <= 1024) ? (int)(((uint64_t)abs_m01 * reciprocal_table_q24[abs_m10]) >> 14) : ((abs_m01 << 10) / abs_m10);
+        if (idx > 1024) idx = 1024;
         angle_q10 = arctan_table_q10[idx];
     } else {
-        int idx = (abs_m10 << 10) / abs_m01;
+        int idx = (abs_m01 <= 1024) ? (int)(((uint64_t)abs_m10 * reciprocal_table_q24[abs_m01]) >> 14) : ((abs_m10 << 10) / abs_m01);
+        if (idx > 1024) idx = 1024;
         angle_q10 = 900 - arctan_table_q10[idx];
     }
 
@@ -1129,6 +1136,16 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
     }
 }
 
+// 纯加法与位移位组合，替代常数乘法
+// 18*x = (x<<4) + (x<<1)
+// 34*x = (x<<5) + (x<<1)
+// 49*x = (x<<5) + (x<<4) + x
+// 54*x = (x<<5) + (x<<4) + (x<<2) + (x<<1)
+inline static int mul18(int x) { return (x << 4) + (x << 1); }
+inline static int mul34(int x) { return (x << 5) + (x << 1); }
+inline static int mul49(int x) { return (x << 5) + (x << 4) + x; }
+inline static int mul54(int x) { return (x << 5) + (x << 4) + (x << 2) + (x << 1); }
+
 // 1D 分离式定点 7x7 高斯卷积 (sigma=2.0, 核权重比 256)
 // [18, 34, 49, 54, 49, 34, 18], sum = 256
 static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPadded)
@@ -1148,9 +1165,9 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
         int* tempRow = &tempBuf[r * cols];
         // 边界内像素 (3 到 cols-4)
         for (int c = 3; c < cols - 3; ++c) {
-            int val = srcRow[c-3] * 18 + srcRow[c-2] * 34 + srcRow[c-1] * 49 +
-                      srcRow[c]   * 54 +
-                      srcRow[c+1] * 49 + srcRow[c+2] * 34 + srcRow[c+3] * 18;
+            int val = mul18(srcRow[c-3]) + mul34(srcRow[c-2]) + mul49(srcRow[c-1]) +
+                      mul54(srcRow[c])   +
+                      mul49(srcRow[c+1]) + mul34(srcRow[c+2]) + mul18(srcRow[c+3]);
             tempRow[c] = (val + 128) >> 8;
         }
         // 左边界处理 (c < 3)
@@ -1159,7 +1176,9 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
             for (int k = -3; k <= 3; ++k) {
                 int colIdx = std::abs(c + k);
                 if (colIdx >= cols) colIdx = 2 * cols - 1 - colIdx;
-                val += srcRow[colIdx] * ((k == 0) ? 54 : ((std::abs(k) == 1) ? 49 : ((std::abs(k) == 2) ? 34 : 18)));
+                int absK = std::abs(k);
+                int coeff = (absK == 0) ? mul54(srcRow[colIdx]) : ((absK == 1) ? mul49(srcRow[colIdx]) : ((absK == 2) ? mul34(srcRow[colIdx]) : mul18(srcRow[colIdx])));
+                val += coeff;
             }
             tempRow[c] = (val + 128) >> 8;
         }
@@ -1170,7 +1189,9 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
                 int colIdx = c + k;
                 if (colIdx >= cols) colIdx = 2 * (cols - 1) - colIdx;
                 if (colIdx < 0) colIdx = -colIdx;
-                val += srcRow[colIdx] * ((k == 0) ? 54 : ((std::abs(k) == 1) ? 49 : ((std::abs(k) == 2) ? 34 : 18)));
+                int absK = std::abs(k);
+                int coeff = (absK == 0) ? mul54(srcRow[colIdx]) : ((absK == 1) ? mul49(srcRow[colIdx]) : ((absK == 2) ? mul34(srcRow[colIdx]) : mul18(srcRow[colIdx])));
+                val += coeff;
             }
             tempRow[c] = (val + 128) >> 8;
         }
@@ -1188,9 +1209,9 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
         const int* tempRowP3 = &tempBuf[(r + 3) * cols];
 
         for (int c = 0; c < cols; ++c) {
-            int val = tempRowM3[c] * 18 + tempRowM2[c] * 34 + tempRowM1[c] * 49 +
-                      tempRow0[c]  * 54 +
-                      tempRowP1[c] * 49 + tempRowP2[c] * 34 + tempRowP3[c] * 18;
+            int val = mul18(tempRowM3[c]) + mul34(tempRowM2[c]) + mul49(tempRowM1[c]) +
+                      mul54(tempRow0[c])  +
+                      mul49(tempRowP1[c]) + mul34(tempRowP2[c]) + mul18(tempRowP3[c]);
             int pix = (val + 128) >> 8;
             dstRow[c] = (uchar)(pix > 255 ? 255 : (pix < 0 ? 0 : pix));
         }

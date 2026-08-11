@@ -60,6 +60,7 @@ public:
 
     // 计算两个ORB描述子之间的汉明距离
     static int DescriptorDistance(const cv::Mat &a, const cv::Mat &b);
+    static int DescriptorDistance(const uint8_t* pa, const uint8_t* pb);
 
     // 基于 HBST 的帧间特征匹配，支持比率测试
     int SearchByHBST(Frame &F1, Frame &F2, std::vector<cv::Point2f> &vbPrevMatched);

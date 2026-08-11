@@ -206,6 +206,9 @@ void MapPoint::ShareObservations(std::map<KeyFrame*, int>& counter, unsigned lon
 
 int MapPoint::GetRedundantObservationsCount(KeyFrame* pKF, int scaleLevel)
 {
+    if (nObs.load(std::memory_order_relaxed) < 3)
+        return 0;
+
     unique_lock<mutex> lock(mMutexFeatures);
     int count = 0;
     for(std::map<KeyFrame*, size_t>::const_iterator mit=mObservations.begin(), mend=mObservations.end(); mit!=mend; mit++)
@@ -323,8 +326,6 @@ float MapPoint::GetFoundRatio()
 void MapPoint::ComputeDistinctiveDescriptors()
 {
     // 检索所有观测到的描述符
-    vector<cv::Mat> vDescriptors;
-
     map<KeyFrame*,size_t> observations;
 
     {
@@ -337,39 +338,46 @@ void MapPoint::ComputeDistinctiveDescriptors()
     if(observations.empty())
         return;
 
-    vDescriptors.reserve(observations.size());
+    const uint8_t* descPtrs[MAPPOINT_DESC_MAX_OBS];
+    cv::Mat descMats[MAPPOINT_DESC_MAX_OBS];
+    size_t nDescs = 0;
 
     for(map<KeyFrame*,size_t>::iterator mit=observations.begin(), mend=observations.end(); mit!=mend; mit++)
     {
         KeyFrame* pKF = mit->first;
 
         if(!pKF->isBad())
-            vDescriptors.push_back(pKF->mDescriptors.row(mit->second));
+        {
+            if (nDescs < MAPPOINT_DESC_MAX_OBS)
+            {
+                descPtrs[nDescs] = pKF->mDescriptors.ptr<uint8_t>(mit->second);
+                descMats[nDescs] = pKF->mDescriptors.row(mit->second);
+                nDescs++;
+            }
+        }
     }
 
-    if(vDescriptors.empty())
+    if(nDescs == 0)
         return;
 
-    const size_t N = vDescriptors.size();
+    const size_t N = nDescs;
 
     // 快速路径：1 个或 2 个观测时无需计算距离矩阵
     if (N <= 2)
     {
         unique_lock<mutex> lock(mMutexFeatures);
-        mDescriptor = vDescriptors[0].clone();
+        mDescriptor = descMats[0].clone();
         return;
     }
 
-    // N > 2 时，使用栈内存缓冲区（限制最大 64 个观测）
-    const size_t N_max = std::min(N, (size_t)64);
     int distsMat[MAPPOINT_DESC_MAX_OBS][MAPPOINT_DESC_MAX_OBS];
 
-    for(size_t i = 0; i < N_max; ++i)
+    for(size_t i = 0; i < N; ++i)
     {
         distsMat[i][i] = 0;
-        for(size_t j = i + 1; j < N_max; ++j)
+        for(size_t j = i + 1; j < N; ++j)
         {
-            int distij = ORBmatcher::DescriptorDistance(vDescriptors[i], vDescriptors[j]);
+            int distij = ORBmatcher::DescriptorDistance(descPtrs[i], descPtrs[j]);
             distsMat[i][j] = distij;
             distsMat[j][i] = distij;
         }
@@ -379,11 +387,11 @@ void MapPoint::ComputeDistinctiveDescriptors()
     int BestIdx = 0;
     int rowDists[MAPPOINT_DESC_MAX_OBS];
 
-    for(size_t i = 0; i < N_max; ++i)
+    for(size_t i = 0; i < N; ++i)
     {
-        std::memcpy(rowDists, distsMat[i], N_max * sizeof(int));
-        size_t medianIdx = (N_max - 1) / 2;
-        std::nth_element(rowDists, rowDists + medianIdx, rowDists + N_max);
+        std::memcpy(rowDists, distsMat[i], N * sizeof(int));
+        size_t medianIdx = (N - 1) / 2;
+        std::nth_element(rowDists, rowDists + medianIdx, rowDists + N);
         int median = rowDists[medianIdx];
 
         if(median < BestMedian)
@@ -395,7 +403,7 @@ void MapPoint::ComputeDistinctiveDescriptors()
 
     {
         unique_lock<mutex> lock(mMutexFeatures);
-        mDescriptor = vDescriptors[BestIdx].clone();
+        mDescriptor = descMats[BestIdx].clone();
     }
 }
 

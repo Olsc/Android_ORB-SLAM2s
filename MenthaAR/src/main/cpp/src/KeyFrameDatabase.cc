@@ -66,14 +66,20 @@ void KeyFrameDatabase::add(KeyFrame *pKF)
 
 void KeyFrameDatabase::erase(KeyFrame* pKF)
 {
-    unique_lock<mutex> lock(mMutex);
-    if (mhmKeyFrames.erase(pKF->mnId) > 0) {
-        mnErasedCount++;
-        // 当删除数量达到设定的阈值时，触发树重建，彻底清理残留特征点
-        if (mnErasedCount >= KFD_REBUILD_ERASE_TH) {
-            rebuild();
-            mnErasedCount = 0;
+    bool bNeedRebuild = false;
+    {
+        unique_lock<mutex> lock(mMutex);
+        if (mhmKeyFrames.erase(pKF->mnId) > 0) {
+            mnErasedCount++;
+            // 当删除数量达到设定的阈值时，触发树重建，彻底清理残留特征点
+            if (mnErasedCount >= KFD_REBUILD_ERASE_TH) {
+                bNeedRebuild = true;
+                mnErasedCount = 0;
+            }
         }
+    }
+    if (bNeedRebuild) {
+        rebuild();
     }
 }
 
@@ -277,12 +283,20 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
 
 void KeyFrameDatabase::rebuild()
 {
-    // 清除树以安全释放所有 Matchable 对象的内存
-    mpTree->clear();
+    // 1. 在锁内获取当前活动关键帧快照
+    std::vector<KeyFrame*> vpKFs;
+    {
+        unique_lock<mutex> lock(mMutex);
+        vpKFs.reserve(mhmKeyFrames.size());
+        for (auto& pair : mhmKeyFrames) {
+            if (pair.second && !pair.second->isBad())
+                vpKFs.push_back(pair.second);
+        }
+    }
 
-    // 重新把 mhmKeyFrames 中所有的活动关键帧特征插入树中
-    for (auto& pair : mhmKeyFrames) {
-        KeyFrame* pKF = pair.second;
+    // 2. 在锁外无锁构建新树，完全不阻塞主线程对 KeyFrameDatabase 的并发重定位查询
+    HBSTTree* pNewTree = new HBSTTree();
+    for (KeyFrame* pKF : vpKFs) {
         if (!pKF || pKF->isBad() || pKF->mDescriptors.empty())
             continue;
 
@@ -290,7 +304,19 @@ void KeyFrameDatabase::rebuild()
         for(int i = 0; i < pKF->N; i++) objects[i] = i;
 
         HBSTTree::MatchableVector matchables = HBSTTree::getMatchables(pKF->mDescriptors, objects, pKF->mnId);
-        mpTree->add(matchables);
+        pNewTree->add(matchables);
+    }
+
+    // 3. 仅在替换树指针的瞬间持锁 (< 1us)，旧树在锁外安全释放
+    HBSTTree* pOldTree = nullptr;
+    {
+        unique_lock<mutex> lock(mMutex);
+        pOldTree = mpTree;
+        mpTree = pNewTree;
+    }
+
+    if (pOldTree) {
+        delete pOldTree;
     }
 }
 

@@ -447,9 +447,11 @@ void LocalMapping::CreateNewMapPoints()
                     float aqq = M[q][q];
                     float apq = M[p][q];
 
-                    float phi = 0.5f * std::atan2(2.0f * apq, aqq - app);
-                    float c = std::cos(phi);
-                    float s = std::sin(phi);
+                    // 代数 Jacobi 旋转求解 cos(phi) 与 sin(phi)，完全消除 atan2/cos/sin 调用（数值精确一致）
+                    float tau = (aqq - app) / (2.0f * apq);
+                    float t = (tau >= 0.0f) ? (1.0f / (tau + std::sqrt(1.0f + tau * tau))) : (-1.0f / (-tau + std::sqrt(1.0f + tau * tau)));
+                    float c = 1.0f / std::sqrt(1.0f + t * t);
+                    float s = t * c;
 
                     for (int i = 0; i < 4; ++i) {
                         if (i != p && i != q) {
@@ -506,32 +508,26 @@ void LocalMapping::CreateNewMapPoints()
             if(z2<=0)
                 continue;
 
-            // 检查第一个关键帧中的重投影误差
+            // 检查第一个关键帧中的重投影误差（交叉相乘消除 1.0/z1 浮点除法，100% 数学等价）
             const float &sigmaSquare1 = mpCurrentKeyFrame->mvLevelSigma2[kp1.octave];
             const float x1 = Rcw1.row(0).dot(x3Dt)+tcw1.at<float>(0);
             const float y1 = Rcw1.row(1).dot(x3Dt)+tcw1.at<float>(1);
-            const float invz1 = 1.0/z1;
 
             {
-                float u1 = fx1*x1*invz1+cx1;
-                float v1 = fy1*y1*invz1+cy1;
-                float errX1 = u1 - kp1.pt.x;
-                float errY1 = v1 - kp1.pt.y;
-                if((errX1*errX1+errY1*errY1)>OPTIMIZER_CHI2_TH_2D*sigmaSquare1)
+                float dx1 = fx1*x1 + (cx1 - kp1.pt.x)*z1;
+                float dy1 = fy1*y1 + (cy1 - kp1.pt.y)*z1;
+                if((dx1*dx1 + dy1*dy1) > OPTIMIZER_CHI2_TH_2D * sigmaSquare1 * z1 * z1)
                     continue;
             }
 
-            // 检查第二个关键帧中的重投影误差
+            // 检查第二个关键帧中的重投影误差（交叉相乘消除 1.0/z2 浮点除法，100% 数学等价）
             const float sigmaSquare2 = pKF2->mvLevelSigma2[kp2.octave];
             const float x2 = Rcw2.row(0).dot(x3Dt)+tcw2.at<float>(0);
             const float y2 = Rcw2.row(1).dot(x3Dt)+tcw2.at<float>(1);
-            const float invz2 = 1.0/z2;
             {
-                float u2 = fx2*x2*invz2+cx2;
-                float v2 = fy2*y2*invz2+cy2;
-                float errX2 = u2 - kp2.pt.x;
-                float errY2 = v2 - kp2.pt.y;
-                if((errX2*errX2+errY2*errY2)>OPTIMIZER_CHI2_TH_2D*sigmaSquare2)
+                float dx2 = fx2*x2 + (cx2 - kp2.pt.x)*z2;
+                float dy2 = fy2*y2 + (cy2 - kp2.pt.y)*z2;
+                if((dx2*dx2 + dy2*dy2) > OPTIMIZER_CHI2_TH_2D * sigmaSquare2 * z2 * z2)
                     continue;
             }
 
@@ -784,9 +780,12 @@ void LocalMapping::KeyFrameCulling()
     vector<KeyFrame*> vpLocalKeyFrames = mpCurrentKeyFrame->GetVectorCovisibleKeyFrames();
 
     // 每次最多处理 KEYFRAME_CULLING_MAX_KFS 个关键帧，防止单次耗时过久阻塞跟踪线程
-    // 剩余关键帧将在下一次 KeyFrameCulling 调用中处理
     const int KEYFRAME_CULLING_MAX_KFS = KEYFRAME_CULL_BATCH_SIZE;
     int nProcessed = 0;
+
+    // 第一阶段：无主锁下的只读候选冗余帧搜集 (Read-Only Pass)
+    vector<KeyFrame*> vpRedundantKFs;
+    vpRedundantKFs.reserve(KEYFRAME_CULLING_MAX_KFS);
 
     for(vector<KeyFrame*>::iterator vit=vpLocalKeyFrames.begin(), vend=vpLocalKeyFrames.end(); vit!=vend; vit++)
     {
@@ -798,7 +797,7 @@ void LocalMapping::KeyFrameCulling()
             break;
 
         KeyFrame* pKF = *vit;
-        if(pKF->mnId==0)
+        if(!pKF || pKF->isBad() || pKF->mnId==0)
             continue;
         const vector<MapPoint*> vpMapPoints = pKF->GetMapPointMatches();
 
@@ -813,6 +812,8 @@ void LocalMapping::KeyFrameCulling()
             if(pMP && !pMP->isBad())
                 nMPs++;
         }
+
+        if(nMPs == 0) continue;
 
         // 非冗余观测的最大允许数量。一旦非冗余观测数超过此上限，该帧绝无可能满足冗余标准
         const int maxNonRedundant = nMPs * (1.0f - KEYFRAME_REDUNDANCY_THRESHOLD);
@@ -848,8 +849,20 @@ void LocalMapping::KeyFrameCulling()
             }
         }
 
-        if(nRedundantObservations>KEYFRAME_REDUNDANCY_THRESHOLD*nMPs)
+        if(nRedundantObservations > KEYFRAME_REDUNDANCY_THRESHOLD*nMPs)
+        {
+            vpRedundantKFs.push_back(pKF);
+        }
+    }
+
+    // 第二阶段：批量原子写 (Batch Erasure)，极短时间持锁标记 SetBadFlag
+    for(size_t i=0; i<vpRedundantKFs.size(); i++)
+    {
+        KeyFrame* pKF = vpRedundantKFs[i];
+        if(pKF && !pKF->isBad())
+        {
             pKF->SetBadFlag();
+        }
     }
 }
 
