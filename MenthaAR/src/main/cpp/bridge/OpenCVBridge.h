@@ -28,6 +28,13 @@ JNIEXPORT void JNICALL Java_com_orb_slam2s_slamar_OpenCVBridge_nativeMatSetTo
 JNIEXPORT void JNICALL Java_com_orb_slam2s_slamar_OpenCVBridge_nativeRGBA2Gray
   (JNIEnv *, jclass, jlong, jlong);
 
+// YUV420 处理
+JNIEXPORT void JNICALL Java_com_orb_slam2s_slamar_OpenCVBridge_nativeYPlaneToMats
+  (JNIEnv *, jclass, jlong, jlong, jbyteArray, jint, jint);
+
+JNIEXPORT void JNICALL Java_com_orb_slam2s_slamar_OpenCVBridge_nativeDirectYPlaneToMats
+  (JNIEnv *, jclass, jlong, jlong, jobject, jint, jint);
+
 JNIEXPORT void JNICALL Java_com_orb_slam2s_slamar_OpenCVBridge_nativeRotate180
   (JNIEnv *, jclass, jlong);
 

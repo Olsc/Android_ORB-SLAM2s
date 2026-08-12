@@ -108,9 +108,9 @@ public class ArCamUIActivity extends AppCompatActivity implements
     private volatile byte[] browserFrameData = null;
     private final Object browserFrameLock = new Object();
     private boolean useWebCamera = false; // Web模式：使用浏览器相机而不是本地相机
-    private Thread webFrameProcessor; // Web图像处理线程
+    private Thread webFrameProcessor;
     private volatile boolean isProcessingWebFrames = false;
-    private boolean webWaitLogged = false; // 等待SLAM初始化提示只打印一次
+    private boolean webWaitLogged = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -236,12 +236,12 @@ public class ArCamUIActivity extends AppCompatActivity implements
             }
         });
 
-        // 点击触发相机自动对焦
+        // 点击触发相机自动对焦（Web模式下关闭对焦）
         touchView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d(TAG, "onClick: CameraX 自动对焦");
-                if (mOpenCvCameraView != null) {
+                if (!useWebCamera && mOpenCvCameraView != null) {
+                    Log.d(TAG, "onClick: CameraX 自动对焦");
                     mOpenCvCameraView.autoFocusCenter();
                 }
             }
@@ -650,9 +650,9 @@ public class ArCamUIActivity extends AppCompatActivity implements
             }
         }
 
-        // 暂停Web服务：避免退后台后线程继续解码/处理浏览器帧（耗电、发热）
+        // 暂停Web服务：避免退后台后线程继续处理
+        stopWebFrameProcessing();
         if (isWebRunning) {
-            stopWebFrameProcessing();
             if (webServer != null) {
                 webServer.stop();
             }
@@ -684,9 +684,8 @@ public class ArCamUIActivity extends AppCompatActivity implements
             }
         }
 
-        // 恢复Web服务（从后台返回时重启帧处理与HTTP服务）
+        // 恢复Web服务
         if (isWebRunning) {
-            startWebFrameProcessing();
             if (webServer != null) {
                 webServer.start();
             }
@@ -801,9 +800,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
     protected void onDestroy() {
         Log.d(TAG, "onDestroy: 释放资源");
 
-        // 停止Web图像处理线程
         stopWebFrameProcessing();
-
         if (webServer != null) {
             webServer.stop();
         }
@@ -840,11 +837,9 @@ public class ArCamUIActivity extends AppCompatActivity implements
 
     @Override
     public long onCameraFrame(CameraGLViewBase.CvCameraViewFrame inputFrame) {
-        // Web模式：完全停止本地处理，显示黑屏
+        // Web模式：本地相机停止对 SLAM 的驱动，仅维持图形预览/占位，SLAM 由后台 webFrameProcessor 处理
         if (useWebCamera) {
             mRgbaAddr = inputFrame.rgba();
-            // 填充黑色
-            OpenCVBridge.nativeMatSetTo(mRgbaAddr, 0, 0, 0, 255);
             return mRgbaAddr;
         }
 
@@ -882,6 +877,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
         }
 
         isProcessingWebFrames = true;
+        webWaitLogged = false;
         webFrameProcessor = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -906,7 +902,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
                                     frameData, 0, frameData.length);
 
                             if (browserBitmap != null) {
-                                // 仅在尺寸变化时重新创建 native Mat
+                                // 仅在尺寸变化或未创建时分配 native Mat
                                 if (webRgbaAddr == 0) {
                                     webRgbaAddr = OpenCVBridge.nativeCreateMat(
                                             browserBitmap.getHeight(), browserBitmap.getWidth(), OpenCVBridge.CV_8UC4);
@@ -1240,7 +1236,10 @@ public class ArCamUIActivity extends AppCompatActivity implements
 
             webServer.start();
             isWebRunning = true;
-            useWebCamera = true; // 切换到Web模式：本地相机继续运行但不处理数据
+            useWebCamera = true; // 切换到Web模式：本地相机关闭硬件，仅处理 Web/浏览端画面
+            if (mOpenCvCameraView != null) {
+                mOpenCvCameraView.startWebModeTicker();
+            }
 
             // Web模式下隐藏AR物体：浏览器相机SLAM姿态与本地相机坐标系不一致，
             // 继续渲染会导致物体漂浮在错误的空间位置（黑屏+漂浮物体的bug来源）
@@ -1281,6 +1280,9 @@ public class ArCamUIActivity extends AppCompatActivity implements
             }
             isWebRunning = false;
             useWebCamera = false; // 切换回本地相机模式
+            if (mOpenCvCameraView != null) {
+                mOpenCvCameraView.stopWebModeTicker();
+            }
 
             // 恢复AR物体渲染（本地相机重新驱动SLAM，坐标系恢复一致）
             if (modelRendererWrapper != null) {

@@ -127,6 +127,34 @@ JNIEXPORT void JNICALL Java_com_orb_slam2s_slamar_OpenCVBridge_nativeYPlaneToMat
     env->ReleaseByteArrayElements(yData, data, JNI_ABORT);
 }
 
+JNIEXPORT void JNICALL Java_com_orb_slam2s_slamar_OpenCVBridge_nativeDirectYPlaneToMats
+  (JNIEnv *env, jclass cls, jlong rgbaMatAddr, jlong grayMatAddr,
+   jobject yBufDirect, jint width, jint height)
+{
+    cv::Mat* rgbaMat = (cv::Mat*)rgbaMatAddr;
+    cv::Mat* grayMat = (cv::Mat*)grayMatAddr;
+    if (!rgbaMat || !grayMat || !yBufDirect) return;
+    if (rgbaMat->empty() || grayMat->empty()) return;
+
+    const uint8_t* src = (const uint8_t*)env->GetDirectBufferAddress(yBufDirect);
+    if (!src) return;
+
+    size_t pixelCount = (size_t)width * height;
+
+    // 灰度图：直接拷贝
+    memcpy(grayMat->data, src, pixelCount);
+
+    // RGBA: 将 Y 值填入所有 4 通道 (R=G=B=Y, A=255)
+    uint8_t* dst = (uint8_t*)rgbaMat->data;
+    for (size_t i = 0; i < pixelCount; i++) {
+        uint8_t y = src[i];
+        dst[i * 4]     = y;  // R
+        dst[i * 4 + 1] = y;  // G
+        dst[i * 4 + 2] = y;  // B
+        dst[i * 4 + 3] = ORB_SLAM2::RGBA_ALPHA_OPAQUE;     // A
+    }
+}
+
 JNIEXPORT void JNICALL Java_com_orb_slam2s_slamar_OpenCVBridge_nativeRotate180
   (JNIEnv *env, jclass cls, jlong matAddr)
 {

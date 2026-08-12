@@ -463,7 +463,7 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
             }
         }
 
-        // 3D扫描建模与AR模式：显示完整地图点云
+        // 3D扫描建模与AR模式：仅在重定位/加载离线地图时显示历史地图点云 (drawOnlyLoaded = true 避免在线扫描点云持久化堆积)
         if(status==ORB_SLAM2::Tracking::OK) {
             if(gEnablePointCloudDisplay.load()) {
                 // 获取相机位姿（若有地图对齐则使用对齐后的位姿）
@@ -472,9 +472,9 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
                     TcwForProjection = slamSys->GetMapAlignedPose(localTcw);
                 }
 
-                // 获取所有地图点并绘制全图点云 (drawOnlyLoaded = false 允许在线扫描点完整渲染)
+                // 仅绘制已加载地图的固定点云，在线扫描新生成的点不进行画面持久化投影
                 vector<ORB_SLAM2::MapPoint*> allMapPoints = slamSys->GetAllMapPoints();
-                drawAllMapPoints(TcwForProjection, allMapPoints, outputImage, fx, fy, cx, cy, false);
+                drawAllMapPoints(TcwForProjection, allMapPoints, outputImage, fx, fy, cx, cy, true);
             }
         }
 

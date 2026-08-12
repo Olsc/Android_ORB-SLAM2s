@@ -56,6 +56,12 @@ public class OpenCVBridge {
     public static native void nativeYPlaneToMats(long rgbaMatAddr, long grayMatAddr,
                                                   byte[] yData, int width, int height);
 
+    /**
+     * 将 Direct ByteBuffer 的 Y-plane 直写入 RGBA 和 Gray Mat（零 Java 中间拷贝）
+     */
+    public static native void nativeDirectYPlaneToMats(long rgbaMatAddr, long grayMatAddr,
+                                                      java.nio.ByteBuffer yBufDirect, int width, int height);
+
     // ==================== 图像处理 ====================
 
     /**

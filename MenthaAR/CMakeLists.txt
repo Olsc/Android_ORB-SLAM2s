@@ -246,7 +246,6 @@ add_library(MenthaAR_Engine SHARED
         src/main/cpp/Plane.cpp
         src/main/cpp/Matrix.cpp
         src/main/cpp/bridge/OpenCVBridge.cpp
-
         )
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -329,3 +328,4 @@ if(MENTHA_DEVELOP_MODE)
     # 链接分析器库
     target_link_libraries(MenthaAR_Engine Mentha_Profiler)
 endif()
+
