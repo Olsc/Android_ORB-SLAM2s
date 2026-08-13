@@ -225,7 +225,7 @@ protected:
     // 坏标志
     bool mbNotErase;
     bool mbToBeErased;
-    std::atomic<bool> mbBad;    
+    std::atomic<bool> mbBad;
 
     float mHalfBaseline; // 仅用于可视化
 

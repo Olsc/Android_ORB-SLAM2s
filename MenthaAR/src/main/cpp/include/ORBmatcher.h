@@ -53,7 +53,7 @@ namespace ORB_SLAM2
 using namespace std;
 
 class ORBmatcher
-{    
+{
 public:
 
     ORBmatcher(float nnratio=ORB_MATCHER_DEFAULT_NN_RATIO, bool checkOri=true);

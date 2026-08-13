@@ -77,7 +77,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
     private Button btnTogglePointCloud;
     private Button btnToggleSlam;
 
-
     private Button btn3DofCube;
     private final android.os.Handler uiHandler = new android.os.Handler();
     private androidx.appcompat.app.AlertDialog loadingDialog;
@@ -134,9 +133,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
         });
     }
 
-    /**
-     * 根据屏幕实际分辨率计算最优相机处理分辨率
-     */
+    // 根据屏幕实际分辨率计算最优相机处理分辨率
     private void computeScreenResolution() {
         WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
         if (wm != null) {
@@ -163,10 +160,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
         }
     }
 
-    /**
-     * 锁定当前横屏方向：检测设备进入时的横屏方向（左/右），
-     * 然后锁定该方向，防止后续旋转切换
-     */
+    // 锁定当前横屏方向，防止后续旋转切换
     private void lockCurrentOrientation() {
         try {
             WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
@@ -247,7 +241,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
             }
         });
 
-        // Web Server Button
+        // Web 服务器按钮
         btnStartWeb = findViewById(R.id.btn_start_web);
         if (btnStartWeb != null) {
             btnStartWeb.setOnClickListener(new View.OnClickListener() {
@@ -692,10 +686,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
         }
     }
 
-    /**
-     * 异步初始化SLAM系统，完成后再启动相机
-     * 在后台线程加载词汇表，避免阻塞主线程和UI冻结
-     */
+    // 异步初始化 SLAM 系统，后台线程加载词汇表，避免阻塞主线程
     private void initSLAMAsync() {
         // 先显示加载对话框
         showLoadingDialog(getString(R.string.loading_slam_init), getString(R.string.loading_slam_wait));
@@ -741,9 +732,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
         }).start();
     }
 
-    /**
-     * 显示加载对话框（使用非弃用的AlertDialog + ProgressBar）
-     */
+    // 显示加载对话框（AlertDialog + ProgressBar）
     private void showLoadingDialog(String title, String message) {
         runOnUiThread(new Runnable() {
             @Override
@@ -781,9 +770,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
         });
     }
 
-    /**
-     * 关闭加载对话框
-     */
+    // 关闭加载对话框
     private void dismissLoadingDialog() {
         runOnUiThread(new Runnable() {
             @Override
@@ -804,7 +791,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
         if (webServer != null) {
             webServer.stop();
         }
-        
+
         // 销毁 Filament 资源
         if (modelRendererWrapper != null) {
             modelRendererWrapper.destroy();
@@ -1019,9 +1006,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
         uiHandler.postDelayed(updater, 1000);
     }
 
-    /**
-     * 初始化摇杆 — 用于控制AR物体的Y轴旋转
-     */
+    // 初始化摇杆，用于控制 AR 物体的 Y 轴旋转
     private void initJoystick() {
         joystickView = findViewById(R.id.joystick_view);
         if (joystickView != null) {
@@ -1088,9 +1073,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
 
     // ========== 3DOF 功能 ==========
 
-    /**
-     * 初始化3DOF传感器和渲染器
-     */
+    // 初始化 3DOF 传感器和渲染器
     private void init3DofSensor() {
         orientationSensor = new OrientationSensor();
 
@@ -1130,9 +1113,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
         Log.d(TAG, "3DOF传感器和渲染器初始化完成");
     }
 
-    /**
-     * 在视角前方5米处生成3DOF立方体
-     */
+    // 在视角前方 5 米处生成 3DOF 立方体
     private void spawn3DofCube() {
         if (orientationSensor == null || threeDofRenderer == null) {
             showHint(getString(R.string.hint_3dof_unavailable));
@@ -1170,11 +1151,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
         }
     }
 
-    /**
-     * 获取设备的IP地址
-     * 
-     * @return 设备IP地址，如果获取失败则返回本地回环地址
-     */
+    // 获取设备 IP 地址，失败时返回本地回环地址
     private String getDeviceIpAddress() {
         try {
             for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
@@ -1194,9 +1171,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
         return "127.0.0.1";
     }
 
-    /**
-     * 生成二维码位图
-     */
+    // 生成二维码位图
     private Bitmap generateQrCode(String content) {
         try {
             int size = 512;
@@ -1253,9 +1228,9 @@ public class ArCamUIActivity extends AppCompatActivity implements
             btnStartWeb.setText(getString(R.string.btn_web_server_close));
 
             String ipAddress = getDeviceIpAddress();
-            String url = "https://" + ipAddress + ":8080"; 
+            String url = "https://" + ipAddress + ":8080";
             showHint(getString(R.string.hint_web_server_started, url));
-            
+
             // 显示二维码窗口
             if (floatingQrWindow != null) {
                 floatingQrWindow.setVisibility(View.VISIBLE);
@@ -1269,7 +1244,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
                     }
                 }
             }
-            
+
             Log.d(TAG, "Web服务器已启动，本地处理已停止，仅处理浏览器图像");
         } else {
             // 停止Web图像处理线程

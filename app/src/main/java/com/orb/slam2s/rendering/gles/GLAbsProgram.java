@@ -51,7 +51,6 @@ public abstract class GLAbsProgram {
         GLES20.glDeleteProgram(mProgramId);
     }
 
-
     public int getMaPositionHandle() {
         return maPositionHandle;
     }

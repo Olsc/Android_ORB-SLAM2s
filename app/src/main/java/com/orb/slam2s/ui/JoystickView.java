@@ -9,17 +9,8 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 
-/**
- * 虚拟摇杆控件 — 用于控制AR物体的Y轴旋转。
- *
- * 交互方式：
- * - 触摸并拖动手柄绕中心旋转
- * - 手柄偏离中心的角度 = AR物体的旋转角度
- * - 手柄偏离中心的距离 = 旋转速度系数（0~1）
- * - 松手后手柄弹回中心（停止旋转）
- *
- * 只在AR物体存在时由Activity控制显隐。
- */
+// 虚拟摇杆控件：手柄偏离中心的角度控制AR物体Y轴旋转，偏离距离控制旋转力度
+// 只在 AR 物体存在时由 Activity 控制显隐
 public class JoystickView extends View {
 
     // 绘制元素
@@ -54,11 +45,7 @@ public class JoystickView extends View {
     private static final int RING_COLOR = 0x60FFFFFF;    // 淡白色环
 
     public interface OnJoystickListener {
-        /**
-         * 摇杆值变化回调
-         * @param angleDeg 手柄偏离中心的角度（0~360度，0=右，90=上）
-         * @param intensity 偏离力度（0~1，0=中心死区）
-         */
+        // 摇杆值变化回调，angleDeg 为偏离角度(0~360度)，intensity 为力度(0~1)
         void onJoystickUpdate(float angleDeg, float intensity);
     }
 
@@ -185,18 +172,14 @@ public class JoystickView extends View {
         return super.onTouchEvent(event);
     }
 
-    /**
-     * 判断触摸点是否在摇杆底座范围内
-     */
+    // 判断触摸点是否在摇杆底座范围内
     private boolean isInsideBase(float x, float y) {
         float dx = x - mCenterX;
         float dy = y - mCenterY;
         return (dx * dx + dy * dy) <= (mRadius * mRadius);
     }
 
-    /**
-     * 更新手柄位置并计算输出值
-     */
+    // 更新手柄位置并计算输出值
     private void updateHandlePosition(float touchX, float touchY) {
         float dx = touchX - mCenterX;
         float dy = touchY - mCenterY;
@@ -238,9 +221,7 @@ public class JoystickView extends View {
         invalidate();
     }
 
-    /**
-     * 松手后手柄弹回中心
-     */
+    // 松手后手柄弹回中心
     private void resetHandle() {
         mHandleX = mCenterX;
         mHandleY = mCenterY;

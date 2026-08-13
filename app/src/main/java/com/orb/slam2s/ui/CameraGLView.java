@@ -31,9 +31,7 @@ import java.util.concurrent.Executors;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-/**
- * 相机 GL 视图 — 使用 CameraX + OpenCVBridge 处理帧
- */
+// 相机 GL 视图，使用 CameraX + OpenCVBridge 处理帧
 @SuppressWarnings("deprecation")
 public class CameraGLView extends CameraGLViewBase {
 
@@ -234,9 +232,7 @@ public class CameraGLView extends CameraGLViewBase {
         }
     };
 
-    /**
-     * 开启 Web 模式渲染脉冲（关闭物理相机硬件传感器，由后台 HandlerThread 独立驱动）
-     */
+    // 开启 Web 模式渲染脉冲，关闭物理相机硬件传感器，由后台 HandlerThread 独立驱动
     public void startWebModeTicker() {
         Log.d(TAG, "开启 Web 模式后台渲染脉冲，关闭物理相机传感器");
         pauseCameraSensor();
@@ -250,9 +246,7 @@ public class CameraGLView extends CameraGLViewBase {
         mWebHandler.post(webTickerRunnable);
     }
 
-    /**
-     * 停止 Web 模式渲染脉冲（恢复物理相机硬件传感器）
-     */
+    // 停止 Web 模式渲染脉冲，恢复物理相机硬件传感器
     public void stopWebModeTicker() {
         Log.d(TAG, "停止 Web 模式后台渲染脉冲，恢复物理相机传感器");
         isWebTickerRunning = false;
@@ -267,9 +261,7 @@ public class CameraGLView extends CameraGLViewBase {
         resumeCameraSensor();
     }
 
-    /**
-     * 暂停物理相机硬件传感器 (Web 模式下释放物理硬件与指示灯)
-     */
+    // 暂停物理相机硬件传感器，Web 模式下释放物理硬件与指示灯
     public void pauseCameraSensor() {
         Log.d(TAG, "Web模式：关闭物理相机硬件传感器");
         if (cameraProvider != null) {
@@ -283,9 +275,7 @@ public class CameraGLView extends CameraGLViewBase {
         }
     }
 
-    /**
-     * 恢复物理相机硬件传感器 (切回本地 SLAM 模式)
-     */
+    // 恢复物理相机硬件传感器，切回本地 SLAM 模式
     public void resumeCameraSensor() {
         Log.d(TAG, "恢复物理相机硬件传感器");
         if (mIsStopped) return;

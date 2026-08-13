@@ -1,6 +1,4 @@
-/**
- * MenthaAR SLAM
- */
+// MenthaAR SLAM
 
 #include <iostream>
 #include <vector>
@@ -116,7 +114,7 @@ int main(int argc, char** argv) {
               << ", video plays at source rate, ORB processing fixed at "
               << TARGET_FPS << " FPS" << std::endl;
 
-    // 设置视频分辨率为 1280x720 以获得绝佳的高清画质
+    // 设置视频分辨率为 1280x720
     cap.set(cv::CAP_PROP_FRAME_WIDTH, ORB_SLAM2::UBUNTU_CAPTURE_WIDTH);
     cap.set(cv::CAP_PROP_FRAME_HEIGHT, ORB_SLAM2::UBUNTU_CAPTURE_HEIGHT);
 
@@ -419,7 +417,7 @@ void initMenu() {
     arSec.buttons.push_back(btnPlace);
     arSec.buttons.push_back(btnClear);
 
-    // Section 2: Map Persistence
+    // 第 2 组菜单：地图持久化
     MenuSection mapSec;
     mapSec.title = "Map Persistence";
     mapSec.expanded = false;
@@ -490,7 +488,7 @@ void initMenu() {
     mapSec.buttons.push_back(btnSave);
     mapSec.buttons.push_back(btnLoad);
 
-    // Section 4: Display Settings
+    // 第 3 组菜单：显示设置
     MenuSection dispSec;
     dispSec.title = "Display Settings";
     dispSec.expanded = false;
@@ -613,7 +611,7 @@ void drawGUI(cv::Mat& frame, int trackingState, int fps) {
                 btn.rect = cv::Rect(drawerX + 20, currentY, kDrawerWidth - 40, buttonHeight);
                 btn.isHovered = btn.rect.contains(mousePos);
 
-                // 绝佳的鼠标移入高亮特效
+                // 鼠标移入高亮特效
                 cv::Scalar borderCol = btn.isHovered ? cv::Scalar(255, 255, 255) : cv::Scalar(80, 80, 80);
                 cv::Scalar fillCol = btn.color * (btn.isHovered ? 1.3 : 1.0);
 
@@ -636,7 +634,7 @@ void drawGUI(cv::Mat& frame, int trackingState, int fps) {
     }
 }
 
-// 鼠标回调拦截与位置响应，保证卓越的交互灵活性
+// 鼠标回调拦截与位置响应
 void onMouse(int event, int x, int y, int flags, void* userdata) {
     mousePos = cv::Point(x, y);
 

@@ -22,7 +22,6 @@ public class GLPassThroughProgram extends GLAbsProgram {
         ShaderUtils.checkGlError("glGetUniformLocation uMVPMatrix");
     }
 
-
     public int getTextureSamplerHandle() {
         return uTextureSamplerHandle;
     }

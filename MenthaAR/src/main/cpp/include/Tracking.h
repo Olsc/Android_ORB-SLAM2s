@@ -68,7 +68,7 @@ class LoopClosing;
 class System;
 
 class Tracking
-{  
+{
 
 public:
     Tracking(System* pSys, FrameDrawer* pFrameDrawer, Map* pMap,
@@ -315,7 +315,7 @@ protected:
         // 获取包围盒内的候选点 (原始版本,返回矩形区域)
         void GetCandidatesInBBox(const cv::Point3f& center, float radius, std::vector<int>& outIndices) const;
         // 获取包围盒内的候选点 (优化版本,精确圆形过滤)
-        void GetCandidatesInSphere(const cv::Point3f& center, float radius, 
+        void GetCandidatesInSphere(const cv::Point3f& center, float radius,
                                   const std::vector<RefMPSnapshot>& snaps,
                                   std::vector<int>& outIndices) const;
     };

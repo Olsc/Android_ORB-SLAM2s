@@ -80,7 +80,7 @@ public:
     void SetBadFlag();
     bool isBad();
 
-    void Replace(MapPoint* pMP);    
+    void Replace(MapPoint* pMP);
     MapPoint* GetReplaced();
 
     void IncreaseVisible(int n=1);
@@ -146,11 +146,11 @@ public:
     // 回环闭合使用的变量
     long unsigned int mnLoopPointForKF;
     long unsigned int mnCorrectedByKF;
-    long unsigned int mnCorrectedReference;    
+    long unsigned int mnCorrectedReference;
     cv::Mat mPosGBA;
     long unsigned int mnBAGlobalForKF;
 
-protected:    
+protected:
 
      // 绝对坐标位置
      cv::Mat mWorldPos;

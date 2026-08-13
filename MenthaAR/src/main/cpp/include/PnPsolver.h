@@ -79,7 +79,7 @@ class PnPsolver {
               const double Rtrue[3][3], const double ttrue[3],
               const double Rest[3][3],  const double test[3]);
 
-  // void print_pose(const double R[3][3], const double t[3]);  // 已注释 - 调试函数
+  // void print_pose(const double R[3][3], const double t[3]);  // 调试函数
   double reprojection_error(const double R[3][3], const double t[3]);
 
   void choose_control_points(void);

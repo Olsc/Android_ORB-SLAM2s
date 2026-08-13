@@ -9,16 +9,11 @@ import android.opengl.Matrix;
 import android.util.Log;
 import android.view.Surface;
 
-/**
- * 3DOF方向传感器管理类
- * 负责处理设备传感器数据以计算设备的3D姿态
- * 优先使用旋转矢量传感器，不可用时回退到加速度计+磁力计方案
- * 
- * 针对固定横屏应用进行了坐标系重映射
- */
+// 3DOF方向传感器管理类：优先旋转矢量传感器，不可用时回退加速度计+磁力计
+// 针对固定横屏应用进行传感器坐标系重映射
 public class OrientationSensor implements SensorEventListener {
     private static final String TAG = "OrientationSensor";
-    
+
     private SensorManager sensorManager;
     private Sensor rotationSensor;
     private Sensor accelerometer;
@@ -39,9 +34,7 @@ public class OrientationSensor implements SensorEventListener {
         Matrix.setIdentityM(rotationMatrix, 0);
     }
 
-    /**
-     * 注册传感器监听器并开始获取数据
-     */
+    // 注册传感器监听器并开始获取数据
     public void start(Context context) {
         sensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
 
@@ -64,9 +57,7 @@ public class OrientationSensor implements SensorEventListener {
         }
     }
 
-    /**
-     * 注销监听器并释放资源
-     */
+    // 注销监听器并释放资源
     public void stop() {
         if (sensorManager != null) {
             sensorManager.unregisterListener(this);
@@ -74,9 +65,7 @@ public class OrientationSensor implements SensorEventListener {
         ready = false;
     }
 
-    /**
-     * 检查传感器是否已经产生了第一个有效读数
-     */
+    // 检查传感器是否已产生第一个有效读数
     public boolean isReady() {
         return ready;
     }
@@ -115,15 +104,8 @@ public class OrientationSensor implements SensorEventListener {
             }
         }
     }
-    
-    /**
-     * 将传感器坐标系重映射为横屏坐标系
-     *
-     * 竖屏时传感器坐标系：X向右，Y向上，Z向外（屏幕朝向用户）
-     * 根据当前显示旋转，选择正确的重映射方式：
-     * - 左横屏 (ROTATION_90) : AXIS_Y → 新X, AXIS_MINUS_X → 新Y
-     * - 右横屏 (ROTATION_270): AXIS_MINUS_Y → 新X, AXIS_X → 新Y
-     */
+
+    // 将传感器坐标系重映射为横屏坐标系，左横屏(ROTATION_90)与右横屏(ROTATION_270)使用不同轴映射
     private void remapForLandscape() {
         // 获取当前显示旋转
         int displayRotation = android.view.Surface.ROTATION_90; // 默认左横屏
@@ -158,16 +140,12 @@ public class OrientationSensor implements SensorEventListener {
         // 暂时无需处理精度变化
     }
 
-    /**
-     * 获取当前的旋转矩阵（已针对横屏重映射）
-     */
+    // 获取已针对横屏重映射的旋转矩阵
     public float[] getRotationMatrix() {
         return rotationMatrix;
     }
 
-    /**
-     * 检查设备是否具备运行所需的传感器
-     */
+    // 检查设备是否具备运行所需的传感器
     public boolean hasRequiredSensors(Context context) {
         SensorManager sm = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
         Sensor rotationSensor = sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);

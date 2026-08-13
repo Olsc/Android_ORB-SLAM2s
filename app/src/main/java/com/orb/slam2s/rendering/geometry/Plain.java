@@ -25,7 +25,7 @@ public class Plain {
             1.0f, 1.0f, 0f
     };
 
-    //ABCD（占位文本）
+    // 无旋转纹理坐标
     public static final float TEXTURE_NO_ROTATION[] = {
             0.0f, 1.0f,
             1.0f, 1.0f,
@@ -59,7 +59,6 @@ public class Plain {
         GLES20.glEnableVertexAttribArray(textureCoordinateHandle);
         ShaderUtils.checkGlError("glEnableVertexAttribArray maTextureHandle");
     }
-
 
     public FloatBuffer getVerticesBuffer() {
         return mVerticesBuffer;

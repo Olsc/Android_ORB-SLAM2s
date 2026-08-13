@@ -7,7 +7,7 @@ public class FpsMeter {
     private static final DecimalFormat FPS_FORMAT = new DecimalFormat("0.00");
 
     private int                 mFramesCounter;
-    private double              mFrequency;    // 1e9 (nanoTime returns nanoseconds)
+    private double              mFrequency;    // 1e9（nanoTime 以纳秒为单位）
     private long                mprevFrameTime;
     private String              mStrfps;
     boolean                     mIsInitialized = false;

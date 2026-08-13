@@ -1,9 +1,5 @@
-/**
- * MenthaAR SLAM Benchmark — 离线视频性能与稳定性评测工具
- *
- * 用法:
- *   ./MenthaAR_Benchmark <video_path> [output_report_prefix] [--loops N]
- */
+// MenthaAR SLAM Benchmark：离线视频性能与稳定性评测工具
+// 用法: ./MenthaAR_Benchmark <video_path> [output_report_prefix] [--loops N]
 
 #include <iostream>
 #include <fstream>
@@ -211,7 +207,7 @@ MemoryInfo getMemoryInfo(int numMPs, int numKFs) {
     // 估计结构内存开销
     info.mpMemMB = (numMPs * 450.0) / (1024.0 * 1024.0);
     info.kfMemMB = (numKFs * 55.0 * 1024.0) / (1024.0 * 1024.0);
-    info.bufferMemMB = (1280 * 720 * 3 * 2 + 640 * 360 * 2) / (1024.0 * 1024.0); // ~7 MB
+    info.bufferMemMB = (1280 * 720 * 3 * 2 + 640 * 360 * 2) / (1024.0 * 1024.0); // 约 7 MB
     info.otherMemMB = std::max(0.0, info.rssMB - (info.mpMemMB + info.kfMemMB + info.bufferMemMB));
 
     return info;
@@ -308,7 +304,7 @@ ScoreCard calculateScoreCard(const std::vector<FrameRecord>& records, int totalF
 // JSON / CSV 导出报告
 // ============================================================
 void exportReports(const std::string& prefix, const ScoreCard& card, const std::vector<FrameRecord>& records) {
-    // JSON
+    // JSON 报告
     std::string jsonPath = prefix + ".json";
     std::ofstream ofs(jsonPath);
     if (ofs.is_open()) {
@@ -361,7 +357,7 @@ void exportReports(const std::string& prefix, const ScoreCard& card, const std::
         ofs.close();
     }
 
-    // CSV
+    // CSV 报告
     std::string csvPath = prefix + ".csv";
     std::ofstream cfs(csvPath);
     if (cfs.is_open()) {
@@ -672,12 +668,12 @@ int main(int argc, char** argv) {
         // 绘制桌面交互式 UI 面板
         drawGUI(imgRgba, status, fps, memInfo, gCurrentLoop, gTargetLoops);
 
-        // 绘制【可视化内存分布仪表盘】
+        // 绘制可视化内存分布仪表盘
         if (gShowMemoryPanel) {
             drawMemoryDashboard(imgRgba, memInfo, gRssHistory);
         }
 
-        // 评测完成时绘制【综合性能评分卡】模态框
+        // 评测完成时绘制综合性能评分卡模态框
         if (gBenchmarkCompleted) {
             drawScoreCardModal(imgRgba, gScoreCard);
         }
@@ -760,7 +756,7 @@ void drawARCube(cv::Mat& im, const cv::Mat& Tcw, Plane* plane, float fx, float f
 void initMenu() {
     menuSections.clear();
 
-    // Section 1: AR Controls
+    // 第 1 组菜单：AR 控制
     MenuSection arSec;
     arSec.title = "AR Controls";
     arSec.expanded = true;
@@ -803,7 +799,7 @@ void initMenu() {
     arSec.buttons.push_back(btnPlace);
     arSec.buttons.push_back(btnClear);
 
-    // Section 2: Map Persistence
+    // 第 2 组菜单：地图持久化
     MenuSection mapSec;
     mapSec.title = "Map Persistence";
     mapSec.expanded = false;
@@ -873,7 +869,7 @@ void initMenu() {
     mapSec.buttons.push_back(btnSave);
     mapSec.buttons.push_back(btnLoad);
 
-    // Section 3: Display Settings
+    // 第 3 组菜单：显示设置
     MenuSection dispSec;
     dispSec.title = "Display Settings";
     dispSec.expanded = false;
@@ -895,7 +891,7 @@ void initMenu() {
     dispSec.buttons.push_back(btnToggleP);
     dispSec.buttons.push_back(btnToggleMem);
 
-    // Section 4: Benchmark Controls
+    // 第 4 组菜单：评测控制
     MenuSection benchSec;
     benchSec.title = "Benchmark Controls";
     benchSec.expanded = true;
@@ -1039,7 +1035,7 @@ void drawGUI(cv::Mat& frame, int trackingState, int fps, const MemoryInfo& memIn
     }
 }
 
-// 绘制【可视化内存分布仪表盘】 (包含堆叠成分柱状图与 RSS 历史走势曲线)
+// 绘制可视化内存分布仪表盘，包含堆叠成分柱状图与RSS历史走势曲线
 void drawMemoryDashboard(cv::Mat& frame, const MemoryInfo& memInfo, const std::vector<double>& rssHist) {
     int panelW = 340;
     int panelH = 140;
@@ -1077,19 +1073,19 @@ void drawMemoryDashboard(cv::Mat& frame, const MemoryInfo& memInfo, const std::v
 
     int curX = barX;
     if (wMP > 0) {
-        cv::rectangle(frame, cv::Rect(curX, barY, wMP, barH), cv::Scalar(255, 200, 0), -1); // Cyan-Blue for MPs
+        cv::rectangle(frame, cv::Rect(curX, barY, wMP, barH), cv::Scalar(255, 200, 0), -1); // 青色-地图点
         curX += wMP;
     }
     if (wKF > 0) {
-        cv::rectangle(frame, cv::Rect(curX, barY, wKF, barH), cv::Scalar(255, 100, 50), -1); // Deep Blue for KFs
+        cv::rectangle(frame, cv::Rect(curX, barY, wKF, barH), cv::Scalar(255, 100, 50), -1); // 深蓝-关键帧
         curX += wKF;
     }
     if (wBuf > 0) {
-        cv::rectangle(frame, cv::Rect(curX, barY, wBuf, barH), cv::Scalar(50, 180, 255), -1); // Orange for Buffers
+        cv::rectangle(frame, cv::Rect(curX, barY, wBuf, barH), cv::Scalar(50, 180, 255), -1); // 橙色-缓冲区
         curX += wBuf;
     }
     if (wOth > 0) {
-        cv::rectangle(frame, cv::Rect(curX, barY, wOth, barH), cv::Scalar(140, 140, 140), -1); // Gray for Other
+        cv::rectangle(frame, cv::Rect(curX, barY, wOth, barH), cv::Scalar(140, 140, 140), -1); // 灰色-其他
     }
     cv::rectangle(frame, cv::Rect(barX, barY, barW, barH), cv::Scalar(180, 180, 180), 1, cv::LINE_AA);
 
@@ -1140,7 +1136,7 @@ void drawMemoryDashboard(cv::Mat& frame, const MemoryInfo& memInfo, const std::v
     }
 }
 
-// 评测完成时绘制【综合性能评分卡】模态窗口 (Scorecard Modal)
+// 评测完成时绘制综合性能评分卡模态窗口
 void drawScoreCardModal(cv::Mat& frame, const ScoreCard& card) {
     int modalW = 520;
     int modalH = 340;
@@ -1159,7 +1155,7 @@ void drawScoreCardModal(cv::Mat& frame, const ScoreCard& card) {
              cv::Scalar(80, 80, 90), 1, cv::LINE_AA);
 
     // 左侧：总分与 Badge
-    cv::Scalar gradeColor(0, 255, 136); // Emerald for S+/S/A
+    cv::Scalar gradeColor(0, 255, 136); // 翠绿-S+/S/A
     if (card.grade == "B") gradeColor = cv::Scalar(0, 215, 255);
     else if (card.grade == "C") gradeColor = cv::Scalar(30, 180, 230);
     else if (card.grade == "D") gradeColor = cv::Scalar(30, 30, 230);

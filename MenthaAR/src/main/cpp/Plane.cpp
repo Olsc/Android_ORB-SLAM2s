@@ -3,20 +3,14 @@
  * 由Olsc于2025/8/25开始进行修改
  */
 
-/**
- * 平面检测与表示模块实现
- */
+// 平面检测与表示模块实现
 
 #include "Plane.h"
 #include "Matrix.h"
 #include "UIUtils.h"
 
-/**
- * SO(3)李代数的指数映射
- * 使用Rodrigues公式将旋转向量转换为旋转矩阵
- * 公式: exp([w]×) = I + sin(θ)/θ * [w]× + (1-cos(θ))/θ² * [w]×²
- * 其中θ = ||w||，[w]×是反对称矩阵
- */
+// SO(3)李代数指数映射：用Rodrigues公式将旋转向量转为旋转矩阵
+// exp([w]×) = I + sin(θ)/θ·[w]× + (1-cos(θ))/θ²·[w]×²，θ=||w||
 cv::Mat Plane::ExpSO3(const float& x, const float& y, const float& z)
 {
     cv::Mat I = cv::Mat::eye(3, 3, CV_32F);  // 单位矩阵
@@ -39,34 +33,26 @@ cv::Mat Plane::ExpSO3(const float& x, const float& y, const float& z)
     }
 }
 
-/**
- * SO(3)李代数的指数映射（向量版本）
- */
+// SO(3)李代数指数映射的向量版本
 cv::Mat Plane::ExpSO3(const cv::Mat& v)
 {
     return ExpSO3(v.at<float>(0), v.at<float>(1), v.at<float>(2));
 }
 
-/**
- * 从地图点集合构造平面
- * 初始化平面参数并计算变换矩阵
- */
-Plane::Plane(const std::vector<ORB_SLAM2::MapPoint*>& vMPs, const cv::Mat& Tcw) : 
+// 从地图点集合构造平面，初始化平面参数并计算变换矩阵
+Plane::Plane(const std::vector<ORB_SLAM2::MapPoint*>& vMPs, const cv::Mat& Tcw) :
     mvMPs(vMPs), mTcw(Tcw.clone())
 {
     // 随机初始化平面绕法向量的旋转角度（-π/2 到 π/2）
-    rang = -3.14159265358979323846f / 2 + 
-           static_cast<float>(static_cast<double>(rand()) / static_cast<double>(RAND_MAX)) * 
+    rang = -3.14159265358979323846f / 2 +
+           static_cast<float>(static_cast<double>(rand()) / static_cast<double>(RAND_MAX)) *
            3.14159265358979323846f;
 
     Recompute();  // 计算平面参数
 }
 
-/**
- * 从法向量和原点构造平面
- * 直接使用给定的法向量和原点，无需重新计算
- */
-Plane::Plane(const float& nx, const float& ny, const float& nz, 
+// 从法向量和原点直接构造平面，无需重新计算
+Plane::Plane(const float& nx, const float& ny, const float& nz,
              const float& ox, const float& oy, const float& oz)
 {
     // 设置平面法向量和原点
@@ -101,16 +87,7 @@ Plane::Plane(const float& nx, const float& ny, const float& nz,
     getColMajorMatrixFromMat(glTpw, Tpw);
 }
 
-/**
- * 根据地图点重新计算平面参数
- * 使用SVD分解拟合最优平面
- * 流程：
- *   1. 构造点坐标矩阵A（每行一个点）
- *   2. SVD分解得到法向量（最小奇异值对应的右奇异向量）
- *   3. 计算平面原点（所有点的质心）
- *   4. 确保法向量指向相机（避免法向量反向）
- *   5. 构建世界到平面的变换矩阵
- */
+// 根据地图点用SVD分解重新计算平面参数：拟合法向量、计算质心原点并确保法向量朝向相机
 void Plane::Recompute()
 {
     const int N = static_cast<int>(mvMPs.size());
@@ -188,5 +165,5 @@ void Plane::Recompute()
     // 转换为OpenGL格式
     setIdentityM(glTpw);
     getColMajorMatrixFromMat(glTpw, Tpw);
-    // transposeR(glTpw);  // 旧代码，已注释
+    // transposeR(glTpw);
 }

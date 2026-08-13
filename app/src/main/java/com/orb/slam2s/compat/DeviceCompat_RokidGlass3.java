@@ -5,10 +5,7 @@ import android.util.Log;
 
 import com.orb.slam2s.slamar.OpenCVBridge;
 
-/**
- * 设备兼容性处理类
- * 用于针对特定设备（如 Rokid RG-glasses）进行特殊的画面处理或逻辑调整。
- */
+// 设备兼容性处理类：针对特定设备（如 Rokid RG-glasses）进行特殊画面处理或逻辑调整
 public class DeviceCompat_RokidGlass3 {
     private static final String TAG = "DeviceCompat_RokidGlass3";
 
@@ -21,12 +18,7 @@ public class DeviceCompat_RokidGlass3 {
     // 缓存：设备信息不会在运行时改变，只需检测一次
     private static Boolean sIsRokidGlasses = null;
 
-    /**
-     * 检查当前设备是否为 Rokid RG-glasses。
-     * 结果会缓存，后续调用直接返回缓存值。
-     *
-     * @return 如果是目标设备则返回 true，否则返回 false。
-     */
+    // 检查当前设备是否为 Rokid RG-glasses，结果缓存后直接返回
     public static boolean isRokidGlasses() {
         if (sIsRokidGlasses != null) {
             return sIsRokidGlasses;
@@ -44,12 +36,7 @@ public class DeviceCompat_RokidGlass3 {
         return sIsRokidGlasses;
     }
 
-    /**
-     * 如果是 Rokid 设备，则对相机画面进行镜像处理。
-     * 用户要求：画面需要上下镜像 + 左右镜像。
-     *
-     * @param matAddr 需要处理的 native Mat 地址
-     */
+    // Rokid 设备时对相机画面做上下与左右镜像处理
     public static void checkAndFlipFrame(long matAddr) {
         if (matAddr == 0) return;
 

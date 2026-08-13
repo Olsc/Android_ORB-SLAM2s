@@ -27,10 +27,7 @@ import io.noties.markwon.ext.tables.TablePlugin;
 
 public class PrivacyConsentActivity extends AppCompatActivity {
 
-    /**
-     * 隐私协议开关。true = 启动时展示隐私协议（阅读到底部后方可同意）；
-     * false = 跳过隐私协议，直接进入应用。
-     */
+    // 隐私协议开关：true 启动时展示隐私协议，false 跳过直接进入应用
     public static final boolean ENABLE_PRIVACY = false;
 
     private static final String TAG = "PrivacyConsent";
@@ -100,9 +97,7 @@ public class PrivacyConsentActivity extends AppCompatActivity {
         });
     }
 
-    /**
-     * 根据系统语言加载对应的隐私协议 markdown 文件
-     */
+    // 根据系统语言加载对应的隐私协议 markdown 文件
     private String loadPrivacyMarkdown() {
         String fileName;
         String localeLang = Locale.getDefault().getLanguage();
@@ -131,26 +126,20 @@ public class PrivacyConsentActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * 检查用户是否已同意隐私协议
-     */
+    // 检查用户是否已同意隐私协议
     private boolean hasAgreed() {
         SharedPreferences prefs = getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         return prefs.getBoolean(KEY_AGREED, false);
     }
 
-    /**
-     * 保存用户同意状态
-     */
+    // 保存用户同意状态
     private void saveAgreement() {
         SharedPreferences prefs = getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         prefs.edit().putBoolean(KEY_AGREED, true).apply();
         Log.d(TAG, "已保存隐私协议");
     }
 
-    /**
-     * 跳转到主应用的 ModelActivity
-     */
+    // 跳转到主应用的 ModelActivity
     private void startNextActivity() {
         Intent intent = new Intent(this, ModelActivity.class);
         startActivity(intent);

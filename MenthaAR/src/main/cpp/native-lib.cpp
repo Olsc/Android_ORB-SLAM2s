@@ -2,7 +2,7 @@
  * 由Olsc于2025/8/25开始进行修改
  */
 
- #include <jni.h>
+#include <jni.h>
 #include <string>
 #include <sstream>
 #include <thread>
@@ -68,7 +68,7 @@ std::vector<ArObjectInfo> gArObjects;
 // 多地图支持
 std::mutex gMapDataMutex;
 
-// ========== SLAM 系统访问的读写锁优化 ==========
+// ========== SLAM 系统访问的读写锁 ==========
 static std::mutex gSlamPtrLock;                    // 仅保护 slamSys 指针（极短临界区）
 static std::atomic<int> gProcessingFrames{0};      // 正在处理的帧数（用于写操作协调）
 static std::condition_variable gCvProcessingFrames; // gProcessingFrames 归零时通知写操作
@@ -89,20 +89,8 @@ float gCurrentModelMatrix[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
 float gCurrentViewMatrix[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
 float gCurrentProjectionMatrix[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
 
-/**
- * 保存平面和AR对象信息到文件
- * 
- * 文件格式：
- *   - 魔数: 'ARIN' (0x4152494E)
- *   - 版本号: 1
- *   - 平面信息: 原点(x,y,z)、法向量(x,y,z)、旋转角
- *   - AR对象列表: 每个对象包含模型矩阵和缩放系数
- * 
- * 用途：
- *   与SLAM地图文件配套保存，用于重定位后恢复AR场景
- * 
- * @param filename 地图文件路径（不含扩展名）
- */
+// 保存平面和AR对象信息到 .arinfo 文件，与SLAM地图配套保存
+// 文件格式：魔数+版本+平面信息+AR对象列表，用于重定位后恢复AR场景
 void SavePlaneAndArInfo(const std::string& filename)
 {
     std::lock_guard<std::mutex> lock(gMapDataMutex);
@@ -292,7 +280,7 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
         const int scaledH = cvRound(static_cast<double>(image.rows) / DOWNSCALE);
         cv::resize(image, imgSmall, cv::Size(scaledW, scaledH), 0, 0, cv::INTER_LINEAR);
 
-        // ===== 读写锁优化：不再全程持有全局锁 =====
+        // ===== 读写锁：不再全程持有全局锁 =====
         ORB_SLAM2::System* currentSlamSys = nullptr;
         {
             std::lock_guard<std::mutex> _ptrLock(gSlamPtrLock);
@@ -527,10 +515,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_initSLAM(JNIEnv* env, jobject instance, 
     slamSys->UpdateCalibration(fx, fy, cx, cy);
 }
 
-/**
- * 根据相机实际分辨率缩放内参
- * 基准内参在640x360下标定，按比例缩放到当前工作分辨率
- */
+// 根据相机实际分辨率缩放内参，基准内参在640x360下标定后按比例缩放
 void updateScaledIntrinsics(int cameraWidth, int cameraHeight) {
     if (cameraWidth <= 0 || cameraHeight <= 0) return;
 
@@ -556,10 +541,7 @@ void updateScaledIntrinsics(int cameraWidth, int cameraHeight) {
     cy = gScaledCy;
 }
 
-/**
- * JNI: 更新相机分辨率并重新计算内参和投影矩阵
- * 在相机启动或屏幕旋转时由Java层调用
- */
+// JNI：更新相机分辨率并重新计算内参和投影矩阵，在相机启动或屏幕旋转时调用
 JNIEXPORT void JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_nativeUpdateResolution(JNIEnv* env, jobject instance,
                                                                jint cameraWidth, jint cameraHeight) {
@@ -716,12 +698,12 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeGetMVP(JNIEnv *env, jobject instan
     jfloat *viewM  = env->GetFloatArrayElements(viewM_, nullptr);
     jfloat *projM  = env->GetFloatArrayElements(projM_, nullptr);
 
-    // Model
+    // 模型矩阵
     {
         std::lock_guard<std::mutex> lock(gMapDataMutex);
         for(int i=0; i<16; i++) modelM[i] = gCurrentModelMatrix[i];
     }
-    // View
+    // 视图矩阵
     {
         bool useSlam = false;
         cv::Mat TcwForView;
@@ -741,7 +723,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeGetMVP(JNIEnv *env, jobject instan
             for(int i=0; i<16; i++) viewM[i] = gCurrentViewMatrix[i];
         }
     }
-    // Projection
+    // 投影矩阵
     frustumM_RUB((int)(imageWidth/ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR), (int)(imageHeight/ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR), fx, fy, cx, cy,
                  ORB_SLAM2::PROJECTION_ZNEAR, ORB_SLAM2::PROJECTION_ZFAR, projM);
 
