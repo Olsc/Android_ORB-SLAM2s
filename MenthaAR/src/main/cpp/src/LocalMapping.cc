@@ -37,6 +37,7 @@
 #include "ORBmatcher.h"
 #include "Optimizer.h"
 #include "Config.h"
+#include "Converter.h"
 
 #include<mutex>
 #include<chrono>
@@ -394,26 +395,9 @@ void LocalMapping::CreateNewMapPoints()
             cv::Mat x3D;
             if(cosParallaxRays<cosParallaxStereo && cosParallaxRays>0 && (bStereo1 || bStereo2 || cosParallaxRays<LOCAL_MAPPING_TRIANGULATION_PARALLAX_TH))
             {
-                // 线性三角化方法
-                // 用标量 xn1x/xn1y/xn2x/xn2y 直接填充 A，避免额外的 xn1/xn2 cv::Mat 分配
-                cv::Mat A(4,4,CV_32F);
-                A.row(0) = xn1x*Tcw1.row(2)-Tcw1.row(0);
-                A.row(1) = xn1y*Tcw1.row(2)-Tcw1.row(1);
-                A.row(2) = xn2x*Tcw2.row(2)-Tcw2.row(0);
-                A.row(3) = xn2y*Tcw2.row(2)-Tcw2.row(1);
-
-                // 直接对 A 做 SVD 求零空间（最小奇异值右奇异向量）。
-                // 切勿改为「对 A^T A 做 Jacobi」——平方条件数会损失约 1 个数量级精度。
-                cv::Mat u,w,vt;
-                cv::SVD::compute(A,w,u,vt,cv::SVD::MODIFY_A| cv::SVD::FULL_UV);
-
-                x3D = vt.row(3).t();
-
-                if(x3D.at<float>(3)==0)
+                // 线性三角化（公共 DLT 实现，见 Converter::TriangulateDLT；w==0 时返回 false）
+                if (!Converter::TriangulateDLT(Tcw1, Tcw2, xn1x, xn1y, xn2x, xn2y, x3D))
                     continue;
-
-                // 欧几里得坐标
-                x3D = x3D.rowRange(0,3)/x3D.at<float>(3);
 
             }
             else

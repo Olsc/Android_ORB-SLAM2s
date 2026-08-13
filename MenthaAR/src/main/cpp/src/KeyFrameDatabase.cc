@@ -307,7 +307,7 @@ void KeyFrameDatabase::rebuild()
         pNewTree->add(matchables);
     }
 
-    // 3. 仅在替换树指针的瞬间持锁 (< 1us)，旧树在锁外安全释放
+    // 3. 仅在替换树指针的瞬间持锁 (< 1us)，旧树在锁外安全释放。
     HBSTTree* pOldTree = nullptr;
     {
         unique_lock<mutex> lock(mMutex);

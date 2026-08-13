@@ -39,7 +39,10 @@
 #include "Optimizer.h"
 #include "ORBmatcher.h"
 #include "Config.h"
+#include "Converter.h"
 #include "Random.h"
+
+#include <limits>
 
 #include<thread>
 
@@ -739,22 +742,14 @@ bool Initializer::ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv:
 
 void Initializer::Triangulate(const cv::KeyPoint &kp1, const cv::KeyPoint &kp2, const cv::Mat &P1, const cv::Mat &P2, cv::Mat &x3D)
 {
-    // 线性三角化：直接对 A 做 SVD，取最小奇异值对应右奇异向量（A 的零空间）。
-    // 注意：切勿改为「对 A^T A 做 Jacobi/特征分解」——那会平方条件数，在病态小视差
-    // 场景下精度损失约 1 个数量级（已由 Python 纯标量验证证实）。cv::SVD 直接对 A
-    // 双侧正交分解，是数值上最稳定的零空间求解。
-    cv::Mat A(4,4,CV_32F);
-
-    A.row(0) = kp1.pt.x*P1.row(2)-P1.row(0);
-    A.row(1) = kp1.pt.y*P1.row(2)-P1.row(1);
-    A.row(2) = kp2.pt.x*P2.row(2)-P2.row(0);
-    A.row(3) = kp2.pt.y*P2.row(2)-P2.row(1);
-
-    cv::Mat u,w,vt;
-    cv::SVD::compute(A,w,u,vt,cv::SVD::MODIFY_A| cv::SVD::FULL_UV);
-
-    x3D = vt.row(3).t();
-    x3D = x3D.rowRange(0,3)/x3D.at<float>(3);
+    // 线性三角化（公共 DLT 实现，见 Converter::TriangulateDLT）
+    if (!Converter::TriangulateDLT(P1, P2, kp1.pt.x, kp1.pt.y, kp2.pt.x, kp2.pt.y, x3D))
+    {
+        // w==0 退化：填充 inf，与原「x3D.rowRange(0,3)/w（w→0）」行为等价，
+        // 由 CheckRT 的 isfinite 检查兜底拒绝该点。
+        const float inf = std::numeric_limits<float>::infinity();
+        x3D = (cv::Mat_<float>(3,1) << inf, inf, inf);
+    }
 }
 
 void Initializer::Normalize(const vector<cv::KeyPoint> &vKeys, vector<cv::Point2f> &vNormalizedPoints, cv::Mat &T)
