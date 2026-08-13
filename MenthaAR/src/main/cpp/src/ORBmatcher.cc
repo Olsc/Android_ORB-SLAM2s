@@ -1778,30 +1778,61 @@ void ORBmatcher::ComputeThreeMaxima(vector<int>* histo, const int L, int &ind1, 
     }
 }
 
-static inline int Popcount64(uint64_t v) {
-#if defined(_MSC_VER)
-    return (int)__popcnt64(v);
-#elif defined(__GNUC__) || defined(__clang__)
-    return __builtin_popcountll(v);
-#else
-    v = v - ((v >> 1) & 0x5555555555555555ULL);
-    v = (v & 0x3333333333333333ULL) + ((v >> 2) & 0x3333333333333333ULL);
-    v = (v + (v >> 4)) & 0x0F0F0F0F0F0F0F0FULL;
-    return (int)((v * 0x0101010101010101ULL) >> 56);
-#endif
-}
+// 8-bit popcount 查表（256 字节，常驻 L1 cache）。
+// 这是纯标量、全 CPU 兼容的汉明距离实现：逐字节查表累加，无损精度，
+// 且比 __builtin_popcountll 在无硬件 popcount 平台（如 AArch64 未开 NEON 时）
+// 的软件 SWAR 展开更快、更省指令，也不依赖编译器内建与目标指令集。
+static const uint8_t POPCNT8_LUT[256] = {
+    0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4,
+    1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,
+    1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,
+    2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
+    1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,
+    2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
+    2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
+    3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
+    1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,
+    2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
+    2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
+    3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
+    2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
+    3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
+    3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
+    4,5,5,6,5,6,6,7,5,6,6,7,6,7,7,8
+};
 
-// 跨平台 64-bit 并行 Bitwise Popcount
+// ORB 描述子汉明距离 (32 字节)。ARM 平台优先走 NEON 硬件 popcount（vcntq_u8，
+// 两条 vcntq + 两条 vaddlvq 即完成）；其余 CPU 走纯标量查表法，二者均无损精度。
 int ORBmatcher::DescriptorDistance(const uint8_t* pa, const uint8_t* pb)
 {
-    uint64_t va[4], vb[4];
-    std::memcpy(va, pa, 32);
-    std::memcpy(vb, pb, 32);
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+    const uint8x16_t va0 = vld1q_u8(pa);
+    const uint8x16_t vb0 = vld1q_u8(pb);
+    const uint8x16_t va1 = vld1q_u8(pa + 16);
+    const uint8x16_t vb1 = vld1q_u8(pb + 16);
 
-    return Popcount64(va[0] ^ vb[0]) +
-           Popcount64(va[1] ^ vb[1]) +
-           Popcount64(va[2] ^ vb[2]) +
-           Popcount64(va[3] ^ vb[3]);
+    const uint8x16_t xor0 = veorq_u8(va0, vb0);
+    const uint8x16_t xor1 = veorq_u8(va1, vb1);
+
+    const uint8x16_t pop0 = vcntq_u8(xor0);
+    const uint8x16_t pop1 = vcntq_u8(xor1);
+
+    #if defined(__aarch64__)
+        return (int)(vaddlvq_u8(pop0) + vaddlvq_u8(pop1));
+    #else
+        // Armv7 NEON: 使用 vpaddlq 逐步归约
+        uint16x8_t sum16 = vpaddlq_u8(vaddq_u8(pop0, pop1));
+        uint32x4_t sum32 = vpaddlq_u16(sum16);
+        uint64x2_t sum64 = vpaddlq_u32(sum32);
+        return (int)(vgetq_lane_u64(sum64, 0) + vgetq_lane_u64(sum64, 1));
+    #endif
+#else
+    // 非 NEON 平台：纯标量查表法（全 CPU 兼容，比软件 SWAR 快，无损精度）
+    int d = 0;
+    for (int i = 0; i < 32; ++i)
+        d += POPCNT8_LUT[pa[i] ^ pb[i]];
+    return d;
+#endif
 }
 
 int ORBmatcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)

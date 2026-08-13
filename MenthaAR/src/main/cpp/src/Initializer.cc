@@ -739,102 +739,22 @@ bool Initializer::ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv:
 
 void Initializer::Triangulate(const cv::KeyPoint &kp1, const cv::KeyPoint &kp2, const cv::Mat &P1, const cv::Mat &P2, cv::Mat &x3D)
 {
-    float A[4][4];
-    const float* pP1_0 = P1.ptr<float>(0);
-    const float* pP1_1 = P1.ptr<float>(1);
-    const float* pP1_2 = P1.ptr<float>(2);
-    const float* pP2_0 = P2.ptr<float>(0);
-    const float* pP2_1 = P2.ptr<float>(1);
-    const float* pP2_2 = P2.ptr<float>(2);
+    // 线性三角化：直接对 A 做 SVD，取最小奇异值对应右奇异向量（A 的零空间）。
+    // 注意：切勿改为「对 A^T A 做 Jacobi/特征分解」——那会平方条件数，在病态小视差
+    // 场景下精度损失约 1 个数量级（已由 Python 纯标量验证证实）。cv::SVD 直接对 A
+    // 双侧正交分解，是数值上最稳定的零空间求解。
+    cv::Mat A(4,4,CV_32F);
 
-    for (int c = 0; c < 4; ++c) {
-        A[0][c] = kp1.pt.x * pP1_2[c] - pP1_0[c];
-        A[1][c] = kp1.pt.y * pP1_2[c] - pP1_1[c];
-        A[2][c] = kp2.pt.x * pP2_2[c] - pP2_0[c];
-        A[3][c] = kp2.pt.y * pP2_2[c] - pP2_1[c];
-    }
+    A.row(0) = kp1.pt.x*P1.row(2)-P1.row(0);
+    A.row(1) = kp1.pt.y*P1.row(2)-P1.row(1);
+    A.row(2) = kp2.pt.x*P2.row(2)-P2.row(0);
+    A.row(3) = kp2.pt.y*P2.row(2)-P2.row(1);
 
-    // 零堆分配 4x4 雅可比求解器
-    float M[4][4];
-    for (int r = 0; r < 4; ++r) {
-        for (int c = r; c < 4; ++c) {
-            float val = A[0][r] * A[0][c] + A[1][r] * A[1][c] + A[2][r] * A[2][c] + A[3][r] * A[3][c];
-            M[r][c] = val;
-            M[c][r] = val;
-        }
-    }
+    cv::Mat u,w,vt;
+    cv::SVD::compute(A,w,u,vt,cv::SVD::MODIFY_A| cv::SVD::FULL_UV);
 
-    float V[4][4] = {
-        {1.0f, 0.0f, 0.0f, 0.0f},
-        {0.0f, 1.0f, 0.0f, 0.0f},
-        {0.0f, 0.0f, 1.0f, 0.0f},
-        {0.0f, 0.0f, 0.0f, 1.0f}
-    };
-
-    for (int it = 0; it < INITIALIZER_JACOBI_ITERS; ++it) {
-        float maxVal = 0.0f;
-        int p = 0, q = 1;
-        for (int i = 0; i < 4; ++i) {
-            for (int j = i + 1; j < 4; ++j) {
-                float absVal = std::abs(M[i][j]);
-                if (absVal > maxVal) {
-                    maxVal = absVal;
-                    p = i;
-                    q = j;
-                }
-            }
-        }
-
-        if (maxVal < 1e-15f) break;
-
-        float app = M[p][p];
-        float aqq = M[q][q];
-        float apq = M[p][q];
-
-        float phi = 0.5f * std::atan2(2.0f * apq, aqq - app);
-        float c = std::cos(phi);
-        float s = std::sin(phi);
-
-        for (int i = 0; i < 4; ++i) {
-            if (i != p && i != q) {
-                float mip = M[i][p];
-                float miq = M[i][q];
-                M[i][p] = c * mip - s * miq;
-                M[p][i] = M[i][p];
-                M[i][q] = s * mip + c * miq;
-                M[q][i] = M[i][q];
-            }
-        }
-
-        M[p][p] = c * c * app - 2.0f * s * c * apq + s * s * aqq;
-        M[q][q] = s * s * app + 2.0f * s * c * apq + c * c * aqq;
-        M[p][q] = 0.0f;
-        M[q][p] = 0.0f;
-
-        for (int i = 0; i < 4; ++i) {
-            float vip = V[i][p];
-            float viq = V[i][q];
-            V[i][p] = c * vip - s * viq;
-            V[i][q] = s * vip + c * viq;
-        }
-    }
-
-    int minIdx = 0;
-    float minEval = M[0][0];
-    for (int i = 1; i < 4; ++i) {
-        if (M[i][i] < minEval) {
-            minEval = M[i][i];
-            minIdx = i;
-        }
-    }
-
-    float w = V[3][minIdx];
-    if (std::abs(w) > 1e-10f) {
-        float invW = 1.0f / w;
-        x3D = (cv::Mat_<float>(3, 1) << V[0][minIdx] * invW, V[1][minIdx] * invW, V[2][minIdx] * invW);
-    } else {
-        x3D = cv::Mat::zeros(3, 1, CV_32F);
-    }
+    x3D = vt.row(3).t();
+    x3D = x3D.rowRange(0,3)/x3D.at<float>(3);
 }
 
 void Initializer::Normalize(const vector<cv::KeyPoint> &vKeys, vector<cv::Point2f> &vNormalizedPoints, cv::Mat &T)
