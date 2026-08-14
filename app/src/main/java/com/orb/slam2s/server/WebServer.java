@@ -84,32 +84,35 @@ public class WebServer {
 
     // 创建 SSL 服务器 Socket
     private SSLServerSocket createSSLServerSocket(int port) throws Exception {
-        // 1. 从assets读取证书和密钥
-        InputStream certStream = context.getAssets().open("cert/cert.pem");
-        InputStream keyStream = context.getAssets().open("cert/key.pem");
+        // 1. 动态生成自签名证书 (每次启动重新生成，确保证书不一致)
+        KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
+        keyStore.load(null);
+        String alias = "webserver_dynamic_key";
+        if (keyStore.containsAlias(alias)) {
+            keyStore.deleteEntry(alias);
+        }
 
-        // 2. 加载证书
-        CertificateFactory cf = CertificateFactory.getInstance("X.509");
-        Certificate cert = cf.generateCertificate(certStream);
-        certStream.close();
+        java.security.KeyPairGenerator kpg = java.security.KeyPairGenerator.getInstance(
+                android.security.keystore.KeyProperties.KEY_ALGORITHM_RSA, "AndroidKeyStore");
+        
+        kpg.initialize(new android.security.keystore.KeyGenParameterSpec.Builder(
+                alias,
+                android.security.keystore.KeyProperties.PURPOSE_SIGN | android.security.keystore.KeyProperties.PURPOSE_VERIFY | android.security.keystore.KeyProperties.PURPOSE_ENCRYPT | android.security.keystore.KeyProperties.PURPOSE_DECRYPT)
+                .setDigests(android.security.keystore.KeyProperties.DIGEST_NONE, android.security.keystore.KeyProperties.DIGEST_SHA256, android.security.keystore.KeyProperties.DIGEST_SHA512)
+                .setEncryptionPaddings(android.security.keystore.KeyProperties.ENCRYPTION_PADDING_NONE, android.security.keystore.KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1)
+                .setSignaturePaddings(android.security.keystore.KeyProperties.SIGNATURE_PADDING_RSA_PKCS1)
+                .setRandomizedEncryptionRequired(false)
+                .setCertificateSubject(new javax.security.auth.x500.X500Principal("CN=localhost"))
+                .setCertificateSerialNumber(java.math.BigInteger.valueOf(System.currentTimeMillis()))
+                .setCertificateNotBefore(new java.util.Date())
+                .setCertificateNotAfter(new java.util.Date(System.currentTimeMillis() + 365L * 24 * 60 * 60 * 1000))
+                .build());
 
-        // 3. 加载私钥 (PEM格式)
-        String keyPEM = readPEMFile(keyStream);
-        keyStream.close();
-        byte[] keyBytes = parsePEMPrivateKey(keyPEM);
-        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
-        KeyFactory kf = KeyFactory.getInstance("RSA");
-        PrivateKey privateKey = kf.generatePrivate(keySpec);
-
-        // 4. 创建KeyStore并加载证书和私钥
-        KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-        keyStore.load(null, null);
-        keyStore.setCertificateEntry("cert", cert);
-        keyStore.setKeyEntry("key", privateKey, "".toCharArray(), new Certificate[]{cert});
+        kpg.generateKeyPair();
 
         // 5. 初始化KeyManagerFactory
         KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        kmf.init(keyStore, "".toCharArray());
+        kmf.init(keyStore, null); // AndroidKeyStore 不需要密码
 
         // 6. 创建SSLContext
         SSLContext sslContext = SSLContext.getInstance("TLS");
@@ -123,32 +126,6 @@ public class WebServer {
         sslServerSocket.setNeedClientAuth(false);
         sslServerSocket.setWantClientAuth(false);
         return sslServerSocket;
-    }
-
-    // 读取 PEM 文件内容
-    private String readPEMFile(InputStream is) throws IOException {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-        StringBuilder sb = new StringBuilder();
-        String line;
-        while ((line = reader.readLine()) != null) {
-            sb.append(line).append("\n");
-        }
-        reader.close();
-        return sb.toString();
-    }
-
-    // 解析 PEM 格式私钥，提取 Base64 编码的密钥数据
-    private byte[] parsePEMPrivateKey(String pem) {
-        // 移除PEM头尾和换行符
-        String privateKeyPEM = pem
-                .replace("-----BEGIN PRIVATE KEY-----", "")
-                .replace("-----END PRIVATE KEY-----", "")
-                .replace("-----BEGIN RSA PRIVATE KEY-----", "")
-                .replace("-----END RSA PRIVATE KEY-----", "")
-                .replaceAll("\\s", "");
-
-        // Base64解码 (使用Android的Base64)
-        return android.util.Base64.decode(privateKeyPEM, android.util.Base64.DEFAULT);
     }
 
     public void stop() {

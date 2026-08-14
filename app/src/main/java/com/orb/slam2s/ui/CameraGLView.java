@@ -93,7 +93,7 @@ public class CameraGLView extends CameraGLViewBase {
                     imageAnalysis.setAnalyzer(analyzerExecutor, new ImageAnalysis.Analyzer() {
                         @Override
                         public void analyze(ImageProxy image) {
-                            if (mIsStopped || analyzerExecutor == null || analyzerExecutor.isShutdown()) {
+                            if (mIsStopped || isWebTickerRunning || analyzerExecutor == null || analyzerExecutor.isShutdown()) {
                                 image.close();
                                 return;
                             }
@@ -220,9 +220,11 @@ public class CameraGLView extends CameraGLViewBase {
                 int h = GlobalConstant.RESOLUTION_HEIGHT;
                 if (rgbaMatAddr == 0) {
                     rgbaMatAddr = OpenCVBridge.nativeCreateMat(h, w, OpenCVBridge.CV_8UC4);
+                    OpenCVBridge.nativeMatSetTo(rgbaMatAddr, 0, 0, 0, 255);
                 }
                 if (grayMatAddr == 0) {
                     grayMatAddr = OpenCVBridge.nativeCreateMat(h, w, OpenCVBridge.CV_8UC1);
+                    OpenCVBridge.nativeMatSetTo(grayMatAddr, 0, 0, 0, 0);
                 }
                 deliverAndDrawFrame(new XCameraFrame(rgbaMatAddr, grayMatAddr));
                 if (mWebHandler != null && isWebTickerRunning) {
@@ -235,13 +237,26 @@ public class CameraGLView extends CameraGLViewBase {
     // 开启 Web 模式渲染脉冲，关闭物理相机硬件传感器，由后台 HandlerThread 独立驱动
     public void startWebModeTicker() {
         Log.d(TAG, "开启 Web 模式后台渲染脉冲，关闭物理相机传感器");
+        isWebTickerRunning = true;
         pauseCameraSensor();
+
+        int w = GlobalConstant.RESOLUTION_WIDTH;
+        int h = GlobalConstant.RESOLUTION_HEIGHT;
+        if (rgbaMatAddr == 0) {
+            rgbaMatAddr = OpenCVBridge.nativeCreateMat(h, w, OpenCVBridge.CV_8UC4);
+        }
+        OpenCVBridge.nativeMatSetTo(rgbaMatAddr, 0, 0, 0, 255);
+
+        if (grayMatAddr == 0) {
+            grayMatAddr = OpenCVBridge.nativeCreateMat(h, w, OpenCVBridge.CV_8UC1);
+        }
+        OpenCVBridge.nativeMatSetTo(grayMatAddr, 0, 0, 0, 0);
+
         if (mWebThread == null || !mWebThread.isAlive()) {
             mWebThread = new android.os.HandlerThread("WebRenderThread");
             mWebThread.start();
             mWebHandler = new android.os.Handler(mWebThread.getLooper());
         }
-        isWebTickerRunning = true;
         mWebHandler.removeCallbacks(webTickerRunnable);
         mWebHandler.post(webTickerRunnable);
     }
