@@ -1,24 +1,15 @@
 package com.orb.slam2s.compat;
 
 import android.os.Build;
-import android.util.Log;
 
-import com.orb.slam2s.slamar.OpenCVBridge;
-
-// 设备兼容性处理类：针对特定设备（如 Rokid RG-glasses）进行特殊画面处理或逻辑调整
+/**
+ * 设备兼容性处理类：针对特定设备（如 Rokid RG-glasses）进行特殊画面处理或逻辑调整
+ */
 public class DeviceCompat_RokidGlass3 {
     private static final String TAG = "DeviceCompat_RokidGlass3";
 
-    // 目标设备信息
-    private static final String TARGET_MANUFACTURER = "Rokid";
-    private static final String TARGET_MODEL = "RG-glasses";
-    private static final String TARGET_PRODUCT = "glasses";
-    private static final String TARGET_CODENAME = "glasses";
-
-    // 缓存：设备信息不会在运行时改变，只需检测一次
     private static Boolean sIsRokidGlasses = null;
 
-    // 检查当前设备是否为 Rokid RG-glasses，结果缓存后直接返回
     public static boolean isRokidGlasses() {
         if (sIsRokidGlasses != null) {
             return sIsRokidGlasses;
@@ -36,12 +27,23 @@ public class DeviceCompat_RokidGlass3 {
         return sIsRokidGlasses;
     }
 
-    // Rokid 设备时对相机画面做上下与左右镜像处理
-    public static void checkAndFlipFrame(long matAddr) {
-        if (matAddr == 0) return;
-
-        if (isRokidGlasses()) {
-            OpenCVBridge.nativeFlipBoth(matAddr);
+    /**
+     * Rokid RG-glasses 设备帧画面上下与左右镜像翻转处理（纯 Byte 缓冲版本，零 JNI 跨进程开销）
+     */
+    public static void checkAndFlipFrame(byte[] yData, int width, int height) {
+        if (yData == null || !isRokidGlasses() || width <= 0 || height <= 0) return;
+        
+        int halfH = height / 2;
+        for (int r = 0; r < halfH; r++) {
+            int topOffset = r * width;
+            int bottomOffset = (height - 1 - r) * width;
+            for (int c = 0; c < width; c++) {
+                int topIdx = topOffset + c;
+                int bottomIdx = bottomOffset + (width - 1 - c);
+                byte tmp = yData[topIdx];
+                yData[topIdx] = yData[bottomIdx];
+                yData[bottomIdx] = tmp;
+            }
         }
     }
 }

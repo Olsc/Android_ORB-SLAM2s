@@ -72,6 +72,8 @@
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <vector>
+#include <thread>
+#include <atomic>
 
 #include "ORBextractor.h"
 #include "Config.h"
@@ -1068,9 +1070,36 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
 void ORBextractor::ComputeKeyPointsOctTree(vector<vector<KeyPoint> >& allKeypoints)
 {
     allKeypoints.resize(nlevels);
-    // 委托给合并辅助函数，由调用者（operator()）决定是否并行
     detectAndOrientLevels(cv::Range(0, nlevels), allKeypoints);
 }
+
+// 按金字塔层并行执行 fn(level)。各层检测/描述子计算相互独立（层内数据 + thread_local 缓存），
+// 不依赖 OpenCV 是否启用并行支持。
+// 注意：独立进程在受限 cpuset 下可用核少，线程数上限取 2 —— 线程过多反而加剧 CPU 争抢。
+namespace {
+template <typename Fn>
+void parallelForLevels(int nlevels, Fn&& fn) {
+    const int hwThreads = (int)std::thread::hardware_concurrency();
+    const int nThreads = std::min(nlevels, std::max(2, hwThreads / 2));
+    if (nThreads <= 1) {
+        for (int i = 0; i < nlevels; ++i) fn(i);
+        return;
+    }
+    std::atomic<int> next(0);
+    std::vector<std::thread> pool;
+    pool.reserve(nThreads);
+    for (int t = 0; t < nThreads; ++t) {
+        pool.emplace_back([&] {
+            for (;;) {
+                int i = next.fetch_add(1);
+                if (i >= nlevels) break;
+                fn(i);
+            }
+        });
+    }
+    for (auto& th : pool) th.join();
+}
+} // namespace
 
 void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPoint>& _keypoints,
                       OutputArray _descriptors)
@@ -1090,7 +1119,9 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
 
     {
         VT_PROFILE_SCOPE("ORB_Detect+Orient");
-        detectAndOrientLevels(cv::Range(0, nlevels), allKeypoints);
+        parallelForLevels(nlevels, [this, &allKeypoints](int level) {
+            detectAndOrientLevels(cv::Range(level, level + 1), allKeypoints);
+        });
     }
 
     int nkeypoints = 0;
@@ -1131,8 +1162,10 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
 
     {
         VT_PROFILE_SCOPE("ORB_Blur+Desc");
-        blurAndComputeDescriptors(cv::Range(0, nlevels), levelDescOffset,
-                                  _keypoints, descriptors);
+        parallelForLevels(nlevels, [this, &levelDescOffset, &_keypoints, &descriptors](int level) {
+            blurAndComputeDescriptors(cv::Range(level, level + 1), levelDescOffset,
+                                      _keypoints, descriptors);
+        });
     }
 }
 

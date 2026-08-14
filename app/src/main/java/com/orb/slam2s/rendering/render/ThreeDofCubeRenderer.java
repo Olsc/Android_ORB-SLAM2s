@@ -6,6 +6,7 @@ import android.opengl.GLSurfaceView;
 import android.util.Log;
 import android.view.WindowManager;
 
+import com.orb.slam2s.ipc.SlamIPCClient;
 import com.orb.slam2s.sensors.OrientationSensor;
 import com.orb.slam2s.slamar.NativeHelper;
 
@@ -46,6 +47,12 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
         this.context = context;
         this.orientationSensor = sensor;
         this.nativeHelper = nativeHelper;
+    }
+
+    public ThreeDofCubeRenderer(Context context, OrientationSensor sensor, SlamIPCClient client) {
+        this.context = context;
+        this.orientationSensor = sensor;
+        this.nativeHelper = new NativeHelper(context);
     }
 
     // 在视角前方指定距离处生成立方体
@@ -115,21 +122,19 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
 
         float[] rotationMatrix = orientationSensor.getRotationMatrix();
 
-        // 检查旋转矩阵是否有效
         boolean isIdentity = true;
         for (int i = 1; i < 4; i++) {
             if (rotationMatrix[i] != 0) isIdentity = false;
         }
 
-        // 延迟初始化：当获取到有效的传感器数据后，在相机前方固定距离生成物体
-        if (!mInitialized && !isIdentity) {
+        if (!mInitialized && !isIdentity && nativeHelper != null) {
             mObjectWorldPos = nativeHelper.calculate3DofInsertionPoint(rotationMatrix, rotation, mDistance);
             mInitialized = true;
             Log.d(TAG, String.format("立方体世界坐标已初始化: [%.2f, %.2f, %.2f]",
                     mObjectWorldPos[0], mObjectWorldPos[1], mObjectWorldPos[2]));
         }
 
-        if (mInitialized) {
+        if (mInitialized && nativeHelper != null) {
             float[] newMvpMatrix = nativeHelper.compute3DofMVP(rotationMatrix, rotation, mRatio, mObjectWorldPos);
 
             if (newMvpMatrix != null && newMvpMatrix.length == 16) {
@@ -162,7 +167,6 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
             4, 5, 1, 4, 1, 0
         };
 
-        // 为每个面分配不同的颜色
         float[][] faceColors = {
             {1.0f, 0.0f, 0.0f, 1.0f}, // 红
             {0.0f, 1.0f, 0.0f, 1.0f}, // 绿
@@ -235,7 +239,6 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
             try {
                 return context.getDisplay().getRotation();
             } catch (Exception | NoSuchMethodError e) {
-                // 回退方案
             }
         }
         return getLegacyRotation();
