@@ -98,7 +98,7 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
         R << poseF[0], poseF[1], poseF[2],
              poseF[4], poseF[5], poseF[6],
              poseF[8], poseF[9], poseF[10];
-        Eigen::Matrix<double,3,1> t(poseF[12], poseF[13], poseF[14]);
+        Eigen::Matrix<double,3,1> t(poseF[3], poseF[7], poseF[11]);
         vSE3->setEstimate(g2o::SE3Quat(R, t));
         vSE3->setId(pKF->mnId);
         vSE3->setFixed(pKF->mnId==0);
@@ -490,7 +490,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
         R << poseF[0], poseF[1], poseF[2],
              poseF[4], poseF[5], poseF[6],
              poseF[8], poseF[9], poseF[10];
-        Eigen::Matrix<double,3,1> t(poseF[12], poseF[13], poseF[14]);
+        Eigen::Matrix<double,3,1> t(poseF[3], poseF[7], poseF[11]);
         vSE3->setEstimate(g2o::SE3Quat(R, t));
         vSE3->setId(pKFi->mnId);
         vSE3->setFixed(pKFi->mnId==0);
@@ -511,7 +511,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
         R << poseF[0], poseF[1], poseF[2],
              poseF[4], poseF[5], poseF[6],
              poseF[8], poseF[9], poseF[10];
-        Eigen::Matrix<double,3,1> t(poseF[12], poseF[13], poseF[14]);
+        Eigen::Matrix<double,3,1> t(poseF[3], poseF[7], poseF[11]);
         vSE3->setEstimate(g2o::SE3Quat(R, t));
         vSE3->setId(pKFi->mnId);
         vSE3->setFixed(true);
