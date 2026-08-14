@@ -507,13 +507,23 @@ void initMenu() {
     menuSections.push_back(dispSec);
 }
 
+// 将 ROI 裁剪到图像有效范围内，防止过小视频帧（如竖屏/低分辨率视频）导致越界崩溃。
+// 返回裁剪后是否仍有有效区域；无效时上层应跳过对应绘制。
+static bool clampRoiToImage(cv::Rect& r, const cv::Mat& img) {
+    cv::Rect bounds(0, 0, img.cols, img.rows);
+    r &= bounds;
+    return r.width > 0 && r.height > 0;
+}
+
 // 绘制半透明状态仪表盘和右侧可收纳控制按钮板
 void drawGUI(cv::Mat& frame, int trackingState, int fps) {
     // 1. 绘制左上方的半透明“状态仪表盘”
     //    只对面板 ROI 混合（纯色 Mat + addWeighted），避免全帧 clone/addWeighted 拖慢播放帧率
     cv::Rect panelRect(15, 15, 280, 140);
-    cv::Mat panelOverlay(panelRect.size(), frame.type(), cv::Scalar(30, 30, 30));
-    cv::addWeighted(panelOverlay, 0.75, frame(panelRect), 0.25, 0, frame(panelRect));
+    if (clampRoiToImage(panelRect, frame)) {
+        cv::Mat panelOverlay(panelRect.size(), frame.type(), cv::Scalar(30, 30, 30));
+        cv::addWeighted(panelOverlay, 0.75, frame(panelRect), 0.25, 0, frame(panelRect));
+    }
 
     // 绘制仪表盘的高雅描边边框
     cv::rectangle(frame, cv::Rect(15, 15, 280, 140), cv::Scalar(100, 100, 100), 1, cv::LINE_AA);
@@ -561,8 +571,10 @@ void drawGUI(cv::Mat& frame, int trackingState, int fps) {
         int tabW = 8, tabH = 96;
         int tabX = frame.cols - tabW, tabY = (frame.rows - tabH) / 2;
         cv::Rect tabRect(tabX, tabY, tabW, tabH);
-        cv::Mat tabOverlay(tabRect.size(), frame.type(), cv::Scalar(45, 45, 45));
-        cv::addWeighted(tabOverlay, 0.65, frame(tabRect), 0.35, 0, frame(tabRect));
+        if (clampRoiToImage(tabRect, frame)) {
+            cv::Mat tabOverlay(tabRect.size(), frame.type(), cv::Scalar(45, 45, 45));
+            cv::addWeighted(tabOverlay, 0.65, frame(tabRect), 0.35, 0, frame(tabRect));
+        }
         cv::rectangle(frame, cv::Rect(tabX, tabY, tabW, tabH), cv::Scalar(90, 90, 90), 1, cv::LINE_AA);
         // 三条指示线，提示可拖出
         for (int i = 0; i < 3; i++) {
@@ -575,8 +587,10 @@ void drawGUI(cv::Mat& frame, int trackingState, int fps) {
 
     // 展开状态：半透明抽屉覆盖在右缘（交互时使用，仅抽屉区域 ROI 混合）
     cv::Rect drawerRect(drawerX, 0, kDrawerWidth, frame.rows);
-    cv::Mat drawerOverlay(drawerRect.size(), frame.type(), cv::Scalar(15, 15, 15));
-    cv::addWeighted(drawerOverlay, 0.82, frame(drawerRect), 0.18, 0, frame(drawerRect));
+    if (clampRoiToImage(drawerRect, frame)) {
+        cv::Mat drawerOverlay(drawerRect.size(), frame.type(), cv::Scalar(15, 15, 15));
+        cv::addWeighted(drawerOverlay, 0.82, frame(drawerRect), 0.18, 0, frame(drawerRect));
+    }
 
     // 绘制分隔边界线
     cv::line(frame, cv::Point(drawerX, 0), cv::Point(drawerX, frame.rows), cv::Scalar(60, 60, 60), 1, cv::LINE_AA);

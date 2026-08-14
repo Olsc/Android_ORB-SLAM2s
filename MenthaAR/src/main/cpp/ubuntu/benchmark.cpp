@@ -920,12 +920,22 @@ void initMenu() {
     menuSections.push_back(benchSec);
 }
 
+// 将 ROI 裁剪到图像有效范围内，防止过小视频帧（如竖屏/低分辨率视频）导致越界崩溃。
+// 返回裁剪后是否仍有有效区域；无效时上层应跳过对应绘制。
+static bool clampRoiToImage(cv::Rect& r, const cv::Mat& img) {
+    cv::Rect bounds(0, 0, img.cols, img.rows);
+    r &= bounds;
+    return r.width > 0 && r.height > 0;
+}
+
 // 绘制 GUI 仪表盘与抽屉
 void drawGUI(cv::Mat& frame, int trackingState, int fps, const MemoryInfo& memInfo, int curLoop, int totalLoops) {
     // 1. 左上角状态仪表盘
     cv::Rect panelRect(15, 15, 300, 155);
-    cv::Mat panelOverlay(panelRect.size(), frame.type(), cv::Scalar(25, 25, 25));
-    cv::addWeighted(panelOverlay, 0.78, frame(panelRect), 0.22, 0, frame(panelRect));
+    if (clampRoiToImage(panelRect, frame)) {
+        cv::Mat panelOverlay(panelRect.size(), frame.type(), cv::Scalar(25, 25, 25));
+        cv::addWeighted(panelOverlay, 0.78, frame(panelRect), 0.22, 0, frame(panelRect));
+    }
     cv::rectangle(frame, panelRect, cv::Scalar(90, 90, 90), 1, cv::LINE_AA);
 
     std::string stateStr = "No Input";
@@ -972,8 +982,10 @@ void drawGUI(cv::Mat& frame, int trackingState, int fps, const MemoryInfo& memIn
         int tabW = 8, tabH = 96;
         int tabX = frame.cols - tabW, tabY = (frame.rows - tabH) / 2;
         cv::Rect tabRect(tabX, tabY, tabW, tabH);
-        cv::Mat tabOverlay(tabRect.size(), frame.type(), cv::Scalar(45, 45, 45));
-        cv::addWeighted(tabOverlay, 0.65, frame(tabRect), 0.35, 0, frame(tabRect));
+        if (clampRoiToImage(tabRect, frame)) {
+            cv::Mat tabOverlay(tabRect.size(), frame.type(), cv::Scalar(45, 45, 45));
+            cv::addWeighted(tabOverlay, 0.65, frame(tabRect), 0.35, 0, frame(tabRect));
+        }
         cv::rectangle(frame, tabRect, cv::Scalar(90, 90, 90), 1, cv::LINE_AA);
         for (int i = 0; i < 3; i++) {
             int ly = tabY + tabH / 2 - 7 + i * 7;
@@ -984,8 +996,10 @@ void drawGUI(cv::Mat& frame, int trackingState, int fps, const MemoryInfo& memIn
     }
 
     cv::Rect drawerRect(drawerX, 0, kDrawerWidth, frame.rows);
-    cv::Mat drawerOverlay(drawerRect.size(), frame.type(), cv::Scalar(15, 15, 15));
-    cv::addWeighted(drawerOverlay, 0.84, frame(drawerRect), 0.16, 0, frame(drawerRect));
+    if (clampRoiToImage(drawerRect, frame)) {
+        cv::Mat drawerOverlay(drawerRect.size(), frame.type(), cv::Scalar(15, 15, 15));
+        cv::addWeighted(drawerOverlay, 0.84, frame(drawerRect), 0.16, 0, frame(drawerRect));
+    }
     cv::line(frame, cv::Point(drawerX, 0), cv::Point(drawerX, frame.rows), cv::Scalar(60, 60, 60), 1, cv::LINE_AA);
 
     int currentY = 20;
@@ -1044,6 +1058,7 @@ void drawMemoryDashboard(cv::Mat& frame, const MemoryInfo& memInfo, const std::v
 
     cv::Rect panelRect(panelX, panelY, panelW, panelH);
     if (panelY < 180) return; // 避免遮挡顶部仪表盘
+    if (!clampRoiToImage(panelRect, frame)) return; // 帧过小/过窄时跳过，防止越界
 
     cv::Mat panelOverlay(panelRect.size(), frame.type(), cv::Scalar(20, 20, 25));
     cv::addWeighted(panelOverlay, 0.82, frame(panelRect), 0.18, 0, frame(panelRect));
@@ -1136,69 +1151,95 @@ void drawMemoryDashboard(cv::Mat& frame, const MemoryInfo& memInfo, const std::v
     }
 }
 
-// 评测完成时绘制综合性能评分卡模态窗口
+// 评测完成时绘制综合性能评分卡模态窗口（自适应任意分辨率）
 void drawScoreCardModal(cv::Mat& frame, const ScoreCard& card) {
-    int modalW = 520;
-    int modalH = 340;
-    int modalX = (frame.cols - modalW) / 2;
-    int modalY = (frame.rows - modalH) / 2;
+    // 设计基准尺寸（s=1.0 时模态框大小，用于 1280x720 等宽屏）
+    const float baseW = 520.0f, baseH = 340.0f;
+    const int margin = 10;
+
+    // 根据当前帧大小计算等比缩放系数：小帧自动缩小以完整显示，
+    // 大帧不放大（保持设计尺寸），避免任何分辨率下越界。
+    float s = std::min(1.0f,
+                       std::min((float)(frame.cols - 2 * margin) / baseW,
+                                (float)(frame.rows - 2 * margin) / baseH));
+    if (s <= 0.0f) return; // 帧过小无法显示
+
+    const int modalW = (int)std::lround(baseW * s);
+    const int modalH = (int)std::lround(baseH * s);
+    const int modalX = (frame.cols - modalW) / 2;
+    const int modalY = (frame.rows - modalH) / 2;
+
+    // 坐标 / 尺寸 / 字号 / 线宽统一按 s 等比缩放，保证布局在任意分辨率下完整
+    auto SX = [&](float v) { return modalX + (int)std::lround(v * s); };
+    auto SY = [&](float v) { return modalY + (int)std::lround(v * s); };
+    auto SW = [&](float v) { return (int)std::lround(v * s); };
+    auto FS = [&](float v) { return std::max(0.2f, v * s); };          // 字号（最小 0.2 保证可读）
+    auto TH = [&](float v) { return std::max(1, (int)std::lround(v * s)); }; // 线宽 / 字粗
+
+    // 背景整体压暗，突出评分卡（模态效果）
+    cv::Mat dim(frame.size(), frame.type(), cv::Scalar(0, 0, 0));
+    cv::addWeighted(dim, 0.35, frame, 0.65, 0, frame);
 
     cv::Rect modalRect(modalX, modalY, modalW, modalH);
     cv::Mat overlay(modalRect.size(), frame.type(), cv::Scalar(15, 15, 20));
     cv::addWeighted(overlay, 0.88, frame(modalRect), 0.12, 0, frame(modalRect));
-    cv::rectangle(frame, modalRect, cv::Scalar(0, 215, 255), 2, cv::LINE_AA);
+    cv::rectangle(frame, modalRect, cv::Scalar(0, 215, 255), TH(2), cv::LINE_AA);
 
-    // 标题与 Badge
-    cv::putText(frame, "SLAM BENCHMARK COMPREHENSIVE SCORECARD", cv::Point(modalX + 25, modalY + 38),
-                cv::FONT_HERSHEY_SIMPLEX, 0.52, cv::Scalar(255, 255, 255), 1, cv::LINE_AA);
-    cv::line(frame, cv::Point(modalX + 25, modalY + 48), cv::Point(modalX + modalW - 25, modalY + 48),
-             cv::Scalar(80, 80, 90), 1, cv::LINE_AA);
+    // 标题与分隔线
+    cv::putText(frame, "SLAM BENCHMARK COMPREHENSIVE SCORECARD",
+                cv::Point(SX(25), SY(38)), cv::FONT_HERSHEY_SIMPLEX, FS(0.52),
+                cv::Scalar(255, 255, 255), TH(1), cv::LINE_AA);
+    cv::line(frame, cv::Point(SX(25), SY(48)), cv::Point(SX(495), SY(48)),
+             cv::Scalar(80, 80, 90), TH(1), cv::LINE_AA);
 
-    // 左侧：总分与 Badge
+    // 左侧：总分 Badge（按等级着色）
     cv::Scalar gradeColor(0, 255, 136); // 翠绿-S+/S/A
     if (card.grade == "B") gradeColor = cv::Scalar(0, 215, 255);
     else if (card.grade == "C") gradeColor = cv::Scalar(30, 180, 230);
     else if (card.grade == "D") gradeColor = cv::Scalar(30, 30, 230);
 
-    cv::Rect badgeRect(modalX + 30, modalY + 65, 140, 120);
+    cv::Rect badgeRect(SX(30), SY(65), SW(140), SW(120));
     cv::rectangle(frame, badgeRect, cv::Scalar(30, 30, 40), -1);
-    cv::rectangle(frame, badgeRect, gradeColor, 2, cv::LINE_AA);
+    cv::rectangle(frame, badgeRect, gradeColor, TH(2), cv::LINE_AA);
 
     char scoreStr[32];
     snprintf(scoreStr, sizeof(scoreStr), "%.1f", card.overallScore);
-    cv::putText(frame, scoreStr, cv::Point(badgeRect.x + 25, badgeRect.y + 55),
-                cv::FONT_HERSHEY_SIMPLEX, 1.2, cv::Scalar(255, 255, 255), 2, cv::LINE_AA);
-    cv::putText(frame, "Grade " + card.grade, cv::Point(badgeRect.x + 32, badgeRect.y + 95),
-                cv::FONT_HERSHEY_SIMPLEX, 0.7, gradeColor, 2, cv::LINE_AA);
+    cv::putText(frame, scoreStr, cv::Point(badgeRect.x + SW(25), badgeRect.y + SW(55)),
+                cv::FONT_HERSHEY_SIMPLEX, FS(1.2), cv::Scalar(255, 255, 255), TH(2), cv::LINE_AA);
+    cv::putText(frame, "Grade " + card.grade, cv::Point(badgeRect.x + SW(32), badgeRect.y + SW(95)),
+                cv::FONT_HERSHEY_SIMPLEX, FS(0.7), gradeColor, TH(2), cv::LINE_AA);
 
     // 右侧：4 项维度分拆条形图
-    int barX = modalX + 190;
-    int barY = modalY + 75;
-    int barW = 280;
+    int barX = SX(190);
+    int barY = SY(75);
+    int barW = SW(280);
+    int barH = SW(10);
 
-    auto drawSubBar = [&](const std::string& label, double val, int yOffset) {
-        cv::putText(frame, label, cv::Point(barX, barY + yOffset), cv::FONT_HERSHEY_SIMPLEX, 0.38, cv::Scalar(220, 220, 220), 1);
+    auto drawSubBar = [&](const std::string& label, double val, int yOff) {
+        cv::putText(frame, label, cv::Point(barX, barY + yOff), cv::FONT_HERSHEY_SIMPLEX, FS(0.38),
+                    cv::Scalar(220, 220, 220), TH(1));
         char vStr[16];
         snprintf(vStr, sizeof(vStr), "%.1f", val);
-        cv::putText(frame, vStr, cv::Point(barX + barW - 35, barY + yOffset), cv::FONT_HERSHEY_SIMPLEX, 0.38, cv::Scalar(0, 220, 255), 1);
+        cv::putText(frame, vStr, cv::Point(barX + barW - SW(35), barY + yOff), cv::FONT_HERSHEY_SIMPLEX, FS(0.38),
+                    cv::Scalar(0, 220, 255), TH(1));
 
-        cv::Rect bR(barX, barY + yOffset + 6, barW, 10);
+        cv::Rect bR(barX, barY + yOff + SW(6), barW, barH);
         cv::rectangle(frame, bR, cv::Scalar(40, 40, 50), -1);
         int fillW = (int)(barW * (val / 100.0));
         if (fillW > 0) {
-            cv::rectangle(frame, cv::Rect(barX, barY + yOffset + 6, fillW, 10), cv::Scalar(0, 215, 255), -1);
+            cv::rectangle(frame, cv::Rect(barX, barY + yOff + SW(6), fillW, barH), cv::Scalar(0, 215, 255), -1);
         }
-        cv::rectangle(frame, bR, cv::Scalar(80, 80, 90), 1);
+        cv::rectangle(frame, bR, cv::Scalar(80, 80, 90), TH(1));
     };
 
     drawSubBar("Tracking Quality (40%)", card.trackingScore, 0);
-    drawSubBar("Real-Time Latency (30%)", card.latencyScore, 30);
-    drawSubBar("Map Stability (20%)", card.stabilityScore, 60);
-    drawSubBar("Memory Health (10%)", card.memoryScore, 90);
+    drawSubBar("Real-Time Latency (30%)", card.latencyScore, SW(30));
+    drawSubBar("Map Stability (20%)", card.stabilityScore, SW(60));
+    drawSubBar("Memory Health (10%)", card.memoryScore, SW(90));
 
     // 下方核心数据指标
-    cv::line(frame, cv::Point(modalX + 25, modalY + 215), cv::Point(modalX + modalW - 25, modalY + 215),
-             cv::Scalar(80, 80, 90), 1, cv::LINE_AA);
+    cv::line(frame, cv::Point(SX(25), SY(215)), cv::Point(SX(495), SY(215)),
+             cv::Scalar(80, 80, 90), TH(1), cv::LINE_AA);
 
     char line1[128], line2[128];
     snprintf(line1, sizeof(line1), "Frames: %d | OK Ratio: %.1f%% | Mean Latency: %.2f ms",
@@ -1206,13 +1247,16 @@ void drawScoreCardModal(cv::Mat& frame, const ScoreCard& card) {
     snprintf(line2, sizeof(line2), "Final Map: %d MPs, %d KFs | Peak Memory: %.1f MB",
              card.finalMPs, card.finalKFs, card.peakRssMB);
 
-    cv::putText(frame, line1, cv::Point(modalX + 30, modalY + 242), cv::FONT_HERSHEY_SIMPLEX, 0.42, cv::Scalar(220, 220, 220), 1, cv::LINE_AA);
-    cv::putText(frame, line2, cv::Point(modalX + 30, modalY + 268), cv::FONT_HERSHEY_SIMPLEX, 0.42, cv::Scalar(220, 220, 220), 1, cv::LINE_AA);
+    cv::putText(frame, line1, cv::Point(SX(30), SY(242)), cv::FONT_HERSHEY_SIMPLEX, FS(0.42),
+                cv::Scalar(220, 220, 220), TH(1), cv::LINE_AA);
+    cv::putText(frame, line2, cv::Point(SX(30), SY(268)), cv::FONT_HERSHEY_SIMPLEX, FS(0.42),
+                cv::Scalar(220, 220, 220), TH(1), cv::LINE_AA);
 
     // 底部操作提示
-    cv::rectangle(frame, cv::Rect(modalX + 20, modalY + modalH - 45, modalW - 40, 30), cv::Scalar(35, 35, 45), -1);
+    cv::rectangle(frame, cv::Rect(SX(20), SY(295), SW(480), SW(30)), cv::Scalar(35, 35, 45), -1);
     cv::putText(frame, "Press 'ESC' / 'q' to exit or click 'Restart Benchmark' in drawer",
-                cv::Point(modalX + 45, modalY + modalH - 25), cv::FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(0, 255, 255), 1, cv::LINE_AA);
+                cv::Point(SX(45), SY(315)), cv::FONT_HERSHEY_SIMPLEX, FS(0.4),
+                cv::Scalar(0, 255, 255), TH(1), cv::LINE_AA);
 }
 
 // 鼠标响应
