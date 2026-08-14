@@ -103,7 +103,7 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 | Snapdragon 870 | 小米 10S | 30 FPS |
 | Snapdragon 7s Gen 2 | Redmi Pad Pro | 30 FPS |
 | Snapdragon 835 | 小米 6 | 15–30 FPS |
-| Snapdragon AR1 Gen 1 | Rokid Glasses | 10–25 FPS |
+| Snapdragon AR1 Gen 1 | Rokid Glass3 | 10–25 FPS |
 
 ### 🌑 暗帧检测
 
