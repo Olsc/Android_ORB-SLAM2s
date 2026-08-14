@@ -547,8 +547,8 @@ void ORBextractor::InitLUT() {
 
             // 预计算旋转后的坐标偏移
             // 原始公式: x' = x*a - y*b, y' = x*b + y*a
-            descriptorOffsetLUT[angle][i].dy = (int)(x * b + y * a + 0.5f);
-            descriptorOffsetLUT[angle][i].dx = (int)(x * a - y * b + 0.5f);
+            descriptorOffsetLUT[angle][i].dy = cvRound(x * b + y * a);
+            descriptorOffsetLUT[angle][i].dx = cvRound(x * a - y * b);
         }
     }
 
@@ -1224,7 +1224,11 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
             for (int k = -3; k <= 3; ++k) {
                 int rowIdx = std::abs(r + k);
                 if (rowIdx >= rows) rowIdx = 2 * rows - 1 - rowIdx;
-                val += tempBuf[rowIdx * cols + c] * ((k == 0) ? 54 : ((std::abs(k) == 1) ? 49 : ((std::abs(k) == 2) ? 34 : 18)));
+                const int absK = std::abs(k);
+                val += (absK == 0) ? mul54(tempBuf[rowIdx * cols + c])
+                                   : ((absK == 1) ? mul49(tempBuf[rowIdx * cols + c])
+                                                  : ((absK == 2) ? mul34(tempBuf[rowIdx * cols + c])
+                                                                 : mul18(tempBuf[rowIdx * cols + c])));
             }
             int pix = (val + 128) >> 8;
             dstRow[c] = (uchar)(pix > 255 ? 255 : (pix < 0 ? 0 : pix));
@@ -1238,7 +1242,11 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
                 int rowIdx = r + k;
                 if (rowIdx >= rows) rowIdx = 2 * (rows - 1) - rowIdx;
                 if (rowIdx < 0) rowIdx = -rowIdx;
-                val += tempBuf[rowIdx * cols + c] * ((k == 0) ? 54 : ((std::abs(k) == 1) ? 49 : ((std::abs(k) == 2) ? 34 : 18)));
+                const int absK = std::abs(k);
+                val += (absK == 0) ? mul54(tempBuf[rowIdx * cols + c])
+                                   : ((absK == 1) ? mul49(tempBuf[rowIdx * cols + c])
+                                                  : ((absK == 2) ? mul34(tempBuf[rowIdx * cols + c])
+                                                                 : mul18(tempBuf[rowIdx * cols + c])));
             }
             int pix = (val + 128) >> 8;
             dstRow[c] = (uchar)(pix > 255 ? 255 : (pix < 0 ? 0 : pix));

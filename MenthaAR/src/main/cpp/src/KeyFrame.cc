@@ -100,8 +100,6 @@ void KeyFrame::SetPose(const cv::Mat &Tcw_)
     Twc = cv::Mat::eye(4,4,Tcw.type());
     Rwc.copyTo(Twc.rowRange(0,3).colRange(0,3));
     Ow.copyTo(Twc.rowRange(0,3).col(3));
-
-    Ow.copyTo(Twc.rowRange(0,3).col(3));
 }
 
 cv::Mat KeyFrame::GetPose()
@@ -140,6 +138,39 @@ cv::Mat KeyFrame::GetTranslation()
 {
     std::unique_lock<std::mutex> lock(mMutexPose);
     return Tcw.rowRange(0,3).col(3).clone();
+}
+
+// 栈版零拷贝读取
+void KeyFrame::GetPose(float out[16])
+{
+    std::unique_lock<std::mutex> lock(mMutexPose);
+    for(int r=0; r<4; ++r)
+        for(int c=0; c<4; ++c)
+            out[r*4+c] = Tcw.at<float>(r,c);
+}
+
+void KeyFrame::GetPoseInverse(float out[16])
+{
+    std::unique_lock<std::mutex> lock(mMutexPose);
+    for(int r=0; r<4; ++r)
+        for(int c=0; c<4; ++c)
+            out[r*4+c] = Twc.at<float>(r,c);
+}
+
+void KeyFrame::GetRotation(float out[9])
+{
+    std::unique_lock<std::mutex> lock(mMutexPose);
+    for(int r=0; r<3; ++r)
+        for(int c=0; c<3; ++c)
+            out[r*3+c] = Tcw.at<float>(r,c);
+}
+
+void KeyFrame::GetTranslation(float out[3])
+{
+    std::unique_lock<std::mutex> lock(mMutexPose);
+    out[0] = Tcw.at<float>(0,3);
+    out[1] = Tcw.at<float>(1,3);
+    out[2] = Tcw.at<float>(2,3);
 }
 
 void KeyFrame::AddConnection(KeyFrame *pKF, const int &weight)
@@ -585,10 +616,19 @@ void KeyFrame::SetBadFlag()
         pParentCopy->EraseChild(this);
     }
 
+    cv::Mat TcwCopy;
+    {
+        unique_lock<mutex> lockPose(mMutexPose);
+        TcwCopy = Tcw.clone();
+    }
+    cv::Mat Tcp;
+    if(pParentCopy)
+        Tcp = TcwCopy * pParentCopy->GetPoseInverse();
+
     {
         unique_lock<mutex> lock(mMutexConnections);
         if(pParentCopy)
-            mTcp = Tcw * pParentCopy->GetPoseInverse();
+            mTcp = Tcp;
         mbBad = true;
     }
 
@@ -621,7 +661,7 @@ void KeyFrame::EraseConnection(KeyFrame* pKF)
 std::vector<size_t> KeyFrame::GetFeaturesInArea(const float &x, const float &y, const float &r) const
 {
     std::vector<size_t> vIndices;
-    vIndices.reserve(N);
+    vIndices.reserve(16);
 
     const int nMinCellX = max(0,(int)floor((x-mnMinX-r)*mfGridElementWidthInv));
     if(nMinCellX>=mnGridCols)
@@ -639,12 +679,14 @@ std::vector<size_t> KeyFrame::GetFeaturesInArea(const float &x, const float &y, 
     if(nMaxCellY<0)
         return vIndices;
 
+    // 提升到循环外
+    const float rSq = r*r;
+
     for(int ix = nMinCellX; ix<=nMaxCellX; ix++)
     {
         for(int iy = nMinCellY; iy<=nMaxCellY; iy++)
         {
             const std::vector<size_t>& vCell = mGrid[ix][iy];
-            const float rSq = r*r;
             for(size_t j=0, jend=vCell.size(); j<jend; j++)
             {
                 const cv::KeyPoint &kpUn = mvKeysUn[vCell[j]];
@@ -691,14 +733,19 @@ float KeyFrame::ComputeSceneMedianDepth(const int q)
     vDepths.reserve(N);
     cv::Mat Rcw2 = Tcw_.row(2).colRange(0,3);
     Rcw2 = Rcw2.t();
+    const float r20 = Rcw2.at<float>(0);
+    const float r21 = Rcw2.at<float>(1);
+    const float r22 = Rcw2.at<float>(2);
     float zcw = Tcw_.at<float>(2,3);
     for(int i=0; i<N; i++)
     {
         if(vpMapPoints[i])
         {
             MapPoint* pMP = vpMapPoints[i];
-            cv::Mat x3Dw = pMP->GetWorldPos();
-            float z = Rcw2.dot(x3Dw)+zcw;
+            // 栈版读取
+            cv::Point3f x3Dw;
+            pMP->GetWorldPos(x3Dw);
+            const float z = r20*x3Dw.x + r21*x3Dw.y + r22*x3Dw.z + zcw;
             vDepths.push_back(z);
         }
     }

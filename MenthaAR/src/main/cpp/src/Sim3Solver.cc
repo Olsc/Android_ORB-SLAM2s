@@ -43,8 +43,6 @@
 #include "ORBmatcher.h"
 #include "Config.h"
 
-#include "Thirdparty/DBoW2/DUtils/Random.h"
-
 namespace ORB_SLAM2
 {
 
@@ -179,7 +177,7 @@ cv::Mat Sim3Solver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInli
         // 获取最小点集
         for(short i = 0; i < SIM3_RANSAC_MIN_SET; ++i)
         {
-            int randi = rand() % vAvailableIndices.size();
+            int randi = mLcg.randomInt(0, (int)vAvailableIndices.size() - 1);
 
             int idx = vAvailableIndices[randi];
 

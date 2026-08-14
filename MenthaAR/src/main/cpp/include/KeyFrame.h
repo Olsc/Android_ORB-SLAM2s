@@ -67,6 +67,12 @@ public:
     cv::Mat GetRotation();
     cv::Mat GetTranslation();
 
+    // 栈版零拷贝读取
+    void GetPose(float out[16]);          // 4x4 行优先
+    void GetPoseInverse(float out[16]);   // 4x4 行优先
+    void GetRotation(float out[9]);       // 3x3 行优先
+    void GetTranslation(float out[3]);
+
     // 共视图函数
     void AddConnection(KeyFrame* pKF, const int &weight);
     void EraseConnection(KeyFrame* pKF);

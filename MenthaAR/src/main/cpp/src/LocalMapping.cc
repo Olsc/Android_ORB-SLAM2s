@@ -287,13 +287,22 @@ void LocalMapping::CreateNewMapPoints()
 
     ORBmatcher matcher(ORB_MATCHER_NNRATIO_TRIANGULATION,false);
 
-    cv::Mat Rcw1 = mpCurrentKeyFrame->GetRotation();
-    cv::Mat Rwc1 = Rcw1.t();
-    cv::Mat tcw1 = mpCurrentKeyFrame->GetTranslation();
+    // 栈版读取位姿
+    float Rcw1f[9], tcw1f[3];
+    mpCurrentKeyFrame->GetRotation(Rcw1f);
+    mpCurrentKeyFrame->GetTranslation(tcw1f);
+    cv::Point3f Ow1;
+    mpCurrentKeyFrame->GetCameraCenter(Ow1);
+
+    cv::Mat Rwc1(3,3,CV_32F);  // Rwc1 = Rcw1^T
     cv::Mat Tcw1(3,4,CV_32F);
-    Rcw1.copyTo(Tcw1.colRange(0,3));
-    tcw1.copyTo(Tcw1.col(3));
-    cv::Mat Ow1 = mpCurrentKeyFrame->GetCameraCenter();
+    for(int r=0; r<3; ++r) {
+        for(int c=0; c<3; ++c) {
+            Tcw1.at<float>(r,c) = Rcw1f[r*3+c];
+            Rwc1.at<float>(r,c) = Rcw1f[c*3+r];
+        }
+        Tcw1.at<float>(r,3) = tcw1f[r];
+    }
 
     const float &fx1 = mpCurrentKeyFrame->fx;
     const float &fy1 = mpCurrentKeyFrame->fy;
@@ -314,10 +323,13 @@ void LocalMapping::CreateNewMapPoints()
 
         KeyFrame* pKF2 = vpNeighKFs[i];
 
-        // 首先检查基线是否太短
-        cv::Mat Ow2 = pKF2->GetCameraCenter();
-        cv::Mat vBaseline = Ow2-Ow1;
-        const float baseline = cv::norm(vBaseline);
+        // 首先检查基线是否太短（栈版相机中心，标量基线）
+        cv::Point3f Ow2;
+        pKF2->GetCameraCenter(Ow2);
+        const float bx = Ow2.x - Ow1.x;
+        const float by = Ow2.y - Ow1.y;
+        const float bz = Ow2.z - Ow1.z;
+        const float baseline = std::sqrt(bx*bx + by*by + bz*bz);
 
         {
             const float medianDepthKF2 = pKF2->ComputeSceneMedianDepth(TRIANGULATION_DEPTH_PERCENTILE);
@@ -334,12 +346,19 @@ void LocalMapping::CreateNewMapPoints()
         vector<pair<size_t,size_t> > vMatchedIndices;
         matcher.SearchForTriangulation(mpCurrentKeyFrame,pKF2,F12,vMatchedIndices,false);
 
-        cv::Mat Rcw2 = pKF2->GetRotation();
-        cv::Mat Rwc2 = Rcw2.t();
-        cv::Mat tcw2 = pKF2->GetTranslation();
+        float Rcw2f[9], tcw2f[3];
+        pKF2->GetRotation(Rcw2f);
+        pKF2->GetTranslation(tcw2f);
+
+        cv::Mat Rwc2(3,3,CV_32F);  // Rwc2 = Rcw2^T
         cv::Mat Tcw2(3,4,CV_32F);
-        Rcw2.copyTo(Tcw2.colRange(0,3));
-        tcw2.copyTo(Tcw2.col(3));
+        for(int r=0; r<3; ++r) {
+            for(int c=0; c<3; ++c) {
+                Tcw2.at<float>(r,c) = Rcw2f[r*3+c];
+                Rwc2.at<float>(r,c) = Rcw2f[c*3+r];
+            }
+            Tcw2.at<float>(r,3) = tcw2f[r];
+        }
 
         const float &fx2 = pKF2->fx;
         const float &fy2 = pKF2->fy;
@@ -403,21 +422,22 @@ void LocalMapping::CreateNewMapPoints()
             else
                 continue; // 没有双目信息且视差非常小
 
-            cv::Mat x3Dt = x3D.t();
-
-            // 检查三角化点是否在相机前方
-            float z1 = Rcw1.row(2).dot(x3Dt)+tcw1.at<float>(2);
+            // 检查三角化点是否在相机前方（标量；Rcw1f/tcw1f 为栈版位姿）
+            const float x3Dx = x3D.at<float>(0);
+            const float x3Dy = x3D.at<float>(1);
+            const float x3Dz = x3D.at<float>(2);
+            float z1 = Rcw1f[6]*x3Dx + Rcw1f[7]*x3Dy + Rcw1f[8]*x3Dz + tcw1f[2];
             if(z1<=0)
                 continue;
 
-            float z2 = Rcw2.row(2).dot(x3Dt)+tcw2.at<float>(2);
+            float z2 = Rcw2f[6]*x3Dx + Rcw2f[7]*x3Dy + Rcw2f[8]*x3Dz + tcw2f[2];
             if(z2<=0)
                 continue;
 
             // 检查第一个关键帧中的重投影误差（交叉相乘消除 1.0/z1 浮点除法，100% 数学等价）
             const float &sigmaSquare1 = mpCurrentKeyFrame->mvLevelSigma2[kp1.octave];
-            const float x1 = Rcw1.row(0).dot(x3Dt)+tcw1.at<float>(0);
-            const float y1 = Rcw1.row(1).dot(x3Dt)+tcw1.at<float>(1);
+            const float x1 = Rcw1f[0]*x3Dx + Rcw1f[1]*x3Dy + Rcw1f[2]*x3Dz + tcw1f[0];
+            const float y1 = Rcw1f[3]*x3Dx + Rcw1f[4]*x3Dy + Rcw1f[5]*x3Dz + tcw1f[1];
 
             {
                 float dx1 = fx1*x1 + (cx1 - kp1.pt.x)*z1;
@@ -428,8 +448,8 @@ void LocalMapping::CreateNewMapPoints()
 
             // 检查第二个关键帧中的重投影误差（交叉相乘消除 1.0/z2 浮点除法，100% 数学等价）
             const float sigmaSquare2 = pKF2->mvLevelSigma2[kp2.octave];
-            const float x2 = Rcw2.row(0).dot(x3Dt)+tcw2.at<float>(0);
-            const float y2 = Rcw2.row(1).dot(x3Dt)+tcw2.at<float>(1);
+            const float x2 = Rcw2f[0]*x3Dx + Rcw2f[1]*x3Dy + Rcw2f[2]*x3Dz + tcw2f[0];
+            const float y2 = Rcw2f[3]*x3Dx + Rcw2f[4]*x3Dy + Rcw2f[5]*x3Dz + tcw2f[1];
             {
                 float dx2 = fx2*x2 + (cx2 - kp2.pt.x)*z2;
                 float dy2 = fy2*y2 + (cy2 - kp2.pt.y)*z2;
@@ -439,10 +459,8 @@ void LocalMapping::CreateNewMapPoints()
 
             // 检查尺度一致性
             // 使用平方距离进行快速零值检查，避免不必要的sqrt
-            cv::Mat normal1 = x3D-Ow1;
-            cv::Mat normal2 = x3D-Ow2;
-            const float n1x = normal1.at<float>(0), n1y = normal1.at<float>(1), n1z = normal1.at<float>(2);
-            const float n2x = normal2.at<float>(0), n2y = normal2.at<float>(1), n2z = normal2.at<float>(2);
+            const float n1x = x3Dx - Ow1.x, n1y = x3Dy - Ow1.y, n1z = x3Dz - Ow1.z;
+            const float n2x = x3Dx - Ow2.x, n2y = x3Dy - Ow2.y, n2z = x3Dz - Ow2.z;
             const float dist1Sq = n1x*n1x + n1y*n1y + n1z*n1z;
             const float dist2Sq = n2x*n2x + n2y*n2y + n2z*n2z;
 
@@ -561,10 +579,23 @@ void LocalMapping::SearchInNeighbors()
 
 cv::Mat LocalMapping::ComputeF12(KeyFrame *&pKF1, KeyFrame *&pKF2)
 {
-    cv::Mat R1w = pKF1->GetRotation();
-    cv::Mat t1w = pKF1->GetTranslation();
-    cv::Mat R2w = pKF2->GetRotation();
-    cv::Mat t2w = pKF2->GetTranslation();
+    // 栈版读取位姿（锁内拷贝，替代 4 次 clone）
+    float R1f[9], R2f[9], t1f[3], t2f[3];
+    pKF1->GetRotation(R1f);
+    pKF1->GetTranslation(t1f);
+    pKF2->GetRotation(R2f);
+    pKF2->GetTranslation(t2f);
+
+    cv::Mat R1w(3,3,CV_32F), R2w(3,3,CV_32F);
+    cv::Mat t1w(3,1,CV_32F), t2w(3,1,CV_32F);
+    for(int r=0; r<3; ++r) {
+        for(int c=0; c<3; ++c) {
+            R1w.at<float>(r,c) = R1f[r*3+c];
+            R2w.at<float>(r,c) = R2f[r*3+c];
+        }
+        t1w.at<float>(r) = t1f[r];
+        t2w.at<float>(r) = t2f[r];
+    }
 
     cv::Mat R12 = R1w*R2w.t();
     cv::Mat t12 = -R1w*R2w.t()*t2w+t1w;
@@ -633,16 +664,6 @@ void LocalMapping::Release()
         return;
     mbStopped.store(false);
     mbStopRequested.store(false);
-    list<KeyFrame*> lKFs;
-    {
-        unique_lock<mutex> lock3(mMutexNewKFs);
-        lKFs.swap(mlNewKeyFrames);
-    }
-    for(list<KeyFrame*>::iterator lit = lKFs.begin(), lend=lKFs.end(); lit!=lend; lit++)
-    {
-        if(*lit)
-            (*lit)->SetBadFlag();
-    }
     // 通知 Stopped 循环退出等待（mCvEvent.wait 在 mMutexStop 下阻塞时，
     // notify 在 mMutexStop/mMutexFinish 释放后发送，确保数据可见性）
     mCvEvent.notify_one();

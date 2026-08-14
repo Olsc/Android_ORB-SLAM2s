@@ -105,9 +105,15 @@ void Plane::Recompute()
 
         if (!pMP->isBad())
         {
-            cv::Mat Xw = pMP->GetWorldPos();
-            o += Xw;  // 累加坐标（后续计算质心）
-            A.row(nPoints).colRange(0, 3) = Xw.t();
+            // 栈版读取
+            cv::Point3f Xw;
+            pMP->GetWorldPos(Xw);
+            o.at<float>(0) += Xw.x;  // 累加坐标（后续计算质心）
+            o.at<float>(1) += Xw.y;
+            o.at<float>(2) += Xw.z;
+            A.at<float>(nPoints,0) = Xw.x;
+            A.at<float>(nPoints,1) = Xw.y;
+            A.at<float>(nPoints,2) = Xw.z;
             nPoints++;
         }
     }

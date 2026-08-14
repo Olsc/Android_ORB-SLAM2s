@@ -251,8 +251,8 @@ void ORB_SLAM2::Tracking::BindLoadedMapPointsUsingSnapshots()
     std::vector<int> gridCandidates;
     bool useGrid = false;
     if(mRefGrid.nCols > 0) {
-         cv::Mat OwM = mCurrentFrame.GetCameraCenter();
-         cv::Point3f Ow(OwM.at<float>(0), OwM.at<float>(1), OwM.at<float>(2));
+         cv::Point3f Ow;
+         mCurrentFrame.GetCameraCenter(Ow);   // 栈版
          mRefGrid.GetCandidatesInBBox(Ow, TRACKING_GRID_SEARCH_RADIUS, gridCandidates); // 40m radius
          useGrid = true;
     }
@@ -307,13 +307,22 @@ void ORB_SLAM2::Tracking::BindLoadedMapPointsUsingSnapshots()
         }
     }
 
-    // 按投影误差排序，优先绑定质量好的匹配
-    std::sort(candidates.begin(), candidates.end(), 
-              [](const BindCandidate &a, const BindCandidate &b){ 
-                  return a.projErr < b.projErr; 
+    // 按投影误差取前 nMaxBind 个最佳候选（nth_element 替代全排序，O(k) 期望），
+    // 再对幸存子集排序以保持与原先一致的绑定顺序（去重冲突时仍优先误差小者）
+    if(candidates.size() > (size_t)nMaxBind)
+    {
+        std::nth_element(candidates.begin(), candidates.begin() + nMaxBind, candidates.end(),
+                         [](const BindCandidate &a, const BindCandidate &b){
+                             return a.projErr < b.projErr;
+                         });
+        candidates.resize(nMaxBind);
+    }
+    std::sort(candidates.begin(), candidates.end(),
+              [](const BindCandidate &a, const BindCandidate &b){
+                  return a.projErr < b.projErr;
               });
 
-    // 绑定前nMaxBind个最佳匹配，去重确保一个特征点只绑定一次
+    // 绑定候选（已按误差保证前 nMaxBind 为最优；去重确保一个特征点只绑定一次）
     std::vector<bool> frameUsed(mCurrentFrame.N, false);
     for(const auto &c : candidates){
         if(projBinds >= nMaxBind) break;
@@ -368,8 +377,8 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
     for(MapPoint* p : allMPs) {
         if(!p || p->isBad()) continue;
         if(hasLoaded && !p->mbFromLoadedMap) continue;
-        cv::Mat d = p->GetDescriptor();
-        if(d.empty()) continue;
+        uint8_t dbuf[ORB_DESC_COLS];
+        if(!p->GetDescriptor(dbuf)) continue;
         validCount++;
         if(validCount >= TRACKING_REF_CACHE_LIMIT) break;  // 限制最大数量
     }
@@ -384,13 +393,13 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
         // 先假设 descriptor（特征描述子）的列数是 32，之后再通过实际数据去确认
         int descCols = ORB_DESC_COLS;
 
-        // 先获取第一个有效描述子来确定维度
+        // 先获取第一个有效描述子来确定维度（ORB 描述子恒为 32 列）
         for(MapPoint* p : allMPs) {
             if(!p || p->isBad()) continue;
             if(hasLoaded && !p->mbFromLoadedMap) continue;
-            cv::Mat d = p->GetDescriptor();
-            if(!d.empty()) {
-                descCols = d.cols;
+            uint8_t dbuf[ORB_DESC_COLS];
+            if(p->GetDescriptor(dbuf)) {
+                descCols = ORB_DESC_COLS;
                 break;
             }
         }
@@ -412,14 +421,14 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
 
         // 加载的地图点在导入后通常没有关键帧观测，这里不再以 Observations 过滤
 
-        // 复制描述子（只读）
-        cv::Mat d = p->GetDescriptor();
-        if(d.empty()) continue;
+        // 复制描述子
+        uint8_t dbuf[ORB_DESC_COLS];
+        if(!p->GetDescriptor(dbuf)) continue;
         withDesc++;
 
         // 直接写入预分配的矩阵,避免push_back的拷贝
         if(rowIdx < newRefDesc.rows) {
-            d.copyTo(newRefDesc.row(rowIdx));
+            memcpy(newRefDesc.ptr<uint8_t>(rowIdx), dbuf, ORB_DESC_COLS);
         }
 
         newRefIdxToMP.push_back(p);
@@ -477,6 +486,16 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
     mSnapSeqProduced++;
     mCvReloc.notify_all();
     mRefBuilding.store(false);
+}
+
+void ORB_SLAM2::Tracking::InvalidateRefCache()
+{
+    {
+        std::unique_lock<std::mutex> lk(mMutexReloc);
+        mRefCacheDirty.store(true);
+    }
+    // 唤醒后台重定位线程（其等待谓词包含 mRefCacheDirty）
+    mCvReloc.notify_all();
 }
 
 void ORB_SLAM2::Tracking::PublishRelocAlignment(const cv::Mat &TmapFromSlam, int inliers, float conf, double ts, int mapId)
@@ -653,13 +672,14 @@ void Tracking::GlobalRelocLoop(int sessionId)
         std::vector<int> valToRef;
         std::shared_ptr<HBSTTree> pTree;
 
-        // 1. 确定性事件等待：有新帧快照或停止信号时被唤醒，绝无任何 sleep 猜测
+        // 1. 确定性事件等待：有新帧快照、缓存失效请求或停止信号时被唤醒，绝无任何 sleep 猜测
         {
             std::unique_lock<std::mutex> lk(mMutexReloc);
             mCvReloc.wait(lk, [this, sessionId]{
                 return mbRelocThreadStop || 
                        mRelocThreadSessionId.load() != sessionId || 
-                       mSnapSeqProduced != mSnapSeqConsumed; 
+                       mSnapSeqProduced != mSnapSeqConsumed ||
+                       mRefCacheDirty.load();
             });
 
             if(mbRelocThreadStop || mRelocThreadSessionId.load() != sessionId) 
@@ -670,6 +690,8 @@ void Tracking::GlobalRelocLoop(int sessionId)
 
             // 状态检查：系统未初始化或地图无点时跳过，等待下一次快照事件
             if(mState == NO_IMAGES_YET || mState == NOT_INITIALIZED || mpMap->MapPointsInMap() == 0) {
+                // 即使地图无点，也先消费缓存失效请求（避免标志残留）
+                mRefCacheDirty.store(false);
                 continue;
             }
 
@@ -680,8 +702,9 @@ void Tracking::GlobalRelocLoop(int sessionId)
             ts = mLastTimestamp;
             if(!mLastTcwSlam.empty()) TcwSlam = mLastTcwSlam.clone();
 
-            // 若尚未构建参考缓存，且地图存在点，解锁后精准构建
-            if(mRefDesc.empty() || mRefDesc.rows != (int)mRefSnapshots.size()) {
+            // 若缓存被主线程标记失效（跟踪丢失/加载地图/重置），或尚未构建，
+            // 在后台线程构建——避免主线程同步构建造成掉帧。
+            if(mRefCacheDirty.exchange(false) || mRefDesc.empty() || mRefDesc.rows != (int)mRefSnapshots.size()) {
                 lk.unlock();
                 BuildLoadedRefCache();
                 lk.lock();
@@ -1159,8 +1182,8 @@ void Tracking::Track()
         }
         else {
             if(mState == OK) {
-                LOGD("跟踪丢失！立即构建参考缓存以进行快速重定位。");
-                BuildLoadedRefCache();
+                LOGD("跟踪丢失！标记参考缓存失效，由后台线程异步重建以快速重定位。");
+                InvalidateRefCache();  // 避免主线程同步构建造成掉帧
             }
             mState=LOST;
         }
@@ -1175,8 +1198,15 @@ void Tracking::Track()
             if(!mLastFrame.mTcw.empty())
             {
                 cv::Mat LastTwc = cv::Mat::eye(4,4,CV_32F);
-                mLastFrame.GetRotationInverse().copyTo(LastTwc.rowRange(0,3).colRange(0,3));
-                mLastFrame.GetCameraCenter().copyTo(LastTwc.rowRange(0,3).col(3));
+                // 栈版读取
+                float Rwc[9];
+                mLastFrame.GetRotationInverse(Rwc);
+                cv::Point3f Ow;
+                mLastFrame.GetCameraCenter(Ow);
+                LastTwc.at<float>(0,0)=Rwc[0]; LastTwc.at<float>(0,1)=Rwc[1]; LastTwc.at<float>(0,2)=Rwc[2];
+                LastTwc.at<float>(1,0)=Rwc[3]; LastTwc.at<float>(1,1)=Rwc[4]; LastTwc.at<float>(1,2)=Rwc[5];
+                LastTwc.at<float>(2,0)=Rwc[6]; LastTwc.at<float>(2,1)=Rwc[7]; LastTwc.at<float>(2,2)=Rwc[8];
+                LastTwc.at<float>(0,3)=Ow.x;   LastTwc.at<float>(1,3)=Ow.y;   LastTwc.at<float>(2,3)=Ow.z;
                 mVelocity = mCurrentFrame.mTcw*LastTwc;
             }
             else
@@ -1299,7 +1329,12 @@ void Tracking::Track()
             else
             {
                 try {
-                    cv::Mat Tcr = mCurrentFrame.mTcw*pRefKF->GetPoseInverse();
+                    // 栈版读取逆位姿（锁内拷贝，替代 GetPoseInverse() clone）
+                    float pw[16];
+                    pRefKF->GetPoseInverse(pw);
+                    cv::Mat Pw(4,4,CV_32F);
+                    memcpy(Pw.data, pw, 16*sizeof(float));
+                    cv::Mat Tcr = mCurrentFrame.mTcw*Pw;
                     mlRelativeFramePoses.push_back(Tcr);
                     mlpReferences.push_back(mpReferenceKF);
                 } catch (...) {
@@ -1515,7 +1550,12 @@ void Tracking::CreateInitialMapMonocular()
         if(vpAllMapPoints[iMP])
         {
             MapPoint* pMP = vpAllMapPoints[iMP];
-            pMP->SetWorldPos(pMP->GetWorldPos()*invMedianDepth);
+            // 栈版读取
+            cv::Point3f p3w;
+            pMP->GetWorldPos(p3w);
+            pMP->SetWorldPos((cv::Mat_<float>(3,1) << p3w.x*invMedianDepth,
+                                                       p3w.y*invMedianDepth,
+                                                       p3w.z*invMedianDepth));
             pMP->UpdateNormalAndDepth();
         }
     }
@@ -1629,14 +1669,17 @@ void Tracking::UpdateLastFrame()
         return;
     }
 
-    cv::Mat T_ref_pose;
+    // 栈版读取位姿
+    float poseF[16];
     {
         std::unique_lock<std::mutex> lock(mpMap->mMutexMapUpdate);
         if(pRef->isBad()) {
             return;
         }
-        T_ref_pose = pRef->GetPose();
+        pRef->GetPose(poseF);
     }
+    cv::Mat T_ref_pose(4,4,CV_32F);
+    memcpy(T_ref_pose.data, poseF, 16*sizeof(float));
 
     mLastFrame.SetPose(Tlr * T_ref_pose);
 
@@ -1911,13 +1954,6 @@ bool Tracking::TrackLocalMap()
                 //     res.inliers, res.confidence, minInliers, minConfidence);
                 // 不清除已有对齐状态，但拒绝新的低质量对齐
             }
-        }
-    }
-    // 如果我们有稳定的地图对齐，轻轻融合它以减少漂移并提供稳定的地图位姿
-    if(mbHaveMapAlign && !mCurrentFrame.mTcw.empty()){
-        std::unique_lock<std::mutex> lk(mMutexReloc);
-        if(!mT_map_from_slam.empty()){
-            cv::Mat Tcw_map = mT_map_from_slam * mCurrentFrame.mTcw;
         }
     }
     // 利用快照进行快速绑定，避免只匹配一帧后就中断
@@ -2866,8 +2902,9 @@ void Tracking::Reset()
         ClearMapAlignment();
         // 有已加载地图时无需等待冷却，重置后立即可基于已加载点重定位
         mRelocCooldownFrames = 0;
-        BuildLoadedRefCache(); // 完整重建（此时 mbRelocThreadStop=false，不会被截断）
-        LOGD("跟踪::重置: 已重建已加载地图缓存（%d 个点），冷却取消，重置后立即可重定位",
+        // 由后台重定位线程异步重建（其等待谓词包含 mRefCacheDirty，会立即唤醒）
+        InvalidateRefCache();
+        LOGD("跟踪::重置: 已标记重建已加载地图缓存（%d 个点），冷却取消，重置后立即可重定位",
              (int)savedLoadedMPs.size());
     }
 }
@@ -2946,11 +2983,10 @@ void Tracking::ClearTrackingState()
         mRefLastBuildTs = 0.0;
     }
 
-    // 如果地图点还在，立即重建重定位缓存
-    // 这样Reset后可以立即使用地图数据进行重定位，不会出现"读取的需要匹配的地图数据也被清了"的问题
+    // 如果地图点还在，标记重建重定位缓存（由后台线程异步执行）
     if(mpMap && mpMap->MapPointsInMap() > 0) {
-        LOGD("清除跟踪状态: 重建缓存");
-        BuildLoadedRefCache();  // 立即重建缓存
+        LOGD("清除跟踪状态: 标记重建缓存");
+        InvalidateRefCache();
     }
 
     // 清空重定位缓冲区

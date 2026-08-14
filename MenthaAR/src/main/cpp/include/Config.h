@@ -492,8 +492,8 @@ const int RELOC_MAX_CANDIDATES_HARD_CAP = 10000;
 // 加载地图空间网格单元尺寸（米）
 const float LOADED_MAP_GRID_CELL_SIZE = 10.0f;
 
-// 网格单元格数硬上限（防内存爆炸）
-const long long GRID_CELLS_HARD_CAP = 10000000LL;
+// 网格单元格数硬上限（防内存爆炸）。
+const long long GRID_CELLS_HARD_CAP = 1000000LL;
 
 // 网格每维度最大格数（超限时按此缩小单元尺寸）
 const int GRID_MAX_DIM_CELLS = 100;

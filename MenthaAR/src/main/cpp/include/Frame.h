@@ -78,9 +78,23 @@ public:
         return mOw.clone();
     }
 
+    // 栈版
+    inline void GetCameraCenter(cv::Point3f& out) const {
+        out.x = mOw.at<float>(0);
+        out.y = mOw.at<float>(1);
+        out.z = mOw.at<float>(2);
+    }
+
     // 返回旋转的逆
     inline cv::Mat GetRotationInverse(){
         return mRwc.clone();
+    }
+
+    // 栈版零拷贝读取旋转逆矩阵（行优先 3x3）
+    inline void GetRotationInverse(float out[9]) const {
+        out[0]=mRwc.at<float>(0,0); out[1]=mRwc.at<float>(0,1); out[2]=mRwc.at<float>(0,2);
+        out[3]=mRwc.at<float>(1,0); out[4]=mRwc.at<float>(1,1); out[5]=mRwc.at<float>(1,2);
+        out[6]=mRwc.at<float>(2,0); out[7]=mRwc.at<float>(2,1); out[8]=mRwc.at<float>(2,2);
     }
 
     // 检查地图点是否在相机的视锥体内

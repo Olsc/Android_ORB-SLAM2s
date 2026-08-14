@@ -66,20 +66,24 @@ void KeyFrameDatabase::add(KeyFrame *pKF)
 
 void KeyFrameDatabase::erase(KeyFrame* pKF)
 {
-    bool bNeedRebuild = false;
     {
         unique_lock<mutex> lock(mMutex);
         if (mhmKeyFrames.erase(pKF->mnId) > 0) {
             mnErasedCount++;
-            // 当删除数量达到设定的阈值时，触发树重建，彻底清理残留特征点
             if (mnErasedCount >= KFD_REBUILD_ERASE_TH) {
-                bNeedRebuild = true;
                 mnErasedCount = 0;
+                mbRebuildPending.store(true, std::memory_order_release);
             }
         }
     }
-    if (bNeedRebuild) {
-        rebuild();
+}
+
+void KeyFrameDatabase::RebuildIfPending()
+{
+    if (mbRebuildPending.load(std::memory_order_acquire)) {
+        if (mbRebuildPending.exchange(false, std::memory_order_acq_rel)) {
+            rebuild();
+        }
     }
 }
 
@@ -89,6 +93,7 @@ void KeyFrameDatabase::clear()
     mpTree->clear();
     mhmKeyFrames.clear();
     mnErasedCount = 0;
+    mbRebuildPending.store(false, std::memory_order_release);  // 清空后无需重建
 }
 
 vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float minScore)

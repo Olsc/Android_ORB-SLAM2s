@@ -789,11 +789,12 @@ Java_com_orb_slam2s_slamar_NativeHelper_getMiniMapPoints(JNIEnv *env, jobject in
         for(size_t i=0; i<total && out.size() < limit * 3; i += step) {
             ORB_SLAM2::MapPoint* p = v[i];
             if(!p || p->isBad()) continue;
-            cv::Mat P = p->GetWorldPos();
-            if(P.empty()) continue;
-            out.push_back(P.at<float>(0));
-            out.push_back(P.at<float>(1));
-            out.push_back(P.at<float>(2));
+            // 栈版读取
+            cv::Point3f Pw;
+            p->GetWorldPos(Pw);
+            out.push_back(Pw.x);
+            out.push_back(Pw.y);
+            out.push_back(Pw.z);
         }
     }
 
