@@ -43,7 +43,6 @@
 #include"LocalMapping.h"
 #include"LoopClosing.h"
 #include"Frame.h"
-#include "ORBVocabulary.h"
 #include"KeyFrameDatabase.h"
 #include"ORBextractor.h"
 #include "Initializer.h"
@@ -68,7 +67,7 @@ class LoopClosing;
 class System;
 
 class Tracking
-{  
+{
 
 public:
     Tracking(System* pSys, FrameDrawer* pFrameDrawer, Map* pMap,
@@ -110,6 +109,9 @@ public:
 
     // 为加载的地图点构建/重建缓存的参考描述符
     void BuildLoadedRefCache();
+
+    // 标记参考缓存失效并唤醒后台重定位线程异步重建。
+    void InvalidateRefCache();
 
     // 后台重定位的运行时配置
     void SetRelocConfig(int topKWords, int maxCandidates, int matchChunk, int bgSleepUs,
@@ -291,6 +293,8 @@ protected:
     size_t mRefCachedMPCount = 0;
     double mRefLastBuildTs = 0.0;
     std::atomic<bool> mRefBuilding{false};
+    // 缓存失效请求标志：主线程置位，后台重定位线程消费并重建
+    std::atomic<bool> mRefCacheDirty{false};
     // HBST树：用于代替词袋倒排索引加速背景重定位匹配
     std::shared_ptr<HBSTTree> mpRefTree;
     // 加载地图点的不可变快照以避免竞争
@@ -315,7 +319,7 @@ protected:
         // 获取包围盒内的候选点 (原始版本,返回矩形区域)
         void GetCandidatesInBBox(const cv::Point3f& center, float radius, std::vector<int>& outIndices) const;
         // 获取包围盒内的候选点 (优化版本,精确圆形过滤)
-        void GetCandidatesInSphere(const cv::Point3f& center, float radius, 
+        void GetCandidatesInSphere(const cv::Point3f& center, float radius,
                                   const std::vector<RefMPSnapshot>& snaps,
                                   std::vector<int>& outIndices) const;
     };

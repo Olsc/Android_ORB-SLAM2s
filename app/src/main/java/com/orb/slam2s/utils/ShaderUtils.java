@@ -54,7 +54,6 @@ public class ShaderUtils {
         return program;
     }
 
-
     public static int loadShader(int shaderType, String source) {
         int shader = GLES20.glCreateShader(shaderType);
         if (shader != 0) {
@@ -72,12 +71,7 @@ public class ShaderUtils {
         return shader;
     }
 
-    /**
-     * 将原始文本文件转换为字符串。
-     *
-     * @param resId 即将转换为着色器的原始文本文件的资源ID。
-     * @return 文本文件的内容，如果出错则返回null。
-     */
+    // 将原始文本文件转换为字符串，失败时返回 null
     public static String readRawTextFile(Context context, int resId) {
         InputStream inputStream = context.getResources().openRawResource(resId);
         try {
@@ -94,6 +88,5 @@ public class ShaderUtils {
         }
         return null;
     }
-
 
 }

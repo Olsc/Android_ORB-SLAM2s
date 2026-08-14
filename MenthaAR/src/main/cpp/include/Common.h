@@ -16,10 +16,7 @@
  * version 3, together with ORB-SLAM2.
  */
 
-/**
- * 公共头文件
- * 功能描述: 定义全局日志宏和通用包含文件
- */
+// 公共头文件：定义全局日志宏和通用包含文件
 
 #ifndef ORB_SLAM2_AR_COMMON_H
 #define ORB_SLAM2_AR_COMMON_H

@@ -17,9 +17,7 @@ import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.util.ArrayList;
 
-/**
- * NativeHelper类：用于与JNI层交互，处理摄像头帧、平面检测、SLAM初始化等功能
- */
+// NativeHelper类：与JNI层交互，处理摄像头帧、平面检测、SLAM初始化等功能
 public class NativeHelper {
     private static final String TAG = "NativeHelper";
 
@@ -54,12 +52,7 @@ public class NativeHelper {
         planeDetected = false;
     }
 
-    /**
-     * 处理摄像头帧
-     * @param matAddrGr 摄像头灰度图像地址
-     * @param matAddrRgba 摄像头彩色图像地址
-     * @return 最后的追踪结果
-     */
+    // 处理摄像头帧，返回最后的追踪结果
     public int processCameraFrame(long matAddrGr, long matAddrRgba) {
         nativeProcessFrameMat(matAddrGr, matAddrRgba, statusBuf);
         lastTrackingResult = statusBuf[0];
@@ -71,10 +64,7 @@ public class NativeHelper {
         return lastTrackingResult;
     }
 
-    /**
-     * 检测平面
-     * @return 平面检测结果
-     */
+    // 检测平面，返回平面检测结果
     public int detectPlane() {
         detect(statusBuf);
         planeDetectResult = statusBuf[1];
@@ -113,10 +103,7 @@ public class NativeHelper {
     // 本地方法：更新相机分辨率并重新计算内参
     public native void nativeUpdateResolution(int cameraWidth, int cameraHeight);
 
-    /**
-     * 通知native层相机分辨率已更新
-     * 在相机启动或旋转变化时调用
-     */
+    // 通知 native 层相机分辨率已更新，在相机启动或旋转变化时调用
     public void updateResolution(int width, int height) {
         if (width > 0 && height > 0) {
             nativeUpdateResolution(width, height);
@@ -135,16 +122,15 @@ public class NativeHelper {
     // 点云显示控制（控制绿色和蓝色点云）
     public native void setPointCloudDisplay(boolean enable);
     public native boolean isPointCloudDisplayEnabled();
-    
+
     // SLAM 开关控制
     public native void setEnableSLAM(boolean enable);
     public native boolean isEnableSLAM();
 
-    
     // 3DOF功能接口
     public native float[] calculate3DofInsertionPoint(float[] rotationMatrix, int rotation, float distance);
     public native float[] compute3DofMVP(float[] rotationMatrix, int rotation, float ratio, float[] objectPos);
-    
+
     // AR对象缩放
     public native void updateArObjectScale(float scaleFactor);
     // public native float getArObjectScale();  // 暂未使用（app 无调用点），需要时取消注释
@@ -175,14 +161,12 @@ public class NativeHelper {
         void setDraw(boolean flag);                 // 设置是否绘制
     }
 
-    /**
-     * MapManager类：管理地图的保存、加载、删除和查询
-     */
+    // MapManager类：管理地图的保存、加载、删除和查询
     public static class MapManager {
         private static final String TAG = "MapManager";
         private static final String MAP_DIR_NAME = "SLAM/maps";
         private static final String MAP_METADATA_EXT = ".json";
-        
+
         private final Context context;
         private final NativeHelper nativeHelper;
         private final File mapDirectory;
@@ -191,40 +175,33 @@ public class NativeHelper {
             this.context = context;
             this.nativeHelper = nativeHelper;
             this.mapDirectory = new File(context.getExternalFilesDir(null), MAP_DIR_NAME);
-            
+
             // 确保地图目录存在
             if (!mapDirectory.exists()) {
                 mapDirectory.mkdirs();
             }
         }
 
-        /**
-         * 保存地图
-         * @param mapName 地图名称
-         */
+        // 保存地图
         public void saveMap(String mapName) {
             saveMap(mapName, -1);
         }
 
-        /**
-         * 保存地图（指定特征点上限）
-         * @param mapName 地图名称
-         * @param maxPoints 特征点上限，<=0 表示使用默认配置
-         */
+        // 保存地图，maxPoints 为特征点上限，<=0 表示使用默认配置
         public void saveMap(String mapName, int maxPoints) {
             try {
                 // 清理文件名
                 mapName = mapName.replaceAll("[^a-zA-Z0-9_\\-]", "_");
-                
+
                 String mapPath = new File(mapDirectory, mapName + ".bin").getAbsolutePath();
                 nativeHelper.saveMap(mapPath, maxPoints);
-                
+
                 // 获取地图统计信息
                 int[] stats = nativeHelper.getMapStats();
                 int keyFrames = stats != null && stats.length > 0 ? stats[0] : 0;
                 int mapPoints = stats != null && stats.length > 1 ? stats[1] : 0;
                 boolean hasPlane = stats != null && stats.length > 2 && stats[2] > 0;
-                
+
                 // 保存元数据
                 MapInfo info = new MapInfo();
                 info.name = mapName;
@@ -233,69 +210,57 @@ public class NativeHelper {
                 info.createTime = System.currentTimeMillis();
                 info.hasPlane = hasPlane;
                 info.fileSize = new File(mapPath).length();
-                
+
                 saveMetadata(info);
-                
-                android.widget.Toast.makeText(context, context.getString(R.string.hint_map_saved, mapName), 
+
+                android.widget.Toast.makeText(context, context.getString(R.string.hint_map_saved, mapName),
                     android.widget.Toast.LENGTH_SHORT).show();
                 Log.d(TAG, "地图已保存: " + mapName + " (KFs: " + keyFrames + ", MPs: " + mapPoints + ")");
             } catch (Exception e) {
                 Log.e(TAG, "保存地图失败: " + e.getMessage(), e);
-                android.widget.Toast.makeText(context, context.getString(R.string.hint_map_save_failed, e.getMessage()), 
+                android.widget.Toast.makeText(context, context.getString(R.string.hint_map_save_failed, e.getMessage()),
                     android.widget.Toast.LENGTH_SHORT).show();
             }
         }
 
-        /**
-         * 加载地图
-         * @param mapName 地图名称
-         */
+        // 加载地图
         public void loadMap(String mapName) {
             loadMapWithId(mapName, 0, false);
         }
 
-        /**
-         * 加载地图（指定ID和追加模式）
-         * @param mapName 地图名称
-         * @param mapId 地图ID
-         * @param append 是否追加
-         */
+        // 加载地图，mapId 指定地图ID，append 控制是否追加
         public void loadMapWithId(String mapName, int mapId, boolean append) {
             try {
                 String mapPath = new File(mapDirectory, mapName + ".bin").getAbsolutePath();
                 File mapFile = new File(mapPath);
-                
+
                 if (!mapFile.exists()) {
-                    android.widget.Toast.makeText(context, context.getString(R.string.hint_map_file_not_found), 
+                    android.widget.Toast.makeText(context, context.getString(R.string.hint_map_file_not_found),
                         android.widget.Toast.LENGTH_SHORT).show();
                     return;
                 }
-                
+
                 nativeHelper.loadMapWithId(mapPath, mapId, append);
-                
+
                 if (mapId == 0 && !append) {
-                     android.widget.Toast.makeText(context, context.getString(R.string.hint_map_loaded, mapName), 
+                     android.widget.Toast.makeText(context, context.getString(R.string.hint_map_loaded, mapName),
                         android.widget.Toast.LENGTH_SHORT).show();
                 }
-                
+
                 Log.d(TAG, "地图已加载: " + mapName + " (ID=" + mapId + ", Append=" + append + ")");
             } catch (Exception e) {
                 Log.e(TAG, "加载地图失败: " + e.getMessage(), e);
-                android.widget.Toast.makeText(context, context.getString(R.string.hint_map_load_failed, e.getMessage()), 
+                android.widget.Toast.makeText(context, context.getString(R.string.hint_map_load_failed, e.getMessage()),
                     android.widget.Toast.LENGTH_SHORT).show();
             }
         }
 
-        /**
-         * 删除地图
-         * @param mapName 地图名称
-         * @return 是否删除成功
-         */
+        // 删除地图，返回是否删除成功
         public boolean deleteMap(String mapName) {
             try {
                 File mapFile = new File(mapDirectory, mapName + ".bin");
                 File metaFile = new File(mapDirectory, mapName + MAP_METADATA_EXT);
-                
+
                 boolean success = true;
                 if (mapFile.exists()) {
                     success = mapFile.delete();
@@ -303,7 +268,7 @@ public class NativeHelper {
                 if (metaFile.exists()) {
                     metaFile.delete();
                 }
-                
+
                 if (success) {
                     Log.d(TAG, "地图已删除: " + mapName);
                 }
@@ -314,27 +279,24 @@ public class NativeHelper {
             }
         }
 
-        /**
-         * 获取所有已保存的地图
-         * @return 地图信息列表
-         */
+        // 获取所有已保存的地图
         public ArrayList<MapInfo> getAllMaps() {
             ArrayList<MapInfo> maps = new ArrayList<>();
-            
+
             if (!mapDirectory.exists()) {
                 return maps;
             }
-            
+
             File[] files = mapDirectory.listFiles();
             if (files == null) {
                 return maps;
             }
-            
+
             for (File file : files) {
                 if (file.getName().endsWith(".bin")) {
                     String mapName = file.getName().replace(".bin", "");
                     MapInfo info = loadMetadata(mapName);
-                    
+
                     // 如果没有元数据，创建基本信息
                     if (info == null) {
                         info = new MapInfo();
@@ -348,11 +310,11 @@ public class NativeHelper {
                         // 更新文件大小（可能已改变）
                         info.fileSize = file.length();
                     }
-                    
+
                     maps.add(info);
                 }
             }
-            
+
             // 按创建时间降序排序（最新的在前）
             java.util.Collections.sort(maps, new java.util.Comparator<MapInfo>() {
                 @Override
@@ -360,13 +322,11 @@ public class NativeHelper {
                     return Long.compare(m2.createTime, m1.createTime);
                 }
             });
-            
+
             return maps;
         }
 
-        /**
-         * 保存地图元数据
-         */
+        // 保存地图元数据
         private void saveMetadata(MapInfo info) {
             try {
                 File metaFile = new File(mapDirectory, info.name + MAP_METADATA_EXT);
@@ -377,7 +337,7 @@ public class NativeHelper {
                 json.put("createTime", info.createTime);
                 json.put("hasPlane", info.hasPlane);
                 json.put("fileSize", info.fileSize);
-                
+
                 FileWriter writer = new FileWriter(metaFile);
                 writer.write(json.toString(2));
                 writer.close();
@@ -386,21 +346,19 @@ public class NativeHelper {
             }
         }
 
-        /**
-         * 加载地图元数据
-         */
+        // 加载地图元数据
         private MapInfo loadMetadata(String mapName) {
             try {
                 File metaFile = new File(mapDirectory, mapName + MAP_METADATA_EXT);
                 if (!metaFile.exists()) {
                     return null;
                 }
-                
+
                 FileInputStream fis = new FileInputStream(metaFile);
                 byte[] data = new byte[(int) metaFile.length()];
                 fis.read(data);
                 fis.close();
-                
+
                 JSONObject json = new JSONObject(new String(data, "UTF-8"));
                 MapInfo info = new MapInfo();
                 info.name = json.getString("name");
@@ -409,7 +367,7 @@ public class NativeHelper {
                 info.createTime = json.getLong("createTime");
                 info.hasPlane = json.getBoolean("hasPlane");
                 info.fileSize = json.getLong("fileSize");
-                
+
                 return info;
             } catch (Exception e) {
                 Log.e(TAG, "加载元数据失败: " + e.getMessage(), e);
@@ -417,9 +375,7 @@ public class NativeHelper {
             }
         }
 
-        /**
-         * MapInfo类：存储地图的元数据信息
-         */
+        // MapInfo类：存储地图的元数据信息
         public static class MapInfo {
             public String name;         // 地图名称
             public int keyFrames;       // 关键帧数量

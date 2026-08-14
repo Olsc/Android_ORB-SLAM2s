@@ -108,7 +108,7 @@ private:
     int mMaxIterations;
 
     // Ransac集合
-    vector<vector<size_t> > mvSets;   
+    vector<vector<size_t> > mvSets;
 };
 
 } //namespace ORB_SLAM2

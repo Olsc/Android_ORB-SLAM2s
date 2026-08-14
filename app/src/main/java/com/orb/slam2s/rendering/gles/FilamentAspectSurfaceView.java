@@ -4,9 +4,7 @@ import android.content.Context;
 import android.util.AttributeSet;
 import android.view.SurfaceView;
 
-/**
- * 具有比例自适应功能的 SurfaceView。
- */
+// 具有比例自适应功能的 SurfaceView
 public class FilamentAspectSurfaceView extends SurfaceView {
     private int surfaceWidth;
     private int surfaceHeight;
@@ -36,12 +34,12 @@ public class FilamentAspectSurfaceView extends SurfaceView {
         int height = MeasureSpec.getSize(heightMeasureSpec);
         int wMode = MeasureSpec.getMode(widthMeasureSpec);
         int hMode = MeasureSpec.getMode(heightMeasureSpec);
-        
+
         if (wMode == MeasureSpec.EXACTLY && hMode == MeasureSpec.EXACTLY) {
             setMeasuredDimension(width, height);
             return;
         }
-        
+
         if (0 == surfaceWidth || 0 == surfaceHeight) {
             setMeasuredDimension(width, height);
         } else {

@@ -246,7 +246,6 @@ add_library(MenthaAR_Engine SHARED
         src/main/cpp/Plane.cpp
         src/main/cpp/Matrix.cpp
         src/main/cpp/bridge/OpenCVBridge.cpp
-
         )
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

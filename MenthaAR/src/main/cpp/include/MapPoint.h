@@ -38,10 +38,13 @@
 #include"KeyFrame.h"
 #include"Frame.h"
 #include"Map.h"
+#include"Config.h"
 
 #include<opencv2/core/core.hpp>
 #include<mutex>
 #include<atomic>
+#include<memory>
+#include<cstring>
 
 namespace ORB_SLAM2
 {
@@ -80,7 +83,7 @@ public:
     void SetBadFlag();
     bool isBad();
 
-    void Replace(MapPoint* pMP);    
+    void Replace(MapPoint* pMP);
     MapPoint* GetReplaced();
 
     void IncreaseVisible(int n=1);
@@ -93,14 +96,27 @@ public:
     void ComputeDistinctiveDescriptors();
 
     cv::Mat GetDescriptor();
+    // 零锁、零分配热路径读取：把描述子（恒为 32 字节）拷贝到栈缓冲。
+    // 返回是否有描述子（无则 out 清零）。依赖 std::atomic_load 的原子引用计数。
+    inline bool GetDescriptor(uint8_t out[32]) const {
+        std::shared_ptr<const cv::Mat> d = std::atomic_load(&mDescriptor);
+        if(d && !d->empty()) {
+            const size_t n = (d->cols < 32) ? static_cast<size_t>(d->cols) : 32u;
+            memcpy(out, d->ptr<uint8_t>(0), n);
+            return true;
+        }
+        memset(out, 0, 32);
+        return false;
+    }
     inline void SetDescriptor(const cv::Mat &desc){
         if(desc.empty()) return;
         std::lock_guard<std::mutex> lock(mMutexFeatures);
-        mDescriptor = desc.clone();
+        std::atomic_store(&mDescriptor, std::make_shared<const cv::Mat>(desc.clone()));
     }
 
     void UpdateNormalAndDepth();
 
+    // 不变性距离边界：预计算 ×0.8/×1.2 的结果，热路径零锁读取
     float GetMinDistanceInvariance();
     float GetMaxDistanceInvariance();
     int PredictScale(const float &currentDist, KeyFrame*pKF);
@@ -110,6 +126,8 @@ public:
         mNormalVector = normal.clone();
         mfMinDistance = minD;
         mfMaxDistance = maxD;
+        mfMinDistInvariance.store(MAPPOINT_MIN_DIST_INVARIANCE_FACTOR*minD, std::memory_order_relaxed);
+        mfMaxDistInvariance.store(MAPPOINT_MAX_DIST_INVARIANCE_FACTOR*maxD, std::memory_order_relaxed);
     }
 
 public:
@@ -146,11 +164,11 @@ public:
     // 回环闭合使用的变量
     long unsigned int mnLoopPointForKF;
     long unsigned int mnCorrectedByKF;
-    long unsigned int mnCorrectedReference;    
+    long unsigned int mnCorrectedReference;
     cv::Mat mPosGBA;
     long unsigned int mnBAGlobalForKF;
 
-protected:    
+protected:
 
      // 绝对坐标位置
      cv::Mat mWorldPos;
@@ -162,7 +180,7 @@ protected:
      cv::Mat mNormalVector;
 
      // 用于快速匹配的最佳描述子
-     cv::Mat mDescriptor;
+     std::shared_ptr<const cv::Mat> mDescriptor;
 
      // 参考关键帧
      KeyFrame* mpRefKF;
@@ -175,9 +193,11 @@ protected:
     std::atomic<bool> mbBad;
     MapPoint* mpReplaced;
 
-     // 尺度不变性距离
+     // 尺度不变性距离（原始值）与其预计算不变性边界
      float mfMinDistance;
      float mfMaxDistance;
+     std::atomic<float> mfMinDistInvariance{0.0f};
+     std::atomic<float> mfMaxDistInvariance{0.0f};
 
      Map* mpMap;
 

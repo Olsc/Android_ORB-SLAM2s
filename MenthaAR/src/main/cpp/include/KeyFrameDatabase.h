@@ -38,6 +38,7 @@
 #include <vector>
 #include <list>
 #include <set>
+#include <atomic>
 
 #include "KeyFrame.h"
 #include "Frame.h"
@@ -69,6 +70,9 @@ public:
    // 重定位
    std::vector<KeyFrame*> DetectRelocalizationCandidates(Frame* F);
 
+   // 若存在待重建标记则重建（由空闲线程调用，避免在 erase 调用线程同步重建造成卡顿）
+   void RebuildIfPending();
+
 protected:
 
   // HBST 树
@@ -82,6 +86,9 @@ protected:
 
   // 自上次重建以来删除的关键帧数量
   int mnErasedCount;
+
+  // 待重建标记：erase 达到阈值时置位，由 RebuildIfPending() 消费
+  std::atomic<bool> mbRebuildPending{false};
 
   // 互斥锁
   std::mutex mMutex;

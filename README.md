@@ -101,8 +101,9 @@ Currently tested primarily on Qualcomm Snapdragon platform CPUs:
 | Snapdragon 8 Elite | Xiaomi 15 | 30 FPS |
 | Snapdragon 8+ Gen1 | Redmi K60 | 30 FPS |
 | Snapdragon 870 | Xiaomi 10S | 30 FPS |
+| Snapdragon 7s Gen 2 | Redmi Pad Pro | 30 FPS |
 | Snapdragon 835 | Xiaomi 6 | 15–30 FPS |
-| Snapdragon AR1 Gen 1 | Rokid Glasses | 10–25 FPS |
+| Snapdragon AR1 Gen 1 | Rokid Glass3 | 10–25 FPS |
 
 ### 🌑 Dark Frame Detection
 

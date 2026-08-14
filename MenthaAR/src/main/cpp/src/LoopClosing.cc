@@ -46,6 +46,7 @@
 #include<mutex>
 #include<thread>
 #include<chrono>
+#include<cstring>
 
 namespace ORB_SLAM2
 {
@@ -99,6 +100,9 @@ void LoopClosing::Run()
 
         if(CheckFinish())
             break;
+
+        // 消费关键帧数据库的待重建标记
+        mpKeyFrameDB->RebuildIfPending();
 
         // 等待事件（新 KF/Finish/Reset），有事件立即唤醒，最多等 5ms
         {
@@ -418,6 +422,7 @@ void LoopClosing::CorrectLoop()
         {
             mpThreadGBA->detach();
             delete mpThreadGBA;
+            mpThreadGBA = nullptr;  // 防止二次 delete（double-free UB）
         }
     }
 
@@ -447,13 +452,20 @@ void LoopClosing::CorrectLoop()
 
     KeyFrameAndPose CorrectedSim3, NonCorrectedSim3;
     CorrectedSim3[mpCurrentKF]=mg2oScw;
-    cv::Mat Twc = mpCurrentKF->GetPoseInverse();
+    // 栈版读取位姿
+    float TwcF[16];
+    mpCurrentKF->GetPoseInverse(TwcF);
+    cv::Mat Twc(4,4,CV_32F);
+    memcpy(Twc.data, TwcF, 16*sizeof(float));
 
     // 1. 锁外计算位姿与校正 Sim3 矩阵（纯数学计算，无共享状态修改）
     for(vector<KeyFrame*>::iterator vit=mvpCurrentConnectedKFs.begin(), vend=mvpCurrentConnectedKFs.end(); vit!=vend; vit++)
     {
         KeyFrame* pKFi = *vit;
-        cv::Mat Tiw = pKFi->GetPose();
+        float TiwF[16];
+        pKFi->GetPose(TiwF);
+        cv::Mat Tiw(4,4,CV_32F);
+        memcpy(Tiw.data, TiwF, 16*sizeof(float));
 
         if(pKFi!=mpCurrentKF)
         {
@@ -663,7 +675,13 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
     {
         unique_lock<mutex> lock(mMutexGBA);
         if(idx!=mnFullBAIdx)
+        {
+            // 被新闭环中止的 GBA 也必须复位标志，否则 isRunningGBA() 将永远为 true。
+            // 线程对象已由中止方（CorrectLoop）清理。
+            mbFinishedGBA = true;
+            mbRunningGBA = false;
             return;
+        }
 
         if(!mbStopGBA)
         {
@@ -772,6 +790,15 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
 
         mbFinishedGBA = true;
         mbRunningGBA = false;
+        // 修复：正常完成路径也回收线程对象（detach 后 delete 是安全的，
+        // 本线程对象此后不再被任何代码引用），消除泄漏；
+        // 若期间被新的 CorrectLoop 中止并清理过，此处指针已为空，跳过。
+        if(mpThreadGBA)
+        {
+            mpThreadGBA->detach();
+            delete mpThreadGBA;
+            mpThreadGBA = nullptr;
+        }
     }
 }
 

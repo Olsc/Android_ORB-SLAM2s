@@ -91,7 +91,15 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
         if(pKF->isBad())
             continue;
         g2o::VertexSE3Expmap * vSE3 = new g2o::VertexSE3Expmap();
-        vSE3->setEstimate(Converter::toSE3Quat(pKF->GetPose()));
+        // 栈版读取位姿（锁内拷贝，替代 GetPose() clone + Converter 转换）
+        float poseF[16];
+        pKF->GetPose(poseF);
+        Eigen::Matrix<double,3,3> R;
+        R << poseF[0], poseF[1], poseF[2],
+             poseF[4], poseF[5], poseF[6],
+             poseF[8], poseF[9], poseF[10];
+        Eigen::Matrix<double,3,1> t(poseF[3], poseF[7], poseF[11]);
+        vSE3->setEstimate(g2o::SE3Quat(R, t));
         vSE3->setId(pKF->mnId);
         vSE3->setFixed(pKF->mnId==0);
         optimizer.addVertex(vSE3);
@@ -475,7 +483,15 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
     {
         KeyFrame* pKFi = *lit;
         g2o::VertexSE3Expmap * vSE3 = new g2o::VertexSE3Expmap();
-        vSE3->setEstimate(Converter::toSE3Quat(pKFi->GetPose()));
+        // 栈版读取位姿（锁内拷贝，替代 GetPose() clone + Converter 转换）
+        float poseF[16];
+        pKFi->GetPose(poseF);
+        Eigen::Matrix<double,3,3> R;
+        R << poseF[0], poseF[1], poseF[2],
+             poseF[4], poseF[5], poseF[6],
+             poseF[8], poseF[9], poseF[10];
+        Eigen::Matrix<double,3,1> t(poseF[3], poseF[7], poseF[11]);
+        vSE3->setEstimate(g2o::SE3Quat(R, t));
         vSE3->setId(pKFi->mnId);
         vSE3->setFixed(pKFi->mnId==0);
         optimizer.addVertex(vSE3);
@@ -488,7 +504,15 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
     {
         KeyFrame* pKFi = *lit;
         g2o::VertexSE3Expmap * vSE3 = new g2o::VertexSE3Expmap();
-        vSE3->setEstimate(Converter::toSE3Quat(pKFi->GetPose()));
+        // 栈版读取位姿（锁内拷贝，替代 GetPose() clone + Converter 转换）
+        float poseF[16];
+        pKFi->GetPose(poseF);
+        Eigen::Matrix<double,3,3> R;
+        R << poseF[0], poseF[1], poseF[2],
+             poseF[4], poseF[5], poseF[6],
+             poseF[8], poseF[9], poseF[10];
+        Eigen::Matrix<double,3,1> t(poseF[3], poseF[7], poseF[11]);
+        vSE3->setEstimate(g2o::SE3Quat(R, t));
         vSE3->setId(pKFi->mnId);
         vSE3->setFixed(true);
         optimizer.addVertex(vSE3);
@@ -1049,8 +1073,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
         return;
     optimizer.optimize(ESSENTIAL_GRAPH_BA_ITERS);
 
-    // SE3 位姿恢复 并 缓存相机中心以加速后续点更新
-    std::map<KeyFrame*, cv::Mat> mapCameraCenters;
+    // SE3 位姿恢复
     for(size_t i=0;i<vpKFs.size();i++)
     {
         KeyFrame* pKFi = vpKFs[i];
@@ -1072,9 +1095,6 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
         eigt *=(1./s); //[R t/s;0 1]
         cv::Mat Tiw = Converter::toCvSE3(eigR,eigt);
         pKFi->SetPose(Tiw);
-
-        // 缓存更新后的相机中心
-        mapCameraCenters[pKFi] = pKFi->GetCameraCenter();
     }
 
     // 校正点。变换到"未优化"的参考关键帧位姿，然后用优化后的位姿变换回来
@@ -1134,10 +1154,11 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
     const cv::Mat &K2 = pKF2->mK;
 
     // 相机位姿
-    const cv::Mat R1w = pKF1->GetRotation();
-    const cv::Mat t1w = pKF1->GetTranslation();
-    const cv::Mat R2w = pKF2->GetRotation();
-    const cv::Mat t2w = pKF2->GetTranslation();
+    float R1w[9], t1w[3], R2w[9], t2w[3];
+    pKF1->GetRotation(R1w);
+    pKF1->GetTranslation(t1w);
+    pKF2->GetRotation(R2w);
+    pKF2->GetTranslation(t2w);
 
     // 设置 Sim3 顶点
     g2o::VertexSim3Expmap * vSim3 = new g2o::VertexSim3Expmap();    
@@ -1187,18 +1208,33 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
         {
             if(!pMP1->isBad() && !pMP2->isBad() && i2>=0)
             {
+                // 栈版读取世界坐标；标量 R*t 变换（R1w/t1w 为栈版位姿数组）
+                cv::Point3f p3w1;
+                pMP1->GetWorldPos(p3w1);
+                const float R1w00=R1w[0], R1w01=R1w[1], R1w02=R1w[2];
+                const float R1w10=R1w[3], R1w11=R1w[4], R1w12=R1w[5];
+                const float R1w20=R1w[6], R1w21=R1w[7], R1w22=R1w[8];
+                const float t1w0=t1w[0], t1w1=t1w[1], t1w2=t1w[2];
                 g2o::VertexSBAPointXYZ* vPoint1 = new g2o::VertexSBAPointXYZ();
-                cv::Mat P3D1w = pMP1->GetWorldPos();
-                cv::Mat P3D1c = R1w*P3D1w + t1w;
-                vPoint1->setEstimate(Converter::toVector3d(P3D1c));
+                vPoint1->setEstimate(Eigen::Vector3d(
+                    R1w00*p3w1.x + R1w01*p3w1.y + R1w02*p3w1.z + t1w0,
+                    R1w10*p3w1.x + R1w11*p3w1.y + R1w12*p3w1.z + t1w1,
+                    R1w20*p3w1.x + R1w21*p3w1.y + R1w22*p3w1.z + t1w2));
                 vPoint1->setId(id1);
                 vPoint1->setFixed(true);
                 optimizer.addVertex(vPoint1);
 
+                cv::Point3f p3w2;
+                pMP2->GetWorldPos(p3w2);
+                const float R2w00=R2w[0], R2w01=R2w[1], R2w02=R2w[2];
+                const float R2w10=R2w[3], R2w11=R2w[4], R2w12=R2w[5];
+                const float R2w20=R2w[6], R2w21=R2w[7], R2w22=R2w[8];
+                const float t2w0=t2w[0], t2w1=t2w[1], t2w2=t2w[2];
                 g2o::VertexSBAPointXYZ* vPoint2 = new g2o::VertexSBAPointXYZ();
-                cv::Mat P3D2w = pMP2->GetWorldPos();
-                cv::Mat P3D2c = R2w*P3D2w + t2w;
-                vPoint2->setEstimate(Converter::toVector3d(P3D2c));
+                vPoint2->setEstimate(Eigen::Vector3d(
+                    R2w00*p3w2.x + R2w01*p3w2.y + R2w02*p3w2.z + t2w0,
+                    R2w10*p3w2.x + R2w11*p3w2.y + R2w12*p3w2.z + t2w1,
+                    R2w20*p3w2.x + R2w21*p3w2.y + R2w22*p3w2.z + t2w2));
                 vPoint2->setId(id2);
                 vPoint2->setFixed(true);
                 optimizer.addVertex(vPoint2);

@@ -36,6 +36,7 @@
 #define CONVERTER_H
 
 #include<opencv2/core/core.hpp>
+#include <cmath>
 
 #include"../Thirdparty/Eigen/Dense"
 #include"Thirdparty/g2o/g2o/types/types_six_dof_expmap.h"
@@ -64,6 +65,30 @@ public:
     static Eigen::Matrix<double,3,3> toMatrix3d(const cv::Mat &cvMat3);
 
     static std::vector<float> toQuaternion(const cv::Mat &M);
+
+    // 线性三角化（DLT）：对 4×4 矩阵 A 做 SVD，取最小奇异值对应右奇异向量（A 的零空间）。
+    static bool TriangulateDLT(const cv::Mat &P1, const cv::Mat &P2,
+                               float x1, float y1, float x2, float y2,
+                               cv::Mat &x3D)
+    {
+        cv::Mat A(4,4,CV_32F);
+        A.row(0) = x1*P1.row(2)-P1.row(0);
+        A.row(1) = y1*P1.row(2)-P1.row(1);
+        A.row(2) = x2*P2.row(2)-P2.row(0);
+        A.row(3) = y2*P2.row(2)-P2.row(1);
+
+        cv::Mat u,w,vt;
+        cv::SVD::compute(A,w,u,vt,cv::SVD::MODIFY_A| cv::SVD::FULL_UV);
+
+        x3D = vt.row(3).t();
+        const float w3 = x3D.at<float>(3);
+        if (w3 == 0.0f)
+            return false;
+
+        // 欧几里得坐标
+        x3D = x3D.rowRange(0,3)/w3;
+        return true;
+    }
 };
 
 }// namespace ORB_SLAM2

@@ -77,7 +77,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
     private Button btnTogglePointCloud;
     private Button btnToggleSlam;
 
-
     private Button btn3DofCube;
     private final android.os.Handler uiHandler = new android.os.Handler();
     private androidx.appcompat.app.AlertDialog loadingDialog;
@@ -108,9 +107,9 @@ public class ArCamUIActivity extends AppCompatActivity implements
     private volatile byte[] browserFrameData = null;
     private final Object browserFrameLock = new Object();
     private boolean useWebCamera = false; // Web模式：使用浏览器相机而不是本地相机
-    private Thread webFrameProcessor; // Web图像处理线程
+    private Thread webFrameProcessor;
     private volatile boolean isProcessingWebFrames = false;
-    private boolean webWaitLogged = false; // 等待SLAM初始化提示只打印一次
+    private boolean webWaitLogged = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -134,9 +133,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
         });
     }
 
-    /**
-     * 根据屏幕实际分辨率计算最优相机处理分辨率
-     */
+    // 根据屏幕实际分辨率计算最优相机处理分辨率
     private void computeScreenResolution() {
         WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
         if (wm != null) {
@@ -163,10 +160,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
         }
     }
 
-    /**
-     * 锁定当前横屏方向：检测设备进入时的横屏方向（左/右），
-     * 然后锁定该方向，防止后续旋转切换
-     */
+    // 锁定当前横屏方向，防止后续旋转切换
     private void lockCurrentOrientation() {
         try {
             WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
@@ -236,18 +230,18 @@ public class ArCamUIActivity extends AppCompatActivity implements
             }
         });
 
-        // 点击触发相机自动对焦
+        // 点击触发相机自动对焦（Web模式下关闭对焦）
         touchView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d(TAG, "onClick: CameraX 自动对焦");
-                if (mOpenCvCameraView != null) {
+                if (!useWebCamera && mOpenCvCameraView != null) {
+                    Log.d(TAG, "onClick: CameraX 自动对焦");
                     mOpenCvCameraView.autoFocusCenter();
                 }
             }
         });
 
-        // Web Server Button
+        // Web 服务器按钮
         btnStartWeb = findViewById(R.id.btn_start_web);
         if (btnStartWeb != null) {
             btnStartWeb.setOnClickListener(new View.OnClickListener() {
@@ -650,9 +644,9 @@ public class ArCamUIActivity extends AppCompatActivity implements
             }
         }
 
-        // 暂停Web服务：避免退后台后线程继续解码/处理浏览器帧（耗电、发热）
+        // 暂停Web服务：避免退后台后线程继续处理
+        stopWebFrameProcessing();
         if (isWebRunning) {
-            stopWebFrameProcessing();
             if (webServer != null) {
                 webServer.stop();
             }
@@ -684,19 +678,15 @@ public class ArCamUIActivity extends AppCompatActivity implements
             }
         }
 
-        // 恢复Web服务（从后台返回时重启帧处理与HTTP服务）
+        // 恢复Web服务
         if (isWebRunning) {
-            startWebFrameProcessing();
             if (webServer != null) {
                 webServer.start();
             }
         }
     }
 
-    /**
-     * 异步初始化SLAM系统，完成后再启动相机
-     * 在后台线程加载词汇表，避免阻塞主线程和UI冻结
-     */
+    // 异步初始化 SLAM 系统，后台线程加载词汇表，避免阻塞主线程
     private void initSLAMAsync() {
         // 先显示加载对话框
         showLoadingDialog(getString(R.string.loading_slam_init), getString(R.string.loading_slam_wait));
@@ -742,9 +732,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
         }).start();
     }
 
-    /**
-     * 显示加载对话框（使用非弃用的AlertDialog + ProgressBar）
-     */
+    // 显示加载对话框（AlertDialog + ProgressBar）
     private void showLoadingDialog(String title, String message) {
         runOnUiThread(new Runnable() {
             @Override
@@ -782,9 +770,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
         });
     }
 
-    /**
-     * 关闭加载对话框
-     */
+    // 关闭加载对话框
     private void dismissLoadingDialog() {
         runOnUiThread(new Runnable() {
             @Override
@@ -801,13 +787,11 @@ public class ArCamUIActivity extends AppCompatActivity implements
     protected void onDestroy() {
         Log.d(TAG, "onDestroy: 释放资源");
 
-        // 停止Web图像处理线程
         stopWebFrameProcessing();
-
         if (webServer != null) {
             webServer.stop();
         }
-        
+
         // 销毁 Filament 资源
         if (modelRendererWrapper != null) {
             modelRendererWrapper.destroy();
@@ -840,11 +824,9 @@ public class ArCamUIActivity extends AppCompatActivity implements
 
     @Override
     public long onCameraFrame(CameraGLViewBase.CvCameraViewFrame inputFrame) {
-        // Web模式：完全停止本地处理，显示黑屏
+        // Web模式：本地相机停止对 SLAM 的驱动，仅维持图形预览/占位，SLAM 由后台 webFrameProcessor 处理
         if (useWebCamera) {
             mRgbaAddr = inputFrame.rgba();
-            // 填充黑色
-            OpenCVBridge.nativeMatSetTo(mRgbaAddr, 0, 0, 0, 255);
             return mRgbaAddr;
         }
 
@@ -882,6 +864,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
         }
 
         isProcessingWebFrames = true;
+        webWaitLogged = false;
         webFrameProcessor = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -906,7 +889,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
                                     frameData, 0, frameData.length);
 
                             if (browserBitmap != null) {
-                                // 仅在尺寸变化时重新创建 native Mat
+                                // 仅在尺寸变化或未创建时分配 native Mat
                                 if (webRgbaAddr == 0) {
                                     webRgbaAddr = OpenCVBridge.nativeCreateMat(
                                             browserBitmap.getHeight(), browserBitmap.getWidth(), OpenCVBridge.CV_8UC4);
@@ -1023,9 +1006,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
         uiHandler.postDelayed(updater, 1000);
     }
 
-    /**
-     * 初始化摇杆 — 用于控制AR物体的Y轴旋转
-     */
+    // 初始化摇杆，用于控制 AR 物体的 Y 轴旋转
     private void initJoystick() {
         joystickView = findViewById(R.id.joystick_view);
         if (joystickView != null) {
@@ -1092,9 +1073,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
 
     // ========== 3DOF 功能 ==========
 
-    /**
-     * 初始化3DOF传感器和渲染器
-     */
+    // 初始化 3DOF 传感器和渲染器
     private void init3DofSensor() {
         orientationSensor = new OrientationSensor();
 
@@ -1134,9 +1113,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
         Log.d(TAG, "3DOF传感器和渲染器初始化完成");
     }
 
-    /**
-     * 在视角前方5米处生成3DOF立方体
-     */
+    // 在视角前方 5 米处生成 3DOF 立方体
     private void spawn3DofCube() {
         if (orientationSensor == null || threeDofRenderer == null) {
             showHint(getString(R.string.hint_3dof_unavailable));
@@ -1174,11 +1151,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
         }
     }
 
-    /**
-     * 获取设备的IP地址
-     * 
-     * @return 设备IP地址，如果获取失败则返回本地回环地址
-     */
+    // 获取设备 IP 地址，失败时返回本地回环地址
     private String getDeviceIpAddress() {
         try {
             for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
@@ -1198,9 +1171,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
         return "127.0.0.1";
     }
 
-    /**
-     * 生成二维码位图
-     */
+    // 生成二维码位图
     private Bitmap generateQrCode(String content) {
         try {
             int size = 512;
@@ -1240,7 +1211,10 @@ public class ArCamUIActivity extends AppCompatActivity implements
 
             webServer.start();
             isWebRunning = true;
-            useWebCamera = true; // 切换到Web模式：本地相机继续运行但不处理数据
+            useWebCamera = true; // 切换到Web模式：本地相机关闭硬件，仅处理 Web/浏览端画面
+            if (mOpenCvCameraView != null) {
+                mOpenCvCameraView.startWebModeTicker();
+            }
 
             // Web模式下隐藏AR物体：浏览器相机SLAM姿态与本地相机坐标系不一致，
             // 继续渲染会导致物体漂浮在错误的空间位置（黑屏+漂浮物体的bug来源）
@@ -1254,9 +1228,9 @@ public class ArCamUIActivity extends AppCompatActivity implements
             btnStartWeb.setText(getString(R.string.btn_web_server_close));
 
             String ipAddress = getDeviceIpAddress();
-            String url = "https://" + ipAddress + ":8080"; 
+            String url = "https://" + ipAddress + ":8080";
             showHint(getString(R.string.hint_web_server_started, url));
-            
+
             // 显示二维码窗口
             if (floatingQrWindow != null) {
                 floatingQrWindow.setVisibility(View.VISIBLE);
@@ -1270,7 +1244,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
                     }
                 }
             }
-            
+
             Log.d(TAG, "Web服务器已启动，本地处理已停止，仅处理浏览器图像");
         } else {
             // 停止Web图像处理线程
@@ -1281,6 +1255,9 @@ public class ArCamUIActivity extends AppCompatActivity implements
             }
             isWebRunning = false;
             useWebCamera = false; // 切换回本地相机模式
+            if (mOpenCvCameraView != null) {
+                mOpenCvCameraView.stopWebModeTicker();
+            }
 
             // 恢复AR物体渲染（本地相机重新驱动SLAM，坐标系恢复一致）
             if (modelRendererWrapper != null) {

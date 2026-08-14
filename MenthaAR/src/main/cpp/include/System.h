@@ -58,195 +58,85 @@ class Tracking;
 class LocalMapping;
 class LoopClosing;
 
-/**
- * SLAM系统主类
- * 协调跟踪、建图、闭环检测等模块的工作
- */
+// SLAM系统主类：协调跟踪、建图、闭环检测等模块的工作
 class System
 {
 public:
-    /**
-     * 输入传感器类型枚举
-     * 当前实现仅支持单目相机
-     */
+    // 输入传感器类型枚举，当前实现仅支持单目相机
     enum eSensor{
         MONOCULAR=0  // 单目相机
     };
 
 public:
 
-    /**
-     * 构造函数：初始化SLAM系统
-     * 启动局部建图、闭环检测和可视化线程
-     * 
-     * @param strVocFile ORB词汇表文件路径
-     * @param strSettingsFile 相机配置文件路径（YAML格式）
-     * @param sensor 传感器类型（当前仅支持MONOCULAR）
-     */
+    // 构造函数：初始化SLAM系统，启动局部建图、闭环检测与可视化线程
     System(const string &strSettingsFile, const eSensor sensor);
 
-    /**
-     * 处理单目图像帧（主处理函数）
-     * 
-     * 处理流程：
-     *   1. 提取ORB特征
-     *   2. 跟踪上一帧或重定位
-     *   3. 局部地图跟踪
-     *   4. 决定是否创建关键帧
-     * 
-     * @param im 输入图像（支持RGB CV_8UC3或灰度CV_8U，RGB会自动转换为灰度）
-     * @param timestamp 时间戳（秒）
-     * @return 相机位姿矩阵Tcw（世界到相机的变换），跟踪失败时返回空矩阵
-     */
+    // 处理单目图像帧：提取ORB特征、跟踪、局部地图跟踪并决定是否创建关键帧
+    // 返回相机位姿矩阵Tcw，跟踪失败时返回空矩阵
     cv::Mat TrackMonocular(const cv::Mat &im, const double &timestamp);
 
-    /**
-     * 动态更新相机内参（当分辨率改变时由JNI层调用）
-     * 
-     * @param fx x轴焦距
-     * @param fy y轴焦距
-     * @param cx x轴中心点
-     * @param cy y轴中心点
-     */
+    // 动态更新相机内参，当分辨率改变时由JNI层调用
     void UpdateCalibration(float fx, float fy, float cx, float cy);
 
-    /**
-     * 检查地图是否发生重大变化
-     * 
-     * @return true-自上次调用以来发生了闭环或全局BA，false-无重大变化
-     */
+    // 检查地图是否发生重大变化（闭环或全局BA）
     bool MapChanged();
 
-    /**
-     * 重置SLAM系统
-     * 
-     * @param bKeepMap true-仅清除跟踪状态但保留地图, false-完全重置（清空地图）
-     */
+    // 重置SLAM系统，bKeepMap为true时保留地图仅清跟踪状态
     void Reset(bool bKeepMap = false);
 
-    /**
-     * 关闭系统
-     * 请求所有线程结束并等待它们安全退出
-     * 注意：在保存轨迹之前必须调用此函数
-     */
+    // 关闭系统：请求所有线程结束并等待安全退出，保存轨迹前必须调用
     void Shutdown();
 
-    /**
-     * 保存关键帧轨迹
-     * 以TUM RGB-D数据集格式保存（时间戳 x y z qx qy qz qw）
-     * 
-     * 注意：调用前需先调用Shutdown()
-     * 格式详情: http://vision.in.tum.de/data/datasets/rgbd-dataset
-     * 
-     * @param filename 输出文件路径
-     */
+    // 以TUM RGB-D格式保存关键帧轨迹，调用前需先调用Shutdown()
     void SaveKeyFrameTrajectoryTUM(const string &filename);
 
     // 获取当前定位到的地图ID
     int GetCurrentMapId();
 
-    /**
-     * 保存地图到文件
-     * 序列化地图点、关键帧等数据
-     * 
-     * @param filename 地图文件路径
-     * @param maxMapPoints 保存的最大地图特征点数（超出时按时间线从早到晚裁剪，保留最新点）
-     */
+    // 保存地图到文件，maxMapPoints 限制最大特征点数（超限时按时间裁剪保留最新）
     void SaveMap(const string &filename, int maxMapPoints = SYSTEM_MAX_MPS_SAVE);
 
-    /**
-     * 加载地图
-     * @param filename 地图文件路径
-     * @param mapId 地图ID (0为默认/主地图)
-     * @param bAppend 是否追加模式 (true=保留现有地图, false=清除现有地图)
-     */
+    // 加载地图，mapId 为地图ID，bAppend 为追加模式
     void LoadMap(const string &filename, int mapId = 0, bool bAppend = false);
 
-    /**
-     * 获取地图中的关键帧数量
-     * @return 关键帧总数
-     */
+    // 获取地图中的关键帧数量
     int GetNumKeyFrames();
 
-    /**
-     * 获取地图中的地图点数量
-     * @return 地图点总数
-     */
+    // 获取地图中的地图点数量
     int GetNumMapPoints();
 
-    /**
-     * 获取所有地图点
-     * @return 地图点指针列表
-     */
+    // 获取所有地图点
     std::vector<MapPoint*> GetAllMapPoints();
 
-    /**
-     * 获取当前跟踪状态
-     * 可在TrackMonocular()后立即调用
-     * 
-     * @return 状态值: -1=未初始化, 0=丢失, 1=跟踪中, 2=OK
-     */
+    // 获取当前跟踪状态，可在TrackMonocular()后立即调用
     int GetTrackingState();
 
-    /**
-     * 获取当前帧跟踪到的地图点
-     * @return 地图点指针列表
-     */
+    // 获取当前帧跟踪到的地图点
     std::vector<MapPoint*> GetTrackedMapPoints();
 
-    /**
-     * 获取当前帧跟踪到的关键点（去畸变后）
-     * @return 关键点列表
-     */
+    // 获取当前帧跟踪到的关键点（去畸变后）
     std::vector<cv::KeyPoint> GetTrackedKeyPointsUn();
 
-    /**
-     * 获取重定位对齐置信度
-     * 用于UI显示，反映当前位姿与加载地图的对齐程度
-     * 
-     * @return 置信度值（0.0-1.0）
-     */
+    // 获取重定位对齐置信度，反映当前位姿与加载地图的对齐程度
     float GetRelocAlignConfidence();
 
-    /**
-     * 获取重定位匹配分数
-     * 不依赖PnP求解，可以更早地提示是否进入目标区域
-     * 
-     * @return 匹配分数（0.0-1.0）
-     */
+    // 获取重定位匹配分数，不依赖PnP求解，可更早提示是否进入目标区域
     float GetRelocMatchScore();
 
-    /**
-     * 检查是否已建立地图对齐
-     * @return true-已对齐, false-未对齐
-     */
+    // 检查是否已建立地图对齐
     bool HasMapAlignment();
 
-    /**
-     * 获取对齐后的相机位姿
-     * 将SLAM坐标系下的位姿转换到加载地图的坐标系
-     * 
-     * @param TcwSlam SLAM坐标系下的位姿
-     * @return 对齐后的位姿
-     */
+    // 获取对齐后的相机位姿，将SLAM坐标系位姿转换到加载地图坐标系
     cv::Mat GetMapAlignedPose(const cv::Mat &TcwSlam);
 
-    /**
-     * 检查是否已加载地图
-     * 
-     * @return true-已加载地图, false-未加载地图
-     */
+    // 检查是否已加载地图
     bool HasLoadedMap();
 
-    /**
-     * 创建新地图（子地图），用于跟踪丢失时的恢复
-     */
+    // 创建新地图（子地图），用于跟踪丢失时的恢复
     void CreateNewMap();
 
-    /**
-     * 切换到指定地图
-     * @param pMap 目标地图指针
-     */
+    // 切换到指定地图
     void SwitchToMap(Map* pMap);
 
 //public:

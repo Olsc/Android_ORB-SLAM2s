@@ -8,7 +8,6 @@ import android.view.ScaleGestureDetector;
 
 import java.util.ArrayList;
 
-
 /**
  * Created by Ads on 2016/11/7.
  * 由Olsc于2025/8/25开始进行修改
@@ -66,8 +65,8 @@ public class TouchHelper {
     }
 
     public boolean handleTouchEvent(MotionEvent event) {
-        //int action = event.getActionMasked(); 已注释
-        //也可以通过event.getPointerCount()来判断是双指缩放还是单指触控
+        // int action = event.getActionMasked();
+        // 也可通过 event.getPointerCount() 判断是双指缩放还是单指触控
         boolean ret=scaleGestureDetector.onTouchEvent(event);
         if (!scaleGestureDetector.isInProgress()){
             ret=gestureDetector.onTouchEvent(event);

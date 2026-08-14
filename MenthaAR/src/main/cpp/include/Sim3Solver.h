@@ -39,6 +39,7 @@
 #include <vector>
 
 #include "KeyFrame.h"
+#include "Random.h"
 
 namespace ORB_SLAM2
 {
@@ -131,6 +132,9 @@ protected:
     // 标定参数
     cv::Mat mK1;
     cv::Mat mK2;
+
+    // 随机数生成器
+    LCG mLcg;
 };
 
 } //namespace ORB_SLAM2

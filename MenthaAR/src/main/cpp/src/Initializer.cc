@@ -39,7 +39,10 @@
 #include "Optimizer.h"
 #include "ORBmatcher.h"
 #include "Config.h"
+#include "Converter.h"
 #include "Random.h"
+
+#include <limits>
 
 #include<thread>
 
@@ -739,101 +742,13 @@ bool Initializer::ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv:
 
 void Initializer::Triangulate(const cv::KeyPoint &kp1, const cv::KeyPoint &kp2, const cv::Mat &P1, const cv::Mat &P2, cv::Mat &x3D)
 {
-    float A[4][4];
-    const float* pP1_0 = P1.ptr<float>(0);
-    const float* pP1_1 = P1.ptr<float>(1);
-    const float* pP1_2 = P1.ptr<float>(2);
-    const float* pP2_0 = P2.ptr<float>(0);
-    const float* pP2_1 = P2.ptr<float>(1);
-    const float* pP2_2 = P2.ptr<float>(2);
-
-    for (int c = 0; c < 4; ++c) {
-        A[0][c] = kp1.pt.x * pP1_2[c] - pP1_0[c];
-        A[1][c] = kp1.pt.y * pP1_2[c] - pP1_1[c];
-        A[2][c] = kp2.pt.x * pP2_2[c] - pP2_0[c];
-        A[3][c] = kp2.pt.y * pP2_2[c] - pP2_1[c];
-    }
-
-    // 零堆分配 4x4 雅可比求解器
-    float M[4][4];
-    for (int r = 0; r < 4; ++r) {
-        for (int c = r; c < 4; ++c) {
-            float val = A[0][r] * A[0][c] + A[1][r] * A[1][c] + A[2][r] * A[2][c] + A[3][r] * A[3][c];
-            M[r][c] = val;
-            M[c][r] = val;
-        }
-    }
-
-    float V[4][4] = {
-        {1.0f, 0.0f, 0.0f, 0.0f},
-        {0.0f, 1.0f, 0.0f, 0.0f},
-        {0.0f, 0.0f, 1.0f, 0.0f},
-        {0.0f, 0.0f, 0.0f, 1.0f}
-    };
-
-    for (int it = 0; it < INITIALIZER_JACOBI_ITERS; ++it) {
-        float maxVal = 0.0f;
-        int p = 0, q = 1;
-        for (int i = 0; i < 4; ++i) {
-            for (int j = i + 1; j < 4; ++j) {
-                float absVal = std::abs(M[i][j]);
-                if (absVal > maxVal) {
-                    maxVal = absVal;
-                    p = i;
-                    q = j;
-                }
-            }
-        }
-
-        if (maxVal < 1e-15f) break;
-
-        float app = M[p][p];
-        float aqq = M[q][q];
-        float apq = M[p][q];
-
-        float phi = 0.5f * std::atan2(2.0f * apq, aqq - app);
-        float c = std::cos(phi);
-        float s = std::sin(phi);
-
-        for (int i = 0; i < 4; ++i) {
-            if (i != p && i != q) {
-                float mip = M[i][p];
-                float miq = M[i][q];
-                M[i][p] = c * mip - s * miq;
-                M[p][i] = M[i][p];
-                M[i][q] = s * mip + c * miq;
-                M[q][i] = M[i][q];
-            }
-        }
-
-        M[p][p] = c * c * app - 2.0f * s * c * apq + s * s * aqq;
-        M[q][q] = s * s * app + 2.0f * s * c * apq + c * c * aqq;
-        M[p][q] = 0.0f;
-        M[q][p] = 0.0f;
-
-        for (int i = 0; i < 4; ++i) {
-            float vip = V[i][p];
-            float viq = V[i][q];
-            V[i][p] = c * vip - s * viq;
-            V[i][q] = s * vip + c * viq;
-        }
-    }
-
-    int minIdx = 0;
-    float minEval = M[0][0];
-    for (int i = 1; i < 4; ++i) {
-        if (M[i][i] < minEval) {
-            minEval = M[i][i];
-            minIdx = i;
-        }
-    }
-
-    float w = V[3][minIdx];
-    if (std::abs(w) > 1e-10f) {
-        float invW = 1.0f / w;
-        x3D = (cv::Mat_<float>(3, 1) << V[0][minIdx] * invW, V[1][minIdx] * invW, V[2][minIdx] * invW);
-    } else {
-        x3D = cv::Mat::zeros(3, 1, CV_32F);
+    // 线性三角化（公共 DLT 实现，见 Converter::TriangulateDLT）
+    if (!Converter::TriangulateDLT(P1, P2, kp1.pt.x, kp1.pt.y, kp2.pt.x, kp2.pt.y, x3D))
+    {
+        // w==0 退化：填充 inf，与原「x3D.rowRange(0,3)/w（w→0）」行为等价，
+        // 由 CheckRT 的 isfinite 检查兜底拒绝该点。
+        const float inf = std::numeric_limits<float>::infinity();
+        x3D = (cv::Mat_<float>(3,1) << inf, inf, inf);
     }
 }
 

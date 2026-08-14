@@ -31,9 +31,7 @@ import java.util.concurrent.Executors;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-/**
- * 相机 GL 视图 — 使用 CameraX + OpenCVBridge 处理帧
- */
+// 相机 GL 视图，使用 CameraX + OpenCVBridge 处理帧
 @SuppressWarnings("deprecation")
 public class CameraGLView extends CameraGLViewBase {
 
@@ -125,20 +123,22 @@ public class CameraGLView extends CameraGLViewBase {
                                         grayMatAddr = OpenCVBridge.nativeCreateMat(h, w, OpenCVBridge.CV_8UC1);  // CV_8UC1
                                     }
 
-                                    // 复用 byte[] 缓冲区，避免每帧 GC 分配
-                                    int requiredSize = w * h;
-                                    if (mYuvDataCache == null || mYuvDataCache.length < requiredSize) {
-                                        mYuvDataCache = new byte[requiredSize];
+                                    if (yBuf.isDirect() && rowStride == w) {
+                                        // 零拷贝直传 JNI，无需 Java 字节数组拷贝与循环
+                                        OpenCVBridge.nativeDirectYPlaneToMats(rgbaMatAddr, grayMatAddr, yBuf, w, h);
+                                    } else {
+                                        // 备用兼容路径：逐行拷贝去除填充
+                                        int requiredSize = w * h;
+                                        if (mYuvDataCache == null || mYuvDataCache.length < requiredSize) {
+                                            mYuvDataCache = new byte[requiredSize];
+                                        }
+                                        int bufPos = yBuf.position();
+                                        for (int row = 0; row < h; row++) {
+                                            yBuf.position(bufPos + row * rowStride);
+                                            yBuf.get(mYuvDataCache, row * w, w);
+                                        }
+                                        OpenCVBridge.nativeYPlaneToMats(rgbaMatAddr, grayMatAddr, mYuvDataCache, w, h);
                                     }
-                                    // 将 Y-plane 读入平坦 byte[]（逐行拷贝以处理 stride 填充）
-                                    int bufPos = yBuf.position();
-                                    for (int row = 0; row < h; row++) {
-                                        yBuf.position(bufPos + row * rowStride);
-                                        yBuf.get(mYuvDataCache, row * w, w);
-                                    }
-
-                                    // 一次性写入 RGBA + Gray（native 层）
-                                    OpenCVBridge.nativeYPlaneToMats(rgbaMatAddr, grayMatAddr, mYuvDataCache, w, h);
 
                                     image.close();
                                 } else {
@@ -206,6 +206,89 @@ public class CameraGLView extends CameraGLViewBase {
         Log.d(TAG, "正在连接 CameraX");
         if (!initializeCamera(width, height)) return false;
         return true;
+    }
+
+    private android.os.HandlerThread mWebThread;
+    private android.os.Handler mWebHandler;
+    private volatile boolean isWebTickerRunning = false;
+
+    private final Runnable webTickerRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (isWebTickerRunning && !mIsStopped) {
+                int w = GlobalConstant.RESOLUTION_WIDTH;
+                int h = GlobalConstant.RESOLUTION_HEIGHT;
+                if (rgbaMatAddr == 0) {
+                    rgbaMatAddr = OpenCVBridge.nativeCreateMat(h, w, OpenCVBridge.CV_8UC4);
+                }
+                if (grayMatAddr == 0) {
+                    grayMatAddr = OpenCVBridge.nativeCreateMat(h, w, OpenCVBridge.CV_8UC1);
+                }
+                deliverAndDrawFrame(new XCameraFrame(rgbaMatAddr, grayMatAddr));
+                if (mWebHandler != null && isWebTickerRunning) {
+                    mWebHandler.postDelayed(this, 33);
+                }
+            }
+        }
+    };
+
+    // 开启 Web 模式渲染脉冲，关闭物理相机硬件传感器，由后台 HandlerThread 独立驱动
+    public void startWebModeTicker() {
+        Log.d(TAG, "开启 Web 模式后台渲染脉冲，关闭物理相机传感器");
+        pauseCameraSensor();
+        if (mWebThread == null || !mWebThread.isAlive()) {
+            mWebThread = new android.os.HandlerThread("WebRenderThread");
+            mWebThread.start();
+            mWebHandler = new android.os.Handler(mWebThread.getLooper());
+        }
+        isWebTickerRunning = true;
+        mWebHandler.removeCallbacks(webTickerRunnable);
+        mWebHandler.post(webTickerRunnable);
+    }
+
+    // 停止 Web 模式渲染脉冲，恢复物理相机硬件传感器
+    public void stopWebModeTicker() {
+        Log.d(TAG, "停止 Web 模式后台渲染脉冲，恢复物理相机传感器");
+        isWebTickerRunning = false;
+        if (mWebHandler != null) {
+            mWebHandler.removeCallbacks(webTickerRunnable);
+        }
+        if (mWebThread != null) {
+            mWebThread.quitSafely();
+            mWebThread = null;
+            mWebHandler = null;
+        }
+        resumeCameraSensor();
+    }
+
+    // 暂停物理相机硬件传感器，Web 模式下释放物理硬件与指示灯
+    public void pauseCameraSensor() {
+        Log.d(TAG, "Web模式：关闭物理相机硬件传感器");
+        if (cameraProvider != null) {
+            new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
+                try {
+                    cameraProvider.unbindAll();
+                } catch (Exception e) {
+                    Log.e(TAG, "pauseCameraSensor error: " + e.getMessage());
+                }
+            });
+        }
+    }
+
+    // 恢复物理相机硬件传感器，切回本地 SLAM 模式
+    public void resumeCameraSensor() {
+        Log.d(TAG, "恢复物理相机硬件传感器");
+        if (mIsStopped) return;
+        new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
+            try {
+                if (cameraProvider != null) {
+                    cameraProvider.unbindAll();
+                }
+                initializeCamera(getWidth(), getHeight());
+            } catch (Exception e) {
+                Log.e(TAG, "resumeCameraSensor error: " + e.getMessage());
+            }
+        });
     }
 
     @Override

@@ -64,13 +64,14 @@ MapPoint::MapPoint(const cv::Mat &Pos, Map* pMap, Frame* pFrame, const int &idxF
     mnFound(1), mbBad(false), mpReplaced(NULL), mpMap(pMap)
 {
     Pos.copyTo(mWorldPos);
-    cv::Mat Ow = pFrame->GetCameraCenter();
-    cv::Mat PC = Pos - Ow;
+    // 栈版读取相机中心（Frame 无锁），PC = Pos - Ow 标量化
+    cv::Point3f Ow;
+    pFrame->GetCameraCenter(Ow);
 
     // 内联计算距离和法向量归一化，避免多次cv::norm调用
-    const float pcx = PC.at<float>(0);
-    const float pcy = PC.at<float>(1);
-    const float pcz = PC.at<float>(2);
+    const float pcx = Pos.at<float>(0) - Ow.x;
+    const float pcy = Pos.at<float>(1) - Ow.y;
+    const float pcz = Pos.at<float>(2) - Ow.z;
     const float distSq = pcx*pcx + pcy*pcy + pcz*pcz;
     const float dist = sqrt(distSq);
     const float invDist = (dist > 1e-10f) ? (1.0f / dist) : 0.0f;
@@ -84,7 +85,10 @@ MapPoint::MapPoint(const cv::Mat &Pos, Map* pMap, Frame* pFrame, const int &idxF
     mfMaxDistance = dist*levelScaleFactor;
     mfMinDistance = mfMaxDistance/pFrame->mvScaleFactors[nLevels-1];
 
-    pFrame->mDescriptors.row(idxF).copyTo(mDescriptor);
+    // 描述子改为 shared_ptr + 原子读
+    std::atomic_store(&mDescriptor, std::make_shared<const cv::Mat>(pFrame->mDescriptors.row(idxF).clone()));
+    mfMinDistInvariance.store(MAPPOINT_MIN_DIST_INVARIANCE_FACTOR*mfMinDistance, std::memory_order_relaxed);
+    mfMaxDistInvariance.store(MAPPOINT_MAX_DIST_INVARIANCE_FACTOR*mfMaxDistance, std::memory_order_relaxed);
 
     // MapPoints 可以从 Tracking 和 Local Mapping 创建。此互斥锁避免 ID 冲突。
     unique_lock<mutex> lock(mpMap->mMutexPointCreation);
@@ -103,6 +107,8 @@ MapPoint::MapPoint(const cv::Mat &Pos, Map* pMap):
     // 给予宽松的尺度范围，保证视野检查可通过
     mfMinDistance = MAPPOINT_DEFAULT_MIN_DIST;
     mfMaxDistance = MAPPOINT_DEFAULT_MAX_DIST;
+    mfMinDistInvariance.store(MAPPOINT_MIN_DIST_INVARIANCE_FACTOR*mfMinDistance, std::memory_order_relaxed);
+    mfMaxDistInvariance.store(MAPPOINT_MAX_DIST_INVARIANCE_FACTOR*mfMaxDistance, std::memory_order_relaxed);
 
     unique_lock<mutex> lock(mpMap->mMutexPointCreation);
     mnId=nNextId++;
@@ -174,7 +180,7 @@ void MapPoint::EraseObservation(KeyFrame* pKF)
             mObservations.erase(pKF);
 
             if(mpRefKF==pKF)
-                mpRefKF=mObservations.begin()->first;
+                mpRefKF = mObservations.empty() ? static_cast<KeyFrame*>(NULL) : mObservations.begin()->first;
 
             // 如果只有2个或更少的观测，则丢弃该点
             if(nObs<=MAPPOINT_MIN_OBS_FOR_BAD)
@@ -206,6 +212,9 @@ void MapPoint::ShareObservations(std::map<KeyFrame*, int>& counter, unsigned lon
 
 int MapPoint::GetRedundantObservationsCount(KeyFrame* pKF, int scaleLevel)
 {
+    if (nObs.load(std::memory_order_relaxed) < 3)
+        return 0;
+
     unique_lock<mutex> lock(mMutexFeatures);
     int count = 0;
     for(std::map<KeyFrame*, size_t>::const_iterator mit=mObservations.begin(), mend=mObservations.end(); mit!=mend; mit++)
@@ -323,8 +332,6 @@ float MapPoint::GetFoundRatio()
 void MapPoint::ComputeDistinctiveDescriptors()
 {
     // 检索所有观测到的描述符
-    vector<cv::Mat> vDescriptors;
-
     map<KeyFrame*,size_t> observations;
 
     {
@@ -337,39 +344,46 @@ void MapPoint::ComputeDistinctiveDescriptors()
     if(observations.empty())
         return;
 
-    vDescriptors.reserve(observations.size());
+    const uint8_t* descPtrs[MAPPOINT_DESC_MAX_OBS];
+    cv::Mat descMats[MAPPOINT_DESC_MAX_OBS];
+    size_t nDescs = 0;
 
     for(map<KeyFrame*,size_t>::iterator mit=observations.begin(), mend=observations.end(); mit!=mend; mit++)
     {
         KeyFrame* pKF = mit->first;
 
         if(!pKF->isBad())
-            vDescriptors.push_back(pKF->mDescriptors.row(mit->second));
+        {
+            if (nDescs < MAPPOINT_DESC_MAX_OBS)
+            {
+                descPtrs[nDescs] = pKF->mDescriptors.ptr<uint8_t>(mit->second);
+                descMats[nDescs] = pKF->mDescriptors.row(mit->second);
+                nDescs++;
+            }
+        }
     }
 
-    if(vDescriptors.empty())
+    if(nDescs == 0)
         return;
 
-    const size_t N = vDescriptors.size();
+    const size_t N = nDescs;
 
     // 快速路径：1 个或 2 个观测时无需计算距离矩阵
     if (N <= 2)
     {
         unique_lock<mutex> lock(mMutexFeatures);
-        mDescriptor = vDescriptors[0].clone();
+        std::atomic_store(&mDescriptor, std::make_shared<const cv::Mat>(descMats[0].clone()));
         return;
     }
 
-    // N > 2 时，使用栈内存缓冲区（限制最大 64 个观测）
-    const size_t N_max = std::min(N, (size_t)64);
     int distsMat[MAPPOINT_DESC_MAX_OBS][MAPPOINT_DESC_MAX_OBS];
 
-    for(size_t i = 0; i < N_max; ++i)
+    for(size_t i = 0; i < N; ++i)
     {
         distsMat[i][i] = 0;
-        for(size_t j = i + 1; j < N_max; ++j)
+        for(size_t j = i + 1; j < N; ++j)
         {
-            int distij = ORBmatcher::DescriptorDistance(vDescriptors[i], vDescriptors[j]);
+            int distij = ORBmatcher::DescriptorDistance(descPtrs[i], descPtrs[j]);
             distsMat[i][j] = distij;
             distsMat[j][i] = distij;
         }
@@ -379,11 +393,11 @@ void MapPoint::ComputeDistinctiveDescriptors()
     int BestIdx = 0;
     int rowDists[MAPPOINT_DESC_MAX_OBS];
 
-    for(size_t i = 0; i < N_max; ++i)
+    for(size_t i = 0; i < N; ++i)
     {
-        std::memcpy(rowDists, distsMat[i], N_max * sizeof(int));
-        size_t medianIdx = (N_max - 1) / 2;
-        std::nth_element(rowDists, rowDists + medianIdx, rowDists + N_max);
+        std::memcpy(rowDists, distsMat[i], N * sizeof(int));
+        size_t medianIdx = (N - 1) / 2;
+        std::nth_element(rowDists, rowDists + medianIdx, rowDists + N);
         int median = rowDists[medianIdx];
 
         if(median < BestMedian)
@@ -395,14 +409,17 @@ void MapPoint::ComputeDistinctiveDescriptors()
 
     {
         unique_lock<mutex> lock(mMutexFeatures);
-        mDescriptor = vDescriptors[BestIdx].clone();
+        std::atomic_store(&mDescriptor, std::make_shared<const cv::Mat>(descMats[BestIdx].clone()));
     }
 }
 
 cv::Mat MapPoint::GetDescriptor()
 {
-    unique_lock<mutex> lock(mMutexFeatures);
-    return mDescriptor.clone();
+    // 原子读取 shared_ptr 后 clone
+    std::shared_ptr<const cv::Mat> d = std::atomic_load(&mDescriptor);
+    if(d)
+        return d->clone();
+    return cv::Mat();
 }
 
 int MapPoint::GetIndexInKeyFrame(KeyFrame *pKF)
@@ -453,16 +470,21 @@ void MapPoint::UpdateNormalAndDepth()
 
     cv::Mat normal = cv::Mat::zeros(3,1,CV_32F);
     int n=0;
+    // Pos 的标量副本，避免循环内 Mat 运算
+    const float posx = Pos.at<float>(0);
+    const float posy = Pos.at<float>(1);
+    const float posz = Pos.at<float>(2);
     for(map<KeyFrame*,size_t>::iterator mit=observations.begin(), mend=observations.end(); mit!=mend; mit++)
     {
         KeyFrame* pKF = mit->first;
-        cv::Mat Owi = pKF->GetCameraCenter();
-        cv::Mat normali = Pos - Owi;
+        // 栈版读取相机中心
+        cv::Point3f Owi;
+        pKF->GetCameraCenter(Owi);
 
-        // 内联计算向量范数，避免cv::norm调用
-        const float nx = normali.at<float>(0);
-        const float ny = normali.at<float>(1);
-        const float nz = normali.at<float>(2);
+        // normali = Pos - Owi（标量）
+        const float nx = posx - Owi.x;
+        const float ny = posy - Owi.y;
+        const float nz = posz - Owi.z;
         const float normSq = nx*nx + ny*ny + nz*nz;
         if(normSq > 1e-12f) {
             const float invNorm = 1.0f / sqrt(normSq);
@@ -473,12 +495,13 @@ void MapPoint::UpdateNormalAndDepth()
         n++;
     }
 
-    cv::Mat PC = Pos - pRefKF->GetCameraCenter();
+    cv::Point3f pRefOwi;
+    pRefKF->GetCameraCenter(pRefOwi);
 
-    // 内联计算距离，避免cv::norm调用
-    const float pcx = PC.at<float>(0);
-    const float pcy = PC.at<float>(1);
-    const float pcz = PC.at<float>(2);
+    // PC = Pos - pRefKF 相机中心（标量）
+    const float pcx = posx - pRefOwi.x;
+    const float pcy = posy - pRefOwi.y;
+    const float pcz = posz - pRefOwi.z;
     const float dist = sqrt(pcx*pcx + pcy*pcy + pcz*pcz);
 
     const int level = pRefKF->mvKeysUn[observations[pRefKF]].octave;
@@ -490,19 +513,22 @@ void MapPoint::UpdateNormalAndDepth()
         mfMaxDistance = dist*levelScaleFactor;
         mfMinDistance = mfMaxDistance/pRefKF->mvScaleFactors[nLevels-1];
         mNormalVector = normal/n;
+        // 同步预计算不变性边界
+        mfMinDistInvariance.store(MAPPOINT_MIN_DIST_INVARIANCE_FACTOR*mfMinDistance, std::memory_order_relaxed);
+        mfMaxDistInvariance.store(MAPPOINT_MAX_DIST_INVARIANCE_FACTOR*mfMaxDistance, std::memory_order_relaxed);
     }
 }
 
 float MapPoint::GetMinDistanceInvariance()
 {
-    unique_lock<mutex> lock(mMutexPos);
-    return MAPPOINT_MIN_DIST_INVARIANCE_FACTOR*mfMinDistance;
+    // 原子缓存
+    return mfMinDistInvariance.load(std::memory_order_relaxed);
 }
 
 float MapPoint::GetMaxDistanceInvariance()
 {
-    unique_lock<mutex> lock(mMutexPos);
-    return MAPPOINT_MAX_DIST_INVARIANCE_FACTOR*mfMaxDistance;
+    // 原子缓存
+    return mfMaxDistInvariance.load(std::memory_order_relaxed);
 }
 
 int MapPoint::PredictScale(const float &currentDist, KeyFrame* pKF)

@@ -39,7 +39,6 @@
 #include<opencv2/core/core.hpp>
 #include<opencv2/features2d/features2d.hpp>
 
-#include "Thirdparty/DBoW2/DBoW2/FeatureVector.h"
 #include "Config.h"
 
 //#include<stdint-gcc.h>
@@ -102,7 +101,9 @@ int ORBmatcher::SearchByProjection(Frame &F, const vector<MapPoint*> &vpMapPoint
         if(vIndices.empty())
             continue;
 
-        const cv::Mat MPdescriptor = pMP->GetDescriptor();
+        // 栈缓冲读取描述子
+        uint8_t MPdescriptor[ORB_DESC_COLS];
+        pMP->GetDescriptor(MPdescriptor);
 
         int bestDist=256;
         int bestLevel= -1;
@@ -119,9 +120,7 @@ int ORBmatcher::SearchByProjection(Frame &F, const vector<MapPoint*> &vpMapPoint
                 if(F.mvpMapPoints[idx]->Observations()>0)
                     continue;
 
-            const cv::Mat &d = F.mDescriptors.row(idx);
-
-            const int dist = DescriptorDistance(MPdescriptor,d);
+            const int dist = DescriptorDistance(MPdescriptor, F.mDescriptors.ptr<uint8_t>(idx));
 
             if(dist<bestDist)
             {
@@ -415,7 +414,8 @@ int ORBmatcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapP
             continue;
 
         // 匹配半径内最相似的关键点
-        const cv::Mat dMP = pMP->GetDescriptor();
+        uint8_t dMP[ORB_DESC_COLS];
+        pMP->GetDescriptor(dMP);
 
         int bestDist = ORB_MAX_DISTANCE;
         int bestIdx = -1;
@@ -430,9 +430,7 @@ int ORBmatcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapP
             if(kpLevel<nPredictedLevel-1 || kpLevel>nPredictedLevel)
                 continue;
 
-            const cv::Mat &dKF = pKF->mDescriptors.row(idx);
-
-            const int dist = DescriptorDistance(dMP,dKF);
+            const int dist = DescriptorDistance(dMP, pKF->mDescriptors.ptr<uint8_t>(idx));
 
             if(dist<bestDist)
             {
@@ -727,9 +725,11 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
         return 0;
 
     // 计算第二幅图像中的像极点
-    cv::Mat Cw = pKF1->GetCameraCenter();
-    cv::Mat R2w = pKF2->GetRotation();
-    cv::Mat t2w = pKF2->GetTranslation();
+    cv::Point3f Cw;
+    pKF1->GetCameraCenter(Cw);
+    float R2w[9], t2w[3];
+    pKF2->GetRotation(R2w);
+    pKF2->GetTranslation(t2w);
     std::shared_ptr<HBSTTree> tree1 = pKF1->GetHBSTTree();
     if (!tree1)
         return 0;
@@ -739,10 +739,13 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
     if (!tree2)
         return 0;
 
-    cv::Mat C2 = R2w*Cw+t2w;
-    const float invz = 1.0f/C2.at<float>(2);
-    const float ex =pKF2->fx*C2.at<float>(0)*invz+pKF2->cx;
-    const float ey =pKF2->fy*C2.at<float>(1)*invz+pKF2->cy;
+    // C2 = R2w*Cw + t2w（标量）
+    const float C2x = R2w[0]*Cw.x + R2w[1]*Cw.y + R2w[2]*Cw.z + t2w[0];
+    const float C2y = R2w[3]*Cw.x + R2w[4]*Cw.y + R2w[5]*Cw.z + t2w[1];
+    const float C2z = R2w[6]*Cw.x + R2w[7]*Cw.y + R2w[8]*Cw.z + t2w[2];
+    const float invz = 1.0f/C2z;
+    const float ex = pKF2->fx*C2x*invz+pKF2->cx;
+    const float ey = pKF2->fy*C2y*invz+pKF2->cy;
 
     int nmatches=0;
     vector<bool> vbMatched2(pKF2->N,false);
@@ -864,9 +867,12 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
     if (!pKF || pKF->isBad())
         return 0;
 
-    cv::Mat Rcw = pKF->GetRotation();
-    cv::Mat tcw = pKF->GetTranslation();
-    cv::Mat Ow = pKF->GetCameraCenter();
+    // 栈版零拷贝读取位姿与相机中心
+    float Rcw[9], tcw[3];
+    pKF->GetRotation(Rcw);
+    pKF->GetTranslation(tcw);
+    cv::Point3f Ow;
+    pKF->GetCameraCenter(Ow);
 
     const float &fx = pKF->fx;
     const float &fy = pKF->fy;
@@ -874,11 +880,11 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
     const float &cy = pKF->cy;
 
     // 预先提取位姿与相机中心的标量值，在循环中以 O(1) 免锁且免分配执行 3D 变换
-    const float R00 = Rcw.at<float>(0,0), R01 = Rcw.at<float>(0,1), R02 = Rcw.at<float>(0,2);
-    const float R10 = Rcw.at<float>(1,0), R11 = Rcw.at<float>(1,1), R12 = Rcw.at<float>(1,2);
-    const float R20 = Rcw.at<float>(2,0), R21 = Rcw.at<float>(2,1), R22 = Rcw.at<float>(2,2);
-    const float tx = tcw.at<float>(0), ty = tcw.at<float>(1), tz = tcw.at<float>(2);
-    const float Ox = Ow.at<float>(0), Oy = Ow.at<float>(1), Oz = Ow.at<float>(2);
+    const float R00 = Rcw[0], R01 = Rcw[1], R02 = Rcw[2];
+    const float R10 = Rcw[3], R11 = Rcw[4], R12 = Rcw[5];
+    const float R20 = Rcw[6], R21 = Rcw[7], R22 = Rcw[8];
+    const float tx = tcw[0], ty = tcw[1], tz = tcw[2];
+    const float Ox = Ow.x, Oy = Ow.y, Oz = Ow.z;
 
     int nFused=0;
 
@@ -958,8 +964,8 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
             continue;
 
         // 匹配半径内最相似的关键点
-
-        const cv::Mat dMP = pMP->GetDescriptor();
+        uint8_t dMP[ORB_DESC_COLS];
+        pMP->GetDescriptor(dMP);
 
         int bestDist = ORB_MAX_DISTANCE;
         int bestIdx = -1;
@@ -984,9 +990,7 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
             if(e2*pKF->mvInvLevelSigma2[kpLevel]>OPTIMIZER_CHI2_TH_2D)
                 continue;
 
-            const cv::Mat &dKF = pKF->mDescriptors.row(idx);
-
-            const int dist = DescriptorDistance(dMP,dKF);
+            const int dist = DescriptorDistance(dMP, pKF->mDescriptors.ptr<uint8_t>(idx));
 
             if(dist<bestDist)
             {
@@ -1120,8 +1124,8 @@ int ORBmatcher::Fuse(KeyFrame *pKF, cv::Mat Scw, const vector<MapPoint *> &vpPoi
             continue;
 
         // 匹配半径内最相似的关键点
-
-        const cv::Mat dMP = pMP->GetDescriptor();
+        uint8_t dMP[ORB_DESC_COLS];
+        pMP->GetDescriptor(dMP);
 
         int bestDist = INT_MAX;
         int bestIdx = -1;
@@ -1133,9 +1137,7 @@ int ORBmatcher::Fuse(KeyFrame *pKF, cv::Mat Scw, const vector<MapPoint *> &vpPoi
             if(kpLevel<nPredictedLevel-1 || kpLevel>nPredictedLevel)
                 continue;
 
-            const cv::Mat &dKF = pKF->mDescriptors.row(idx);
-
-            int dist = DescriptorDistance(dMP,dKF);
+            int dist = DescriptorDistance(dMP, pKF->mDescriptors.ptr<uint8_t>(idx));
 
             if(dist<bestDist)
             {
@@ -1176,13 +1178,15 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
     const float &cx = pKF1->cx;
     const float &cy = pKF1->cy;
 
-    // 世界坐标系到相机1
-    cv::Mat R1w = pKF1->GetRotation();
-    cv::Mat t1w = pKF1->GetTranslation();
+    // 世界坐标系到相机1（栈版零拷贝读取）
+    float R1w[9], t1w[3];
+    pKF1->GetRotation(R1w);
+    pKF1->GetTranslation(t1w);
 
     // 世界坐标系到相机2
-    cv::Mat R2w = pKF2->GetRotation();
-    cv::Mat t2w = pKF2->GetTranslation();
+    float R2w[9], t2w[3];
+    pKF2->GetRotation(R2w);
+    pKF2->GetTranslation(t2w);
 
     // 相机间的变换
     cv::Mat sR12 = s12*R12;
@@ -1214,10 +1218,10 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
     vector<int> vnMatch2(N2,-1);
 
     // 预将矩阵数据在循环外部加载至栈上，消除循环内部的 Mat 访问开销
-    const float R1w00 = R1w.at<float>(0,0), R1w01 = R1w.at<float>(0,1), R1w02 = R1w.at<float>(0,2);
-    const float R1w10 = R1w.at<float>(1,0), R1w11 = R1w.at<float>(1,1), R1w12 = R1w.at<float>(1,2);
-    const float R1w20 = R1w.at<float>(2,0), R1w21 = R1w.at<float>(2,1), R1w22 = R1w.at<float>(2,2);
-    const float t1wX = t1w.at<float>(0), t1wY = t1w.at<float>(1), t1wZ = t1w.at<float>(2);
+    const float R1w00 = R1w[0], R1w01 = R1w[1], R1w02 = R1w[2];
+    const float R1w10 = R1w[3], R1w11 = R1w[4], R1w12 = R1w[5];
+    const float R1w20 = R1w[6], R1w21 = R1w[7], R1w22 = R1w[8];
+    const float t1wX = t1w[0], t1wY = t1w[1], t1wZ = t1w[2];
 
     const float sR21_00 = sR21.at<float>(0,0), sR21_01 = sR21.at<float>(0,1), sR21_02 = sR21.at<float>(0,2);
     const float sR21_10 = sR21.at<float>(1,0), sR21_11 = sR21.at<float>(1,1), sR21_12 = sR21.at<float>(1,2);
@@ -1290,7 +1294,8 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
             continue;
 
         // 匹配半径内最相似的关键点
-        const cv::Mat dMP = pMP->GetDescriptor();
+        uint8_t dMP[ORB_DESC_COLS];
+        pMP->GetDescriptor(dMP);
 
         int bestDist = INT_MAX;
         int bestIdx = -1;
@@ -1303,9 +1308,7 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
             if(kp.octave<nPredictedLevel-1 || kp.octave>nPredictedLevel)
                 continue;
 
-            const cv::Mat &dKF = pKF2->mDescriptors.row(idx);
-
-            const int dist = DescriptorDistance(dMP,dKF);
+            const int dist = DescriptorDistance(dMP, pKF2->mDescriptors.ptr<uint8_t>(idx));
 
             if(dist<bestDist)
             {
@@ -1321,10 +1324,10 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
     }
 
     // 预将矩阵数据在循环外部加载至栈上，消除循环内部的 Mat 访问开销
-    const float R2w00 = R2w.at<float>(0,0), R2w01 = R2w.at<float>(0,1), R2w02 = R2w.at<float>(0,2);
-    const float R2w10 = R2w.at<float>(1,0), R2w11 = R2w.at<float>(1,1), R2w12 = R2w.at<float>(1,2);
-    const float R2w20 = R2w.at<float>(2,0), R2w21 = R2w.at<float>(2,1), R2w22 = R2w.at<float>(2,2);
-    const float t2wX = t2w.at<float>(0), t2wY = t2w.at<float>(1), t2wZ = t2w.at<float>(2);
+    const float R2w00 = R2w[0], R2w01 = R2w[1], R2w02 = R2w[2];
+    const float R2w10 = R2w[3], R2w11 = R2w[4], R2w12 = R2w[5];
+    const float R2w20 = R2w[6], R2w21 = R2w[7], R2w22 = R2w[8];
+    const float t2wX = t2w[0], t2wY = t2w[1], t2wZ = t2w[2];
 
     const float sR12_00 = sR12.at<float>(0,0), sR12_01 = sR12.at<float>(0,1), sR12_02 = sR12.at<float>(0,2);
     const float sR12_10 = sR12.at<float>(1,0), sR12_11 = sR12.at<float>(1,1), sR12_12 = sR12.at<float>(1,2);
@@ -1397,7 +1400,8 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
             continue;
 
         // 匹配半径内最相似的关键点
-        const cv::Mat dMP = pMP->GetDescriptor();
+        uint8_t dMP[ORB_DESC_COLS];
+        pMP->GetDescriptor(dMP);
 
         int bestDist = INT_MAX;
         int bestIdx = -1;
@@ -1410,9 +1414,7 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
             if(kp.octave<nPredictedLevel-1 || kp.octave>nPredictedLevel)
                 continue;
 
-            const cv::Mat &dKF = pKF1->mDescriptors.row(idx);
-
-            const int dist = DescriptorDistance(dMP,dKF);
+            const int dist = DescriptorDistance(dMP, pKF1->mDescriptors.ptr<uint8_t>(idx));
 
             if(dist<bestDist)
             {
@@ -1522,7 +1524,9 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
                 if(vIndices2.empty())
                     continue;
 
-                const cv::Mat dMP = pMP->GetDescriptor();
+                // 栈缓冲描述子
+                uint8_t dMP[ORB_DESC_COLS];
+                pMP->GetDescriptor(dMP);
 
                 int bestDist = ORB_MAX_DISTANCE;
                 int bestIdx2 = -1;
@@ -1531,9 +1535,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
                 {
                     const size_t i2 = *vit;
 
-                    const cv::Mat &d = CurrentFrame.mDescriptors.row(i2);
-
-                    const int dist = DescriptorDistance(dMP,d);
+                    const int dist = DescriptorDistance(dMP, CurrentFrame.mDescriptors.ptr<uint8_t>(i2));
 
                     if(dist<bestDist)
                     {
@@ -1666,7 +1668,9 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const set
                 if(vIndices2.empty())
                     continue;
 
-                const cv::Mat dMP = pMP->GetDescriptor();
+                // 栈缓冲描述子
+                uint8_t dMP[ORB_DESC_COLS];
+                pMP->GetDescriptor(dMP);
 
                 int bestDist = ORB_MAX_DISTANCE;
                 int bestIdx2 = -1;
@@ -1677,9 +1681,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const set
                     if(CurrentFrame.mvpMapPoints[i2])
                         continue;
 
-                    const cv::Mat &d = CurrentFrame.mDescriptors.row(i2);
-
-                    const int dist = DescriptorDistance(dMP,d);
+                    const int dist = DescriptorDistance(dMP, CurrentFrame.mDescriptors.ptr<uint8_t>(i2));
 
                     if(dist<bestDist)
                     {
@@ -1778,15 +1780,34 @@ void ORBmatcher::ComputeThreeMaxima(vector<int>* histo, const int L, int &ind1, 
     }
 }
 
-// 位集计数来自 bithacks (CountBitsSetParallel)
-int ORBmatcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)
-{
-    const uint8_t* pa = a.ptr<uint8_t>();
-    const uint8_t* pb = b.ptr<uint8_t>();
+// 8-bit popcount 查表（256 字节，常驻 L1 cache）。
+// 这是纯标量、全 CPU 兼容的汉明距离实现：逐字节查表累加，无损精度，
+// 且比 __builtin_popcountll 在无硬件 popcount 平台（如 AArch64 未开 NEON 时）
+// 的软件 SWAR 展开更快、更省指令，也不依赖编译器内建与目标指令集。
+static const uint8_t POPCNT8_LUT[256] = {
+    0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4,
+    1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,
+    1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,
+    2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
+    1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,
+    2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
+    2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
+    3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
+    1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,
+    2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
+    2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
+    3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
+    2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
+    3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
+    3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
+    4,5,5,6,5,6,6,7,5,6,6,7,6,7,7,8
+};
 
+// ORB 描述子汉明距离 (32 字节)。ARM 平台优先走 NEON 硬件 popcount（vcntq_u8，
+// 两条 vcntq + 两条 vaddlvq 即完成）；其余 CPU 走纯标量查表法，二者均无损精度。
+int ORBmatcher::DescriptorDistance(const uint8_t* pa, const uint8_t* pb)
+{
 #if defined(__ARM_NEON) || defined(__ARM_NEON__)
-    // ARM NEON 路径: vcntq_u8 + vaddlvq_u8
-    // 单指令 16 字节 popcount, 2 次加载覆盖全部 32 字节
     const uint8x16_t va0 = vld1q_u8(pa);
     const uint8x16_t vb0 = vld1q_u8(pb);
     const uint8x16_t va1 = vld1q_u8(pa + 16);
@@ -1795,12 +1816,9 @@ int ORBmatcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)
     const uint8x16_t xor0 = veorq_u8(va0, vb0);
     const uint8x16_t xor1 = veorq_u8(va1, vb1);
 
-    // vcntq_u8: 每条指令对 16 个字节同时计算 popcount
-    // vaddlvq_u8: 将 16 字节的 popcount 水平累加为单个 u32
     const uint8x16_t pop0 = vcntq_u8(xor0);
     const uint8x16_t pop1 = vcntq_u8(xor1);
 
-    // vaddlvq_u8 是 AArch64 特有指令，Armv7 回退到 vpaddlq
     #if defined(__aarch64__)
         return (int)(vaddlvq_u8(pop0) + vaddlvq_u8(pop1));
     #else
@@ -1811,16 +1829,17 @@ int ORBmatcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)
         return (int)(vgetq_lane_u64(sum64, 0) + vgetq_lane_u64(sum64, 1));
     #endif
 #else
-    // 标量回退: 4 × 64 位 popcount (与之前相同)
-    uint64_t va[4], vb[4];
-    std::memcpy(va, pa, 32);
-    std::memcpy(vb, pb, 32);
-
-    return __builtin_popcountll(va[0] ^ vb[0]) +
-           __builtin_popcountll(va[1] ^ vb[1]) +
-           __builtin_popcountll(va[2] ^ vb[2]) +
-           __builtin_popcountll(va[3] ^ vb[3]);
+    // 非 NEON 平台：纯标量查表法（全 CPU 兼容，比软件 SWAR 快，无损精度）
+    int d = 0;
+    for (int i = 0; i < 32; ++i)
+        d += POPCNT8_LUT[pa[i] ^ pb[i]];
+    return d;
 #endif
+}
+
+int ORBmatcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)
+{
+    return DescriptorDistance(a.ptr<uint8_t>(), b.ptr<uint8_t>());
 }
 
 } //namespace ORB_SLAM2

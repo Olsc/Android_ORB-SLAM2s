@@ -206,11 +206,22 @@ void System::SaveKeyFrameTrajectoryTUM(const std::string &filename)
         if(pKF->isBad())
             continue;
 
-        cv::Mat R = pKF->GetRotation().t();
-        std::vector<float> q = Converter::toQuaternion(R);
-        cv::Mat t = pKF->GetCameraCenter();
-        f << std::setprecision(6) << pKF->mTimeStamp << std::setprecision(7) << " " << t.at<float>(0) << " " << t.at<float>(1) << " " << t.at<float>(2)
-          << " " << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << std::endl;
+        // 栈版读取（锁内拷贝）：R = GetRotation().t()，t = 相机中心
+        float Rf[9];
+        pKF->GetRotation(Rf);
+        cv::Point3f t;
+        pKF->GetCameraCenter(t);
+
+        Eigen::Matrix3d Rm;
+        Rm << Rf[0], Rf[1], Rf[2],
+              Rf[3], Rf[4], Rf[5],
+              Rf[6], Rf[7], Rf[8];
+        Eigen::Quaterniond q(Rm.transpose());
+        std::vector<float> qv(4);
+        qv[0] = (float)q.x(); qv[1] = (float)q.y(); qv[2] = (float)q.z(); qv[3] = (float)q.w();
+
+        f << std::setprecision(6) << pKF->mTimeStamp << std::setprecision(7) << " " << t.x << " " << t.y << " " << t.z
+          << " " << qv[0] << " " << qv[1] << " " << qv[2] << " " << qv[3] << std::endl;
     }
 
     f.close();
@@ -369,10 +380,10 @@ void System::CreateNewMap()
         mpLocalMapper->SetAcceptKeyFrames(true);
     }
 
-    // 若迁移了已加载点，重建重定位缓存，使新地图中可立即匹配
+    // 若迁移了已加载点，标记重建重定位缓存
     if(!savedLoadedMPs.empty() && mpTracker) {
-        mpTracker->BuildLoadedRefCache();
-        LOGD("System::CreateNewMap 已重建重定位缓存（%d 个已加载点），新地图可立即匹配",
+        mpTracker->InvalidateRefCache();
+        LOGD("System::CreateNewMap 已标记重建重定位缓存（%d 个已加载点），新地图可立即匹配",
              (int)savedLoadedMPs.size());
     }
 
@@ -503,8 +514,10 @@ void System::SaveMap(const std::string &filename, int maxMapPoints)
         if(pMP->GetDescriptor().empty()) pMP->ComputeDistinctiveDescriptors();
         uint32_t id = static_cast<uint32_t>(pMP->mnId);
         ofs.write(reinterpret_cast<const char*>(&id), sizeof(id));
-        cv::Mat Pw = pMP->GetWorldPos();
-        float xyz[3] = {Pw.at<float>(0), Pw.at<float>(1), Pw.at<float>(2)};
+        // 栈版读取
+        cv::Point3f Pw;
+        pMP->GetWorldPos(Pw);
+        float xyz[3] = {Pw.x, Pw.y, Pw.z};
         ofs.write(reinterpret_cast<const char*>(xyz), sizeof(xyz));
 
         // 描述符
@@ -708,10 +721,10 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
              cntLoaded > 0 ? (100.0f * cntLoadedWithNormal / cntLoaded) : 0.0f);
     }
 
-    // 立即重建参考缓存，避免需要多次点击才生效
+    // 标记重建参考缓存（[M2] 由后台重定位线程异步重建，避免加载时主线程卡顿）
     if(mpTracker){ 
-        mpTracker->BuildLoadedRefCache(); 
-        LOGD("加载地图: 参考缓存已重建");
+        mpTracker->InvalidateRefCache(); 
+        LOGD("加载地图: 参考缓存已标记重建");
     }
 
     // 确保仍处于SLAM建图模式（不是仅定位），继续正常扫描与建图

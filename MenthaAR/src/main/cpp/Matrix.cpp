@@ -3,10 +3,7 @@
  * 由Olsc于2025/8/25开始进行修改
  */
 
-/**
- * 矩阵运算模块实现
- * 实现了3D图形学中常用的矩阵和四元数运算
- */
+// 矩阵运算模块实现：提供3D图形学常用矩阵与四元数运算
 
 #include "Matrix.h"
 #include <cmath>
@@ -18,10 +15,7 @@
 const float PI= (const float) acos(-1);  // π常量
 #define I(_i, _j) ((_j)+ 4*(_i))  // 列主序矩阵索引宏（OpenGL风格）
 
-/**
- * 4x4矩阵乘法（列主序）
- * 实现 r = lhs * rhs
- */
+// 4x4矩阵乘法（列主序），r = lhs * rhs
 void multiplyMM(float* r, const float* lhs, const float* rhs) {
     float tmp[16];
     // 第0列
@@ -83,18 +77,12 @@ void translateM(float* m, int mOffset, float x, float y, float z) {
     }
 }
 
-/**
- * 计算3D向量的长度
- */
+// 计算3D向量的长度
 float length(float x, float y, float z) {
     return (float) sqrt(x * x + y * y + z * z);
 }
 
-/**
- * 创建绕任意轴的旋转矩阵
- * 使用Rodrigues旋转公式
- * 优化策略: 对X/Y/Z轴旋转进行特殊处理，避免不必要的计算
- */
+// 创建绕任意轴的旋转矩阵（Rodrigues公式），对X/Y/Z轴旋转做特殊处理
 void setRotateM(float rm[], int rmOffset,
                 float a, float x, float y, float z) {
     // 设置齐次坐标的固定值
@@ -110,30 +98,30 @@ void setRotateM(float rm[], int rmOffset,
     float s = (float) sin(a);
     float c = (float) cos(a);
 
-    // 特殊情况优化：绕X轴旋转
+    // 特殊情况：绕X轴旋转
     if (1.0f == x && 0.0f == y && 0.0f == z) {
         rm[rmOffset + 5] = c;   rm[rmOffset + 10]= c;
         rm[rmOffset + 6] = s;   rm[rmOffset + 9] = -s;
         rm[rmOffset + 1] = 0;   rm[rmOffset + 2] = 0;
         rm[rmOffset + 4] = 0;   rm[rmOffset + 8] = 0;
         rm[rmOffset + 0] = 1;
-    } 
-    // 特殊情况优化：绕Y轴旋转
+    }
+    // 特殊情况：绕Y轴旋转
     else if (0.0f == x && 1.0f == y && 0.0f == z) {
         rm[rmOffset + 0] = c;   rm[rmOffset + 10]= c;
         rm[rmOffset + 8] = s;   rm[rmOffset + 2] = -s;
         rm[rmOffset + 1] = 0;   rm[rmOffset + 4] = 0;
         rm[rmOffset + 6] = 0;   rm[rmOffset + 9] = 0;
         rm[rmOffset + 5] = 1;
-    } 
-    // 特殊情况优化：绕Z轴旋转
+    }
+    // 特殊情况：绕Z轴旋转
     else if (0.0f == x && 0.0f == y && 1.0f == z) {
         rm[rmOffset + 0] = c;   rm[rmOffset + 5] = c;
         rm[rmOffset + 1] = s;   rm[rmOffset + 4] = -s;
         rm[rmOffset + 2] = 0;   rm[rmOffset + 6] = 0;
         rm[rmOffset + 8] = 0;   rm[rmOffset + 9] = 0;
         rm[rmOffset + 10]= 1;
-    } 
+    }
     // 一般情况：绕任意轴旋转（使用Rodrigues公式）
     else {
         float len = length(x, y, z);
@@ -163,10 +151,7 @@ void setRotateM(float rm[], int rmOffset,
     }
 }
 
-/**
- * 对矩阵应用旋转变换
- * 先创建旋转矩阵，然后与原矩阵相乘
- */
+// 对矩阵应用旋转变换，先创建旋转矩阵再与原矩阵相乘
 void rotateM(float rm[], float m[],
                            float a, float x, float y, float z) {
     // 使用局部变量确保线程安全（避免多线程竞争）
@@ -183,10 +168,7 @@ void rotateM(float rm[], float m[],
     }
 }
 
-/**
- * 创建OpenGL风格的透视投影矩阵
- * 定义一个视锥体（frustum），用于3D透视投影
- */
+// 创建OpenGL风格透视投影矩阵，定义视锥体用于3D透视投影
 void frustumM(float m[], int offset,
               float left, float right, float bottom, float top,
               float nearZ, float farZ) {
@@ -219,10 +201,7 @@ void frustumM(float m[], int offset,
     m[offset + 15] = 0.0f;
 }
 
-/**
- * 从相机内参创建RUB坐标系的透视投影矩阵
- * 参考: http://www.songho.ca/opengl/gl_projectionmatrix.html
- */
+// 从相机内参创建RUB坐标系透视投影矩阵
 void frustumM_RUB(int w, int h, double fu, double fv, double u0, double v0, double zNear, double zFar ,float projectionMatrix[]) {
     // 根据相机内参计算视锥体边界
     const double L = -(u0) * zNear / fu;        // 左边界
@@ -232,9 +211,7 @@ void frustumM_RUB(int w, int h, double fu, double fv, double u0, double v0, doub
     frustumM(projectionMatrix,0,L,R,B,T,zNear,zFar);
 }
 
-/**
- * 设置为4x4单位矩阵
- */
+// 设置为4x4单位矩阵
 void setIdentityM(float m[])
 {
     m[0] = 1.0f;  m[1] = 0.0f;  m[2] = 0.0f;  m[3] = 0.0f;

@@ -492,8 +492,8 @@ const int RELOC_MAX_CANDIDATES_HARD_CAP = 10000;
 // 加载地图空间网格单元尺寸（米）
 const float LOADED_MAP_GRID_CELL_SIZE = 10.0f;
 
-// 网格单元格数硬上限（防内存爆炸）
-const long long GRID_CELLS_HARD_CAP = 10000000LL;
+// 网格单元格数硬上限（防内存爆炸）。
+const long long GRID_CELLS_HARD_CAP = 1000000LL;
 
 // 网格每维度最大格数（超限时按此缩小单元尺寸）
 const int GRID_MAX_DIM_CELLS = 100;
@@ -703,9 +703,6 @@ const int LOCAL_BA_MIN_KEYFRAMES = 3;
 // 中位深度统计排序索引（ComputeSceneMedianDepth 参数）
 const int TRIANGULATION_DEPTH_PERCENTILE = 2;
 
-// 三角化 4×4 特征分解最大迭代次数
-const int TRIANGULATION_JACOBI_MAX_ITERS = 30;
-
 // MapPointCulling 的 KF 间隔时间窗：≥2 帧观测不足判死；≥3 帧移出候选列表
 const int MAPPOINT_CULL_KF_GAP_CHECK = 2;
 const int MAPPOINT_CULL_KF_GAP_REMOVE = 3;
@@ -798,9 +795,6 @@ const float INITIALIZER_SINGULAR_RATIO = 1.00001f;
 
 // 最优/次优内点比判定
 const float INITIALIZER_BEST_RATIO = 0.75f;
-
-// Jacobi 特征分解迭代上限
-const int INITIALIZER_JACOBI_ITERS = 30;
 
 // 负深度视差判定 cos 阈值（≈0.36°）与视差分位
 const float INITIALIZER_PARALLAX_COS_TH = 0.99998f;

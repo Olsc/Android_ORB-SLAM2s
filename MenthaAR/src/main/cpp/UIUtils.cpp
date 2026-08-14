@@ -3,20 +3,12 @@
  * 由Olsc于2025/8/25开始进行修改
  */
 
- /**
- * UI工具函数模块实现
- */
+// UI工具函数模块实现
 #include "UIUtils.h"
 #include "Matrix.h"
 #include "include/Config.h"
 
-/**
- * 绘制当前帧跟踪到的特征点
- * 颜色编码策略:
- *   - 青色(31,188,210): 新建的地图点
- *   - 绿色(0,255,0): 成功匹配到的已加载地图点
- *   - 红色(0,0,255): 未成功匹配的已加载地图点
- */
+// 绘制当前帧跟踪到的特征点，青色=新建、绿色=匹配的已加载、红色=未匹配的已加载
 void drawTrackedPoints(const std::vector<cv::KeyPoint> &vKeys, const std::vector<ORB_SLAM2::MapPoint *> &vMPs,
                        cv::Mat &im, float cx, float cy)
 {
@@ -43,14 +35,7 @@ void drawTrackedPoints(const std::vector<cv::KeyPoint> &vKeys, const std::vector
     }
 }
 
-/**
- * 使用RANSAC算法从3D地图点中检测平面
- * 算法流程:
- *   1. 筛选观测次数>5的稳定地图点
- *   2. RANSAC迭代: 随机选3个点拟合平面，计算内点距离
- *   3. 选择中值距离最小的平面作为最佳结果
- *   4. 提取内点并构建平面对象
- */
+// 使用RANSAC算法从3D地图点中检测平面，选择中值距离最小的模型
 Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &vMPs, const int iterations)
 {
     // 提取3D点：仅保留观测次数>5的稳定地图点 (使用栈分配和零拷贝接口，彻底消除堆开销)
@@ -135,11 +120,11 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
             vDistances[i] = fabs(vPoints[i].x*a + vPoints[i].y*b + vPoints[i].z*c + d)*f;
         }
 
-        // 对距离排序，计算中值距离（取前20%的点的边界值）
+        // 计算中值距离（取前20%的点的边界值；nth_element 替代全排序）
         vector<float> vSorted = vDistances;
-        sort(vSorted.begin(),vSorted.end());
-
         int nth = max((int)(ORB_SLAM2::PLANE_MEDIAN_TAIL_RATIO*N), ORB_SLAM2::PLANE_MEDIAN_MIN_SAMPLES);
+        if(nth >= (int)vSorted.size()) nth = (int)vSorted.size() - 1;
+        std::nth_element(vSorted.begin(), vSorted.begin() + nth, vSorted.end());
         const float medianDist = vSorted[nth];
 
         // 保存中值距离最小的模型
@@ -178,10 +163,7 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
     return new Plane(vInlierMPs,Tcw);
 }
 
-/**
- * 将OpenCV的4x4 Mat矩阵转换为OpenGL的列主序矩阵
- * OpenCV使用行主序，OpenGL使用列主序，需要进行转置
- */
+// 将OpenCV的4x4 Mat矩阵转为OpenGL列主序矩阵，OpenCV行主序与OpenGL列主序需转置
 void getColMajorMatrixFromMat(float M[],cv::Mat &Tcw){
     M[0] = Tcw.at<float>(0,0);
     M[1] = Tcw.at<float>(1,0);
@@ -201,10 +183,8 @@ void getColMajorMatrixFromMat(float M[],cv::Mat &Tcw){
     M[15]  = 1.0;
 }
 
-/**
- * 绘制所有地图点（用于AR重定位时显示完整点云）
- */
-void drawAllMapPoints(const cv::Mat &Tcw, const std::vector<ORB_SLAM2::MapPoint*> &allMapPoints, 
+// 绘制所有地图点，用于AR重定位时显示完整点云
+void drawAllMapPoints(const cv::Mat &Tcw, const std::vector<ORB_SLAM2::MapPoint*> &allMapPoints,
                       cv::Mat &im, float fx, float fy, float cx, float cy, bool drawOnlyLoaded)
 {
     if(Tcw.empty() || allMapPoints.empty())
@@ -277,7 +257,7 @@ void drawAllMapPoints(const cv::Mat &Tcw, const std::vector<ORB_SLAM2::MapPoint*
             continue;
 
         // 绘制点
-        cv::circle(im, cv::Point2f(u_display, v_display), ORB_SLAM2::UI_CLOUD_POINT_RADIUS, 
+        cv::circle(im, cv::Point2f(u_display, v_display), ORB_SLAM2::UI_CLOUD_POINT_RADIUS,
                    pMP->mbFromLoadedMap ? colorLoaded : colorNew, -1);
 
         drawnCount++;

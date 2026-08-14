@@ -55,9 +55,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * 用于在AR环境中渲染3D模型（GLB格式）的包装类（基于 Google Filament 渲染引擎）。
- */
+// 用于在 AR 环境中渲染 3D 模型（GLB 格式）的包装类，基于 Google Filament 渲染引擎
 public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
     private static final String TAG = "ModelRendererWrapper";
 
@@ -446,9 +444,7 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
         }).start();
     }
 
-    /**
-     * 优化与调整模型的所有材质球属性
-     */
+    // 调整模型所有材质球的属性参数
     private void customizeMaterials() {
         if (asset == null || engine == null) return;
 
@@ -595,9 +591,7 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
         }
     }
 
-    /**
-     * 摇杆增量旋转：同时更新Y轴(yaw)和X轴(pitch)旋转
-     */
+    // 摇杆增量旋转，同时更新 Y 轴(yaw)与 X 轴(pitch)
     public void addUserRotation(float yawDelta, float pitchDelta) {
         userRotationY += yawDelta;
         userRotationY = userRotationY % 360.0f;
@@ -639,10 +633,7 @@ public class ModelRendererWrapper implements NativeHelper.OnMVPUpdatedCallback {
         matricesReady = true;
     }
 
-    /**
-     * 释放 Filament 所占用的 native 及 Java 层资源。
-     * 在 Activity 的 onDestroy() 触发时必须调用该方法。
-     */
+    // 释放 Filament 占用的 native 与 Java 层资源，必须在 onDestroy() 中调用
     public void destroy() {
         Log.d(TAG, "开始释放 Filament 引擎资源...");
         stopFrameLoop();

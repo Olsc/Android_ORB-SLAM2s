@@ -17,10 +17,7 @@ import java.nio.ShortBuffer;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-/**
- * 3DOF立方体渲染器
- * 在视角前方指定距离处生成一个彩色立方体，并进行3DOF跟踪
- */
+// 3DOF立方体渲染器：在视角前方指定距离处生成彩色立方体并进行3DOF跟踪
 public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
     private static final String TAG = "ThreeDofCubeRenderer";
 
@@ -51,9 +48,7 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
         this.nativeHelper = nativeHelper;
     }
 
-    /**
-     * 在视角前方指定距离处生成立方体
-     */
+    // 在视角前方指定距离处生成立方体
     public void spawnCubeAtDistance(float distance) {
         this.mDistance = distance;
         this.mInitialized = false; // 重置，下一帧会重新计算位置
@@ -61,9 +56,7 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
         Log.d(TAG, "请求在前方 " + distance + " 米处生成立方体");
     }
 
-    /**
-     * 隐藏立方体
-     */
+    // 隐藏立方体
     public void hideCube() {
         this.mShowCube = false;
     }
@@ -76,7 +69,7 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
         GLES20.glEnable(GLES20.GL_BLEND);
         GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
 
-        String vertexShaderCode = 
+        String vertexShaderCode =
             "uniform mat4 uMVPMatrix;" +
             "attribute vec4 vPosition;" +
             "attribute vec4 vColor;" +
@@ -86,7 +79,7 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
             "  fColor = vColor;" +
             "}";
 
-        String fragmentShaderCode = 
+        String fragmentShaderCode =
             "precision mediump float;" +
             "varying vec4 fColor;" +
             "void main() {" +

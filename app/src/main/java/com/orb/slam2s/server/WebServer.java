@@ -65,7 +65,7 @@ public class WebServer {
                 // 创建SSL服务器Socket
                 SSLServerSocket sslServerSocket = createSSLServerSocket(port);
                 serverSocket = sslServerSocket;
-                
+
                 Log.d(TAG, "服务器在 " + port + " 上启动");
                 while (isRunning) {
                     try {
@@ -82,9 +82,7 @@ public class WebServer {
         }).start();
     }
 
-    /**
-     * 创建SSL服务器Socket
-     */
+    // 创建 SSL 服务器 Socket
     private SSLServerSocket createSSLServerSocket(int port) throws Exception {
         // 1. 从assets读取证书和密钥
         InputStream certStream = context.getAssets().open("cert/cert.pem");
@@ -119,7 +117,7 @@ public class WebServer {
 
         // 7. 创建SSLServerSocketFactory
         SSLServerSocketFactory ssf = sslContext.getServerSocketFactory();
-        
+
         // 8. 创建并返回SSLServerSocket
         SSLServerSocket sslServerSocket = (SSLServerSocket) ssf.createServerSocket(port);
         sslServerSocket.setNeedClientAuth(false);
@@ -127,9 +125,7 @@ public class WebServer {
         return sslServerSocket;
     }
 
-    /**
-     * 读取PEM文件内容
-     */
+    // 读取 PEM 文件内容
     private String readPEMFile(InputStream is) throws IOException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(is));
         StringBuilder sb = new StringBuilder();
@@ -141,9 +137,7 @@ public class WebServer {
         return sb.toString();
     }
 
-    /**
-     * 解析PEM格式的私钥，提取Base64编码的密钥数据
-     */
+    // 解析 PEM 格式私钥，提取 Base64 编码的密钥数据
     private byte[] parsePEMPrivateKey(String pem) {
         // 移除PEM头尾和换行符
         String privateKeyPEM = pem
@@ -152,7 +146,7 @@ public class WebServer {
                 .replace("-----BEGIN RSA PRIVATE KEY-----", "")
                 .replace("-----END RSA PRIVATE KEY-----", "")
                 .replaceAll("\\s", "");
-        
+
         // Base64解码 (使用Android的Base64)
         return android.util.Base64.decode(privateKeyPEM, android.util.Base64.DEFAULT);
     }
@@ -391,7 +385,6 @@ public class WebServer {
             os.write(header.getBytes());
             os.write(bytes);
         }
-
 
         private void handleUploadFrame(InputStream is, OutputStream os) throws IOException {
             try {

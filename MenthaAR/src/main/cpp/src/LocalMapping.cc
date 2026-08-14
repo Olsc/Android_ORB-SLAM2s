@@ -37,6 +37,7 @@
 #include "ORBmatcher.h"
 #include "Optimizer.h"
 #include "Config.h"
+#include "Converter.h"
 
 #include<mutex>
 #include<chrono>
@@ -286,13 +287,22 @@ void LocalMapping::CreateNewMapPoints()
 
     ORBmatcher matcher(ORB_MATCHER_NNRATIO_TRIANGULATION,false);
 
-    cv::Mat Rcw1 = mpCurrentKeyFrame->GetRotation();
-    cv::Mat Rwc1 = Rcw1.t();
-    cv::Mat tcw1 = mpCurrentKeyFrame->GetTranslation();
+    // 栈版读取位姿
+    float Rcw1f[9], tcw1f[3];
+    mpCurrentKeyFrame->GetRotation(Rcw1f);
+    mpCurrentKeyFrame->GetTranslation(tcw1f);
+    cv::Point3f Ow1;
+    mpCurrentKeyFrame->GetCameraCenter(Ow1);
+
+    cv::Mat Rwc1(3,3,CV_32F);  // Rwc1 = Rcw1^T
     cv::Mat Tcw1(3,4,CV_32F);
-    Rcw1.copyTo(Tcw1.colRange(0,3));
-    tcw1.copyTo(Tcw1.col(3));
-    cv::Mat Ow1 = mpCurrentKeyFrame->GetCameraCenter();
+    for(int r=0; r<3; ++r) {
+        for(int c=0; c<3; ++c) {
+            Tcw1.at<float>(r,c) = Rcw1f[r*3+c];
+            Rwc1.at<float>(r,c) = Rcw1f[c*3+r];
+        }
+        Tcw1.at<float>(r,3) = tcw1f[r];
+    }
 
     const float &fx1 = mpCurrentKeyFrame->fx;
     const float &fy1 = mpCurrentKeyFrame->fy;
@@ -313,10 +323,13 @@ void LocalMapping::CreateNewMapPoints()
 
         KeyFrame* pKF2 = vpNeighKFs[i];
 
-        // 首先检查基线是否太短
-        cv::Mat Ow2 = pKF2->GetCameraCenter();
-        cv::Mat vBaseline = Ow2-Ow1;
-        const float baseline = cv::norm(vBaseline);
+        // 首先检查基线是否太短（栈版相机中心，标量基线）
+        cv::Point3f Ow2;
+        pKF2->GetCameraCenter(Ow2);
+        const float bx = Ow2.x - Ow1.x;
+        const float by = Ow2.y - Ow1.y;
+        const float bz = Ow2.z - Ow1.z;
+        const float baseline = std::sqrt(bx*bx + by*by + bz*bz);
 
         {
             const float medianDepthKF2 = pKF2->ComputeSceneMedianDepth(TRIANGULATION_DEPTH_PERCENTILE);
@@ -333,12 +346,19 @@ void LocalMapping::CreateNewMapPoints()
         vector<pair<size_t,size_t> > vMatchedIndices;
         matcher.SearchForTriangulation(mpCurrentKeyFrame,pKF2,F12,vMatchedIndices,false);
 
-        cv::Mat Rcw2 = pKF2->GetRotation();
-        cv::Mat Rwc2 = Rcw2.t();
-        cv::Mat tcw2 = pKF2->GetTranslation();
+        float Rcw2f[9], tcw2f[3];
+        pKF2->GetRotation(Rcw2f);
+        pKF2->GetTranslation(tcw2f);
+
+        cv::Mat Rwc2(3,3,CV_32F);  // Rwc2 = Rcw2^T
         cv::Mat Tcw2(3,4,CV_32F);
-        Rcw2.copyTo(Tcw2.colRange(0,3));
-        tcw2.copyTo(Tcw2.col(3));
+        for(int r=0; r<3; ++r) {
+            for(int c=0; c<3; ++c) {
+                Tcw2.at<float>(r,c) = Rcw2f[r*3+c];
+                Rwc2.at<float>(r,c) = Rcw2f[c*3+r];
+            }
+            Tcw2.at<float>(r,3) = tcw2f[r];
+        }
 
         const float &fx2 = pKF2->fx;
         const float &fy2 = pKF2->fy;
@@ -394,153 +414,53 @@ void LocalMapping::CreateNewMapPoints()
             cv::Mat x3D;
             if(cosParallaxRays<cosParallaxStereo && cosParallaxRays>0 && (bStereo1 || bStereo2 || cosParallaxRays<LOCAL_MAPPING_TRIANGULATION_PARALLAX_TH))
             {
-                // 线性三角化方法 (零堆分配 4x4 雅可比求解器)
-                float A[4][4];
-                const float* pTcw1_0 = Tcw1.ptr<float>(0);
-                const float* pTcw1_1 = Tcw1.ptr<float>(1);
-                const float* pTcw1_2 = Tcw1.ptr<float>(2);
-                const float* pTcw2_0 = Tcw2.ptr<float>(0);
-                const float* pTcw2_1 = Tcw2.ptr<float>(1);
-                const float* pTcw2_2 = Tcw2.ptr<float>(2);
-
-                for (int c = 0; c < 4; ++c) {
-                    A[0][c] = xn1x * pTcw1_2[c] - pTcw1_0[c];
-                    A[1][c] = xn1y * pTcw1_2[c] - pTcw1_1[c];
-                    A[2][c] = xn2x * pTcw2_2[c] - pTcw2_0[c];
-                    A[3][c] = xn2y * pTcw2_2[c] - pTcw2_1[c];
-                }
-
-                // 4x4 实对称矩阵 A^T A 正交 Jacobi 旋转特征分解 (栈内存零分配，精确且数值极其稳定)
-                float M[4][4];
-                for (int r = 0; r < 4; ++r) {
-                    for (int c = r; c < 4; ++c) {
-                        float val = A[0][r] * A[0][c] + A[1][r] * A[1][c] + A[2][r] * A[2][c] + A[3][r] * A[3][c];
-                        M[r][c] = val;
-                        M[c][r] = val;
-                    }
-                }
-
-                float V[4][4] = {
-                    {1.0f, 0.0f, 0.0f, 0.0f},
-                    {0.0f, 1.0f, 0.0f, 0.0f},
-                    {0.0f, 0.0f, 1.0f, 0.0f},
-                    {0.0f, 0.0f, 0.0f, 1.0f}
-                };
-
-                for (int it = 0; it < TRIANGULATION_JACOBI_MAX_ITERS; ++it) {
-                    float maxVal = 0.0f;
-                    int p = 0, q = 1;
-                    for (int i = 0; i < 4; ++i) {
-                        for (int j = i + 1; j < 4; ++j) {
-                            float absVal = std::abs(M[i][j]);
-                            if (absVal > maxVal) {
-                                maxVal = absVal;
-                                p = i;
-                                q = j;
-                            }
-                        }
-                    }
-
-                    if (maxVal < 1e-15f) break;
-
-                    float app = M[p][p];
-                    float aqq = M[q][q];
-                    float apq = M[p][q];
-
-                    float phi = 0.5f * std::atan2(2.0f * apq, aqq - app);
-                    float c = std::cos(phi);
-                    float s = std::sin(phi);
-
-                    for (int i = 0; i < 4; ++i) {
-                        if (i != p && i != q) {
-                            float mip = M[i][p];
-                            float miq = M[i][q];
-                            M[i][p] = c * mip - s * miq;
-                            M[p][i] = M[i][p];
-                            M[i][q] = s * mip + c * miq;
-                            M[q][i] = M[i][q];
-                        }
-                    }
-
-                    M[p][p] = c * c * app - 2.0f * s * c * apq + s * s * aqq;
-                    M[q][q] = s * s * app + 2.0f * s * c * apq + c * c * aqq;
-                    M[p][q] = 0.0f;
-                    M[q][p] = 0.0f;
-
-                    for (int i = 0; i < 4; ++i) {
-                        float vip = V[i][p];
-                        float viq = V[i][q];
-                        V[i][p] = c * vip - s * viq;
-                        V[i][q] = s * vip + c * viq;
-                    }
-                }
-
-                int minIdx = 0;
-                float minEval = M[0][0];
-                for (int i = 1; i < 4; ++i) {
-                    if (M[i][i] < minEval) {
-                        minEval = M[i][i];
-                        minIdx = i;
-                    }
-                }
-
-                float invW = V[3][minIdx];
-                if (std::abs(invW) <= 1e-10f)
+                // 线性三角化（公共 DLT 实现，见 Converter::TriangulateDLT；w==0 时返回 false）
+                if (!Converter::TriangulateDLT(Tcw1, Tcw2, xn1x, xn1y, xn2x, xn2y, x3D))
                     continue;
-
-                invW = 1.0f / invW;
-                x3D = (cv::Mat_<float>(3, 1) << V[0][minIdx] * invW, V[1][minIdx] * invW, V[2][minIdx] * invW);
 
             }
             else
                 continue; // 没有双目信息且视差非常小
 
-            cv::Mat x3Dt = x3D.t();
-
-            // 检查三角化点是否在相机前方
-            float z1 = Rcw1.row(2).dot(x3Dt)+tcw1.at<float>(2);
+            // 检查三角化点是否在相机前方（标量；Rcw1f/tcw1f 为栈版位姿）
+            const float x3Dx = x3D.at<float>(0);
+            const float x3Dy = x3D.at<float>(1);
+            const float x3Dz = x3D.at<float>(2);
+            float z1 = Rcw1f[6]*x3Dx + Rcw1f[7]*x3Dy + Rcw1f[8]*x3Dz + tcw1f[2];
             if(z1<=0)
                 continue;
 
-            float z2 = Rcw2.row(2).dot(x3Dt)+tcw2.at<float>(2);
+            float z2 = Rcw2f[6]*x3Dx + Rcw2f[7]*x3Dy + Rcw2f[8]*x3Dz + tcw2f[2];
             if(z2<=0)
                 continue;
 
-            // 检查第一个关键帧中的重投影误差
+            // 检查第一个关键帧中的重投影误差（交叉相乘消除 1.0/z1 浮点除法，100% 数学等价）
             const float &sigmaSquare1 = mpCurrentKeyFrame->mvLevelSigma2[kp1.octave];
-            const float x1 = Rcw1.row(0).dot(x3Dt)+tcw1.at<float>(0);
-            const float y1 = Rcw1.row(1).dot(x3Dt)+tcw1.at<float>(1);
-            const float invz1 = 1.0/z1;
+            const float x1 = Rcw1f[0]*x3Dx + Rcw1f[1]*x3Dy + Rcw1f[2]*x3Dz + tcw1f[0];
+            const float y1 = Rcw1f[3]*x3Dx + Rcw1f[4]*x3Dy + Rcw1f[5]*x3Dz + tcw1f[1];
 
             {
-                float u1 = fx1*x1*invz1+cx1;
-                float v1 = fy1*y1*invz1+cy1;
-                float errX1 = u1 - kp1.pt.x;
-                float errY1 = v1 - kp1.pt.y;
-                if((errX1*errX1+errY1*errY1)>OPTIMIZER_CHI2_TH_2D*sigmaSquare1)
+                float dx1 = fx1*x1 + (cx1 - kp1.pt.x)*z1;
+                float dy1 = fy1*y1 + (cy1 - kp1.pt.y)*z1;
+                if((dx1*dx1 + dy1*dy1) > OPTIMIZER_CHI2_TH_2D * sigmaSquare1 * z1 * z1)
                     continue;
             }
 
-            // 检查第二个关键帧中的重投影误差
+            // 检查第二个关键帧中的重投影误差（交叉相乘消除 1.0/z2 浮点除法，100% 数学等价）
             const float sigmaSquare2 = pKF2->mvLevelSigma2[kp2.octave];
-            const float x2 = Rcw2.row(0).dot(x3Dt)+tcw2.at<float>(0);
-            const float y2 = Rcw2.row(1).dot(x3Dt)+tcw2.at<float>(1);
-            const float invz2 = 1.0/z2;
+            const float x2 = Rcw2f[0]*x3Dx + Rcw2f[1]*x3Dy + Rcw2f[2]*x3Dz + tcw2f[0];
+            const float y2 = Rcw2f[3]*x3Dx + Rcw2f[4]*x3Dy + Rcw2f[5]*x3Dz + tcw2f[1];
             {
-                float u2 = fx2*x2*invz2+cx2;
-                float v2 = fy2*y2*invz2+cy2;
-                float errX2 = u2 - kp2.pt.x;
-                float errY2 = v2 - kp2.pt.y;
-                if((errX2*errX2+errY2*errY2)>OPTIMIZER_CHI2_TH_2D*sigmaSquare2)
+                float dx2 = fx2*x2 + (cx2 - kp2.pt.x)*z2;
+                float dy2 = fy2*y2 + (cy2 - kp2.pt.y)*z2;
+                if((dx2*dx2 + dy2*dy2) > OPTIMIZER_CHI2_TH_2D * sigmaSquare2 * z2 * z2)
                     continue;
             }
 
             // 检查尺度一致性
             // 使用平方距离进行快速零值检查，避免不必要的sqrt
-            cv::Mat normal1 = x3D-Ow1;
-            cv::Mat normal2 = x3D-Ow2;
-            const float n1x = normal1.at<float>(0), n1y = normal1.at<float>(1), n1z = normal1.at<float>(2);
-            const float n2x = normal2.at<float>(0), n2y = normal2.at<float>(1), n2z = normal2.at<float>(2);
+            const float n1x = x3Dx - Ow1.x, n1y = x3Dy - Ow1.y, n1z = x3Dz - Ow1.z;
+            const float n2x = x3Dx - Ow2.x, n2y = x3Dy - Ow2.y, n2z = x3Dz - Ow2.z;
             const float dist1Sq = n1x*n1x + n1y*n1y + n1z*n1z;
             const float dist2Sq = n2x*n2x + n2y*n2y + n2z*n2z;
 
@@ -659,10 +579,23 @@ void LocalMapping::SearchInNeighbors()
 
 cv::Mat LocalMapping::ComputeF12(KeyFrame *&pKF1, KeyFrame *&pKF2)
 {
-    cv::Mat R1w = pKF1->GetRotation();
-    cv::Mat t1w = pKF1->GetTranslation();
-    cv::Mat R2w = pKF2->GetRotation();
-    cv::Mat t2w = pKF2->GetTranslation();
+    // 栈版读取位姿（锁内拷贝，替代 4 次 clone）
+    float R1f[9], R2f[9], t1f[3], t2f[3];
+    pKF1->GetRotation(R1f);
+    pKF1->GetTranslation(t1f);
+    pKF2->GetRotation(R2f);
+    pKF2->GetTranslation(t2f);
+
+    cv::Mat R1w(3,3,CV_32F), R2w(3,3,CV_32F);
+    cv::Mat t1w(3,1,CV_32F), t2w(3,1,CV_32F);
+    for(int r=0; r<3; ++r) {
+        for(int c=0; c<3; ++c) {
+            R1w.at<float>(r,c) = R1f[r*3+c];
+            R2w.at<float>(r,c) = R2f[r*3+c];
+        }
+        t1w.at<float>(r) = t1f[r];
+        t2w.at<float>(r) = t2f[r];
+    }
 
     cv::Mat R12 = R1w*R2w.t();
     cv::Mat t12 = -R1w*R2w.t()*t2w+t1w;
@@ -731,16 +664,6 @@ void LocalMapping::Release()
         return;
     mbStopped.store(false);
     mbStopRequested.store(false);
-    list<KeyFrame*> lKFs;
-    {
-        unique_lock<mutex> lock3(mMutexNewKFs);
-        lKFs.swap(mlNewKeyFrames);
-    }
-    for(list<KeyFrame*>::iterator lit = lKFs.begin(), lend=lKFs.end(); lit!=lend; lit++)
-    {
-        if(*lit)
-            (*lit)->SetBadFlag();
-    }
     // 通知 Stopped 循环退出等待（mCvEvent.wait 在 mMutexStop 下阻塞时，
     // notify 在 mMutexStop/mMutexFinish 释放后发送，确保数据可见性）
     mCvEvent.notify_one();
@@ -784,9 +707,12 @@ void LocalMapping::KeyFrameCulling()
     vector<KeyFrame*> vpLocalKeyFrames = mpCurrentKeyFrame->GetVectorCovisibleKeyFrames();
 
     // 每次最多处理 KEYFRAME_CULLING_MAX_KFS 个关键帧，防止单次耗时过久阻塞跟踪线程
-    // 剩余关键帧将在下一次 KeyFrameCulling 调用中处理
     const int KEYFRAME_CULLING_MAX_KFS = KEYFRAME_CULL_BATCH_SIZE;
     int nProcessed = 0;
+
+    // 第一阶段：无主锁下的只读候选冗余帧搜集 (Read-Only Pass)
+    vector<KeyFrame*> vpRedundantKFs;
+    vpRedundantKFs.reserve(KEYFRAME_CULLING_MAX_KFS);
 
     for(vector<KeyFrame*>::iterator vit=vpLocalKeyFrames.begin(), vend=vpLocalKeyFrames.end(); vit!=vend; vit++)
     {
@@ -798,7 +724,7 @@ void LocalMapping::KeyFrameCulling()
             break;
 
         KeyFrame* pKF = *vit;
-        if(pKF->mnId==0)
+        if(!pKF || pKF->isBad() || pKF->mnId==0)
             continue;
         const vector<MapPoint*> vpMapPoints = pKF->GetMapPointMatches();
 
@@ -813,6 +739,8 @@ void LocalMapping::KeyFrameCulling()
             if(pMP && !pMP->isBad())
                 nMPs++;
         }
+
+        if(nMPs == 0) continue;
 
         // 非冗余观测的最大允许数量。一旦非冗余观测数超过此上限，该帧绝无可能满足冗余标准
         const int maxNonRedundant = nMPs * (1.0f - KEYFRAME_REDUNDANCY_THRESHOLD);
@@ -848,8 +776,24 @@ void LocalMapping::KeyFrameCulling()
             }
         }
 
-        if(nRedundantObservations>KEYFRAME_REDUNDANCY_THRESHOLD*nMPs)
+        if(nRedundantObservations > KEYFRAME_REDUNDANCY_THRESHOLD*nMPs)
+        {
+            vpRedundantKFs.push_back(pKF);
+        }
+    }
+
+    // 第二阶段：每次只删除 1 个冗余关键帧（其余留待下一轮 KeyFrameCulling）。
+    // SetBadFlag 会在锁外级联 EraseObservation → ComputeDistinctiveDescriptors（O(n²)），
+    // 一次删除多个 KF 会与 Tracking 争抢数千次 MapPoint 锁，造成单次数秒冻结；
+    // 改为每轮删 1 个，把开销摊薄到多轮，不改变算法语义、不降精度。
+    for(size_t i=0; i<vpRedundantKFs.size(); i++)
+    {
+        KeyFrame* pKF = vpRedundantKFs[i];
+        if(pKF && !pKF->isBad())
+        {
             pKF->SetBadFlag();
+            break;  // 每轮只删 1 个冗余 KF，摊薄 SetBadFlag 级联开销
+        }
     }
 }
 

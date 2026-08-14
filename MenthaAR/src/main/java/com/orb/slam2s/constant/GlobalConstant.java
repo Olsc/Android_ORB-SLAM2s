@@ -19,13 +19,7 @@ public class GlobalConstant {
     // 显示旋转角度 (0=正常左横屏, 180=右横屏)
     public static int DISPLAY_ROTATION = 0;
 
-    /**
-     * 根据屏幕尺寸和最大目标分辨率计算最佳相机分辨率
-     * 确保保持16:9比例，且不超过参考分辨率
-     *
-     * @param screenWidth  屏幕宽度 (px)
-     * @param screenHeight 屏幕高度 (px)
-     */
+    // 根据屏幕尺寸计算最佳相机分辨率，保持16:9比例且不超过参考分辨率
     public static void computeOptimalResolution(int screenWidth, int screenHeight) {
         // 确保宽>高 (横屏)
         if (screenWidth < screenHeight) {
@@ -65,10 +59,7 @@ public class GlobalConstant {
         RESOLUTION_HEIGHT = targetH;
     }
 
-    /**
-     * 更新显示旋转角度
-     * @param rotation Android Surface rotation (Surface.ROTATION_0/90/180/270)
-     */
+    // 更新显示旋转角度，rotation 为 Android Surface 旋转角度
     public static void setDisplayRotation(int rotation) {
         // 传感器坐标系重映射在OrientationSensor中已处理
         // 这里记录屏幕旋转，用于相机帧旋转补偿

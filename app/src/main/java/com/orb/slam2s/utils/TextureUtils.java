@@ -4,12 +4,10 @@ import android.graphics.Bitmap;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
 
-
 /**
  * Created by Ads on 2016/11/19.
  * 由Olsc于2025/8/25开始进行修改
  */
-
 public class TextureUtils{
 
     public static int loadTexture(final Bitmap img, final int usedTexId) {
@@ -35,7 +33,6 @@ public class TextureUtils{
         }
         return textures[0];
     }
-
 
     public static int getTextureFromBitmap(final Bitmap img, int[] outSize) {
         if (img == null || img.isRecycled()) {

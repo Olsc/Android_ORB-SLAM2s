@@ -9,7 +9,7 @@
 namespace ORB_SLAM2
 {
 
-// ObjectType is size_t, which represents the index of the keypoint in the KeyFrame
+// ObjectType 为 size_t，表示关键点在关键帧中的索引
 typedef srrg_hbst::BinaryMatchable256<size_t> HBSTMatchable;
 typedef srrg_hbst::BinaryTree256<size_t> HBSTTree;
 typedef srrg_hbst::BinaryNode256<size_t> HBSTNode;

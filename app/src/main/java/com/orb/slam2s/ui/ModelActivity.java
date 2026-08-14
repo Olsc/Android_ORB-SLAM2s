@@ -13,10 +13,7 @@ import com.orb.slam2s.R;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-/**
- * ModelActivity 类，用于处理权限请求、初始化模型并跳转到下一个活动界面。
- * 该活动会在启动时请求权限，并解压所需的模型文件。
- */
+// ModelActivity：启动时请求权限，权限通过后初始化并跳转到主界面
 public class ModelActivity extends Activity {
     private static final int REQUEST_PERMISSION = 233; // 请求权限的请求码
 
@@ -30,17 +27,12 @@ public class ModelActivity extends Activity {
             init();
     }
 
-    /**
-     * 初始化方法，启动异步任务解压模型文件
-     */
+    // 初始化并跳转到主界面
     private void init(){
         extractModelFiles();
     }
 
-    /**
-     * 检查是否获得了 CAMERA 权限
-     * @return 是否有权限
-     */
+    // 检查是否获得 CAMERA 权限，返回是否有权限
     private boolean checkPermission(){
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -74,10 +66,7 @@ public class ModelActivity extends Activity {
         }
     }
 
-    /**
-     * 显示提示信息
-     * @param hint 提示的消息
-     */
+    // 显示提示信息
     private void showHint(String hint){
         Toast.makeText(this,hint , Toast.LENGTH_LONG).show(); // 弹出提示
     }
