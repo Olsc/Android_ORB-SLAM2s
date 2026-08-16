@@ -27,6 +27,9 @@ if sys.platform == "win32":
     except Exception:
         pass
 
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+
 # Matplotlib 图表生成
 try:
     import matplotlib
@@ -34,8 +37,9 @@ try:
     import matplotlib.pyplot as plt
     import matplotlib.ticker as ticker
     # 尝试配置跨平台中文字体
-    plt.rcParams['font.sans-serif'] = ['Microsoft YaHei', 'SimHei', 'Segoe UI', 'DejaVu Sans', 'Arial', 'sans-serif']
+    plt.rcParams['font.sans-serif'] = ['Microsoft YaHei', 'SimHei', 'SimSun', 'DejaVu Sans', 'sans-serif']
     plt.rcParams['axes.unicode_minus'] = False
+    plt.rcParams['svg.fonttype'] = 'none'
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
@@ -303,16 +307,50 @@ class SLAMWorkloadModel:
         }
 
 
+def find_git_repo_root(start_dir: Optional[str] = None) -> str:
+    """
+    自动查找并返回包含当前目录或脚本所在目录的 Git 仓库根目录路径。
+    如果未找到，退回至当前工作路径。
+    """
+    search_path = os.path.abspath(start_dir) if start_dir else os.path.dirname(os.path.abspath(__file__))
+    if not os.path.exists(search_path):
+        search_path = os.getcwd()
+    if os.path.isfile(search_path):
+        search_path = os.path.dirname(search_path)
+
+    # 1. 优先通过 git rev-parse --show-toplevel 查找
+    try:
+        res = subprocess.run(["git", "rev-parse", "--show-toplevel"],
+                             cwd=search_path, capture_output=True, text=True,
+                             encoding="utf-8", errors="ignore")
+        if res.returncode == 0 and res.stdout.strip():
+            return os.path.abspath(res.stdout.strip())
+    except Exception:
+        pass
+
+    # 2. 退回逐级向上递归查找 .git 目录/文件
+    curr = search_path
+    while True:
+        if os.path.exists(os.path.join(curr, ".git")):
+            return curr
+        parent = os.path.dirname(curr)
+        if parent == curr:
+            break
+        curr = parent
+
+    return os.path.abspath(search_path)
+
+
 # ==============================================================================
 # 3. Git Commit 历史提取引擎 (Git History Engine - 支持多线程并行)
 # ==============================================================================
 class GitCommitEngine:
     """
-    高效提取 Git 仓库历史 Commit 信息及源码，支持并行拉取
+    高效提取 Git 仓库历史 Commit 信息及源码，支持自动定位 Git 根目录与并行拉取
     """
 
-    def __init__(self, repo_dir: str = "."):
-        self.repo_dir = os.path.abspath(repo_dir)
+    def __init__(self, repo_dir: Optional[str] = None):
+        self.repo_dir = find_git_repo_root(repo_dir)
 
     def get_commit_list(self, rev_range: Optional[str] = None, max_count: Optional[int] = None) -> List[Dict[str, str]]:
         """
@@ -397,14 +435,15 @@ class BenchmarkVisualizer:
         return f"{val:.0f} Ops"
 
     @staticmethod
-    def generate_png_plot(benchmark_results: List[Dict[str, Any]],
-                          output_png: str,
-                          stress_matrix_data: Optional[Dict[str, Dict[str, Any]]] = None):
+    def generate_plots(benchmark_results: List[Dict[str, Any]],
+                       output_png: Optional[str] = None,
+                       output_svg: Optional[str] = None,
+                       stress_matrix_data: Optional[Dict[str, Dict[str, Any]]] = None):
         """
-        生成高清 Matplotlib 排版优化图表 (自动扩充头部留白，防文字重叠/堆叠)
+        生成高清 Matplotlib 排版优化图表 (支持 PNG 与 矢量 SVG 导出，含顶部理论算力声明 Banner，自动扩充头部留白，防文字重叠/堆叠)
         """
         if not HAS_MATPLOTLIB or not benchmark_results:
-            print("[-] Matplotlib 未合规渲染或结果为空，跳过 PNG 图表生成。")
+            print("[-] Matplotlib 未合规渲染或结果为空，跳过图表生成。")
             return
 
         valid_results = [r for r in benchmark_results if r.get("is_valid_slam", True) and r["total_ops"] > 0]
@@ -435,10 +474,18 @@ class BenchmarkVisualizer:
 
         # 判断是否需要 4 子图 (如果有矩阵压力测试数据)
         num_subplots = 4 if stress_matrix_data else 3
-        fig_height = 18 if num_subplots == 4 else 15
+        fig_height = 18.5 if num_subplots == 4 else 15.5
 
         plt.style.use('seaborn-v0_8-whitegrid' if 'seaborn-v0_8-whitegrid' in plt.style.available else 'default')
         fig, axes = plt.subplots(num_subplots, 1, figsize=(14, fig_height), dpi=150)
+
+        # ----------------------------------------------------------------------
+        # 顶部全局理论算力声明 Banner (英文，规范包裹外框)
+        # ----------------------------------------------------------------------
+        fig.suptitle("Note: Workload figures represent theoretical algorithmic complexity (FLOPs / Operations), independent of actual execution speed (FPS or runtime latency).",
+                     fontsize=10, fontweight='bold', color='#1e293b',
+                     bbox=dict(boxstyle="round,pad=0.5,rounding_size=0.3", fc="#f8fafc", ec="#cbd5e1", lw=1.2),
+                     y=0.996)
         
         # ----------------------------------------------------------------------
         # 子图 1: 1分钟视频总计算量演变趋势
@@ -506,12 +553,12 @@ class BenchmarkVisualizer:
             height = bar.get_height()
             pct_text = f"{(height / max_ops_g * 100):.1f}%" if max_ops_g > 0 else "100%"
             human_val = BenchmarkVisualizer.format_ops_human(height * 1e9)
-            # 文字安全摆放于柱体上方 6pt 处，绝不与 Subplot Title 重叠
+            # 文字安全摆放于柱体上方 6pt 处，包裹好边框
             ax3.annotate(f"{human_val}\n({pct_text})",
                          xy=(bar.get_x() + bar.get_width() / 2, height),
                          xytext=(0, 6), textcoords="offset points",
-                         ha='center', va='bottom', fontsize=10, fontweight='bold',
-                         bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="none", alpha=0.8))
+                         ha='center', va='bottom', fontsize=9.5, fontweight='bold',
+                         bbox=dict(boxstyle="round,pad=0.3,rounding_size=0.2", fc="#ffffff", ec="#cbd5e1", lw=0.9, alpha=0.95))
 
         ax3.set_title("Milestone Workload Comparison (Initial vs Peak vs Latest)", fontsize=12, fontweight='bold', pad=16)
         ax3.set_ylabel("Workload (Giga-Ops / 1 min)", fontsize=10)
@@ -546,16 +593,30 @@ class BenchmarkVisualizer:
                              xy=(bar.get_x() + bar.get_width() / 2, h),
                              xytext=(0, 6), textcoords="offset points",
                              ha='center', va='bottom', fontsize=9, fontweight='bold',
-                             bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="none", alpha=0.8))
+                             bbox=dict(boxstyle="round,pad=0.3,rounding_size=0.2", fc="#ffffff", ec="#cbd5e1", lw=0.9, alpha=0.95))
 
             ax4.set_title("Stress Testing Matrix: Workload across Profiles (Latest Commit)", fontsize=12, fontweight='bold', pad=16)
             ax4.set_ylabel("Workload (Giga-Ops / 1 min)", fontsize=10)
             ax4.grid(True, linestyle='--', alpha=0.5, axis='y')
 
-        plt.tight_layout(pad=2.5)
-        plt.savefig(output_png, dpi=200, bbox_inches='tight')
+        plt.tight_layout(rect=[0, 0, 1, 0.980], pad=2.5)
+
+        if output_png:
+            plt.savefig(output_png, dpi=200, bbox_inches='tight')
+            print(f"[+] 排版优化后的高清 PNG 图表已保存至: {output_png}")
+        
+        if output_svg:
+            plt.savefig(output_svg, bbox_inches='tight')
+            print(f"[+] 排版优化后的矢量 SVG 图表已保存至: {output_svg}")
+
         plt.close()
-        print(f"[+] 排版优化后的高清 PNG 图表已保存至: {output_png}")
+
+    @staticmethod
+    def generate_png_plot(benchmark_results: List[Dict[str, Any]],
+                          output_png: str,
+                          stress_matrix_data: Optional[Dict[str, Dict[str, Any]]] = None):
+        """兼容性包装接口：生成 PNG 图表"""
+        BenchmarkVisualizer.generate_plots(benchmark_results, output_png=output_png, stress_matrix_data=stress_matrix_data)
 
     @staticmethod
     def generate_html_report(benchmark_results: List[Dict[str, Any]],
@@ -689,6 +750,11 @@ class BenchmarkVisualizer:
         .header p {{ color: var(--text-muted); font-size: 14px; margin-top: 4px; }}
         .meta-tag {{ background: #e0e7ff; color: #3730a3; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; }}
         
+        .notice-banner {{ background: #eff6ff; border: 1px solid #bfdbfe; border-left: 5px solid #2563eb; border-radius: 10px; padding: 16px 20px; margin-bottom: 24px; display: flex; align-items: center; gap: 14px; box-shadow: 0 1px 2px rgba(37,99,235,0.05); }}
+        .notice-icon {{ font-size: 22px; flex-shrink: 0; line-height: 1; }}
+        .notice-text {{ font-size: 13.5px; color: #1e40af; line-height: 1.6; }}
+        .notice-text strong {{ color: #1e3a8a; }}
+
         .grid-stats {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }}
         .stat-card {{ background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid var(--border-color); }}
         .stat-card .label {{ font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }}
@@ -749,6 +815,14 @@ class BenchmarkVisualizer:
             </div>
             <div>
                 <span class="meta-tag">分析 Git Commits: {len(benchmark_results)} 次</span>
+            </div>
+        </div>
+
+        <!-- 顶置理论算力说明 Notice Banner -->
+        <div class="notice-banner">
+            <div class="notice-icon">💡</div>
+            <div class="notice-text">
+                <strong>理论算力说明：</strong>本报告中的计算量数值代表算法架构在对应场景下的<strong>理论计算复杂度（Operations / FLOPs）</strong>，反映代码逻辑与数据流的算力需求，<strong>与实际硬件运行计算速度（如 FPS、硬件延迟或运行耗时）无直接线性等价关系</strong>。
             </div>
         </div>
 
@@ -920,7 +994,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="SLAM Git 提交历史理论计算量 Benchmark 与压力测试工具"
     )
-    parser.add_argument("--repo", type=str, default=".", help="Git 仓库目录路径 (默认当前目录)")
+    parser.add_argument("--repo", type=str, default=None, help="Git 仓库或其子目录路径 (默认自动寻找上级 Git 根目录)")
     parser.add_argument("--recent", type=int, default=None, help="仅测算最近 N 个 Commit")
     parser.add_argument("--range", type=str, default=None, help="指定 Commit 范围 (例如 HEAD~30..HEAD)")
     
@@ -945,9 +1019,17 @@ def main():
     
     # 输出
     parser.add_argument("--output-png", type=str, default="benchmark_workload.png", help="PNG 图表输出文件名")
+    parser.add_argument("--output-svg", type=str, default=None, help="SVG 矢量图表输出文件名 (默认按 PNG 自动导出同名 .svg)")
     parser.add_argument("--output-html", type=str, default="benchmark_report.html", help="HTML 报告输出文件名")
 
     args = parser.parse_args()
+
+    # 处理导出图表路径
+    output_png = args.output_png
+    output_svg = args.output_svg
+    if output_svg is None and output_png:
+        base_name, _ = os.path.splitext(output_png)
+        output_svg = f"{base_name}.svg"
 
     # 应用预设或自定义参数
     preset_config = WORKLOAD_PRESETS.get(args.preset, WORKLOAD_PRESETS[DEFAULT_PRESET])
@@ -959,15 +1041,17 @@ def main():
     keyframe_ratio = args.keyframe_ratio if args.keyframe_ratio is not None else preset_config["keyframe_ratio"]
     loop_freq = args.loop_freq if args.loop_freq is not None else preset_config["loop_freq"]
 
+    # 1. 自动查找与获取 Git 提交列表
+    git_engine = GitCommitEngine(repo_dir=args.repo)
+
     print("=" * 70)
     print("🚀 SLAM Git 提交历史理论计算量 Benchmark 与压力测试")
     print("=" * 70)
+    print(f"[*] 定位 Git 仓库目录: {git_engine.repo_dir}")
     print(f"[*] 预设场景模式: {preset_config['name']}")
     print(f"[*] 算力基准配置: {duration} 秒 @ {fps} FPS ({duration * fps} 帧) | {width}x{height} | {n_features} 特征点/帧")
     print(f"[*] 并行提取线程: {args.jobs} 线程")
 
-    # 1. 获取 Git 提交列表
-    git_engine = GitCommitEngine(repo_dir=args.repo)
     try:
         commits = git_engine.get_commit_list(rev_range=args.range, max_count=args.recent)
     except Exception as e:
@@ -1080,7 +1164,7 @@ def main():
         "height": height
     }
 
-    BenchmarkVisualizer.generate_png_plot(results, args.output_png, stress_matrix_data)
+    BenchmarkVisualizer.generate_plots(results, output_png=output_png, output_svg=output_svg, stress_matrix_data=stress_matrix_data)
     BenchmarkVisualizer.generate_html_report(results, args.output_html, video_params, stress_matrix_data)
 
     # 7. 终端摘要对比打印
@@ -1105,7 +1189,10 @@ def main():
         print(f"• 单帧平均理论计算量: {BenchmarkVisualizer.format_ops_human(latest_r['ops_per_frame'])} / 帧")
         print(f"• 报告文件已生成:")
         print(f"    - 交互式 HTML: {os.path.abspath(args.output_html)}")
-        print(f"    - 排版优化 PNG 图表: {os.path.abspath(args.output_png)}")
+        if output_png:
+            print(f"    - 排版优化 PNG 图表: {os.path.abspath(output_png)}")
+        if output_svg:
+            print(f"    - 矢量 SVG 图表: {os.path.abspath(output_svg)}")
         print("=" * 70)
 
 
