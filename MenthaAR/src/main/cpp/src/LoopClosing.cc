@@ -74,6 +74,22 @@ void LoopClosing::SetMap(Map* pMap)
     mpMap = pMap;
 }
 
+bool LoopClosing::HasPendingEvent()
+{
+    {
+        unique_lock<mutex> lk(mMutexLoopQueue);
+        if(!mlpLoopKeyFrameQueue.empty()) return true;
+    }
+    return mbFinishRequested.load(std::memory_order_acquire) ||
+           mbResetRequested.load(std::memory_order_acquire);
+}
+
+void LoopClosing::NotifyEvent()
+{
+    std::unique_lock<std::mutex> evLock(mMutexEvent);
+    mCvEvent.notify_all();
+}
+
 void LoopClosing::Run()
 {
     mbFinished =false;
@@ -104,10 +120,10 @@ void LoopClosing::Run()
         // 消费关键帧数据库的待重建标记
         mpKeyFrameDB->RebuildIfPending();
 
-        // 等待事件（新 KF/Finish/Reset），有事件立即唤醒，最多等 5ms
+        // R5：事件谓词等待替代 5ms 心跳轮询——空闲时零唤醒
         {
             std::unique_lock<std::mutex> lock(mMutexEvent);
-            mCvEvent.wait_for(lock, std::chrono::milliseconds(THREAD_POLL_WAIT_MS));
+            mCvEvent.wait(lock, [this]{ return HasPendingEvent(); });
         }
     }
 
@@ -116,10 +132,12 @@ void LoopClosing::Run()
 
 void LoopClosing::InsertKeyFrame(KeyFrame *pKF)
 {
-    unique_lock<mutex> lock(mMutexLoopQueue);
-    if(pKF->mnId!=0)
-        mlpLoopKeyFrameQueue.push_back(pKF);
-    mCvEvent.notify_one();
+    {
+        unique_lock<mutex> lock(mMutexLoopQueue);
+        if(pKF->mnId!=0)
+            mlpLoopKeyFrameQueue.push_back(pKF);
+    }
+    NotifyEvent();
 }
 
 bool LoopClosing::CheckNewKeyFrames()
@@ -410,21 +428,8 @@ void LoopClosing::CorrectLoop()
     // 避免在纠正闭环时插入新的关键帧
     mpLocalMapper->RequestStop();
 
-    // 如果正在运行全局 Bundle Adjustment，则中止它
-    if(isRunningGBA())
-    {
-        unique_lock<mutex> lock(mMutexGBA);
-        mbStopGBA = true;
-
-        mnFullBAIdx++;
-
-        if(mpThreadGBA)
-        {
-            mpThreadGBA->detach();
-            delete mpThreadGBA;
-            mpThreadGBA = nullptr;  // 防止二次 delete（double-free UB）
-        }
-    }
+    // 如果正在运行全局 Bundle Adjustment，则中止它（join 等待线程真正退出）
+    RequestStopGBA();
 
     // 等待局部建图线程有效停止
     mpLocalMapper->WaitForStopped(LOOP_LOCALMAPPER_TIMEOUT_MS);
@@ -636,15 +641,15 @@ void LoopClosing::RequestReset()
 {
     {
         unique_lock<mutex> lock(mMutexReset);
-        mbResetRequested = true;
+        mbResetRequested.store(true);
     }
-    mCvEvent.notify_one();
+    NotifyEvent();
 }
 
 void LoopClosing::ResetIfRequested()
 {
     unique_lock<mutex> lock(mMutexReset);
-    if(mbResetRequested)
+    if(mbResetRequested.load())
     {
         mlpLoopKeyFrameQueue.clear();
         mLastLoopKFid=0;
@@ -662,6 +667,33 @@ void LoopClosing::WaitForResetComplete()
     unique_lock<mutex> lock(mMutexResetComplete);
     mCvResetComplete.wait(lock, [this]{ return mbResetComplete; });
     mbResetComplete = false;
+}
+
+void LoopClosing::RequestStopGBA()
+{
+    std::thread* pToJoin = nullptr;
+    {
+        unique_lock<mutex> lock(mMutexGBA);
+        if(mpThreadGBA)
+        {
+            mbStopGBA = true;
+            mnFullBAIdx++;          // 使 GBA 线程末尾的 idx 校验判定"已被中止"
+            pToJoin = mpThreadGBA;
+            mpThreadGBA = nullptr;  // GBA 线程自身收尾时看到空指针会跳过 detach/delete
+        }
+        else if(mbRunningGBA)
+        {
+            // 线程对象已被自然完成路径回收，仅置停止标志让残余优化尽快退出
+            mbStopGBA = true;
+            mnFullBAIdx++;
+        }
+    }
+    if(pToJoin)
+    {
+        if(pToJoin->joinable())
+            pToJoin->join();
+        delete pToJoin;
+    }
 }
 
 void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
@@ -691,16 +723,17 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
             // 等待局部建图线程有效停止
             mpLocalMapper->WaitForStopped(LOOP_LOCALMAPPER_TIMEOUT_MS);
 
+            // 复核修复（RA-5）：原先在此处对 mMutexGBA 二次加锁（recheckLock）——
+            // 外层 lock 全程持有且 std::mutex 非递归，正常完成的 GBA 走到这里
+            // 即死锁 GBA 线程并永久占用 mMutexGBA。mnFullBAIdx 仅在 mMutexGBA
+            // 内被 RequestStopGBA 修改，持锁期间 idx 不可能变化，直接判断即可：
+            if(idx != mnFullBAIdx)
             {
-                unique_lock<mutex> recheckLock(mMutexGBA);
-                if(idx != mnFullBAIdx)
+                if(mpLocalMapper->isStopped() && !mpLocalMapper->isFinished())
                 {
-                    if(mpLocalMapper->isStopped() && !mpLocalMapper->isFinished())
-                    {
-                        mpLocalMapper->Release();
-                    }
-                    return;
+                    mpLocalMapper->Release();
                 }
+                return;
             }
 
             if(!mpLocalMapper->isStopped() && !mpLocalMapper->isFinished())
@@ -742,8 +775,11 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
                 lpKFtoCheck.pop_front();
             }
 
-            // 校正地图点
+            // 校正地图点（C-4：锁内仅写坐标，法向/深度更新移出 mMutexMapUpdate，
+            // 避免大地图时 Tracking 的 UpdateLastFrame/初始化在全局锁上排队数秒）
             const vector<MapPoint*> vpMPs = mpMap->GetAllMapPoints();
+            vector<MapPoint*> vpToUpdateNormal;
+            vpToUpdateNormal.reserve(vpMPs.size());
 
             for(size_t i=0; i<vpMPs.size(); i++)
             {
@@ -778,10 +814,17 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
                     pMP->SetWorldPos(Rwc*Xc+twc);
                 }
 
-                pMP->UpdateNormalAndDepth();
-            }            
+                vpToUpdateNormal.push_back(pMP);
+            }
 
             mpMap->InformNewBigChange();
+            lock.unlock();   // 提前释放 mMutexMapUpdate
+
+            for(MapPoint* pMP : vpToUpdateNormal)
+            {
+                if(pMP && !pMP->isBad())
+                    pMP->UpdateNormalAndDepth();
+            }
 
             mpLocalMapper->Release();
 
@@ -805,16 +848,18 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
 void LoopClosing::RequestFinish()
 {
     // 请求结束闭环检测线程
-    unique_lock<mutex> lock(mMutexFinish);
-    mbFinishRequested = true;
-    mCvEvent.notify_one();
+    {
+        unique_lock<mutex> lock(mMutexFinish);
+        mbFinishRequested.store(true);
+    }
+    NotifyEvent();
 }
 
 bool LoopClosing::CheckFinish()
 {
     // 检查是否请求结束
     unique_lock<mutex> lock(mMutexFinish);
-    return mbFinishRequested;
+    return mbFinishRequested.load();
 }
 
 void LoopClosing::SetFinish()

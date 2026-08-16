@@ -42,6 +42,7 @@
 
 #include<opencv2/core/core.hpp>
 #include<mutex>
+#include<unordered_map>
 #include<atomic>
 #include<memory>
 #include<cstring>
@@ -70,7 +71,8 @@ public:
     KeyFrame* GetReferenceKeyFrame();
 
     std::map<KeyFrame*,size_t> GetObservations();
-    void ShareObservations(std::map<KeyFrame*, int>& counter, unsigned long excludeId = -1);
+    // 零拷贝聚合观测计数（T-8：哈希表 O(1) 插入，替代调用方整 map 拷贝/红黑树插入）
+    void ShareObservations(std::unordered_map<KeyFrame*, int>& counter, unsigned long excludeId = -1);
     int GetRedundantObservationsCount(KeyFrame* pKF, int scaleLevel);
     int Observations() const;
 
@@ -89,8 +91,10 @@ public:
     void IncreaseVisible(int n=1);
     void IncreaseFound(int n=1);
     float GetFoundRatio();
-    inline int GetFound(){
-        return mnFound;
+    // mnFound/mnVisible 为原子量：可见/找到计数由跟踪线程写、
+    // 剔除与统计路径并发读，原先的无锁读非原子 int 属数据竞争
+    inline int GetFound() const {
+        return mnFound.load(std::memory_order_relaxed);
     }
 
     void ComputeDistinctiveDescriptors();
@@ -185,9 +189,9 @@ protected:
      // 参考关键帧
      KeyFrame* mpRefKF;
 
-     // 跟踪计数器
-     int mnVisible;
-     int mnFound;
+     // 跟踪计数器（原子：跨线程读写，原先 mutex+裸 int 混用）
+     std::atomic<int> mnVisible;
+     std::atomic<int> mnFound;
 
      // 坏点标志（我们目前不从内存中删除地图点）
     std::atomic<bool> mbBad;

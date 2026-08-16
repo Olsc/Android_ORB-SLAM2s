@@ -93,22 +93,11 @@ struct DescriptorOffset {
 static DescriptorOffset descriptorOffsetLUT[360][ORB_BRIEF_NUM_POINTS];
 static bool bDescriptorLUTInit = false;
 
-// 线程局部缓存：按当前图像 step 预先缩放的单字节偏移查找表，完全消除循环内 dy * step 乘法
-static thread_local int cachedStep = -1;
-static thread_local int levelStepOffsetLUT[360][ORB_BRIEF_NUM_POINTS];
-
-static void PrepareLevelStepOffsetLUT(int step)
-{
-    if (cachedStep == step) return;
-    cachedStep = step;
-    for (int a = 0; a < 360; ++a) {
-        const DescriptorOffset* src = descriptorOffsetLUT[a];
-        int* dst = levelStepOffsetLUT[a];
-        for (int i = 0; i < ORB_BRIEF_NUM_POINTS; ++i) {
-            dst[i] = src[i].dy * step + src[i].dx;
-        }
-    }
-}
+// E-1 修正说明：
+// 原实现用单值 cachedStep 缓存 step 缩放后的偏移 LUT——但 8 层金字塔 step 各不相同，
+// 逐层切换导致每层 miss、每帧最多 8 次全表重建（360×512=184,320 次乘加 ×8 ≈ 1.47M/帧）。
+// 修正为在描述子循环内直接计算 dy*step+dx：每关键点 512 次乘加（1000 点/帧 ≈ 0.5M/帧），
+// 数学完全等价、零表重建、零额外内存（原先的 thread_local LUT 另占 1.4MB/线程，一并删除）。
 
 static uint32_t reciprocal_table_q24[1025];
 static uint16_t arctan_table_q10[1025];
@@ -233,15 +222,12 @@ static void computeOrbDescriptor(const KeyPoint& kpt,
     const uchar* center = &img.at<uchar>(kpy, kpx);
     const int step = (int)img.step;
 
-    // 确保当前 step 对应的偏移查找表已准备好
-    PrepareLevelStepOffsetLUT(step);
+    // E-1：直接由 (dy,dx) 基表计算当前层 step 的偏移（消除每帧 8 次全表重建的 thrash）
+    const DescriptorOffset* off = descriptorOffsetLUT[angleIdx];
 
-    // 获取当前角度对应的单字节偏移 LUT 指针
-    const int* lut_ptr = levelStepOffsetLUT[angleIdx];
+    #define GET_VALUE(idx) center[off[idx].dy * step + off[idx].dx]
 
-    #define GET_VALUE(idx) center[lut_ptr[idx]]
-
-    for (int i = 0; i < ORB_DESC_COLS; ++i, lut_ptr += 16)
+    for (int i = 0; i < ORB_DESC_COLS; ++i, off += 16)
     {
         int t0, t1, val;
         t0 = GET_VALUE(0); t1 = GET_VALUE(1);
@@ -1260,6 +1246,13 @@ void ORBextractor::blurAndComputeDescriptors(
 {
     for (int level = range.start; level < range.end; ++level)
     {
+        // E-3：本层无关键点则跳过模糊与 ROI 构造（整图 7×7 定点模糊只为
+        // 描述子计算服务，空纹理层每帧的 ~百万次整型运算是纯浪费）
+        const int kpStart = levelDescOffset[level];
+        const int kpEnd = levelDescOffset[level + 1];
+        if (kpStart == kpEnd)
+            continue;
+
         // 确保 mvBlurredPyramidPadded 大小和类型正确
         Size sz = mvImagePyramid[level].size();
         Size wholeSize(sz.width + ORB_EDGE_THRESHOLD*2, sz.height + ORB_EDGE_THRESHOLD*2);

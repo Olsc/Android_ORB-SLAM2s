@@ -53,9 +53,9 @@ Java_com_orb_slam2s_slamar_NativeHelper_calculate3DofInsertionPoint(JNIEnv* env,
     return result;
 }
 
-// 计算3DOF MVP矩阵
-JNIEXPORT jfloatArray JNICALL
-Java_com_orb_slam2s_slamar_NativeHelper_compute3DofMVP(JNIEnv* env, jobject thiz, jfloatArray rotationMatrix, jint rotation, jfloat ratio, jfloatArray objectPos) {
+// 计算3DOF MVP矩阵（J-9：出参版本——直接填充调用方缓冲，免每帧 JNI 数组分配）
+JNIEXPORT void JNICALL
+Java_com_orb_slam2s_slamar_NativeHelper_compute3DofMVP(JNIEnv* env, jobject thiz, jfloatArray outMvp, jfloatArray rotationMatrix, jint rotation, jfloat ratio, jfloatArray objectPos) {
     // 获取设备旋转数据
     jsize len = env->GetArrayLength(rotationMatrix);
     float deviceRotation[16];
@@ -93,9 +93,9 @@ Java_com_orb_slam2s_slamar_NativeHelper_compute3DofMVP(JNIEnv* env, jobject thiz
     float mvpMatrix[16];
     multiplyMM(mvpMatrix, projectionMatrix, tempMatrix);
 
-    jfloatArray result = env->NewFloatArray(16);
-    env->SetFloatArrayRegion(result, 0, 16, mvpMatrix);
-    return result;
+    if (outMvp != NULL && env->GetArrayLength(outMvp) >= 16) {
+        env->SetFloatArrayRegion(outMvp, 0, 16, mvpMatrix);
+    }
 }
 
 }

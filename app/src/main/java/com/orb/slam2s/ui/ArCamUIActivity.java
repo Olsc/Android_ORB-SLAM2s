@@ -802,6 +802,15 @@ public class ArCamUIActivity extends AppCompatActivity implements
         if (mOpenCvCameraView != null)
             mOpenCvCameraView.disableView();
 
+        // J-6：注销地图统计轮询（原先永不 removeCallbacks，Activity 销毁后
+        // 仍每秒跑一次 JNI 并持有 Activity 引用导致泄漏）
+        uiHandler.removeCallbacksAndMessages(null);
+
+        // J-13：相机/渲染都已停止后，join 全部 SLAM 工作线程并释放 native 系统
+        if (nativeHelper != null) {
+            nativeHelper.shutdownSLAM();
+        }
+
         // 清理加载对话框，防止内存泄漏
         dismissLoadingDialog();
     }
@@ -848,12 +857,17 @@ public class ArCamUIActivity extends AppCompatActivity implements
         }
 
         mFpsMeter.measure();
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                fpsText.setText(mFpsMeter.getText());
-            }
-        });
+        // J-5：FpsMeter 内部 20 帧才刷新一次字符串——UI 更新跟随同一节奏，
+        // 消除每帧一次的跨线程 Runnable 投递（帧计数驱动，非定时器）
+        if (mFpsMeter.isUpdated()) {
+            final CharSequence fpsTextCS = mFpsMeter.getText();
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    fpsText.setText(fpsTextCS);
+                }
+            });
+        }
         return mRgbaAddr;
     }
 

@@ -33,6 +33,7 @@
  */
 
 #include "KeyFrame.h"
+#include <unordered_map>
 #include "Converter.h"
 #include "ORBmatcher.h"
 #include "Config.h"
@@ -252,10 +253,9 @@ vector<KeyFrame*> KeyFrame::GetCovisiblesByWeight(const int &w)
 int KeyFrame::GetWeight(KeyFrame *pKF)
 {
     unique_lock<mutex> lock(mMutexConnections);
-    if(mConnectedKeyFrameWeights.count(pKF))
-        return mConnectedKeyFrameWeights[pKF];
-    else
-        return 0;
+    // 单次 find 替代 count+operator[] 的两次红黑树查找
+    auto it = mConnectedKeyFrameWeights.find(pKF);
+    return it != mConnectedKeyFrameWeights.end() ? it->second : 0;
 }
 
 void KeyFrame::AddMapPoint(MapPoint *pMP, const size_t &idx)
@@ -274,13 +274,18 @@ void KeyFrame::EraseMapPointMatch(const size_t &idx)
 
 void KeyFrame::EraseMapPointMatch(MapPoint* pMP)
 {
+    // 必须持 mMutexFeatures：此函数被 MapPoint::SetBadFlag/Replace 在回环/融合
+    // 线程调用，与 LocalMapping/LoopClosing 持锁读取 mvpMapPoints 并发
     int idx = pMP->GetIndexInKeyFrame(this);
+    unique_lock<mutex> lock(mMutexFeatures);
     if(idx>=0 && static_cast<size_t>(idx)<mvpMapPoints.size())
         mvpMapPoints[idx]=static_cast<MapPoint*>(NULL);
 }
 
 void KeyFrame::ReplaceMapPointMatch(const size_t &idx, MapPoint* pMP)
 {
+    // 同上：跨线程写必须与读端（GetMapPoints/GetMapPointMatches 等）互斥
+    unique_lock<mutex> lock(mMutexFeatures);
     if(idx < mvpMapPoints.size())
         mvpMapPoints[idx]=pMP;
 }
@@ -343,7 +348,9 @@ MapPoint* KeyFrame::GetMapPoint(const size_t &idx)
 
 void KeyFrame::UpdateConnections()
 {
-    map<KeyFrame*,int> KFcounter;
+    // T-8：哈希计数（O(1) 插入）；有序表在下方统一重建
+    unordered_map<KeyFrame*,int> KFcounter;
+    KFcounter.reserve(256);
 
     vector<MapPoint*> vpMP;
 
@@ -379,7 +386,7 @@ void KeyFrame::UpdateConnections()
 
     vector<pair<int,KeyFrame*> > vPairs;
     vPairs.reserve(KFcounter.size());
-    for(map<KeyFrame*,int>::iterator mit=KFcounter.begin(), mend=KFcounter.end(); mit!=mend; mit++)
+    for(auto mit=KFcounter.begin(), mend=KFcounter.end(); mit!=mend; mit++)
     {
         if(mit->second>nmax)
         {
@@ -412,7 +419,8 @@ void KeyFrame::UpdateConnections()
     {
         unique_lock<mutex> lockCon(mMutexConnections);
 
-        mConnectedKeyFrameWeights = KFcounter;
+        mConnectedKeyFrameWeights.clear();
+        mConnectedKeyFrameWeights.insert(KFcounter.begin(), KFcounter.end());
         mvpOrderedConnectedKeyFrames = std::move(vOrderedKFs);
         mvOrderedWeights = std::move(vOrderedWs);
 
@@ -750,9 +758,12 @@ float KeyFrame::ComputeSceneMedianDepth(const int q)
         }
     }
 
-    std::sort(vDepths.begin(),vDepths.end());
+    // 只需第 q 分位一个值：nth_element O(N) 替代全排序 O(N log N)
+    // （该函数在 CreateNewMapPoints 中对每个邻居 KF 调用一次）
+    const size_t idx = (vDepths.size()-1)/q;
+    std::nth_element(vDepths.begin(), vDepths.begin()+idx, vDepths.end());
 
-    return vDepths[(vDepths.size()-1)/q];
+    return vDepths[idx];
 }
 
 std::shared_ptr<HBSTTree> KeyFrame::GetHBSTTree() {

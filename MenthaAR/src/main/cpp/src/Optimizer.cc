@@ -84,6 +84,10 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
 
     long unsigned int maxKFid = 0;
 
+    // O-2：顶点指针数组（按 id 索引）替代每边 2 次 optimizer.vertex() 哈希查找
+    // + dynamic_cast RTTI。数组按需增长（KF/MP id 均在登记时保证容量）。
+    std::vector<g2o::OptimizableGraph::Vertex*> vAllVertices;
+
     // 设置关键帧顶点
     for(size_t i=0; i<vpKFs.size(); i++)
     {
@@ -103,6 +107,9 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
         vSE3->setId(pKF->mnId);
         vSE3->setFixed(pKF->mnId==0);
         optimizer.addVertex(vSE3);
+        if((size_t)pKF->mnId >= vAllVertices.size())
+            vAllVertices.resize((size_t)pKF->mnId + 1, nullptr);
+        vAllVertices[pKF->mnId] = vSE3;
         if(pKF->mnId>maxKFid)
             maxKFid=pKF->mnId;
     }
@@ -124,6 +131,9 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
         vPoint->setId(id);
         vPoint->setMarginalized(true);
         optimizer.addVertex(vPoint);
+        if((size_t)id >= vAllVertices.size())
+            vAllVertices.resize((size_t)id + 1, nullptr);
+        vAllVertices[id] = vPoint;
 
        const map<KeyFrame*,size_t> observations = pMP->GetObservations();
 
@@ -144,9 +154,9 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
             Eigen::Matrix<double,2,1> obs;
             obs << kpUn.pt.x, kpUn.pt.y;
 
-            // 在创建 Edge 之前先验证 vertices 是否存在
-            g2o::OptimizableGraph::Vertex* v0 = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id));
-            g2o::OptimizableGraph::Vertex* v1 = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pKF->mnId));
+            // O-2：数组直查替代哈希查找+dynamic_cast
+            g2o::OptimizableGraph::Vertex* v0 = vAllVertices[id];
+            g2o::OptimizableGraph::Vertex* v1 = vAllVertices[pKF->mnId];
 
             if(!v0 || !v1)
             {
@@ -188,6 +198,7 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
         if(nEdges==0)
         {
             optimizer.removeVertex(vPoint);
+            vAllVertices[id] = nullptr;
             vbNotIncludedMP[i]=true;
         }
         else
@@ -341,18 +352,14 @@ int Optimizer::PoseOptimization(Frame *pFrame)
 
     // 我们执行4次优化，每次优化后我们将观测分类为内点/外点
     // 在下一次优化中，不包括外点，但在最后它们可以再次被分类为内点。
+    // R3：删除 200ms 墙钟超时——4×5 次 LM 迭代本身即有界，且时间截断会使
+    // 慢设备上的位姿停在未收敛状态（精度损失且不可复现）
     const float chi2Mono[4]={OPTIMIZER_CHI2_TH_2D,OPTIMIZER_CHI2_TH_2D,OPTIMIZER_CHI2_TH_2D,OPTIMIZER_CHI2_TH_2D};
     const int its[POSE_OPT_PASSES]={POSE_OPT_PASS_ITERS,POSE_OPT_PASS_ITERS,POSE_OPT_PASS_ITERS,POSE_OPT_PASS_ITERS};
 
     int nBad=0;
-    auto start_time = std::chrono::steady_clock::now();
     for(size_t it=0; it<POSE_OPT_PASSES; it++)
     {
-        auto current_time = std::chrono::steady_clock::now();
-        if (std::chrono::duration_cast<std::chrono::milliseconds>(current_time - start_time).count() > POSE_OPT_TIMEOUT_MS) {
-            break; // 单次优化总超时限制200ms
-        }
-
         vSE3->setEstimate(Converter::toSE3Quat(pFrame->mTcw));
         optimizer.initializeOptimization(0);
         if(optimizer.activeVertices().empty())
@@ -478,6 +485,10 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
 
     unsigned long maxKFid = 0;
 
+    // O-2：顶点指针数组（按 id 索引，一次分配）
+    std::vector<g2o::OptimizableGraph::Vertex*> vAllVertices(
+        (size_t)pMap->GetMaxKFid() + 2, nullptr);
+
     // 设置局部关键帧顶点
     for(list<KeyFrame*>::iterator lit=lLocalKeyFrames.begin(), lend=lLocalKeyFrames.end(); lit!=lend; lit++)
     {
@@ -495,6 +506,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
         vSE3->setId(pKFi->mnId);
         vSE3->setFixed(pKFi->mnId==0);
         optimizer.addVertex(vSE3);
+        vAllVertices[pKFi->mnId] = vSE3;
         if(pKFi->mnId>maxKFid)
             maxKFid=pKFi->mnId;
     }
@@ -516,21 +528,34 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
         vSE3->setId(pKFi->mnId);
         vSE3->setFixed(true);
         optimizer.addVertex(vSE3);
+        vAllVertices[pKFi->mnId] = vSE3;
         if(pKFi->mnId>maxKFid)
             maxKFid=pKFi->mnId;
     }
 
-    // 设置地图点顶点
-    const int nExpectedSize = (lLocalKeyFrames.size()+lFixedCameras.size())*lLocalMapPoints.size();
+    // O-5：精确统计实际边数后 reserve（原先 (KF数+固定KF数)×局部点数 的
+    // 上界预留是实际边数的 ~10 倍，白白抬高内存峰值）
+    size_t nExactEdges = 0;
+    for(list<MapPoint*>::iterator lit=lLocalMapPoints.begin(), lend=lLocalMapPoints.end(); lit!=lend; lit++)
+    {
+        const map<KeyFrame*,size_t> observations = (*lit)->GetObservations();
+        for(map<KeyFrame*,size_t>::const_iterator mit=observations.begin(), mend=observations.end(); mit!=mend; mit++)
+        {
+            KeyFrame* pKFi = mit->first;
+            if(pKFi && !pKFi->isBad())
+                ++nExactEdges;
+        }
+    }
+    const size_t nReserve = nExactEdges > 0 ? nExactEdges : 1;
 
     vector<g2o::EdgeSE3ProjectXYZ*> vpEdgesMono;
-    vpEdgesMono.reserve(nExpectedSize);
+    vpEdgesMono.reserve(nReserve);
 
     vector<KeyFrame*> vpEdgeKFMono;
-    vpEdgeKFMono.reserve(nExpectedSize);
+    vpEdgeKFMono.reserve(nReserve);
 
     vector<MapPoint*> vpMapPointEdgeMono;
-    vpMapPointEdgeMono.reserve(nExpectedSize);
+    vpMapPointEdgeMono.reserve(nReserve);
 
     const float thHuberMono = OPTIMIZER_HUBER_TH_2D; // 卡方检验阈值(5.991对应的平方根)
 
@@ -545,6 +570,9 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
         vPoint->setId(id);
         vPoint->setMarginalized(true);
         optimizer.addVertex(vPoint);
+        if((size_t)id >= vAllVertices.size())
+            vAllVertices.resize((size_t)id + 1, nullptr);
+        vAllVertices[id] = vPoint;
 
         const map<KeyFrame*,size_t> observations = pMP->GetObservations();
 
@@ -561,9 +589,13 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
                     Eigen::Matrix<double,2,1> obs;
                     obs << kpUn.pt.x, kpUn.pt.y;
 
-                    // 在创建 Edge 之前先验证 vertices 是否存在
-                    g2o::OptimizableGraph::Vertex* v0 = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id));
-                    g2o::OptimizableGraph::Vertex* v1 = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pKFi->mnId));
+                    // O-2：数组直查替代哈希查找+dynamic_cast
+                    g2o::OptimizableGraph::Vertex* v0 =
+                        ((size_t)id < vAllVertices.size()) ? vAllVertices[id]
+                        : dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id));
+                    g2o::OptimizableGraph::Vertex* v1 =
+                        ((size_t)pKFi->mnId < vAllVertices.size()) ? vAllVertices[pKFi->mnId]
+                        : dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pKFi->mnId));
 
                     if(!v0 || !v1)
                     {
@@ -832,9 +864,9 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
             const g2o::Sim3 Sjw = vScw[nIDj];
             const g2o::Sim3 Sji = Sjw * Swi;
 
-            // 在创建 Edge 之前先验证 vertices 是否存在
-            g2o::OptimizableGraph::Vertex* vj = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(nIDj));
-            g2o::OptimizableGraph::Vertex* vi = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(nIDi));
+            // O-2：vpVertices 数组直查（建顶点时已登记），免哈希查找与 RTTI
+            g2o::OptimizableGraph::Vertex* vj = vpVertices[nIDj];
+            g2o::OptimizableGraph::Vertex* vi = vpVertices[nIDi];
 
             //  只有当两个顶点都存在时才创建 Edge
             if(!vj || !vi)
@@ -916,9 +948,9 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
 
             g2o::Sim3 Sji = Sjw * Swi;
 
-            // 在创建 Edge 之前先验证 vertices 是否存在
-            g2o::OptimizableGraph::Vertex* vj = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(nIDj));
-            g2o::OptimizableGraph::Vertex* vi = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(nIDi));
+            // O-2：vpVertices 数组直查（建顶点时已登记），免哈希查找与 RTTI
+            g2o::OptimizableGraph::Vertex* vj = vpVertices[nIDj];
+            g2o::OptimizableGraph::Vertex* vi = vpVertices[nIDi];
 
             if(vj && vi)
             {
@@ -974,9 +1006,9 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
 
                 g2o::Sim3 Sli = Slw * Swi;
 
-                // 在创建 Edge 之前先验证 vertices 是否存在
-                g2o::OptimizableGraph::Vertex* vl = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pLKF->mnId));
-                g2o::OptimizableGraph::Vertex* vi = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(nIDi));
+                // O-2：数组直查
+                g2o::OptimizableGraph::Vertex* vl = vpVertices[pLKF->mnId];
+                g2o::OptimizableGraph::Vertex* vi = vpVertices[nIDi];
 
                 if(vl && vi)
                 {
@@ -1034,9 +1066,9 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
 
                     g2o::Sim3 Sni = Snw * Swi;
 
-                    // 在创建 Edge 之前先验证 vertices 是否存在
-                    g2o::OptimizableGraph::Vertex* vn = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pKFn->mnId));
-                    g2o::OptimizableGraph::Vertex* vi = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(nIDi));
+                    // O-2：数组直查
+                    g2o::OptimizableGraph::Vertex* vn = vpVertices[pKFn->mnId];
+                    g2o::OptimizableGraph::Vertex* vi = vpVertices[nIDi];
 
                     if(vn && vi)
                     {
@@ -1082,7 +1114,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
         const int nIDi = pKFi->mnId;
         if(nIDi < 0 || nIDi > (int)nMaxKFid) continue;
 
-        g2o::VertexSim3Expmap* VSim3 = static_cast<g2o::VertexSim3Expmap*>(optimizer.vertex(nIDi));
+        g2o::VertexSim3Expmap* VSim3 = (nIDi >= 0 && (size_t)nIDi < vpVertices.size()) ? vpVertices[nIDi] : nullptr;
         if(!VSim3) continue;
 
         g2o::Sim3 CorrectedSiw =  VSim3->estimate();
@@ -1204,6 +1236,10 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
 
         const int i2 = pMP2->GetIndexInKeyFrame(pKF2);
 
+        // 提升到外层作用域：建边时直接复用（O-2），不再经 optimizer.vertex 查找
+        g2o::VertexSBAPointXYZ* vPoint1 = nullptr;
+        g2o::VertexSBAPointXYZ* vPoint2 = nullptr;
+
         if(pMP1 && pMP2)
         {
             if(!pMP1->isBad() && !pMP2->isBad() && i2>=0)
@@ -1215,7 +1251,7 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
                 const float R1w10=R1w[3], R1w11=R1w[4], R1w12=R1w[5];
                 const float R1w20=R1w[6], R1w21=R1w[7], R1w22=R1w[8];
                 const float t1w0=t1w[0], t1w1=t1w[1], t1w2=t1w[2];
-                g2o::VertexSBAPointXYZ* vPoint1 = new g2o::VertexSBAPointXYZ();
+                vPoint1 = new g2o::VertexSBAPointXYZ();
                 vPoint1->setEstimate(Eigen::Vector3d(
                     R1w00*p3w1.x + R1w01*p3w1.y + R1w02*p3w1.z + t1w0,
                     R1w10*p3w1.x + R1w11*p3w1.y + R1w12*p3w1.z + t1w1,
@@ -1230,7 +1266,7 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
                 const float R2w10=R2w[3], R2w11=R2w[4], R2w12=R2w[5];
                 const float R2w20=R2w[6], R2w21=R2w[7], R2w22=R2w[8];
                 const float t2w0=t2w[0], t2w1=t2w[1], t2w2=t2w[2];
-                g2o::VertexSBAPointXYZ* vPoint2 = new g2o::VertexSBAPointXYZ();
+                vPoint2 = new g2o::VertexSBAPointXYZ();
                 vPoint2->setEstimate(Eigen::Vector3d(
                     R2w00*p3w2.x + R2w01*p3w2.y + R2w02*p3w2.z + t2w0,
                     R2w10*p3w2.x + R2w11*p3w2.y + R2w12*p3w2.z + t2w1,
@@ -1252,10 +1288,11 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
         const cv::KeyPoint &kpUn1 = pKF1->mvKeysUn[i];
         obs1 << kpUn1.pt.x, kpUn1.pt.y;
 
-        // 在创建 Edge 之前先验证 vertices 是否存在
-        g2o::OptimizableGraph::Vertex* v0_id2 = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id2));
-        g2o::OptimizableGraph::Vertex* v1_id0 = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(0));
-        g2o::OptimizableGraph::Vertex* v0_id1 = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id1));
+        // O-2：直接使用上一段刚创建并登记的顶点指针（vPoint1/vPoint2/vSim3），
+        // 免去每点 3 次哈希查找 + dynamic_cast
+        g2o::OptimizableGraph::Vertex* v0_id2 = static_cast<g2o::OptimizableGraph::Vertex*>(vPoint2);
+        g2o::OptimizableGraph::Vertex* v1_id0 = static_cast<g2o::OptimizableGraph::Vertex*>(vSim3);
+        g2o::OptimizableGraph::Vertex* v0_id1 = static_cast<g2o::OptimizableGraph::Vertex*>(vPoint1);
 
         // 只有当所有必要的顶点都存在时才创建和添加 Edge
         if(!v0_id2 || !v1_id0 || !v0_id1)

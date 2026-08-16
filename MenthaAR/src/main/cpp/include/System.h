@@ -72,6 +72,9 @@ public:
     // 构造函数：初始化SLAM系统，启动局部建图、闭环检测与可视化线程
     System(const string &strSettingsFile, const eSensor sensor);
 
+    // 析构函数：确保所有线程被 join、子模块与地图被释放（Shutdown 未被调用时兜底）
+    ~System();
+
     // 处理单目图像帧：提取ORB特征、跟踪、局部地图跟踪并决定是否创建关键帧
     // 返回相机位姿矩阵Tcw，跟踪失败时返回空矩阵
     cv::Mat TrackMonocular(const cv::Mat &im, const double &timestamp);
@@ -180,10 +183,6 @@ private:
     std::vector<MapPoint*> mTrackedMapPoints;
     std::vector<cv::KeyPoint> mTrackedKeyPointsUn;
     std::mutex mMutexState;
-
-    // CreateNewMap 限频保护：防止高性能机器上频繁丢失导致连续触发新建子地图
-    std::mutex mMutexNewMap;
-    std::chrono::steady_clock::time_point mLastNewMapTime;
 };
 
 }// namespace ORB_SLAM2

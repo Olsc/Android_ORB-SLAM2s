@@ -198,7 +198,7 @@ map<KeyFrame*, size_t> MapPoint::GetObservations()
     return mObservations;
 }
 
-void MapPoint::ShareObservations(std::map<KeyFrame*, int>& counter, unsigned long excludeId)
+void MapPoint::ShareObservations(std::unordered_map<KeyFrame*, int>& counter, unsigned long excludeId)
 {
     unique_lock<mutex> lock(mMutexFeatures);
     for(std::map<KeyFrame*, size_t>::const_iterator mit=mObservations.begin(), mend=mObservations.end(); mit!=mend; mit++)
@@ -269,6 +269,9 @@ void MapPoint::Replace(MapPoint* pMP)
 {
     if(pMP->mnId==this->mnId)
         return;
+    // 目标点已坏则不合并（否则观测会被并入死点丢失）
+    if(pMP->isBad())
+        return;
 
     int nvisible, nfound;
     map<KeyFrame*,size_t> obs;
@@ -278,8 +281,8 @@ void MapPoint::Replace(MapPoint* pMP)
         obs=mObservations;
         mObservations.clear();
         mbBad=true;
-        nvisible = mnVisible;
-        nfound = mnFound;
+        nvisible = mnVisible.load(std::memory_order_relaxed);
+        nfound = mnFound.load(std::memory_order_relaxed);
         mpReplaced = pMP;
     }
 
@@ -313,20 +316,20 @@ bool MapPoint::isBad()
 
 void MapPoint::IncreaseVisible(int n)
 {
-    unique_lock<mutex> lock(mMutexFeatures);
-    mnVisible+=n;
+    // 原子计数替代互斥锁（热路径每帧数百次调用）
+    mnVisible.fetch_add(n, std::memory_order_relaxed);
 }
 
 void MapPoint::IncreaseFound(int n)
 {
-    unique_lock<mutex> lock(mMutexFeatures);
-    mnFound+=n;
+    mnFound.fetch_add(n, std::memory_order_relaxed);
 }
 
 float MapPoint::GetFoundRatio()
 {
-    unique_lock<mutex> lock(mMutexFeatures);
-    return static_cast<float>(mnFound)/mnVisible;
+    // mnVisible 至少为 1（构造函数初始化），无需除零保护
+    return static_cast<float>(mnFound.load(std::memory_order_relaxed)) /
+           mnVisible.load(std::memory_order_relaxed);
 }
 
 void MapPoint::ComputeDistinctiveDescriptors()

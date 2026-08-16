@@ -51,6 +51,9 @@ struct Profiler::Impl {
             }
 
             if (!batch.empty()) {
+                // 修复：写盘必须与 WriteEvent 中"名称映射立即落盘"的写入互斥，
+                // ofstream 非线程安全，原先两线程并发 write 会交错损坏文件
+                std::lock_guard<std::mutex> writeLock(mutex);
                 for (const auto& event : batch) {
                     uint8_t eventMarker = ORB_SLAM2::PROFILER_EVENT_MARKER; // 事件标记
                     outFile.write(reinterpret_cast<const char*>(&eventMarker), 1);
@@ -124,8 +127,11 @@ void Profiler::WriteEvent(const char* name, EventType type) {
         }
 
         pImpl->eventQueue.push({nameId, tid, GetTimestampNS(), type});
+        // R17：仅当队列积压达到半批时才唤醒写线程（时间戳在入队时已捕获，
+        // 落盘延迟不影响精度），让批量写真正批起来；100ms 超时兜底低流量场景
+        if (pImpl->eventQueue.size() >= ORB_SLAM2::PROFILER_BATCH_MAX / 2)
+            pImpl->cv.notify_one();
     }
-    pImpl->cv.notify_one();
 }
 
 Profiler::~Profiler() {

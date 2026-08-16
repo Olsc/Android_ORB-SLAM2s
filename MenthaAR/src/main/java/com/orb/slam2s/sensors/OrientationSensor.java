@@ -90,10 +90,14 @@ public class OrientationSensor implements SensorEventListener {
         }
     }
 
+    // J-10：R/I 矩阵复用成员——原先每传感器事件 new float[16]×2（GAME 速率高频分配）
+    private final float[] mRotR = new float[16];
+    private final float[] mRotI = new float[16];
+
     private void updateRotationMatrix() {
         if (hasGravity && hasGeomagnetic) {
-            float[] R = new float[16];
-            float[] I = new float[16];
+            final float[] R = mRotR;
+            final float[] I = mRotI;
             if (SensorManager.getRotationMatrix(R, I, gravity, geomagnetic)) {
                 System.arraycopy(R, 0, rawRotationMatrix, 0, 16);
                 remapForLandscape();

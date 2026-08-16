@@ -190,9 +190,15 @@ int ORBmatcher::SearchByHBST(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoi
 
     int nmatches=0;
 
-    vector<int> rotHist[HISTO_LENGTH];
-    for(int i=0;i<HISTO_LENGTH;i++)
-        rotHist[i].reserve(ROT_HIST_RESERVE);
+    // M-1：旋转直方图缓冲复用（thread_local + clear），替代每次调用
+    // 30 次 reserve(500) 的固定 60KB 堆分配——直方图只需 clear 复用容量
+    static thread_local vector<int> rotHist[HISTO_LENGTH];
+    static thread_local bool rotHistInit = false;
+    if(!rotHistInit){
+        for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].reserve(ROT_HIST_RESERVE);
+        rotHistInit = true;
+    }
+    for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].clear();
     const float factor = 1.0f/HISTO_LENGTH;
 
     if(pKF->mDescriptors.empty() || F.mDescriptors.empty())
@@ -456,9 +462,15 @@ int ORBmatcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f
     int nmatches=0;
     vnMatches12 = vector<int>(F1.mvKeysUn.size(),-1);
 
-    vector<int> rotHist[HISTO_LENGTH];
-    for(int i=0;i<HISTO_LENGTH;i++)
-        rotHist[i].reserve(ROT_HIST_RESERVE);
+    // M-1：旋转直方图缓冲复用（thread_local + clear），替代每次调用
+    // 30 次 reserve(500) 的固定 60KB 堆分配——直方图只需 clear 复用容量
+    static thread_local vector<int> rotHist[HISTO_LENGTH];
+    static thread_local bool rotHistInit = false;
+    if(!rotHistInit){
+        for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].reserve(ROT_HIST_RESERVE);
+        rotHistInit = true;
+    }
+    for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].clear();
     const float factor = 1.0f/HISTO_LENGTH;
 
     vector<int> vMatchedDistance(F2.mvKeysUn.size(),INT_MAX);
@@ -476,7 +488,8 @@ int ORBmatcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f
         if(vIndices2.empty())
             continue;
 
-        cv::Mat d1 = F1.mDescriptors.row(i1);
+        // M-4：直接用行首指针，免去每点 2 次 cv::Mat 行头构造（含原子引用计数）
+        const uint8_t* d1 = F1.mDescriptors.ptr<uint8_t>(i1);
 
         int bestDist = INT_MAX;
         int bestDist2 = INT_MAX;
@@ -486,7 +499,7 @@ int ORBmatcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f
         {
             size_t i2 = *vit;
 
-            cv::Mat d2 = F2.mDescriptors.row(i2);
+            const uint8_t* d2 = F2.mDescriptors.ptr<uint8_t>(i2);
 
             int dist = DescriptorDistance(d1,d2);
 
@@ -584,9 +597,14 @@ int ORBmatcher::SearchByHBST(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> 
     vpMatches12 = vector<MapPoint*>(vpMapPoints1.size(), static_cast<MapPoint*>(NULL));
     vector<bool> vbMatched2(vpMapPoints2.size(), false);
 
-    vector<int> rotHist[HISTO_LENGTH];
-    for (int i = 0; i < HISTO_LENGTH; i++)
-        rotHist[i].reserve(ROT_HIST_RESERVE);
+    // M-1：旋转直方图缓冲复用（thread_local + clear）
+    static thread_local vector<int> rotHist[HISTO_LENGTH];
+    static thread_local bool rotHistInit = false;
+    if(!rotHistInit){
+        for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].reserve(ROT_HIST_RESERVE);
+        rotHistInit = true;
+    }
+    for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].clear();
 
     const float factor = 1.0f / HISTO_LENGTH;
 
@@ -751,9 +769,14 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
     vector<bool> vbMatched2(pKF2->N,false);
     vector<int> vMatches12(pKF1->N,-1);
 
-    vector<int> rotHist[HISTO_LENGTH];
-    for(int i=0;i<HISTO_LENGTH;i++)
-        rotHist[i].reserve(ROT_HIST_RESERVE);
+    // M-1：旋转直方图缓冲复用（thread_local + clear）
+    static thread_local vector<int> rotHist[HISTO_LENGTH];
+    static thread_local bool rotHistInit = false;
+    if(!rotHistInit){
+        for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].reserve(ROT_HIST_RESERVE);
+        rotHistInit = true;
+    }
+    for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].clear();
 
     const float factor = 1.0f/HISTO_LENGTH;
 
@@ -1454,10 +1477,15 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
 {
     int nmatches = 0;
 
-    // 旋转直方图（用于检查旋转一致性）
-    vector<int> rotHist[HISTO_LENGTH];
-    for(int i=0;i<HISTO_LENGTH;i++)
-        rotHist[i].reserve(ROT_HIST_RESERVE);
+    // M-1：旋转直方图缓冲复用（thread_local + clear），替代每次调用
+    // 30 次 reserve(500) 的固定 60KB 堆分配——直方图只需 clear 复用容量
+    static thread_local vector<int> rotHist[HISTO_LENGTH];
+    static thread_local bool rotHistInit = false;
+    if(!rotHistInit){
+        for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].reserve(ROT_HIST_RESERVE);
+        rotHistInit = true;
+    }
+    for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].clear();
     const float factor = 1.0f/HISTO_LENGTH;
 
     const cv::Mat Rcw = CurrentFrame.mTcw.rowRange(0,3).colRange(0,3);
@@ -1605,10 +1633,15 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const set
     const float tx = tcw.at<float>(0), ty = tcw.at<float>(1), tz = tcw.at<float>(2);
     const float Ox = Ow.at<float>(0), Oy = Ow.at<float>(1), Oz = Ow.at<float>(2);
 
-    // 旋转直方图（用于检查旋转一致性）
-    vector<int> rotHist[HISTO_LENGTH];
-    for(int i=0;i<HISTO_LENGTH;i++)
-        rotHist[i].reserve(ROT_HIST_RESERVE);
+    // M-1：旋转直方图缓冲复用（thread_local + clear），替代每次调用
+    // 30 次 reserve(500) 的固定 60KB 堆分配——直方图只需 clear 复用容量
+    static thread_local vector<int> rotHist[HISTO_LENGTH];
+    static thread_local bool rotHistInit = false;
+    if(!rotHistInit){
+        for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].reserve(ROT_HIST_RESERVE);
+        rotHistInit = true;
+    }
+    for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].clear();
     const float factor = 1.0f/HISTO_LENGTH;
 
     const vector<MapPoint*> vpMPs = pKF->GetMapPointMatches();

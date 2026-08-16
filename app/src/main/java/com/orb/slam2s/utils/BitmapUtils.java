@@ -14,17 +14,21 @@ import java.io.InputStream;
 public class BitmapUtils {
 
     public static Bitmap loadBitmapFromAssets(Context context,String filePath){
+        // J-14：finally 中关闭流——原先 InputStream 泄漏
         InputStream inputStream = null;
         try {
             inputStream = context.getResources().getAssets().open(filePath);
+            BitmapFactory.Options options=new BitmapFactory.Options();
+            options.inScaled=false;
+            return BitmapFactory.decodeStream(inputStream);
         } catch (IOException e) {
             e.printStackTrace();
+            return null;
+        } finally {
+            if (inputStream != null) {
+                try { inputStream.close(); } catch (IOException ignored) {}
+            }
         }
-        if(inputStream==null) return null;
-        BitmapFactory.Options options=new BitmapFactory.Options();
-        options.inScaled=false;
-        Bitmap bitmap= BitmapFactory.decodeStream(inputStream);
-        return bitmap;
     }
 
     public static Bitmap loadBitmapFromRaw(Context context, int resourceId){

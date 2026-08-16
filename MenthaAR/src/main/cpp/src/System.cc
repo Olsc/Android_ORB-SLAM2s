@@ -48,6 +48,7 @@
 #include <iomanip>
 #include <sstream>
 #include "MenthaProfiler.h" // 性能分析器
+#include <atomic>
 
 namespace ORB_SLAM2
 {
@@ -152,15 +153,12 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
 
 bool System::MapChanged()
 {
-    static int n=0;
+    // 原为函数级 static int：detect JNI 线程与主线程并发调用存在数据竞争
+    static std::atomic<int> n{0};
     int curn = mpMap->GetLastBigChangeIdx();
-    if(n<curn)
-    {
-        n=curn;
-        return true;
-    }
-    else
-        return false;
+    int prev = n.load(std::memory_order_relaxed);
+    while(prev < curn && !n.compare_exchange_weak(prev, curn)) {}
+    return prev < curn;
 }
 
 void System::Reset(bool bKeepMap)
@@ -175,19 +173,50 @@ void System::Reset(bool bKeepMap)
 
 void System::Shutdown()
 {
+    // 幂等保护：线程已 join 后不再重复关停
+    if(!mptLocalMapping && !mptLoopClosing)
+        return;
+
+    // 先停后台重定位线程（防止 join 期间仍访问地图数据）
+    if(mpTracker)
+        mpTracker->StopGlobalRelocThread();
+
+    // 停止可能正在运行的 GBA（join 而非 detach，见 LoopClosing::RequestStopGBA）
+    if(mpLoopCloser)
+        mpLoopCloser->RequestStopGBA();
+
     mpLocalMapper->RequestFinish();
     mpLoopCloser->RequestFinish();
 
-    // 等待所有线程真正停止
-    std::mutex mtx;
-    std::condition_variable cv;
-    std::unique_lock<std::mutex> lock(mtx);
-    while(!mpLocalMapper->isFinished() || !mpLoopCloser->isFinished()
-          || mpLoopCloser->isRunningGBA())
-    {
-        cv.wait_for(lock, std::chrono::milliseconds(THREAD_POLL_WAIT_MS));
-    }
+    // join 替代原先"从未被 notify 的 wait_for 轮询"——确定性等待，零空转
+    if(mptLocalMapping && mptLocalMapping->joinable())
+        mptLocalMapping->join();
+    if(mptLoopClosing && mptLoopClosing->joinable())
+        mptLoopClosing->join();
 
+    delete mptLocalMapping; mptLocalMapping = nullptr;
+    delete mptLoopClosing;  mptLoopClosing = nullptr;
+}
+
+System::~System()
+{
+    Shutdown();
+    // Shutdown 后 LM/LC/GlobalReloc 线程均已 join；按依赖序释放子模块后，
+    // 已无任何持有者，可安全释放子地图中的全部 KeyFrame/MapPoint。
+    // 注意：Map 没有析构清理（~Map 不能调 clear()——CreateNewMap 的子地图
+    // 逐出路径中 KFD/回环队列仍持有旧地图 KF 指针，析构时 clear 会产生
+    // 悬空指针），因此必须在此显式 clear() 后再 delete。
+    delete mpTracker;       // Tracking 析构不再有线程成员（后台线程已停）
+    delete mpLocalMapper;
+    delete mpLoopCloser;
+    delete mpFrameDrawer;
+    delete mpKeyFrameDatabase;
+    for(Map* pMap : mvpMaps)
+    {
+        if(pMap) { pMap->clear(); delete pMap; }
+    }
+    mvpMaps.clear();
+    mpMap = nullptr;
 }
 
 void System::SaveKeyFrameTrajectoryTUM(const std::string &filename)
@@ -268,20 +297,8 @@ bool System::HasLoadedMap()
 
 void System::CreateNewMap()
 {
-    // ===== 限频保护：加 5 秒冷却期，防止频繁切换导致主线程被阻塞数十~数百毫秒 =====
-    {
-        std::unique_lock<std::mutex> lock(mMutexNewMap);
-        auto now = std::chrono::steady_clock::now();
-        if (mLastNewMapTime.time_since_epoch().count() != 0) {
-            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - mLastNewMapTime).count();
-            if (elapsed < NEW_MAP_COOLDOWN_MS) {
-                LOGD("System::CreateNewMap 距上次仅 %lld ms (< %d ms)，跳过以防抖动", NEW_MAP_COOLDOWN_MS,
-                     (long long)elapsed);
-                return;
-            }
-        }
-        mLastNewMapTime = now;
-    }
+    // 限频已由 Tracking 侧的帧计数冷却（TRACKING_NEW_MAP_COOLDOWN_FRAMES=150）承担，
+    // 原先的 5 秒墙钟冷却属于时间驱动防抖（R8），且与帧计数冷却重复，删除。
 
     LOGD("System::CreateNewMap 开始创建新子地图");
 

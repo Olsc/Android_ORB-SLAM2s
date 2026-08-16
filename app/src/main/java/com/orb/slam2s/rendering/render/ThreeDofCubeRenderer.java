@@ -130,12 +130,9 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
         }
 
         if (mInitialized) {
-            float[] newMvpMatrix = nativeHelper.compute3DofMVP(rotationMatrix, rotation, mRatio, mObjectWorldPos);
-
-            if (newMvpMatrix != null && newMvpMatrix.length == 16) {
-                System.arraycopy(newMvpMatrix, 0, mvpMatrix, 0, 16);
-                drawCube();
-            }
+            // J-9：出参版 compute3DofMVP 直接填充复用缓冲，消除每帧一次的 JNI float[16] 分配
+            nativeHelper.compute3DofMVP(mvpMatrix, rotationMatrix, rotation, mRatio, mObjectWorldPos);
+            drawCube();
         }
     }
 
@@ -202,12 +199,19 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
         indexBuffer.position(0);
     }
 
+    // J-9：句柄在链接后缓存——原先每帧 3 次驱动级查询是纯开销
+    private int positionHandle = -1;
+    private int colorHandle = -1;
+    private int mvpMatrixHandle = -1;
+
     private void drawCube() {
         GLES20.glUseProgram(program);
 
-        int positionHandle = GLES20.glGetAttribLocation(program, "vPosition");
-        int colorHandle = GLES20.glGetAttribLocation(program, "vColor");
-        int mvpMatrixHandle = GLES20.glGetUniformLocation(program, "uMVPMatrix");
+        if (positionHandle < 0) {
+            positionHandle = GLES20.glGetAttribLocation(program, "vPosition");
+            colorHandle = GLES20.glGetAttribLocation(program, "vColor");
+            mvpMatrixHandle = GLES20.glGetUniformLocation(program, "uMVPMatrix");
+        }
 
         GLES20.glEnableVertexAttribArray(positionHandle);
         GLES20.glEnableVertexAttribArray(colorHandle);

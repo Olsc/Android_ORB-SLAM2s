@@ -113,7 +113,8 @@ protected:
     cv::Mat SkewSymmetricMatrix(const cv::Mat &v);
 
     void ResetIfRequested();
-    bool mbResetRequested;
+    // 原子化以便事件谓词无锁读取（写入仍在对应 mutex 内，写后统一 NotifyEvent）
+    std::atomic<bool> mbResetRequested;
     std::mutex mMutexReset;
 
     bool mbResetComplete = false;
@@ -122,9 +123,14 @@ protected:
 
     bool CheckFinish();
     void SetFinish();
-    bool mbFinishRequested;
+    std::atomic<bool> mbFinishRequested;
     bool mbFinished;
     std::mutex mMutexFinish;
+
+    // 主循环事件谓词：队列/停止/完成/重置 任一为真
+    bool HasPendingEvent();
+    // 在 mMutexEvent 下通知，杜绝"检查后-阻塞前"的丢失唤醒
+    void NotifyEvent();
 
     Map* mpMap;
 

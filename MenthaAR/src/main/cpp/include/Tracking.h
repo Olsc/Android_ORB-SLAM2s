@@ -289,9 +289,14 @@ protected:
 
     // 为加载的地图点缓存的参考描述符（用于后台匹配）
     cv::Mat mRefDesc; // 描述符行
-    std::vector<MapPoint*> mRefIdxToMP;
+    // T-6：缓存主体改为不可变快照的 shared_ptr——读端仅在锁内拷贝指针（O(1)），
+    // 替代原先每轮唤醒对整个 vector 的值拷贝（3 万点 ≈ 840KB/次）
+    std::shared_ptr<const std::vector<MapPoint*>> mpRefIdxToMP;
     size_t mRefCachedMPCount = 0;
     double mRefLastBuildTs = 0.0;
+    // R10：重建节流改为增量驱动（地图点 +5% 或 KF +3 才重建），替代 2 秒墙钟冷却
+    long long mRefLastBuildMPCount = 0;
+    long long mRefLastBuildKFCount = 0;
     std::atomic<bool> mRefBuilding{false};
     // 缓存失效请求标志：主线程置位，后台重定位线程消费并重建
     std::atomic<bool> mRefCacheDirty{false};
@@ -304,7 +309,7 @@ protected:
         float maxD;
         int mapId = 0;
     };
-    std::vector<RefMPSnapshot> mRefSnapshots;
+    std::shared_ptr<const std::vector<RefMPSnapshot>> mpRefSnapshots;
 
     // 简单的3D网格索引，用于加速空间查询
     struct LoadedMapGrid {
