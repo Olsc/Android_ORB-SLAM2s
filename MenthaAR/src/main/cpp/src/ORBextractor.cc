@@ -72,6 +72,8 @@
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <vector>
+#include <thread>
+#include <atomic>
 
 #include "ORBextractor.h"
 #include "Config.h"
@@ -1054,9 +1056,134 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
 void ORBextractor::ComputeKeyPointsOctTree(vector<vector<KeyPoint> >& allKeypoints)
 {
     allKeypoints.resize(nlevels);
-    // 委托给合并辅助函数，由调用者（operator()）决定是否并行
     detectAndOrientLevels(cv::Range(0, nlevels), allKeypoints);
 }
+
+// 按金字塔层并行执行 fn(level)。各层检测/描述子计算相互独立（层内数据 + thread_local 缓存）。
+// 极致性能优化：采用静态常驻轻量级工作线程池，消灭每帧频繁创建/销毁 std::thread 的内核调度与上下文切换开销。
+// 工作线程在空闲时阻塞在条件变量上，主线程直接参与任务窃取，实现最优的负载均衡与零分配并发。
+namespace {
+class LevelThreadPool {
+public:
+    static LevelThreadPool& instance() {
+        static LevelThreadPool pool;
+        return pool;
+    }
+
+    template <typename Fn>
+    void run(int nlevels, Fn&& fn) {
+        const int hwThreads = (int)std::thread::hardware_concurrency();
+        const int nThreads = std::min(nlevels, std::max(2, hwThreads / 2));
+        if (nThreads <= 1 || hwThreads <= 2 || nlevels < 4) {
+            for (int i = 0; i < nlevels; ++i) fn(i);
+            return;
+        }
+
+        const int helperCount = nThreads - 1; // 主线程直接参与，辅助线程只需 nThreads - 1
+        ensureWorkers(helperCount);
+
+        nextIdx_.store(0, std::memory_order_relaxed);
+        totalLevels_.store(nlevels, std::memory_order_relaxed);
+        remainingWorkers_.store(helperCount, std::memory_order_release);
+
+        std::function<void(int)> task = fn;
+        currentTask_ = &task;
+
+        {
+            std::unique_lock<std::mutex> lk(mutex_);
+            taskGeneration_++;
+        }
+        cvWork_.notify_all();
+
+        // 主线程参与任务处理
+        for (;;) {
+            int i = nextIdx_.fetch_add(1, std::memory_order_relaxed);
+            if (i >= nlevels) break;
+            fn(i);
+        }
+
+        // 等待所有辅助工作线程完成
+        {
+            std::unique_lock<std::mutex> lk(mutex_);
+            cvDone_.wait(lk, [this] {
+                return remainingWorkers_.load(std::memory_order_acquire) == 0;
+            });
+        }
+        currentTask_ = nullptr;
+    }
+
+    ~LevelThreadPool() {
+        shutdown();
+    }
+
+private:
+    LevelThreadPool() = default;
+
+    void ensureWorkers(int needed) {
+        std::unique_lock<std::mutex> lk(mutex_);
+        while ((int)workers_.size() < needed) {
+            workers_.emplace_back(&LevelThreadPool::workerLoop, this);
+        }
+    }
+
+    void shutdown() {
+        {
+            std::unique_lock<std::mutex> lk(mutex_);
+            stop_ = true;
+            taskGeneration_++;
+        }
+        cvWork_.notify_all();
+        for (auto& w : workers_) {
+            if (w.joinable()) w.join();
+        }
+        workers_.clear();
+    }
+
+    void workerLoop() {
+        uint64_t lastGen = 0;
+        for (;;) {
+            std::unique_lock<std::mutex> lk(mutex_);
+            cvWork_.wait(lk, [this, lastGen] {
+                return stop_ || taskGeneration_ != lastGen;
+            });
+            if (stop_) break;
+            lastGen = taskGeneration_;
+            lk.unlock();
+
+            auto* task = currentTask_;
+            if (task) {
+                const int nlevels = totalLevels_.load(std::memory_order_relaxed);
+                for (;;) {
+                    int i = nextIdx_.fetch_add(1, std::memory_order_relaxed);
+                    if (i >= nlevels) break;
+                    (*task)(i);
+                }
+            }
+
+            if (remainingWorkers_.fetch_sub(1, std::memory_order_acq_rel) == 1) {
+                std::unique_lock<std::mutex> lkDone(mutex_);
+                cvDone_.notify_one();
+            }
+        }
+    }
+
+    std::mutex mutex_;
+    std::condition_variable cvWork_;
+    std::condition_variable cvDone_;
+    std::vector<std::thread> workers_;
+    std::atomic<int> nextIdx_{0};
+    std::atomic<int> totalLevels_{0};
+    std::atomic<int> remainingWorkers_{0};
+    const std::function<void(int)>* currentTask_ = nullptr;
+    uint64_t taskGeneration_ = 0;
+    bool stop_ = false;
+};
+
+template <typename Fn>
+void parallelForLevels(int nlevels, Fn&& fn) {
+    LevelThreadPool::instance().run(nlevels, std::forward<Fn>(fn));
+}
+} // namespace
 
 void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPoint>& _keypoints,
                       OutputArray _descriptors)
@@ -1076,7 +1203,9 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
 
     {
         VT_PROFILE_SCOPE("ORB_Detect+Orient");
-        detectAndOrientLevels(cv::Range(0, nlevels), allKeypoints);
+        parallelForLevels(nlevels, [this, &allKeypoints](int level) {
+            detectAndOrientLevels(cv::Range(level, level + 1), allKeypoints);
+        });
     }
 
     int nkeypoints = 0;
@@ -1117,8 +1246,10 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
 
     {
         VT_PROFILE_SCOPE("ORB_Blur+Desc");
-        blurAndComputeDescriptors(cv::Range(0, nlevels), levelDescOffset,
-                                  _keypoints, descriptors);
+        parallelForLevels(nlevels, [this, &levelDescOffset, &_keypoints, &descriptors](int level) {
+            blurAndComputeDescriptors(cv::Range(level, level + 1), levelDescOffset,
+                                      _keypoints, descriptors);
+        });
     }
 }
 
