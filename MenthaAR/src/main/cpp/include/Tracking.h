@@ -334,7 +334,7 @@ protected:
     int mConsecutiveFail = 0;
     int mConsecutiveLostFrames = 0;
 
-    // ===== 异步重定位结果缓冲区（仅对齐）=====
+    // 异步重定位结果缓冲区（仅对齐）
     struct RelocAlignResult{
         cv::Mat T_map_from_slam; // 4x4
         int inliers = 0;
@@ -351,7 +351,7 @@ protected:
     void PublishRelocAlignment(const cv::Mat &TmapFromSlam, int inliers, float conf, double ts, int mapId);
     bool TryConsumeRelocAlignment(RelocAlignResult &out);
 
-    // ===== 配置旋钮 =====
+    // 配置旋钮
     int mCfgTopKWords = SYSTEM_RELOC_CONFIG_TOP_K;
     int mCfgMaxCandidates = SYSTEM_RELOC_CONFIG_MAX_CANDIDATES;
     int mCfgMatchChunk = SYSTEM_RELOC_CONFIG_MATCH_CHUNK;

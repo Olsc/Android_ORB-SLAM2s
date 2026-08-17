@@ -59,7 +59,7 @@ bool wasLost = false;                // 上一帧是否处于LOST状态
 const double LOST_RESET_TIMEOUT = ORB_SLAM2::LOST_RESET_TIMEOUT; // 名义超时（秒），仅用于换算帧数
 int gLostFrameCount = 0;             // 连续丢失帧计数（帧计数替代墙钟倒计时）
 
-// ========== AR 锚点 ==========
+// AR 锚点
 AR::ArAnchor gAnchor;
 std::map<int, AR::ArAnchor> gMapAnchors;
 // 渲染层对齐滞回状态（与 SLAM 核心 mbHaveMapAlign 解耦，由 AR_RenderFrame 维护）
@@ -69,7 +69,7 @@ const int ALIGN_HOLD_FRAMES = 6;   // raw 对齐丢失后仍按"对齐帧"渲染
 // 多地图支持
 std::mutex gMapDataMutex;
 
-// ========== SLAM 系统访问的读写锁 ==========
+// SLAM 系统访问的读写锁
 static std::mutex gSlamPtrLock;                    // 仅保护 slamSys 指针（极短临界区）
 static std::atomic<int> gProcessingFrames{0};      // 正在处理的帧数（用于写操作协调）
 static std::condition_variable gCvProcessingFrames; // gProcessingFrames 归零时通知写操作
@@ -87,7 +87,7 @@ static std::atomic<float> gArObjectScale{ORB_SLAM2::AR_OBJECT_SCALE_DEFAULT};  /
 float gCurrentModelMatrix[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
 float gCurrentViewMatrix[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
 
-// ========== AR 锚点生命周期事件 ==========
+// AR 锚点生命周期事件
 
 // 重置渲染层对齐滞回状态
 static void AR_ResetAlignHold() {
@@ -167,7 +167,7 @@ static bool AR_RenderFrame(const cv::Mat& localTcw, bool trackingOk) {
     std::lock_guard<std::mutex> lk(gMapDataMutex);
     const bool rawAligned = (slamSys && slamSys->HasMapAlignment());
 
-    // ---- 1) 滞回：raw 对齐抖动不下穿 ----
+    // 1) 滞回：raw 对齐抖动不下穿
     if (rawAligned) {
         gAlignHold.effAligned = true;
         gAlignHold.dropHold = 0;
@@ -178,7 +178,7 @@ static bool AR_RenderFrame(const cv::Mat& localTcw, bool trackingOk) {
     }
     const bool usingHold = gAlignHold.effAligned && !rawAligned && gAlignHold.hasLastGood;
 
-    // ---- 2) View：与 Model 严格同帧 ----
+    // 2) View：与 Model 严格同帧
     float view[16];
     if (usingHold) {
         memcpy(view, gAlignHold.lastView, sizeof(view));   // 冻结最后对齐视图
@@ -191,7 +191,7 @@ static bool AR_RenderFrame(const cv::Mat& localTcw, bool trackingOk) {
         getRUBViewMatrixFromRDF(tmp, view);
     }
 
-    // ---- 3) Model + 绘制门控 ----
+    // 3) Model + 绘制门控
     float model[16];
     setIdentityM(model);
     bool draw = trackingOk && gAnchor.valid && gAnchor.plane;
@@ -216,14 +216,14 @@ static bool AR_RenderFrame(const cv::Mat& localTcw, bool trackingOk) {
         }
     }
 
-    // ---- 4) 真对齐时缓存 lastGood（view/model 都在地图帧） ----
+    // 4) 真对齐时缓存 lastGood（view/model 都在地图帧）
     if (gAlignHold.effAligned && rawAligned) {
         memcpy(gAlignHold.lastView, view, sizeof(view));
         memcpy(gAlignHold.lastModel, model, sizeof(model));
         gAlignHold.hasLastGood = true;
     }
 
-    // ---- 5) 发布 ----
+    // 5) 发布
     memcpy(gCurrentViewMatrix, view, sizeof(view));
     memcpy(gCurrentModelMatrix, model, sizeof(model));
     return draw;
@@ -958,7 +958,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_isEnableSLAM(JNIEnv *env, jobject instan
     return (jboolean)gEnableSLAM;
 }
 
-// ========== 共享内存帧持久映射 ==========
+// 共享内存帧持久映射
 #define SH_HEADER_SIZE 256
 #define SH_OFF_FRAME_W 8
 #define SH_OFF_FRAME_H 12

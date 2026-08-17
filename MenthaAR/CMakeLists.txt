@@ -11,7 +11,7 @@ else()
     message(WARNING "OpenMP CXX NOT found! OpenCV will compile without OpenMP acceleration.")
 endif()
 
-#--------------------------------------------------- OpenCV 构建 ---------------------------------------------------#
+# OpenCV 构建
 # 使用官方 OpenCV 源码库，作为子库构建，并激活 NEON/OpenMP 硬件加速
 set(OPENCV_SRC_DIR "${CMAKE_SOURCE_DIR}/src/main/cpp/Thirdparty/opencv")
 
@@ -197,7 +197,7 @@ include_directories(
         src/main/cpp/Thirdparty/srrg_hbst
 )
 
-# ========== 整合所有组件到一个 SO：libMenthaAR_Engine.so ==========
+# 整合所有组件到一个 SO：libMenthaAR_Engine.so
 add_library(MenthaAR_Engine SHARED
         # SLAM Core 组件
         src/main/cpp/include/System.h
@@ -283,7 +283,7 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(MenthaAR_Engine OpenMP::OpenMP_CXX -static-openmp)
 endif()
 
-# ========== 3DOF 独立库 ==========
+# 3DOF 独立库
 add_library(Mentha_3DOF SHARED src/main/cpp/3dof.cpp src/main/cpp/Matrix.cpp)
 target_include_directories(Mentha_3DOF PRIVATE
     ${OPENCV_SRC_DIR}/include
@@ -295,7 +295,7 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(Mentha_3DOF OpenMP::OpenMP_CXX -static-openmp)
 endif()
 
-# ========== Mentha 性能分析器 ==========
+# Mentha 性能分析器
 set(MENTHA_DEVELOP_MODE ON) # <--- 修改这里：ON 开启，OFF 关闭
 
 message(STATUS "Mentha 分析器状态: ${MENTHA_DEVELOP_MODE}")

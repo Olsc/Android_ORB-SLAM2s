@@ -183,7 +183,7 @@ public class SlamIPCClient {
         }
     }
 
-    // ==================== 共享内存结果读取（渲染线程调用，零 binder） ====================
+    // 共享内存结果读取（渲染线程调用，零 binder）
 
     /** 读取最新 MVP（48 floats：M[16]+V[16]+P[16]）。返回 false 表示无有效数据。 */
     public boolean readMvp(float[] out48) {
@@ -200,7 +200,7 @@ public class SlamIPCClient {
         return sharedMemoryBuffer != null ? sharedMemoryBuffer.readPointCloud(out, maxFloats) : 0;
     }
 
-    // ==================== 低频控制接口（binder，非每帧路径） ====================
+    // 低频控制接口（binder，非每帧路径）
 
     public void detectPlane() {
         if (slamService != null) {

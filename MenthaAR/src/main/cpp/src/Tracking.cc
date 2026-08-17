@@ -1808,7 +1808,7 @@ bool Tracking::TrackLocalMap()
     // 必须等待SLAM建立一定规模的新地图（稳定）后，再尝试混合已加载的地图点。
     if((int)mvpLocalMapPoints.size()<LOCAL_MAP_SUPPLEMENT_TRIGGER)
     {
-        // 此时跳过全局搜索，不仅节省性能，也符合"先建图稳了再匹配"的逻辑
+        // 此时跳过全局搜索，避免无谓开销，也符合"先建图稳了再匹配"的逻辑
         bool bSkipGlobalWithLoadedMap = (mpMap->MapPointsInMap() > TRACKING_SKIP_GLOBAL_MAX_MPS && mpMap->KeyFramesInMap() < TRACKING_SKIP_GLOBAL_MAX_KFS && !mbHaveMapAlign);
 
         if(!bSkipGlobalWithLoadedMap)
@@ -3319,7 +3319,7 @@ void Tracking::LoadedMapGrid::GetCandidatesInSphere(const cv::Point3f& center, f
     rMin = std::max(0, rMin); rMax = std::min(nRows-1, rMax);
     sMin = std::max(0, sMin); sMax = std::min(nSlices-1, sMax);
 
-    // 精确球形过滤,减少84.6%冗余候选
+    // 精确球形过滤：剔除包围盒内的冗余候选
     // 预计算平方半径,避免sqrt和重复计算
     const float radiusSq = radius * radius;
 

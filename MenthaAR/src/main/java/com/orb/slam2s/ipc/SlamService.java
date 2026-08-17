@@ -45,7 +45,7 @@ public class SlamService extends Service {
     private NativeHelper nativeHelper;
     private final RemoteCallbackList<ISlamCallback> callbacks = new RemoteCallbackList<>();
 
-    // ---- 专用 SLAM 处理线程 ----
+    // 专用 SLAM 处理线程
     private Thread slamThread;
     private final Object queueLock = new Object();
     private final java.util.ArrayDeque<Runnable> taskQueue = new java.util.ArrayDeque<>();
@@ -209,7 +209,7 @@ public class SlamService extends Service {
         }
     };
 
-    // ==================== 处理线程 ====================
+    // 处理线程
 
     private void postTask(Runnable r) {
         synchronized (queueLock) {
@@ -269,7 +269,7 @@ public class SlamService extends Service {
         }
     }
 
-    // ==================== 帧处理 ====================
+    // 帧处理
 
     private void processFrameInternal(int seq, int bufIndex, int w, int h) {
         try {
@@ -292,7 +292,7 @@ public class SlamService extends Service {
         }
     }
 
-    // ==================== 生命周期 ====================
+    // 生命周期
 
     @Override
     public void onCreate() {
@@ -327,7 +327,7 @@ public class SlamService extends Service {
         }
     }
 
-    // ==================== 回调 ====================
+    // 回调
 
     private void notifyPlaneDetected(int result) {
         int n = callbacks.beginBroadcast();

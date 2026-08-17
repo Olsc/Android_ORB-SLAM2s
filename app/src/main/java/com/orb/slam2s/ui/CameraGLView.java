@@ -27,7 +27,7 @@ import java.util.concurrent.Executors;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-// 相机 GL 视图 — 100% 纯 Java SDK 图像采集与 SharedMemory 帧推送
+// 相机 GL 视图 — 纯 Java SDK 图像采集与 SharedMemory 帧推送
 @SuppressWarnings("deprecation")
 public class CameraGLView extends CameraGLViewBase {
 

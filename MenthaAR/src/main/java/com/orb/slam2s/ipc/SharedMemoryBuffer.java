@@ -65,7 +65,7 @@ import java.nio.ByteOrder;
 public class SharedMemoryBuffer {
     private static final String TAG = "SharedMemoryBuffer";
 
-    // ---- 布局常量（与 native-lib.cpp 中 SH_* 保持一致，勿单独修改）----
+    // 布局常量（与 native-lib.cpp 中 SH_* 保持一致，勿单独修改）
     public static final int HEADER_MAGIC = 0x4D4E5448; // "MNTH"
     public static final int HEADER_VERSION = 2;
     public static final int HEADER_SIZE = 256;
@@ -132,7 +132,7 @@ public class SharedMemoryBuffer {
         }
     }
 
-    // ==================== 布局计算 ====================
+    // 布局计算
 
     /** 设置当前帧尺寸（影响 Y 双缓冲与点云区偏移）。必须在写帧前调用。 */
     public void setFrameSize(int w, int h) {
@@ -158,7 +158,7 @@ public class SharedMemoryBuffer {
         return HEADER_SIZE + 2 * w * h + POINTCLOUD_MAX_BYTES;
     }
 
-    // ==================== header 读写（绝对偏移，线程安全） ====================
+    // header 读写（绝对偏移，线程安全）
 
     /** 初始化 header（首次写帧前调用一次）。返回 false 表示缓冲区不可用。 */
     public boolean initHeader(int w, int h) {
@@ -263,7 +263,7 @@ public class SharedMemoryBuffer {
         return floats;
     }
 
-    // ==================== 帧写入 ====================
+    // 帧写入
 
     // 将一帧灰度 Y 数据写入指定缓冲（bufIndex 0/1）
     // 调用方必须已确认该缓冲可写（slamDoneSeq >= seq-2）
@@ -289,7 +289,7 @@ public class SharedMemoryBuffer {
         return true;
     }
 
-    // ==================== 通用访问 ====================
+    // 通用访问
 
     public ParcelFileDescriptor getParcelFileDescriptor() {
         return pfd;

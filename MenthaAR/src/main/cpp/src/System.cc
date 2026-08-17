@@ -301,7 +301,7 @@ void System::CreateNewMap()
 
     LOGD("System::CreateNewMap 开始创建新子地图");
 
-    // ===== 1. 暂停 LocalMapping/LoopClosing 接收新数据 =====
+    // 1. 暂停 LocalMapping/LoopClosing 接收新数据
     if (mpLocalMapper) {
         mpLocalMapper->SetAcceptKeyFrames(false);
         mpLocalMapper->InterruptBA();
@@ -315,12 +315,12 @@ void System::CreateNewMap()
         mpLoopCloser->ClearQueue();
     }
 
-    // ===== 2. 停止后台重定位线程（防止切 Map 期间访问悬空指针） =====
+    // 2. 停止后台重定位线程（防止切 Map 期间访问悬空指针）
     if (mpTracker) {
         mpTracker->StopGlobalRelocThread();
     }
 
-    // ===== 3. 清空与旧 Map 绑定的重定位/对齐缓存 =====
+    // 3. 清空与旧 Map 绑定的重定位/对齐缓存
     // 此时后台线程已停止，无竞争。不清 Map 本身，旧 Map 继续保留在 mvpMaps 中。
     if (mpTracker) {
         mpTracker->ClearRelocCacheForMapSwitch();
@@ -331,7 +331,7 @@ void System::CreateNewMap()
         mpTracker->InformOnlyTracking(false);
     }
 
-    // ===== 5. 创建新 Map 并切换 =====
+    // 5. 创建新 Map 并切换
     std::vector<MapPoint*> savedLoadedMPs;
     {
         std::vector<MapPoint*> allMPs = mpMap->GetAllMapPoints();
@@ -380,18 +380,18 @@ void System::CreateNewMap()
              (int)savedLoadedMPs.size(), pNewMap->mnId);
     }
 
-    // ===== 6. 轻量重置跟踪运行时状态 =====
+    // 6. 轻量重置跟踪运行时状态
     // PrepareForNewMap 代替 Reset()：不阻塞 spin、不清旧 Map、不停重定位线程，全程 < 1 ms
     if (mpTracker) {
         mpTracker->PrepareForNewMap();
     }
 
-    // ===== 7. 重启后台重定位线程 =====
+    // 7. 重启后台重定位线程
     if (mpTracker) {
         mpTracker->StartGlobalRelocThread();
     }
 
-    // ===== 8. 恢复 LocalMapping =====
+    // 8. 恢复 LocalMapping
     if (mpLocalMapper) {
         mpLocalMapper->SetAcceptKeyFrames(true);
     }

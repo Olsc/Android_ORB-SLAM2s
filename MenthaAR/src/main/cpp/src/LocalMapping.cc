@@ -457,7 +457,7 @@ void LocalMapping::CreateNewMapPoints()
             if(z2<=0)
                 continue;
 
-            // 检查第一个关键帧中的重投影误差（交叉相乘消除 1.0/z1 浮点除法，100% 数学等价）
+            // 检查第一个关键帧中的重投影误差（交叉相乘消除 1.0/z1 浮点除法，数学上完全等价）
             const float &sigmaSquare1 = mpCurrentKeyFrame->mvLevelSigma2[kp1.octave];
             const float x1 = Rcw1f[0]*x3Dx + Rcw1f[1]*x3Dy + Rcw1f[2]*x3Dz + tcw1f[0];
             const float y1 = Rcw1f[3]*x3Dx + Rcw1f[4]*x3Dy + Rcw1f[5]*x3Dz + tcw1f[1];
@@ -469,7 +469,7 @@ void LocalMapping::CreateNewMapPoints()
                     continue;
             }
 
-            // 检查第二个关键帧中的重投影误差（交叉相乘消除 1.0/z2 浮点除法，100% 数学等价）
+            // 检查第二个关键帧中的重投影误差（交叉相乘消除 1.0/z2 浮点除法，数学上完全等价）
             const float sigmaSquare2 = pKF2->mvLevelSigma2[kp2.octave];
             const float x2 = Rcw2f[0]*x3Dx + Rcw2f[1]*x3Dy + Rcw2f[2]*x3Dz + tcw2f[0];
             const float y2 = Rcw2f[3]*x3Dx + Rcw2f[4]*x3Dy + Rcw2f[5]*x3Dz + tcw2f[1];
