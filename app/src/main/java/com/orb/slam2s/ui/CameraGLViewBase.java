@@ -8,9 +8,7 @@ import android.view.View;
 
 import com.orb.slam2s.rendering.gles.GLRootView;
 
-/**
- * 相机与 SDK 交互的基础类：控制相机启停、处理帧并回调监听器，将结果绘制到屏幕
- */
+// 相机与 SDK 交互的基础类：控制相机启停、处理帧并回调监听器，将结果绘制到屏幕
 public abstract class CameraGLViewBase extends GLRootView {
 
     private static final String TAG = "CameraGLViewBase";
@@ -38,27 +36,17 @@ public abstract class CameraGLViewBase extends GLRootView {
     }
 
     public interface CvCameraViewListener2 {
-        /**
-         * 当相机预览启动时调用此方法。
-         * @param width - 将传递的帧的宽度
-         * @param height - 将传递的帧的高度
-         */
+        // 相机预览启动时调用，width/height 为传递的帧宽高
         public void onCameraViewStarted(int width, int height);
 
-        /**
-         * 当相机预览因某种原因停止时调用此方法。
-         */
+        // 相机预览因某种原因停止时调用
         public void onCameraViewStopped();
 
-        /**
-         * 每帧回调（宿主用于 FPS 等统计；帧内容由 CameraGLView 通过 XCameraFrame 提供）。
-         */
+        // 每帧回调（宿主用于 FPS 等统计；帧内容由 CameraGLView 通过 XCameraFrame 提供）
         public long onCameraFrame(CvCameraViewFrame inputFrame);
     }
 
-    /**
-     * 相机单帧的抽象表示（CameraX 路径无原生 Mat 地址，rgba()/gray() 返回 0，仅作回调载体）。
-     */
+    // 相机单帧的抽象表示（CameraX 路径无原生 Mat 地址，rgba()/gray() 返回 0，仅作回调载体）
     public interface CvCameraViewFrame {
         public long rgba();
         public long gray();
@@ -149,10 +137,7 @@ public abstract class CameraGLViewBase extends GLRootView {
         }
     }
 
-    /**
-     * 当子类处理完一帧后调用，把帧交给宿主回调（onCameraFrame），用于 FPS 等统计。
-     * @param frame - 要传递的当前帧
-     */
+    // 子类处理完一帧后调用，把帧交给宿主回调（onCameraFrame），用于 FPS 等统计
     protected void deliverAndDrawFrame(CvCameraViewFrame frame) {
         if (mListener != null) {
             mListener.onCameraFrame(frame);

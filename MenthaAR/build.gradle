@@ -12,7 +12,7 @@ android {
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
-        
+
         externalNativeBuild {
             cmake {
                 cppFlags "-std=c++11 -frtti -fexceptions -fopenmp"
@@ -38,14 +38,14 @@ android {
     buildFeatures {
         aidl = true
     }
-    
+
     externalNativeBuild {
         cmake {
             path "CMakeLists.txt"
             version '3.22.1'
         }
     }
-    
+
     packaging {
         jniLibs {
             useLegacyPackaging true

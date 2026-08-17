@@ -66,10 +66,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 add_subdirectory(${OPENCV_SRC_DIR} opencv_build)
 
-
-
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -fexceptions -frtti")
-
 
 ADD_LIBRARY(g2o
         src/main/cpp/Thirdparty/g2o/g2o/types/types_sba.h
@@ -200,7 +197,6 @@ include_directories(
         src/main/cpp/Thirdparty/srrg_hbst
 )
 
-
 # ========== 整合所有组件到一个 SO：libMenthaAR_Engine.so ==========
 add_library(MenthaAR_Engine SHARED
         # SLAM Core 组件
@@ -239,7 +235,7 @@ add_library(MenthaAR_Engine SHARED
         src/main/cpp/src/KeyFrameDatabase.cc
         src/main/cpp/src/Sim3Solver.cc
         src/main/cpp/src/Initializer.cc
-        
+
         # JNI 接口层与 IPC 通讯层
         src/main/cpp/native-lib.cpp
         src/main/cpp/UIUtils.cpp
@@ -267,7 +263,6 @@ else()
 endif()
 
 find_library(log-lib log)
-
 
 target_link_libraries(MenthaAR_Engine
         -Wl,--whole-archive
@@ -314,16 +309,16 @@ if(MENTHA_DEVELOP_MODE)
             src/main/cpp/profiler/MenthaProfiler.cpp
             src/main/cpp/profiler/MenthaProfiler.h
     )
-    
+
     # 使用 PUBLIC 确保宏定义传播给所有链接到此库的目标（如 MenthaAR_Engine）
     target_compile_definitions(Mentha_Profiler PUBLIC MENTHA_DEVELOP_MODE)
-    
+
     target_link_libraries(Mentha_Profiler ${log-lib} -static-openmp)
-    
+
     if(OpenMP_CXX_FOUND)
         target_link_libraries(Mentha_Profiler OpenMP::OpenMP_CXX -static-openmp)
     endif()
-    
+
     # 链接分析器库
     target_link_libraries(MenthaAR_Engine Mentha_Profiler)
 endif()

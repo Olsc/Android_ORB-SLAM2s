@@ -8,7 +8,6 @@
 #include "Matrix.h"
 #include "include/Config.h"
 
-
 // 使用RANSAC算法从3D地图点中检测平面，选择中值距离最小的模型
 Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &vMPs, const int iterations)
 {
@@ -156,4 +155,3 @@ void getColMajorMatrixFromMat(float M[],cv::Mat &Tcw){
     M[14] = Tcw.at<float>(2,3);
     M[15]  = 1.0;
 }
-

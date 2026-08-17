@@ -123,10 +123,8 @@ public class SlamIPCClient {
         }
     }
 
-    /**
-     * 将一帧灰度 Y 数据写入共享内存并投递给 SLAM 进程（oneway，不阻塞）。
-     * 内部做双缓冲 + 背压丢帧。可在任意线程调用（内部已串行化）。
-     */
+    // 将一帧灰度 Y 数据写入共享内存并投递给 SLAM 进程（oneway，不阻塞）
+    // 内部双缓冲 + 背压丢帧，可在任意线程调用（内部已串行化）
     public void sendFrameData(byte[] frameData, int width, int height) {
         if (slamService == null || frameData == null) return;
         if (width <= 0 || height <= 0) return;
@@ -173,9 +171,7 @@ public class SlamIPCClient {
         }
     }
 
-    /**
-     * 将共享内存缓冲的 fd 一次性绑定到 SLAM 进程。
-     */
+    // 将共享内存缓冲的 fd 一次性绑定到 SLAM 进程
     private void attachFrameBuffer() {
         if (slamService == null || sharedMemoryBuffer == null) return;
         ParcelFileDescriptor pfd = sharedMemoryBuffer.getParcelFileDescriptor();

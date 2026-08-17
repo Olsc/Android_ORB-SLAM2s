@@ -36,7 +36,7 @@ public class NativeHelper {
     private int planeDetectResult;                      // 平面检测结果
     private boolean planeDetected;                      // 是否检测到平面
 
-    // J-4：状态缓冲区实际只使用 3 个 int [tracking, shouldDraw, scaleBits]，
+    // 状态缓冲区实际只使用 3 个 int [tracking, shouldDraw, scaleBits]，
     // 原先的 233 是把 PLANE_DETECTED 常量误当作数组长度
     private final int[] statusBuf = new int[3];
 
@@ -48,11 +48,8 @@ public class NativeHelper {
         planeDetected = false;
     }
 
-    /**
-     * 检测平面（在 SLAM 处理线程内调用）。
-     * MVP 结果由 native 写回共享内存，UI 渲染线程直接读取。
-     * @return 平面检测结果
-     */
+    // 检测平面（在 SLAM 处理线程内调用）
+    // MVP 结果由 native 写回共享内存，UI 渲染线程直接读取；返回平面检测结果
     public int detectPlane() {
         detect(statusBuf);
         planeDetectResult = statusBuf[1];
@@ -90,8 +87,8 @@ public class NativeHelper {
     // 本地方法：初始化SLAM
     public native void initSLAM(String path);
 
-    // J-13：关停并释放 SLAM 系统（join 全部工作线程后 delete），
-    // Activity.onDestroy 调用，修复 LM/LC/GlobalReloc 三条线程永不退出的问题
+    // 关停并释放 SLAM 系统（join 全部工作线程后 delete）
+    // 由 Activity.onDestroy 调用，确保 LM/LC/GlobalReloc 三条线程全部退出
     public native void nativeShutdown();
 
     // 供 Activity 生命周期调用的安全封装
@@ -128,7 +125,7 @@ public class NativeHelper {
 
     // 3DOF功能接口
     public native float[] calculate3DofInsertionPoint(float[] rotationMatrix, int rotation, float distance);
-    // J-9：出参版本——直接填充调用方缓冲，避免每帧 JNI 分配新 float[16]
+    // 出参版本——直接填充调用方缓冲，避免每帧 JNI 分配新 float[16]
     public native void compute3DofMVP(float[] outMvp, float[] rotationMatrix, int rotation, float ratio, float[] objectPos);
 
     // AR对象缩放

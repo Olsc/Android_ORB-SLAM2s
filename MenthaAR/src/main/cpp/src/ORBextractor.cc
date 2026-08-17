@@ -95,11 +95,8 @@ struct DescriptorOffset {
 static DescriptorOffset descriptorOffsetLUT[360][ORB_BRIEF_NUM_POINTS];
 static bool bDescriptorLUTInit = false;
 
-// E-1 修正说明：
-// 原实现用单值 cachedStep 缓存 step 缩放后的偏移 LUT——但 8 层金字塔 step 各不相同，
-// 逐层切换导致每层 miss、每帧最多 8 次全表重建（360×512=184,320 次乘加 ×8 ≈ 1.47M/帧）。
-// 修正为在描述子循环内直接计算 dy*step+dx：每关键点 512 次乘加（1000 点/帧 ≈ 0.5M/帧），
-// 数学完全等价、零表重建、零额外内存（原先的 thread_local LUT 另占 1.4MB/线程，一并删除）。
+// 描述子偏移按当前层 step 直接计算 dy*step+dx——8 层金字塔 step 各异，
+// 单值 LUT 逐层切换必失效（每帧最多 8 次全表重建），直接计算零重建、零额外内存
 
 static uint32_t reciprocal_table_q24[1025];
 static uint16_t arctan_table_q10[1025];
@@ -218,13 +215,13 @@ static void computeOrbDescriptor(const KeyPoint& kpt,
     if(angleIdx < 0) angleIdx += 360;
     if(angleIdx >= 360) angleIdx -= 360;
 
-    // 快速舍入优化
+    // 快速舍入（+0.5 后截断取整）
     const int kpy = (int)(kpt.pt.y + 0.5f);
     const int kpx = (int)(kpt.pt.x + 0.5f);
     const uchar* center = &img.at<uchar>(kpy, kpx);
     const int step = (int)img.step;
 
-    // E-1：直接由 (dy,dx) 基表计算当前层 step 的偏移（消除每帧 8 次全表重建的 thrash）
+    // 直接由 (dy,dx) 基表计算当前层 step 的偏移（消除每帧 8 次全表重建的 thrash）
     const DescriptorOffset* off = descriptorOffsetLUT[angleIdx];
 
     #define GET_VALUE(idx) center[off[idx].dy * step + off[idx].dx]
@@ -683,7 +680,7 @@ void ExtractorNode::DivideNode(ExtractorNode &n1, ExtractorNode &n2, ExtractorNo
 vector<cv::KeyPoint> ORBextractor::DistributeOctTree(const vector<cv::KeyPoint>& vToDistributeKeys, const int &minX,
                                        const int &maxX, const int &minY, const int &maxY, const int &N, const int &level)
 {
-    // 计算初始节点数量   
+    // 计算初始节点数量
     const int nIni = round(static_cast<float>(maxX-minX)/(maxY-minY));
 
     const float hX = static_cast<float>(maxX-minX)/nIni;
@@ -706,7 +703,7 @@ vector<cv::KeyPoint> ORBextractor::DistributeOctTree(const vector<cv::KeyPoint>&
         vpIniNodes[i] = &lNodes.back();
     }
 
-    // 将点关联到子节点 (使用乘法代替除法优化性能)
+    // 将点关联到子节点（用乘法替代除法）
     const float inv_hX = 1.0f / hX;
     for(size_t i=0;i<vToDistributeKeys.size();i++)
     {
@@ -768,7 +765,7 @@ vector<cv::KeyPoint> ORBextractor::DistributeOctTree(const vector<cv::KeyPoint>&
                 // 如果子节点包含点则添加
                 if(n1.vKeys.size()>0)
                 {
-                    lNodes.push_front(std::move(n1));                    
+                    lNodes.push_front(std::move(n1));
                     if(lNodes.front().vKeys.size()>1)
                     {
                         nToExpand++;
@@ -810,7 +807,7 @@ vector<cv::KeyPoint> ORBextractor::DistributeOctTree(const vector<cv::KeyPoint>&
                 lit=lNodes.erase(lit);
                 continue;
             }
-        }       
+        }
 
         // 如果节点数超过所需特征数或所有节点都只包含一个点则完成
         if((int)lNodes.size()>=N || (int)lNodes.size()==prevSize)
@@ -995,7 +992,7 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
             }
         }
 
-        // 3. 逐个网格单次遍历流式过滤 (单次遍历替代原代码双重 Pass，提升缓存命中率)
+        // 3. 逐个网格单次遍历流式过滤（避免双重 Pass 的缓存失效）
         for(int cellIdx = 0; cellIdx < nCells; ++cellIdx)
         {
             int start = cellOffsets[cellIdx];
@@ -1060,8 +1057,8 @@ void ORBextractor::ComputeKeyPointsOctTree(vector<vector<KeyPoint> >& allKeypoin
 }
 
 // 按金字塔层并行执行 fn(level)。各层检测/描述子计算相互独立（层内数据 + thread_local 缓存）。
-// 极致性能优化：采用静态常驻轻量级工作线程池，消灭每帧频繁创建/销毁 std::thread 的内核调度与上下文切换开销。
-// 工作线程在空闲时阻塞在条件变量上，主线程直接参与任务窃取，实现最优的负载均衡与零分配并发。
+// 静态常驻轻量级工作线程池：避免每帧创建/销毁 std::thread 的调度与切换开销；
+// 空闲线程阻塞于条件变量，主线程参与任务窃取，负载均衡且零分配
 namespace {
 class LevelThreadPool {
 public:
@@ -1187,7 +1184,7 @@ void parallelForLevels(int nlevels, Fn&& fn) {
 
 void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPoint>& _keypoints,
                       OutputArray _descriptors)
-{ 
+{
     VT_PROFILE_FUNCTION();
     if(_image.empty())
         return;
@@ -1377,7 +1374,7 @@ void ORBextractor::blurAndComputeDescriptors(
 {
     for (int level = range.start; level < range.end; ++level)
     {
-        // E-3：本层无关键点则跳过模糊与 ROI 构造（整图 7×7 定点模糊只为
+        // 本层无关键点则跳过模糊与 ROI 构造（整图 7×7 定点模糊只为
         // 描述子计算服务，空纹理层每帧的 ~百万次整型运算是纯浪费）
         const int kpStart = levelDescOffset[level];
         const int kpEnd = levelDescOffset[level + 1];
@@ -1389,7 +1386,7 @@ void ORBextractor::blurAndComputeDescriptors(
         Size wholeSize(sz.width + ORB_EDGE_THRESHOLD*2, sz.height + ORB_EDGE_THRESHOLD*2);
         mvBlurredPyramidPadded[level].create(wholeSize, mvImagePyramid[level].type());
 
-        // 对带边框的图像进行定点 1D 可分离高斯模糊优化
+        // 对带边框的图像做定点 1D 可分离高斯模糊
         FastIntegerGaussianBlur7x7(mvImagePyramidPadded[level], mvBlurredPyramidPadded[level]);
 
         // 让 mvBlurredPyramid[level] 成为 mvBlurredPyramidPadded[level] 的子矩阵 ROI

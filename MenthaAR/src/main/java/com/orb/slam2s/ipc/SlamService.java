@@ -31,7 +31,7 @@ import com.orb.slam2s.slamar.NativeHelper;
 /**
  * SLAM 独立进程服务。
  *
- * 架构要点（修复性能问题的关键）：
+ * 架构要点：
  * 1. SLAM 处理（TrackMonocular 等耗时操作）运行在专用高优先级线程 {@link #slamThread}，
  *    绝不占用 binder 线程 —— binder 线程池不再被 30fps 的帧处理长期阻塞。
  * 2. 帧投递使用 oneway AIDL（processFrame 只入队立即返回），binder 事务开销降至最低。
@@ -313,11 +313,8 @@ public class SlamService extends Service {
         super.onDestroy();
         Log.d(TAG, "SlamService onDestroy: 停止处理线程并释放 SLAM 系统");
         stopSlamThread();
-        // J-13（合并修补）：服务进程销毁时必须 join 全部 SLAM 工作线程并释放 native 系统，
-        // 否则 LM/LC/GlobalReloc 三条常驻线程随进程退出被 kill（不执行析构），
-        // 导致 MapPoint/KeyFrame 内存泄漏 + mmap 残留。
-        // 顺序：先停帧处理（stopSlamThread 已完成）→ 再 shutdownSLAM（内部 join 工作线程）→
-        // 最后 detach 共享内存（native 侧 munmap）
+        // 服务进程销毁时依次：停帧处理 → shutdownSLAM（join 工作线程）→ detach 共享内存，
+        // 确保三条常驻线程（LM/LC/GlobalReloc）全部释放，避免内存泄漏与 mmap 残留
         if (nativeHelper != null) {
             nativeHelper.shutdownSLAM();
             nativeHelper.detachFrameBuffer();

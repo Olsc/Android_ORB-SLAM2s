@@ -16,7 +16,6 @@
 #include <GLES/gl.h>
 #endif
 
-
 // 使用RANSAC算法检测平面，失败返回NULL
 Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &vMPs, const int iterations);
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """native-lib.cpp 合并冲突批量解决：按冲突序号应用策略。
-策略依据（复审记录）：
-  ours  = main 侧（RA 加固/R7 帧计数/S-5 缓存等，IPC 侧为同逻辑旧版）
+策略依据：
+  ours  = main 侧（原子量/帧计数/投影缓存等，IPC 侧为同逻辑旧版）
   theirs= IPC 侧新功能（AR_RenderFrame 锚点管线、共享内存帧路径、JNI 入口删除）
   custom= 双方叠加
 """
@@ -52,24 +52,23 @@ CUSTOM_14 = """        stats[0] = sys->GetNumKeyFrames();
 """
 
 POLICY = {
-    1: "ours",     # FrameRefGuard（S-7）
+    1: "ours",     # FrameRefGuard
     2: "ours",     # 递减移至函数末尾的注释
     3: "ours",     # currentSlamSys 快照 + 提前返回
     4: "theirs",   # AR_RenderFrame 锚点渲染管线（取代内联对齐门控，语义超集）
-    5: "ours",     # R7 帧计数丢失重置 + CPU 绘制段
+    5: "ours",     # 帧计数丢失重置 + CPU 绘制段
     6: ("custom", CUSTOM_6),      # cpuset 诊断（IPC）+ 锁内构造（main）
     7: "ours",     # 锁内 UpdateCalibration
     8: "ours",     # sys 快照 + maxPoints 保存
     9: "theirs",   # IPC 删除 getCurrentMapId/nativeProcessFrameMat（Java 侧无调用方）
-    10: "ours",    # detect 加固快照
+    10: "ours",    # detect 锁内快照
     11: ("custom", CUSTOM_11),    # AR_OnArPlaced 事件（IPC）+ sys 快照（main）
-    12: "ours",    # nativeGetMVP 加固 + S-5 缓存
-    13: "ours",    # getV 加固
-    14: ("custom", CUSTOM_14),    # sys 快照 + gAnchor.plane（锚点重构）
+    12: "ours",    # nativeGetMVP 快路径 + 投影缓存
+    13: "ours",    # getV 快路径
+    14: ("custom", CUSTOM_14),    # sys 快照 + gAnchor.plane（锚点集中状态）
     15: "ours",    # getMiniMapPoints 持锁采样
-    16: "theirs",  # isEnableSLAM + 共享内存帧路径（原子化在后续修补中恢复）
+    16: "theirs",  # isEnableSLAM + 共享内存帧路径
 }
-
 
 def main():
     lines = F.read_text(encoding="utf-8").splitlines(keepends=True)
@@ -96,7 +95,6 @@ def main():
     F.write_text("".join(out), encoding="utf-8")
     print(f"已解决 {idx} 处冲突")
     assert idx == 16, f"预期 16 处，实际 {idx}"
-
 
 if __name__ == "__main__":
     sys.exit(main())

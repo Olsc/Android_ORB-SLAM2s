@@ -289,12 +289,12 @@ protected:
 
     // 为加载的地图点缓存的参考描述符（用于后台匹配）
     cv::Mat mRefDesc; // 描述符行
-    // T-6：缓存主体改为不可变快照的 shared_ptr——读端仅在锁内拷贝指针（O(1)），
+    // 缓存主体改为不可变快照的 shared_ptr——读端仅在锁内拷贝指针（O(1)），
     // 替代原先每轮唤醒对整个 vector 的值拷贝（3 万点 ≈ 840KB/次）
     std::shared_ptr<const std::vector<MapPoint*>> mpRefIdxToMP;
     size_t mRefCachedMPCount = 0;
     double mRefLastBuildTs = 0.0;
-    // R10：重建节流改为增量驱动（地图点 +5% 或 KF +3 才重建），替代 2 秒墙钟冷却
+    // 重建节流改为增量驱动（地图点 +5% 或 KF +3 才重建），替代 2 秒墙钟冷却
     long long mRefLastBuildMPCount = 0;
     long long mRefLastBuildKFCount = 0;
     std::atomic<bool> mRefBuilding{false};
@@ -323,7 +323,7 @@ protected:
         void Build(const std::vector<RefMPSnapshot>& snaps, float size = LOADED_MAP_GRID_CELL_SIZE);
         // 获取包围盒内的候选点 (原始版本,返回矩形区域)
         void GetCandidatesInBBox(const cv::Point3f& center, float radius, std::vector<int>& outIndices) const;
-        // 获取包围盒内的候选点 (优化版本,精确圆形过滤)
+        // 获取包围盒内的候选点（精确圆形过滤）
         void GetCandidatesInSphere(const cv::Point3f& center, float radius,
                                   const std::vector<RefMPSnapshot>& snaps,
                                   std::vector<int>& outIndices) const;

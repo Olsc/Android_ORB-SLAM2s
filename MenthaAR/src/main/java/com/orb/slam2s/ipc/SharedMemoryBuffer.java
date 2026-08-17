@@ -112,9 +112,7 @@ public class SharedMemoryBuffer {
         }
     }
 
-    /**
-     * 通过反射获取 SharedMemory 底层 fd（getFd 在高版本系统上仍被允许访问）。
-     */
+    // 通过反射获取 SharedMemory 底层 fd（getFd 在高版本系统上仍被允许访问）
     @SuppressLint("DiscouragedPrivateApi")
     private int getRawFd(SharedMemory sharedMemory) {
         try {
@@ -267,10 +265,8 @@ public class SharedMemoryBuffer {
 
     // ==================== 帧写入 ====================
 
-    /**
-     * 将一帧灰度 Y 数据写入指定缓冲（bufIndex 0/1）。
-     * 调用方必须已确认该缓冲可写（slamDoneSeq >= seq-2）。
-     */
+    // 将一帧灰度 Y 数据写入指定缓冲（bufIndex 0/1）
+    // 调用方必须已确认该缓冲可写（slamDoneSeq >= seq-2）
     public boolean writeFrame(byte[] yData, int bufIndex, int w, int h) {
         if (frameW != w || frameH != h) {
             setFrameSize(w, h);

@@ -93,7 +93,7 @@ public class WebServer {
 
         java.security.KeyPairGenerator kpg = java.security.KeyPairGenerator.getInstance(
                 android.security.keystore.KeyProperties.KEY_ALGORITHM_RSA, "AndroidKeyStore");
-        
+
         kpg.initialize(new android.security.keystore.KeyGenParameterSpec.Builder(
                 alias,
                 android.security.keystore.KeyProperties.PURPOSE_SIGN | android.security.keystore.KeyProperties.PURPOSE_VERIFY | android.security.keystore.KeyProperties.PURPOSE_ENCRYPT | android.security.keystore.KeyProperties.PURPOSE_DECRYPT)

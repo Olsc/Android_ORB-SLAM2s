@@ -14,7 +14,7 @@ import java.io.InputStream;
 public class BitmapUtils {
 
     public static Bitmap loadBitmapFromAssets(Context context,String filePath){
-        // J-14：finally 中关闭流——原先 InputStream 泄漏
+        // finally 中关闭流——原先 InputStream 泄漏
         InputStream inputStream = null;
         try {
             inputStream = context.getResources().getAssets().open(filePath);

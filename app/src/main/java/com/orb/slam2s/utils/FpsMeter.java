@@ -19,7 +19,7 @@ public class FpsMeter {
         mStrfps = "";
     }
 
-    // J-5 配套：本 measure() 调用是否恰好刷新了字符串（每 STEP=20 帧一次），
+    // 本 measure() 调用是否恰好刷新了字符串（每 STEP=20 帧一次），
     // 供调用方决定是否值得投递一次 UI 更新
     private boolean mUpdatedThisCall = false;
 

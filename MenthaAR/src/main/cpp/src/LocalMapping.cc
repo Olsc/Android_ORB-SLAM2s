@@ -111,7 +111,7 @@ void LocalMapping::Run()
         // 检查队列中是否有关键帧
         if(CheckNewKeyFrames())
         {
-            // L-2：忙标志仅在真正处理关键帧期间为 false（原先空闲时也每 3ms 翻转）
+            // 忙标志仅在真正处理关键帧期间为 false（原先空闲时也每 3ms 翻转）
             SetAcceptKeyFrames(false);
 
             {
@@ -199,7 +199,7 @@ void LocalMapping::Run()
         if(CheckFinish())
             break;
 
-        // L-1/R4：事件谓词等待替代 3ms 心跳轮询——空闲时零唤醒
+        // 事件谓词等待替代 3ms 心跳轮询——空闲时零唤醒
         {
             std::unique_lock<std::mutex> lock(mMutexEvent);
             mCvEvent.wait(lock, [this]{ return HasPendingEvent(); });
@@ -255,7 +255,7 @@ void LocalMapping::ProcessNewKeyFrame()
                 }
             }
         }
-    }    
+    }
 
     // 更新共视步图中的链接
     mpCurrentKeyFrame->UpdateConnections();
@@ -409,7 +409,7 @@ void LocalMapping::CreateNewMapPoints()
             const float kp2_ur = -1.0f;
             bool bStereo2 = false;
 
-            // 检查光线之间的视差（标量替换优化 cv::Mat 分配）
+            // 检查光线之间的视差（标量替换，避免 cv::Mat 分配）
             const float xn1x = (kp1.pt.x-cx1)*invfx1;
             const float xn1y = (kp1.pt.y-cy1)*invfy1;
             // xn2 = [(kp2.pt.x-cx2)*invfx2, (kp2.pt.y-cy2)*invfy2, 1]
@@ -503,7 +503,7 @@ void LocalMapping::CreateNewMapPoints()
             // 三角化成功
             MapPoint* pMP = new MapPoint(x3D,mpCurrentKeyFrame,mpMap);
 
-            pMP->AddObservation(mpCurrentKeyFrame,idx1);            
+            pMP->AddObservation(mpCurrentKeyFrame,idx1);
             pMP->AddObservation(pKF2,idx2);
 
             mpCurrentKeyFrame->AddMapPoint(pMP,idx1);
@@ -710,7 +710,7 @@ bool LocalMapping::AcceptKeyFrames()
     if(mbAcceptKeyFrames.load())
         return true;
 
-    // 即使建图线程正忙，如果队列中积压的关键帧较少（少于3帧），也允许继续插入，以极大地提升跟踪稳定性，避免运动卡顿
+    // 即使建图线程正忙，若队列积压的关键帧较少（少于3帧），也允许继续插入，以保证跟踪稳定性
     unique_lock<mutex> lockQueue(mMutexNewKFs);
     return mlNewKeyFrames.size() < LOCAL_MAPPING_MAX_QUEUED_KFS;
 }
@@ -973,7 +973,7 @@ void LocalMapping::CheckLimits()
              if(spLocalMPs.count(pMP)) continue;
 
              // 保护最近看到的点（在最近 N 帧内）
-             if(pMP->mnLastFrameSeen >= mpCurrentKeyFrame->mnFrameId - LOCAL_MAPPING_CULL_PROTECT_FRAMES) continue; 
+             if(pMP->mnLastFrameSeen >= mpCurrentKeyFrame->mnFrameId - LOCAL_MAPPING_CULL_PROTECT_FRAMES) continue;
 
              pMP->SetBadFlag();
              nErasedMP++;

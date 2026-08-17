@@ -110,7 +110,7 @@ void LoopClosing::Run()
                    CorrectLoop();
                }
             }
-        }       
+        }
 
         ResetIfRequested();
 
@@ -120,7 +120,7 @@ void LoopClosing::Run()
         // 消费关键帧数据库的待重建标记
         mpKeyFrameDB->RebuildIfPending();
 
-        // R5：事件谓词等待替代 5ms 心跳轮询——空闲时零唤醒
+        // 事件谓词等待替代 5ms 心跳轮询——空闲时零唤醒
         {
             std::unique_lock<std::mutex> lock(mMutexEvent);
             mCvEvent.wait(lock, [this]{ return HasPendingEvent(); });
@@ -597,9 +597,9 @@ void LoopClosing::CorrectLoop()
     mpThreadGBA = new thread(&LoopClosing::RunGlobalBundleAdjustment,this,mpCurrentKF->mnId);
 
     // 闭环完成，释放局部建图线程
-    mpLocalMapper->Release();    
+    mpLocalMapper->Release();
 
-    mLastLoopKFid = mpCurrentKF->mnId;   
+    mLastLoopKFid = mpCurrentKF->mnId;
     mpCurrentKF->SetErase(); // 闭环完成，平衡最初的 SetNotErase()
 }
 
@@ -723,10 +723,8 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
             // 等待局部建图线程有效停止
             mpLocalMapper->WaitForStopped(LOOP_LOCALMAPPER_TIMEOUT_MS);
 
-            // 复核修复（RA-5）：原先在此处对 mMutexGBA 二次加锁（recheckLock）——
-            // 外层 lock 全程持有且 std::mutex 非递归，正常完成的 GBA 走到这里
-            // 即死锁 GBA 线程并永久占用 mMutexGBA。mnFullBAIdx 仅在 mMutexGBA
-            // 内被 RequestStopGBA 修改，持锁期间 idx 不可能变化，直接判断即可：
+            // 外层已全程持有 mMutexGBA（非递归锁），此处不得二次加锁；
+            // mnFullBAIdx 仅在其内被 RequestStopGBA 修改，持锁期间直接比较即可
             if(idx != mnFullBAIdx)
             {
                 if(mpLocalMapper->isStopped() && !mpLocalMapper->isFinished())
@@ -775,7 +773,7 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
                 lpKFtoCheck.pop_front();
             }
 
-            // 校正地图点（C-4：锁内仅写坐标，法向/深度更新移出 mMutexMapUpdate，
+            // 校正地图点（锁内仅写坐标，法向/深度更新移出 mMutexMapUpdate，
             // 避免大地图时 Tracking 的 UpdateLastFrame/初始化在全局锁上排队数秒）
             const vector<MapPoint*> vpMPs = mpMap->GetAllMapPoints();
             vector<MapPoint*> vpToUpdateNormal;
@@ -833,9 +831,8 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
 
         mbFinishedGBA = true;
         mbRunningGBA = false;
-        // 修复：正常完成路径也回收线程对象（detach 后 delete 是安全的，
-        // 本线程对象此后不再被任何代码引用），消除泄漏；
-        // 若期间被新的 CorrectLoop 中止并清理过，此处指针已为空，跳过。
+        // 正常完成路径回收线程对象（detach 后 delete 安全，此后无任何引用）；
+        // 若已被新的 CorrectLoop 中止并清理过，此处指针已为空则跳过
         if(mpThreadGBA)
         {
             mpThreadGBA->detach();

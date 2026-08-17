@@ -622,7 +622,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
         if (mOpenCvCameraView != null)
             mOpenCvCameraView.disableView();
 
-        // J-6：注销地图统计轮询（原先永不 removeCallbacks，Activity 销毁后
+        // 注销地图统计轮询（原先永不 removeCallbacks，Activity 销毁后
         // 仍每秒跑一次跨进程调用并持有 Activity 引用导致泄漏）
         uiHandler.removeCallbacksAndMessages(null);
 
@@ -656,7 +656,7 @@ public class ArCamUIActivity extends AppCompatActivity implements
     @Override
     public long onCameraFrame(CameraGLViewBase.CvCameraViewFrame inputFrame) {
         mFpsMeter.measure();
-        // J-5：FpsMeter 内部 20 帧才刷新一次字符串——UI 更新跟随同一节奏，
+        // FpsMeter 内部 20 帧才刷新一次字符串——UI 更新跟随同一节奏，
         // 消除每帧一次的跨线程 Runnable 投递（帧计数驱动，非定时器）。
         // IPC 模式下帧数据经共享内存直达服务进程，此处返回 0（无直连处理）
         if (mFpsMeter.isUpdated()) {

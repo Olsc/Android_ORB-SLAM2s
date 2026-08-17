@@ -17,9 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-/**
- * AR 物体/平面锚点 —— 生命周期重构的集中式状态定义
- */
+// AR 物体/平面锚点 —— 集中式状态定义
 
 #ifndef ORB_SLAM2_AR_ANCHOR_H
 #define ORB_SLAM2_AR_ANCHOR_H

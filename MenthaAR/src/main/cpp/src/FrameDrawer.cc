@@ -56,7 +56,7 @@ void FrameDrawer::SetMap(Map* pMap)
 
 void FrameDrawer::Update(Tracking *pTracker)
 {
-    // D-11：本工程的 Viewer 已被裁剪，此类的全部绘制数据（KeyPoint 拷贝、
+    // 本工程的 Viewer 已被裁剪，此类的全部绘制数据（KeyPoint 拷贝、
     // VO/Map 标志、初始化帧）没有任何消费者——原先每帧 O(N) 深拷贝 + 两次
     // N 位分配 + 整段持锁是纯死重。仅保留状态记录（将来重建 Viewer 的话
     // 在此恢复完整实现即可）。

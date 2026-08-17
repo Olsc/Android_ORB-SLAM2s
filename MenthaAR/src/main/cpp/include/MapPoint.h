@@ -71,7 +71,7 @@ public:
     KeyFrame* GetReferenceKeyFrame();
 
     std::map<KeyFrame*,size_t> GetObservations();
-    // 零拷贝聚合观测计数（T-8：哈希表 O(1) 插入，替代调用方整 map 拷贝/红黑树插入）
+    // 零拷贝聚合观测计数（哈希表 O(1) 插入，替代调用方整 map 拷贝/红黑树插入）
     void ShareObservations(std::unordered_map<KeyFrame*, int>& counter, unsigned long excludeId = -1);
     int GetRedundantObservationsCount(KeyFrame* pKF, int scaleLevel);
     int Observations() const;

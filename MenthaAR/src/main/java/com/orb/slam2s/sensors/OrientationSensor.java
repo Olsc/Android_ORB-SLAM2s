@@ -90,7 +90,7 @@ public class OrientationSensor implements SensorEventListener {
         }
     }
 
-    // J-10：R/I 矩阵复用成员——原先每传感器事件 new float[16]×2（GAME 速率高频分配）
+    // R/I 矩阵复用成员——原先每传感器事件 new float[16]×2（GAME 速率高频分配）
     private final float[] mRotR = new float[16];
     private final float[] mRotI = new float[16];
 

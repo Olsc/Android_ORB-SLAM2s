@@ -53,7 +53,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_calculate3DofInsertionPoint(JNIEnv* env,
     return result;
 }
 
-// 计算3DOF MVP矩阵（J-9：出参版本——直接填充调用方缓冲，免每帧 JNI 数组分配）
+// 计算3DOF MVP矩阵（出参版本——直接填充调用方缓冲，免每帧 JNI 数组分配）
 JNIEXPORT void JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_compute3DofMVP(JNIEnv* env, jobject thiz, jfloatArray outMvp, jfloatArray rotationMatrix, jint rotation, jfloat ratio, jfloatArray objectPos) {
     // 获取设备旋转数据

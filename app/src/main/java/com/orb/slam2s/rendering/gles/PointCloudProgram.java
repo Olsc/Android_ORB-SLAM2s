@@ -7,10 +7,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
-/**
- * 基于 OpenGL ES 2.0 的 3D 点云着色器程序 (GL_POINTS)
- * 每个点数据属性包含 7 个 float: [x, y, z, r, g, b, point_size]
- */
+// 基于 OpenGL ES 2.0 的 3D 点云着色器程序 (GL_POINTS)
+// 每个点数据属性包含 7 个 float: [x, y, z, r, g, b, point_size]
 public class PointCloudProgram {
     private static final String TAG = "PointCloudProgram";
 
@@ -61,9 +59,7 @@ public class PointCloudProgram {
         updatePoints(pointData, pointData == null ? 0 : pointData.length);
     }
 
-    /**
-     * 更新点云数据。data 可能为复用的大缓冲，count 为实际有效 float 数量。
-     */
+    // 更新点云数据；data 可能为复用的大缓冲，count 为实际有效 float 数量
     public void updatePoints(float[] pointData, int count) {
         if (pointData == null || count <= 0) {
             pointCount = 0;

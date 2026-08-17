@@ -168,18 +168,18 @@ static bool SolvePnPSafe(const std::vector<cv::Point3f>& pts3d,
             }
         }
         return ok;
-    } catch(const cv::Exception& e){ 
+    } catch(const cv::Exception& e){
         LOGE("安全PnP求解: OpenCV异常: %s", e.what());
         inliers.clear();
-        return false; 
-    } catch(const std::exception& e){ 
+        return false;
+    } catch(const std::exception& e){
         LOGE("安全PnP求解: 标准异常: %s", e.what());
         inliers.clear();
-        return false; 
-    } catch(...){ 
+        return false;
+    } catch(...){
         LOGE("安全PnP求解: 未知异常");
         inliers.clear();
-        return false; 
+        return false;
     }
 }
 
@@ -209,7 +209,7 @@ void ORB_SLAM2::Tracking::BindLoadedMapPointsUsingSnapshots()
         }
     }
 
-    // T-6：锁内仅拷贝 shared_ptr 快照（O(1)），循环在锁外读取不可变数据
+    // 锁内仅拷贝 shared_ptr 快照（O(1)），循环在锁外读取不可变数据
     std::shared_ptr<const std::vector<RefMPSnapshot>> refSnaps;
     std::shared_ptr<const std::vector<MapPoint*>> refMPs;
     {
@@ -344,7 +344,7 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
     // 并发保护：避免多次重入导致refDesc与索引不同步
     bool expected=false; if(!mRefBuilding.compare_exchange_strong(expected, true)) return;
 
-    // 节流（R10）：增量驱动替代 2 秒墙钟冷却——地图点较上次构建增加不足 5%
+    // 节流：增量驱动替代 2 秒墙钟冷却——地图点较上次构建增加不足 5%
     // （且至少 50 个）且关键帧增加不足 3 个时，缓存仍然新鲜，直接复用
     {
         std::unique_lock<std::mutex> lk(mMutexReloc);
@@ -370,7 +370,7 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
 
     const vector<MapPoint*> allMPs = mpMap->GetAllMapPoints();
 
-    // T-5：单遍扫描。第一遍只做指针级筛选（零锁零拷贝）确定 hasLoaded 与候选集，
+    // 单遍扫描。第一遍只做指针级筛选（零锁零拷贝）确定 hasLoaded 与候选集，
     // 第二遍仅对入选点取一次描述子——原先的"计数遍+填充遍"对每点取了两次描述子
     bool hasLoaded = false;
     std::vector<MapPoint*> candidates;
@@ -533,7 +533,7 @@ void ORB_SLAM2::Tracking::UpdateAlignmentSmooth(const cv::Mat &T_new, int inlier
     float alpha = std::min(ALIGN_EMA_MAX_ALPHA, confidence * qualityScore / ALIGN_QUALITY_SCORE_CAP);
     alpha = std::max(ALIGN_EMA_MIN_ALPHA, alpha);  // 限制在 0.1-0.5 之间
 
-    // 直接在原矩阵上更新，避免克隆（关键优化点）
+    // 直接在原矩阵上更新，避免克隆
     cv::Mat& smoothed = mSmoothedT_map_from_slam;
 
     // smoothed = (1-alpha)*smoothed + alpha*T_new
@@ -548,13 +548,11 @@ void ORB_SLAM2::Tracking::UpdateAlignmentSmooth(const cv::Mat &T_new, int inlier
     }
 
     // 旋转矩阵正交化（保证旋转矩阵的有效性）
-    // T-18：Gram-Schmidt 行正交化替代 cv::SVD 的 U·Vᵀ 路径——基准验证
+    // Gram-Schmidt 行正交化替代 cv::SVD 的 U·Vᵀ 路径——基准验证
     // （docs/bench_algorithms.py 测试 4）两者恢复的正交度同为机器精度（~1e-16），
     // 与真值距离同数量级，而 GS 的乘加次数约为 SVD 路径的 1/20，且零堆分配。
-    // 病态输入守护（复核补充）：EMA 混合两个近 180° 差的旋转会使某行凸组合为
-    // 零向量，朴素 GS 将输出退化矩阵（SVD 路径总能给出最近正交阵）。行 0 退化时
-    // 旋转块整体取新对齐结果 T_new（刚体变换，已过质量门槛）；行 1 与行 0 平行时
-    // 用与 r0 最小分量轴的叉积重建。任何输入下输出均为有效右手系旋转。
+    // 病态输入守护：EMA 混合近 180° 旋转差会使某行凸组合为零向量，朴素 GS 将退化；
+    // 行 0 退化时取 T_new，行 1 与行 0 平行时以 r0 最小分量轴的叉积重建，输出始终为右手系
     {
         const float* rn0 = T_new.ptr<float>(0);
         const float* rn1 = T_new.ptr<float>(1);
@@ -684,10 +682,10 @@ void Tracking::GlobalRelocLoop(int sessionId)
     mLastBgRunTime = std::chrono::steady_clock::now();
 
     while(true){
-        cv::Mat desc; 
-        std::vector<cv::KeyPoint> keys; 
-        int N = 0; 
-        double ts = 0.0; 
+        cv::Mat desc;
+        std::vector<cv::KeyPoint> keys;
+        int N = 0;
+        double ts = 0.0;
         cv::Mat TcwSlam;
 
         cv::Mat refDesc;
@@ -698,13 +696,13 @@ void Tracking::GlobalRelocLoop(int sessionId)
         {
             std::unique_lock<std::mutex> lk(mMutexReloc);
             mCvReloc.wait(lk, [this, sessionId]{
-                return mbRelocThreadStop || 
-                       mRelocThreadSessionId.load() != sessionId || 
+                return mbRelocThreadStop ||
+                       mRelocThreadSessionId.load() != sessionId ||
                        mSnapSeqProduced != mSnapSeqConsumed ||
                        mRefCacheDirty.load();
             });
 
-            if(mbRelocThreadStop || mRelocThreadSessionId.load() != sessionId) 
+            if(mbRelocThreadStop || mRelocThreadSessionId.load() != sessionId)
                 break;
 
             // 标记已消费最新快照
@@ -719,8 +717,8 @@ void Tracking::GlobalRelocLoop(int sessionId)
 
             // 提取当前帧快照
             if(!mLastDesc.empty()) desc = mLastDesc.clone();
-            keys = mLastKeysUn; 
-            N = mLastN; 
+            keys = mLastKeysUn;
+            N = mLastN;
             ts = mLastTimestamp;
             if(!mLastTcwSlam.empty()) TcwSlam = mLastTcwSlam.clone();
 
@@ -733,10 +731,10 @@ void Tracking::GlobalRelocLoop(int sessionId)
                 lk.lock();
             }
 
-            if(mbRelocThreadStop || mRelocThreadSessionId.load() != sessionId) 
+            if(mbRelocThreadStop || mRelocThreadSessionId.load() != sessionId)
                 break;
 
-            // T-6：提取不可变快照的 shared_ptr（O(1)），替代整 vector 值拷贝；
+            // 提取不可变快照的 shared_ptr（O(1)），替代整 vector 值拷贝；
             // 原先的 valToRef 是 0..n-1 的恒等映射数组，直接删除
             if(!mRefDesc.empty() && mpRefSnapshots && !mpRefSnapshots->empty() && mpRefTree) {
                 refDesc = mRefDesc;
@@ -872,7 +870,7 @@ void Tracking::GlobalRelocLoop(int sessionId)
             // 提高对齐阈值，要求至少30个inliers且置信度>=0.5，避免错误匹配
             // Reset后如果立即匹配到少量点（比如10-20个），很可能是错误匹配，不应该接受
             if(ok && inliersCnt>=TRACKING_RELOC_PNP_MIN_INLIERS){
-                cv::Mat R; 
+                cv::Mat R;
                 try { cv::Rodrigues(rvec, R); } catch(const cv::Exception& e){ LOGE("RelocBG: Rodrigues异常: %s", e.what()); mRelocCooldownFrames=TRACKING_RELOC_COOLDOWN_FRAMES; continue; }
                 cv::Mat Tcw_map = cv::Mat::eye(4,4,CV_32F);
                 R.copyTo(Tcw_map.rowRange(0,3).colRange(0,3));
@@ -1144,7 +1142,7 @@ void Tracking::Track()
                     // 跟踪丢失且不是VO模式时，尝试重定位
                     if(mCurrentFrame.mnId % 2 == 0)
                         bOKReloc = Relocalization();
-                    else 
+                    else
                         bOKReloc = false;
 
                     if(bOKMM && !bOKReloc)
@@ -1333,7 +1331,7 @@ void Tracking::Track()
         }
     }
 
-    // T-2：轨迹双端列表增量裁剪——仅保留最近 64 条（UpdateLastFrame 只读 back()），
+    // 轨迹双端列表增量裁剪——仅保留最近 64 条（UpdateLastFrame 只读 back()），
     // 替代原先的无界增长（30fps×1 小时 ≈ 32MB 纯浪费）。push 后立即裁剪，无突发。
     auto TrimTrajectory = [this]() {
         const size_t kMaxTrajectory = 64;
@@ -1464,7 +1462,7 @@ void Tracking::MonocularInitialization()
                 }
             }
             if(validCount > 0 && (distSum / validCount) < INITIALIZER_MIN_PARALLAX_PX) {
-                // T-4/R9：视差不足时绝不再"超时强制初始化"（小基线强制三角化
+                // 视差不足时绝不再"超时强制初始化"（小基线强制三角化
                 // 会产生深噪点，牺牲精度）。改为帧计数驱动的参考帧刷新：参考帧
                 // 距今超过 60 帧仍未积累出足够视差，说明参考帧已过时（描述子漂移、
                 // 场景变化），以当前帧重建初始化参考继续等待——纯事件驱动收敛。
@@ -1565,7 +1563,7 @@ void Tracking::CreateInitialMapMonocular()
     pKFini->UpdateConnections();
     pKFcur->UpdateConnections();
 
-    // 初始化BA优化：恢复20次迭代，确保初始地图精度，提高后续帧跟踪稳定性
+    // 初始化BA：20 次迭代，确保初始地图精度与后续帧跟踪稳定性
     Optimizer::GlobalBundleAdjustemnt(mpMap, GBA_INIT_ITERATIONS);
 
     // 设置中位深度为1
@@ -1784,11 +1782,11 @@ bool Tracking::TrackWithMotionModel()
                 nmatches--;
             }
             //  加载的地图点没有Observations，但仍应计入匹配数
-            else if(mCurrentFrame.mvpMapPoints[i]->mbFromLoadedMap || 
+            else if(mCurrentFrame.mvpMapPoints[i]->mbFromLoadedMap ||
                     mCurrentFrame.mvpMapPoints[i]->Observations()>0)
                 nmatchesMap++;
         }
-    }    
+    }
 
     if(mbOnlyTracking)
     {
@@ -1803,7 +1801,7 @@ bool Tracking::TrackLocalMap()
 {
     UpdateLocalMap();
     // 在新匹配前清除匹配标志
-    // （T-9：删除原先 O(M) 的"局部地图组成"统计块——结果只写局部变量，从未被使用）
+    // （删除原先 O(M) 的"局部地图组成"统计块——结果只写局部变量，从未被使用）
     for(MapPoint* p : mvpLocalMapPoints){ if(p) p->mbMatchedInCurrentFrame = false; }
 
     // 避免遍历全局已加载的地图点，这会导致严重卡顿且过早进行地图匹配。
@@ -1813,7 +1811,7 @@ bool Tracking::TrackLocalMap()
         // 此时跳过全局搜索，不仅节省性能，也符合"先建图稳了再匹配"的逻辑
         bool bSkipGlobalWithLoadedMap = (mpMap->MapPointsInMap() > TRACKING_SKIP_GLOBAL_MAX_MPS && mpMap->KeyFramesInMap() < TRACKING_SKIP_GLOBAL_MAX_KFS && !mbHaveMapAlign);
 
-        if(!bSkipGlobalWithLoadedMap) 
+        if(!bSkipGlobalWithLoadedMap)
         {
             const vector<MapPoint*> allMPs = mpMap->GetAllMapPoints();
             int added=0;
@@ -1847,7 +1845,7 @@ bool Tracking::TrackLocalMap()
                 // 确保mCurrentFrame有有效的位姿才能创建KeyFrame
                 // Reset后或LoadMap后，mTcw可能为空或无效，必须检查
                 if(mCurrentFrame.mTcw.empty() || mCurrentFrame.mTcw.rows < 4 || mCurrentFrame.mTcw.cols < 4){
-                    LOGW("局部地图跟踪: 无法创建关键帧，当前帧位姿无效 (empty=%d, rows=%d, cols=%d)", 
+                    LOGW("局部地图跟踪: 无法创建关键帧，当前帧位姿无效 (empty=%d, rows=%d, cols=%d)",
                          mCurrentFrame.mTcw.empty()?1:0,
                          mCurrentFrame.mTcw.empty()?0:mCurrentFrame.mTcw.rows,
                          mCurrentFrame.mTcw.empty()?0:mCurrentFrame.mTcw.cols);
@@ -1902,7 +1900,7 @@ bool Tracking::TrackLocalMap()
                     mNoCurMapLoadedInliersFrames = 0;
 
                     if(mAlignConfidence >= RELOC_STRONG_BIND_CONFIDENCE && !mCurrentFrame.mTcw.empty()){
-                        // T-1：与 BindLoadedMapPointsUsingSnapshots 统一为标量投影路径。
+                        // 与 BindLoadedMapPointsUsingSnapshots 统一为标量投影路径。
                         // 原实现对每个参考点构造 2 个 cv::Mat 并走 cv::Mat 乘法（每点 2 次
                         // 堆分配），3 万加载点时每帧最多 6 万次分配；现零分配零锁读取快照。
                         cv::Mat Tcw_map = mT_map_from_slam * mCurrentFrame.mTcw;
@@ -1913,9 +1911,8 @@ bool Tracking::TrackLocalMap()
                             Rm[r*3+2]=Tcw_map.at<float>(r,2);
                             tm[r]=Tcw_map.at<float>(r,3);
                         }
-                        // 注意：此处已处于外层 lk(mMutexReloc) 的保护下，直接读取
-                        // 快照指针即可——不得再对同一把非递归锁加锁（复核时确认
-                        // 嵌套 unique_lock 会死锁跟踪线程）。
+                        // 已处外层 lk(mMutexReloc) 保护下，直接读取快照指针；
+                        // 不得对同一把非递归锁二次加锁（嵌套 unique_lock 会死锁）
                         std::shared_ptr<const std::vector<RefMPSnapshot>> refSnapsStrong = mpRefSnapshots;
                         std::shared_ptr<const std::vector<MapPoint*>> refMPsStrong = mpRefIdxToMP;
                         int activeMapId = a.mapId;
@@ -2034,7 +2031,7 @@ bool Tracking::TrackLocalMap()
                 {
                     // 加载的地图点没有Observations，但仍应计入匹配数
                     // 对于加载的地图点，跳过Observations检查
-                    if(mCurrentFrame.mvpMapPoints[i]->mbFromLoadedMap || 
+                    if(mCurrentFrame.mvpMapPoints[i]->mbFromLoadedMap ||
                        mCurrentFrame.mvpMapPoints[i]->Observations()>0)
                         mnMatchesInliers++;
                 }
@@ -2079,7 +2076,7 @@ bool Tracking::TrackLocalMap()
     if(mbHaveMapAlign){
         // 对齐后极度宽松的条件，确保不轻易丢失
         if(mnMatchesInliers>=thLoose) return true;
-        if(mnLoadedMapInliers >= thLoaded) return true;  // 新增：加载点也可以判定成功
+        if(mnLoadedMapInliers >= thLoaded) return true;  // 加载点也可判定为成功
         // 宽限：已对齐且连续失败次数不超过3时放行（从2增至3）
         if(mConsecutiveFail<=TRACKING_MAX_CONSECUTIVE_FAIL) return true;
         return false;
@@ -2259,7 +2256,7 @@ void Tracking::SearchLocalPoints()
         // 但避免与已有描述子匹配冲突
         const int totalKeys = mCurrentFrame.N;
         int additionalMatches = 0;
-        // 大幅提升额外匹配上限，确保充分利用加载的地图点，维持稳定跟踪
+        // 提高额外匹配上限，充分利用加载的地图点以维持稳定跟踪
         const int maxAdditionalMatches = mbHaveMapAlign ? LOADED_MATCH_MAX_ALIGNED : LOADED_MATCH_MAX;
 
         for(size_t idx=0; idx<mvpLocalMapPoints.size(); idx++)
@@ -2275,7 +2272,7 @@ void Tracking::SearchLocalPoints()
             const float u = pMP->mTrackProjX;
             const float v = pMP->mTrackProjY;
             const int predictedLevel = pMP->mnTrackScaleLevel;
-            // 在已对齐时适当放宽半径，提升召回；否则使用默认
+            // 在已对齐时适当放宽半径以提高召回率，否则使用默认
             float radiusScale = mbHaveMapAlign ? LOADED_MATCH_RADIUS_SCALE_ALIGNED : 1.0f;
             const float baseRadius = radiusScale * th * mCurrentFrame.mvScaleFactors[predictedLevel];
 
@@ -2341,7 +2338,7 @@ void Tracking::UpdateLocalPoints()
             if(!pMP->isBad())
             {
                 // 载入地图后，已加载点往往缺少关键帧观测，
-                // 为了提升召回，不再按 Observations 进行过滤
+                // 为提高召回率，不再按 Observations 过滤
 
                 mvpLocalMapPoints.push_back(pMP);
                 pMP->mnTrackReferenceForFrame=mCurrentFrame.mnId;
@@ -2350,7 +2347,7 @@ void Tracking::UpdateLocalPoints()
     }
 
     // 限制局部地图点数量，避免过多低质量点影响性能
-    // 大幅提升上限以支持加载地图的重定位和持续跟踪
+    // 提高上限以支持加载地图的重定位和持续跟踪
     if((int)mvpLocalMapPoints.size() > TRACKING_MAX_LOCAL_MAP_POINTS)
     {
         // 1. 快速分区：已加载的地图点 mbFromLoadedMap 优先（无需完整排序），O(N)
@@ -2376,7 +2373,7 @@ void Tracking::UpdateLocalPoints()
 void Tracking::UpdateLocalKeyFrames()
 {
     // 每个地图点都会投票给观察到它的关键帧
-    // T-8：unordered_map（预 reserve）替代 std::map 红黑树——纯计数场景无需有序性
+    // unordered_map（预 reserve）替代 std::map 红黑树——纯计数场景无需有序性
     unordered_map<KeyFrame*,int> keyframeCounter;
     keyframeCounter.reserve(256);
     for(int i=0; i<mCurrentFrame.N; i++)
@@ -2520,7 +2517,7 @@ bool Tracking::Relocalization()
     const int MAX_RELOC_CANDIDATES = RELOC_MAX_CANDIDATE_KFS;
     if(nKFs > MAX_RELOC_CANDIDATES) {
         // 简单截断，因为候选帧通常按BoW分数排序
-        nKFs = MAX_RELOC_CANDIDATES; 
+        nKFs = MAX_RELOC_CANDIDATES;
         vpCandidateKFs.resize(MAX_RELOC_CANDIDATES);
         vpPnPsolvers.resize(MAX_RELOC_CANDIDATES);
         vvpMapPointMatches.resize(MAX_RELOC_CANDIDATES);
@@ -2563,7 +2560,7 @@ bool Tracking::Relocalization()
     }
 
     // 或者执行一些P4P RANSAC迭代，直到找到由足够内点支持的相机姿态
-    // R2：删除 1000ms 墙钟超时——每个 PnPsolver 的 RANSAC 迭代总数有限
+    // 删除 1000ms 墙钟超时——每个 PnPsolver 的 RANSAC 迭代总数有限
     // （SetRansacParameters 自适应上限 ≤300，耗尽即 bNoMore 丢弃该候选），
     // 循环必然在有界迭代内终止，无需用时间截断（时间截断会让超时瞬间的
     // 解成为中途解，精度不可控）

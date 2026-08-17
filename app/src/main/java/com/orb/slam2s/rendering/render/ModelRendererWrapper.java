@@ -54,10 +54,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * 用于在 AR 环境中渲染 3D 模型（GLB 格式）的包装类，基于 Google Filament 渲染引擎。
- * 读 shared memory 共享内存 MVP / draw 标志，无 Binder 调用与 GC。
- */
+// 用于在 AR 环境中渲染 3D 模型（GLB 格式）的包装类，基于 Google Filament 渲染引擎
+// 读 shared memory 共享内存 MVP / draw 标志，无 Binder 调用与 GC
 public class ModelRendererWrapper {
     private static final String TAG = "ModelRendererWrapper";
 

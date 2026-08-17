@@ -84,7 +84,7 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
 
     long unsigned int maxKFid = 0;
 
-    // O-2：顶点指针数组（按 id 索引）替代每边 2 次 optimizer.vertex() 哈希查找
+    // 顶点指针数组（按 id 索引）替代每边 2 次 optimizer.vertex() 哈希查找
     // + dynamic_cast RTTI。数组按需增长（KF/MP id 均在登记时保证容量）。
     std::vector<g2o::OptimizableGraph::Vertex*> vAllVertices;
 
@@ -154,7 +154,7 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
             Eigen::Matrix<double,2,1> obs;
             obs << kpUn.pt.x, kpUn.pt.y;
 
-            // O-2：数组直查替代哈希查找+dynamic_cast
+            // 数组直查替代哈希查找+dynamic_cast
             g2o::OptimizableGraph::Vertex* v0 = vAllVertices[id];
             g2o::OptimizableGraph::Vertex* v1 = vAllVertices[pKF->mnId];
 
@@ -350,9 +350,9 @@ int Optimizer::PoseOptimization(Frame *pFrame)
         return 0;
     }
 
-    // 我们执行4次优化，每次优化后我们将观测分类为内点/外点
+    // 执行 4 次优化，每次后将观测分类为内点/外点
     // 在下一次优化中，不包括外点，但在最后它们可以再次被分类为内点。
-    // R3：删除 200ms 墙钟超时——4×5 次 LM 迭代本身即有界，且时间截断会使
+    // 删除 200ms 墙钟超时——4×5 次 LM 迭代本身即有界，且时间截断会使
     // 慢设备上的位姿停在未收敛状态（精度损失且不可复现）
     const float chi2Mono[4]={OPTIMIZER_CHI2_TH_2D,OPTIMIZER_CHI2_TH_2D,OPTIMIZER_CHI2_TH_2D,OPTIMIZER_CHI2_TH_2D};
     const int its[POSE_OPT_PASSES]={POSE_OPT_PASS_ITERS,POSE_OPT_PASS_ITERS,POSE_OPT_PASS_ITERS,POSE_OPT_PASS_ITERS};
@@ -381,7 +381,7 @@ int Optimizer::PoseOptimization(Frame *pFrame)
             const float chi2 = e->chi2();
 
             if(chi2>chi2Mono[it])
-            {                
+            {
                 pFrame->mvbOutlier[idx]=true;
                 e->setLevel(1);
                 nBad++;
@@ -397,7 +397,7 @@ int Optimizer::PoseOptimization(Frame *pFrame)
         }
         if(optimizer.edges().size()<POSE_OPT_MIN_EDGES)
             break;
-    }    
+    }
 
     // 恢复优化后的位姿并返回内点数量
     g2o::VertexSE3Expmap* vSE3_recov = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(0));
@@ -409,7 +409,7 @@ int Optimizer::PoseOptimization(Frame *pFrame)
 }
 
 void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap)
-{    
+{
     // 局部关键帧：从当前关键帧开始的广度优先搜索
     list<KeyFrame*> lLocalKeyFrames;
 
@@ -455,7 +455,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
             KeyFrame* pKFi = mit->first;
 
             if(pKFi->mnBALocalForKF!=pKF->mnId && pKFi->mnBAFixedForKF!=pKF->mnId)
-            {                
+            {
                 pKFi->mnBAFixedForKF=pKF->mnId;
                 if(!pKFi->isBad())
                     lFixedCameras.push_back(pKFi);
@@ -485,7 +485,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
 
     unsigned long maxKFid = 0;
 
-    // O-2：顶点指针数组（按 id 索引，一次分配）
+    // 顶点指针数组（按 id 索引，一次分配）
     std::vector<g2o::OptimizableGraph::Vertex*> vAllVertices(
         (size_t)pMap->GetMaxKFid() + 2, nullptr);
 
@@ -533,7 +533,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
             maxKFid=pKFi->mnId;
     }
 
-    // O-5：精确统计实际边数后 reserve（原先 (KF数+固定KF数)×局部点数 的
+    // 精确统计实际边数后 reserve（原先 (KF数+固定KF数)×局部点数 的
     // 上界预留是实际边数的 ~10 倍，白白抬高内存峰值）
     size_t nExactEdges = 0;
     for(list<MapPoint*>::iterator lit=lLocalMapPoints.begin(), lend=lLocalMapPoints.end(); lit!=lend; lit++)
@@ -582,14 +582,14 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
             KeyFrame* pKFi = mit->first;
 
             if(!pKFi->isBad())
-            {                
+            {
                 const cv::KeyPoint &kpUn = pKFi->mvKeysUn[mit->second];
 
                 // 单目模式只使用单目观测
                     Eigen::Matrix<double,2,1> obs;
                     obs << kpUn.pt.x, kpUn.pt.y;
 
-                    // O-2：数组直查替代哈希查找+dynamic_cast
+                    // 数组直查替代哈希查找+dynamic_cast
                     g2o::OptimizableGraph::Vertex* v0 =
                         ((size_t)id < vAllVertices.size()) ? vAllVertices[id]
                         : dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id));
@@ -864,7 +864,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
             const g2o::Sim3 Sjw = vScw[nIDj];
             const g2o::Sim3 Sji = Sjw * Swi;
 
-            // O-2：vpVertices 数组直查（建顶点时已登记），免哈希查找与 RTTI
+            // vpVertices 数组直查（建顶点时已登记），免哈希查找与 RTTI
             g2o::OptimizableGraph::Vertex* vj = vpVertices[nIDj];
             g2o::OptimizableGraph::Vertex* vi = vpVertices[nIDi];
 
@@ -948,7 +948,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
 
             g2o::Sim3 Sji = Sjw * Swi;
 
-            // O-2：vpVertices 数组直查（建顶点时已登记），免哈希查找与 RTTI
+            // vpVertices 数组直查（建顶点时已登记），免哈希查找与 RTTI
             g2o::OptimizableGraph::Vertex* vj = vpVertices[nIDj];
             g2o::OptimizableGraph::Vertex* vi = vpVertices[nIDi];
 
@@ -1006,7 +1006,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
 
                 g2o::Sim3 Sli = Slw * Swi;
 
-                // O-2：数组直查
+                // 数组直查
                 g2o::OptimizableGraph::Vertex* vl = vpVertices[pLKF->mnId];
                 g2o::OptimizableGraph::Vertex* vi = vpVertices[nIDi];
 
@@ -1066,7 +1066,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
 
                     g2o::Sim3 Sni = Snw * Swi;
 
-                    // O-2：数组直查
+                    // 数组直查
                     g2o::OptimizableGraph::Vertex* vn = vpVertices[pKFn->mnId];
                     g2o::OptimizableGraph::Vertex* vi = vpVertices[nIDi];
 
@@ -1193,7 +1193,7 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
     pKF2->GetTranslation(t2w);
 
     // 设置 Sim3 顶点
-    g2o::VertexSim3Expmap * vSim3 = new g2o::VertexSim3Expmap();    
+    g2o::VertexSim3Expmap * vSim3 = new g2o::VertexSim3Expmap();
     vSim3->_fix_scale=false;
     vSim3->setEstimate(g2oS12);
     vSim3->setId(0);
@@ -1236,7 +1236,7 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
 
         const int i2 = pMP2->GetIndexInKeyFrame(pKF2);
 
-        // 提升到外层作用域：建边时直接复用（O-2），不再经 optimizer.vertex 查找
+        // 提升到外层作用域：建边时直接复用，不再经 optimizer.vertex 查找
         g2o::VertexSBAPointXYZ* vPoint1 = nullptr;
         g2o::VertexSBAPointXYZ* vPoint2 = nullptr;
 
@@ -1288,7 +1288,7 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
         const cv::KeyPoint &kpUn1 = pKF1->mvKeysUn[i];
         obs1 << kpUn1.pt.x, kpUn1.pt.y;
 
-        // O-2：直接使用上一段刚创建并登记的顶点指针（vPoint1/vPoint2/vSim3），
+        // 直接使用上一段刚创建并登记的顶点指针（vPoint1/vPoint2/vSim3），
         // 免去每点 3 次哈希查找 + dynamic_cast
         g2o::OptimizableGraph::Vertex* v0_id2 = static_cast<g2o::OptimizableGraph::Vertex*>(vPoint2);
         g2o::OptimizableGraph::Vertex* v1_id0 = static_cast<g2o::OptimizableGraph::Vertex*>(vSim3);

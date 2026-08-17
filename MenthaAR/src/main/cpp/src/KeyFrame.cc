@@ -72,7 +72,7 @@ KeyFrame::KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB):
             mGrid[i][j] = F.mGrid[i][j];
     }
 
-    SetPose(F.mTcw);    
+    SetPose(F.mTcw);
 }
 
 void KeyFrame::SetPose(const cv::Mat &Tcw_)
@@ -348,7 +348,7 @@ MapPoint* KeyFrame::GetMapPoint(const size_t &idx)
 
 void KeyFrame::UpdateConnections()
 {
-    // T-8：哈希计数（O(1) 插入）；有序表在下方统一重建
+    // 哈希计数（O(1) 插入）；有序表在下方统一重建
     unordered_map<KeyFrame*,int> KFcounter;
     KFcounter.reserve(256);
 
@@ -509,7 +509,7 @@ void KeyFrame::SetErase()
 }
 
 void KeyFrame::SetBadFlag()
-{   
+{
     // 避免在持有锁的情况下修改被迭代的容器
     // 1. 拷贝连接关系
     map<KeyFrame*,int> connectedWeightsCopy;
@@ -687,7 +687,7 @@ std::vector<size_t> KeyFrame::GetFeaturesInArea(const float &x, const float &y, 
     if(nMaxCellY<0)
         return vIndices;
 
-    // 提升到循环外
+    // 半径平方在循环外预计算
     const float rSq = r*r;
 
     for(int ix = nMinCellX; ix<=nMaxCellX; ix++)
