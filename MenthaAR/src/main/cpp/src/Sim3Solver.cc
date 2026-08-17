@@ -307,7 +307,6 @@ void Sim3Solver::ComputeSim3(cv::Mat &P1, cv::Mat &P2)
     cv::Mat P3 = mR12i*Pr2;
 
     // 步骤6：缩放
-    // 使用dot()替代cv::pow和手动遍历，避免临时矩阵分配
     {
         double nom = Pr1.dot(P3);
         double den = P3.dot(P3);  // 等价于sum(P3.^2)

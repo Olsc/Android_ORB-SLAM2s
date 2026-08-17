@@ -93,7 +93,7 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
             vDistances[i] = fabs(vPoints[i].x*a + vPoints[i].y*b + vPoints[i].z*c + d)*f;
         }
 
-        // 计算中值距离（取前20%的点的边界值；nth_element 替代全排序）
+        // 计算中值距离（取前20%的点的边界值）
         vector<float> vSorted = vDistances;
         int nth = max((int)(ORB_SLAM2::PLANE_MEDIAN_TAIL_RATIO*N), ORB_SLAM2::PLANE_MEDIAN_MIN_SAMPLES);
         if(nth >= (int)vSorted.size()) nth = (int)vSorted.size() - 1;

@@ -120,7 +120,7 @@ void LoopClosing::Run()
         // 消费关键帧数据库的待重建标记
         mpKeyFrameDB->RebuildIfPending();
 
-        // 事件谓词等待替代 5ms 心跳轮询——空闲时零唤醒
+        // 事件谓词等待
         {
             std::unique_lock<std::mutex> lock(mMutexEvent);
             mCvEvent.wait(lock, [this]{ return HasPendingEvent(); });

@@ -253,7 +253,7 @@ vector<KeyFrame*> KeyFrame::GetCovisiblesByWeight(const int &w)
 int KeyFrame::GetWeight(KeyFrame *pKF)
 {
     unique_lock<mutex> lock(mMutexConnections);
-    // 单次 find 替代 count+operator[] 的两次红黑树查找
+    // 单次 find
     auto it = mConnectedKeyFrameWeights.find(pKF);
     return it != mConnectedKeyFrameWeights.end() ? it->second : 0;
 }
@@ -559,7 +559,7 @@ void KeyFrame::SetBadFlag()
         mspChildrens.clear();
     }
 
-    // 更新生成树 (在锁外安全执行，彻底根治与 ChangeParent 的死锁)
+    // 更新生成树
     set<KeyFrame*> sParentCandidates;
     sParentCandidates.insert(pParentCopy);
 
@@ -646,7 +646,6 @@ void KeyFrame::SetBadFlag()
 
 bool KeyFrame::isBad()
 {
-    // mbBad已改为原子变量，无需加锁
     return mbBad;
 }
 
@@ -758,8 +757,7 @@ float KeyFrame::ComputeSceneMedianDepth(const int q)
         }
     }
 
-    // 只需第 q 分位一个值：nth_element O(N) 替代全排序 O(N log N)
-    // （该函数在 CreateNewMapPoints 中对每个邻居 KF 调用一次）
+    // 只需第 q 分位一个值：nth_element O(N) 
     const size_t idx = (vDepths.size()-1)/q;
     std::nth_element(vDepths.begin(), vDepths.begin()+idx, vDepths.end());
 

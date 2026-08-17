@@ -111,7 +111,7 @@ void LocalMapping::Run()
         // 检查队列中是否有关键帧
         if(CheckNewKeyFrames())
         {
-            // 忙标志仅在真正处理关键帧期间为 false（原先空闲时也每 3ms 翻转）
+            // 忙标志仅在真正处理关键帧期间为 false
             SetAcceptKeyFrames(false);
 
             {
@@ -199,7 +199,7 @@ void LocalMapping::Run()
         if(CheckFinish())
             break;
 
-        // 事件谓词等待替代 3ms 心跳轮询——空闲时零唤醒
+        // 空闲时零唤醒
         {
             std::unique_lock<std::mutex> lock(mMutexEvent);
             mCvEvent.wait(lock, [this]{ return HasPendingEvent(); });
@@ -409,7 +409,7 @@ void LocalMapping::CreateNewMapPoints()
             const float kp2_ur = -1.0f;
             bool bStereo2 = false;
 
-            // 检查光线之间的视差（标量替换，避免 cv::Mat 分配）
+            // 检查光线之间的视差
             const float xn1x = (kp1.pt.x-cx1)*invfx1;
             const float xn1y = (kp1.pt.y-cy1)*invfy1;
             // xn2 = [(kp2.pt.x-cx2)*invfx2, (kp2.pt.y-cy2)*invfy2, 1]
@@ -457,7 +457,7 @@ void LocalMapping::CreateNewMapPoints()
             if(z2<=0)
                 continue;
 
-            // 检查第一个关键帧中的重投影误差（交叉相乘消除 1.0/z1 浮点除法，数学上完全等价）
+            // 检查第一个关键帧中的重投影误差
             const float &sigmaSquare1 = mpCurrentKeyFrame->mvLevelSigma2[kp1.octave];
             const float x1 = Rcw1f[0]*x3Dx + Rcw1f[1]*x3Dy + Rcw1f[2]*x3Dz + tcw1f[0];
             const float y1 = Rcw1f[3]*x3Dx + Rcw1f[4]*x3Dy + Rcw1f[5]*x3Dz + tcw1f[1];
@@ -469,7 +469,7 @@ void LocalMapping::CreateNewMapPoints()
                     continue;
             }
 
-            // 检查第二个关键帧中的重投影误差（交叉相乘消除 1.0/z2 浮点除法，数学上完全等价）
+            // 检查第二个关键帧中的重投影误差
             const float sigmaSquare2 = pKF2->mvLevelSigma2[kp2.octave];
             const float x2 = Rcw2f[0]*x3Dx + Rcw2f[1]*x3Dy + Rcw2f[2]*x3Dz + tcw2f[0];
             const float y2 = Rcw2f[3]*x3Dx + Rcw2f[4]*x3Dy + Rcw2f[5]*x3Dz + tcw2f[1];
@@ -481,7 +481,6 @@ void LocalMapping::CreateNewMapPoints()
             }
 
             // 检查尺度一致性
-            // 使用平方距离进行快速零值检查，避免不必要的sqrt
             const float n1x = x3Dx - Ow1.x, n1y = x3Dy - Ow1.y, n1z = x3Dz - Ow1.z;
             const float n2x = x3Dx - Ow2.x, n2y = x3Dy - Ow2.y, n2z = x3Dz - Ow2.z;
             const float dist1Sq = n1x*n1x + n1y*n1y + n1z*n1z;
@@ -602,7 +601,7 @@ void LocalMapping::SearchInNeighbors()
 
 cv::Mat LocalMapping::ComputeF12(KeyFrame *&pKF1, KeyFrame *&pKF2)
 {
-    // 栈版读取位姿（锁内拷贝，替代 4 次 clone）
+    // 栈版读取位姿
     float R1f[9], R2f[9], t1f[3], t2f[3];
     pKF1->GetRotation(R1f);
     pKF1->GetTranslation(t1f);
@@ -819,9 +818,6 @@ void LocalMapping::KeyFrameCulling()
     }
 
     // 第二阶段：每次只删除 1 个冗余关键帧（其余留待下一轮 KeyFrameCulling）。
-    // SetBadFlag 会在锁外级联 EraseObservation → ComputeDistinctiveDescriptors（O(n²)），
-    // 一次删除多个 KF 会与 Tracking 争抢数千次 MapPoint 锁，造成单次数秒冻结；
-    // 改为每轮删 1 个，把开销摊薄到多轮，不改变算法语义、不降精度。
     for(size_t i=0; i<vpRedundantKFs.size(); i++)
     {
         KeyFrame* pKF = vpRedundantKFs[i];
@@ -947,7 +943,7 @@ void LocalMapping::CheckLimits()
     {
         vector<MapPoint*> vpMPs = mpMap->GetAllMapPoints();
 
-        // 使用 nth_element 代替 sort，将最旧的 nToEraseMP 个点放到前面
+        // 使用 nth_element，将最旧的 nToEraseMP 个点放到前面
         int nToEraseMP = nMPs - MAX_MAPPOINTS + MAPPOINT_CULL_BATCH_SIZE;
         if(nToEraseMP > (int)vpMPs.size()) nToEraseMP = vpMPs.size();
 

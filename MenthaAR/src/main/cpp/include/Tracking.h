@@ -289,12 +289,11 @@ protected:
 
     // 为加载的地图点缓存的参考描述符（用于后台匹配）
     cv::Mat mRefDesc; // 描述符行
-    // 缓存主体改为不可变快照的 shared_ptr——读端仅在锁内拷贝指针（O(1)），
-    // 替代原先每轮唤醒对整个 vector 的值拷贝（3 万点 ≈ 840KB/次）
+    // 缓存主体改为不可变快照的 shared_ptr——读端仅在锁内拷贝指针（O(1)）
     std::shared_ptr<const std::vector<MapPoint*>> mpRefIdxToMP;
     size_t mRefCachedMPCount = 0;
     double mRefLastBuildTs = 0.0;
-    // 重建节流改为增量驱动（地图点 +5% 或 KF +3 才重建），替代 2 秒墙钟冷却
+    // 重建节流改为增量驱动（地图点 +5% 或 KF +3 才重建）
     long long mRefLastBuildMPCount = 0;
     long long mRefLastBuildKFCount = 0;
     std::atomic<bool> mRefBuilding{false};
@@ -379,7 +378,6 @@ protected:
     // 重试上限见 Config.h 的 TRACKING_MAX_REF_CACHE_RETRIES
 
     // 最近一次成功触发 CreateNewMap 时的当前帧 id，用于做冷却限频。
-    // 配合 TRACKING_NEW_MAP_COOLDOWN_FRAMES 使用，避免高频丢失导致连续触发新建子地图。
     unsigned int mLastNewMapFrameId = 0;
 
     // 动态搜索半径，根据跟踪状态自适应调整（正常:TH=4, 丢失:TH=8, 重定位后:TH=6）。

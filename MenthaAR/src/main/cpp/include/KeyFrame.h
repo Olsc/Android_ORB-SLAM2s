@@ -132,7 +132,7 @@ public:
         return pKF1->mnId<pKF2->mnId;
     }
 
-    // 以下变量仅由一个线程访问或从不更改（无需互斥锁）。
+    // 以下变量仅由一个线程访问或从不更改。
 public:
 
     static long unsigned int nNextId;
@@ -201,7 +201,6 @@ public:
     const int mnMaxY;
     const cv::Mat mK;
 
-    // 以下变量需要通过互斥锁访问以确保线程安全。
 protected:
 
     // SE3姿态和相机中心

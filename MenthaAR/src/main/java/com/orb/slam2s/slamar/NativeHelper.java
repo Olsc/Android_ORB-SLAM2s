@@ -78,7 +78,7 @@ public class NativeHelper {
         return statusBuf[0];
     }
 
-    // 统一获取MVP（替代getM/getV/getP）
+    // 统一获取MVP
     public native void nativeGetMVP(float[] M, float[] V, float[] P, int w, int h);
 
     // 本地方法：进行平面检测

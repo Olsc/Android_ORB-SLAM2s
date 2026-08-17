@@ -200,7 +200,7 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
     cv::Point3f p3f;
     pMP->GetWorldPos(p3f);
 
-    // 相机坐标系中的3D坐标 (手动展开消除cv::Mat乘法分配开销)
+    // 相机坐标系中的3D坐标
     const float PcX = mRcw.at<float>(0,0)*p3f.x + mRcw.at<float>(0,1)*p3f.y + mRcw.at<float>(0,2)*p3f.z + mtcw.at<float>(0);
     const float PcY = mRcw.at<float>(1,0)*p3f.x + mRcw.at<float>(1,1)*p3f.y + mRcw.at<float>(1,2)*p3f.z + mtcw.at<float>(1);
     const float PcZ = mRcw.at<float>(2,0)*p3f.x + mRcw.at<float>(2,1)*p3f.y + mRcw.at<float>(2,2)*p3f.z + mtcw.at<float>(2);
@@ -269,7 +269,7 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
 std::vector<size_t> Frame::GetFeaturesInArea(const float &x, const float  &y, const float  &r, const int minLevel, const int maxLevel) const
 {
     std::vector<size_t> vIndices;
-    // 半径搜索预留16槽位替代原来的全量reserve(N≈1000)
+    // 半径搜索预留16槽位
 
     // TODO: 临时数值，待测试和优化
     vIndices.reserve(FRAME_SEARCH_RESERVE);

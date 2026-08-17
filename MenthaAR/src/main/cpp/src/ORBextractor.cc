@@ -165,7 +165,7 @@ static float IC_Angle(const Mat& image, Point2f pt,  const vector<int> & u_max)
     int step = (int)image.step1();
 
     // m_01 后缀和累加器：sum_{v=1}^{h} v * v_sum(v) = sum_{v=1}^{h} suffix_{k=v}^{h} v_sum(k)
-    // 从右向左扫描，累计 v_sum 的后缀和，每次 m_01 += 累加器，用加法完全替代乘法
+    // 从右向左扫描，累计 v_sum 的后缀和，每次 m_01 += 累加器
     int suffix_m01 = 0;
 
     for (int v = ORB_HALF_PATCH_SIZE; v >= 1; --v)
@@ -703,7 +703,7 @@ vector<cv::KeyPoint> ORBextractor::DistributeOctTree(const vector<cv::KeyPoint>&
         vpIniNodes[i] = &lNodes.back();
     }
 
-    // 将点关联到子节点（用乘法替代除法）
+    // 将点关联到子节点
     const float inv_hX = 1.0f / hX;
     for(size_t i=0;i<vToDistributeKeys.size();i++)
     {
@@ -1250,7 +1250,7 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
     }
 }
 
-// 纯加法与位移位组合，替代常数乘法
+// 纯加法与位移位组合
 // 18*x = (x<<4) + (x<<1)
 // 34*x = (x<<5) + (x<<1)
 // 49*x = (x<<5) + (x<<4) + x

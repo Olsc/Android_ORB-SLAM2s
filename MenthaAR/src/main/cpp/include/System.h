@@ -75,8 +75,7 @@ public:
     // 析构函数：确保所有线程被 join、子模块与地图被释放（Shutdown 未被调用时兜底）
     ~System();
 
-    // 处理单目图像帧：提取ORB特征、跟踪、局部地图跟踪并决定是否创建关键帧
-    // 返回相机位姿矩阵Tcw，跟踪失败时返回空矩阵
+    // 处理单目图像帧：提取ORB特征、跟踪、局部地图跟踪并决定是否创建关键帧，返回相机位姿矩阵Tcw，跟踪失败时返回空矩阵
     cv::Mat TrackMonocular(const cv::Mat &im, const double &timestamp);
 
     // 动态更新相机内参，当分辨率改变时由JNI层调用
@@ -162,8 +161,7 @@ private:
     // 局部建图器。它管理局部地图并执行局部束调整。
     LocalMapping* mpLocalMapper;
 
-    // 回环闭合器。它搜索每个新关键帧的回环。如果存在回环，它会执行
-    // 位姿图优化，然后执行完整的束调整（在新线程中）。
+    // 回环闭合器。它搜索每个新关键帧的回环。如果存在回环，它会执行位姿图优化，然后执行完整的束调整（在新线程中）。
     LoopClosing* mpLoopCloser;
 
     FrameDrawer* mpFrameDrawer;

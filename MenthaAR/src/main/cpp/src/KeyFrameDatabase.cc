@@ -299,7 +299,7 @@ void KeyFrameDatabase::rebuild()
         }
     }
 
-    // 2. 在锁外无锁构建新树，完全不阻塞主线程对 KeyFrameDatabase 的并发重定位查询
+    // 2. 在锁外无锁构建新树
     HBSTTree* pNewTree = new HBSTTree();
     for (KeyFrame* pKF : vpKFs) {
         if (!pKF || pKF->isBad() || pKF->mDescriptors.empty())

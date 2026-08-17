@@ -57,7 +57,7 @@ std::atomic<bool> gEnableSLAM{true};  // 默认启用 SLAM
 double lastOkTime = 0.0;            // 上次SLAM正常工作的时间
 bool wasLost = false;                // 上一帧是否处于LOST状态
 const double LOST_RESET_TIMEOUT = ORB_SLAM2::LOST_RESET_TIMEOUT; // 名义超时（秒），仅用于换算帧数
-int gLostFrameCount = 0;             // 连续丢失帧计数（帧计数替代墙钟倒计时）
+int gLostFrameCount = 0;             // 连续丢失帧计数
 
 // AR 锚点
 AR::ArAnchor gAnchor;

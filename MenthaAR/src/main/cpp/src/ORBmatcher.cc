@@ -190,8 +190,7 @@ int ORBmatcher::SearchByHBST(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoi
 
     int nmatches=0;
 
-    // 旋转直方图缓冲复用（thread_local + clear），替代每次调用
-    // 30 次 reserve(500) 的固定 60KB 堆分配——直方图只需 clear 复用容量
+    // 旋转直方图缓冲复用（thread_local + clear）
     static thread_local vector<int> rotHist[HISTO_LENGTH];
     static thread_local bool rotHistInit = false;
     if(!rotHistInit){
@@ -363,11 +362,11 @@ int ORBmatcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapP
         if(pMP->isBad() || spAlreadyFound.count(pMP))
             continue;
 
-        // 获取3D坐标 (使用 Point3f 替代 cv::Mat，消除堆分配)
+        // 获取3D坐标 
         cv::Point3f p3Dw;
         pMP->GetWorldPos(p3Dw);
 
-        // 转换到相机坐标系 (标量乘加替代矩阵乘法)
+        // 转换到相机坐标系
         const float p3DcX = R00 * p3Dw.x + R01 * p3Dw.y + R02 * p3Dw.z + tx;
         const float p3DcY = R10 * p3Dw.x + R11 * p3Dw.y + R12 * p3Dw.z + ty;
         const float p3DcZ = R20 * p3Dw.x + R21 * p3Dw.y + R22 * p3Dw.z + tz;
@@ -462,8 +461,7 @@ int ORBmatcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f
     int nmatches=0;
     vnMatches12 = vector<int>(F1.mvKeysUn.size(),-1);
 
-    // 旋转直方图缓冲复用（thread_local + clear），替代每次调用
-    // 30 次 reserve(500) 的固定 60KB 堆分配——直方图只需 clear 复用容量
+    // 旋转直方图缓冲复用（thread_local + clear）
     static thread_local vector<int> rotHist[HISTO_LENGTH];
     static thread_local bool rotHistInit = false;
     if(!rotHistInit){
@@ -923,11 +921,11 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
         if(pMP->isBad() || pMP->IsInKeyFrame(pKF))
             continue;
 
-        // 使用栈分配的 Point3f 替代 cv::Mat 获取 3D 坐标，消除堆分配
+        // 使用栈分配的 Point3f
         cv::Point3f p3Dw;
         pMP->GetWorldPos(p3Dw);
 
-        // 标量级 3D 旋转与平移变换，替代 cv::Mat 矩阵乘法
+        // 标量级 3D 旋转与平移变换
         const float p3DcX = R00*p3Dw.x + R01*p3Dw.y + R02*p3Dw.z + tx;
         const float p3DcY = R10*p3Dw.x + R11*p3Dw.y + R12*p3Dw.z + ty;
         const float p3DcZ = R20*p3Dw.x + R21*p3Dw.y + R22*p3Dw.z + tz;
@@ -967,7 +965,7 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
         // 只在需要时计算实际距离
         const float dist3D = sqrt(dist3DSq);
 
-        // 使用栈分配的 Point3f 替代 cv::Mat 获取法向量
+        // 使用栈分配的 Point3f
         cv::Point3f Pn;
         pMP->GetNormal(Pn);
 
@@ -1089,11 +1087,11 @@ int ORBmatcher::Fuse(KeyFrame *pKF, cv::Mat Scw, const vector<MapPoint *> &vpPoi
         if(pMP->isBad() || spAlreadyFound.count(pMP))
             continue;
 
-        // 获取3D坐标 (使用 Point3f 替代 cv::Mat，消除堆分配)
+        // 获取3D坐标
         cv::Point3f p3Dw;
         pMP->GetWorldPos(p3Dw);
 
-        // 转换到相机坐标系 (标量乘加替代矩阵乘法)
+        // 转换到相机坐标系
         const float p3DcX = R00 * p3Dw.x + R01 * p3Dw.y + R02 * p3Dw.z + tx;
         const float p3DcY = R10 * p3Dw.x + R11 * p3Dw.y + R12 * p3Dw.z + ty;
         const float p3DcZ = R20 * p3Dw.x + R21 * p3Dw.y + R22 * p3Dw.z + tz;
@@ -1262,7 +1260,7 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
         if(pMP->isBad())
             continue;
 
-        // 获取3D坐标 (使用 Point3f 替代 cv::Mat，消除堆分配)
+        // 获取3D坐标
         cv::Point3f p3Dw;
         pMP->GetWorldPos(p3Dw);
 
@@ -1368,7 +1366,7 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
         if(pMP->isBad())
             continue;
 
-        // 获取3D坐标 (使用 Point3f 替代 cv::Mat，消除堆分配)
+        // 获取3D坐标
         cv::Point3f p3Dw;
         pMP->GetWorldPos(p3Dw);
 
@@ -1477,8 +1475,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
 {
     int nmatches = 0;
 
-    // 旋转直方图缓冲复用（thread_local + clear），替代每次调用
-    // 30 次 reserve(500) 的固定 60KB 堆分配——直方图只需 clear 复用容量
+    // 旋转直方图缓冲复用（thread_local + clear）
     static thread_local vector<int> rotHist[HISTO_LENGTH];
     static thread_local bool rotHistInit = false;
     if(!rotHistInit){
@@ -1515,7 +1512,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
         {
             if(!LastFrame.mvbOutlier[i])
             {
-                // 投影 (使用 Point3f 替代 cv::Mat，消除堆分配)
+                // 投影
                 cv::Point3f x3Dw;
                 pMP->GetWorldPos(x3Dw);
                 const float xc = R00*x3Dw.x + R01*x3Dw.y + R02*x3Dw.z + tx;
@@ -1633,8 +1630,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const set
     const float tx = tcw.at<float>(0), ty = tcw.at<float>(1), tz = tcw.at<float>(2);
     const float Ox = Ow.at<float>(0), Oy = Ow.at<float>(1), Oz = Ow.at<float>(2);
 
-    // 旋转直方图缓冲复用（thread_local + clear），替代每次调用
-    // 30 次 reserve(500) 的固定 60KB 堆分配——直方图只需 clear 复用容量
+    // 旋转直方图缓冲复用（thread_local + clear）
     static thread_local vector<int> rotHist[HISTO_LENGTH];
     static thread_local bool rotHistInit = false;
     if(!rotHistInit){
@@ -1654,7 +1650,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const set
         {
             if(!pMP->isBad() && !sAlreadyFound.count(pMP))
             {
-                // 投影 (使用 Point3f 替代 cv::Mat，消除堆分配)
+                // 投影
                 cv::Point3f x3Dw;
                 pMP->GetWorldPos(x3Dw);
                 const float xc = R00*x3Dw.x + R01*x3Dw.y + R02*x3Dw.z + tx;

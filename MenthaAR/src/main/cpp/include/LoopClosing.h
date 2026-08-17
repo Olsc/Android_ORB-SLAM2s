@@ -84,14 +84,13 @@ public:
     void RequestReset();
     void WaitForResetComplete();
 
-    // 轻量级清空回环关键帧队列，不阻塞等待 Reset 完成。
-    // 用于 CreateNewMap 流程：避免旧 KF 在切到新地图后被 LoopClosing 处理。
+    // 轻量级清空回环关键帧队列，用于 CreateNewMap 流程。
     void ClearQueue();
 
     // 此函数将在单独的线程中运行
     void RunGlobalBundleAdjustment(unsigned long nLoopKF);
 
-    // 中止正在运行的 GBA 并 join 其线程（替代原先 detach+delete 运行中线程的写法）。
+    // 中止正在运行的 GBA 并 join 其线程。
     // 由 CorrectLoop 的二次回环路径与 System::Shutdown 调用。
     void RequestStopGBA();
 

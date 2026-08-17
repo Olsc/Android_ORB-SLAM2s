@@ -187,7 +187,7 @@ void System::Shutdown()
     mpLocalMapper->RequestFinish();
     mpLoopCloser->RequestFinish();
 
-    // join 替代原先"从未被 notify 的 wait_for 轮询"——确定性等待，零空转
+    // 确定性等待，零空转
     if(mptLocalMapping && mptLocalMapping->joinable())
         mptLocalMapping->join();
     if(mptLoopClosing && mptLoopClosing->joinable())

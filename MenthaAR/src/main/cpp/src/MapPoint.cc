@@ -316,7 +316,7 @@ bool MapPoint::isBad()
 
 void MapPoint::IncreaseVisible(int n)
 {
-    // 原子计数替代互斥锁（热路径每帧数百次调用）
+    // 原子计数（热路径每帧数百次调用）
     mnVisible.fetch_add(n, std::memory_order_relaxed);
 }
 

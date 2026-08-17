@@ -65,8 +65,7 @@ public:
     // 基于 HBST 的关键帧间特征匹配
     int SearchByHBST(KeyFrame *pKF1, KeyFrame *pKF2, std::vector<MapPoint*> &vpMatches12);
 
-    // 使用 HBST 替代 BoW 进行快速特征匹配
-    // 用于重定位和回环检测
+    // 使用 HBST 用于重定位和回环检测
     int SearchByHBST(KeyFrame *pKF, Frame &F, std::vector<MapPoint*> &vpMapPointMatches);
 
     // 从特征点描述子构造 HBST 的 Matchable 格式
@@ -96,7 +95,6 @@ public:
                                std::vector<pair<size_t, size_t> > &vMatchedPairs, const bool bOnlyStereo);
 
     // 在KF1和KF2之间搜索地图点匹配，通过Sim3变换[s12*R12|t12]
-    // 在双目和RGB-D情况下，s12=1
     int SearchBySim3(KeyFrame* pKF1, KeyFrame* pKF2, std::vector<MapPoint *> &vpMatches12, const float &s12, const cv::Mat &R12, const cv::Mat &t12, const float th);
 
     // 将地图点投影到关键帧并搜索重复的地图点

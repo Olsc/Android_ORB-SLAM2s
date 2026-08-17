@@ -84,8 +84,7 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
 
     long unsigned int maxKFid = 0;
 
-    // 顶点指针数组（按 id 索引）替代每边 2 次 optimizer.vertex() 哈希查找
-    // + dynamic_cast RTTI。数组按需增长（KF/MP id 均在登记时保证容量）。
+    // 顶点指针数组（按 id 索引）
     std::vector<g2o::OptimizableGraph::Vertex*> vAllVertices;
 
     // 设置关键帧顶点
@@ -95,7 +94,7 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
         if(pKF->isBad())
             continue;
         g2o::VertexSE3Expmap * vSE3 = new g2o::VertexSE3Expmap();
-        // 栈版读取位姿（锁内拷贝，替代 GetPose() clone + Converter 转换）
+        // 栈版读取位姿
         float poseF[16];
         pKF->GetPose(poseF);
         Eigen::Matrix<double,3,3> R;
@@ -154,7 +153,7 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
             Eigen::Matrix<double,2,1> obs;
             obs << kpUn.pt.x, kpUn.pt.y;
 
-            // 数组直查替代哈希查找+dynamic_cast
+            // 数组直查
             g2o::OptimizableGraph::Vertex* v0 = vAllVertices[id];
             g2o::OptimizableGraph::Vertex* v1 = vAllVertices[pKF->mnId];
 
@@ -494,7 +493,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
     {
         KeyFrame* pKFi = *lit;
         g2o::VertexSE3Expmap * vSE3 = new g2o::VertexSE3Expmap();
-        // 栈版读取位姿（锁内拷贝，替代 GetPose() clone + Converter 转换）
+        // 栈版读取位姿
         float poseF[16];
         pKFi->GetPose(poseF);
         Eigen::Matrix<double,3,3> R;
@@ -516,7 +515,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
     {
         KeyFrame* pKFi = *lit;
         g2o::VertexSE3Expmap * vSE3 = new g2o::VertexSE3Expmap();
-        // 栈版读取位姿（锁内拷贝，替代 GetPose() clone + Converter 转换）
+        // 栈版读取位姿
         float poseF[16];
         pKFi->GetPose(poseF);
         Eigen::Matrix<double,3,3> R;
@@ -589,7 +588,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
                     Eigen::Matrix<double,2,1> obs;
                     obs << kpUn.pt.x, kpUn.pt.y;
 
-                    // 数组直查替代哈希查找+dynamic_cast
+                    // 数组直查
                     g2o::OptimizableGraph::Vertex* v0 =
                         ((size_t)id < vAllVertices.size()) ? vAllVertices[id]
                         : dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id));

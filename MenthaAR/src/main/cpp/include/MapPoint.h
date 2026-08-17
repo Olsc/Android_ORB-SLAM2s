@@ -71,7 +71,7 @@ public:
     KeyFrame* GetReferenceKeyFrame();
 
     std::map<KeyFrame*,size_t> GetObservations();
-    // 零拷贝聚合观测计数（哈希表 O(1) 插入，替代调用方整 map 拷贝/红黑树插入）
+    // 零拷贝聚合观测计数（哈希表 O(1) 插入）
     void ShareObservations(std::unordered_map<KeyFrame*, int>& counter, unsigned long excludeId = -1);
     int GetRedundantObservationsCount(KeyFrame* pKF, int scaleLevel);
     int Observations() const;
@@ -91,8 +91,7 @@ public:
     void IncreaseVisible(int n=1);
     void IncreaseFound(int n=1);
     float GetFoundRatio();
-    // mnFound/mnVisible 为原子量：可见/找到计数由跟踪线程写、
-    // 剔除与统计路径并发读，原先的无锁读非原子 int 属数据竞争
+
     inline int GetFound() const {
         return mnFound.load(std::memory_order_relaxed);
     }
@@ -100,7 +99,7 @@ public:
     void ComputeDistinctiveDescriptors();
 
     cv::Mat GetDescriptor();
-    // 零锁、零分配热路径读取：把描述子（恒为 32 字节）拷贝到栈缓冲。
+    // 把描述子（恒为 32 字节）拷贝到栈缓冲。
     // 返回是否有描述子（无则 out 清零）。依赖 std::atomic_load 的原子引用计数。
     inline bool GetDescriptor(uint8_t out[32]) const {
         std::shared_ptr<const cv::Mat> d = std::atomic_load(&mDescriptor);
@@ -189,11 +188,11 @@ protected:
      // 参考关键帧
      KeyFrame* mpRefKF;
 
-     // 跟踪计数器（原子：跨线程读写，原先 mutex+裸 int 混用）
+     // 跟踪计数器
      std::atomic<int> mnVisible;
      std::atomic<int> mnFound;
 
-     // 坏点标志（我们目前不从内存中删除地图点）
+     // 坏点标志
     std::atomic<bool> mbBad;
     MapPoint* mpReplaced;
 

@@ -309,7 +309,7 @@ void ORB_SLAM2::Tracking::BindLoadedMapPointsUsingSnapshots()
         }
     }
 
-    // 按投影误差取前 nMaxBind 个最佳候选（nth_element 替代全排序，O(k) 期望），
+    // 按投影误差取前 nMaxBind 个最佳候选，
     // 再对幸存子集排序以保持与原先一致的绑定顺序（去重冲突时仍优先误差小者）
     if(candidates.size() > (size_t)nMaxBind)
     {
@@ -344,8 +344,7 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
     // 并发保护：避免多次重入导致refDesc与索引不同步
     bool expected=false; if(!mRefBuilding.compare_exchange_strong(expected, true)) return;
 
-    // 节流：增量驱动替代 2 秒墙钟冷却——地图点较上次构建增加不足 5%
-    // （且至少 50 个）且关键帧增加不足 3 个时，缓存仍然新鲜，直接复用
+    // 节流：增量驱动
     {
         std::unique_lock<std::mutex> lk(mMutexReloc);
         if(mRefDesc.rows > 0 && mpRefIdxToMP && !mpRefIdxToMP->empty())
@@ -548,11 +547,6 @@ void ORB_SLAM2::Tracking::UpdateAlignmentSmooth(const cv::Mat &T_new, int inlier
     }
 
     // 旋转矩阵正交化（保证旋转矩阵的有效性）
-    // Gram-Schmidt 行正交化替代 cv::SVD 的 U·Vᵀ 路径——基准验证
-    // （docs/bench_algorithms.py 测试 4）两者恢复的正交度同为机器精度（~1e-16），
-    // 与真值距离同数量级，而 GS 的乘加次数约为 SVD 路径的 1/20，且零堆分配。
-    // 病态输入守护：EMA 混合近 180° 旋转差会使某行凸组合为零向量，朴素 GS 将退化；
-    // 行 0 退化时取 T_new，行 1 与行 0 平行时以 r0 最小分量轴的叉积重建，输出始终为右手系
     {
         const float* rn0 = T_new.ptr<float>(0);
         const float* rn1 = T_new.ptr<float>(1);
@@ -734,8 +728,7 @@ void Tracking::GlobalRelocLoop(int sessionId)
             if(mbRelocThreadStop || mRelocThreadSessionId.load() != sessionId)
                 break;
 
-            // 提取不可变快照的 shared_ptr（O(1)），替代整 vector 值拷贝；
-            // 原先的 valToRef 是 0..n-1 的恒等映射数组，直接删除
+            // 提取不可变快照的 shared_ptr（O(1)）
             if(!mRefDesc.empty() && mpRefSnapshots && !mpRefSnapshots->empty() && mpRefTree) {
                 refDesc = mRefDesc;
                 refSnaps = mpRefSnapshots;
@@ -1331,8 +1324,7 @@ void Tracking::Track()
         }
     }
 
-    // 轨迹双端列表增量裁剪——仅保留最近 64 条（UpdateLastFrame 只读 back()），
-    // 替代原先的无界增长（30fps×1 小时 ≈ 32MB 纯浪费）。push 后立即裁剪，无突发。
+    // 轨迹双端列表增量裁剪——仅保留最近 64 条（UpdateLastFrame 只读 back()）
     auto TrimTrajectory = [this]() {
         const size_t kMaxTrajectory = 64;
         while(mlRelativeFramePoses.size() > kMaxTrajectory) mlRelativeFramePoses.pop_front();
@@ -1356,7 +1348,7 @@ void Tracking::Track()
             else
             {
                 try {
-                    // 栈版读取逆位姿（锁内拷贝，替代 GetPoseInverse() clone）
+                    // 栈版读取逆位姿
                     float pw[16];
                     pRefKF->GetPoseInverse(pw);
                     cv::Mat Pw(4,4,CV_32F);
@@ -2361,7 +2353,7 @@ void Tracking::UpdateLocalPoints()
             // 如果已加载点少于限制，则对于普通点进行 O(N) 的 partial selection
             std::nth_element(pivot, mvpLocalMapPoints.begin() + TRACKING_MAX_LOCAL_MAP_POINTS, mvpLocalMapPoints.end(),
                              [](const MapPoint* a, const MapPoint* b) {
-                                 // nObs 是原子变量，直接通过 Observations() 获取，零锁开销且极快
+                                 // nObs 是原子变量，直接通过 Observations() 获取
                                  return a->Observations() > b->Observations();
                              });
         }
@@ -2373,7 +2365,6 @@ void Tracking::UpdateLocalPoints()
 void Tracking::UpdateLocalKeyFrames()
 {
     // 每个地图点都会投票给观察到它的关键帧
-    // unordered_map（预 reserve）替代 std::map 红黑树——纯计数场景无需有序性
     unordered_map<KeyFrame*,int> keyframeCounter;
     keyframeCounter.reserve(256);
     for(int i=0; i<mCurrentFrame.N; i++)
@@ -2507,7 +2498,6 @@ bool Tracking::Relocalization()
     vector<vector<MapPoint*> > vvpMapPointMatches;
     vvpMapPointMatches.resize(nKFs);
 
-    // 使用 vector<int> 替代 vector<bool> 以避免多线程并发写导致的竞争问题
     vector<int> vbDiscarded;
     vbDiscarded.resize(nKFs, 0);
 
