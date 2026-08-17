@@ -450,8 +450,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
         new Thread(() -> {
             try {
                 final String resDir = getExternalFilesDir("SLAM").getAbsolutePath() + "/";
-                Log.d(TAG, "SLAM资源目录: " + resDir);
-                Log.d(TAG, "绑定 SLAM 独立进程服务...");
 
                 if (slamIPCClient != null) {
                     slamIPCClient.bindService();

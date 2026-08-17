@@ -296,7 +296,7 @@ if(OpenMP_CXX_FOUND)
 endif()
 
 # Mentha 性能分析器
-set(MENTHA_DEVELOP_MODE ON) # <--- 修改这里：ON 开启，OFF 关闭
+set(MENTHA_DEVELOP_MODE OFF) # <--- 修改这里：ON 开启，OFF 关闭
 
 message(STATUS "Mentha 分析器状态: ${MENTHA_DEVELOP_MODE}")
 

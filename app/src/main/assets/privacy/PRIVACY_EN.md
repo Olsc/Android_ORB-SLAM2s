@@ -1,6 +1,6 @@
 # ORB-SLAM2s Privacy Policy and Terms of Use
 
-**Last Updated: July 10, 2026**
+**Last Updated: August 17, 2026**
 
 ---
 
@@ -19,9 +19,10 @@ This project combines computer vision-based Simultaneous Localization and Mappin
 7. **Dark Frame Detection**: Automatic detection of overly dark environments, pausing SLAM tracking to prevent wasted computational resources and tracking loss;
 8. **3D Object Interaction Management**: Support for placing, scaling (pinch gesture), and interacting with 3D AR objects;
 9. **3DOF Orientation Tracking**: Three-degrees-of-freedom orientation tracking using onboard device sensors (Rotation Vector Sensor / Accelerometer + Magnetometer);
-10. **Multi-Map Support**: Simultaneous loading, matching, and management of multiple map files.
+10. **Multi-Map Support**: Simultaneous loading, matching, and management of multiple map files;
+11. **Fully Decoupled IPC Architecture & Open Secondary Development**: The core SLAM computation engine is completely decoupled into an isolated background process service (`:slam_process`), communicating with UI and rendering pipelines via zero-copy shared memory (SharedMemory/Ashmem double-buffering) and asynchronous AIDL IPC. This architecture fully separates computation from rendering, exposes a clean, standardized IPC client interface, and enables secondary editing, custom algorithm backend replacements, and third-party host engine integrations.
 
-This project **only** runs on the Android mobile platform. Its underlying SLAM engine is implemented in C/C++ (ORB-SLAM2 core, accessed via JNI), while the upper layer uses Java for user interface and AR rendering pipelines.
+This project **only** runs on the Android mobile platform. Its underlying SLAM engine is implemented in C/C++ (running in the isolated `:slam_process` service), while the upper layer uses Java/Kotlin for user interface and AR rendering pipelines, coordinating via high-performance local Inter-Process Communication (IPC).
 
 ---
 
@@ -60,19 +61,19 @@ Under the terms of the GPL-3.0 License:
 
 This project is built upon the following open-source libraries, each with its own independent license:
 
-| Component | License | Description |
-|-----------|---------|-------------|
-| ORB-SLAM2 Core | GPL-3.0 | Original SLAM library by Raul Mur-Artal et al. |
-| DBoW2 (modified) | Modified BSD (with notification clause) | Bag-of-Words library for place recognition |
-| g2o (modified) | BSD 2-Clause (core) | Graph optimization library for non-linear optimization (some components GPL-3.0/LGPL-3.0) |
-| Eigen3 | MPL-2.0 (mostly) | Linear algebra library (3.4+ portions also Apache-2.0/BSD-3-Clause) |
-| OpenCV | Apache 2.0 | Computer vision library (some files BSD-3-Clause) |
-| AndroidX / CameraX | Apache 2.0 | Official Android camera and UI components |
-| Google Material Design | Apache 2.0 | UI design library |
-| **srrg_hbst (HBST)** | **BSD 3-Clause** | **Hierarchical Bag of Scalable Trees — fast incremental image matching for relocalization** |
-| **Google Filament** | **Apache 2.0** | **Physically-based 3D rendering engine for AR object display (GLB/glTF model support)** |
-| Google Guava | Apache 2.0 | Java core library extensions |
-| **Markwon (io.noties.markwon)** | **Apache 2.0** | **Markdown rendering library — used to display this Privacy Policy within the app** |
+| Component                       | License                                 | Description                                                                                 |
+| ------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------- |
+| ORB-SLAM2 Core                  | GPL-3.0                                 | Original SLAM library by Raul Mur-Artal et al.                                              |
+| DBoW2 (modified)                | Modified BSD (with notification clause) | Bag-of-Words library for place recognition                                                  |
+| g2o (modified)                  | BSD 2-Clause (core)                     | Graph optimization library for non-linear optimization (some components GPL-3.0/LGPL-3.0)   |
+| Eigen3                          | MPL-2.0 (mostly)                        | Linear algebra library (3.4+ portions also Apache-2.0/BSD-3-Clause)                         |
+| OpenCV                          | Apache 2.0                              | Computer vision library (some files BSD-3-Clause)                                           |
+| AndroidX / CameraX              | Apache 2.0                              | Official Android camera and UI components                                                   |
+| Google Material Design          | Apache 2.0                              | UI design library                                                                           |
+| **srrg_hbst (HBST)**            | **BSD 3-Clause**                        | **Hierarchical Bag of Scalable Trees — fast incremental image matching for relocalization** |
+| **Google Filament**             | **Apache 2.0**                          | **Physically-based 3D rendering engine for AR object display (GLB/glTF model support)**     |
+| Google Guava                    | Apache 2.0                              | Java core library extensions                                                                |
+| **Markwon (io.noties.markwon)** | **Apache 2.0**                          | **Markdown rendering library — used to display this Privacy Policy within the app**         |
 
 For closed-source commercial licensing inquiries of ORB-SLAM2, please contact the original authors (orbslam@unizar.es).
 
@@ -116,29 +117,30 @@ The following permissions are declared in AndroidManifest.xml. Each permission s
 
 ### 5.1 Camera Hardware
 
-| Item | Description |
-|------|-------------|
-| **Declaration** | `<uses-feature android:name="android.hardware.camera" />` |
-| **Purpose** | Primary input source for SLAM real-time tracking and AR rendering. Resolution is dynamically computed (base 1280x720, maintain 16:9 aspect ratio). |
+| Item              | Description                                                                                                                                        |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Declaration**   | `<uses-feature android:name="android.hardware.camera" />`                                                                                          |
+| **Purpose**       | Primary input source for SLAM real-time tracking and AR rendering. Resolution is dynamically computed (base 1280x720, maintain 16:9 aspect ratio). |
 | **Data Pipeline** | CameraX `ImageAnalysis` outputs RGBA_8888 format frames → converted to OpenCV Mat objects (RGBA + Gray) → passed to JNI layer for SLAM processing. |
 
 ### 5.2 Autofocus
 
-| Item | Description |
-|------|-------------|
-| **Declaration** | `<uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />` |
-| **Purpose** | User tap-to-focus triggers center autofocus and metering, improving image quality and tracking stability. |
-| **Optional** | Marked as `required="false"` — devices without autofocus support can still use the camera normally. |
+| Item            | Description                                                                                               |
+| --------------- | --------------------------------------------------------------------------------------------------------- |
+| **Declaration** | `<uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />`              |
+| **Purpose**     | User tap-to-focus triggers center autofocus and metering, improving image quality and tracking stability. |
+| **Optional**    | Marked as `required="false"` — devices without autofocus support can still use the camera normally.       |
 
 ### 5.3 Sensors (Runtime Usage, Not Declared in Manifest)
 
-| Sensor Type | Purpose | Priority |
-|-------------|---------|----------|
-| **TYPE_ROTATION_VECTOR** (Rotation Vector Sensor) | 3DOF orientation tracking, computes device 3D pose | Primary |
-| **TYPE_ACCELEROMETER** (Accelerometer) | Fallback when rotation vector sensor is unavailable | Secondary (combined with magnetometer) |
-| **TYPE_MAGNETIC_FIELD** (Magnetometer) | Fallback when rotation vector sensor is unavailable | Secondary (combined with accelerometer) |
+| Sensor Type                                       | Purpose                                             | Priority                                |
+| ------------------------------------------------- | --------------------------------------------------- | --------------------------------------- |
+| **TYPE_ROTATION_VECTOR** (Rotation Vector Sensor) | 3DOF orientation tracking, computes device 3D pose  | Primary                                 |
+| **TYPE_ACCELEROMETER** (Accelerometer)            | Fallback when rotation vector sensor is unavailable | Secondary (combined with magnetometer)  |
+| **TYPE_MAGNETIC_FIELD** (Magnetometer)            | Fallback when rotation vector sensor is unavailable | Secondary (combined with accelerometer) |
 
 **Notes**:
+
 - Sensor data sample rate is set to `SensorManager.SENSOR_DELAY_GAME` (game level, ~20ms interval);
 - All sensor data is processed **locally on the device** and **is not uploaded, stored, or transmitted to any external location**;
 - Sensor coordinate systems are remapped for landscape orientation to accommodate the app's fixed landscape display.
@@ -161,21 +163,23 @@ This project strictly adheres to the principle of data minimization. **We do NOT
 - ❌ No third-party advertising SDKs or analytics SDKs;
 - ❌ No active connections to any remote servers.
 
-### 6.2 Local Data Processing
+### 6.2 Local Data Processing and Inter-Process Communication (IPC)
 
-| Data Type | Processing Method | Storage |
-|-----------|-------------------|---------|
-| **Camera frames** | Real-time processing: grayscale and RGBA conversion, processed in memory. Frame data is discarded after processing completes. | Not stored |
-| **SLAM maps (when user actively saves)** | Serialized as binary `.bin` files + `.json` metadata files | Saved to `getExternalFilesDir("SLAM/maps/")` |
-| **Map metadata** | Includes: map name, keyframe count, map point count, creation timestamp, whether plane detection exists | Same as above |
-| **ORB vocabulary** | Pre-packaged file, used for feature matching (read-only) | `getExternalFilesDir("SLAM/")` |
-| **Camera calibration config** | Pre-packaged file (read-only) | `getExternalFilesDir("SLAM/")` |
-| **Log information** | Outputs debug logs via Android Logcat, visible only in developer mode | System log buffer (circular overwrite) |
+| Data Type                                | Processing Method                                                                                                                                                                                                                            | Storage                                      |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| **Camera frames**                        | Real-time processing: written to anonymous shared memory (Ashmem/SharedMemory double buffer), notifying the `:slam_process` process via oneway AIDL for processing. Frame data is overwritten/released by subsequent frames.                 | Not stored                                   |
+| **Inter-Process Data Flow**              | Point cloud coordinates, MVP transformation matrices, and tracking states are exchanged between the main UI process and SLAM process via shared memory headers and memory mapping, entirely within local RAM with zero network transmission. | Not stored                                   |
+| **SLAM maps (when user actively saves)** | Serialized as binary `.bin` files + `.json` metadata files                                                                                                                                                                                   | Saved to `getExternalFilesDir("SLAM/maps/")` |
+| **Map metadata**                         | Includes: map name, keyframe count, map point count, creation timestamp, whether plane detection exists                                                                                                                                      | Same as above                                |
+| **ORB vocabulary**                       | Pre-packaged file, used for feature matching (read-only)                                                                                                                                                                                     | `getExternalFilesDir("SLAM/")`               |
+| **Camera calibration config**            | Pre-packaged file (read-only)                                                                                                                                                                                                                | `getExternalFilesDir("SLAM/")`               |
+| **Log information**                      | Outputs debug logs via Android Logcat, visible only in developer mode                                                                                                                                                                        | System log buffer (circular overwrite)       |
 
 ### 6.3 Crash Handling
 
 This application **does not include any custom crash collection mechanism**. When the application crashes, the Android system default behavior applies (displaying the "App has stopped" dialog).
 
+- Benefiting from the **IPC process decoupling architecture**, the native SLAM algorithm runs in an independent `:slam_process`. If the underlying algorithm encounters an extreme out-of-memory or native crash, the host UI process can detect the disconnection via `ServiceConnection` and degrade gracefully, preventing a full application crash;
 - The application itself **does NOT collect, store, or upload any crash information** to any remote server;
 - The Android system may, with the user's explicit consent, collect basic crash stack information for system diagnostic purposes (this behavior is controlled by the Android system and is unrelated to this application).
 
@@ -184,7 +188,7 @@ This application **does not include any custom crash collection mechanism**. Whe
 All third-party libraries used by this project run locally on the device and do not involve data transmission:
 
 - **OpenCV**: Image processing (feature extraction, matrix operations), all executed locally on the CPU;
-- **ORB-SLAM2 Core (C++)**: SLAM algorithm engine, all executed locally;
+- **ORB-SLAM2 Core (C++)**: SLAM algorithm engine, encapsulated in `:slam_process` and executed entirely locally;
 - **srrg_hbst (HBST)**: Hierarchical binary search tree for image matching and relocalization, all executed locally;
 - **Google Filament + gltfio**: Physically-based 3D rendering engine for AR object display (GLB/glTF), rendering executed locally on GPU;
 - **Google Guava / AndroidX**: System utility classes, not involved with user data;
@@ -196,10 +200,11 @@ All third-party libraries used by this project run locally on the device and do 
 
 1. **App Signing**: APK/AAB distributions of this application should be signed with the developer's private key to ensure integrity and trustworthy source.
 2. **Data Isolation**: All application data is stored in the app's `getExternalFilesDir()` sandbox directory, with access restricted by the Android system.
-3. **Minimum Permissions**: Only the minimum permissions required for SLAM and AR functionality are requested; no extraneous permissions are declared.
-4. **No Background Services**: The application has no persistent background services. All resources (camera, sensors, GL context) are released upon exit.
-5. **App Backup & Data Leakage Prevention**: The application's `AndroidManifest.xml` declares `android:allowBackup="true"` for convenience. On Android 12+ (API 31+), users can disable backup in device settings to prevent map files and app data from being included in system backups. Users handling sensitive mapping data should consider disabling app backup.
-6. **Native Code Crash Handling**: The application's C++ native layer includes a signal handler framework that intercepts native crashes (e.g., SIGSEGV, SIGABRT) to produce diagnostic logs. These logs are written only to the Android Logcat buffer (accessible solely in developer/debug mode) and are never collected, stored, or transmitted by the application itself. This mechanism is provided solely for debugging purposes during development.
+3. **Process Isolation & Security Boundary**: The SLAM core service runs in an isolated private process (`:slam_process`) declared with `android:exported="false"`. External unauthorized apps cannot bind to or invoke this service. The separation also delivers process-level fault isolation.
+4. **Minimum Permissions**: Only the minimum permissions required for SLAM and AR functionality are requested; no extraneous permissions are declared.
+5. **No Persistent Background Services**: The application has no persistent background services. All resources (camera, sensors, IPC bindings, GL context) are released upon exit.
+6. **App Backup & Data Leakage Prevention**: The application's `AndroidManifest.xml` declares `android:allowBackup="true"` for convenience. On Android 12+ (API 31+), users can disable backup in device settings to prevent map files and app data from being included in system backups. Users handling sensitive mapping data should consider disabling app backup.
+7. **Native Code Crash Handling**: The application's C++ native layer includes a signal handler framework that intercepts native crashes (e.g., SIGSEGV, SIGABRT) to produce diagnostic logs. These logs are written only to the Android Logcat buffer (accessible solely in developer/debug mode) and are never collected, stored, or transmitted by the application itself. This mechanism is provided solely for debugging purposes during development.
 
 ---
 
@@ -240,6 +245,7 @@ If you encounter any behavior that violates the above principles in the project 
 When downloading, using, or distributing this software (ORB-SLAM2s) or any derivative versions, you are **strictly prohibited** from using it for the following purposes:
 
 ### 9.1 Illegal and Malicious Purposes
+
 - ❌ Any violation of the laws of the People's Republic of China;
 - ❌ Any violation of the laws of the user's country or region;
 - ❌ Infringement of others' privacy rights (e.g., covert recording, illegal surveillance);
@@ -250,11 +256,13 @@ When downloading, using, or distributing this software (ORB-SLAM2s) or any deriv
 - ❌ Use in un-certified aircraft, spacecraft navigation, or flight control systems;
 
 ### 9.2 High-Risk Activities
+
 - ❌ Use in nuclear facilities, chemical plants, life-support systems, or other environments with extremely high safety requirements;
 - ❌ Use in scenarios that could result in personal injury or property damage;
 - ❌ Integration into critical infrastructure (aerospace, rail transportation, autonomous driving, etc.) without adequate safety testing and regulatory certification;
 
 ### 9.3 Intellectual Property and Compliance
+
 - ❌ Removing or obscuring copyright notices and license information of this software and its upstream open-source components (ORB-SLAM2, DBoW2, g2o, etc.);
 - ❌ Distributing modified versions or derivative works of this software in violation of GPL-3.0 license terms (must also be distributed under GPL-3.0 with source code provided);
 - ❌ Using this software or its components for patent infringement or to assist in patent infringement.
@@ -300,26 +308,27 @@ Users are solely responsible for ensuring their use of this software complies wi
 
 This project is built upon the following open-source libraries and integrates the corresponding third-party components. The intellectual property ownership and license declarations for each library are as follows:
 
-| Component | Copyright Holder | License |
-|-----------|-----------------|---------|
-| **ORB-SLAM2 Core Algorithm** | Raul Mur-Artal, Juan D. Tardos, J. M. M. Montiel, Dorian Galvez-Lopez | GPL-3.0 |
-| **DBoW2 (modified)** | Dorian Galvez-Lopez | Modified BSD (with notification clause) |
-| **g2o (modified)** | Rainer Kuemmerle, Giorgio Grisetti, Hauke Strasdat, Kurt Konolige, Wolfram Burgard | BSD 2-Clause (core); some components GPL-3.0 / LGPL-3.0 |
-| **Eigen3** | Benoît Jacob, Gaël Guennebaud and contributors | MPL-2.0 (core; 3.4+ portions also under Apache-2.0 / BSD-3-Clause / GPL-3.0) |
-| **OpenCV** | Intel Corporation, Willow Garage, Itseez, NVIDIA, AMD, OpenCV Foundation and contributors | Apache 2.0 (some files BSD-3-Clause) |
-| **srrg_hbst (HBST)** | Dominik Schlegel, Giorgio Grisetti — srrg-software | BSD 3-Clause |
-| **Google Filament** | Google LLC | Apache 2.0 |
-| **gltfio / filament-utils** | Google LLC | Apache 2.0 |
-| **ZXing ("Zebra Crossing")** | Sean Owen and ZXing project contributors | Apache 2.0 |
-| **Google Guava** | Google LLC | Apache 2.0 |
-| **Markwon (io.noties.markwon)** | Dimitry Ivanov (noties) | Apache 2.0 |
-| **AndroidX / CameraX** | Google LLC / Android Open Source Project | Apache 2.0 |
-| **Android Support Library / Appcompat** | Google LLC / Android Open Source Project | Apache 2.0 |
-| **Material Components (Material Design)** | Google LLC | Apache 2.0 |
-| **ORB-SLAM2s Adaptation & Enhancement Code** | Project contributors (see GitHub contributors list) | GPL-3.0 |
-| **Project Name "ORB-SLAM2s"** | Project maintainer | Does not constitute trademark registration |
+| Component                                    | Copyright Holder                                                                          | License                                                                      |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| **ORB-SLAM2 Core Algorithm**                 | Raul Mur-Artal, Juan D. Tardos, J. M. M. Montiel, Dorian Galvez-Lopez                     | GPL-3.0                                                                      |
+| **DBoW2 (modified)**                         | Dorian Galvez-Lopez                                                                       | Modified BSD (with notification clause)                                      |
+| **g2o (modified)**                           | Rainer Kuemmerle, Giorgio Grisetti, Hauke Strasdat, Kurt Konolige, Wolfram Burgard        | BSD 2-Clause (core); some components GPL-3.0 / LGPL-3.0                      |
+| **Eigen3**                                   | Benoît Jacob, Gaël Guennebaud and contributors                                            | MPL-2.0 (core; 3.4+ portions also under Apache-2.0 / BSD-3-Clause / GPL-3.0) |
+| **OpenCV**                                   | Intel Corporation, Willow Garage, Itseez, NVIDIA, AMD, OpenCV Foundation and contributors | Apache 2.0 (some files BSD-3-Clause)                                         |
+| **srrg_hbst (HBST)**                         | Dominik Schlegel, Giorgio Grisetti — srrg-software                                        | BSD 3-Clause                                                                 |
+| **Google Filament**                          | Google LLC                                                                                | Apache 2.0                                                                   |
+| **gltfio / filament-utils**                  | Google LLC                                                                                | Apache 2.0                                                                   |
+| **ZXing ("Zebra Crossing")**                 | Sean Owen and ZXing project contributors                                                  | Apache 2.0                                                                   |
+| **Google Guava**                             | Google LLC                                                                                | Apache 2.0                                                                   |
+| **Markwon (io.noties.markwon)**              | Dimitry Ivanov (noties)                                                                   | Apache 2.0                                                                   |
+| **AndroidX / CameraX**                       | Google LLC / Android Open Source Project                                                  | Apache 2.0                                                                   |
+| **Android Support Library / Appcompat**      | Google LLC / Android Open Source Project                                                  | Apache 2.0                                                                   |
+| **Material Components (Material Design)**    | Google LLC                                                                                | Apache 2.0                                                                   |
+| **ORB-SLAM2s Adaptation & Enhancement Code** | Project contributors (see GitHub contributors list)                                       | GPL-3.0                                                                      |
+| **Project Name "ORB-SLAM2s"**                | Project maintainer                                                                        | Does not constitute trademark registration                                   |
 
 **Notes**:
+
 - For the specific terms of each third-party library, please refer to the original license text in their official repositories.
 - For closed-source commercial licensing inquiries of ORB-SLAM2, please contact the original authors: orbslam (at) unizar (dot) es.
 - For project collaboration or other field cooperation inquiries, please contact: OlscStudio@outlook.com
