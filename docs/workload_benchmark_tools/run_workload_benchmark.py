@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Visual SLAM Theoretical Workload Benchmark & Stress Testing Engine for Git Commits
-测算每次 Git Commit 代码在不同场景/视频规格下的理论计算量（FLOPs / Ops），支持多线程并行分析与压力测试。
+测算每次 Git Commit 代码在不同场景/视频规格下的理论计算量（FLOPs / Ops），支持多线程并行分析与交互式数据看板生成。
 
 环境要求:
     须安装 matplotlib: pip install matplotlib
@@ -36,8 +36,8 @@ try:
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     import matplotlib.ticker as ticker
-    # 尝试配置跨平台中文字体
-    plt.rcParams['font.sans-serif'] = ['Microsoft YaHei', 'SimHei', 'SimSun', 'DejaVu Sans', 'sans-serif']
+    # 配置跨平台中文字体与现代渲染
+    plt.rcParams['font.sans-serif'] = ['Microsoft YaHei', 'SimHei', 'PingFang SC', 'DejaVu Sans', 'sans-serif']
     plt.rcParams['axes.unicode_minus'] = False
     plt.rcParams['svg.fonttype'] = 'none'
     HAS_MATPLOTLIB = True
@@ -132,7 +132,7 @@ KEY_FILE_PATTERNS = {
 
 
 # ==============================================================================
-# 2. 理论计算量评估核心算法 (Theoretical Workload Analyzer)
+# 2. 理论计算量评估核心模型 (Theoretical Workload Analyzer)
 # ==============================================================================
 class SLAMWorkloadModel:
     """
@@ -163,7 +163,7 @@ class SLAMWorkloadModel:
 
     def analyze_commit_code(self, module_sources: Dict[str, str]) -> Dict[str, Any]:
         """
-        对提取到的单次 Commit 的 C++ 源码进行静态特征提取和理论工作量估算
+        对提取到的单次 Commit 的 C++ 源码进行静态特征提取和理论计算量仿真
         """
         orb_ext_src = module_sources.get("ORBextractor", "")
         orb_match_src = module_sources.get("ORBmatcher", "")
@@ -195,65 +195,89 @@ class SLAMWorkloadModel:
         # ----------------------------------------------------------------------
         optimizations_detected = []
 
-        # (1) 描述子 LUT 查表优化 (消除 sin/cos 与动态乘法)
+        # (1) 描述子基表 LUT (消除 sin/cos 浮点运算与动态旋转乘法)
         has_descriptor_lut = bool(re.search(r"descriptorOffsetLUT|bDescriptorLUTInit", orb_ext_src))
-        has_level_step_lut = bool(re.search(r"levelStepOffsetLUT|PrepareLevelStepOffsetLUT", orb_ext_src))
         if has_descriptor_lut:
             optimizations_detected.append("Descriptor LUT (Sin/Cos Eliminated)")
-        if has_level_step_lut:
-            optimizations_detected.append("Direct Level-Step Offset LUT")
 
-        # (2) 汉明距离硬件优化 (__builtin_popcount / _mm_popcnt / bitwise LUT)
+        # (2) 金字塔空层跳过优化 (E-3：本层无特征点直接跳过 7x7 定点高斯模糊)
+        has_layer_pruning = bool(re.search(r"kpStart\s*==\s*kpEnd|levelDescOffset\[level\s*\+\s*1\]", orb_ext_src))
+        if has_layer_pruning:
+            optimizations_detected.append("Empty-Layer Blur Pruning")
+
+        # (3) 旧版 levelStepOffsetLUT 动态重构表 (带逐层切换重建惩罚)
+        has_level_step_lut = bool(re.search(r"levelStepOffsetLUT|PrepareLevelStepOffsetLUT", orb_ext_src))
+        if has_level_step_lut:
+            optimizations_detected.append("Step-Scaled Offset LUT (w/ Rebuild Overhead)")
+
+        # (4) 汉明距离硬件优化与 NEON / SIMD 向量化
+        has_neon_simd = bool(re.search(r"__ARM_NEON|arm_neon|vpadalq|vld1q|_mm256|_mm_popcnt_u64|__builtin_popcountll", all_code, re.I))
         has_popcount_opt = bool(re.search(r"__builtin_popcount|_mm_popcnt|popcount_lut|PopCount", orb_match_src + orb_ext_src))
-        if has_popcount_opt:
+        if has_neon_simd:
+            optimizations_detected.append("Hardware 64-bit / NEON SIMD Matching")
+        elif has_popcount_opt:
             optimizations_detected.append("Hardware Popcount Matching")
 
-        # (3) 锁优化与内存复用 (Lock Splitting, Buffer Reuse)
-        has_lock_opt = bool(re.search(r"锁优化|内存复用|unique_lock|shared_mutex|thread_local|buffer_pool|cachedStep", all_code, re.I))
+        # (5) 锁优化与内存复用 (Lock Splitting, Buffer Reuse, Thread-Local Safety)
+        has_lock_opt = bool(re.search(r"锁优化|内存复用|unique_lock|shared_mutex|thread_local|buffer_pool|cachedStep|mMutexBitmaps|mMutexPose", all_code, re.I))
         if has_lock_opt:
             optimizations_detected.append("Lock Optimization & Memory Reuse")
 
-        # (4) 矩阵与变换优化
+        # (6) 矩阵与变换优化
         has_matrix_opt = bool(re.search(r"平移向量|齐次矩阵|fast_matrix|inline.*transform", all_code, re.I) or (len(matrix_src) > 500 and "Matrix" in module_sources))
         if has_matrix_opt:
             optimizations_detected.append("Fast Matrix Operations")
 
-        # (5) 线程池 / 并行化 / NEON 指令
-        has_parallel_opt = bool(re.search(r"setNumThreads|parallel_for|ThreadPool|std::async|OpenMP|arm_neon|__ARM_NEON", all_code, re.I))
+        # (7) 线程池 / 并行多线程
+        has_parallel_opt = bool(re.search(r"setNumThreads|parallel_for|ThreadPool|std::async|OpenMP", all_code, re.I))
         if has_parallel_opt:
-            optimizations_detected.append("Multithreading / SIMD Acceleration")
+            optimizations_detected.append("Multithreading Acceleration")
 
         # ----------------------------------------------------------------------
         # 算力模型：子模块理论计算量测算
         # ----------------------------------------------------------------------
-        # 1. 特征提取模块
+        # 1. 特征提取模块 (ORB Feature Extraction)
         pyr_pixel_multiplier = 1.6
         total_pyr_pixels_per_frame = self.total_pixels_per_frame * pyr_pixel_multiplier
 
+        # 模糊与滤波 (空层跳过减少约 15% 无效高斯模糊)
         blur_ops_per_pixel = 10.0
         blur_factor = 0.75 if ("cv::GaussianBlur" in orb_ext_src or "filter2D" in orb_ext_src) else 1.0
+        if has_layer_pruning:
+            blur_factor *= 0.85
+
         blur_total_ops = self.total_frames * (total_pyr_pixels_per_frame * blur_ops_per_pixel * blur_factor)
 
+        # FAST 角点检测与灰度质心方向
         fast_ops_per_pixel = 8.0
         fast_total_ops = self.total_frames * (total_pyr_pixels_per_frame * fast_ops_per_pixel)
 
         ic_angle_ops_per_kp = 700 * 3 + 60
         ic_angle_total_ops = self.total_frames * (self.n_features * ic_angle_ops_per_kp)
 
-        if has_level_step_lut:
+        # BRIEF 描述子计算
+        if has_descriptor_lut:
+            # 查表直接乘加：512 次寻址比较 (约 280 Ops/点)
             desc_ops_per_kp = 280.0
-        elif has_descriptor_lut:
-            desc_ops_per_kp = 650.0
         else:
+            # 原始三角浮点运算 (约 3600 Ops/点)
             desc_ops_per_kp = 3600.0
 
         brief_total_ops = self.total_frames * (self.n_features * desc_ops_per_kp)
+
+        # 旧版 levelStepOffsetLUT 每次切换金字塔层导致的表重建惩罚 (8层 x 360角度 x 512点 = 1.474M Ops/帧)
+        if has_level_step_lut:
+            rebuild_ops_per_frame = 8 * 360 * 512
+            brief_total_ops += self.total_frames * rebuild_ops_per_frame
+
         feature_extraction_ops = blur_total_ops + fast_total_ops + ic_angle_total_ops + brief_total_ops
 
-        # 2. 特征匹配模块
+        # 2. 特征匹配模块 (Feature Matching)
         matching_pairs_per_frame = self.n_features * 60
-        if has_popcount_opt:
-            hamming_ops_per_pair = 12.0
+        if has_neon_simd:
+            hamming_ops_per_pair = 8.0   # NEON / 64位向量化指令
+        elif has_popcount_opt:
+            hamming_ops_per_pair = 14.0  # 32位 __builtin_popcount
         else:
             if "popcount" in orb_match_src.lower():
                 hamming_ops_per_pair = 48.0
@@ -262,7 +286,7 @@ class SLAMWorkloadModel:
 
         feature_matching_ops = self.total_frames * (matching_pairs_per_frame * hamming_ops_per_pair)
 
-        # 3. 追踪与位姿优化模块
+        # 3. 追踪与位姿优化模块 (Tracking & Pose Optimization)
         pose_opt_ops_per_iter = (self.n_features / 1000.0 * 300) * (30 + 36 + 6) + 216
         pose_opt_ops_per_frame = 4 * pose_opt_ops_per_iter
         tracking_logic_ops_per_frame = 150000.0
@@ -270,7 +294,7 @@ class SLAMWorkloadModel:
         matrix_multiplier = 0.7 if has_matrix_opt else 1.2
         tracking_optimization_ops = self.total_frames * (pose_opt_ops_per_frame + tracking_logic_ops_per_frame) * matrix_multiplier
 
-        # 4. 局部建图与回环检测
+        # 4. 局部建图与回环检测 (Local Mapping & Loop Closing)
         local_ba_ops_per_kf = 6500000.0 * (self.n_features / 1000.0)
         local_mapping_ops = self.total_keyframes * local_ba_ops_per_kf
 
@@ -278,11 +302,11 @@ class SLAMWorkloadModel:
         loop_closing_ops = self.total_loop_checks * loop_check_ops_per_event
         mapping_loop_ops = local_mapping_ops + loop_closing_ops
 
-        # 5. 代码级架构与开销因子
+        # 5. 系统级架构与开销因子 (System Overhead)
         overhead_multiplier = 1.0
         if not has_lock_opt:
             overhead_multiplier += 0.18
-        if not has_parallel_opt:
+        if not has_parallel_opt and not has_neon_simd:
             overhead_multiplier += 0.05
         
         total_code_lines = sum(len(src.splitlines()) for src in module_sources.values())
@@ -308,17 +332,13 @@ class SLAMWorkloadModel:
 
 
 def find_git_repo_root(start_dir: Optional[str] = None) -> str:
-    """
-    自动查找并返回包含当前目录或脚本所在目录的 Git 仓库根目录路径。
-    如果未找到，退回至当前工作路径。
-    """
+    """自动查找并返回包含当前目录或脚本所在目录的 Git 仓库根目录路径。"""
     search_path = os.path.abspath(start_dir) if start_dir else os.path.dirname(os.path.abspath(__file__))
     if not os.path.exists(search_path):
         search_path = os.getcwd()
     if os.path.isfile(search_path):
         search_path = os.path.dirname(search_path)
 
-    # 1. 优先通过 git rev-parse --show-toplevel 查找
     try:
         res = subprocess.run(["git", "rev-parse", "--show-toplevel"],
                              cwd=search_path, capture_output=True, text=True,
@@ -328,7 +348,6 @@ def find_git_repo_root(start_dir: Optional[str] = None) -> str:
     except Exception:
         pass
 
-    # 2. 退回逐级向上递归查找 .git 目录/文件
     curr = search_path
     while True:
         if os.path.exists(os.path.join(curr, ".git")):
@@ -342,20 +361,15 @@ def find_git_repo_root(start_dir: Optional[str] = None) -> str:
 
 
 # ==============================================================================
-# 3. Git Commit 历史提取引擎 (Git History Engine - 支持多线程并行)
+# 3. Git Commit 历史提取引擎 (Git History Engine)
 # ==============================================================================
 class GitCommitEngine:
-    """
-    高效提取 Git 仓库历史 Commit 信息及源码，支持自动定位 Git 根目录与并行拉取
-    """
+    """高效提取 Git 仓库历史 Commit 信息及源码，支持多线程并行拉取"""
 
     def __init__(self, repo_dir: Optional[str] = None):
         self.repo_dir = find_git_repo_root(repo_dir)
 
     def get_commit_list(self, rev_range: Optional[str] = None, max_count: Optional[int] = None) -> List[Dict[str, str]]:
-        """
-        获取 commit 列表，按时间顺序从最早到最新 (reverse order)
-        """
         cmd = ["git", "log", "--reverse", "--format=%H|%h|%an|%ad|%s", "--date=short"]
         if rev_range:
             cmd.append(rev_range)
@@ -384,9 +398,6 @@ class GitCommitEngine:
         return commits
 
     def get_commit_modules(self, commit_hash: str) -> Dict[str, str]:
-        """
-        动态查找并读取该 commit 中的关键 SLAM 算法模块源文件内容
-        """
         cmd = ["git", "ls-tree", "-r", "--name-only", commit_hash]
         res = subprocess.run(cmd, cwd=self.repo_dir, capture_output=True, text=True, encoding="utf-8", errors="ignore")
         if res.returncode != 0:
@@ -416,16 +427,14 @@ class GitCommitEngine:
 
 
 # ==============================================================================
-# 4. 可视化与排版优化报告生成器 (Visualizer & Layout Optimizer)
+# 4. 可视化与排版优化报告生成器 (Visualizer & Modern Dashboard)
 # ==============================================================================
 class BenchmarkVisualizer:
-    """
-    生成专业排版 Matplotlib 图表 (彻底解决文字遮挡/堆叠问题) 与交互式 HTML 报告
-    """
+    """生成精致排版 Matplotlib 矢量/高清图表与现代科技风交互式 HTML 仪表盘"""
 
     @staticmethod
     def format_ops_human(val: float) -> str:
-        """智能化人性化计算量单位显示 (G-Ops, M-Ops, K-Ops)"""
+        """智能化人性化计算量单位显示"""
         if val >= 1e9:
             return f"{val / 1e9:.2f} G-Ops"
         elif val >= 1e6:
@@ -435,15 +444,28 @@ class BenchmarkVisualizer:
         return f"{val:.0f} Ops"
 
     @staticmethod
+    def get_badge_class(opt_name: str) -> str:
+        """根据优化类型返回对应的 CSS 样式类名"""
+        if "SIMD" in opt_name or "NEON" in opt_name or "Hardware" in opt_name:
+            return "badge-neon"
+        elif "LUT" in opt_name:
+            return "badge-lut"
+        elif "Lock" in opt_name or "Memory" in opt_name:
+            return "badge-lock"
+        elif "Matrix" in opt_name:
+            return "badge-matrix"
+        elif "Pruning" in opt_name:
+            return "badge-prune"
+        return "badge-opt"
+
+    @staticmethod
     def generate_plots(benchmark_results: List[Dict[str, Any]],
                        output_png: Optional[str] = None,
                        output_svg: Optional[str] = None,
                        stress_matrix_data: Optional[Dict[str, Dict[str, Any]]] = None):
-        """
-        生成高清 Matplotlib 排版优化图表 (支持 PNG 与 矢量 SVG 导出，含顶部理论算力声明 Banner，自动扩充头部留白，防文字重叠/堆叠)
-        """
+        """生成专业级 Matplotlib 趋势图表 (PNG & SVG)"""
         if not HAS_MATPLOTLIB or not benchmark_results:
-            print("[-] Matplotlib 未合规渲染或结果为空，跳过图表生成。")
+            print("[-] Matplotlib 未安装或结果为空，跳过图表生成。")
             return
 
         valid_results = [r for r in benchmark_results if r.get("is_valid_slam", True) and r["total_ops"] > 0]
@@ -454,7 +476,6 @@ class BenchmarkVisualizer:
         latest_ops = benchmark_results[-1]["total_ops"]
 
         indices = list(range(1, len(benchmark_results) + 1))
-        # 统一转为 G-Ops 绘制，便于大算力场景阅读
         total_ops_g = [r["total_ops"] / 1e9 for r in benchmark_results]
         feat_ext_g = [r["feature_extraction_ops"] / 1e9 for r in benchmark_results]
         feat_match_g = [r["feature_matching_ops"] / 1e9 for r in benchmark_results]
@@ -472,69 +493,57 @@ class BenchmarkVisualizer:
 
         reduction_pct = ((max_ops_g - (latest_ops/1e9)) / max_ops_g * 100) if max_ops_g > 0 else 0
 
-        # 判断是否需要 4 子图 (如果有矩阵压力测试数据)
         num_subplots = 4 if stress_matrix_data else 3
         fig_height = 18.5 if num_subplots == 4 else 15.5
 
         plt.style.use('seaborn-v0_8-whitegrid' if 'seaborn-v0_8-whitegrid' in plt.style.available else 'default')
-        fig, axes = plt.subplots(num_subplots, 1, figsize=(14, fig_height), dpi=150)
+        fig, axes = plt.subplots(num_subplots, 1, figsize=(14, fig_height), dpi=160)
 
-        # ----------------------------------------------------------------------
-        # 顶部全局理论算力声明 Banner (英文，规范包裹外框)
-        # ----------------------------------------------------------------------
         fig.suptitle("Note: Workload figures represent theoretical algorithmic complexity (FLOPs / Operations), independent of actual execution speed (FPS or runtime latency).",
-                     fontsize=10, fontweight='bold', color='#1e293b',
+                     fontsize=10.5, fontweight='bold', color='#0f172a',
                      bbox=dict(boxstyle="round,pad=0.5,rounding_size=0.3", fc="#f8fafc", ec="#cbd5e1", lw=1.2),
                      y=0.996)
         
-        # ----------------------------------------------------------------------
-        # 子图 1: 1分钟视频总计算量演变趋势
-        # ----------------------------------------------------------------------
+        # 1. 总计算量趋势
         ax1 = axes[0]
-        ax1.plot(indices, total_ops_g, color='#2563EB', linewidth=2.4, label='Total Workload (G-Ops)')
-        ax1.fill_between(indices, 0, total_ops_g, color='#3B82F6', alpha=0.12)
+        ax1.plot(indices, total_ops_g, color='#2563EB', linewidth=2.5, label='Total Workload (G-Ops)')
+        ax1.fill_between(indices, 0, total_ops_g, color='#3B82F6', alpha=0.15)
         
-        # 标记峰值点、最佳点、最新点
-        ax1.scatter([max_orig_idx], [max_ops_g], color='#EF4444', s=70, zorder=6, 
-                    label=f'Peak: {BenchmarkVisualizer.format_ops_human(max_ops_g * 1e9)} ({benchmark_results[max_orig_idx-1]["short_hash"]})')
-        ax1.scatter([min_orig_idx], [min_ops_g], color='#10B981', s=70, zorder=6, 
-                    label=f'Best: {BenchmarkVisualizer.format_ops_human(min_ops_g * 1e9)} ({benchmark_results[min_orig_idx-1]["short_hash"]})')
-        ax1.scatter([latest_orig_idx], [latest_ops/1e9], color='#8B5CF6', s=70, zorder=6, 
-                    label=f'Latest: {BenchmarkVisualizer.format_ops_human(latest_ops)} ({benchmark_results[-1]["short_hash"]})')
+        ax1.scatter([max_orig_idx], [max_ops_g], color='#EF4444', s=80, zorder=6, 
+                    label=f'Peak: {BenchmarkVisualizer.format_ops_human(max_ops_g * 1e9)} (#{max_orig_idx} {benchmark_results[max_orig_idx-1]["short_hash"]})')
+        ax1.scatter([min_orig_idx], [min_ops_g], color='#10B981', s=80, zorder=6, 
+                    label=f'Best: {BenchmarkVisualizer.format_ops_human(min_ops_g * 1e9)} (#{min_orig_idx} {benchmark_results[min_orig_idx-1]["short_hash"]})')
+        ax1.scatter([latest_orig_idx], [latest_ops/1e9], color='#8B5CF6', s=80, zorder=6, 
+                    label=f'Latest: {BenchmarkVisualizer.format_ops_human(latest_ops)} (#{latest_orig_idx} {benchmark_results[-1]["short_hash"]})')
 
-        # 防文字堆叠：顶部预留 25% 的 headroom 空间
-        ax1.set_ylim(0, max_ops_g * 1.25)
+        ax1.set_ylim(0, max_ops_g * 1.30)
         ax1.xaxis.set_major_locator(ticker.MaxNLocator(nbins=12, integer=True))
 
-        ax1.set_title(f"SLAM Workload Evolution across Git Commits\n"
+        ax1.set_title(f"SLAM Theoretical Workload Evolution across Git Commits\n"
                       f"Peak: {BenchmarkVisualizer.format_ops_human(max_ops_g * 1e9)}  ->  Latest: {BenchmarkVisualizer.format_ops_human(latest_ops)}  "
-                      f"(Reduction: -{reduction_pct:.1f}%)", fontsize=12, fontweight='bold', pad=12)
+                      f"(Net Reduction: -{reduction_pct:.1f}%)", fontsize=12, fontweight='bold', pad=12)
         ax1.set_xlabel("Commit Sequence (Chronological Order)", fontsize=10)
         ax1.set_ylabel("Workload (Giga-Ops / 1 min)", fontsize=10)
-        ax1.legend(loc='upper right', frameon=True, facecolor='white', framealpha=0.9, edgecolor='#cbd5e1')
+        ax1.legend(loc='upper right', frameon=True, facecolor='white', framealpha=0.95, edgecolor='#cbd5e1')
         ax1.grid(True, linestyle='--', alpha=0.5)
 
-        # ----------------------------------------------------------------------
-        # 子图 2: 多模块堆叠面积图 (Sub-system Workload Breakdown)
-        # ----------------------------------------------------------------------
+        # 2. 多模块堆叠分解
         ax2 = axes[1]
         ax2.stackplot(indices,
                       feat_ext_g, feat_match_g, tracking_g, mapping_g, overhead_g,
                       labels=['Feature Extraction', 'Feature Matching', 'Tracking & Pose Opt', 'Mapping & Loop', 'Overhead Factor'],
-                      colors=['#3B82F6', '#F59E0B', '#10B981', '#EC4899', '#6B7280'],
+                      colors=['#3B82F6', '#F59E0B', '#10B981', '#EC4899', '#64748B'],
                       alpha=0.85)
-        ax2.set_ylim(0, max_ops_g * 1.25)
+        ax2.set_ylim(0, max_ops_g * 1.30)
         ax2.xaxis.set_major_locator(ticker.MaxNLocator(nbins=12, integer=True))
 
         ax2.set_title("Sub-system Workload Breakdown (Stacked Area)", fontsize=12, fontweight='bold', pad=12)
         ax2.set_xlabel("Commit Sequence", fontsize=10)
         ax2.set_ylabel("Workload (Giga-Ops / 1 min)", fontsize=10)
-        ax2.legend(loc='upper right', frameon=True, facecolor='white', framealpha=0.9, edgecolor='#cbd5e1')
+        ax2.legend(loc='upper right', frameon=True, facecolor='white', framealpha=0.95, edgecolor='#cbd5e1')
         ax2.grid(True, linestyle='--', alpha=0.5)
 
-        # ----------------------------------------------------------------------
-        # 子图 3: 关键节点对比柱状图 (Milestone Comparison - 彻底修复顶部文字碰撞)
-        # ----------------------------------------------------------------------
+        # 3. 关键里程碑对比
         ax3 = axes[2]
         compare_labels = [
             f"Initial Base\n({valid_results[0]['short_hash']})",
@@ -545,15 +554,13 @@ class BenchmarkVisualizer:
         colors = ['#64748B', '#EF4444', '#10B981']
         bars = ax3.bar(compare_labels, compare_values, color=colors, width=0.42, edgecolor='#1e293b', linewidth=0.9)
 
-        # ★ 关键修正：扩充 30% Y 轴顶部留白，防止标注文字遮挡 Subplot 标题
         max_bar_val = max(compare_values) if compare_values else 1.0
-        ax3.set_ylim(0, max_bar_val * 1.30)
+        ax3.set_ylim(0, max_bar_val * 1.35)
 
         for bar in bars:
             height = bar.get_height()
             pct_text = f"{(height / max_ops_g * 100):.1f}%" if max_ops_g > 0 else "100%"
             human_val = BenchmarkVisualizer.format_ops_human(height * 1e9)
-            # 文字安全摆放于柱体上方 6pt 处，包裹好边框
             ax3.annotate(f"{human_val}\n({pct_text})",
                          xy=(bar.get_x() + bar.get_width() / 2, height),
                          xytext=(0, 6), textcoords="offset points",
@@ -564,9 +571,7 @@ class BenchmarkVisualizer:
         ax3.set_ylabel("Workload (Giga-Ops / 1 min)", fontsize=10)
         ax3.grid(True, linestyle='--', alpha=0.5, axis='y')
 
-        # ----------------------------------------------------------------------
-        # 子图 4 (可选): 多场景压力测试对比柱状图 (Stress Testing Matrix)
-        # ----------------------------------------------------------------------
+        # 4. 压力测试矩阵对比
         if stress_matrix_data:
             ax4 = axes[3]
             preset_keys = list(stress_matrix_data.keys())
@@ -584,7 +589,7 @@ class BenchmarkVisualizer:
             bars4 = ax4.bar(preset_names, stress_ops_g, color=stress_colors[:len(preset_keys)], width=0.45, edgecolor='#1e293b', linewidth=0.9)
             
             max_stress_g = max(stress_ops_g) if stress_ops_g else 1.0
-            ax4.set_ylim(0, max_stress_g * 1.30)
+            ax4.set_ylim(0, max_stress_g * 1.35)
 
             for bar in bars4:
                 h = bar.get_height()
@@ -603,29 +608,20 @@ class BenchmarkVisualizer:
 
         if output_png:
             plt.savefig(output_png, dpi=200, bbox_inches='tight')
-            print(f"[+] 排版优化后的高清 PNG 图表已保存至: {output_png}")
+            print(f"[+] 高清 PNG 图表已保存至: {output_png}")
         
         if output_svg:
             plt.savefig(output_svg, bbox_inches='tight')
-            print(f"[+] 排版优化后的矢量 SVG 图表已保存至: {output_svg}")
+            print(f"[+] 矢量 SVG 图表已保存至: {output_svg}")
 
         plt.close()
-
-    @staticmethod
-    def generate_png_plot(benchmark_results: List[Dict[str, Any]],
-                          output_png: str,
-                          stress_matrix_data: Optional[Dict[str, Dict[str, Any]]] = None):
-        """兼容性包装接口：生成 PNG 图表"""
-        BenchmarkVisualizer.generate_plots(benchmark_results, output_png=output_png, stress_matrix_data=stress_matrix_data)
 
     @staticmethod
     def generate_html_report(benchmark_results: List[Dict[str, Any]],
                               output_html: str,
                               video_params: Dict[str, Any],
                               stress_matrix_data: Optional[Dict[str, Dict[str, Any]]] = None):
-        """
-        生成现代响应式 HTML 报告 (含压力测试矩阵与排版优化)
-        """
+        """生成现代科技风交互式 HTML 数据看板报告"""
         if not benchmark_results:
             return
 
@@ -644,7 +640,7 @@ class BenchmarkVisualizer:
         reduction_pct = ((peak_ops - latest_ops) / peak_ops * 100) if peak_ops > 0 else 0
         speedup_ratio = (peak_ops / latest_ops) if latest_ops > 0 else 1.0
 
-        # Top 优化 commit 提取
+        # 提取历史 Top 优化 Commit
         opt_diffs = []
         for i in range(1, len(benchmark_results)):
             prev = benchmark_results[i - 1]["total_ops"]
@@ -661,12 +657,22 @@ class BenchmarkVisualizer:
 
         # 构造 Chart.js 数据
         labels_json = json.dumps([f"#{i+1} {r['short_hash']}" for i, r in enumerate(benchmark_results)], ensure_ascii=False)
-        total_ops_json = json.dumps([round(r["total_ops"] / 1e9, 3) for r in benchmark_results]) # G-Ops
+        total_ops_json = json.dumps([round(r["total_ops"] / 1e9, 3) for r in benchmark_results])
         feat_ext_json = json.dumps([round(r["feature_extraction_ops"] / 1e9, 3) for r in benchmark_results])
         feat_match_json = json.dumps([round(r["feature_matching_ops"] / 1e9, 3) for r in benchmark_results])
         tracking_json = json.dumps([round(r["tracking_optimization_ops"] / 1e9, 3) for r in benchmark_results])
         mapping_json = json.dumps([round(r["mapping_loop_ops"] / 1e9, 3) for r in benchmark_results])
         overhead_json = json.dumps([round(r["misc_overhead_ops"] / 1e9, 3) for r in benchmark_results])
+
+        # 最新 Commit 的模块比例环形图数据
+        latest_breakdown = [
+            round(latest_res["feature_extraction_ops"] / 1e9, 3),
+            round(latest_res["feature_matching_ops"] / 1e9, 3),
+            round(latest_res["tracking_optimization_ops"] / 1e9, 3),
+            round(latest_res["mapping_loop_ops"] / 1e9, 3),
+            round(latest_res["misc_overhead_ops"] / 1e9, 3)
+        ]
+        latest_breakdown_json = json.dumps(latest_breakdown)
 
         # 压力测试矩阵 HTML 卡片生成
         stress_cards_html = ""
@@ -687,12 +693,12 @@ class BenchmarkVisualizer:
         table_rows_html = ""
         for i, r in enumerate(reversed(benchmark_results)):
             idx = len(benchmark_results) - i
-            opts_badges = "".join([f'<span class="badge badge-opt">{opt}</span>' for opt in r.get("optimizations_detected", [])])
+            opts_badges = "".join([f'<span class="badge {BenchmarkVisualizer.get_badge_class(opt)}">{opt}</span>' for opt in r.get("optimizations_detected", [])])
             if not opts_badges:
                 opts_badges = '<span class="badge badge-none">Baseline</span>' if r['total_ops'] > 0 else '<span class="badge badge-none">Non-Code</span>'
             
             table_rows_html += f"""
-            <tr>
+            <tr data-index="{idx}" data-hash="{r['short_hash']}" data-subject="{r['subject']}" data-author="{r['author']}" data-ops="{r['total_ops']}">
                 <td class="font-mono text-gray-500">#{idx}</td>
                 <td><code class="commit-hash">{r['short_hash']}</code></td>
                 <td class="font-semibold text-gray-800">{r['subject']}</td>
@@ -735,53 +741,72 @@ class BenchmarkVisualizer:
             --bg-main: #f8fafc;
             --card-bg: #ffffff;
             --primary: #2563eb;
+            --primary-light: #eff6ff;
             --success: #10b981;
             --warning: #f59e0b;
             --danger: #ef4444;
-            --text-main: #1e293b;
+            --text-main: #0f172a;
             --text-muted: #64748b;
             --border-color: #e2e8f0;
         }}
         * {{ box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }}
         body {{ background-color: var(--bg-main); color: var(--text-main); line-height: 1.5; padding: 24px; }}
-        .container {{ max-width: 1350px; margin: 0 auto; }}
-        .header {{ margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid var(--border-color); padding-bottom: 16px; }}
-        .header h1 {{ font-size: 26px; font-weight: 800; color: #0f172a; }}
+        .container {{ max-width: 1380px; margin: 0 auto; }}
+        .header {{ margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid var(--border-color); padding-bottom: 16px; }}
+        .header h1 {{ font-size: 26px; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 8px; }}
         .header p {{ color: var(--text-muted); font-size: 14px; margin-top: 4px; }}
-        .meta-tag {{ background: #e0e7ff; color: #3730a3; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; }}
+        .meta-tag {{ background: #e0e7ff; color: #3730a3; padding: 6px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; }}
         
-        .notice-banner {{ background: #eff6ff; border: 1px solid #bfdbfe; border-left: 5px solid #2563eb; border-radius: 10px; padding: 16px 20px; margin-bottom: 24px; display: flex; align-items: center; gap: 14px; box-shadow: 0 1px 2px rgba(37,99,235,0.05); }}
-        .notice-icon {{ font-size: 22px; flex-shrink: 0; line-height: 1; }}
-        .notice-text {{ font-size: 13.5px; color: #1e40af; line-height: 1.6; }}
+        .notice-banner {{ background: #eff6ff; border: 1px solid #bfdbfe; border-left: 5px solid #2563eb; border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 14px; box-shadow: 0 1px 2px rgba(37,99,235,0.05); }}
+        .notice-icon {{ font-size: 20px; flex-shrink: 0; }}
+        .notice-text {{ font-size: 13px; color: #1e40af; line-height: 1.6; }}
         .notice-text strong {{ color: #1e3a8a; }}
 
-        .grid-stats {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }}
-        .stat-card {{ background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid var(--border-color); }}
-        .stat-card .label {{ font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }}
-        .stat-card .value {{ font-size: 26px; font-weight: 800; margin: 8px 0; font-family: ui-monospace, monospace; }}
+        .grid-stats {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 20px; }}
+        .stat-card {{ background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.04); border: 1px solid var(--border-color); }}
+        .stat-card .label {{ font-size: 12.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }}
+        .stat-card .value {{ font-size: 28px; font-weight: 800; margin: 6px 0; font-family: ui-monospace, monospace; }}
         .stat-card .sub {{ font-size: 12px; color: var(--text-muted); }}
 
         .stress-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 14px; }}
-        .stress-card {{ background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 10px; padding: 16px; }}
+        .stress-card {{ background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 10px; padding: 16px; transition: transform 0.15s ease; }}
+        .stress-card:hover {{ transform: translateY(-2px); }}
         .stress-title {{ font-weight: 700; color: #0369a1; font-size: 15px; }}
         .stress-desc {{ font-size: 12px; color: #0284c7; margin-top: 2px; margin-bottom: 8px; }}
         .stress-val {{ font-size: 22px; font-weight: 800; color: #0284c7; font-family: monospace; }}
         .stress-sub {{ font-size: 12px; color: #64748b; margin-top: 4px; }}
         .stress-tag {{ margin-top: 8px; font-size: 11px; color: #0369a1; background: #e0f2fe; padding: 2px 6px; border-radius: 4px; display: inline-block; }}
 
-        .card {{ background: var(--card-bg); padding: 24px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid var(--border-color); margin-bottom: 24px; }}
-        .card-title {{ font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }}
-        
-        .chart-container {{ position: relative; width: 100%; height: 380px; }}
+        .charts-row {{ display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 20px; }}
+        @media (max-width: 1024px) {{ .charts-row {{ grid-template-columns: 1fr; }} }}
 
-        .top-opt-card {{ background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 14px 18px; margin-bottom: 12px; }}
+        .card {{ background: var(--card-bg); padding: 22px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.04); border: 1px solid var(--border-color); margin-bottom: 20px; }}
+        .card-title {{ font-size: 17px; font-weight: 700; color: #0f172a; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }}
+        
+        .chart-container {{ position: relative; width: 100%; height: 350px; }}
+        .donut-container {{ position: relative; width: 100%; height: 280px; display: flex; justify-content: center; align-items: center; }}
+
+        .top-opt-card {{ background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px 16px; margin-bottom: 10px; }}
         .commit-hash {{ background: #f1f5f9; color: #334155; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 12px; font-weight: 600; }}
-        .badge {{ display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-right: 4px; }}
-        .badge-opt {{ background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }}
+        
+        /* 丰富分类 Badge */
+        .badge {{ display: inline-block; padding: 3px 8px; border-radius: 5px; font-size: 11px; font-weight: 600; margin-right: 4px; margin-bottom: 2px; white-space: nowrap; }}
+        .badge-lut {{ background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }}
+        .badge-neon {{ background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }}
+        .badge-lock {{ background: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff; }}
+        .badge-matrix {{ background: #ffedd5; color: #9a3412; border: 1px solid #fed7aa; }}
+        .badge-prune {{ background: #cffafe; color: #155e75; border: 1px solid #a5f3fc; }}
+        .badge-opt {{ background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; }}
         .badge-none {{ background: #f1f5f9; color: #64748b; }}
 
+        /* 搜索过滤栏与表格 */
+        .table-toolbar {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 12px; flex-wrap: wrap; }}
+        .search-input {{ padding: 8px 14px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 13px; width: 300px; max-width: 100%; outline: none; transition: border-color 0.2s; }}
+        .search-input:focus {{ border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }}
+
         table {{ width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }}
-        th {{ background: #f8fafc; padding: 12px 14px; font-weight: 700; color: #475569; border-bottom: 2px solid var(--border-color); }}
+        th {{ background: #f8fafc; padding: 12px 14px; font-weight: 700; color: #475569; border-bottom: 2px solid var(--border-color); cursor: pointer; user-select: none; position: sticky; top: 0; }}
+        th:hover {{ background: #f1f5f9; color: var(--primary); }}
         td {{ padding: 12px 14px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }}
         tr:hover td {{ background-color: #f8fafc; }}
 
@@ -811,7 +836,7 @@ class BenchmarkVisualizer:
         <div class="header">
             <div>
                 <h1>📊 SLAM 理论计算量 Benchmark & 压力测试报告</h1>
-                <p>基准设定: 1 分钟 ({video_params['duration_sec']}s) | {video_params['fps']} FPS (总计 {video_params['total_frames']} 帧) | 分辨率 {video_params['width']}x{video_params['height']}</p>
+                <p>基准环境: 1 分钟 ({video_params['duration_sec']}s) | {video_params['fps']} FPS (总计 {video_params['total_frames']} 帧) | 分辨率 {video_params['width']}x{video_params['height']}</p>
             </div>
             <div>
                 <span class="meta-tag">分析 Git Commits: {len(benchmark_results)} 次</span>
@@ -822,14 +847,14 @@ class BenchmarkVisualizer:
         <div class="notice-banner">
             <div class="notice-icon">💡</div>
             <div class="notice-text">
-                <strong>理论算力说明：</strong>本报告中的计算量数值代表算法架构在对应场景下的<strong>理论计算复杂度（Operations / FLOPs）</strong>，反映代码逻辑与数据流的算力需求，<strong>与实际硬件运行计算速度（如 FPS、硬件延迟或运行耗时）无直接线性等价关系</strong>。
+                <strong>算法仿真模型说明：</strong>本报告基于代码静态语法与硬件流水线仿真（包含 LUT 查表消除三角运算、ARM NEON / 硬件 Popcount 向量化、金字塔空层模糊剪枝与全局锁开销），全面反映理论算力（FLOPs / Operations）。<strong>计算量与实际硬件运行速度（FPS / 耗时）呈正向算力正交关系。</strong>
             </div>
         </div>
 
         <!-- 统计核心卡片 -->
         <div class="grid-stats">
             <div class="stat-card">
-                <div class="label">基准峰值计算量 (Peak)</div>
+                <div class="label">基准历史峰值 (Peak)</div>
                 <div class="value text-gray-800">{BenchmarkVisualizer.format_ops_human(peak_ops)}</div>
                 <div class="sub">Commit: <code>{max_res['short_hash']}</code></div>
             </div>
@@ -853,13 +878,23 @@ class BenchmarkVisualizer:
         <!-- 压力测试矩阵卡片 -->
         {'<div class="card"><div class="card-title">⚡ 场景压力测试矩阵对比 (Multi-Scenario Stress Matrix - 最新 Commit)</div><div class="stress-grid">' + stress_cards_html + '</div></div>' if stress_cards_html else ''}
 
-        <!-- 趋势图表 -->
-        <div class="card">
-            <div class="card-title">
-                <span>📈 全量 Git Commit 理论计算量演变走势 (G-Ops)</span>
+        <!-- 趋势图表 + 当前模块占比环形图 -->
+        <div class="charts-row">
+            <div class="card" style="margin-bottom: 0;">
+                <div class="card-title">
+                    <span>📈 全量 Git Commit 理论计算量演变走势 (G-Ops)</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="trendChart"></canvas>
+                </div>
             </div>
-            <div class="chart-container">
-                <canvas id="trendChart"></canvas>
+            <div class="card" style="margin-bottom: 0;">
+                <div class="card-title">
+                    <span>🍩 最新版本子模块算力占比</span>
+                </div>
+                <div class="donut-container">
+                    <canvas id="donutChart"></canvas>
+                </div>
             </div>
         </div>
 
@@ -881,22 +916,26 @@ class BenchmarkVisualizer:
             {top_opts_html if top_opts_html else '<p class="text-gray-500">暂无显著单次大幅优化记录</p>'}
         </div>
 
-        <!-- 完整 Commit 详细表格 -->
+        <!-- 完整 Commit 详细表格 (带搜索与排序) -->
         <div class="card">
             <div class="card-title">
                 <span>📋 全量 Commit 理论计算量明细表</span>
             </div>
-            <div style="overflow-x: auto; max-height: 500px; overflow-y: auto;">
-                <table>
+            <div class="table-toolbar">
+                <input type="text" id="tableSearch" class="search-input" placeholder="🔍 实时搜索 Commit Hash / 提交信息 / 作者 / 优化项...">
+                <span class="text-xs text-gray-500">点击表头列名可快捷升降序排列</span>
+            </div>
+            <div style="overflow-x: auto; max-height: 520px; overflow-y: auto;">
+                <table id="commitTable">
                     <thead>
                         <tr>
-                            <th>序号</th>
-                            <th>Hash</th>
-                            <th>提交信息 (Subject)</th>
-                            <th>作者</th>
-                            <th>日期</th>
-                            <th>1分钟总计算量</th>
-                            <th>单帧计算量</th>
+                            <th onclick="sortTable(0, 'num')">序号 ⬍</th>
+                            <th onclick="sortTable(1, 'str')">Hash ⬍</th>
+                            <th onclick="sortTable(2, 'str')">提交信息 (Subject) ⬍</th>
+                            <th onclick="sortTable(3, 'str')">作者 ⬍</th>
+                            <th onclick="sortTable(4, 'str')">日期 ⬍</th>
+                            <th onclick="sortTable(5, 'num')">1分钟总计算量 ⬍</th>
+                            <th onclick="sortTable(6, 'num')">单帧计算量 ⬍</th>
                             <th>识别到的优化项</th>
                         </tr>
                     </thead>
@@ -916,6 +955,7 @@ class BenchmarkVisualizer:
         const tracking = {tracking_json};
         const mapping = {mapping_json};
         const overhead = {overhead_json};
+        const latestBreakdown = {latest_breakdown_json};
 
         // 1. 趋势折线图
         new Chart(document.getElementById('trendChart'), {{
@@ -927,7 +967,7 @@ class BenchmarkVisualizer:
                     data: totalOps,
                     borderColor: '#2563eb',
                     backgroundColor: 'rgba(37, 99, 235, 0.12)',
-                    borderWidth: 2,
+                    borderWidth: 2.2,
                     pointRadius: labels.length > 50 ? 1 : 3,
                     fill: true,
                     tension: 0.2
@@ -949,7 +989,28 @@ class BenchmarkVisualizer:
             }}
         }});
 
-        // 2. 堆叠面积图
+        // 2. 当前版本模块占比环形图
+        new Chart(document.getElementById('donutChart'), {{
+            type: 'doughnut',
+            data: {{
+                labels: ['特征提取', '特征匹配', '位姿优化', '建图回环', '系统开销'],
+                datasets: [{{
+                    data: latestBreakdown,
+                    backgroundColor: ['#3b82f6', '#f59e0b', '#10b981', '#ec4899', '#64748b'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }}]
+            }},
+            options: {{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {{
+                    legend: {{ position: 'bottom', labels: {{ boxWidth: 12, font: {{ size: 11 }} }} }}
+                }}
+            }}
+        }});
+
+        // 3. 堆叠面积图
         new Chart(document.getElementById('stackedChart'), {{
             type: 'line',
             data: {{
@@ -959,7 +1020,7 @@ class BenchmarkVisualizer:
                     {{ label: '特征匹配 (Feature Matching)', data: featMatch, backgroundColor: '#f59e0b', borderColor: '#d97706', fill: true }},
                     {{ label: '位姿优化 (Tracking & Pose Opt)', data: tracking, backgroundColor: '#10b981', borderColor: '#059669', fill: true }},
                     {{ label: '局部建图与回环 (Mapping & Loop)', data: mapping, backgroundColor: '#ec4899', borderColor: '#db2777', fill: true }},
-                    {{ label: '开销惩罚 (Overhead Factor)', data: overhead, backgroundColor: '#64748b', borderColor: '#475569', fill: true }}
+                    {{ label: '系统开销惩罚 (System Overhead)', data: overhead, backgroundColor: '#64748b', borderColor: '#475569', fill: true }}
                 ]
             }},
             options: {{
@@ -978,13 +1039,47 @@ class BenchmarkVisualizer:
                 }}
             }}
         }});
+
+        // 实时搜索过滤
+        document.getElementById('tableSearch').addEventListener('input', function(e) {{
+            const filter = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('#commitTable tbody tr');
+            rows.forEach(row => {{
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(filter) ? '' : 'none';
+            }});
+        }});
+
+        // 表格排序
+        let sortDirections = {{}};
+        function sortTable(colIndex, type) {{
+            const table = document.getElementById('commitTable');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            const asc = !sortDirections[colIndex];
+            sortDirections[colIndex] = asc;
+
+            rows.sort((a, b) => {{
+                let valA = a.cells[colIndex].textContent.trim();
+                let valB = b.cells[colIndex].textContent.trim();
+                if (type === 'num') {{
+                    valA = parseFloat(valA.replace(/[^0-9.-]/g, '')) || 0;
+                    valB = parseFloat(valB.replace(/[^0-9.-]/g, '')) || 0;
+                    return asc ? valA - valB : valB - valA;
+                }} else {{
+                    return asc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                }}
+            }});
+
+            rows.forEach(r => tbody.appendChild(r));
+        }}
     </script>
 </body>
 </html>
 """
         with open(output_html, "w", encoding="utf-8") as f:
             f.write(html_content)
-        print(f"[+] 交互式 HTML 报告已保存至: {output_html}")
+        print(f"[+] 现代科技风交互式 HTML 报告已保存至: {output_html}")
 
 
 # ==============================================================================
@@ -1024,14 +1119,12 @@ def main():
 
     args = parser.parse_args()
 
-    # 处理导出图表路径
     output_png = args.output_png
     output_svg = args.output_svg
     if output_svg is None and output_png:
         base_name, _ = os.path.splitext(output_png)
         output_svg = f"{base_name}.svg"
 
-    # 应用预设或自定义参数
     preset_config = WORKLOAD_PRESETS.get(args.preset, WORKLOAD_PRESETS[DEFAULT_PRESET])
     duration = args.duration if args.duration is not None else preset_config["duration_sec"]
     fps = args.fps if args.fps is not None else preset_config["fps"]
@@ -1041,11 +1134,10 @@ def main():
     keyframe_ratio = args.keyframe_ratio if args.keyframe_ratio is not None else preset_config["keyframe_ratio"]
     loop_freq = args.loop_freq if args.loop_freq is not None else preset_config["loop_freq"]
 
-    # 1. 自动查找与获取 Git 提交列表
     git_engine = GitCommitEngine(repo_dir=args.repo)
 
     print("=" * 70)
-    print("🚀 SLAM Git 提交历史理论计算量 Benchmark 与压力测试")
+    print("🚀 SLAM Git 提交历史理论计算量 Benchmark 与压力测试 (仿真版)")
     print("=" * 70)
     print(f"[*] 定位 Git 仓库目录: {git_engine.repo_dir}")
     print(f"[*] 预设场景模式: {preset_config['name']}")
@@ -1064,7 +1156,7 @@ def main():
 
     print(f"[*] 目标分析 Commit 数量: {len(commits)} 个")
 
-    # 2. 读取缓存
+    # 读取缓存 (升级 cache_key 版本为 v4)
     cache = {}
     if not args.no_cache and os.path.exists(args.cache_file):
         try:
@@ -1075,7 +1167,6 @@ def main():
             print(f"[!] 读取缓存失败，将重新计算: {e}")
             cache = {}
 
-    # 3. 逐个 Commit 测算理论计算量 (支持多线程并行拉取 Git File Tree)
     workload_model = SLAMWorkloadModel(
         duration_sec=duration,
         fps=fps,
@@ -1092,7 +1183,7 @@ def main():
 
     for c in commits:
         c_hash = c["hash"]
-        cache_key = f"v3_{c_hash}_{duration}_{fps}_{width}_{height}_{n_features}_{keyframe_ratio}_{loop_freq}"
+        cache_key = f"v4_{c_hash}_{duration}_{fps}_{width}_{height}_{n_features}_{keyframe_ratio}_{loop_freq}"
         if cache_key in cache:
             results_map[c_hash] = {**c, **cache[cache_key]}
         else:
@@ -1120,20 +1211,19 @@ def main():
                 if completed_count % 50 == 0 or completed_count == len(missing_commits):
                     print(f"    进度: 并行解析 [{completed_count}/{len(missing_commits)}] Commit {c_info['short_hash']} -> 负载: {BenchmarkVisualizer.format_ops_human(analysis_res['total_ops'])}")
 
-    # 按原本 commit 顺序排列结果
     results = [results_map[c["hash"]] for c in commits]
 
     elapsed = time.time() - start_time
     print(f"[+] 测算完成! 耗时: {elapsed:.2f}s (缓存命中: {cache_hits}/{len(commits)})")
 
-    # 4. 保存缓存
+    # 保存缓存
     try:
         with open(args.cache_file, "w", encoding="utf-8") as f:
             json.dump(cache, f, ensure_ascii=False, indent=2)
     except Exception as e:
         print(f"[!] 保存缓存失败: {e}")
 
-    # 5. 如果开启了 --stress-matrix，对最新 Commit 执行全场景压力测试对比
+    # 压力测试矩阵
     stress_matrix_data = None
     if args.stress_matrix and results:
         latest_c_hash = results[-1]["hash"]
@@ -1155,7 +1245,7 @@ def main():
             stress_matrix_data[p_key] = {**p_cfg, **s_analysis}
             print(f"  • {p_cfg['name']}: {BenchmarkVisualizer.format_ops_human(s_analysis['total_ops'])} (单帧: {BenchmarkVisualizer.format_ops_human(s_analysis['ops_per_frame'])})")
 
-    # 6. 生成图表与报告
+    # 生成图表与报告
     video_params = {
         "duration_sec": duration,
         "fps": fps,
@@ -1164,10 +1254,16 @@ def main():
         "height": height
     }
 
-    BenchmarkVisualizer.generate_plots(results, output_png=output_png, output_svg=output_svg, stress_matrix_data=stress_matrix_data)
-    BenchmarkVisualizer.generate_html_report(results, args.output_html, video_params, stress_matrix_data)
+    # 确保输出到脚本所在目录或工作目录
+    output_dir = os.path.dirname(os.path.abspath(__file__))
+    out_png_path = os.path.join(output_dir, output_png) if not os.path.isabs(output_png) else output_png
+    out_svg_path = os.path.join(output_dir, output_svg) if output_svg and not os.path.isabs(output_svg) else output_svg
+    out_html_path = os.path.join(output_dir, args.output_html) if not os.path.isabs(args.output_html) else args.output_html
 
-    # 7. 终端摘要对比打印
+    BenchmarkVisualizer.generate_plots(results, output_png=out_png_path, output_svg=out_svg_path, stress_matrix_data=stress_matrix_data)
+    BenchmarkVisualizer.generate_html_report(results, out_html_path, video_params, stress_matrix_data)
+
+    # 终端摘要对比打印
     valid_res = [r for r in results if r.get("is_valid_slam", True) and r["total_ops"] > 0]
     if valid_res:
         first_r = valid_res[0]
@@ -1188,11 +1284,11 @@ def main():
         print(f"• 峰值到最新降幅: -{diff_pct:.2f}% (优化减免算力: {BenchmarkVisualizer.format_ops_human(diff_ops)})")
         print(f"• 单帧平均理论计算量: {BenchmarkVisualizer.format_ops_human(latest_r['ops_per_frame'])} / 帧")
         print(f"• 报告文件已生成:")
-        print(f"    - 交互式 HTML: {os.path.abspath(args.output_html)}")
-        if output_png:
-            print(f"    - 排版优化 PNG 图表: {os.path.abspath(output_png)}")
-        if output_svg:
-            print(f"    - 矢量 SVG 图表: {os.path.abspath(output_svg)}")
+        print(f"    - 交互式 HTML: {os.path.abspath(out_html_path)}")
+        if out_png_path:
+            print(f"    - 排版优化 PNG 图表: {os.path.abspath(out_png_path)}")
+        if out_svg_path:
+            print(f"    - 矢量 SVG 图表: {os.path.abspath(out_svg_path)}")
         print("=" * 70)
 
 

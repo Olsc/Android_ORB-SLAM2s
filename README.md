@@ -46,7 +46,7 @@ https://github.com/Martin20150405/SLAM_AR_Android.git
 
 # 🎯 ORB-SLAM2s: Android Spatial Computing & Lightweight AR Demo
 
-*The lowercase 's' in ORB-SLAM2s stands for **Smart · Swift · Small**, emphasizing enhanced intelligence, faster performance, and lighter weight compared to the original ORB-SLAM2.*
+_The lowercase 's' in ORB-SLAM2s stands for **Smart · Swift · Small**, emphasizing enhanced intelligence, faster performance, and lighter weight compared to the original ORB-SLAM2._
 
 This project uses lowercase 's'. Another paper with uppercase 'S' named ORB-SLAM2S:
 
@@ -96,14 +96,14 @@ It shares similar performance optimization concepts with this project, though it
 
 Currently tested primarily on Qualcomm Snapdragon platform CPUs:
 
-| SoC | Device | Performance |
-|---|---|---|
-| Snapdragon 8 Elite | Xiaomi 15 | 30 FPS |
-| Snapdragon 8+ Gen1 | Redmi K60 | 30 FPS |
-| Snapdragon 870 | Xiaomi 10S | 30 FPS |
-| Snapdragon 7s Gen 2 | Redmi Pad Pro | 30 FPS |
-| Snapdragon 835 | Xiaomi 6 | 15–30 FPS |
-| Snapdragon AR1 Gen 1 | Rokid Glass3 | 10–25 FPS |
+| SoC                  | Device        | Performance |
+| -------------------- | ------------- | ----------- |
+| Snapdragon 8 Elite   | Xiaomi 15     | 30 FPS      |
+| Snapdragon 8+ Gen1   | Redmi K60     | 30 FPS      |
+| Snapdragon 870       | Xiaomi 10S    | 30 FPS      |
+| Snapdragon 7s Gen 2  | Redmi Pad Pro | 30 FPS      |
+| Snapdragon 835       | Xiaomi 6      | 15–30 FPS   |
+| Snapdragon AR1 Gen 1 | Rokid Glass3  | 10–25 FPS   |
 
 ### 🌑 Dark Frame Detection
 
@@ -163,11 +163,11 @@ ORB-SLAM2 is a real-time SLAM library for **Monocular**, **Stereo** and **RGB-D*
 
 ### 📖 Related Publications
 
-**[Monocular]** Raúl Mur-Artal, J. M. M. Montiel and Juan D. Tardós. **ORB-SLAM: A Versatile and Accurate Monocular SLAM System**. *IEEE Transactions on Robotics,* vol. 31, no. 5, pp. 1147–1163, 2015. (**2015 IEEE Transactions on Robotics Best Paper Award**). **[PDF](http://webdiis.unizar.es/~raulmur/MurMontielTardosTRO15.pdf)**
+**[Monocular]** Raúl Mur-Artal, J. M. M. Montiel and Juan D. Tardós. **ORB-SLAM: A Versatile and Accurate Monocular SLAM System**. _IEEE Transactions on Robotics,_ vol. 31, no. 5, pp. 1147–1163, 2015. (**2015 IEEE Transactions on Robotics Best Paper Award**). **[PDF](http://webdiis.unizar.es/~raulmur/MurMontielTardosTRO15.pdf)**
 
-**[Stereo and RGB-D]** Raúl Mur-Artal and Juan D. Tardós. **ORB-SLAM2: an Open-Source SLAM System for Monocular, Stereo and RGB-D Cameras**. *IEEE Transactions on Robotics,* vol. 33, no. 5, pp. 1255–1262, 2017. **[PDF](https://128.84.21.199/pdf/1610.06475.pdf)**
+**[Stereo and RGB-D]** Raúl Mur-Artal and Juan D. Tardós. **ORB-SLAM2: an Open-Source SLAM System for Monocular, Stereo and RGB-D Cameras**. _IEEE Transactions on Robotics,_ vol. 33, no. 5, pp. 1255–1262, 2017. **[PDF](https://128.84.21.199/pdf/1610.06475.pdf)**
 
-**[DBoW2 Place Recognizer]** Dorian Gálvez-López and Juan D. Tardós. **Bags of Binary Words for Fast Place Recognition in Image Sequences**. *IEEE Transactions on Robotics,* vol. 28, no. 5, pp. 1188–1197, 2012. **[PDF](http://doriangalvez.com/php/dl.php?dlp=GalvezTRO12.pdf)**
+**[DBoW2 Place Recognizer]** Dorian Gálvez-López and Juan D. Tardós. **Bags of Binary Words for Fast Place Recognition in Image Sequences**. _IEEE Transactions on Robotics,_ vol. 28, no. 5, pp. 1188–1197, 2012. **[PDF](http://doriangalvez.com/php/dl.php?dlp=GalvezTRO12.pdf)**
 
 ---
 
@@ -250,15 +250,23 @@ Required by g2o (see below). Download and install instructions can be found at: 
 
 ## DBoW2 and g2o (Included in Thirdparty folder)
 
-We use modified versions of the [DBoW2](https://github.com/dorian3d/DBoW2) library to perform place recognition and [g2o](https://github.com/RainerKuemmerle/g2o) library to perform non-linear optimizations. Both modified libraries (which are BSD) are included in the *Thirdparty* folder.
+We use modified versions of the [DBoW2](https://github.com/dorian3d/DBoW2) library to perform place recognition and [g2o](https://github.com/RainerKuemmerle/g2o) library to perform non-linear optimizations. Both modified libraries (which are BSD) are included in the _Thirdparty_ folder.
 
 ---
 
 # 🧭 About Inertial Navigation (IMU)
 
-Reference: https://github.com/Olsc/Android_3dof  
+Reference: https://github.com/Olsc/Android_3dof
 
-*This project has not yet completed research and integration.*
+_This project has not yet completed research and integration._
+
+---
+
+# 🧮 Theoretical Computational Complexity
+
+![benchmark](docs/workload_benchmark_tools/benchmark_workload.svg)
+
+---
 
 # 🐳 Mascot
 
@@ -266,7 +274,8 @@ Reference: https://github.com/Olsc/Android_3dof
 
 ![Mascot](docs/img/mascot-q.png)
 
-*Character: Mentha*
+_Character: Mentha_
+
 </div>
 
 ---
