@@ -42,8 +42,6 @@ interface ISlamService {
 
     oneway void detectPlane();
     void updateResolution(int width, int height);
-    oneway void setEnableSLAM(boolean enable);
-    boolean isEnableSLAM();
     void getV(inout float[] viewMatrix);
     int getTrackingStatus();
     void setPointCloudDisplay(boolean enable);

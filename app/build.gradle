@@ -110,7 +110,6 @@ dependencies {
     implementation 'androidx.camera:camera-lifecycle:1.6.1'
     implementation 'androidx.camera:camera-view:1.6.1'
     implementation 'com.google.guava:guava:33.6.0-android'
-    implementation 'com.google.zxing:core:3.5.4'
     implementation 'io.noties.markwon:core:4.6.2'
     implementation 'io.noties.markwon:ext-tables:4.6.2'
 

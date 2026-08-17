@@ -23,7 +23,6 @@ bool planeLoadedFromMap = false;
 
 float fx, fy, cx, cy;
 double timeStamp = 0.0;
-bool gEnableSLAM = true;
 bool gEnablePointCloudDisplay = true;
 bool gShouldDrawArObject = false;
 
@@ -225,7 +224,7 @@ int main(int argc, char** argv) {
         // ---- ORB/SLAM 跟踪：固定 TARGET_FPS 时间节流 ----
         // 无论视频/相机源帧率多少，每 processInterval 秒只处理最新一帧，
         // 其余帧仅显示不处理，保证视频正常速度播放而 SLAM 固定 30fps
-        if (gEnableSLAM) {
+        {
             auto now = std::chrono::steady_clock::now();
             double procDt = std::chrono::duration_cast<std::chrono::duration<double>>(
                 now - lastProcessTime).count();

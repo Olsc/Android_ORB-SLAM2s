@@ -64,9 +64,6 @@
             android:shadowRadius="2"/>
     </LinearLayout>
 
-    <include layout="@layout/floating_qr_window"
-        android:id="@+id/floating_qr_window"/>
-
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -175,38 +172,6 @@
         </LinearLayout>
 
         <Button
-            android:id="@+id/btn_group_slam"
-            android:layout_width="76dp"
-            android:layout_height="32dp"
-            android:layout_marginBottom="4dp"
-            android:text="@string/category_slam"
-            android:textSize="11sp"
-            android:textAllCaps="false"
-            android:backgroundTint="#607D8B"
-            android:alpha="0.90"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"/>
-        <LinearLayout
-            android:id="@+id/group_slam"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="gone">
-            <Button
-                android:id="@+id/btn_toggle_slam"
-                android:layout_width="76dp"
-                android:layout_height="32dp"
-                android:layout_marginBottom="4dp"
-                android:text="@string/btn_slam"
-                android:textSize="11sp"
-                android:textAllCaps="false"
-                android:backgroundTint="#4CAF50"
-                android:alpha="0.85"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"/>
-        </LinearLayout>
-
-        <Button
             android:id="@+id/btn_group_display"
             android:layout_width="76dp"
             android:layout_height="32dp"
@@ -232,19 +197,6 @@
                 android:text="@string/btn_point_cloud"
                 android:textSize="11sp"
                 android:textAllCaps="false"
-                android:alpha="0.85"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"/>
-            <Button
-                android:id="@+id/btn_start_web"
-                android:layout_width="76dp"
-                android:layout_height="32dp"
-                android:layout_marginBottom="4dp"
-                android:text="@string/btn_web_server"
-                android:textSize="11sp"
-                android:textAllCaps="false"
-                android:backgroundTint="#2196F3"
-                android:textColor="#FFFFFF"
                 android:alpha="0.85"
                 android:paddingStart="8dp"
                 android:paddingEnd="8dp"/>

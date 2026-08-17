@@ -19,8 +19,7 @@ This project combines computer vision-based Simultaneous Localization and Mappin
 7. **Dark Frame Detection**: Automatic detection of overly dark environments, pausing SLAM tracking to prevent wasted computational resources and tracking loss;
 8. **3D Object Interaction Management**: Support for placing, scaling (pinch gesture), and interacting with 3D AR objects;
 9. **3DOF Orientation Tracking**: Three-degrees-of-freedom orientation tracking using onboard device sensors (Rotation Vector Sensor / Accelerometer + Magnetometer);
-10. **Web Remote Viewing**: Built-in SSL-encrypted HTTP Web server (HTTPS) for viewing camera feeds and SLAM data remotely via a browser;
-11. **Multi-Map Support**: Simultaneous loading, matching, and management of multiple map files.
+10. **Multi-Map Support**: Simultaneous loading, matching, and management of multiple map files.
 
 This project **only** runs on the Android mobile platform. Its underlying SLAM engine is implemented in C/C++ (ORB-SLAM2 core, accessed via JNI), while the upper layer uses Java for user interface and AR rendering pipelines.
 
@@ -72,7 +71,6 @@ This project is built upon the following open-source libraries, each with its ow
 | Google Material Design | Apache 2.0 | UI design library |
 | **srrg_hbst (HBST)** | **BSD 3-Clause** | **Hierarchical Bag of Scalable Trees — fast incremental image matching for relocalization** |
 | **Google Filament** | **Apache 2.0** | **Physically-based 3D rendering engine for AR object display (GLB/glTF model support)** |
-| ZXing ("Zebra Crossing") | Apache 2.0 | QR code generation library for Web server LAN access |
 | Google Guava | Apache 2.0 | Java core library extensions |
 | **Markwon (io.noties.markwon)** | **Apache 2.0** | **Markdown rendering library — used to display this Privacy Policy within the app** |
 
@@ -111,24 +109,6 @@ The following permissions are declared in AndroidManifest.xml. Each permission s
 - **Limitation**: `android:maxSdkVersion="32"` — Same as read permission; higher Android versions use scoped storage.
 - **Written Content**: Only `.bin` (serialized map data) and `.json` (metadata description) file types.
 - **Storage Path**: Only writes to the `getExternalFilesDir("SLAM/maps")` directory; does not modify other user files.
-
-### 4.4 `android.permission.INTERNET`
-
-- **Purpose**: Start an HTTP Web server on the device for remote viewing of camera feeds and SLAM data via a browser
-- **Usage Location**: `WebServer.java` — built-in SSL-encrypted Web server
-- **Necessity**: **Optional permission**. Used only when the user manually activates the "Start Web Server" button. Functions:
-  1. Real-time viewing of SLAM point clouds and camera feeds in a browser over LAN;
-  2. Support for browser-based image frame upload for SLAM processing (Web mode).
-  This feature is fully user-initiated and controllable.
-- **Non-Internet Use**: This project **does not** actively connect to any internet server, send data to remote servers, or contain any remote analytics, statistics, or telemetry functionality.
-- **Explanation**: This permission is solely for local (including LAN) Web service; it does not constitute data transmission to the cloud.
-
-### 4.5 `android.permission.ACCESS_NETWORK_STATE`
-
-- **Purpose**: Obtain the device's local LAN IP address for the Web server URL display and QR code generation
-- **Usage Location**: `ArCamUIActivity.java` — `getDeviceIpAddress()` method
-- **Necessity**: **Optional permission**. Used only when the Web server is enabled, to display the LAN access address to the user.
-- **Usage Method**: Enumerates `NetworkInterface` to obtain a non-loopback IPv4 address; does not track network behavior or read specific network content.
 
 ---
 
@@ -199,17 +179,7 @@ This application **does not include any custom crash collection mechanism**. Whe
 - The application itself **does NOT collect, store, or upload any crash information** to any remote server;
 - The Android system may, with the user's explicit consent, collect basic crash stack information for system diagnostic purposes (this behavior is controlled by the Android system and is unrelated to this application).
 
-### 6.4 Web Server Mode
-
-Users can manually enable the built-in SSL Web server (port 8080, HTTPS). In this mode:
-
-- **Data flow**: Browser camera frames → encrypted transmission (TLS/SSL) → local device processing → SLAM data returned;
-- **Data transmission scope**: Limited to the local LAN (same WiFi subnet); no transmission to the public internet;
-- **User control**: The Web server is fully user-initiated (manual start/stop) and is off by default;
-- **QR code generation**: Generated QR codes contain only the LAN IP address and port for scanning and connecting within the same LAN;
-- **Security measures**: The Web server uses a self-signed certificate for TLS/SSL encryption, and sets `Access-Control-Allow-Origin: *` to support cross-origin requests.
-
-### 6.5 Third-Party Library Data Handling
+### 6.4 Third-Party Library Data Handling
 
 All third-party libraries used by this project run locally on the device and do not involve data transmission:
 
@@ -217,7 +187,6 @@ All third-party libraries used by this project run locally on the device and do 
 - **ORB-SLAM2 Core (C++)**: SLAM algorithm engine, all executed locally;
 - **srrg_hbst (HBST)**: Hierarchical binary search tree for image matching and relocalization, all executed locally;
 - **Google Filament + gltfio**: Physically-based 3D rendering engine for AR object display (GLB/glTF), rendering executed locally on GPU;
-- **ZXing**: QR code encoding, all executed locally;
 - **Google Guava / AndroidX**: System utility classes, not involved with user data;
 - **Markwon**: Markdown rendering library used solely for displaying the Privacy Policy within the app, all executed locally.
 
@@ -226,13 +195,11 @@ All third-party libraries used by this project run locally on the device and do 
 ## 7. Security Considerations
 
 1. **App Signing**: APK/AAB distributions of this application should be signed with the developer's private key to ensure integrity and trustworthy source.
-2. **Network Security**: Web server mode uses a self-signed TLS certificate for encrypted transmission. Browsers will show a security warning on first connection (self-signed certificate); users should confirm before proceeding.
-3. **Cleartext Traffic Note**: The application's `AndroidManifest.xml` declares `android:usesCleartextTraffic="true"`. This is strictly necessary for the optional local Web server feature to serve HTTP content over the local LAN. The application does not send unencrypted traffic to the public internet. On Android 9+ (API 28+), the Web server uses TLS/SSL encryption (HTTPS) for all data transmission.
-4. **Data Isolation**: All application data is stored in the app's `getExternalFilesDir()` sandbox directory, with access restricted by the Android system.
-5. **Minimum Permissions**: Only the minimum permissions required for SLAM and AR functionality are requested; no extraneous permissions are declared.
-6. **No Background Services**: The application has no persistent background services. All resources (camera, sensors, GL context) are released upon exit.
-7. **App Backup & Data Leakage Prevention**: The application's `AndroidManifest.xml` declares `android:allowBackup="true"` for convenience. On Android 12+ (API 31+), users can disable backup in device settings to prevent map files and app data from being included in system backups. Users handling sensitive mapping data should consider disabling app backup.
-8. **Native Code Crash Handling**: The application's C++ native layer includes a signal handler framework that intercepts native crashes (e.g., SIGSEGV, SIGABRT) to produce diagnostic logs. These logs are written only to the Android Logcat buffer (accessible solely in developer/debug mode) and are never collected, stored, or transmitted by the application itself. This mechanism is provided solely for debugging purposes during development.
+2. **Data Isolation**: All application data is stored in the app's `getExternalFilesDir()` sandbox directory, with access restricted by the Android system.
+3. **Minimum Permissions**: Only the minimum permissions required for SLAM and AR functionality are requested; no extraneous permissions are declared.
+4. **No Background Services**: The application has no persistent background services. All resources (camera, sensors, GL context) are released upon exit.
+5. **App Backup & Data Leakage Prevention**: The application's `AndroidManifest.xml` declares `android:allowBackup="true"` for convenience. On Android 12+ (API 31+), users can disable backup in device settings to prevent map files and app data from being included in system backups. Users handling sensitive mapping data should consider disabling app backup.
+6. **Native Code Crash Handling**: The application's C++ native layer includes a signal handler framework that intercepts native crashes (e.g., SIGSEGV, SIGABRT) to produce diagnostic logs. These logs are written only to the Android Logcat buffer (accessible solely in developer/debug mode) and are never collected, stored, or transmitted by the application itself. This mechanism is provided solely for debugging purposes during development.
 
 ---
 

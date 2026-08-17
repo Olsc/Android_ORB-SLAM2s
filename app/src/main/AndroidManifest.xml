@@ -11,8 +11,6 @@
         tools:node="merge"
         tools:ignore="ScopedStorage" />
     <uses-permission android:name="android.permission.CAMERA" tools:node="merge" />
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <uses-feature android:name="android.hardware.camera" />
     <uses-feature android:name="android.hardware.camera.autofocus"
@@ -25,8 +23,7 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
-        android:name="com.orb.slam2s.App"
-        android:usesCleartextTraffic="true">
+        android:name="com.orb.slam2s.App">
         <activity
             android:name="com.orb.slam2s.ui.PrivacyConsentActivity"
             android:exported="true"

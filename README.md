@@ -87,7 +87,6 @@ It shares similar performance optimization concepts with this project, though it
 - **🌑 Dark Frame Detection** —— Automatically skips dark or low-quality frames to prevent SLAM thread blocking
 - **🖱️ AR Object Management** —— Place, scale (pinch gesture), and interact with 3D objects
 - **🧭 3DOF Orientation Tracking** —— Three-degrees-of-freedom orientation tracking using onboard device sensors (Rotation Vector / Accelerometer + Magnetometer)
-- **🌐 Remote SLAM via Browser** —— Built-in SSL-encrypted HTTPS Web server. Use a browser as a remote camera source — send images to the device for SLAM processing and view real-time 3D point cloud and pose data
 - **📑 Multi-Map Support** —— Simultaneous loading and matching of multiple map files
 
 ---

@@ -50,9 +50,6 @@ std::mutex gMapPointsMutex;
 // 点云显示开关（同时控制绿色和蓝色点云）：由 binder/UI 线程写、SLAM 线程读，保持原子量
 std::atomic<bool> gEnablePointCloudDisplay{true};  // 默认启用点云显示
 
-// SLAM 开关控制（跨线程读写，同上保持原子）
-std::atomic<bool> gEnableSLAM{true};  // 默认启用 SLAM
-
 // SLAM丢失自动重置相关变量
 double lastOkTime = 0.0;            // 上次SLAM正常工作的时间
 bool wasLost = false;                // 上一帧是否处于LOST状态
@@ -156,16 +153,6 @@ static void AR_OnMapSwitched(int oldId, int newId) {
         LOGD("恢复地图%d的AR上下文", newId);
     }
     // 目标地图无 AR 物体：保留当前本地锚点
-}
-
-// 事件：SLAM 开关切换（setEnableSLAM 调用）
-// 关闭 → 隐藏 AR 并重置滞回；几何保留，重新开启后恢复
-static void AR_OnSlamToggle(bool enable) {
-    if (!enable) {
-        std::lock_guard<std::mutex> lk(gMapDataMutex);
-        gShouldDrawArObject = false;
-        AR_ResetAlignHold();
-    }
 }
 
 // 每帧渲染管线：由 processImage 在 status==2 时调用，返回是否应绘制 AR 物体
@@ -383,154 +370,138 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
 
     int status = 0;
 
-    if (!gEnableSLAM)
-    {
-        status = 0;
-
-        {
-            std::lock_guard<std::mutex> lock(gMapPointsMutex);
-            vMPs.clear();
-            vKeys.clear();
-        }
-
-        gShouldDrawArObject = false;
+    const float DOWNSCALE = ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR;
+    static thread_local cv::Mat imgSmall;
+    if (image.empty()) {
+        LOGE("processImage: 输入图像为空，跳帧处理");
+        return 0;
     }
-    else
+    const int scaledW = cvRound(static_cast<double>(image.cols) / DOWNSCALE);
+    const int scaledH = cvRound(static_cast<double>(image.rows) / DOWNSCALE);
+    cv::resize(image, imgSmall, cv::Size(scaledW, scaledH), 0, 0, cv::INTER_LINEAR);
+
+    // 确保内参与实际 SLAM 分辨率匹配
+    static int sLastSlamW = 0, sLastSlamH = 0;
+    if (imgSmall.cols != sLastSlamW || imgSmall.rows != sLastSlamH) {
+        const float calScaleX = (float)imgSmall.cols / ORB_SLAM2::BASE_SLAM_WIDTH;
+        const float calScaleY = (float)imgSmall.rows / ORB_SLAM2::BASE_SLAM_HEIGHT;
+        gScaledFx = gBaseFx * calScaleX;
+        gScaledFy = gBaseFy * calScaleY;
+        gScaledCx = gBaseCx * calScaleX;
+        gScaledCy = gBaseCy * calScaleY;
+        fx = gScaledFx; fy = gScaledFy; cx = gScaledCx; cy = gScaledCy;
+        if (slamSys) {
+            slamSys->UpdateCalibration(fx, fy, cx, cy);
+        }
+        sLastSlamW = imgSmall.cols;
+        sLastSlamH = imgSmall.rows;
+        LOGD("SLAM 内参校准: 分辨率=%dx%d fx=%.1f fy=%.1f cx=%.1f cy=%.1f",
+             imgSmall.cols, imgSmall.rows, fx, fy, cx, cy);
+    }
+
+    ORB_SLAM2::System* currentSlamSys = nullptr;
     {
-        const float DOWNSCALE = ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR;
-        static thread_local cv::Mat imgSmall;
-        if (image.empty()) {
-            LOGE("processImage: 输入图像为空，跳帧处理");
-            return 0;
-        }
-        const int scaledW = cvRound(static_cast<double>(image.cols) / DOWNSCALE);
-        const int scaledH = cvRound(static_cast<double>(image.rows) / DOWNSCALE);
-        cv::resize(image, imgSmall, cv::Size(scaledW, scaledH), 0, 0, cv::INTER_LINEAR);
+        std::lock_guard<std::mutex> _ptrLock(gSlamPtrLock);
+        currentSlamSys = slamSys;
+        if (currentSlamSys)
+            gProcessingFrames.fetch_add(1, std::memory_order_relaxed);
+    }
 
-        // 确保内参与实际 SLAM 分辨率匹配
-        static int sLastSlamW = 0, sLastSlamH = 0;
-        if (imgSmall.cols != sLastSlamW || imgSmall.rows != sLastSlamH) {
-            const float calScaleX = (float)imgSmall.cols / ORB_SLAM2::BASE_SLAM_WIDTH;
-            const float calScaleY = (float)imgSmall.rows / ORB_SLAM2::BASE_SLAM_HEIGHT;
-            gScaledFx = gBaseFx * calScaleX;
-            gScaledFy = gBaseFy * calScaleY;
-            gScaledCx = gBaseCx * calScaleX;
-            gScaledCy = gBaseCy * calScaleY;
-            fx = gScaledFx; fy = gScaledFy; cx = gScaledCx; cy = gScaledCy;
-            if (slamSys) {
-                slamSys->UpdateCalibration(fx, fy, cx, cy);
+    // RAII 引用计数：无论从哪个 return 退出，都在"本函数完全结束"时才递减并唤醒
+    // 等待的写操作（LoadMap 等）。原先在中途递减后仍继续访问 slamSys，与写方
+    // "计数归零即可安全写"的协议存在悬空窗口。
+    const bool bHoldsFrameRef = (currentSlamSys != nullptr);
+    struct FrameRefGuard {
+        const bool armed;
+        explicit FrameRefGuard(bool a) : armed(a) {}
+        ~FrameRefGuard() {
+            if (armed) {
+                gProcessingFrames.fetch_sub(1, std::memory_order_release);
+                gCvProcessingFrames.notify_one();
             }
-            sLastSlamW = imgSmall.cols;
-            sLastSlamH = imgSmall.rows;
-            LOGD("SLAM 内参校准: 分辨率=%dx%d fx=%.1f fy=%.1f cx=%.1f cy=%.1f",
-                 imgSmall.cols, imgSmall.rows, fx, fy, cx, cy);
         }
+    } frameRefGuard(bHoldsFrameRef);
 
-        ORB_SLAM2::System* currentSlamSys = nullptr;
+    // 使用线程局部 Tcw，避免全局 Tcw 的数据竞争
+    cv::Mat localTcw;
+    if(currentSlamSys) {
+        localTcw = currentSlamSys->TrackMonocular(imgSmall, timeStamp);
+        int localStatus = currentSlamSys->GetTrackingState();
+
         {
-            std::lock_guard<std::mutex> _ptrLock(gSlamPtrLock);
-            currentSlamSys = slamSys;
-            if (currentSlamSys)
-                gProcessingFrames.fetch_add(1, std::memory_order_relaxed);
+            std::lock_guard<std::mutex> _tcwLock(gTcwLock);
+            gCachedTcw = localTcw.clone();
+        }
+        {
+            std::lock_guard<std::mutex> _mpLock(gMapPointsMutex);
+            vMPs = currentSlamSys->GetTrackedMapPoints();
+            vKeys = currentSlamSys->GetTrackedKeyPointsUn();
         }
 
-        // RAII 引用计数：无论从哪个 return 退出，都在"本函数完全结束"时才递减并唤醒
-        // 等待的写操作（LoadMap 等）。原先在中途递减后仍继续访问 slamSys，与写方
-        // "计数归零即可安全写"的协议存在悬空窗口。
-        const bool bHoldsFrameRef = (currentSlamSys != nullptr);
-        struct FrameRefGuard {
-            const bool armed;
-            explicit FrameRefGuard(bool a) : armed(a) {}
-            ~FrameRefGuard() {
-                if (armed) {
-                    gProcessingFrames.fetch_sub(1, std::memory_order_release);
-                    gCvProcessingFrames.notify_one();
-                }
-            }
-        } frameRefGuard(bHoldsFrameRef);
+        status = localStatus;
+        // 注意：gProcessingFrames 的递减已移至 processImage 完全结束处。
+        // 原先在这里递减后函数仍继续访问 slamSys（GetCurrentMapId/HasMapAlignment/
+        // GetAllMapPoints），与 LoadMap 的"等待计数归零后写地图"协议存在悬空窗口。
+    } else {
+        {
+            std::lock_guard<std::mutex> _tcwLock(gTcwLock);
+            gCachedTcw = cv::Mat();
+        }
+        status = 0;
+    }
 
-        // 使用线程局部 Tcw，避免全局 Tcw 的数据竞争
-        cv::Mat localTcw;
-        if(currentSlamSys) {
-            localTcw = currentSlamSys->TrackMonocular(imgSmall, timeStamp);
-            int localStatus = currentSlamSys->GetTrackingState();
+    // 确保 vMPs 在任何情况下都处于安全状态
 
-            {
-                std::lock_guard<std::mutex> _tcwLock(gTcwLock);
-                gCachedTcw = localTcw.clone();
-            }
-            {
-                std::lock_guard<std::mutex> _mpLock(gMapPointsMutex);
-                vMPs = currentSlamSys->GetTrackedMapPoints();
-                vKeys = currentSlamSys->GetTrackedKeyPointsUn();
-            }
+    // 使用锁内快照 currentSlamSys（持有帧引用计数期间对象保证存活），
+    // 原先在此无锁读取全局 slamSys 属数据竞争
+    if(!currentSlamSys) {
+        return status;
+    }
 
-            status = localStatus;
-            // 注意：gProcessingFrames 的递减已移至 processImage 完全结束处。
-            // 原先在这里递减后函数仍继续访问 slamSys（GetCurrentMapId/HasMapAlignment/
-            // GetAllMapPoints），与 LoadMap 的"等待计数归零后写地图"协议存在悬空窗口。
+    // 检查是否切换了地图
+    int currentMapId = currentSlamSys->GetCurrentMapId();
+    if (currentMapId != gActiveMapId) {
+        static int lastTargetMapId = -1;
+        if (currentMapId == lastTargetMapId) {
+            gMapSwitchCounter++;
         } else {
-            {
-                std::lock_guard<std::mutex> _tcwLock(gTcwLock);
-                gCachedTcw = cv::Mat();
-            }
-            status = 0;
+            gMapSwitchCounter = 1;
+            lastTargetMapId = currentMapId;
         }
 
-        // 确保 vMPs 在任何情况下都处于安全状态
-
-        // 使用锁内快照 currentSlamSys（持有帧引用计数期间对象保证存活），
-        // 原先在此无锁读取全局 slamSys 属数据竞争
-        if(!currentSlamSys) {
-            return status;
-        }
-
-        // 检查是否切换了地图
-        int currentMapId = currentSlamSys->GetCurrentMapId();
-        if (currentMapId != gActiveMapId) {
-            static int lastTargetMapId = -1;
-            if (currentMapId == lastTargetMapId) {
-                gMapSwitchCounter++;
-            } else {
-                gMapSwitchCounter = 1;
-                lastTargetMapId = currentMapId;
-            }
-
-            if (gMapSwitchCounter >= MAP_SWITCH_THRESHOLD) {
-                LOGD("检测到并确认地图切换：%d -> %d", gActiveMapId, currentMapId);
-                AR_OnMapSwitched(gActiveMapId, currentMapId);
-                gMapSwitchCounter = 0;
-            }
-        } else {
+        if (gMapSwitchCounter >= MAP_SWITCH_THRESHOLD) {
+            LOGD("检测到并确认地图切换：%d -> %d", gActiveMapId, currentMapId);
+            AR_OnMapSwitched(gActiveMapId, currentMapId);
             gMapSwitchCounter = 0;
         }
+    } else {
+        gMapSwitchCounter = 0;
+    }
 
-        // 如果SLAM正在跟踪，更新AR对象视图/模型矩阵
-        if(!localTcw.empty()) {
-            gShouldDrawArObject = AR_RenderFrame(localTcw, (status == 2));
-        } else {
-            gShouldDrawArObject = false;
-        }
+    // 如果SLAM正在跟踪，更新AR对象视图/模型矩阵
+    if(!localTcw.empty()) {
+        gShouldDrawArObject = AR_RenderFrame(localTcw, (status == 2));
+    } else {
+        gShouldDrawArObject = false;
+    }
 
-        bool isLost = (status == ORB_SLAM2::Tracking::LOST);
-        const int LOST_RESET_FRAMES = (int)(LOST_RESET_TIMEOUT * ORB_SLAM2::SYSTEM_FPS);
+    bool isLost = (status == ORB_SLAM2::Tracking::LOST);
+    const int LOST_RESET_FRAMES = (int)(LOST_RESET_TIMEOUT * ORB_SLAM2::SYSTEM_FPS);
 
-        if(!isLost) {
-            lastOkTime = timeStamp;
+    if(!isLost) {
+        lastOkTime = timeStamp;
+        wasLost = false;
+        gLostFrameCount = 0;
+    } else {
+        // SLAM处于LOST状态
+        if(++gLostFrameCount >= LOST_RESET_FRAMES) {
+            LOGD("SLAM连续丢失 %d 帧，执行轻量重置（保留加载的地图）...", gLostFrameCount);
+            currentSlamSys->Reset(true);  // 保留地图的重置
             wasLost = false;
+            lastOkTime = timeStamp;
             gLostFrameCount = 0;
-        } else {
-            // SLAM处于LOST状态
-            if(++gLostFrameCount >= LOST_RESET_FRAMES) {
-                LOGD("SLAM连续丢失 %d 帧，执行轻量重置（保留加载的地图）...", gLostFrameCount);
-                currentSlamSys->Reset(true);  // 保留地图的重置
-                wasLost = false;
-                lastOkTime = timeStamp;
-                gLostFrameCount = 0;
-                LOGD("SLAM轻量重置完成，已加载的地图数据已保留");
-            }
+            LOGD("SLAM轻量重置完成，已加载的地图数据已保留");
         }
-
     }
 
     return status;
@@ -958,27 +929,6 @@ Java_com_orb_slam2s_slamar_NativeHelper_setPointCloudDisplay(JNIEnv *env, jobjec
 JNIEXPORT jboolean JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_isPointCloudDisplayEnabled(JNIEnv *env, jobject instance) {
     return (jboolean)gEnablePointCloudDisplay;
-}
-
-JNIEXPORT void JNICALL
-Java_com_orb_slam2s_slamar_NativeHelper_setEnableSLAM(JNIEnv *env, jobject instance, jboolean enable) {
-    bool wasEnabled = gEnableSLAM;
-    gEnableSLAM = (bool)enable;
-
-    if(wasEnabled && !gEnableSLAM) {
-        {
-            std::lock_guard<std::mutex> lock(gMapPointsMutex);
-            vMPs.clear();
-            vKeys.clear();
-        }
-        AR_OnSlamToggle(false);
-    } else if(!wasEnabled && gEnableSLAM) {
-    }
-}
-
-JNIEXPORT jboolean JNICALL
-Java_com_orb_slam2s_slamar_NativeHelper_isEnableSLAM(JNIEnv *env, jobject instance) {
-    return (jboolean)gEnableSLAM;
 }
 
 // 共享内存帧持久映射

@@ -222,28 +222,7 @@ public class SlamIPCClient {
         }
     }
 
-    public void setEnableSLAM(boolean enable) {
-        if (slamService != null) {
-            try {
-                slamService.setEnableSLAM(enable);
-            } catch (RemoteException e) {
-                Log.e(TAG, "setEnableSLAM 异常: " + e.getMessage());
-            }
-        }
-    }
-
-    public boolean isEnableSLAM() {
-        if (slamService != null) {
-            try {
-                return slamService.isEnableSLAM();
-            } catch (RemoteException e) {
-                Log.e(TAG, "isEnableSLAM 异常: " + e.getMessage());
-            }
-        }
-        return false;
-    }
-
-    /** 读取最新视图矩阵（WebServer 等外部消费者使用，低频） */
+    /** 读取最新视图矩阵（外部消费者使用，低频） */
     public void getV(float[] viewMatrix) {
         if (slamService != null && viewMatrix != null && viewMatrix.length == 16) {
             try {
@@ -254,7 +233,7 @@ public class SlamIPCClient {
         }
     }
 
-    /** 读取最新跟踪状态（WebServer 使用，低频） */
+    /** 读取最新跟踪状态（低频） */
     public int getTrackingStatus() {
         if (slamService != null) {
             try {

@@ -25,10 +25,6 @@ import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.MultiFormatWriter;
-import com.google.zxing.WriterException;
-import com.google.zxing.common.BitMatrix;
 import com.orb.slam2s.R;
 import com.orb.slam2s.constant.GlobalConstant;
 import com.orb.slam2s.ipc.SlamIPCClient;
@@ -36,15 +32,9 @@ import com.orb.slam2s.rendering.gles.FilamentAspectSurfaceView;
 import com.orb.slam2s.rendering.render.ModelRendererWrapper;
 import com.orb.slam2s.rendering.render.ThreeDofCubeRenderer;
 import com.orb.slam2s.sensors.OrientationSensor;
-import com.orb.slam2s.server.WebServer;
 import com.orb.slam2s.slamar.NativeHelper;
 import com.orb.slam2s.utils.FpsMeter;
 import com.orb.slam2s.utils.TouchHelper;
-
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.util.Enumeration;
 
 @SuppressWarnings("deprecation")
 public class ArCamUIActivity extends AppCompatActivity implements
@@ -69,23 +59,10 @@ public class ArCamUIActivity extends AppCompatActivity implements
     private Button btnLoadMap;
     private Button btnMapList;
     private Button btnTogglePointCloud;
-    private Button btnToggleSlam;
 
     private Button btn3DofCube;
     private final android.os.Handler uiHandler = new android.os.Handler();
     private androidx.appcompat.app.AlertDialog loadingDialog;
-
-    // 拖动相关变量
-    private float qrDX, qrDY;
-
-    // Web Server 相关 UI
-    private View floatingQrWindow;
-    private android.widget.ImageView ivQrCode;
-    private android.widget.TextView tvWebUrl;
-
-    private WebServer webServer;
-    private Button btnStartWeb;
-    private boolean isWebRunning = false;
 
     // 摇杆控制AR物体旋转
     private JoystickView joystickView;
@@ -206,11 +183,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
             }
         });
 
-        btnStartWeb = findViewById(R.id.btn_start_web);
-        if (btnStartWeb != null) {
-            btnStartWeb.setOnClickListener(v -> toggleWebServer());
-        }
-
         fpsText = findViewById(R.id.text_fps);
         textMapStats = findViewById(R.id.text_map_stats);
         mFpsMeter = new FpsMeter();
@@ -242,47 +214,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
             btnTogglePointCloud.setOnClickListener(v -> togglePointCloudDisplay());
         }
 
-        floatingQrWindow = findViewById(R.id.floating_qr_window);
-        ivQrCode = findViewById(R.id.iv_qr_code);
-        tvWebUrl = findViewById(R.id.tv_web_url);
-        View qrHeader = findViewById(R.id.qr_window_header);
-        View btnCloseQr = findViewById(R.id.btn_close_qr);
-
-        if (btnCloseQr != null) {
-            btnCloseQr.setOnClickListener(v -> {
-                if (isWebRunning) {
-                    toggleWebServer();
-                } else {
-                    if (floatingQrWindow != null)
-                        floatingQrWindow.setVisibility(View.GONE);
-                }
-            });
-        }
-
-        if (qrHeader != null && floatingQrWindow != null) {
-            qrHeader.setOnTouchListener((view, event) -> {
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_DOWN:
-                        qrDX = floatingQrWindow.getX() - event.getRawX();
-                        qrDY = floatingQrWindow.getY() - event.getRawY();
-                        break;
-                    case MotionEvent.ACTION_MOVE:
-                        floatingQrWindow.animate()
-                                .x(event.getRawX() + qrDX)
-                                .y(event.getRawY() + qrDY)
-                                .setDuration(0)
-                                .start();
-                        break;
-                    case MotionEvent.ACTION_UP:
-                        view.performClick();
-                        return false;
-                    default:
-                        return false;
-                }
-                return true;
-            });
-        }
-
         Button btnGroupAr = findViewById(R.id.btn_group_ar);
         if (btnGroupAr != null) {
             btnGroupAr.setOnClickListener(v -> toggleExclusive(R.id.group_ar));
@@ -291,18 +222,9 @@ public class ArCamUIActivity extends AppCompatActivity implements
         if (btnGroupMap != null) {
             btnGroupMap.setOnClickListener(v -> toggleExclusive(R.id.group_map));
         }
-        Button btnGroupSlam = findViewById(R.id.btn_group_slam);
-        if (btnGroupSlam != null) {
-            btnGroupSlam.setOnClickListener(v -> toggleExclusive(R.id.group_slam));
-        }
         Button btnGroupDisplay = findViewById(R.id.btn_group_display);
         if (btnGroupDisplay != null) {
             btnGroupDisplay.setOnClickListener(v -> toggleExclusive(R.id.group_display));
-        }
-
-        btnToggleSlam = findViewById(R.id.btn_toggle_slam);
-        if (btnToggleSlam != null) {
-            btnToggleSlam.setOnClickListener(v -> toggleSLAM());
         }
 
         btn3DofCube = findViewById(R.id.btn_3dof_cube);
@@ -317,13 +239,11 @@ public class ArCamUIActivity extends AppCompatActivity implements
     private void toggleExclusive(int groupId) {
         View ga = findViewById(R.id.group_ar);
         View gm = findViewById(R.id.group_map);
-        View gs = findViewById(R.id.group_slam);
         View gd = findViewById(R.id.group_display);
         View target = findViewById(groupId);
         boolean visible = target != null && target.getVisibility() == View.VISIBLE;
         if (ga != null) ga.setVisibility(View.GONE);
         if (gm != null) gm.setVisibility(View.GONE);
-        if (gs != null) gs.setVisibility(View.GONE);
         if (gd != null) gd.setVisibility(View.GONE);
         if (!visible && target != null) target.setVisibility(View.VISIBLE);
     }
@@ -495,10 +415,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
             }
         }
 
-        if (isWebRunning && webServer != null) {
-            webServer.stop();
-        }
-
         if (slamIPCClient != null) {
             slamIPCClient.unbindService();
         }
@@ -525,10 +441,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
             if (threeDofGLView != null) {
                 threeDofGLView.onResume();
             }
-        }
-
-        if (isWebRunning && webServer != null) {
-            webServer.start();
         }
     }
 
@@ -609,10 +521,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
     protected void onDestroy() {
         Log.d(TAG, "onDestroy: 释放资源");
 
-        if (webServer != null) {
-            webServer.stop();
-        }
-
         if (modelRendererWrapper != null) {
             modelRendererWrapper.destroy();
             modelRendererWrapper = null;
@@ -622,13 +530,9 @@ public class ArCamUIActivity extends AppCompatActivity implements
         if (mOpenCvCameraView != null)
             mOpenCvCameraView.disableView();
 
-        // 注销地图统计轮询（原先永不 removeCallbacks，Activity 销毁后
-        // 仍每秒跑一次跨进程调用并持有 Activity 引用导致泄漏）
+        // 注销地图统计轮询
         uiHandler.removeCallbacksAndMessages(null);
 
-        // IPC 架构：解绑服务（SLAM 释放由 SlamService.onDestroy 中的
-        // shutdownSLAM 在 :slam_process 内完成）；本地 nativeHelper 若从未
-        // 初始化过则 shutdownSLAM 为无害空操作，保留以覆盖非 IPC 场景
         if (slamIPCClient != null) {
             slamIPCClient.unbindService();
         }
@@ -656,9 +560,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
     @Override
     public long onCameraFrame(CameraGLViewBase.CvCameraViewFrame inputFrame) {
         mFpsMeter.measure();
-        // FpsMeter 内部 20 帧才刷新一次字符串——UI 更新跟随同一节奏，
-        // 消除每帧一次的跨线程 Runnable 投递（帧计数驱动，非定时器）。
-        // IPC 模式下帧数据经共享内存直达服务进程，此处返回 0（无直连处理）
         if (mFpsMeter.isUpdated()) {
             final CharSequence fpsTextCS = mFpsMeter.getText();
             runOnUiThread(() -> fpsText.setText(fpsTextCS));
@@ -721,26 +622,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
             }
         } else {
             Log.e(TAG, "无法切换点云显示：SlamIPCClient 未连接");
-        }
-    }
-
-    private void toggleSLAM() {
-        if (slamIPCClient != null && btnToggleSlam != null) {
-            boolean currentState = slamIPCClient.isEnableSLAM();
-            boolean newState = !currentState;
-            slamIPCClient.setEnableSLAM(newState);
-
-            if (newState) {
-                btnToggleSlam.setText(getString(R.string.btn_slam));
-                showHint(getString(R.string.hint_slam_enabled));
-                Log.d(TAG, "SLAM已启用");
-            } else {
-                btnToggleSlam.setText(getString(R.string.btn_slam_disabled));
-                showHint(getString(R.string.hint_slam_disabled));
-                Log.d(TAG, "SLAM已关闭");
-            }
-        } else {
-            Log.e(TAG, "无法切换SLAM：SlamIPCClient 未连接");
         }
     }
 
@@ -811,100 +692,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
             }
             showHint(getString(R.string.hint_3dof_closed));
             Log.d(TAG, "3DOF模式已关闭");
-        }
-    }
-
-    private String getDeviceIpAddress() {
-        try {
-            for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
-                NetworkInterface networkInterface = en.nextElement();
-                for (Enumeration<InetAddress> enumInetAddress = networkInterface.getInetAddresses(); enumInetAddress
-                        .hasMoreElements();) {
-                    InetAddress inetAddress = enumInetAddress.nextElement();
-                    if (!inetAddress.isLoopbackAddress() && inetAddress instanceof Inet4Address) {
-                        return inetAddress.getHostAddress();
-                    }
-                }
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "获取IP地址失败: " + e.getMessage(), e);
-        }
-        return "127.0.0.1";
-    }
-
-    private Bitmap generateQrCode(String content) {
-        try {
-            int size = 512;
-            BitMatrix bitMatrix = new MultiFormatWriter().encode(content, BarcodeFormat.QR_CODE, size, size);
-            int width = bitMatrix.getWidth();
-            int height = bitMatrix.getHeight();
-            int[] pixels = new int[width * height];
-            for (int y = 0; y < height; y++) {
-                int offset = y * width;
-                for (int x = 0; x < width; x++) {
-                    pixels[offset + x] = bitMatrix.get(x, y) ? 0xFF000000 : 0xFFFFFFFF;
-                }
-            }
-            Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-            bitmap.setPixels(pixels, 0, width, 0, 0, width, height);
-            return bitmap;
-        } catch (WriterException e) {
-            Log.e(TAG, "生成二维码失败", e);
-            return null;
-        }
-    }
-
-    private void toggleWebServer() {
-        if (!isWebRunning) {
-            webServer = new WebServer(8080, nativeHelper, slamIPCClient, this);
-
-            webServer.setOnFrameReceivedListener(frameData -> {
-            });
-
-            webServer.start();
-            isWebRunning = true;
-
-            if (modelRendererWrapper != null) {
-                modelRendererWrapper.setDraw(false);
-            }
-
-            btnStartWeb.setText(getString(R.string.btn_web_server_close));
-
-            String ipAddress = getDeviceIpAddress();
-            String url = "https://" + ipAddress + ":8080";
-            showHint(getString(R.string.hint_web_server_started, url));
-
-            if (floatingQrWindow != null) {
-                floatingQrWindow.setVisibility(View.VISIBLE);
-                if (tvWebUrl != null) {
-                    tvWebUrl.setText(url);
-                }
-                if (ivQrCode != null) {
-                    Bitmap qrBitmap = generateQrCode(url);
-                    if (qrBitmap != null) {
-                        ivQrCode.setImageBitmap(qrBitmap);
-                    }
-                }
-            }
-
-            Log.d(TAG, "Web服务器已启动");
-        } else {
-            if (webServer != null) {
-                webServer.stop();
-            }
-            isWebRunning = false;
-
-            if (modelRendererWrapper != null) {
-                modelRendererWrapper.setDraw(true);
-            }
-
-            if (floatingQrWindow != null) {
-                floatingQrWindow.setVisibility(View.GONE);
-            }
-
-            btnStartWeb.setText(getString(R.string.btn_web_server_open));
-            showHint(getString(R.string.hint_web_server_closed));
-            Log.d(TAG, "Web服务器已关闭");
         }
     }
 }

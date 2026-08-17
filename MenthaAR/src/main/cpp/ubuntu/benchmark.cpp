@@ -35,7 +35,6 @@ bool planeLoadedFromMap = false;
 
 float fx, fy, cx, cy;
 double timeStamp = 0.0;
-bool gEnableSLAM = true;
 bool gEnablePointCloudDisplay = true;
 bool gShouldDrawArObject = false;
 bool gShowMemoryPanel = true; // 是否开启内存分布可视化仪表盘
@@ -577,7 +576,7 @@ int main(int argc, char** argv) {
         }
 
         // ORB / SLAM 处理节流
-        if (gEnableSLAM && !gBenchmarkCompleted && !gBenchmarkPaused && !frame.empty()) {
+        if (!gBenchmarkCompleted && !gBenchmarkPaused && !frame.empty()) {
             auto now = std::chrono::steady_clock::now();
             double procDt = std::chrono::duration_cast<std::chrono::duration<double>>(now - lastProcessTime).count();
             if (procDt >= processInterval) {

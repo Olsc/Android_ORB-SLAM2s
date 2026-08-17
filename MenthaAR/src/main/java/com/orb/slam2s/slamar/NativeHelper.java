@@ -119,10 +119,6 @@ public class NativeHelper {
     public native void setPointCloudDisplay(boolean enable);
     public native boolean isPointCloudDisplayEnabled();
 
-    // SLAM 开关控制
-    public native void setEnableSLAM(boolean enable);
-    public native boolean isEnableSLAM();
-
     // 3DOF功能接口
     public native float[] calculate3DofInsertionPoint(float[] rotationMatrix, int rotation, float distance);
     // 出参版本——直接填充调用方缓冲，避免每帧 JNI 分配新 float[16]
@@ -135,7 +131,7 @@ public class NativeHelper {
     public native float[] getTrackedPoints(int maxPoints);
     public native float[] getAllArObjectsData();
 
-    // 视图矩阵 (WebServer使用)
+    // 视图矩阵
     public native void getV(float viewM[]);
 
     // 获取最后的追踪结果

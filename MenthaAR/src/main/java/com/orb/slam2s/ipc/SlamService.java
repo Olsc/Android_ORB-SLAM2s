@@ -129,21 +129,6 @@ public class SlamService extends Service {
         }
 
         @Override
-        public void setEnableSLAM(boolean enable) {
-            // 并入处理线程：避免 binder 线程与 slamThread 并发修改 native 全局状态
-            postTask(() -> {
-                if (nativeHelper != null) {
-                    nativeHelper.setEnableSLAM(enable);
-                }
-            });
-        }
-
-        @Override
-        public boolean isEnableSLAM() {
-            return nativeHelper != null && nativeHelper.isEnableSLAM();
-        }
-
-        @Override
         public void getV(float[] viewMatrix) {
             if (nativeHelper != null && viewMatrix != null && viewMatrix.length == 16) {
                 nativeHelper.getV(viewMatrix);
