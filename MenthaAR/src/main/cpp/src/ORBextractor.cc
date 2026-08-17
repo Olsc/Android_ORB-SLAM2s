@@ -74,6 +74,8 @@
 #include <vector>
 #include <thread>
 #include <atomic>
+#include <mutex>
+#include <condition_variable>
 
 #include "ORBextractor.h"
 #include "Config.h"

@@ -143,6 +143,10 @@ void drawMemoryDashboard(cv::Mat& frame, const MemoryInfo& memInfo, const std::v
 void drawScoreCardModal(cv::Mat& frame, const ScoreCard& card);
 void onMouse(int event, int x, int y, int flags, void* userdata);
 void drawARCube(cv::Mat& im, const cv::Mat& Tcw, Plane* plane, float fx, float fy, float cx, float cy);
+void drawTrackedPoints(const std::vector<cv::KeyPoint>& vKeys, const std::vector<ORB_SLAM2::MapPoint*>& vMPs,
+                       cv::Mat& im, float cx = 0.0f, float cy = 0.0f);
+void drawAllMapPoints(const cv::Mat& Tcw, const std::vector<ORB_SLAM2::MapPoint*>& allMapPoints,
+                      cv::Mat& im, float fx, float fy, float cx, float cy, bool drawOnlyLoaded = true);
 MemoryInfo getMemoryInfo(int numMPs, int numKFs);
 ScoreCard calculateScoreCard(const std::vector<FrameRecord>& records, int totalFrames);
 void resetBenchmarkState();
@@ -695,6 +699,92 @@ int main(int argc, char** argv) {
 
     std::cout << "[Benchmark] Done. Goodbye!" << std::endl;
     return 0;
+}
+
+// 绘制当前帧跟踪到的特征点，青色=新建、绿色=匹配的已加载、红色=未匹配的已加载
+void drawTrackedPoints(const std::vector<cv::KeyPoint>& vKeys, const std::vector<ORB_SLAM2::MapPoint*>& vMPs,
+                       cv::Mat& im, float cx, float cy) {
+    float scaleX = ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR, scaleY = ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR;
+    if (cx > 0.0f && cy > 0.0f) {
+        scaleX = (float)im.cols / (ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR * cx);
+        scaleY = (float)im.rows / (ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR * cy);
+    }
+
+    const int N = (int)vKeys.size();
+    for (int i = 0; i < N; i++) {
+        if (i >= (int)vMPs.size()) break;
+        ORB_SLAM2::MapPoint* pMP = vMPs[i];
+        if (pMP) {
+            cv::Scalar color = cv::Scalar(ORB_SLAM2::UI_COLOR_NEW_POINT_B, ORB_SLAM2::UI_COLOR_NEW_POINT_G, ORB_SLAM2::UI_COLOR_NEW_POINT_R);
+            if (pMP->mbFromLoadedMap) {
+                color = cv::Scalar(ORB_SLAM2::UI_COLOR_LOADED_POINT_B, ORB_SLAM2::UI_COLOR_LOADED_POINT_G, ORB_SLAM2::UI_COLOR_LOADED_POINT_R);
+            }
+            cv::circle(im, cv::Point2f(vKeys[i].pt.x * scaleX, vKeys[i].pt.y * scaleY), ORB_SLAM2::UI_POINT_RADIUS, color, -1);
+        }
+    }
+}
+
+// 绘制所有地图点，用于AR重定位时显示完整点云
+void drawAllMapPoints(const cv::Mat& Tcw, const std::vector<ORB_SLAM2::MapPoint*>& allMapPoints,
+                      cv::Mat& im, float fx, float fy, float cx, float cy, bool drawOnlyLoaded) {
+    if (Tcw.empty() || allMapPoints.empty() || Tcw.rows < 3 || Tcw.cols < 4)
+        return;
+
+    const float R11 = Tcw.at<float>(0, 0), R12 = Tcw.at<float>(0, 1), R13 = Tcw.at<float>(0, 2);
+    const float R21 = Tcw.at<float>(1, 0), R22 = Tcw.at<float>(1, 1), R23 = Tcw.at<float>(1, 2);
+    const float R31 = Tcw.at<float>(2, 0), R32 = Tcw.at<float>(2, 1), R33 = Tcw.at<float>(2, 2);
+    const float tx = Tcw.at<float>(0, 3);
+    const float ty = Tcw.at<float>(1, 3);
+    const float tz = Tcw.at<float>(2, 3);
+
+    const int imgWidth = im.cols;
+    const int imgHeight = im.rows;
+
+    int drawnCount = 0;
+    const int maxDrawPoints = ORB_SLAM2::UI_MAX_DRAWN_POINTS;
+
+    const float dispScaleX = (ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR * cx > 0.0f) ? (float)im.cols / (ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR * cx) : ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR;
+    const float dispScaleY = (ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR * cy > 0.0f) ? (float)im.rows / (ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR * cy) : ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR;
+    const float fx2 = fx * dispScaleX;
+    const float fy2 = fy * dispScaleY;
+    const float cx2 = cx * dispScaleX;
+    const float cy2 = cy * dispScaleY;
+
+    const cv::Scalar colorLoaded(ORB_SLAM2::UI_COLOR_LOADED_POINT_B, ORB_SLAM2::UI_COLOR_LOADED_POINT_G, ORB_SLAM2::UI_COLOR_LOADED_POINT_R);
+    const cv::Scalar colorNew(ORB_SLAM2::UI_COLOR_NEW_POINT_B, ORB_SLAM2::UI_COLOR_NEW_POINT_G, ORB_SLAM2::UI_COLOR_NEW_POINT_R);
+
+    for (size_t i = 0; i < allMapPoints.size(); i++) {
+        ORB_SLAM2::MapPoint* pMP = allMapPoints[i];
+        if (!pMP || pMP->isBad())
+            continue;
+        if (drawOnlyLoaded && !pMP->mbFromLoadedMap)
+            continue;
+
+        cv::Point3f Pw;
+        pMP->GetWorldPos(Pw);
+
+        const float Xw = Pw.x, Yw = Pw.y, Zw = Pw.z;
+        const float Xc = R11 * Xw + R12 * Yw + R13 * Zw + tx;
+        const float Yc = R21 * Xw + R22 * Yw + R23 * Zw + ty;
+        const float Zc = R31 * Xw + R32 * Yw + R33 * Zw + tz;
+
+        if (Zc <= ORB_SLAM2::PROJECT_MIN_DEPTH)
+            continue;
+
+        const float invZ = 1.0f / Zc;
+        const float u_display = fx2 * Xc * invZ + cx2;
+        const float v_display = fy2 * Yc * invZ + cy2;
+
+        if (u_display < 0 || u_display >= imgWidth || v_display < 0 || v_display >= imgHeight)
+            continue;
+
+        cv::circle(im, cv::Point2f(u_display, v_display), ORB_SLAM2::UI_CLOUD_POINT_RADIUS,
+                   pMP->mbFromLoadedMap ? colorLoaded : colorNew, -1);
+
+        drawnCount++;
+        if (drawnCount >= maxDrawPoints)
+            break;
+    }
 }
 
 // 绘制 AR 立方体线框
