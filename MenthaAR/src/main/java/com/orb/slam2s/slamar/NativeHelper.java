@@ -228,11 +228,15 @@ public class NativeHelper {
         public boolean deleteMap(String mapName) {
             try {
                 File mapFile = new File(mapDirectory, mapName + ".bin");
+                File arInfoFile = new File(mapDirectory, mapName + ".bin.arinfo");
                 File metaFile = new File(mapDirectory, mapName + MAP_METADATA_EXT);
 
                 boolean success = true;
                 if (mapFile.exists()) {
                     success = mapFile.delete();
+                }
+                if (arInfoFile.exists()) {
+                    arInfoFile.delete();
                 }
                 if (metaFile.exists()) {
                     metaFile.delete();

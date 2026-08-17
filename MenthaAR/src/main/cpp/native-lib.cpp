@@ -105,6 +105,12 @@ static void AR_OnArPlaced(Plane* detected, bool whileAligned) {
     AR_ResetAlignHold();             // 新锚点必须重新按当前帧渲染，避免冻结旧锚点的 lastGood
     if (gAnchor.plane) {
         getRUBModelMatrixFromRDF(gAnchor.plane->glTpw, gCurrentModelMatrix);
+        AR::ArObject obj;
+        memcpy(obj.modelMatrix, gCurrentModelMatrix, sizeof(obj.modelMatrix));
+        obj.scale = gArObjectScale.load(std::memory_order_relaxed);
+        obj.isValid = true;
+        obj.objectId = "default";
+        gAnchor.objects.push_back(obj);
     }
 }
 
@@ -114,7 +120,7 @@ static void AR_OnMapDataLoaded(int mapId, AR::ArAnchor loaded) {
     gMapAnchors[mapId] = std::move(loaded);   // 替换缓存，旧 Plane 由 unique_ptr 自动释放
 
     if (mapId == gActiveMapId) {
-        if (!gMapAnchors[mapId].objects.empty()) {
+        if (gMapAnchors[mapId].valid || gMapAnchors[mapId].plane != nullptr || !gMapAnchors[mapId].objects.empty()) {
             gAnchor = gMapAnchors[mapId].Clone();
             gAnchor.isFromLoadedMap = (gAnchor.plane != nullptr);
             gAnchor.frame = (gAnchor.plane != nullptr) ? AR::AnchorFrame::kMap : AR::AnchorFrame::kSlam;
@@ -138,7 +144,7 @@ static void AR_OnMapSwitched(int oldId, int newId) {
 
     gActiveMapId = newId;
 
-    if (gMapAnchors.count(newId) && !gMapAnchors[newId].objects.empty()) {
+    if (gMapAnchors.count(newId) && (gMapAnchors[newId].valid || gMapAnchors[newId].plane != nullptr || !gMapAnchors[newId].objects.empty())) {
         gAnchor = gMapAnchors[newId].Clone();
         gAnchor.isFromLoadedMap = (gAnchor.plane != nullptr);
         gAnchor.frame = (gAnchor.plane != nullptr) ? AR::AnchorFrame::kMap : AR::AnchorFrame::kSlam;
@@ -260,10 +266,19 @@ void SavePlaneAndArInfo(const std::string& filename)
     }
 
     // 保存AR对象
-    auto numObjects = static_cast<uint32_t>(gAnchor.objects.size());
+    std::vector<AR::ArObject> objectsToSave = gAnchor.objects;
+    if (objectsToSave.empty() && plane) {
+        AR::ArObject defaultObj;
+        getRUBModelMatrixFromRDF(plane->glTpw, defaultObj.modelMatrix);
+        defaultObj.scale = gArObjectScale.load(std::memory_order_relaxed);
+        defaultObj.isValid = true;
+        defaultObj.objectId = "default";
+        objectsToSave.push_back(defaultObj);
+    }
+    auto numObjects = static_cast<uint32_t>(objectsToSave.size());
     ofs.write(reinterpret_cast<const char*>(&numObjects), sizeof(numObjects));
 
-    for (const auto& obj : gAnchor.objects)
+    for (const auto& obj : objectsToSave)
     {
         if (!obj.isValid) continue;
 
@@ -329,8 +344,7 @@ void LoadPlaneAndArInfo(const std::string& filename, int mapId)
         }
 
         if(dataValid) {
-            loaded.plane = std::unique_ptr<Plane>(new Plane(n3[0], n3[1], n3[2], o3[0], o3[1], o3[2]));
-            loaded.plane->rang = rang;
+            loaded.plane = std::unique_ptr<Plane>(new Plane(n3[0], n3[1], n3[2], o3[0], o3[1], o3[2], rang));
             loaded.frame = AR::AnchorFrame::kMap;   // 加载平面的坐标位于目标/地图坐标系
             LOGD("加载平面和AR信息：为地图%d加载平面", mapId);
         }
@@ -904,14 +918,23 @@ JNIEXPORT jfloatArray JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_getAllArObjectsData(JNIEnv *env, jobject instance) {
     std::lock_guard<std::mutex> lock(gMapDataMutex);
     std::vector<float> data;
-    data.push_back((float)gAnchor.objects.size());
-
-    for(const auto& obj : gAnchor.objects) {
-        if(!obj.isValid) continue;
-        for(float m : obj.modelMatrix) {
-            data.push_back(m);
+    if (!gAnchor.objects.empty()) {
+        data.push_back((float)gAnchor.objects.size());
+        for(const auto& obj : gAnchor.objects) {
+            if(!obj.isValid) continue;
+            for(float m : obj.modelMatrix) {
+                data.push_back(m);
+            }
+            data.push_back(obj.scale);
         }
-        data.push_back(obj.scale);
+    } else if (gAnchor.valid && gAnchor.plane) {
+        data.push_back(1.0f);
+        for(int i=0; i<16; i++) {
+            data.push_back(gCurrentModelMatrix[i]);
+        }
+        data.push_back(gArObjectScale.load(std::memory_order_relaxed));
+    } else {
+        data.push_back(0.0f);
     }
 
     jfloatArray arr = env->NewFloatArray((jsize)data.size());

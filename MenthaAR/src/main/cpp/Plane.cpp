@@ -53,12 +53,13 @@ Plane::Plane(const std::vector<ORB_SLAM2::MapPoint*>& vMPs, const cv::Mat& Tcw) 
 
 // 从法向量和原点直接构造平面，无需重新计算
 Plane::Plane(const float& nx, const float& ny, const float& nz,
-             const float& ox, const float& oy, const float& oz)
+             const float& ox, const float& oy, const float& oz,
+             const float& rang_)
 {
     // 设置平面法向量和原点
     n = (cv::Mat_<float>(3, 1) << nx, ny, nz);
     o = (cv::Mat_<float>(3, 1) << ox, oy, oz);
-    rang = 0.0f;
+    rang = rang_;
 
     // 计算从世界坐标系到平面坐标系的变换矩阵
     // 使平面的Y轴与世界的Y轴对齐
@@ -76,8 +77,8 @@ Plane::Plane(const float& nx, const float& ny, const float& nz,
         Tpw.rowRange(0, 3).colRange(0, 3) = ExpSO3(v * ang / sa) * ExpSO3(up * rang);
     }
     else
-    {  // 法向量平行于up向量，不需要旋转
-        Tpw.rowRange(0, 3).colRange(0, 3) = cv::Mat::eye(3, 3, CV_32F);
+    {  // 法向量平行于up向量，绕up旋转rang角度
+        Tpw.rowRange(0, 3).colRange(0, 3) = ExpSO3(up * rang);
     }
 
     o.copyTo(Tpw.col(3).rowRange(0, 3));  // 设置平移部分
