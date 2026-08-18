@@ -1,22 +1,8 @@
-package com.orb.slam2s.rendering.render;
-
-/*
- * Copyright 2017 Google Inc. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+package com.orb.slam2s.graphics;
 
 import android.content.Context;
 import android.graphics.PixelFormat;
+import android.opengl.Matrix;
 import android.util.Log;
 import android.view.Choreographer;
 import android.view.Surface;
@@ -43,9 +29,9 @@ import com.google.android.filament.gltfio.MaterialProvider;
 import com.google.android.filament.gltfio.ResourceLoader;
 import com.google.android.filament.gltfio.UbershaderProvider;
 import com.google.android.filament.utils.Utils;
+import com.orb.slam2s.graphics.AspectSurfaceView;
 import com.orb.slam2s.ipc.SlamIPCClient;
-import com.orb.slam2s.rendering.gles.FilamentAspectSurfaceView;
-import com.orb.slam2s.utils.TouchHelper;
+import com.orb.slam2s.util.TouchGestureHelper;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -53,16 +39,16 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-// 用于在 AR 环境中渲染 3D 模型（GLB 格式）的包装类，基于 Google Filament 渲染引擎
-// 读 shared memory 共享内存 MVP / draw 标志，无 Binder 调用与 GC
-public class ModelRendererWrapper {
-    private static final String TAG = "ModelRendererWrapper";
+// 基于 Google Filament 引擎的 AR 3D 模型 (GLB) 渲染包装器
+// 采用共享内存直接读取 MVP 与渲染状态标志，免去 Binder 调用与频繁 GC
+public class FilamentModelRenderer {
+    private static final String TAG = "FilamentModelRenderer";
 
     static {
         Utils.init();
     }
 
-    private FilamentAspectSurfaceView arObjectView;
+    private AspectSurfaceView arObjectView;
     private Context context;
     private SlamIPCClient slamIPCClient;
 
@@ -131,47 +117,47 @@ public class ModelRendererWrapper {
         }
     };
 
-    private ModelRendererWrapper() {
-        android.opengl.Matrix.setIdentityM(modelMatrix, 0);
-        android.opengl.Matrix.setIdentityM(viewMatrix, 0);
-        android.opengl.Matrix.setIdentityM(projectionMatrix, 0);
+    private FilamentModelRenderer() {
+        Matrix.setIdentityM(modelMatrix, 0);
+        Matrix.setIdentityM(viewMatrix, 0);
+        Matrix.setIdentityM(projectionMatrix, 0);
     }
 
-    public static ModelRendererWrapper newInstance() {
-        return new ModelRendererWrapper();
+    public static FilamentModelRenderer newInstance() {
+        return new FilamentModelRenderer();
     }
 
-    public ModelRendererWrapper setArObjectView(FilamentAspectSurfaceView arObjectView) {
+    public FilamentModelRenderer setArObjectView(AspectSurfaceView arObjectView) {
         this.arObjectView = arObjectView;
         return this;
     }
 
-    public ModelRendererWrapper setContext(Context context) {
+    public FilamentModelRenderer setContext(Context context) {
         this.context = context;
         return this;
     }
 
-    public ModelRendererWrapper setSlamIPCClient(SlamIPCClient client) {
+    public FilamentModelRenderer setSlamIPCClient(SlamIPCClient client) {
         this.slamIPCClient = client;
         return this;
     }
 
-    public ModelRendererWrapper setModelPath(String modelPath) {
+    public FilamentModelRenderer setModelPath(String modelPath) {
         this.modelPath = modelPath;
         return this;
     }
 
-    public ModelRendererWrapper setInitSize(float initSize) {
+    public FilamentModelRenderer setInitSize(float initSize) {
         this.initSize = initSize;
         return this;
     }
 
-    public ModelRendererWrapper setDrawStateListener(DrawStateListener listener) {
+    public FilamentModelRenderer setDrawStateListener(DrawStateListener listener) {
         this.drawStateListener = listener;
         return this;
     }
 
-    public ModelRendererWrapper init(TouchHelper touchHelper) {
+    public FilamentModelRenderer init(TouchGestureHelper touchHelper) {
         if (arObjectView == null) {
             Log.e(TAG, "ArObjectView为空，无法初始化");
             return this;
@@ -190,8 +176,6 @@ public class ModelRendererWrapper {
                         currentScaleFactor = MAX_SCALE;
                     }
                     if (slamIPCClient != null) {
-                        // SLAM 状态（gArObjectScale）位于 :slam_process 进程，
-                        // 必须走 IPC 才能持久化到保存的 AR 物体数据
                         slamIPCClient.updateArObjectScale(scaleFactor);
                     }
                 }
@@ -433,7 +417,7 @@ public class ModelRendererWrapper {
         }
 
         if (matricesReady) {
-            if (android.opengl.Matrix.invertM(tempCameraModelMatrix, 0, viewMatrix, 0)) {
+            if (Matrix.invertM(tempCameraModelMatrix, 0, viewMatrix, 0)) {
                 camera.setModelMatrix(tempCameraModelMatrix);
             } else {
                 camera.setModelMatrix(viewMatrix);
@@ -454,21 +438,21 @@ public class ModelRendererWrapper {
                 if (wantDraw) {
                     float finalScale = initSize * currentScaleFactor * autoScaleFactor;
 
-                    android.opengl.Matrix.setIdentityM(tempTransformMatrix, 0);
-                    android.opengl.Matrix.scaleM(tempTransformMatrix, 0, finalScale, finalScale, finalScale);
-                    android.opengl.Matrix.rotateM(tempTransformMatrix, 0, 180.0f, 1.0f, 0.0f, 0.0f);
+                    Matrix.setIdentityM(tempTransformMatrix, 0);
+                    Matrix.scaleM(tempTransformMatrix, 0, finalScale, finalScale, finalScale);
+                    Matrix.rotateM(tempTransformMatrix, 0, 180.0f, 1.0f, 0.0f, 0.0f);
                     if (Math.abs(userRotationY) > 0.01f) {
-                        android.opengl.Matrix.rotateM(tempTransformMatrix, 0, userRotationY, 0.0f, 1.0f, 0.0f);
+                        Matrix.rotateM(tempTransformMatrix, 0, userRotationY, 0.0f, 1.0f, 0.0f);
                     }
                     if (Math.abs(userRotationX) > 0.01f) {
-                        android.opengl.Matrix.rotateM(tempTransformMatrix, 0, userRotationX, 1.0f, 0.0f, 0.0f);
+                        Matrix.rotateM(tempTransformMatrix, 0, userRotationX, 1.0f, 0.0f, 0.0f);
                     }
 
-                    android.opengl.Matrix.multiplyMM(tempScaledModelMatrix, 0, modelMatrix, 0, tempTransformMatrix, 0);
+                    Matrix.multiplyMM(tempScaledModelMatrix, 0, modelMatrix, 0, tempTransformMatrix, 0);
                     tm.setTransform(instance, tempScaledModelMatrix);
                 } else {
-                    android.opengl.Matrix.setIdentityM(tempHiddenMatrix, 0);
-                    android.opengl.Matrix.scaleM(tempHiddenMatrix, 0, 0.0f, 0.0f, 0.0f);
+                    Matrix.setIdentityM(tempHiddenMatrix, 0);
+                    Matrix.scaleM(tempHiddenMatrix, 0, 0.0f, 0.0f, 0.0f);
                     tm.setTransform(instance, tempHiddenMatrix);
                 }
             }

@@ -1,8 +1,9 @@
-package com.orb.slam2s.ui;
+package com.orb.slam2s.app;
 
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.WindowManager;
@@ -30,7 +31,7 @@ public class PrivacyConsentActivity extends AppCompatActivity {
     // 隐私协议开关：true 启动时展示隐私协议，false 跳过直接进入应用
     public static final boolean ENABLE_PRIVACY = false;
 
-    private static final String TAG = "PrivacyConsent";
+    private static final String TAG = "PrivacyConsentActivity";
     private static final String PREF_NAME = "privacy_prefs";
     private static final String KEY_AGREED = "privacy_agreed";
 
@@ -83,7 +84,7 @@ public class PrivacyConsentActivity extends AppCompatActivity {
         scrollView.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
             if (!v.canScrollVertically(1)) { // 无法继续向下滚动 = 已到底部
                 btnAgree.setEnabled(true);
-                btnAgree.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF4CAF50));
+                btnAgree.setBackgroundTintList(ColorStateList.valueOf(0xFF4CAF50));
                 btnAgree.setTextColor(0xFFFFFFFF);
                 tvScrollHint.setText(getString(R.string.privacy_scroll_done));
                 tvScrollHint.setTextColor(0xFF4CAF50);
@@ -110,15 +111,13 @@ public class PrivacyConsentActivity extends AppCompatActivity {
 
         Log.d(TAG, "正在加载隐私协议文件：" + fileName + " (语言: " + localeLang + ")");
 
-        try {
-            InputStream is = getAssets().open(fileName);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+        try (InputStream is = getAssets().open(fileName);
+             BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
             StringBuilder sb = new StringBuilder();
             String line;
             while ((line = reader.readLine()) != null) {
                 sb.append(line).append("\n");
             }
-            reader.close();
             return sb.toString();
         } catch (IOException e) {
             Log.e(TAG, "隐私文件加载失败：" + fileName, e);
@@ -139,9 +138,9 @@ public class PrivacyConsentActivity extends AppCompatActivity {
         Log.d(TAG, "已保存隐私协议");
     }
 
-    // 跳转到主应用的 ModelActivity
+    // 跳转到启动引导与权限检查 Activity
     private void startNextActivity() {
-        Intent intent = new Intent(this, ModelActivity.class);
+        Intent intent = new Intent(this, SplashActivity.class);
         startActivity(intent);
         finish();
     }

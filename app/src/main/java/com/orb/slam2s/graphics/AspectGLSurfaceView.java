@@ -1,19 +1,20 @@
-package com.orb.slam2s.rendering.gles;
+package com.orb.slam2s.graphics;
 
 import android.content.Context;
 import android.opengl.GLSurfaceView;
 import android.util.AttributeSet;
 
-public class GLRootView extends GLSurfaceView {
+// 宽高比自适应 GLSurfaceView（专供 OpenGL 预览与渲染）
+public class AspectGLSurfaceView extends GLSurfaceView {
     private int surfaceWidth;
     private int surfaceHeight;
     private double surfaceRatio;
 
-    public GLRootView(Context context) {
+    public AspectGLSurfaceView(Context context) {
         super(context);
     }
 
-    public GLRootView(Context context, AttributeSet attrs) {
+    public AspectGLSurfaceView(Context context, AttributeSet attrs) {
         super(context, attrs);
     }
 
@@ -23,7 +24,7 @@ public class GLRootView extends GLSurfaceView {
         }
         surfaceWidth = width;
         surfaceHeight = height;
-        surfaceRatio=(double)surfaceWidth/surfaceHeight;
+        surfaceRatio = (double) surfaceWidth / surfaceHeight;
         requestLayout();
     }
 
@@ -33,10 +34,12 @@ public class GLRootView extends GLSurfaceView {
         int height = MeasureSpec.getSize(heightMeasureSpec);
         int wMode = MeasureSpec.getMode(widthMeasureSpec);
         int hMode = MeasureSpec.getMode(heightMeasureSpec);
+
         if (wMode == MeasureSpec.EXACTLY && hMode == MeasureSpec.EXACTLY) {
             setMeasuredDimension(width, height);
             return;
         }
+
         if (0 == surfaceWidth || 0 == surfaceHeight) {
             setMeasuredDimension(width, height);
         } else {

@@ -283,18 +283,6 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(MenthaAR_Engine OpenMP::OpenMP_CXX -static-openmp)
 endif()
 
-# 3DOF 独立库
-add_library(Mentha_3DOF SHARED src/main/cpp/3dof.cpp src/main/cpp/Matrix.cpp)
-target_include_directories(Mentha_3DOF PRIVATE
-    ${OPENCV_SRC_DIR}/include
-    ${OPENCV_SRC_DIR}/modules/core/include
-)
-target_link_libraries(Mentha_3DOF ${log-lib} opencv_core)
-
-if(OpenMP_CXX_FOUND)
-    target_link_libraries(Mentha_3DOF OpenMP::OpenMP_CXX -static-openmp)
-endif()
-
 # Mentha 性能分析器
 set(MENTHA_DEVELOP_MODE ON) # <--- 修改这里：ON 开启，OFF 关闭
 

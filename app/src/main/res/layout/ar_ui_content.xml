@@ -2,13 +2,13 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <com.orb.slam2s.ui.CameraGLView
+    <com.orb.slam2s.camera.CameraPreviewView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
         android:id="@+id/my_fake_glsurface_view" />
 
-    <com.orb.slam2s.rendering.gles.FilamentAspectSurfaceView
+    <com.orb.slam2s.graphics.AspectSurfaceView
         android:id="@+id/ar_object_view_gles2_obj"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -20,7 +20,7 @@
         android:layout_height="wrap_content"
         android:layout_centerInParent="true" />
 
-    <com.orb.slam2s.ui.JoystickView
+    <com.orb.slam2s.ui.VirtualJoystickView
         android:id="@+id/joystick_view"
         android:layout_width="120dp"
         android:layout_height="120dp"

@@ -1,14 +1,14 @@
-package com.orb.slam2s.rendering.render;
+package com.orb.slam2s.graphics;
 
 import android.content.Context;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
+import android.opengl.Matrix;
+import android.os.Build;
 import android.util.Log;
 import android.view.WindowManager;
 
-import com.orb.slam2s.ipc.SlamIPCClient;
 import com.orb.slam2s.sensors.OrientationSensor;
-import com.orb.slam2s.slamar.NativeHelper;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -18,9 +18,14 @@ import java.nio.ShortBuffer;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-// 3DOF立方体渲染器：在视角前方指定距离处生成彩色立方体并进行3DOF跟踪
+// 3DOF 立方体渲染器：在视角前方指定距离处生成彩色立方体并进行 3DOF 空间跟踪
 public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
     private static final String TAG = "ThreeDofCubeRenderer";
+
+    private static final float AR_OBJECT_SPIN_Y_DEG = 45.0f;
+    private static final float AR_OBJECT_TILT_X_DEG = 30.0f;
+    private static final float AR_3DOF_ZNEAR = 1.0f;
+    private static final float AR_3DOF_ZFAR = 100.0f;
 
     private boolean mInitialized = false;
     private float[] mObjectWorldPos = new float[3];
@@ -30,7 +35,7 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
 
     private final float[] mvpMatrix = new float[16];
     private float mRatio = 1.0f;
-    private float mDistance = 5.0f; // 默认5米
+    private float mDistance = 5.0f; // 默认 5 米
 
     private FloatBuffer vertexBuffer;
     private FloatBuffer colorBuffer;
@@ -38,21 +43,13 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
 
     private static final int CUBE_INDEX_COUNT = 36;
     private final Context context;
-    private NativeHelper nativeHelper;
 
     // 控制是否显示立方体
     private boolean mShowCube = false;
 
-    public ThreeDofCubeRenderer(Context context, OrientationSensor sensor, NativeHelper nativeHelper) {
+    public ThreeDofCubeRenderer(Context context, OrientationSensor sensor) {
         this.context = context;
         this.orientationSensor = sensor;
-        this.nativeHelper = nativeHelper;
-    }
-
-    public ThreeDofCubeRenderer(Context context, OrientationSensor sensor, SlamIPCClient client) {
-        this.context = context;
-        this.orientationSensor = sensor;
-        this.nativeHelper = new NativeHelper(context);
     }
 
     // 在视角前方指定距离处生成立方体
@@ -93,13 +90,7 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
             "  gl_FragColor = fColor;" +
             "}";
 
-        int vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, vertexShaderCode);
-        int fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentShaderCode);
-
-        program = GLES20.glCreateProgram();
-        GLES20.glAttachShader(program, vertexShader);
-        GLES20.glAttachShader(program, fragmentShader);
-        GLES20.glLinkProgram(program);
+        program = GLUtils.createProgram(vertexShaderCode, fragmentShaderCode);
 
         createCube();
     }
@@ -119,7 +110,6 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
         }
 
         int rotation = getDisplayRotation();
-
         float[] rotationMatrix = orientationSensor.getRotationMatrix();
 
         boolean isIdentity = true;
@@ -127,19 +117,47 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
             if (rotationMatrix[i] != 0) isIdentity = false;
         }
 
-        if (!mInitialized && !isIdentity && nativeHelper != null) {
-            mObjectWorldPos = nativeHelper.calculate3DofInsertionPoint(rotationMatrix, rotation, mDistance);
+        if (!mInitialized && !isIdentity) {
+            mObjectWorldPos = calculate3DofInsertionPoint(rotationMatrix, rotation, mDistance);
             mInitialized = true;
             Log.d(TAG, String.format("立方体世界坐标已初始化: [%.2f, %.2f, %.2f]",
                     mObjectWorldPos[0], mObjectWorldPos[1], mObjectWorldPos[2]));
         }
 
-        if (mInitialized && nativeHelper != null) {
-            // 出参版 compute3DofMVP 直接填充复用缓冲，消除每帧一次的 JNI float[16] 分配
-            //（IPC 合并：叠加 null 守卫——独立进程模式下 NativeHelper 可能为空壳实例）
-            nativeHelper.compute3DofMVP(mvpMatrix, rotationMatrix, rotation, mRatio, mObjectWorldPos);
+        if (mInitialized) {
+            compute3DofMVP(mvpMatrix, rotationMatrix, rotation, mRatio, mObjectWorldPos);
             drawCube();
         }
+    }
+
+    // 纯 Java 计算 3DOF 物体世界坐标插入点（视角前方指定距离）
+    private float[] calculate3DofInsertionPoint(float[] rotationMatrix, int rotation, float distance) {
+        float[] invViewMatrix = new float[16];
+        Matrix.transposeM(invViewMatrix, 0, rotationMatrix, 0);
+
+        float[] targetPosCameraSpace = {0.0f, 0.0f, -distance, 1.0f};
+        float[] worldPos = new float[4];
+        Matrix.multiplyMV(worldPos, 0, invViewMatrix, 0, targetPosCameraSpace, 0);
+        return new float[]{worldPos[0], worldPos[1], worldPos[2]};
+    }
+
+    // 纯 Java 计算 3DOF MVP 矩阵
+    private void compute3DofMVP(float[] outMvp, float[] rotationMatrix, int rotation, float ratio, float[] objectPos) {
+        float[] projectionMatrix = new float[16];
+        Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, -1, 1, AR_3DOF_ZNEAR, AR_3DOF_ZFAR);
+
+        float[] modelMatrix = new float[16];
+        Matrix.setIdentityM(modelMatrix, 0);
+        float ox = objectPos != null && objectPos.length > 0 ? objectPos[0] : 0.0f;
+        float oy = objectPos != null && objectPos.length > 1 ? objectPos[1] : 0.0f;
+        float oz = objectPos != null && objectPos.length > 2 ? objectPos[2] : 0.0f;
+        Matrix.translateM(modelMatrix, 0, ox, oy, oz);
+        Matrix.rotateM(modelMatrix, 0, AR_OBJECT_SPIN_Y_DEG, 0.0f, 1.0f, 0.0f);
+        Matrix.rotateM(modelMatrix, 0, AR_OBJECT_TILT_X_DEG, 1.0f, 0.0f, 0.0f);
+
+        float[] tempMatrix = new float[16];
+        Matrix.multiplyMM(tempMatrix, 0, rotationMatrix, 0, modelMatrix, 0);
+        Matrix.multiplyMM(outMvp, 0, projectionMatrix, 0, tempMatrix, 0);
     }
 
     private void createCube() {
@@ -204,7 +222,6 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
         indexBuffer.position(0);
     }
 
-    // 句柄在链接后缓存——原先每帧 3 次驱动级查询是纯开销
     private int positionHandle = -1;
     private int colorHandle = -1;
     private int mvpMatrixHandle = -1;
@@ -232,18 +249,11 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
         GLES20.glDisableVertexAttribArray(colorHandle);
     }
 
-    private int loadShader(int type, String shaderCode) {
-        int shader = GLES20.glCreateShader(type);
-        GLES20.glShaderSource(shader, shaderCode);
-        GLES20.glCompileShader(shader);
-        return shader;
-    }
-
     private int getDisplayRotation() {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             try {
                 return context.getDisplay().getRotation();
-            } catch (Exception | NoSuchMethodError e) {
+            } catch (Exception | NoSuchMethodError ignored) {
             }
         }
         return getLegacyRotation();

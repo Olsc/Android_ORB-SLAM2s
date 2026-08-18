@@ -1,20 +1,20 @@
-package com.orb.slam2s.rendering.gles;
+package com.orb.slam2s.graphics;
 
 import android.content.Context;
 import android.util.AttributeSet;
 import android.view.SurfaceView;
 
-// 具有比例自适应功能的 SurfaceView
-public class FilamentAspectSurfaceView extends SurfaceView {
+// 宽高比自适应 SurfaceView（专供 Filament / 自定义 Surface 渲染）
+public class AspectSurfaceView extends SurfaceView {
     private int surfaceWidth;
     private int surfaceHeight;
     private double surfaceRatio;
 
-    public FilamentAspectSurfaceView(Context context) {
+    public AspectSurfaceView(Context context) {
         super(context);
     }
 
-    public FilamentAspectSurfaceView(Context context, AttributeSet attrs) {
+    public AspectSurfaceView(Context context, AttributeSet attrs) {
         super(context, attrs);
     }
 

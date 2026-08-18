@@ -9,51 +9,43 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 
-// 虚拟摇杆控件：手柄偏离中心的角度控制AR物体Y轴旋转，偏离距离控制旋转力度
-// 只在 AR 物体存在时由 Activity 控制显隐
-public class JoystickView extends View {
+// 虚拟摇杆控件：控制 AR 物体旋转角度与力度
+public class VirtualJoystickView extends View {
 
-    // 绘制元素
     private final Paint mBgPaint;
     private final Paint mHandlePaint;
     private final Paint mRingPaint;
     private final Paint mCrossPaint;
-    private final Paint mHandleRingPaint;  // 复用避免onDraw中分配
+    private final Paint mHandleRingPaint;
 
-    // 几何尺寸
     private float mCenterX;
     private float mCenterY;
-    private float mRadius;          // 摇杆底座半径
-    private float mHandleRadius;    // 手柄半径
+    private float mRadius;
+    private float mHandleRadius;
 
-    // 手柄状态
     private float mHandleX;
     private float mHandleY;
     private boolean mIsDragging = false;
 
-    // 输出值
-    private float mRotationAngle = 0.0f;   // 0~360度，绕Y轴旋转
-    private float mIntensity = 0.0f;        // 0~1，旋转力度
+    private float mRotationAngle = 0.0f;
+    private float mIntensity = 0.0f;
 
-    // 回调
     private OnJoystickListener mListener;
 
-    // 常量
-    private static final float HANDLE_RATIO = 0.28f;    // 手柄半径 / 底座半径
-    private static final float DEAD_ZONE_RATIO = 0.08f; // 死区半径 / 底座半径
-    private static final int HANDLE_COLOR = 0xCCFFFFFF;  // 较亮白色
-    private static final int RING_COLOR = 0x60FFFFFF;    // 淡白色环
+    private static final float HANDLE_RATIO = 0.28f;
+    private static final float DEAD_ZONE_RATIO = 0.08f;
+    private static final int HANDLE_COLOR = 0xCCFFFFFF;
+    private static final int RING_COLOR = 0x60FFFFFF;
 
     public interface OnJoystickListener {
-        // 摇杆值变化回调，angleDeg 为偏离角度(0~360度)，intensity 为力度(0~1)
         void onJoystickUpdate(float angleDeg, float intensity);
     }
 
-    public JoystickView(Context context) {
+    public VirtualJoystickView(Context context) {
         this(context, null);
     }
 
-    public JoystickView(Context context, AttributeSet attrs) {
+    public VirtualJoystickView(Context context, AttributeSet attrs) {
         super(context, attrs);
 
         mBgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -77,12 +69,11 @@ public class JoystickView extends View {
         mHandleRingPaint.setStrokeWidth(2.0f);
         mHandleRingPaint.setColor(0x80FFFFFF);
 
-        // 默认不可见（AR物体出现时由Activity设为VISIBLE）
         setVisibility(GONE);
     }
 
     public void setOnJoystickListener(OnJoystickListener listener) {
-        mListener = listener;
+        this.mListener = listener;
     }
 
     @Override
@@ -93,11 +84,9 @@ public class JoystickView extends View {
         mRadius = Math.min(w, h) / 2.0f * 0.85f;
         mHandleRadius = mRadius * HANDLE_RATIO;
 
-        // 初始化手柄位置在中心
         mHandleX = mCenterX;
         mHandleY = mCenterY;
 
-        // 创建背景渐变
         mBgPaint.setShader(new RadialGradient(
                 mCenterX, mCenterY, mRadius,
                 new int[]{0x30FFFFFF, 0x10FFFFFF, 0x00FFFFFF},
@@ -116,13 +105,10 @@ public class JoystickView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-
         if (mRadius <= 0) return;
 
-        // 绘制底座背景
+        // 绘制底座背景与圆环
         canvas.drawCircle(mCenterX, mCenterY, mRadius, mBgPaint);
-
-        // 绘制底座圆环
         canvas.drawCircle(mCenterX, mCenterY, mRadius, mRingPaint);
         canvas.drawCircle(mCenterX, mCenterY, mRadius * 0.65f, mRingPaint);
 
@@ -133,8 +119,6 @@ public class JoystickView extends View {
 
         // 绘制手柄
         canvas.drawCircle(mHandleX, mHandleY, mHandleRadius, mHandlePaint);
-
-        // 手柄外环（复用预分配的Paint）
         canvas.drawCircle(mHandleX, mHandleY, mHandleRadius + 2, mHandleRingPaint);
     }
 
@@ -172,20 +156,22 @@ public class JoystickView extends View {
         return super.onTouchEvent(event);
     }
 
-    // 判断触摸点是否在摇杆底座范围内
+    @Override
+    public boolean performClick() {
+        return super.performClick();
+    }
+
     private boolean isInsideBase(float x, float y) {
         float dx = x - mCenterX;
         float dy = y - mCenterY;
         return (dx * dx + dy * dy) <= (mRadius * mRadius);
     }
 
-    // 更新手柄位置并计算输出值
     private void updateHandlePosition(float touchX, float touchY) {
         float dx = touchX - mCenterX;
         float dy = touchY - mCenterY;
         float distance = (float) Math.sqrt(dx * dx + dy * dy);
 
-        // 限制在底座范围内
         if (distance > mRadius) {
             float scale = mRadius / distance;
             dx *= scale;
@@ -196,24 +182,18 @@ public class JoystickView extends View {
         mHandleX = mCenterX + dx;
         mHandleY = mCenterY + dy;
 
-        // 检查死区
         float deadZone = mRadius * DEAD_ZONE_RATIO;
         if (distance < deadZone) {
             mRotationAngle = 0.0f;
             mIntensity = 0.0f;
         } else {
-            // 计算角度：atan2(dy, dx)，0=右，顺时针增加
-            // 用户左右拖拽 = Y轴旋转（水平拖拽控制绕Y轴旋转）
             float rawAngle = (float) Math.toDegrees(Math.atan2(dy, dx));
-            // 规范化到 0~360
             mRotationAngle = (rawAngle + 360.0f) % 360.0f;
 
-            // 力度：死区外线性 0~1
             mIntensity = (distance - deadZone) / (mRadius - deadZone);
             mIntensity = Math.min(1.0f, Math.max(0.0f, mIntensity));
         }
 
-        // 回调
         if (mListener != null) {
             mListener.onJoystickUpdate(mRotationAngle, mIntensity);
         }
@@ -221,7 +201,6 @@ public class JoystickView extends View {
         invalidate();
     }
 
-    // 松手后手柄弹回中心
     private void resetHandle() {
         mHandleX = mCenterX;
         mHandleY = mCenterY;
