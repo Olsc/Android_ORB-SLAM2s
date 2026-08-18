@@ -2002,9 +2002,10 @@ bool Tracking::TrackLocalMap()
         mConsecutiveFail=0;
     }
     mnMatchesInliers = 0;
+    mnLocalMatchesInliers = 0;
+    mnLoadedMapInliers = 0;
 
     // 统计匹配到加载点的数量，作为置信度来源
-    int mnLoadedMapInliers = 0;
     int mnLoadedMapInliersCurMap = 0;
     const int curMapIdForCount = mnCurrentMapId.load();
 
@@ -2021,6 +2022,8 @@ bool Tracking::TrackLocalMap()
                     mnLoadedMapInliers++;
                     if(mCurrentFrame.mvpMapPoints[i]->mnMapId == curMapIdForCount)
                         mnLoadedMapInliersCurMap++;
+                } else {
+                    mnLocalMatchesInliers++;
                 }
                 if(!mbOnlyTracking)
                 {
@@ -2126,8 +2129,10 @@ bool Tracking::NeedNewKeyFrame()
     const bool c1_init = (nKFs<=NEW_MAP_KF_COUNT && mCurrentFrame.mnId>=mnLastKeyFrameId+mMinFrames);
     // 条件1c：跟踪较弱（单目模式不适用）
     const bool c1c = false;
-    // 条件2：与参考关键帧相比跟踪点较少。与地图匹配相比有很多视觉里程计。
-    const bool c2 = ((mnMatchesInliers<nRefMatches*thRefRatio|| bNeedToInsertClose) && mnMatchesInliers>=TRACKING_SUCCESS_LOADED);
+    // 条件2：与参考关键帧相比跟踪点较少。
+    // 重要：使用本地内点 mnLocalMatchesInliers 进行评估，避免已加载地图点充斥视野时抑制关键帧插入导致建图停止
+    const int inliersForDecision = (mnLoadedMapInliers > 0 && mnLocalMatchesInliers > 0) ? mnLocalMatchesInliers : mnMatchesInliers;
+    const bool c2 = ((inliersForDecision < nRefMatches*thRefRatio || bNeedToInsertClose) && mnMatchesInliers>=TRACKING_SUCCESS_LOADED);
 
     if ((c1a || c1b || c1c || c1_init) && c2)
     {

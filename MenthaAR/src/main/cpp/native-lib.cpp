@@ -1047,17 +1047,61 @@ static void writePointCloudToSharedMemory() {
         localMPs = vMPs;
     }
 
+    cv::Mat curTcw;
+    {
+        std::lock_guard<std::mutex> tcwLock(gTcwLock);
+        curTcw = gCachedTcw.clone();
+    }
+    if (curTcw.empty() || curTcw.rows < 3 || curTcw.cols < 4) {
+        *shIntPtr(SH_OFF_POINTCLOUD_BYTES) = 0;
+        return;
+    }
+
+    // 提取当前相机的本地位姿 (SLAM 坐标系)
+    const float Rs00 = curTcw.at<float>(0,0), Rs01 = curTcw.at<float>(0,1), Rs02 = curTcw.at<float>(0,2), ts0 = curTcw.at<float>(0,3);
+    const float Rs10 = curTcw.at<float>(1,0), Rs11 = curTcw.at<float>(1,1), Rs12 = curTcw.at<float>(1,2), ts1 = curTcw.at<float>(1,3);
+    const float Rs20 = curTcw.at<float>(2,0), Rs21 = curTcw.at<float>(2,1), Rs22 = curTcw.at<float>(2,2), ts2 = curTcw.at<float>(2,3);
+
+    // 检查是否有地图对齐位姿
+    bool hasAlign = false;
+    cv::Mat mapTcw;
+    {
+        std::lock_guard<std::mutex> ptrLock(gSlamPtrLock);
+        if (slamSys && slamSys->HasMapAlignment()) {
+            mapTcw = slamSys->GetMapAlignedPose(curTcw);
+            hasAlign = (!mapTcw.empty() && mapTcw.rows >= 3 && mapTcw.cols >= 4);
+        }
+    }
+    const float Rm00 = hasAlign ? mapTcw.at<float>(0,0) : 0, Rm01 = hasAlign ? mapTcw.at<float>(0,1) : 0, Rm02 = hasAlign ? mapTcw.at<float>(0,2) : 0, tm0 = hasAlign ? mapTcw.at<float>(0,3) : 0;
+    const float Rm10 = hasAlign ? mapTcw.at<float>(1,0) : 0, Rm11 = hasAlign ? mapTcw.at<float>(1,1) : 0, Rm12 = hasAlign ? mapTcw.at<float>(1,2) : 0, tm1 = hasAlign ? mapTcw.at<float>(1,3) : 0;
+    const float Rm20 = hasAlign ? mapTcw.at<float>(2,0) : 0, Rm21 = hasAlign ? mapTcw.at<float>(2,1) : 0, Rm22 = hasAlign ? mapTcw.at<float>(2,2) : 0, tm2 = hasAlign ? mapTcw.at<float>(2,3) : 0;
+
     const size_t NMPs = localMPs.size();
     for (size_t i = 0; i < NMPs; ++i) {
         ORB_SLAM2::MapPoint* pMP = localMPs[i];
         if (!pMP || pMP->isBad()) continue;
         cv::Point3f Pw;
         pMP->GetWorldPos(Pw);
+
+        float PcX, PcY, PcZ;
+        if (pMP->mbFromLoadedMap) {
+            if (!hasAlign) continue; // 未对齐时不渲染加载点
+            PcX = Rm00*Pw.x + Rm01*Pw.y + Rm02*Pw.z + tm0;
+            PcY = Rm10*Pw.x + Rm11*Pw.y + Rm12*Pw.z + tm1;
+            PcZ = Rm20*Pw.x + Rm21*Pw.y + Rm22*Pw.z + tm2;
+        } else {
+            // 实时扫描的蓝色点：使用当前纯净 SLAM 位姿转换到相机空间
+            PcX = Rs00*Pw.x + Rs01*Pw.y + Rs02*Pw.z + ts0;
+            PcY = Rs10*Pw.x + Rs11*Pw.y + Rs12*Pw.z + ts1;
+            PcZ = Rs20*Pw.x + Rs21*Pw.y + Rs22*Pw.z + ts2;
+        }
+
+        if (PcZ <= 0.05f) continue; // 过滤相机后方与极近异常点
         if (n * 7 + 7 > maxFloats) break;
 
-        dst[n*7+0] = Pw.x;
-        dst[n*7+1] = Pw.y;
-        dst[n*7+2] = Pw.z;
+        dst[n*7+0] = PcX;
+        dst[n*7+1] = PcY;
+        dst[n*7+2] = PcZ;
         if (pMP->mbFromLoadedMap) {
             dst[n*7+3] = 0.0f; dst[n*7+4] = 1.0f; dst[n*7+5] = 0.0f;       // 绿色
         } else {
@@ -1067,8 +1111,9 @@ static void writePointCloudToSharedMemory() {
         n++;
     }
 
+    // 补充渲染已加载的参考地图点云（仅在对齐成功时）
     const int status = slamSys->GetTrackingState();
-    if (status == 2 && slamSys->HasMapAlignment()) {
+    if (status == 2 && hasAlign) {
         std::vector<ORB_SLAM2::MapPoint*> allMPs = slamSys->GetAllMapPoints();
         int count = 0;
         const int maxDrawPoints = 3000;
@@ -1077,11 +1122,17 @@ static void writePointCloudToSharedMemory() {
 
             cv::Point3f Pw;
             pMP->GetWorldPos(Pw);
+
+            const float PcX = Rm00*Pw.x + Rm01*Pw.y + Rm02*Pw.z + tm0;
+            const float PcY = Rm10*Pw.x + Rm11*Pw.y + Rm12*Pw.z + tm1;
+            const float PcZ = Rm20*Pw.x + Rm21*Pw.y + Rm22*Pw.z + tm2;
+
+            if (PcZ <= 0.05f) continue;
             if (n * 7 + 7 > maxFloats) break;
 
-            dst[n*7+0] = Pw.x;
-            dst[n*7+1] = Pw.y;
-            dst[n*7+2] = Pw.z;
+            dst[n*7+0] = PcX;
+            dst[n*7+1] = PcY;
+            dst[n*7+2] = PcZ;
             dst[n*7+3] = 0.0f; dst[n*7+4] = 1.0f; dst[n*7+5] = 0.0f;
             dst[n*7+6] = 4.0f;
             n++;

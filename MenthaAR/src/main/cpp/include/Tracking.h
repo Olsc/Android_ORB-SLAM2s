@@ -245,6 +245,8 @@ protected:
 
     // 当前帧中的匹配数
     int mnMatchesInliers;
+    int mnLocalMatchesInliers;   // 本地实时扫描建立的内点数
+    int mnLoadedMapInliers;      // 来自已加载地图的内点数
 
     //上一帧、关键帧和重定位信息
     KeyFrame* mpLastKeyFrame;

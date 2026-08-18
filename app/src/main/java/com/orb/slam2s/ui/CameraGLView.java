@@ -352,8 +352,8 @@ public class CameraGLView extends CameraGLViewBase {
             if (slamIPCClient != null && slamIPCClient.isConnected() && pointCloudProgram != null) {
                 int floats = slamIPCClient.readPointCloud(pointCloudBuffer, pointCloudBuffer.length);
                 if (floats > 0 && slamIPCClient.readMvp(tempMvp)) {
-                    android.opengl.Matrix.multiplyMM(tmpVp, 0, tempMvp, 16, RDF_TO_RUB, 0);
-                    android.opengl.Matrix.multiplyMM(vpMatrix, 0, tempMvp, 32, tmpVp, 0);
+                    // 点云已在当前相机坐标系 (RDF)，直接由 ProjectionMatrix * RDF_TO_RUB 投影
+                    android.opengl.Matrix.multiplyMM(vpMatrix, 0, tempMvp, 32, RDF_TO_RUB, 0);
                     pointCloudProgram.updatePoints(pointCloudBuffer, floats);
                     GLES20.glDisable(GLES20.GL_DEPTH_TEST);
                     pointCloudProgram.draw(vpMatrix);

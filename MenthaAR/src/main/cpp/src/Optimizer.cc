@@ -304,6 +304,10 @@ int Optimizer::PoseOptimization(Frame *pFrame)
         MapPoint* pMP = pFrame->mvpMapPoints[i];
         if(pMP)
         {
+            // 加载的地图点处于 Map-world 历史坐标系，绝不能混入当前本地 SLAM 帧的位姿优化中
+            if(pMP->mbFromLoadedMap)
+                continue;
+
             nInitialCorrespondences++;
             pFrame->mvbOutlier[i] = false;
 
@@ -435,7 +439,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
         {
             MapPoint* pMP = *vit;
             if(pMP)
-                if(!pMP->isBad())
+                if(!pMP->isBad() && !pMP->mbFromLoadedMap)
                     if(pMP->mnBALocalForKF!=pKF->mnId)
                     {
                         lLocalMapPoints.push_back(pMP);
