@@ -388,7 +388,6 @@ public class ArCamUIActivity extends AppCompatActivity implements
 
         modelRendererWrapper = ModelRendererWrapper.newInstance()
                 .setArObjectView(glRootView)
-                .setNativeHelper(nativeHelper)
                 .setSlamIPCClient(slamIPCClient)
                 .setContext(this)
                 .setModelPath("model.glb")

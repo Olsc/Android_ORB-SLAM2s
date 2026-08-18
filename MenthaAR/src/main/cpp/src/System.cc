@@ -363,7 +363,7 @@ void System::CreateNewMap()
     }
 
     Map* pNewMap = new Map();
-    pNewMap->mnId = mvpMaps.size();
+    pNewMap->mnId = mnNextMapId++;   // 单调递增，避免逐出旧地图后 ID 复用冲突
     mvpMaps.push_back(pNewMap);
 
     LOGD("System::CreateNewMap 新地图 ID=%lu (旧地图保留为子地图，共 %zu 个)",

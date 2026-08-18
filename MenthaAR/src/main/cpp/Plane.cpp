@@ -166,7 +166,14 @@ void Plane::Recompute()
     Tpw = cv::Mat::eye(4, 4, CV_32F);
 
     // 组合旋转：先将法向量旋转到up方向，再绕法向量旋转
-    Tpw.rowRange(0, 3).colRange(0, 3) = ExpSO3(v * ang / sa) * ExpSO3(up * rang);
+    if (sa > 1e-6)
+    {  // 法向量不平行于up向量
+        Tpw.rowRange(0, 3).colRange(0, 3) = ExpSO3(v * ang / sa) * ExpSO3(up * rang);
+    }
+    else
+    {  // 法向量平行于up向量（如水平地面），绕up旋转rang角度
+        Tpw.rowRange(0, 3).colRange(0, 3) = ExpSO3(up * rang);
+    }
     o.copyTo(Tpw.col(3).rowRange(0, 3));  // 设置平移部分
 
     // 转换为OpenGL格式

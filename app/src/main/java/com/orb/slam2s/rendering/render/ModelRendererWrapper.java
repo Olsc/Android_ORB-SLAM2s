@@ -45,7 +45,6 @@ import com.google.android.filament.gltfio.UbershaderProvider;
 import com.google.android.filament.utils.Utils;
 import com.orb.slam2s.ipc.SlamIPCClient;
 import com.orb.slam2s.rendering.gles.FilamentAspectSurfaceView;
-import com.orb.slam2s.slamar.NativeHelper;
 import com.orb.slam2s.utils.TouchHelper;
 
 import java.io.IOException;
@@ -65,7 +64,6 @@ public class ModelRendererWrapper {
 
     private FilamentAspectSurfaceView arObjectView;
     private Context context;
-    private NativeHelper nativeHelper;
     private SlamIPCClient slamIPCClient;
 
     private String modelPath;
@@ -153,11 +151,6 @@ public class ModelRendererWrapper {
         return this;
     }
 
-    public ModelRendererWrapper setNativeHelper(NativeHelper nativeHelper) {
-        this.nativeHelper = nativeHelper;
-        return this;
-    }
-
     public ModelRendererWrapper setSlamIPCClient(SlamIPCClient client) {
         this.slamIPCClient = client;
         return this;
@@ -196,8 +189,10 @@ public class ModelRendererWrapper {
                     } else if (currentScaleFactor > MAX_SCALE) {
                         currentScaleFactor = MAX_SCALE;
                     }
-                    if (nativeHelper != null) {
-                        nativeHelper.updateArObjectScale(scaleFactor);
+                    if (slamIPCClient != null) {
+                        // SLAM 状态（gArObjectScale）位于 :slam_process 进程，
+                        // 必须走 IPC 才能持久化到保存的 AR 物体数据
+                        slamIPCClient.updateArObjectScale(scaleFactor);
                     }
                 }
             });

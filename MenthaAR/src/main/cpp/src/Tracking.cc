@@ -186,9 +186,26 @@ static bool SolvePnPSafe(const std::vector<cv::Point3f>& pts3d,
 // 使用参考快照在主线程快速绑定已加载地图点，避免只出现一次的闪烁现象
 void ORB_SLAM2::Tracking::BindLoadedMapPointsUsingSnapshots()
 {
-    // 只在真正对齐成功后才绑定，防止在错误位置强制匹配
-    // Reset后未对齐时应允许正常扫描新点，因此需检查对齐状态
-    if (mRefDesc.empty())
+    // 锁内一次性拷贝不可变快照（shared_ptr 为 O(1)，描述子为浅拷贝），
+    // 循环在锁外读取，避免与后台线程 BuildLoadedRefCache 的发布写操作竞争
+    std::shared_ptr<const std::vector<RefMPSnapshot>> refSnaps;
+    std::shared_ptr<const std::vector<MapPoint*>> refMPs;
+    cv::Mat refDesc;
+    bool haveAlign = false;
+    {
+        std::unique_lock<std::mutex> lk(mMutexReloc);
+        // 只有在成功对齐后才绑定，防止Reset后在没有对齐的情况下错误匹配
+        // 但如果地图已加载但没有对齐，应该允许系统继续扫描新点，而不是强制绑定旧地图点
+        if(!mbHaveMapAlign) {
+            // 没有对齐时，不进行绑定，允许系统正常扫描新点
+            return;
+        }
+        refSnaps = mpRefSnapshots;
+        refMPs  = mpRefIdxToMP;
+        refDesc = mRefDesc;          // cv::Mat 浅拷贝（引用计数）
+        haveAlign = mbHaveMapAlign;
+    }
+    if (refDesc.empty())
         return;
 
     // 若当前帧无位姿/关键点，跳过
@@ -199,26 +216,8 @@ void ORB_SLAM2::Tracking::BindLoadedMapPointsUsingSnapshots()
     // 阈值取自Config.h，避免每帧做繁重的投影匹配
     if(mnMatchesInliers > MAIN_THREAD_BIND_INLIER_THRESHOLD) return;
 
-    // 只有在成功对齐后才绑定，防止Reset后在没有对齐的情况下错误匹配
-    // 但如果地图已加载但没有对齐，应该允许系统继续扫描新点，而不是强制绑定旧地图点
-    {
-        std::unique_lock<std::mutex> lk(mMutexReloc);
-        if(!mbHaveMapAlign) {
-            // 没有对齐时，不进行绑定，允许系统正常扫描新点
-            return;
-        }
-    }
-
-    // 锁内仅拷贝 shared_ptr 快照（O(1)），循环在锁外读取不可变数据
-    std::shared_ptr<const std::vector<RefMPSnapshot>> refSnaps;
-    std::shared_ptr<const std::vector<MapPoint*>> refMPs;
-    {
-        std::unique_lock<std::mutex> lk(mMutexReloc);
-        refSnaps = mpRefSnapshots;
-        refMPs  = mpRefIdxToMP;
-    }
     if(!refSnaps || !refMPs || refSnaps->empty() || refMPs->empty()) return;
-    if(refSnaps->size() != refMPs->size() || mRefDesc.rows != (int)refMPs->size()) return;
+    if(refSnaps->size() != refMPs->size() || refDesc.rows != (int)refMPs->size()) return;
 
     // 通过当前帧位姿投影快照点，进行半径内最近邻像素匹配（不读 MP 成员）
     const float &fx = mCurrentFrame.fx;
@@ -245,18 +244,21 @@ void ORB_SLAM2::Tracking::BindLoadedMapPointsUsingSnapshots()
     struct BindCandidate { int refIdx; int frameIdx; float projErr; float depth; };
     std::vector<BindCandidate> candidates; candidates.reserve(nMaxBind * 2);
 
-    const bool haveAlign = mbHaveMapAlign;
     // const float radius = haveAlign ? 12.0f : 8.0f;
     const float radius = haveAlign ? TRACKING_SEARCH_RADIUS_ALIGNED : TRACKING_SEARCH_RADIUS_UNALIGNED;
 
-    // 使用网格搜索减少遍历数量 (无需重复加锁，复用外层 lk 锁)
+    // 使用网格搜索减少遍历数量；持锁访问 mRefGrid，
+    // 避免与后台线程 BuildLoadedRefCache 的发布（move 赋值）竞争导致 cells 引用悬空
     std::vector<int> gridCandidates;
     bool useGrid = false;
-    if(mRefGrid.nCols > 0) {
-         cv::Point3f Ow;
-         mCurrentFrame.GetCameraCenter(Ow);   // 栈版
-         mRefGrid.GetCandidatesInBBox(Ow, TRACKING_GRID_SEARCH_RADIUS, gridCandidates); // 40m radius
-         useGrid = true;
+    {
+        std::unique_lock<std::mutex> lk(mMutexReloc);
+        if(mRefGrid.nCols > 0) {
+             cv::Point3f Ow;
+             mCurrentFrame.GetCameraCenter(Ow);   // 栈版
+             mRefGrid.GetCandidatesInBBox(Ow, TRACKING_GRID_SEARCH_RADIUS, gridCandidates); // 40m radius
+             useGrid = true;
+        }
     }
 
     const size_t totalPoints = useGrid ? gridCandidates.size() : refSnaps->size();
@@ -2968,13 +2970,8 @@ void Tracking::ClearTrackingState()
     mLastFrame = Frame();
     mCurrentFrame = Frame();
 
-    // 重置帧ID，但地图有关键帧时不能重置以防G2O ID冲突
-    //KeyFrame::nNextId = 0; Frame::nNextId = 0;
-    if(!mpMap || mpMap->KeyFramesInMap() == 0) {
-        KeyFrame::nNextId = 0;
-        Frame::nNextId = 0;
-    } else {
-    }
+    // 保留全局递增的帧ID：多地图下 KeyFrameDatabase 仍保留旧地图关键帧，
+    // 归零会使新 KF 与旧 KF 的 ID 冲突（与 Reset() 保持一致，不重置）
 
     // 清除关键帧引用以防止访问已删除的对象
     mpLastKeyFrame = nullptr;
