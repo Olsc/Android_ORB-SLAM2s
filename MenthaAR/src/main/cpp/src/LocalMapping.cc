@@ -172,7 +172,7 @@ void LocalMapping::Run()
         }
         else if(Stop())
         {
-            // 安全停止区域（精准谓词驱动，零超时盲等，杜绝死锁）
+            // 安全停止区域（纯生命周期与 RAII 保证，零超时盲等）
             VT_PROFILE_SCOPE("LocalMapping::Stopped");
             {
                 std::unique_lock<std::mutex> lock(mMutexEvent);
@@ -184,7 +184,6 @@ void LocalMapping::Run()
                 });
             }
 
-            // 无论由于 Release 还是 CancelStopRequest 或是 Reset 退出，确保停止状态被复位并恢复接收关键帧
             if(!stopRequested())
             {
                 unique_lock<mutex> stopLock(mMutexStop);

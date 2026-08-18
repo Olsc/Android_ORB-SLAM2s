@@ -2081,9 +2081,10 @@ bool Tracking::TrackLocalMap()
         if(mConsecutiveFail<=TRACKING_MAX_CONSECUTIVE_FAIL) return true;
         return false;
     }else{
-        //  未对齐时，如果有足够的加载点匹配，也应该认为跟踪成功
+        // 未对齐时，如果有足够的加载点匹配，判定跟踪成功
         if(mnLoadedMapInliers >= thLoaded) return true;
-        return mnMatchesInliers >= thStrict;
+        // 正常建图跟踪：满足 thLoose (15) 几何内点即为稳定精确跟踪
+        return mnMatchesInliers >= thLoose;
     }
 }
 
@@ -2441,7 +2442,6 @@ void Tracking::UpdateLocalKeyFrames()
                 {
                     mvpLocalKeyFrames.push_back(pNeighKF);
                     pNeighKF->mnTrackReferenceForFrame=mCurrentFrame.mnId;
-                    break;
                 }
             }
         }
@@ -2456,7 +2456,6 @@ void Tracking::UpdateLocalKeyFrames()
                 {
                     mvpLocalKeyFrames.push_back(pChildKF);
                     pChildKF->mnTrackReferenceForFrame=mCurrentFrame.mnId;
-                    break;
                 }
             }
         }
@@ -2468,8 +2467,6 @@ void Tracking::UpdateLocalKeyFrames()
             {
                 mvpLocalKeyFrames.push_back(pParent);
                 pParent->mnTrackReferenceForFrame=mCurrentFrame.mnId;
-                // 此处不能break，否则提前终止外层for循环
-                // 导致其余关键帧的邻居/孩子/父节点无法加入局部地图
             }
         }
 
