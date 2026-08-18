@@ -456,18 +456,14 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
     list<KeyFrame*> lFixedCameras;
     for(list<MapPoint*>::iterator lit=lLocalMapPoints.begin(), lend=lLocalMapPoints.end(); lit!=lend; lit++)
     {
-        map<KeyFrame*,size_t> observations = (*lit)->GetObservations();
-        for(map<KeyFrame*,size_t>::iterator mit=observations.begin(), mend=observations.end(); mit!=mend; mit++)
-        {
-            KeyFrame* pKFi = mit->first;
-
-            if(pKFi->mnBALocalForKF!=pKF->mnId && pKFi->mnBAFixedForKF!=pKF->mnId)
+        (*lit)->ForEachObservation([&](KeyFrame* pKFi, size_t) {
+            if(pKFi && pKFi->mnBALocalForKF!=pKF->mnId && pKFi->mnBAFixedForKF!=pKF->mnId)
             {
                 pKFi->mnBAFixedForKF=pKF->mnId;
                 if(!pKFi->isBad())
                     lFixedCameras.push_back(pKFi);
             }
-        }
+        });
     }
 
     // 线程局部缓存：避免每次 new/delete 求解器对象
@@ -540,20 +536,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
             maxKFid=pKFi->mnId;
     }
 
-    // 精确统计实际边数后 reserve（原先 (KF数+固定KF数)×局部点数 的
-    // 上界预留是实际边数的 ~10 倍，白白抬高内存峰值）
-    size_t nExactEdges = 0;
-    for(list<MapPoint*>::iterator lit=lLocalMapPoints.begin(), lend=lLocalMapPoints.end(); lit!=lend; lit++)
-    {
-        const map<KeyFrame*,size_t> observations = (*lit)->GetObservations();
-        for(map<KeyFrame*,size_t>::const_iterator mit=observations.begin(), mend=observations.end(); mit!=mend; mit++)
-        {
-            KeyFrame* pKFi = mit->first;
-            if(pKFi && !pKFi->isBad())
-                ++nExactEdges;
-        }
-    }
-    const size_t nReserve = nExactEdges > 0 ? nExactEdges : 1;
+    const size_t nReserve = lLocalMapPoints.size() * 5 + 16;
 
     vector<g2o::EdgeSE3ProjectXYZ*> vpEdgesMono;
     vpEdgesMono.reserve(nReserve);
@@ -581,67 +564,52 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
             vAllVertices.resize((size_t)id + 1, nullptr);
         vAllVertices[id] = vPoint;
 
-        const map<KeyFrame*,size_t> observations = pMP->GetObservations();
-
         // 设置边
-        for(map<KeyFrame*,size_t>::const_iterator mit=observations.begin(), mend=observations.end(); mit!=mend; mit++)
-        {
-            KeyFrame* pKFi = mit->first;
-
-            if(!pKFi->isBad())
+        pMP->ForEachObservation([&](KeyFrame* pKFi, size_t featIdx) {
+            if(pKFi && !pKFi->isBad())
             {
-                const cv::KeyPoint &kpUn = pKFi->mvKeysUn[mit->second];
+                const cv::KeyPoint &kpUn = pKFi->mvKeysUn[featIdx];
+                Eigen::Matrix<double,2,1> obs;
+                obs << kpUn.pt.x, kpUn.pt.y;
 
-                // 单目模式只使用单目观测
-                    Eigen::Matrix<double,2,1> obs;
-                    obs << kpUn.pt.x, kpUn.pt.y;
+                g2o::OptimizableGraph::Vertex* v0 = vPoint;
+                g2o::OptimizableGraph::Vertex* v1 =
+                    ((size_t)pKFi->mnId < vAllVertices.size()) ? vAllVertices[pKFi->mnId]
+                    : dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pKFi->mnId));
 
-                    // 数组直查
-                    g2o::OptimizableGraph::Vertex* v0 =
-                        ((size_t)id < vAllVertices.size()) ? vAllVertices[id]
-                        : dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id));
-                    g2o::OptimizableGraph::Vertex* v1 =
-                        ((size_t)pKFi->mnId < vAllVertices.size()) ? vAllVertices[pKFi->mnId]
-                        : dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pKFi->mnId));
+                if(!v0 || !v1)
+                    return;
 
-                    if(!v0 || !v1)
-                    {
-                        continue;
-                    }
+                g2o::EdgeSE3ProjectXYZ* e = new g2o::EdgeSE3ProjectXYZ();
+                if(!e)
+                    return;
 
-                    g2o::EdgeSE3ProjectXYZ* e = new g2o::EdgeSE3ProjectXYZ();
-                    if(!e)
-                    {
-                        continue;
-                    }
+                try {
+                    e->setVertex(0, v0);
+                    e->setVertex(1, v1);
+                    e->setMeasurement(obs);
+                    const float &invSigma2 = pKFi->mvInvLevelSigma2[kpUn.octave];
+                    e->setInformation(Eigen::Matrix2d::Identity()*invSigma2);
 
-                    try {
-                        e->setVertex(0, v0);
-                        e->setVertex(1, v1);
-                        e->setMeasurement(obs);
-                        const float &invSigma2 = pKFi->mvInvLevelSigma2[kpUn.octave];
-                        e->setInformation(Eigen::Matrix2d::Identity()*invSigma2);
+                    g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
+                    e->setRobustKernel(rk);
+                    rk->setDelta(thHuberMono);
 
-                        g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
-                        e->setRobustKernel(rk);
-                        rk->setDelta(thHuberMono);
+                    e->fx = pKFi->fx;
+                    e->fy = pKFi->fy;
+                    e->cx = pKFi->cx;
+                    e->cy = pKFi->cy;
 
-                        e->fx = pKFi->fx;
-                        e->fy = pKFi->fy;
-                        e->cx = pKFi->cx;
-                        e->cy = pKFi->cy;
-
-                        optimizer.addEdge(e);
-                    } catch (...) {
-                        delete e;
-                        continue;
-                    }
-                    vpEdgesMono.push_back(e);
-                    vpEdgeKFMono.push_back(pKFi);
-                    vpMapPointEdgeMono.push_back(pMP);
-                // 立体观测相关代码已移除
+                    optimizer.addEdge(e);
+                } catch (...) {
+                    delete e;
+                    return;
+                }
+                vpEdgesMono.push_back(e);
+                vpEdgeKFMono.push_back(pKFi);
+                vpMapPointEdgeMono.push_back(pMP);
             }
-        }
+        });
     }
 
     if(pbStopFlag)

@@ -2493,36 +2493,37 @@ bool Tracking::Relocalization()
         vpCandidateKFs = mpKeyFrameDB->DetectRelocalizationCandidates(&mCurrentFrame);
     }
 
-    if(vpCandidateKFs.empty())
-        return false;
+    bool bMatch = false;
 
-    int nKFs = vpCandidateKFs.size();
+    if(!vpCandidateKFs.empty())
+    {
+        int nKFs = vpCandidateKFs.size();
 
-    // 我们首先对每个候选帧进行ORB匹配
-    // 如果找到足够多的匹配点，我们就设置PnP求解器
-    ORBmatcher matcher(ORB_MATCHER_NNRATIO_RELOC,true);
+        // 我们首先对每个候选帧进行ORB匹配
+        // 如果找到足够多的匹配点，我们就设置PnP求解器
+        ORBmatcher matcher(ORB_MATCHER_NNRATIO_RELOC,true);
 
-    vector<PnPsolver*> vpPnPsolvers;
-    vpPnPsolvers.resize(nKFs);
+        vector<PnPsolver*> vpPnPsolvers;
+        vpPnPsolvers.resize(nKFs);
 
-    vector<vector<MapPoint*> > vvpMapPointMatches;
-    vvpMapPointMatches.resize(nKFs);
+        vector<vector<MapPoint*> > vvpMapPointMatches;
+        vvpMapPointMatches.resize(nKFs);
 
-    vector<int> vbDiscarded;
-    vbDiscarded.resize(nKFs, 0);
+        vector<int> vbDiscarded;
+        vbDiscarded.resize(nKFs, 0);
 
-    int nCandidates=0;
+        int nCandidates=0;
 
-    // 限制最大候选数量，防止计算量过大导致卡死
-    const int MAX_RELOC_CANDIDATES = RELOC_MAX_CANDIDATE_KFS;
-    if(nKFs > MAX_RELOC_CANDIDATES) {
-        // 简单截断，因为候选帧通常按BoW分数排序
-        nKFs = MAX_RELOC_CANDIDATES;
-        vpCandidateKFs.resize(MAX_RELOC_CANDIDATES);
-        vpPnPsolvers.resize(MAX_RELOC_CANDIDATES);
-        vvpMapPointMatches.resize(MAX_RELOC_CANDIDATES);
-        vbDiscarded.resize(MAX_RELOC_CANDIDATES);
-    }
+        // 限制最大候选数量，防止计算量过大导致卡死
+        const int MAX_RELOC_CANDIDATES = RELOC_MAX_CANDIDATE_KFS;
+        if(nKFs > MAX_RELOC_CANDIDATES) {
+            // 简单截断，因为候选帧通常按BoW分数排序
+            nKFs = MAX_RELOC_CANDIDATES;
+            vpCandidateKFs.resize(MAX_RELOC_CANDIDATES);
+            vpPnPsolvers.resize(MAX_RELOC_CANDIDATES);
+            vvpMapPointMatches.resize(MAX_RELOC_CANDIDATES);
+            vbDiscarded.resize(MAX_RELOC_CANDIDATES);
+        }
 
     for(int i=0; i<nKFs; i++)
     {
@@ -2679,6 +2680,7 @@ bool Tracking::Relocalization()
         if(vpPnPsolvers[i])
             delete vpPnPsolvers[i];
     }
+    } // end if(!vpCandidateKFs.empty())
 
     if(!bMatch)
     {
@@ -2697,7 +2699,9 @@ bool Tracking::Relocalization()
             refSnaps = mpRefSnapshots;
         }
 
-        if (pTree && !mCurrentFrame.mDescriptors.empty() && refDesc.rows > 0 && refSnaps && refDesc.rows == (int)refSnaps->size()) {
+        // 连续丢失多帧时隔帧执行重度 HBST Fallback，避免主线程每帧耗时 15ms 造成掉帧
+        const bool bRunFallback = (mConsecutiveLostFrames <= 3) || ((mCurrentFrame.mnId % 2) == 0);
+        if (bRunFallback && pTree && !mCurrentFrame.mDescriptors.empty() && refDesc.rows > 0 && refSnaps && refDesc.rows == (int)refSnaps->size()) {
             VT_PROFILE_SCOPE("Reloc_Fallback");
             std::vector<size_t> query_objects;
             query_objects.reserve(mCurrentFrame.N);
@@ -2969,6 +2973,12 @@ void Tracking::ClearTrackingState()
     mpReferenceKF = static_cast<KeyFrame*>(NULL);
     mLastFrame = Frame();
     mCurrentFrame = Frame();
+
+    if (mpInitializer)
+    {
+        delete mpInitializer;
+        mpInitializer = static_cast<Initializer*>(NULL);
+    }
 
     // 清除关键帧引用以防止访问已删除的对象
     mpLastKeyFrame = nullptr;

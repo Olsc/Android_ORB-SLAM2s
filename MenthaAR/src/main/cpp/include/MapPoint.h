@@ -71,6 +71,13 @@ public:
     KeyFrame* GetReferenceKeyFrame();
 
     std::map<KeyFrame*,size_t> GetObservations();
+    template<typename F>
+    void ForEachObservation(F&& func) {
+        std::unique_lock<std::mutex> lock(mMutexFeatures);
+        for(const auto& mit : mObservations) {
+            func(mit.first, mit.second);
+        }
+    }
     // 零拷贝聚合观测计数（哈希表 O(1) 插入）
     void ShareObservations(std::unordered_map<KeyFrame*, int>& counter, unsigned long excludeId = -1);
     int GetRedundantObservationsCount(KeyFrame* pKF, int scaleLevel);
