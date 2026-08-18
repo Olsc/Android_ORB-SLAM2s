@@ -1268,7 +1268,7 @@ void Tracking::Track()
         // 更新智能调度状态，供后台重定位线程读取
         mTrackingOK.store(mState == OK);
 
-        // 如果相机在初始化后不久丢失，则重置
+        // 如果相机丢失，进行自动打断与快速恢复
         if(mState==LOST)
         {
             // 初始化后的前20帧内，即使丢失也不立即重置，给予重定位及加载点绑定的机会
@@ -1278,21 +1278,27 @@ void Tracking::Track()
                 return;
             }
 
-            // 多地图模式：如果丢失时间过长，创建新地图（子地图）继续扫描
-            // System::CreateNewMap() 内部已处理已加载点迁移到新地图，无需在此拦截
-            if (mConsecutiveLostFrames > TRACKING_LOST_FRAMES_FOR_NEW_MAP && mpMap->KeyFramesInMap() > TRACKING_NEW_MAP_MIN_KFS)
+            // 多地图模式：如果丢失时间过长，创建新地图（子地图）或重置跟踪状态，确保无缝继续扫描
+            if (mConsecutiveLostFrames > TRACKING_LOST_FRAMES_FOR_NEW_MAP)
             {
-                // 冷却保护：限频防止高性能机器反复触发CreateNewMap导致主线程卡死
                 if (mLastNewMapFrameId > 0 &&
                     mCurrentFrame.mnId < mLastNewMapFrameId + TRACKING_NEW_MAP_COOLDOWN_FRAMES)
                 {
-                    // 冷却期内跳过 CreateNewMap（原高频日志已移除）
+                    // 冷却期内切入轻量重初始化
+                    PrepareForNewMap();
+                    return;
                 }
-                else
+                else if (mpMap->KeyFramesInMap() > TRACKING_NEW_MAP_MIN_KFS)
                 {
                     mpSystem->CreateNewMap();
                     mLastNewMapFrameId = mCurrentFrame.mnId;
                     mConsecutiveLostFrames = 0;
+                    return;
+                }
+                else
+                {
+                    // 地图较小或未达子地图创建条件时，重置跟踪状态以切入 MonocularInitialization
+                    PrepareForNewMap();
                     return;
                 }
             }
@@ -1701,13 +1707,10 @@ void Tracking::UpdateLastFrame()
 
     // 栈版读取位姿
     float poseF[16];
-    {
-        std::unique_lock<std::mutex> lock(mpMap->mMutexMapUpdate);
-        if(pRef->isBad()) {
-            return;
-        }
-        pRef->GetPose(poseF);
+    if(pRef->isBad()) {
+        return;
     }
+    pRef->GetPose(poseF);
     cv::Mat T_ref_pose(4,4,CV_32F);
     memcpy(T_ref_pose.data, poseF, 16*sizeof(float));
 

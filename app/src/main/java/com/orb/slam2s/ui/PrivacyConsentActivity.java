@@ -28,7 +28,7 @@ import io.noties.markwon.ext.tables.TablePlugin;
 public class PrivacyConsentActivity extends AppCompatActivity {
 
     // 隐私协议开关：true 启动时展示隐私协议，false 跳过直接进入应用
-    public static final boolean ENABLE_PRIVACY = true;
+    public static final boolean ENABLE_PRIVACY = false;
 
     private static final String TAG = "PrivacyConsent";
     private static final String PREF_NAME = "privacy_prefs";

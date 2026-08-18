@@ -355,8 +355,8 @@ const int RESET_COOLDOWN_FRAMES = 30;
 // 连续丢失超过此帧数创建新子地图
 const int TRACKING_LOST_FRAMES_FOR_NEW_MAP = 30;
 
-// 新建子地图后的冷却帧数（150帧≈5秒@30fps）
-const int TRACKING_NEW_MAP_COOLDOWN_FRAMES = 150;
+// 新建子地图后的冷却帧数（30帧≈1秒@30fps）
+const int TRACKING_NEW_MAP_COOLDOWN_FRAMES = 30;
 
 // 子地图最大数量
 const int MAX_SUBMAP_COUNT = 10;
@@ -691,8 +691,8 @@ const int ORB_CANDIDATE_RESERVE_FACTOR = 10;
 // 局部建图
 // ==========================================
 
-// Stop 态等待 Release 的超时（毫秒），防止 LM 永久卡死
-const int LOCAL_MAPPING_STOP_WAIT_TIMEOUT_MS = 5000;
+// Stop 态等待 Release 的超时（毫秒），防止 LM 挂起阻塞
+const int LOCAL_MAPPING_STOP_WAIT_TIMEOUT_MS = 800;
 
 // 事件循环轮询间隔（毫秒）
 const int LOCAL_MAPPING_EVENT_WAIT_MS = 3;

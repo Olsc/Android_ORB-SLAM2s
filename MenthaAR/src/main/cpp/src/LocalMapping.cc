@@ -186,6 +186,7 @@ void LocalMapping::Run()
                         unique_lock<mutex> stopLock(mMutexStop);
                         mbStopped.store(false);
                         mbStopRequested.store(false);
+                        SetAcceptKeyFrames(true);
                         // 继续主循环，跟踪线程会看到 LM 已恢复正常
                     }
                 }
