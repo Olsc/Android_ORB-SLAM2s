@@ -72,8 +72,8 @@ public:
     void RequestStop();
     void CancelStopRequest();
 
-    // 等待 LM 进入 Stopped 状态，最多等 timeoutMs 毫秒。返回时调用者仍需 isStopped() 确认。
-    void WaitForStopped(int timeoutMs);
+    // 等待 LM 真正进入 Stopped 状态（精准谓词驱动，零超时盲等）
+    bool WaitForStopped();
 
     void RequestReset();
     void WaitForResetComplete();

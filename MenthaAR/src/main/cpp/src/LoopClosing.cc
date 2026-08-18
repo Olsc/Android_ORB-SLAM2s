@@ -431,19 +431,12 @@ void LoopClosing::CorrectLoop()
     // 如果正在运行全局 Bundle Adjustment，则中止它（join 等待线程真正退出）
     RequestStopGBA();
 
-    // 等待局部建图线程有效停止
-    mpLocalMapper->WaitForStopped(LOOP_LOCALMAPPER_TIMEOUT_MS);
+    // 等待局部建图线程有效停止（零超时、谓词驱动）
+    mpLocalMapper->WaitForStopped();
 
     if(!mpLocalMapper->isStopped())
     {
-        // 超时，中止 Sim3 校正
         mpLocalMapper->CancelStopRequest();
-
-        // 仔细检查它是否在我们取消时停止了
-        if(mpLocalMapper->isStopped())
-        {
-            mpLocalMapper->Release();
-        }
         mpCurrentKF->SetErase();
         return;
     }
@@ -720,8 +713,8 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
             // cout << "全局 Bundle Adjustment 完成" << endl;
             // cout << "正在更新地图 ..." << endl;
             mpLocalMapper->RequestStop();
-            // 等待局部建图线程有效停止
-            mpLocalMapper->WaitForStopped(LOOP_LOCALMAPPER_TIMEOUT_MS);
+            // 等待局部建图线程有效停止（零超时、谓词驱动）
+            mpLocalMapper->WaitForStopped();
 
             // 外层已全程持有 mMutexGBA（非递归锁），此处不得二次加锁；
             // mnFullBAIdx 仅在其内被 RequestStopGBA 修改，持锁期间直接比较即可
@@ -737,10 +730,6 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
             if(!mpLocalMapper->isStopped() && !mpLocalMapper->isFinished())
             {
                  mpLocalMapper->CancelStopRequest();
-                 if(mpLocalMapper->isStopped() && !mpLocalMapper->isFinished())
-                 {
-                     mpLocalMapper->Release();
-                 }
                  return;
             }
 

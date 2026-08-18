@@ -172,25 +172,26 @@ void LocalMapping::Run()
         }
         else if(Stop())
         {
-            // 安全停止区域
+            // 安全停止区域（精准谓词驱动，零超时盲等，杜绝死锁）
             VT_PROFILE_SCOPE("LocalMapping::Stopped");
             {
                 std::unique_lock<std::mutex> lock(mMutexEvent);
-                while(isStopped() && !CheckFinish())
-                {
-                    // 阻塞等待 Release() 唤醒
-                    if(mCvEvent.wait_for(lock, std::chrono::milliseconds(LOCAL_MAPPING_STOP_WAIT_TIMEOUT_MS))
-                            == std::cv_status::timeout)
-                    {
-                        // 超时了还没人 Release — 自动恢复，避免 LM 永久卡死
-                        unique_lock<mutex> stopLock(mMutexStop);
-                        mbStopped.store(false);
-                        mbStopRequested.store(false);
-                        SetAcceptKeyFrames(true);
-                        // 继续主循环，跟踪线程会看到 LM 已恢复正常
-                    }
-                }
+                mCvEvent.wait(lock, [this]{
+                    return !mbStopped.load(std::memory_order_acquire) ||
+                           !mbStopRequested.load(std::memory_order_acquire) ||
+                           mbFinishRequested.load(std::memory_order_acquire) ||
+                           mbResetRequested.load(std::memory_order_acquire);
+                });
             }
+
+            // 无论由于 Release 还是 CancelStopRequest 或是 Reset 退出，确保停止状态被复位并恢复接收关键帧
+            if(!stopRequested())
+            {
+                unique_lock<mutex> stopLock(mMutexStop);
+                mbStopped.store(false, std::memory_order_release);
+            }
+            SetAcceptKeyFrames(true);
+
             if(CheckFinish())
                 break;
         }
@@ -677,11 +678,15 @@ bool LocalMapping::isStopped()
     return mbStopped.load();
 }
 
-void LocalMapping::WaitForStopped(int timeoutMs)
+bool LocalMapping::WaitForStopped()
 {
-    if (isStopped()) return;
+    if (isStopped()) return true;
     std::unique_lock<std::mutex> lock(mMutexEvent);
-    mCvEvent.wait_for(lock, std::chrono::milliseconds(timeoutMs));
+    mCvEvent.wait(lock, [this]{
+        return mbStopped.load(std::memory_order_acquire) ||
+               mbFinishRequested.load(std::memory_order_acquire);
+    });
+    return isStopped();
 }
 
 bool LocalMapping::stopRequested()

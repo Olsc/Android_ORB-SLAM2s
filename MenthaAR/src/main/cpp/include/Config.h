@@ -368,11 +368,6 @@ const int OPTIMIZER_ESSENTIAL_GRAPH_MIN_FEAT = 100;
 const int RELOC_MIN_SHARED_WORDS = 10;
 const int RELOC_MAX_CANDIDATES = 20;
 
-// 系统运行时参数
-
-// 等待线程停止的超时时间（毫秒）
-const int LOOP_LOCALMAPPER_TIMEOUT_MS = 5000;
-
 // 创建新子地图冷却时间（毫秒）
 const int NEW_MAP_COOLDOWN_MS = 5000;
 
@@ -628,9 +623,6 @@ const int ORB_FAST_BORDER_MARGIN = 3;
 const int ORB_CANDIDATE_RESERVE_FACTOR = 10;
 
 // 局部建图
-
-// Stop 态等待 Release 的超时（毫秒），防止 LM 挂起阻塞
-const int LOCAL_MAPPING_STOP_WAIT_TIMEOUT_MS = 800;
 
 // 事件循环轮询间隔（毫秒）
 const int LOCAL_MAPPING_EVENT_WAIT_MS = 3;
