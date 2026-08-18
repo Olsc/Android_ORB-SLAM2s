@@ -2063,7 +2063,7 @@ bool Tracking::TrackLocalMap()
     }
 
     // 决定跟踪是否成功
-    // 大幅放宽跟踪成功条件，提高稳定性，避免过早丢失
+    // 放宽跟踪成功条件，降低过早丢失概率
     int thStrict = TRACKING_SUCCESS_STRICT;  // 从50降至30
     int thLoose = TRACKING_SUCCESS_LOOSE;   // 从25降至15
     int thLoaded = TRACKING_SUCCESS_LOADED;  // 从15降至10，加载点阈值
@@ -2969,9 +2969,6 @@ void Tracking::ClearTrackingState()
     mpReferenceKF = static_cast<KeyFrame*>(NULL);
     mLastFrame = Frame();
     mCurrentFrame = Frame();
-
-    // 保留全局递增的帧ID：多地图下 KeyFrameDatabase 仍保留旧地图关键帧，
-    // 归零会使新 KF 与旧 KF 的 ID 冲突（与 Reset() 保持一致，不重置）
 
     // 清除关键帧引用以防止访问已删除的对象
     mpLastKeyFrame = nullptr;

@@ -429,7 +429,7 @@ std::vector<MapPoint*> System::GetAllMapPoints(){ return mpMap->GetAllMapPoints(
 
 void System::SaveMap(const std::string &filename, int maxMapPoints)
 {
-    // 增强的二进制序列化：保存完整的KF和MP信息以提高重定位精度
+    // 二进制序列化：保存完整的KF和MP信息以提高重定位精度
     LOGD("保存地图: 开始保存地图到 %s (特征点上限=%d)", filename.c_str(), maxMapPoints);
     std::vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();
     std::vector<MapPoint*> vpMPs = mpMap->GetAllMapPoints();

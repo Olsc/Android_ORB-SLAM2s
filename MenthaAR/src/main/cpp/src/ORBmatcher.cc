@@ -335,7 +335,7 @@ int ORBmatcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapP
     // 分解 Scw
     cv::Mat sRcw = Scw.rowRange(0,3).colRange(0,3);
     const float scw = sqrt(sRcw.row(0).dot(sRcw.row(0)));
-    // 用乘法代替矩阵除法以加快计算速度，因为计算机算乘法明显快于除法
+    // 用乘法等价代替矩阵除法
     const float inv_scw = 1.0f/scw;
     cv::Mat Rcw = sRcw * inv_scw;
     cv::Mat tcw = Scw.rowRange(0,3).col(3) * inv_scw;

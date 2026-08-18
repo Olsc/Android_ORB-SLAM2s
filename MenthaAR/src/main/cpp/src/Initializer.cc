@@ -365,7 +365,7 @@ float Initializer::CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vecto
 
         const float squareDist1 = (u1-u2in1)*(u1-u2in1)+(v1-v2in1)*(v1-v2in1);
 
-        // 优化: squareDist1*invSigmaSquare > th ⇔ squareDist1 > th*sigma²
+        // 等价于: squareDist1*invSigmaSquare > th ⇔ squareDist1 > th*sigma²
         if(squareDist1 > thSigma2)
             bIn = false;
         else
@@ -439,7 +439,7 @@ float Initializer::CheckFundamental(const cv::Mat &F21, vector<bool> &vbMatchesI
 
         const float squareDist1 = num2*num2/(a2*a2+b2*b2);
 
-        // 优化: squareDist1*invSigmaSquare > th ⇔ squareDist1 > th*sigma²
+        // 等价于: squareDist1*invSigmaSquare > th ⇔ squareDist1 > th*sigma²
         if(squareDist1 > thSigma2)
             bIn = false;
         else

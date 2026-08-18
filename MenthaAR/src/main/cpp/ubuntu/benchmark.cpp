@@ -26,9 +26,7 @@
 #include "Matrix.h"
 #include "include/Config.h"
 
-// ============================================================
 // 全局状态变量
-// ============================================================
 ORB_SLAM2::System* slamSys = nullptr;
 Plane* pPlane = nullptr;
 bool planeLoadedFromMap = false;
@@ -58,9 +56,7 @@ std::string gOutputPrefix = "benchmark_report";
 volatile bool gStopRequested = false;
 void signalHandler(int) { gStopRequested = true; }
 
-// ============================================================
 // 数据结构定义
-// ============================================================
 struct FrameRecord {
     int loopId;
     int frameId;
@@ -150,9 +146,7 @@ MemoryInfo getMemoryInfo(int numMPs, int numKFs);
 ScoreCard calculateScoreCard(const std::vector<FrameRecord>& records, int totalFrames);
 void resetBenchmarkState();
 
-// ============================================================
 // 视频格式兼容工具 (多流 AVI 处理)
-// ============================================================
 static std::string tryStripAudioStream(const std::string& path) {
     size_t dot = path.find_last_of('.');
     if (dot == std::string::npos) return "";
@@ -175,9 +169,7 @@ static std::string tryStripAudioStream(const std::string& path) {
     return "";
 }
 
-// ============================================================
 // Linux 进程内存读取与估计函数
-// ============================================================
 MemoryInfo getMemoryInfo(int numMPs, int numKFs) {
     MemoryInfo info;
     long pageSizeBytes = sysconf(_SC_PAGESIZE);
@@ -216,9 +208,7 @@ MemoryInfo getMemoryInfo(int numMPs, int numKFs) {
     return info;
 }
 
-// ============================================================
 // 综合性能评分计算逻辑
-// ============================================================
 ScoreCard calculateScoreCard(const std::vector<FrameRecord>& records, int totalFrames) {
     ScoreCard card;
     card.totalFrames = totalFrames;
@@ -303,9 +293,7 @@ ScoreCard calculateScoreCard(const std::vector<FrameRecord>& records, int totalF
     return card;
 }
 
-// ============================================================
 // JSON / CSV 导出报告
-// ============================================================
 void exportReports(const std::string& prefix, const ScoreCard& card, const std::vector<FrameRecord>& records) {
     // JSON 报告
     std::string jsonPath = prefix + ".json";
@@ -415,9 +403,7 @@ void resetBenchmarkState() {
     std::cout << "[Benchmark] State reset successfully." << std::endl;
 }
 
-// ============================================================
 // 主函数
-// ============================================================
 int main(int argc, char** argv) {
     std::cout << "==========================================================" << std::endl;
     std::cout << "   MenthaAR SLAM Benchmark & Memory Profiler" << std::endl;

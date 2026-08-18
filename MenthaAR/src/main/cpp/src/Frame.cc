@@ -271,7 +271,7 @@ std::vector<size_t> Frame::GetFeaturesInArea(const float &x, const float  &y, co
     std::vector<size_t> vIndices;
     // 半径搜索预留16槽位
 
-    // TODO: 临时数值，待测试和优化
+    // TODO: 临时数值，待实测调整
     vIndices.reserve(FRAME_SEARCH_RESERVE);
 
     const int nMinCellX = max(0,(int)floor((x-mnMinX-r)*mfGridElementWidthInv));
