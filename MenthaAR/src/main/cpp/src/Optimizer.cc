@@ -218,9 +218,11 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
     for(size_t i=0; i<vpKFs.size(); i++)
     {
         KeyFrame* pKF = vpKFs[i];
-        if(pKF->isBad())
+        if(!pKF || pKF->isBad())
             continue;
         g2o::VertexSE3Expmap* vSE3 = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(pKF->mnId));
+        if(!vSE3)
+            continue;
         g2o::SE3Quat SE3quat = vSE3->estimate();
         if(nLoopKF==0)
         {
@@ -242,9 +244,11 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
 
         MapPoint* pMP = vpMP[i];
 
-        if(pMP->isBad())
+        if(!pMP || pMP->isBad())
             continue;
         g2o::VertexSBAPointXYZ* vPoint = static_cast<g2o::VertexSBAPointXYZ*>(optimizer.vertex(pMP->mnId+maxKFid+1));
+        if(!vPoint)
+            continue;
 
         if(nLoopKF==0)
         {
@@ -696,13 +700,14 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
         g2o::EdgeSE3ProjectXYZ* e = vpEdgesMono[i];
         MapPoint* pMP = vpMapPointEdgeMono[i];
 
-        if(pMP->isBad())
+        if(!pMP || pMP->isBad())
             continue;
 
         if(e->chi2()>OPTIMIZER_CHI2_TH_2D || !e->isDepthPositive())
         {
             KeyFrame* pKFi = vpEdgeKFMono[i];
-            vToErase.push_back(make_pair(pKFi,pMP));
+            if(pKFi && !pKFi->isBad())
+                vToErase.push_back(make_pair(pKFi,pMP));
         }
     }
 
@@ -716,8 +721,11 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
             {
                 KeyFrame* pKFi = vToErase[i].first;
                 MapPoint* pMPi = vToErase[i].second;
-                pKFi->EraseMapPointMatch(pMPi);
-                pMPi->EraseObservation(pKFi);
+                if(pKFi && !pKFi->isBad() && pMPi && !pMPi->isBad())
+                {
+                    pKFi->EraseMapPointMatch(pMPi);
+                    pMPi->EraseObservation(pKFi);
+                }
             }
         }
 
@@ -726,7 +734,11 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
         for(list<KeyFrame*>::iterator lit=lLocalKeyFrames.begin(), lend=lLocalKeyFrames.end(); lit!=lend; lit++)
         {
             KeyFrame* pKF = *lit;
+            if(!pKF || pKF->isBad())
+                continue;
             g2o::VertexSE3Expmap* vSE3 = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(pKF->mnId));
+            if(!vSE3)
+                continue;
             g2o::SE3Quat SE3quat = vSE3->estimate();
             pKF->SetPose(Converter::toCvMat(SE3quat));
         }
@@ -735,7 +747,11 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
         for(list<MapPoint*>::iterator lit=lLocalMapPoints.begin(), lend=lLocalMapPoints.end(); lit!=lend; lit++)
         {
             MapPoint* pMP = *lit;
+            if(!pMP || pMP->isBad())
+                continue;
             g2o::VertexSBAPointXYZ* vPoint = static_cast<g2o::VertexSBAPointXYZ*>(optimizer.vertex(pMP->mnId+maxKFid+1));
+            if(!vPoint)
+                continue;
             pMP->SetWorldPos(Converter::toCvMat(vPoint->estimate()));
         }
     }

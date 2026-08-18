@@ -3049,6 +3049,13 @@ void Tracking::PrepareForNewMap()
     // 设计目标：毫秒级耗时，避免高频丢失场景下主线程卡死
     LOGD("跟踪::PrepareForNewMap (轻量切图，仅清运行时状态)");
 
+    // 中断后台可能正在运行的局部BA并清空未处理关键帧队列，防止旧状态冲突与线程死锁
+    if (mpLocalMapper)
+    {
+        mpLocalMapper->InterruptBA();
+        mpLocalMapper->ClearQueues();
+    }
+
     mState = NO_IMAGES_YET;
     mpLastKeyFrame = nullptr;
     mpReferenceKF = nullptr;
