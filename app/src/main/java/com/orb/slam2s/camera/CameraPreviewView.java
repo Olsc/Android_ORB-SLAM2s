@@ -266,6 +266,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
                                         yBuf[i] = (byte) ((r * 77 + g * 150 + b * 29) >> 8);
                                         mCachePixels[i] = 0xFF000000 | (r << 16) | (g << 8) | b;
                                     }
+                                    DeviceCompat.checkAndFlipFrame(mCachePixels, w, h);
                                     mCacheBitmap.setPixels(mCachePixels, 0, w, 0, 0, w, h);
                                     queueEvent(() -> {
                                         synchronized (mSyncLock) {

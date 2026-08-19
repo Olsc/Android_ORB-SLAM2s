@@ -44,4 +44,22 @@ public final class DeviceCompat {
             }
         }
     }
+
+    // Rokid RG-glasses 预览位图像素数组上下与左右镜像翻转处理
+    public static void checkAndFlipFrame(int[] pixels, int width, int height) {
+        if (pixels == null || !isRokidGlasses() || width <= 0 || height <= 0) return;
+
+        int halfH = height / 2;
+        for (int r = 0; r < halfH; r++) {
+            int topOffset = r * width;
+            int bottomOffset = (height - 1 - r) * width;
+            for (int c = 0; c < width; c++) {
+                int topIdx = topOffset + c;
+                int bottomIdx = bottomOffset + (width - 1 - c);
+                int tmp = pixels[topIdx];
+                pixels[topIdx] = pixels[bottomIdx];
+                pixels[bottomIdx] = tmp;
+            }
+        }
+    }
 }
