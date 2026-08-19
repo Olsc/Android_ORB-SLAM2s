@@ -70,7 +70,7 @@ public:
    // 重定位
    std::vector<KeyFrame*> DetectRelocalizationCandidates(Frame* F);
 
-   // 若存在待重建标记则重建（由空闲线程调用，避免在 erase 调用线程同步重建造成卡顿）
+   // 若存在待重建标记则重建
    void RebuildIfPending();
 
 protected:

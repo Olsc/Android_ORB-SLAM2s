@@ -107,7 +107,7 @@ PnPsolver::PnPsolver(const Frame &F, const vector<MapPoint*> &vpMapPointMatches)
                 mvP3Dw.push_back(cv::Point3f(Pos.at<float>(0),Pos.at<float>(1), Pos.at<float>(2)));
 
                 mvKeyPointIndices.push_back(i);
-                mvAllIndices.push_back(idx);               
+                mvAllIndices.push_back(idx);
 
                 idx++;
             }
@@ -172,7 +172,7 @@ void PnPsolver::SetRansacParameters(double probability, int minInliers, int maxI
 cv::Mat PnPsolver::find(vector<bool> &vbInliers, int &nInliers)
 {
     bool bFlag;
-    return iterate(mRansacMaxIts,bFlag,vbInliers,nInliers);    
+    return iterate(mRansacMaxIts,bFlag,vbInliers,nInliers);
 }
 
 cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInliers, int &nInliers)
@@ -190,7 +190,10 @@ cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInlie
             return cv::Mat();
         }
 
-        vector<size_t> vAvailableIndices;
+        // 采样去重改为 used 位图：零整表拷贝（原先每次迭代
+        // vAvailableIndices = mvAllIndices 是 N 次拷贝 × 迭代数），且
+        // 无 swap-pop 的恢复问题；minSet=4 远小于 N，重采样碰撞概率可忽略
+        vector<bool> vUsed(N, false);
 
         int nCurrentIterations = 0;
         // 自适应RANSAC提前终止：当已有足够好的解且剩余迭代不可能找到更好的时停止
@@ -201,19 +204,18 @@ cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInlie
             mnIterations++;
             reset_correspondences();
 
-            vAvailableIndices = mvAllIndices;
+            std::fill(vUsed.begin(), vUsed.end(), false);
 
             // 获取最小点集
             for(short i = 0; i < mRansacMinSet; ++i)
             {
-                int randi = mLcg.randomInt(0, vAvailableIndices.size()-1);
-
-                int idx = vAvailableIndices[randi];
+                int idx;
+                do {
+                    idx = mLcg.randomInt(0, N-1);
+                } while(vUsed[idx]);
+                vUsed[idx] = true;
 
                 add_correspondence(mvP3Dw[idx].x,mvP3Dw[idx].y,mvP3Dw[idx].z,mvP2D[idx].x,mvP2D[idx].y);
-
-                vAvailableIndices[randi] = vAvailableIndices.back();
-                vAvailableIndices.pop_back();
             }
 
             // 计算相机位姿

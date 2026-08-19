@@ -11,7 +11,7 @@ else()
     message(WARNING "OpenMP CXX NOT found! OpenCV will compile without OpenMP acceleration.")
 endif()
 
-#--------------------------------------------------- OpenCV 构建 ---------------------------------------------------#
+# OpenCV 构建
 # 使用官方 OpenCV 源码库，作为子库构建，并激活 NEON/OpenMP 硬件加速
 set(OPENCV_SRC_DIR "${CMAKE_SOURCE_DIR}/src/main/cpp/Thirdparty/opencv")
 
@@ -66,10 +66,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 add_subdirectory(${OPENCV_SRC_DIR} opencv_build)
 
-
-
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -fexceptions -frtti")
-
 
 ADD_LIBRARY(g2o
         src/main/cpp/Thirdparty/g2o/g2o/types/types_sba.h
@@ -200,8 +197,7 @@ include_directories(
         src/main/cpp/Thirdparty/srrg_hbst
 )
 
-
-# ========== 整合所有组件到一个 SO：libMenthaAR_Engine.so ==========
+# 整合所有组件到一个 SO：libMenthaAR_Engine.so
 add_library(MenthaAR_Engine SHARED
         # SLAM Core 组件
         src/main/cpp/include/System.h
@@ -239,13 +235,12 @@ add_library(MenthaAR_Engine SHARED
         src/main/cpp/src/KeyFrameDatabase.cc
         src/main/cpp/src/Sim3Solver.cc
         src/main/cpp/src/Initializer.cc
-        
-        # JNI 接口层
+
+        # JNI 接口层与 IPC 通讯层
         src/main/cpp/native-lib.cpp
         src/main/cpp/UIUtils.cpp
         src/main/cpp/Plane.cpp
         src/main/cpp/Matrix.cpp
-        src/main/cpp/bridge/OpenCVBridge.cpp
         )
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -269,7 +264,6 @@ endif()
 
 find_library(log-lib log)
 
-
 target_link_libraries(MenthaAR_Engine
         -Wl,--whole-archive
         opencv_core
@@ -289,20 +283,8 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(MenthaAR_Engine OpenMP::OpenMP_CXX -static-openmp)
 endif()
 
-# ========== 3DOF 独立库 ==========
-add_library(Mentha_3DOF SHARED src/main/cpp/3dof.cpp src/main/cpp/Matrix.cpp)
-target_include_directories(Mentha_3DOF PRIVATE
-    ${OPENCV_SRC_DIR}/include
-    ${OPENCV_SRC_DIR}/modules/core/include
-)
-target_link_libraries(Mentha_3DOF ${log-lib} opencv_core)
-
-if(OpenMP_CXX_FOUND)
-    target_link_libraries(Mentha_3DOF OpenMP::OpenMP_CXX -static-openmp)
-endif()
-
-# ========== Mentha 性能分析器 ==========
-set(MENTHA_DEVELOP_MODE ON) # <--- 修改这里：ON 开启，OFF 关闭
+# Mentha 性能分析器
+set(MENTHA_DEVELOP_MODE OFF) # <--- 修改这里：ON 开启，OFF 关闭
 
 message(STATUS "Mentha 分析器状态: ${MENTHA_DEVELOP_MODE}")
 
@@ -315,16 +297,16 @@ if(MENTHA_DEVELOP_MODE)
             src/main/cpp/profiler/MenthaProfiler.cpp
             src/main/cpp/profiler/MenthaProfiler.h
     )
-    
+
     # 使用 PUBLIC 确保宏定义传播给所有链接到此库的目标（如 MenthaAR_Engine）
     target_compile_definitions(Mentha_Profiler PUBLIC MENTHA_DEVELOP_MODE)
-    
+
     target_link_libraries(Mentha_Profiler ${log-lib} -static-openmp)
-    
+
     if(OpenMP_CXX_FOUND)
         target_link_libraries(Mentha_Profiler OpenMP::OpenMP_CXX -static-openmp)
     endif()
-    
+
     # 链接分析器库
     target_link_libraries(MenthaAR_Engine Mentha_Profiler)
 endif()

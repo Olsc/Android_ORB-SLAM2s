@@ -16,8 +16,6 @@ public:
 
     inline int randomInt(int min, int max) {
         mRandState = mRandState * 1664525u + 1013904223u;
-        // 整数缩放 (state * range) >> 32 替代 double 除法+乘法，
-        // 数学等价：floor(state / 2^32 * range)
         return min + (int)((((uint64_t)mRandState * (uint64_t)(max - min + 1)) >> 32));
     }
 

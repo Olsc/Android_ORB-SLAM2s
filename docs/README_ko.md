@@ -46,7 +46,7 @@ https://github.com/Martin20150405/SLAM_AR_Android.git
 
 # 🎯 ORB-SLAM2s: Android Spatial Computing & Lightweight AR Demo
 
-*ORB-SLAM2s의 소문자 's'는 **Smart · Swift · Small**（스마트 · 스위프트 · 스몰）을 의미하며, 기존 ORB-SLAM2에 비해 향상된 지능성, 더 빠른 성능, 더 가벼운 무게를 강조합니다.*
+_ORB-SLAM2s의 소문자 's'는 **Smart · Swift · Small**（스마트 · 스위프트 · 스몰）을 의미하며, 기존 ORB-SLAM2에 비해 향상된 지능성, 더 빠른 성능, 더 가벼운 무게를 강조합니다._
 
 이 프로젝트는 소문자 's'를 사용합니다. 대문자 'S' 논문인 ORB-SLAM2S：
 
@@ -87,7 +87,6 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 - **🌑 어두운 프레임 감지** —— SLAM 스레드 블로킹 방지를 위해 어두운 프레임 자동 건너뛰기
 - **🖱️ AR 오브젝트 관리** —— 3D 객체 배치, 핀치 제스처로 확대/축소
 - **🧭 3DOF 방향 추적** —— 내장 기기 센서를 사용한 3자유도 방향 추적
-- **🌐 브라우저 기반 SLAM 입력** —— 내장 SSL 암호화 HTTPS Web 서버. 브라우저를 원격 카메라 소스로 사용하여 이미지를 기기로 전송하고 SLAM 처리 후 3D 포인트 클라우드와 자세 데이터를 실시간 표시
 - **📑 다중 지도 지원** —— 여러 지도 파일의 동시 로드, 매칭 및 관리
 
 ---
@@ -96,14 +95,14 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 
 현재 주로 퀄컴 스냅드래곤 플랫폼 CPU에서 테스트 중입니다：
 
-| SoC | 장치 | 성능 |
-|---|---|---|
-| Snapdragon 8 Elite | Xiaomi 15 | 30 FPS |
-| Snapdragon 8+ Gen1 | Redmi K60 | 30 FPS |
-| Snapdragon 870 | Xiaomi 10S | 30 FPS |
-| Snapdragon 7s Gen 2 | Redmi Pad Pro | 30 FPS |
-| Snapdragon 835 | Xiaomi 6 | 15–30 FPS |
-| Snapdragon AR1 Gen 1 | Rokid Glass3 | 10–25 FPS |
+| SoC                  | 장치          | 성능      |
+| -------------------- | ------------- | --------- |
+| Snapdragon 8 Elite   | Xiaomi 15     | 30 FPS    |
+| Snapdragon 8+ Gen1   | Redmi K60     | 30 FPS    |
+| Snapdragon 870       | Xiaomi 10S    | 30 FPS    |
+| Snapdragon 7s Gen 2  | Redmi Pad Pro | 30 FPS    |
+| Snapdragon 835       | Xiaomi 6      | 15–30 FPS |
+| Snapdragon AR1 Gen 1 | Rokid Glass3  | 10–25 FPS |
 
 ### 🌑 어두운 프레임 감지
 
@@ -163,11 +162,11 @@ ORB-SLAM2는 **단안**, **스테레오** 및 **RGB-D** 카메라용 실시간 S
 
 ### 📖 관련 출판물
 
-**[단안]** Raúl Mur-Artal, J. M. M. Montiel and Juan D. Tardós. **ORB-SLAM: A Versatile and Accurate Monocular SLAM System**. *IEEE Transactions on Robotics,* vol. 31, no. 5, pp. 1147–1163, 2015. (**2015 IEEE Transactions on Robotics Best Paper Award**). **[PDF](http://webdiis.unizar.es/~raulmur/MurMontielTardosTRO15.pdf)**
+**[단안]** Raúl Mur-Artal, J. M. M. Montiel and Juan D. Tardós. **ORB-SLAM: A Versatile and Accurate Monocular SLAM System**. _IEEE Transactions on Robotics,_ vol. 31, no. 5, pp. 1147–1163, 2015. (**2015 IEEE Transactions on Robotics Best Paper Award**). **[PDF](http://webdiis.unizar.es/~raulmur/MurMontielTardosTRO15.pdf)**
 
-**[스테레오 및 RGB-D]** Raúl Mur-Artal and Juan D. Tardós. **ORB-SLAM2: an Open-Source SLAM System for Monocular, Stereo and RGB-D Cameras**. *IEEE Transactions on Robotics,* vol. 33, no. 5, pp. 1255–1262, 2017. **[PDF](https://128.84.21.199/pdf/1610.06475.pdf)**
+**[스테레오 및 RGB-D]** Raúl Mur-Artal and Juan D. Tardós. **ORB-SLAM2: an Open-Source SLAM System for Monocular, Stereo and RGB-D Cameras**. _IEEE Transactions on Robotics,_ vol. 33, no. 5, pp. 1255–1262, 2017. **[PDF](https://128.84.21.199/pdf/1610.06475.pdf)**
 
-**[DBoW2 Place Recognizer]** Dorian Gálvez-López and Juan D. Tardós. **Bags of Binary Words for Fast Place Recognition in Image Sequences**. *IEEE Transactions on Robotics,* vol. 28, no. 5, pp. 1188–1197, 2012. **[PDF](http://doriangalvez.com/php/dl.php?dlp=GalvezTRO12.pdf)**
+**[DBoW2 Place Recognizer]** Dorian Gálvez-López and Juan D. Tardós. **Bags of Binary Words for Fast Place Recognition in Image Sequences**. _IEEE Transactions on Robotics,_ vol. 28, no. 5, pp. 1188–1197, 2012. **[PDF](http://doriangalvez.com/php/dl.php?dlp=GalvezTRO12.pdf)**
 
 ---
 
@@ -250,15 +249,23 @@ g2o에 필요합니다(아래 참조). 다운로드 및 설치 지침은 다음�
 
 ## DBoW2 및 g2o（Thirdparty 폴더에 포함됨）
 
-[DBoW2](https://github.com/dorian3d/DBoW2) 및 [g2o](https://github.com/RainerKuemmerle/g2o) 라이브러리를 알고리즘 참조용으로 사용합니다. 두 라이브러리(라이선스 포함)는 *Thirdparty* 폴더에 포함되어 있습니다.
+[DBoW2](https://github.com/dorian3d/DBoW2) 및 [g2o](https://github.com/RainerKuemmerle/g2o) 라이브러리를 알고리즘 참조용으로 사용합니다. 두 라이브러리(라이선스 포함)는 _Thirdparty_ 폴더에 포함되어 있습니다.
 
 ---
 
 # 🧭 관성 항법(IMU) 정보
 
-참고：https://github.com/Olsc/Android_3dof  
+참고：https://github.com/Olsc/Android_3dof
 
-*이 프로젝트는 아직 연구 통합이 완료되지 않았습니다.*
+_이 프로젝트는 아직 연구 통합이 완료되지 않았습니다._
+
+---
+
+# 🧮 이론적 계산 복잡도
+
+![benchmark](workload_benchmark_tools/benchmark_workload.svg)
+
+---
 
 # 🐳 마스코트
 
@@ -266,7 +273,8 @@ g2o에 필요합니다(아래 참조). 다운로드 및 설치 지침은 다음�
 
 ![Mascot](img/mascot-q.png)
 
-*캐릭터: 박하*
+_캐릭터: 박하_
+
 </div>
 
 ---

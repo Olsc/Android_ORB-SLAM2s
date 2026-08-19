@@ -46,7 +46,7 @@ https://github.com/Martin20150405/SLAM_AR_Android.git
 
 # 🎯 ORB-SLAM2s: Android Spatial Computing & Lightweight AR Demo
 
-*ORB-SLAM2s の小文字の 's' は **Smart · Swift · Small**（スマート・迅速・小型）を意味し、元の ORB-SLAM2 と比較して強化された知能性、より高速なパフォーマンス、より軽量なサイズを強調しています。*
+_ORB-SLAM2s の小文字の 's' は **Smart · Swift · Small**（スマート・迅速・小型）を意味し、元の ORB-SLAM2 と比較して強化された知能性、より高速なパフォーマンス、より軽量なサイズを強調しています。_
 
 このプロジェクトでは小文字の 's' を使用しています。大文字の 'S' を持つ別の論文 ORB-SLAM2S：
 
@@ -87,7 +87,6 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 - **🌑 暗所フレーム検出** —— 暗いまたは低品質のフレームを自動的にスキップ
 - **🖱️ AR オブジェクト管理** —— 3D オブジェクトの配置、ピンチジェスチャーによる拡大縮小
 - **🧭 3DOF 方向追跡** —— デバイス内蔵センサーによる 3 自由度の方向追跡
-- **🌐 ブラウザ経由の SLAM 入力** —— 内蔵 SSL 暗号化 HTTPS Web サーバー。ブラウザをリモートカメラ源として使用し、画像を端末に送信して SLAM 処理し、3D 点群と位置データをリアルタイム表示
 - **📑 複数マップのサポート** —— 複数のマップファイルの同時読み込みと管理
 
 ---
@@ -96,14 +95,14 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 
 現在主に Qualcomm Snapdragon プラットフォーム CPU でテストしています：
 
-| SoC | デバイス | パフォーマンス |
-|---|---|---|
-| Snapdragon 8 Elite | Xiaomi 15 | 30 FPS |
-| Snapdragon 8+ Gen1 | Redmi K60 | 30 FPS |
-| Snapdragon 870 | Xiaomi 10S | 30 FPS |
-| Snapdragon 7s Gen 2 | Redmi Pad Pro | 30 FPS |
-| Snapdragon 835 | Xiaomi 6 | 15–30 FPS |
-| Snapdragon AR1 Gen 1 | Rokid Glass3 | 10–25 FPS |
+| SoC                  | デバイス      | パフォーマンス |
+| -------------------- | ------------- | -------------- |
+| Snapdragon 8 Elite   | Xiaomi 15     | 30 FPS         |
+| Snapdragon 8+ Gen1   | Redmi K60     | 30 FPS         |
+| Snapdragon 870       | Xiaomi 10S    | 30 FPS         |
+| Snapdragon 7s Gen 2  | Redmi Pad Pro | 30 FPS         |
+| Snapdragon 835       | Xiaomi 6      | 15–30 FPS      |
+| Snapdragon AR1 Gen 1 | Rokid Glass3  | 10–25 FPS      |
 
 ### 🌑 暗所フレーム検出
 
@@ -163,11 +162,11 @@ ORB-SLAM2 は、**単眼**、**ステレオ**、および **RGB-D** カメラ用
 
 ### 📖 関連出版物
 
-**[単眼]** Raúl Mur-Artal, J. M. M. Montiel and Juan D. Tardós. **ORB-SLAM: A Versatile and Accurate Monocular SLAM System**. *IEEE Transactions on Robotics,* vol. 31, no. 5, pp. 1147–1163, 2015. (**2015 IEEE Transactions on Robotics Best Paper Award**). **[PDF](http://webdiis.unizar.es/~raulmur/MurMontielTardosTRO15.pdf)**
+**[単眼]** Raúl Mur-Artal, J. M. M. Montiel and Juan D. Tardós. **ORB-SLAM: A Versatile and Accurate Monocular SLAM System**. _IEEE Transactions on Robotics,_ vol. 31, no. 5, pp. 1147–1163, 2015. (**2015 IEEE Transactions on Robotics Best Paper Award**). **[PDF](http://webdiis.unizar.es/~raulmur/MurMontielTardosTRO15.pdf)**
 
-**[ステレオおよび RGB-D]** Raúl Mur-Artal and Juan D. Tardós. **ORB-SLAM2: an Open-Source SLAM System for Monocular, Stereo and RGB-D Cameras**. *IEEE Transactions on Robotics,* vol. 33, no. 5, pp. 1255–1262, 2017. **[PDF](https://128.84.21.199/pdf/1610.06475.pdf)**
+**[ステレオおよび RGB-D]** Raúl Mur-Artal and Juan D. Tardós. **ORB-SLAM2: an Open-Source SLAM System for Monocular, Stereo and RGB-D Cameras**. _IEEE Transactions on Robotics,_ vol. 33, no. 5, pp. 1255–1262, 2017. **[PDF](https://128.84.21.199/pdf/1610.06475.pdf)**
 
-**[DBoW2 Place Recognizer]** Dorian Gálvez-López and Juan D. Tardós. **Bags of Binary Words for Fast Place Recognition in Image Sequences**. *IEEE Transactions on Robotics,* vol. 28, no. 5, pp. 1188–1197, 2012. **[PDF](http://doriangalvez.com/php/dl.php?dlp=GalvezTRO12.pdf)**
+**[DBoW2 Place Recognizer]** Dorian Gálvez-López and Juan D. Tardós. **Bags of Binary Words for Fast Place Recognition in Image Sequences**. _IEEE Transactions on Robotics,_ vol. 28, no. 5, pp. 1188–1197, 2012. **[PDF](http://doriangalvez.com/php/dl.php?dlp=GalvezTRO12.pdf)**
 
 ---
 
@@ -250,15 +249,23 @@ g2o に必要です（下記参照）。ダウンロードおよびインスト�
 
 ## DBoW2 および g2o（Thirdparty フォルダに含まれています）
 
-[DBoW2](https://github.com/dorian3d/DBoW2) および [g2o](https://github.com/RainerKuemmerle/g2o) ライブラリをアルゴリズム参照として使用しています。両方のライブラリ（ライセンスを含む）は *Thirdparty* フォルダに含まれています。
+[DBoW2](https://github.com/dorian3d/DBoW2) および [g2o](https://github.com/RainerKuemmerle/g2o) ライブラリをアルゴリズム参照として使用しています。両方のライブラリ（ライセンスを含む）は _Thirdparty_ フォルダに含まれています。
 
 ---
 
 # 🧭 慣性航法（IMU）について
 
-参考：https://github.com/Olsc/Android_3dof  
+参考：https://github.com/Olsc/Android_3dof
 
-*本プロジェクトはまだ研究統合が完了していません。*
+_本プロジェクトはまだ研究統合が完了していません。_
+
+---
+
+# 🧮 理論的計算複雑度
+
+![benchmark](workload_benchmark_tools/benchmark_workload.svg)
+
+---
 
 # 🐳 マスコット
 
@@ -266,7 +273,8 @@ g2o に必要です（下記参照）。ダウンロードおよびインスト�
 
 ![Mascot](img/mascot-q.png)
 
-*キャラクター：ハッカ*
+_キャラクター：ハッカ_
+
 </div>
 
 ---

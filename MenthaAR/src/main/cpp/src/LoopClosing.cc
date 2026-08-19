@@ -48,6 +48,36 @@
 #include<chrono>
 #include<cstring>
 
+namespace {
+class LocalMappingStopScope {
+public:
+    explicit LocalMappingStopScope(ORB_SLAM2::LocalMapping* pLM) : mpLM(pLM), mbActive(false) {
+        if(mpLM) {
+            mpLM->RequestStop();
+            mpLM->WaitForStopped();
+            mbActive = mpLM->isStopped();
+        }
+    }
+    ~LocalMappingStopScope() {
+        release();
+    }
+    bool isStopped() const { return mbActive; }
+    void release() {
+        if(mpLM) {
+            if(mbActive) {
+                mpLM->Release();
+                mbActive = false;
+            } else {
+                mpLM->CancelStopRequest();
+            }
+        }
+    }
+private:
+    ORB_SLAM2::LocalMapping* mpLM;
+    bool mbActive;
+};
+}
+
 namespace ORB_SLAM2
 {
 
@@ -74,6 +104,22 @@ void LoopClosing::SetMap(Map* pMap)
     mpMap = pMap;
 }
 
+bool LoopClosing::HasPendingEvent()
+{
+    {
+        unique_lock<mutex> lk(mMutexLoopQueue);
+        if(!mlpLoopKeyFrameQueue.empty()) return true;
+    }
+    return mbFinishRequested.load(std::memory_order_acquire) ||
+           mbResetRequested.load(std::memory_order_acquire);
+}
+
+void LoopClosing::NotifyEvent()
+{
+    std::unique_lock<std::mutex> evLock(mMutexEvent);
+    mCvEvent.notify_all();
+}
+
 void LoopClosing::Run()
 {
     mbFinished =false;
@@ -94,7 +140,7 @@ void LoopClosing::Run()
                    CorrectLoop();
                }
             }
-        }       
+        }
 
         ResetIfRequested();
 
@@ -104,10 +150,10 @@ void LoopClosing::Run()
         // 消费关键帧数据库的待重建标记
         mpKeyFrameDB->RebuildIfPending();
 
-        // 等待事件（新 KF/Finish/Reset），有事件立即唤醒，最多等 5ms
+        // 事件谓词等待
         {
             std::unique_lock<std::mutex> lock(mMutexEvent);
-            mCvEvent.wait_for(lock, std::chrono::milliseconds(THREAD_POLL_WAIT_MS));
+            mCvEvent.wait(lock, [this]{ return HasPendingEvent(); });
         }
     }
 
@@ -116,10 +162,12 @@ void LoopClosing::Run()
 
 void LoopClosing::InsertKeyFrame(KeyFrame *pKF)
 {
-    unique_lock<mutex> lock(mMutexLoopQueue);
-    if(pKF->mnId!=0)
-        mlpLoopKeyFrameQueue.push_back(pKF);
-    mCvEvent.notify_one();
+    {
+        unique_lock<mutex> lock(mMutexLoopQueue);
+        if(pKF->mnId!=0)
+            mlpLoopKeyFrameQueue.push_back(pKF);
+    }
+    NotifyEvent();
 }
 
 bool LoopClosing::CheckNewKeyFrames()
@@ -399,46 +447,17 @@ bool LoopClosing::ComputeSim3()
         mpCurrentKF->SetErase();
         return false;
     }
-
 }
 
 void LoopClosing::CorrectLoop()
 {
-    // cout << "检测到闭环!" << endl;
+    // 如果正在运行全局 Bundle Adjustment，则中止它（join 等待线程真正退出）
+    RequestStopGBA();
 
-    // 向局部建图线程发送停止信号
-    // 避免在纠正闭环时插入新的关键帧
-    mpLocalMapper->RequestStop();
-
-    // 如果正在运行全局 Bundle Adjustment，则中止它
-    if(isRunningGBA())
+    // RAII 保护：确保无论任何分支或异常退出，局部建图线程必定被安全释放，零死锁、零状态泄漏
+    LocalMappingStopScope stopScope(mpLocalMapper);
+    if(!stopScope.isStopped())
     {
-        unique_lock<mutex> lock(mMutexGBA);
-        mbStopGBA = true;
-
-        mnFullBAIdx++;
-
-        if(mpThreadGBA)
-        {
-            mpThreadGBA->detach();
-            delete mpThreadGBA;
-            mpThreadGBA = nullptr;  // 防止二次 delete（double-free UB）
-        }
-    }
-
-    // 等待局部建图线程有效停止
-    mpLocalMapper->WaitForStopped(LOOP_LOCALMAPPER_TIMEOUT_MS);
-
-    if(!mpLocalMapper->isStopped())
-    {
-        // 超时，中止 Sim3 校正
-        mpLocalMapper->CancelStopRequest();
-
-        // 仔细检查它是否在我们取消时停止了
-        if(mpLocalMapper->isStopped())
-        {
-            mpLocalMapper->Release();
-        }
         mpCurrentKF->SetErase();
         return;
     }
@@ -592,9 +611,9 @@ void LoopClosing::CorrectLoop()
     mpThreadGBA = new thread(&LoopClosing::RunGlobalBundleAdjustment,this,mpCurrentKF->mnId);
 
     // 闭环完成，释放局部建图线程
-    mpLocalMapper->Release();    
+    mpLocalMapper->Release();
 
-    mLastLoopKFid = mpCurrentKF->mnId;   
+    mLastLoopKFid = mpCurrentKF->mnId;
     mpCurrentKF->SetErase(); // 闭环完成，平衡最初的 SetNotErase()
 }
 
@@ -636,15 +655,15 @@ void LoopClosing::RequestReset()
 {
     {
         unique_lock<mutex> lock(mMutexReset);
-        mbResetRequested = true;
+        mbResetRequested.store(true);
     }
-    mCvEvent.notify_one();
+    NotifyEvent();
 }
 
 void LoopClosing::ResetIfRequested()
 {
     unique_lock<mutex> lock(mMutexReset);
-    if(mbResetRequested)
+    if(mbResetRequested.load())
     {
         mlpLoopKeyFrameQueue.clear();
         mLastLoopKFid=0;
@@ -662,6 +681,33 @@ void LoopClosing::WaitForResetComplete()
     unique_lock<mutex> lock(mMutexResetComplete);
     mCvResetComplete.wait(lock, [this]{ return mbResetComplete; });
     mbResetComplete = false;
+}
+
+void LoopClosing::RequestStopGBA()
+{
+    std::thread* pToJoin = nullptr;
+    {
+        unique_lock<mutex> lock(mMutexGBA);
+        if(mpThreadGBA)
+        {
+            mbStopGBA = true;
+            mnFullBAIdx++;          // 使 GBA 线程末尾的 idx 校验判定"已被中止"
+            pToJoin = mpThreadGBA;
+            mpThreadGBA = nullptr;  // GBA 线程自身收尾时看到空指针会跳过 detach/delete
+        }
+        else if(mbRunningGBA)
+        {
+            // 线程对象已被自然完成路径回收，仅置停止标志让残余优化尽快退出
+            mbStopGBA = true;
+            mnFullBAIdx++;
+        }
+    }
+    if(pToJoin)
+    {
+        if(pToJoin->joinable())
+            pToJoin->join();
+        delete pToJoin;
+    }
 }
 
 void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
@@ -685,36 +731,16 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
 
         if(!mbStopGBA)
         {
-            // cout << "全局 Bundle Adjustment 完成" << endl;
-            // cout << "正在更新地图 ..." << endl;
-            mpLocalMapper->RequestStop();
-            // 等待局部建图线程有效停止
-            mpLocalMapper->WaitForStopped(LOOP_LOCALMAPPER_TIMEOUT_MS);
-
+            LocalMappingStopScope stopScope(mpLocalMapper);
+            if(idx != mnFullBAIdx || !stopScope.isStopped())
             {
-                unique_lock<mutex> recheckLock(mMutexGBA);
-                if(idx != mnFullBAIdx)
-                {
-                    if(mpLocalMapper->isStopped() && !mpLocalMapper->isFinished())
-                    {
-                        mpLocalMapper->Release();
-                    }
-                    return;
-                }
-            }
-
-            if(!mpLocalMapper->isStopped() && !mpLocalMapper->isFinished())
-            {
-                 mpLocalMapper->CancelStopRequest();
-                 if(mpLocalMapper->isStopped() && !mpLocalMapper->isFinished())
-                 {
-                     mpLocalMapper->Release();
-                 }
-                 return;
+                mbFinishedGBA = true;
+                mbRunningGBA = false;
+                return;
             }
 
             // 获取地图互斥锁
-            unique_lock<mutex> lock(mpMap->mMutexMapUpdate);
+            unique_lock<mutex> mapLock(mpMap->mMutexMapUpdate);
 
             // 从地图的第一个关键帧开始校正关键帧
             list<KeyFrame*> lpKFtoCheck(mpMap->mvpKeyFrameOrigins.begin(),mpMap->mvpKeyFrameOrigins.end());
@@ -727,14 +753,15 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
                 for(set<KeyFrame*>::const_iterator sit=sChilds.begin();sit!=sChilds.end();sit++)
                 {
                     KeyFrame* pChild = *sit;
+                    if(!pChild || pChild->isBad())
+                        continue;
                     if(pChild->mnBAGlobalForKF!=nLoopKF)
                     {
                         cv::Mat Tchildc = pChild->GetPose()*Twc;
-                        pChild->mTcwGBA = Tchildc*pKF->mTcwGBA; //*Tcorc*pKF->mTcwGBA;
+                        pChild->mTcwGBA = Tchildc*pKF->mTcwGBA;
                         pChild->mnBAGlobalForKF=nLoopKF;
-
+                        lpKFtoCheck.push_back(pChild);
                     }
-                    lpKFtoCheck.push_back(pChild);
                 }
 
                 pKF->mTcwBefGBA = pKF->GetPose();
@@ -742,8 +769,11 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
                 lpKFtoCheck.pop_front();
             }
 
-            // 校正地图点
+            // 校正地图点（锁内仅写坐标，法向/深度更新移出 mMutexMapUpdate，
+            // 避免大地图时 Tracking 的 UpdateLastFrame/初始化在全局锁上排队数秒）
             const vector<MapPoint*> vpMPs = mpMap->GetAllMapPoints();
+            vector<MapPoint*> vpToUpdateNormal;
+            vpToUpdateNormal.reserve(vpMPs.size());
 
             for(size_t i=0; i<vpMPs.size(); i++)
             {
@@ -762,37 +792,39 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
                     // 根据其参考关键帧的校正进行更新
                     KeyFrame* pRefKF = pMP->GetReferenceKeyFrame();
 
-                    if(pRefKF->mnBAGlobalForKF!=nLoopKF)
-                        continue;
+                    if(pRefKF && pRefKF->mnBAGlobalForKF==nLoopKF)
+                    {
+                        // 映射到未校正的相机
+                        cv::Mat Rcw = pRefKF->mTcwBefGBA.rowRange(0,3).colRange(0,3);
+                        cv::Mat tcw = pRefKF->mTcwBefGBA.rowRange(0,3).col(3);
+                        cv::Mat Xc = Rcw*pMP->GetWorldPos()+tcw;
 
-                    // 映射到未校正的相机
-                    cv::Mat Rcw = pRefKF->mTcwBefGBA.rowRange(0,3).colRange(0,3);
-                    cv::Mat tcw = pRefKF->mTcwBefGBA.rowRange(0,3).col(3);
-                    cv::Mat Xc = Rcw*pMP->GetWorldPos()+tcw;
+                        // 使用校正后的相机反向投影
+                        cv::Mat Twc = pRefKF->GetPoseInverse();
+                        cv::Mat Rwc = Twc.rowRange(0,3).colRange(0,3);
+                        cv::Mat twc = Twc.rowRange(0,3).col(3);
 
-                    // 使用校正后的相机反向投影
-                    cv::Mat Twc = pRefKF->GetPoseInverse();
-                    cv::Mat Rwc = Twc.rowRange(0,3).colRange(0,3);
-                    cv::Mat twc = Twc.rowRange(0,3).col(3);
-
-                    pMP->SetWorldPos(Rwc*Xc+twc);
+                        pMP->SetWorldPos(Rwc*Xc+twc);
+                    }
                 }
 
-                pMP->UpdateNormalAndDepth();
-            }            
+                vpToUpdateNormal.push_back(pMP);
+            }
 
             mpMap->InformNewBigChange();
+            mapLock.unlock();   // 提前释放 mMutexMapUpdate
 
-            mpLocalMapper->Release();
+            for(MapPoint* pMP : vpToUpdateNormal)
+            {
+                if(pMP && !pMP->isBad())
+                    pMP->UpdateNormalAndDepth();
+            }
 
-            // cout << "地图已更新!" << endl;
+            stopScope.release();
         }
 
         mbFinishedGBA = true;
         mbRunningGBA = false;
-        // 修复：正常完成路径也回收线程对象（detach 后 delete 是安全的，
-        // 本线程对象此后不再被任何代码引用），消除泄漏；
-        // 若期间被新的 CorrectLoop 中止并清理过，此处指针已为空，跳过。
         if(mpThreadGBA)
         {
             mpThreadGBA->detach();
@@ -805,16 +837,18 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
 void LoopClosing::RequestFinish()
 {
     // 请求结束闭环检测线程
-    unique_lock<mutex> lock(mMutexFinish);
-    mbFinishRequested = true;
-    mCvEvent.notify_one();
+    {
+        unique_lock<mutex> lock(mMutexFinish);
+        mbFinishRequested.store(true);
+    }
+    NotifyEvent();
 }
 
 bool LoopClosing::CheckFinish()
 {
     // 检查是否请求结束
     unique_lock<mutex> lock(mMutexFinish);
-    return mbFinishRequested;
+    return mbFinishRequested.load();
 }
 
 void LoopClosing::SetFinish()

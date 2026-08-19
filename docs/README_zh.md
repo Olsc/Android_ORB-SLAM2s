@@ -46,7 +46,7 @@ https://github.com/Martin20150405/SLAM_AR_Android.git
 
 # 🎯 ORB-SLAM2s：Android 空间计算与轻量级 AR 演示
 
-*ORB-SLAM2s 中的小写 's' 代表 **智能 · 快速 · 小巧**，强调与原始 ORB-SLAM2 相比，具有增强的智能、更快的性能和更轻的体积。*
+_ORB-SLAM2s 中的小写 's' 代表 **智能 · 快速 · 小巧**，强调与原始 ORB-SLAM2 相比，具有增强的智能、更快的性能和更轻的体积。_
 
 本项目使用的是小写 s，另外一篇大写 S 的论文名为 ORB-SLAM2S：
 
@@ -87,7 +87,6 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 - **🌑 暗帧检测** —— 自动跳过暗色或低质量帧以防止 SLAM 线程阻塞
 - **🖱️ AR 对象管理** —— 支持 3D 物体的放置、双指缩放等交互操作
 - **🧭 3DOF 姿态跟踪** —— 利用设备内置传感器（旋转矢量传感器 / 加速度计 + 磁力计）实现三自由度方向跟踪
-- **🌐 浏览器端 SLAM 接入** —— 内置 SSL 加密的 HTTPS Web 服务器。浏览器可作为远程相机源，将图像发送至手机进行 SLAM 处理，并实时展示 3D 点云和位姿数据
 - **📑 多地图支持** —— 支持多个地图文件的同时加载和匹配
 
 ---
@@ -96,14 +95,14 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 
 目前主要在高通骁龙平台 CPU 上测试：
 
-| SoC | 设备 | 性能 |
-|---|---|---|
-| Snapdragon 8 Elite | 小米 15 | 30 FPS |
-| Snapdragon 8+ Gen1 | 红米 K60 | 30 FPS |
-| Snapdragon 870 | 小米 10S | 30 FPS |
-| Snapdragon 7s Gen 2 | Redmi Pad Pro | 30 FPS |
-| Snapdragon 835 | 小米 6 | 15–30 FPS |
-| Snapdragon AR1 Gen 1 | Rokid Glass3 | 10–25 FPS |
+| SoC                  | 设备          | 性能      |
+| -------------------- | ------------- | --------- |
+| Snapdragon 8 Elite   | 小米 15       | 30 FPS    |
+| Snapdragon 8+ Gen1   | 红米 K60      | 30 FPS    |
+| Snapdragon 870       | 小米 10S      | 30 FPS    |
+| Snapdragon 7s Gen 2  | Redmi Pad Pro | 30 FPS    |
+| Snapdragon 835       | 小米 6        | 15–30 FPS |
+| Snapdragon AR1 Gen 1 | Rokid Glass3  | 10–25 FPS |
 
 ### 🌑 暗帧检测
 
@@ -163,11 +162,11 @@ ORB-SLAM2 是一个实时 SLAM 库，用于**单目**、**立体**和 **RGB-D** 
 
 ### 📖 相关出版物
 
-**[单目]** Raúl Mur-Artal, J. M. M. Montiel and Juan D. Tardós. **ORB-SLAM: A Versatile and Accurate Monocular SLAM System**. *IEEE Transactions on Robotics,* vol. 31, no. 5, pp. 1147–1163, 2015. (**2015 IEEE Transactions on Robotics 最佳论文奖**). **[PDF](http://webdiis.unizar.es/~raulmur/MurMontielTardosTRO15.pdf)**
+**[单目]** Raúl Mur-Artal, J. M. M. Montiel and Juan D. Tardós. **ORB-SLAM: A Versatile and Accurate Monocular SLAM System**. _IEEE Transactions on Robotics,_ vol. 31, no. 5, pp. 1147–1163, 2015. (**2015 IEEE Transactions on Robotics 最佳论文奖**). **[PDF](http://webdiis.unizar.es/~raulmur/MurMontielTardosTRO15.pdf)**
 
-**[立体和 RGB-D]** Raúl Mur-Artal and Juan D. Tardós. **ORB-SLAM2: an Open-Source SLAM System for Monocular, Stereo and RGB-D Cameras**. *IEEE Transactions on Robotics,* vol. 33, no. 5, pp. 1255–1262, 2017. **[PDF](https://128.84.21.199/pdf/1610.06475.pdf)**
+**[立体和 RGB-D]** Raúl Mur-Artal and Juan D. Tardós. **ORB-SLAM2: an Open-Source SLAM System for Monocular, Stereo and RGB-D Cameras**. _IEEE Transactions on Robotics,_ vol. 33, no. 5, pp. 1255–1262, 2017. **[PDF](https://128.84.21.199/pdf/1610.06475.pdf)**
 
-**[DBoW2 地点识别器]** Dorian Gálvez-López and Juan D. Tardós. **Bags of Binary Words for Fast Place Recognition in Image Sequences**. *IEEE Transactions on Robotics,* vol. 28, no. 5, pp. 1188–1197, 2012. **[PDF](http://doriangalvez.com/php/dl.php?dlp=GalvezTRO12.pdf)**
+**[DBoW2 地点识别器]** Dorian Gálvez-López and Juan D. Tardós. **Bags of Binary Words for Fast Place Recognition in Image Sequences**. _IEEE Transactions on Robotics,_ vol. 28, no. 5, pp. 1188–1197, 2012. **[PDF](http://doriangalvez.com/php/dl.php?dlp=GalvezTRO12.pdf)**
 
 ---
 
@@ -250,15 +249,23 @@ g2o 所需（见下文）。下载和安装说明可在以下网址找到：http
 
 ## DBoW2 和 g2o（包含在 Thirdparty 文件夹中）
 
-我们使用 [DBoW2](https://github.com/dorian3d/DBoW2) 和 [g2o](https://github.com/RainerKuemmerle/g2o) 库进行算法上的引用。这两个库（包含许可证）都包含在 *Thirdparty* 文件夹中。
+我们使用 [DBoW2](https://github.com/dorian3d/DBoW2) 和 [g2o](https://github.com/RainerKuemmerle/g2o) 库进行算法上的引用。这两个库（包含许可证）都包含在 _Thirdparty_ 文件夹中。
 
 ---
 
 # 🧭 关于惯性导航（IMU）
 
-参考：https://github.com/Olsc/Android_3dof  
+参考：https://github.com/Olsc/Android_3dof
 
-*本项目尚未研究整合完成。*
+_本项目尚未研究整合完成。_
+
+---
+
+# 🧮 理论计算量
+
+![benchmark](workload_benchmark_tools/benchmark_workload.svg)
+
+---
 
 # 🐳吉祥物
 
@@ -266,7 +273,8 @@ g2o 所需（见下文）。下载和安装说明可在以下网址找到：http
 
 ![Mascot](img/mascot-q.png)
 
-*角色：薄荷*
+_角色：薄荷_
+
 </div>
 
 ---

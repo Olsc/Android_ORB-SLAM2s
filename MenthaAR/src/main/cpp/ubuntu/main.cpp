@@ -23,7 +23,6 @@ bool planeLoadedFromMap = false;
 
 float fx, fy, cx, cy;
 double timeStamp = 0.0;
-bool gEnableSLAM = true;
 bool gEnablePointCloudDisplay = true;
 bool gShouldDrawArObject = false;
 
@@ -64,6 +63,10 @@ void initMenu();
 void drawGUI(cv::Mat& frame, int trackingState, int fps);
 void onMouse(int event, int x, int y, int flags, void* userdata);
 void drawARCube(cv::Mat& im, const cv::Mat& Tcw, Plane* plane, float fx, float fy, float cx, float cy);
+void drawTrackedPoints(const std::vector<cv::KeyPoint>& vKeys, const std::vector<ORB_SLAM2::MapPoint*>& vMPs,
+                       cv::Mat& im, float cx = 0.0f, float cy = 0.0f);
+void drawAllMapPoints(const cv::Mat& Tcw, const std::vector<ORB_SLAM2::MapPoint*>& allMapPoints,
+                      cv::Mat& im, float fx, float fy, float cx, float cy, bool drawOnlyLoaded = true);
 
 int main(int argc, char** argv) {
     std::cout << "==========================================================" << std::endl;
@@ -221,7 +224,7 @@ int main(int argc, char** argv) {
         // ---- ORB/SLAM 跟踪：固定 TARGET_FPS 时间节流 ----
         // 无论视频/相机源帧率多少，每 processInterval 秒只处理最新一帧，
         // 其余帧仅显示不处理，保证视频正常速度播放而 SLAM 固定 30fps
-        if (gEnableSLAM) {
+        {
             auto now = std::chrono::steady_clock::now();
             double procDt = std::chrono::duration_cast<std::chrono::duration<double>>(
                 now - lastProcessTime).count();
@@ -247,11 +250,6 @@ int main(int argc, char** argv) {
                     vKeys = slamSys->GetTrackedKeyPointsUn();
                 }
             }
-        } else {
-            status = 0;
-            vMPs.clear();
-            vKeys.clear();
-            gShouldDrawArObject = false;
         }
 
         // 确定当前是否可以绘制 3D 虚拟物体
@@ -305,6 +303,92 @@ int main(int argc, char** argv) {
 
     std::cout << "[Ubuntu GUI] Program terminated. Goodbye!" << std::endl;
     return 0;
+}
+
+// 绘制当前帧跟踪到的特征点，青色=新建、绿色=匹配的已加载、红色=未匹配的已加载
+void drawTrackedPoints(const std::vector<cv::KeyPoint>& vKeys, const std::vector<ORB_SLAM2::MapPoint*>& vMPs,
+                       cv::Mat& im, float cx, float cy) {
+    float scaleX = ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR, scaleY = ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR;
+    if (cx > 0.0f && cy > 0.0f) {
+        scaleX = (float)im.cols / (ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR * cx);
+        scaleY = (float)im.rows / (ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR * cy);
+    }
+
+    const int N = (int)vKeys.size();
+    for (int i = 0; i < N; i++) {
+        if (i >= (int)vMPs.size()) break;
+        ORB_SLAM2::MapPoint* pMP = vMPs[i];
+        if (pMP) {
+            cv::Scalar color = cv::Scalar(ORB_SLAM2::UI_COLOR_NEW_POINT_B, ORB_SLAM2::UI_COLOR_NEW_POINT_G, ORB_SLAM2::UI_COLOR_NEW_POINT_R);
+            if (pMP->mbFromLoadedMap) {
+                color = cv::Scalar(ORB_SLAM2::UI_COLOR_LOADED_POINT_B, ORB_SLAM2::UI_COLOR_LOADED_POINT_G, ORB_SLAM2::UI_COLOR_LOADED_POINT_R);
+            }
+            cv::circle(im, cv::Point2f(vKeys[i].pt.x * scaleX, vKeys[i].pt.y * scaleY), ORB_SLAM2::UI_POINT_RADIUS, color, -1);
+        }
+    }
+}
+
+// 绘制所有地图点，用于AR重定位时显示完整点云
+void drawAllMapPoints(const cv::Mat& Tcw, const std::vector<ORB_SLAM2::MapPoint*>& allMapPoints,
+                      cv::Mat& im, float fx, float fy, float cx, float cy, bool drawOnlyLoaded) {
+    if (Tcw.empty() || allMapPoints.empty() || Tcw.rows < 3 || Tcw.cols < 4)
+        return;
+
+    const float R11 = Tcw.at<float>(0, 0), R12 = Tcw.at<float>(0, 1), R13 = Tcw.at<float>(0, 2);
+    const float R21 = Tcw.at<float>(1, 0), R22 = Tcw.at<float>(1, 1), R23 = Tcw.at<float>(1, 2);
+    const float R31 = Tcw.at<float>(2, 0), R32 = Tcw.at<float>(2, 1), R33 = Tcw.at<float>(2, 2);
+    const float tx = Tcw.at<float>(0, 3);
+    const float ty = Tcw.at<float>(1, 3);
+    const float tz = Tcw.at<float>(2, 3);
+
+    const int imgWidth = im.cols;
+    const int imgHeight = im.rows;
+
+    int drawnCount = 0;
+    const int maxDrawPoints = ORB_SLAM2::UI_MAX_DRAWN_POINTS;
+
+    const float dispScaleX = (ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR * cx > 0.0f) ? (float)im.cols / (ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR * cx) : ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR;
+    const float dispScaleY = (ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR * cy > 0.0f) ? (float)im.rows / (ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR * cy) : ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR;
+    const float fx2 = fx * dispScaleX;
+    const float fy2 = fy * dispScaleY;
+    const float cx2 = cx * dispScaleX;
+    const float cy2 = cy * dispScaleY;
+
+    const cv::Scalar colorLoaded(ORB_SLAM2::UI_COLOR_LOADED_POINT_B, ORB_SLAM2::UI_COLOR_LOADED_POINT_G, ORB_SLAM2::UI_COLOR_LOADED_POINT_R);
+    const cv::Scalar colorNew(ORB_SLAM2::UI_COLOR_NEW_POINT_B, ORB_SLAM2::UI_COLOR_NEW_POINT_G, ORB_SLAM2::UI_COLOR_NEW_POINT_R);
+
+    for (size_t i = 0; i < allMapPoints.size(); i++) {
+        ORB_SLAM2::MapPoint* pMP = allMapPoints[i];
+        if (!pMP || pMP->isBad())
+            continue;
+        if (drawOnlyLoaded && !pMP->mbFromLoadedMap)
+            continue;
+
+        cv::Point3f Pw;
+        pMP->GetWorldPos(Pw);
+
+        const float Xw = Pw.x, Yw = Pw.y, Zw = Pw.z;
+        const float Xc = R11 * Xw + R12 * Yw + R13 * Zw + tx;
+        const float Yc = R21 * Xw + R22 * Yw + R23 * Zw + ty;
+        const float Zc = R31 * Xw + R32 * Yw + R33 * Zw + tz;
+
+        if (Zc <= ORB_SLAM2::PROJECT_MIN_DEPTH)
+            continue;
+
+        const float invZ = 1.0f / Zc;
+        const float u_display = fx2 * Xc * invZ + cx2;
+        const float v_display = fy2 * Yc * invZ + cy2;
+
+        if (u_display < 0 || u_display >= imgWidth || v_display < 0 || v_display >= imgHeight)
+            continue;
+
+        cv::circle(im, cv::Point2f(u_display, v_display), ORB_SLAM2::UI_CLOUD_POINT_RADIUS,
+                   pMP->mbFromLoadedMap ? colorLoaded : colorNew, -1);
+
+        drawnCount++;
+        if (drawnCount >= maxDrawPoints)
+            break;
+    }
 }
 
 // 基于平面的原点和法向量投影并绘制 3D 交互式线框立方体
@@ -507,13 +591,23 @@ void initMenu() {
     menuSections.push_back(dispSec);
 }
 
+// 将 ROI 裁剪到图像有效范围内，防止过小视频帧（如竖屏/低分辨率视频）导致越界崩溃。
+// 返回裁剪后是否仍有有效区域；无效时上层应跳过对应绘制。
+static bool clampRoiToImage(cv::Rect& r, const cv::Mat& img) {
+    cv::Rect bounds(0, 0, img.cols, img.rows);
+    r &= bounds;
+    return r.width > 0 && r.height > 0;
+}
+
 // 绘制半透明状态仪表盘和右侧可收纳控制按钮板
 void drawGUI(cv::Mat& frame, int trackingState, int fps) {
     // 1. 绘制左上方的半透明“状态仪表盘”
     //    只对面板 ROI 混合（纯色 Mat + addWeighted），避免全帧 clone/addWeighted 拖慢播放帧率
     cv::Rect panelRect(15, 15, 280, 140);
-    cv::Mat panelOverlay(panelRect.size(), frame.type(), cv::Scalar(30, 30, 30));
-    cv::addWeighted(panelOverlay, 0.75, frame(panelRect), 0.25, 0, frame(panelRect));
+    if (clampRoiToImage(panelRect, frame)) {
+        cv::Mat panelOverlay(panelRect.size(), frame.type(), cv::Scalar(30, 30, 30));
+        cv::addWeighted(panelOverlay, 0.75, frame(panelRect), 0.25, 0, frame(panelRect));
+    }
 
     // 绘制仪表盘的高雅描边边框
     cv::rectangle(frame, cv::Rect(15, 15, 280, 140), cv::Scalar(100, 100, 100), 1, cv::LINE_AA);
@@ -561,8 +655,10 @@ void drawGUI(cv::Mat& frame, int trackingState, int fps) {
         int tabW = 8, tabH = 96;
         int tabX = frame.cols - tabW, tabY = (frame.rows - tabH) / 2;
         cv::Rect tabRect(tabX, tabY, tabW, tabH);
-        cv::Mat tabOverlay(tabRect.size(), frame.type(), cv::Scalar(45, 45, 45));
-        cv::addWeighted(tabOverlay, 0.65, frame(tabRect), 0.35, 0, frame(tabRect));
+        if (clampRoiToImage(tabRect, frame)) {
+            cv::Mat tabOverlay(tabRect.size(), frame.type(), cv::Scalar(45, 45, 45));
+            cv::addWeighted(tabOverlay, 0.65, frame(tabRect), 0.35, 0, frame(tabRect));
+        }
         cv::rectangle(frame, cv::Rect(tabX, tabY, tabW, tabH), cv::Scalar(90, 90, 90), 1, cv::LINE_AA);
         // 三条指示线，提示可拖出
         for (int i = 0; i < 3; i++) {
@@ -575,8 +671,10 @@ void drawGUI(cv::Mat& frame, int trackingState, int fps) {
 
     // 展开状态：半透明抽屉覆盖在右缘（交互时使用，仅抽屉区域 ROI 混合）
     cv::Rect drawerRect(drawerX, 0, kDrawerWidth, frame.rows);
-    cv::Mat drawerOverlay(drawerRect.size(), frame.type(), cv::Scalar(15, 15, 15));
-    cv::addWeighted(drawerOverlay, 0.82, frame(drawerRect), 0.18, 0, frame(drawerRect));
+    if (clampRoiToImage(drawerRect, frame)) {
+        cv::Mat drawerOverlay(drawerRect.size(), frame.type(), cv::Scalar(15, 15, 15));
+        cv::addWeighted(drawerOverlay, 0.82, frame(drawerRect), 0.18, 0, frame(drawerRect));
+    }
 
     // 绘制分隔边界线
     cv::line(frame, cv::Point(drawerX, 0), cv::Point(drawerX, frame.rows), cv::Scalar(60, 60, 60), 1, cv::LINE_AA);

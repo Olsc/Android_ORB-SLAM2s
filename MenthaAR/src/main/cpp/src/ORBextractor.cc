@@ -72,6 +72,10 @@
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <vector>
+#include <thread>
+#include <atomic>
+#include <mutex>
+#include <condition_variable>
 
 #include "ORBextractor.h"
 #include "Config.h"
@@ -93,22 +97,8 @@ struct DescriptorOffset {
 static DescriptorOffset descriptorOffsetLUT[360][ORB_BRIEF_NUM_POINTS];
 static bool bDescriptorLUTInit = false;
 
-// 线程局部缓存：按当前图像 step 预先缩放的单字节偏移查找表，完全消除循环内 dy * step 乘法
-static thread_local int cachedStep = -1;
-static thread_local int levelStepOffsetLUT[360][ORB_BRIEF_NUM_POINTS];
-
-static void PrepareLevelStepOffsetLUT(int step)
-{
-    if (cachedStep == step) return;
-    cachedStep = step;
-    for (int a = 0; a < 360; ++a) {
-        const DescriptorOffset* src = descriptorOffsetLUT[a];
-        int* dst = levelStepOffsetLUT[a];
-        for (int i = 0; i < ORB_BRIEF_NUM_POINTS; ++i) {
-            dst[i] = src[i].dy * step + src[i].dx;
-        }
-    }
-}
+// 描述子偏移按当前层 step 直接计算 dy*step+dx——8 层金字塔 step 各异，
+// 单值 LUT 逐层切换必失效（每帧最多 8 次全表重建），直接计算零重建、零额外内存
 
 static uint32_t reciprocal_table_q24[1025];
 static uint16_t arctan_table_q10[1025];
@@ -177,7 +167,7 @@ static float IC_Angle(const Mat& image, Point2f pt,  const vector<int> & u_max)
     int step = (int)image.step1();
 
     // m_01 后缀和累加器：sum_{v=1}^{h} v * v_sum(v) = sum_{v=1}^{h} suffix_{k=v}^{h} v_sum(k)
-    // 从右向左扫描，累计 v_sum 的后缀和，每次 m_01 += 累加器，用加法完全替代乘法
+    // 从右向左扫描，累计 v_sum 的后缀和，每次 m_01 += 累加器
     int suffix_m01 = 0;
 
     for (int v = ORB_HALF_PATCH_SIZE; v >= 1; --v)
@@ -227,21 +217,18 @@ static void computeOrbDescriptor(const KeyPoint& kpt,
     if(angleIdx < 0) angleIdx += 360;
     if(angleIdx >= 360) angleIdx -= 360;
 
-    // 快速舍入优化
+    // 快速舍入（+0.5 后截断取整）
     const int kpy = (int)(kpt.pt.y + 0.5f);
     const int kpx = (int)(kpt.pt.x + 0.5f);
     const uchar* center = &img.at<uchar>(kpy, kpx);
     const int step = (int)img.step;
 
-    // 确保当前 step 对应的偏移查找表已准备好
-    PrepareLevelStepOffsetLUT(step);
+    // 直接由 (dy,dx) 基表计算当前层 step 的偏移（消除每帧 8 次全表重建的 thrash）
+    const DescriptorOffset* off = descriptorOffsetLUT[angleIdx];
 
-    // 获取当前角度对应的单字节偏移 LUT 指针
-    const int* lut_ptr = levelStepOffsetLUT[angleIdx];
+    #define GET_VALUE(idx) center[off[idx].dy * step + off[idx].dx]
 
-    #define GET_VALUE(idx) center[lut_ptr[idx]]
-
-    for (int i = 0; i < ORB_DESC_COLS; ++i, lut_ptr += 16)
+    for (int i = 0; i < ORB_DESC_COLS; ++i, off += 16)
     {
         int t0, t1, val;
         t0 = GET_VALUE(0); t1 = GET_VALUE(1);
@@ -695,7 +682,7 @@ void ExtractorNode::DivideNode(ExtractorNode &n1, ExtractorNode &n2, ExtractorNo
 vector<cv::KeyPoint> ORBextractor::DistributeOctTree(const vector<cv::KeyPoint>& vToDistributeKeys, const int &minX,
                                        const int &maxX, const int &minY, const int &maxY, const int &N, const int &level)
 {
-    // 计算初始节点数量   
+    // 计算初始节点数量
     const int nIni = round(static_cast<float>(maxX-minX)/(maxY-minY));
 
     const float hX = static_cast<float>(maxX-minX)/nIni;
@@ -718,7 +705,7 @@ vector<cv::KeyPoint> ORBextractor::DistributeOctTree(const vector<cv::KeyPoint>&
         vpIniNodes[i] = &lNodes.back();
     }
 
-    // 将点关联到子节点 (使用乘法代替除法优化性能)
+    // 将点关联到子节点
     const float inv_hX = 1.0f / hX;
     for(size_t i=0;i<vToDistributeKeys.size();i++)
     {
@@ -780,7 +767,7 @@ vector<cv::KeyPoint> ORBextractor::DistributeOctTree(const vector<cv::KeyPoint>&
                 // 如果子节点包含点则添加
                 if(n1.vKeys.size()>0)
                 {
-                    lNodes.push_front(std::move(n1));                    
+                    lNodes.push_front(std::move(n1));
                     if(lNodes.front().vKeys.size()>1)
                     {
                         nToExpand++;
@@ -822,7 +809,7 @@ vector<cv::KeyPoint> ORBextractor::DistributeOctTree(const vector<cv::KeyPoint>&
                 lit=lNodes.erase(lit);
                 continue;
             }
-        }       
+        }
 
         // 如果节点数超过所需特征数或所有节点都只包含一个点则完成
         if((int)lNodes.size()>=N || (int)lNodes.size()==prevSize)
@@ -1007,7 +994,7 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
             }
         }
 
-        // 3. 逐个网格单次遍历流式过滤 (单次遍历替代原代码双重 Pass，提升缓存命中率)
+        // 3. 逐个网格单次遍历流式过滤（避免双重 Pass 的缓存失效）
         for(int cellIdx = 0; cellIdx < nCells; ++cellIdx)
         {
             int start = cellOffsets[cellIdx];
@@ -1068,13 +1055,138 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
 void ORBextractor::ComputeKeyPointsOctTree(vector<vector<KeyPoint> >& allKeypoints)
 {
     allKeypoints.resize(nlevels);
-    // 委托给合并辅助函数，由调用者（operator()）决定是否并行
     detectAndOrientLevels(cv::Range(0, nlevels), allKeypoints);
 }
 
+// 按金字塔层并行执行 fn(level)。各层检测/描述子计算相互独立（层内数据 + thread_local 缓存）。
+// 静态常驻轻量级工作线程池：避免每帧创建/销毁 std::thread 的调度与切换开销；
+// 空闲线程阻塞于条件变量，主线程参与任务窃取，负载均衡且零分配
+namespace {
+class LevelThreadPool {
+public:
+    static LevelThreadPool& instance() {
+        static LevelThreadPool pool;
+        return pool;
+    }
+
+    template <typename Fn>
+    void run(int nlevels, Fn&& fn) {
+        const int hwThreads = (int)std::thread::hardware_concurrency();
+        const int nThreads = std::min(nlevels, std::max(2, hwThreads / 2));
+        if (nThreads <= 1 || hwThreads <= 2 || nlevels < 4) {
+            for (int i = 0; i < nlevels; ++i) fn(i);
+            return;
+        }
+
+        const int helperCount = nThreads - 1; // 主线程直接参与，辅助线程只需 nThreads - 1
+        ensureWorkers(helperCount);
+
+        nextIdx_.store(0, std::memory_order_relaxed);
+        totalLevels_.store(nlevels, std::memory_order_relaxed);
+        remainingWorkers_.store(helperCount, std::memory_order_release);
+
+        std::function<void(int)> task = fn;
+        currentTask_ = &task;
+
+        {
+            std::unique_lock<std::mutex> lk(mutex_);
+            taskGeneration_++;
+        }
+        cvWork_.notify_all();
+
+        // 主线程参与任务处理
+        for (;;) {
+            int i = nextIdx_.fetch_add(1, std::memory_order_relaxed);
+            if (i >= nlevels) break;
+            fn(i);
+        }
+
+        // 等待所有辅助工作线程完成
+        {
+            std::unique_lock<std::mutex> lk(mutex_);
+            cvDone_.wait(lk, [this] {
+                return remainingWorkers_.load(std::memory_order_acquire) == 0;
+            });
+        }
+        currentTask_ = nullptr;
+    }
+
+    ~LevelThreadPool() {
+        shutdown();
+    }
+
+private:
+    LevelThreadPool() = default;
+
+    void ensureWorkers(int needed) {
+        std::unique_lock<std::mutex> lk(mutex_);
+        while ((int)workers_.size() < needed) {
+            workers_.emplace_back(&LevelThreadPool::workerLoop, this);
+        }
+    }
+
+    void shutdown() {
+        {
+            std::unique_lock<std::mutex> lk(mutex_);
+            stop_ = true;
+            taskGeneration_++;
+        }
+        cvWork_.notify_all();
+        for (auto& w : workers_) {
+            if (w.joinable()) w.join();
+        }
+        workers_.clear();
+    }
+
+    void workerLoop() {
+        uint64_t lastGen = 0;
+        for (;;) {
+            std::unique_lock<std::mutex> lk(mutex_);
+            cvWork_.wait(lk, [this, lastGen] {
+                return stop_ || taskGeneration_ != lastGen;
+            });
+            if (stop_) break;
+            lastGen = taskGeneration_;
+            lk.unlock();
+
+            auto* task = currentTask_;
+            if (task) {
+                const int nlevels = totalLevels_.load(std::memory_order_relaxed);
+                for (;;) {
+                    int i = nextIdx_.fetch_add(1, std::memory_order_relaxed);
+                    if (i >= nlevels) break;
+                    (*task)(i);
+                }
+            }
+
+            if (remainingWorkers_.fetch_sub(1, std::memory_order_acq_rel) == 1) {
+                std::unique_lock<std::mutex> lkDone(mutex_);
+                cvDone_.notify_one();
+            }
+        }
+    }
+
+    std::mutex mutex_;
+    std::condition_variable cvWork_;
+    std::condition_variable cvDone_;
+    std::vector<std::thread> workers_;
+    std::atomic<int> nextIdx_{0};
+    std::atomic<int> totalLevels_{0};
+    std::atomic<int> remainingWorkers_{0};
+    const std::function<void(int)>* currentTask_ = nullptr;
+    uint64_t taskGeneration_ = 0;
+    bool stop_ = false;
+};
+
+template <typename Fn>
+void parallelForLevels(int nlevels, Fn&& fn) {
+    LevelThreadPool::instance().run(nlevels, std::forward<Fn>(fn));
+}
+} // namespace
+
 void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPoint>& _keypoints,
                       OutputArray _descriptors)
-{ 
+{
     VT_PROFILE_FUNCTION();
     if(_image.empty())
         return;
@@ -1090,7 +1202,9 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
 
     {
         VT_PROFILE_SCOPE("ORB_Detect+Orient");
-        detectAndOrientLevels(cv::Range(0, nlevels), allKeypoints);
+        parallelForLevels(nlevels, [this, &allKeypoints](int level) {
+            detectAndOrientLevels(cv::Range(level, level + 1), allKeypoints);
+        });
     }
 
     int nkeypoints = 0;
@@ -1131,12 +1245,14 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
 
     {
         VT_PROFILE_SCOPE("ORB_Blur+Desc");
-        blurAndComputeDescriptors(cv::Range(0, nlevels), levelDescOffset,
-                                  _keypoints, descriptors);
+        parallelForLevels(nlevels, [this, &levelDescOffset, &_keypoints, &descriptors](int level) {
+            blurAndComputeDescriptors(cv::Range(level, level + 1), levelDescOffset,
+                                      _keypoints, descriptors);
+        });
     }
 }
 
-// 纯加法与位移位组合，替代常数乘法
+// 纯加法与位移位组合
 // 18*x = (x<<4) + (x<<1)
 // 34*x = (x<<5) + (x<<1)
 // 49*x = (x<<5) + (x<<4) + x
@@ -1260,12 +1376,19 @@ void ORBextractor::blurAndComputeDescriptors(
 {
     for (int level = range.start; level < range.end; ++level)
     {
+        // 本层无关键点则跳过模糊与 ROI 构造（整图 7×7 定点模糊只为
+        // 描述子计算服务，空纹理层每帧的 ~百万次整型运算是纯浪费）
+        const int kpStart = levelDescOffset[level];
+        const int kpEnd = levelDescOffset[level + 1];
+        if (kpStart == kpEnd)
+            continue;
+
         // 确保 mvBlurredPyramidPadded 大小和类型正确
         Size sz = mvImagePyramid[level].size();
         Size wholeSize(sz.width + ORB_EDGE_THRESHOLD*2, sz.height + ORB_EDGE_THRESHOLD*2);
         mvBlurredPyramidPadded[level].create(wholeSize, mvImagePyramid[level].type());
 
-        // 对带边框的图像进行定点 1D 可分离高斯模糊优化
+        // 对带边框的图像做定点 1D 可分离高斯模糊
         FastIntegerGaussianBlur7x7(mvImagePyramidPadded[level], mvBlurredPyramidPadded[level]);
 
         // 让 mvBlurredPyramid[level] 成为 mvBlurredPyramidPadded[level] 的子矩阵 ROI

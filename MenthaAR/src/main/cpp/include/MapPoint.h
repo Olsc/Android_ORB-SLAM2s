@@ -42,6 +42,7 @@
 
 #include<opencv2/core/core.hpp>
 #include<mutex>
+#include<unordered_map>
 #include<atomic>
 #include<memory>
 #include<cstring>
@@ -70,7 +71,15 @@ public:
     KeyFrame* GetReferenceKeyFrame();
 
     std::map<KeyFrame*,size_t> GetObservations();
-    void ShareObservations(std::map<KeyFrame*, int>& counter, unsigned long excludeId = -1);
+    template<typename F>
+    void ForEachObservation(F&& func) {
+        std::unique_lock<std::mutex> lock(mMutexFeatures);
+        for(const auto& mit : mObservations) {
+            func(mit.first, mit.second);
+        }
+    }
+    // 零拷贝聚合观测计数（哈希表 O(1) 插入）
+    void ShareObservations(std::unordered_map<KeyFrame*, int>& counter, unsigned long excludeId = -1);
     int GetRedundantObservationsCount(KeyFrame* pKF, int scaleLevel);
     int Observations() const;
 
@@ -89,14 +98,15 @@ public:
     void IncreaseVisible(int n=1);
     void IncreaseFound(int n=1);
     float GetFoundRatio();
-    inline int GetFound(){
-        return mnFound;
+
+    inline int GetFound() const {
+        return mnFound.load(std::memory_order_relaxed);
     }
 
     void ComputeDistinctiveDescriptors();
 
     cv::Mat GetDescriptor();
-    // 零锁、零分配热路径读取：把描述子（恒为 32 字节）拷贝到栈缓冲。
+    // 把描述子（恒为 32 字节）拷贝到栈缓冲。
     // 返回是否有描述子（无则 out 清零）。依赖 std::atomic_load 的原子引用计数。
     inline bool GetDescriptor(uint8_t out[32]) const {
         std::shared_ptr<const cv::Mat> d = std::atomic_load(&mDescriptor);
@@ -186,10 +196,10 @@ protected:
      KeyFrame* mpRefKF;
 
      // 跟踪计数器
-     int mnVisible;
-     int mnFound;
+     std::atomic<int> mnVisible;
+     std::atomic<int> mnFound;
 
-     // 坏点标志（我们目前不从内存中删除地图点）
+     // 坏点标志
     std::atomic<bool> mbBad;
     MapPoint* mpReplaced;
 

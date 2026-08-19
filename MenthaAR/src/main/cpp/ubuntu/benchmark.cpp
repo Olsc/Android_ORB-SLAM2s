@@ -26,16 +26,13 @@
 #include "Matrix.h"
 #include "include/Config.h"
 
-// ============================================================
 // 全局状态变量
-// ============================================================
 ORB_SLAM2::System* slamSys = nullptr;
 Plane* pPlane = nullptr;
 bool planeLoadedFromMap = false;
 
 float fx, fy, cx, cy;
 double timeStamp = 0.0;
-bool gEnableSLAM = true;
 bool gEnablePointCloudDisplay = true;
 bool gShouldDrawArObject = false;
 bool gShowMemoryPanel = true; // 是否开启内存分布可视化仪表盘
@@ -59,9 +56,7 @@ std::string gOutputPrefix = "benchmark_report";
 volatile bool gStopRequested = false;
 void signalHandler(int) { gStopRequested = true; }
 
-// ============================================================
 // 数据结构定义
-// ============================================================
 struct FrameRecord {
     int loopId;
     int frameId;
@@ -143,13 +138,15 @@ void drawMemoryDashboard(cv::Mat& frame, const MemoryInfo& memInfo, const std::v
 void drawScoreCardModal(cv::Mat& frame, const ScoreCard& card);
 void onMouse(int event, int x, int y, int flags, void* userdata);
 void drawARCube(cv::Mat& im, const cv::Mat& Tcw, Plane* plane, float fx, float fy, float cx, float cy);
+void drawTrackedPoints(const std::vector<cv::KeyPoint>& vKeys, const std::vector<ORB_SLAM2::MapPoint*>& vMPs,
+                       cv::Mat& im, float cx = 0.0f, float cy = 0.0f);
+void drawAllMapPoints(const cv::Mat& Tcw, const std::vector<ORB_SLAM2::MapPoint*>& allMapPoints,
+                      cv::Mat& im, float fx, float fy, float cx, float cy, bool drawOnlyLoaded = true);
 MemoryInfo getMemoryInfo(int numMPs, int numKFs);
 ScoreCard calculateScoreCard(const std::vector<FrameRecord>& records, int totalFrames);
 void resetBenchmarkState();
 
-// ============================================================
 // 视频格式兼容工具 (多流 AVI 处理)
-// ============================================================
 static std::string tryStripAudioStream(const std::string& path) {
     size_t dot = path.find_last_of('.');
     if (dot == std::string::npos) return "";
@@ -172,9 +169,7 @@ static std::string tryStripAudioStream(const std::string& path) {
     return "";
 }
 
-// ============================================================
 // Linux 进程内存读取与估计函数
-// ============================================================
 MemoryInfo getMemoryInfo(int numMPs, int numKFs) {
     MemoryInfo info;
     long pageSizeBytes = sysconf(_SC_PAGESIZE);
@@ -213,9 +208,7 @@ MemoryInfo getMemoryInfo(int numMPs, int numKFs) {
     return info;
 }
 
-// ============================================================
 // 综合性能评分计算逻辑
-// ============================================================
 ScoreCard calculateScoreCard(const std::vector<FrameRecord>& records, int totalFrames) {
     ScoreCard card;
     card.totalFrames = totalFrames;
@@ -300,9 +293,7 @@ ScoreCard calculateScoreCard(const std::vector<FrameRecord>& records, int totalF
     return card;
 }
 
-// ============================================================
 // JSON / CSV 导出报告
-// ============================================================
 void exportReports(const std::string& prefix, const ScoreCard& card, const std::vector<FrameRecord>& records) {
     // JSON 报告
     std::string jsonPath = prefix + ".json";
@@ -412,9 +403,7 @@ void resetBenchmarkState() {
     std::cout << "[Benchmark] State reset successfully." << std::endl;
 }
 
-// ============================================================
 // 主函数
-// ============================================================
 int main(int argc, char** argv) {
     std::cout << "==========================================================" << std::endl;
     std::cout << "   MenthaAR SLAM Benchmark & Memory Profiler" << std::endl;
@@ -573,7 +562,7 @@ int main(int argc, char** argv) {
         }
 
         // ORB / SLAM 处理节流
-        if (gEnableSLAM && !gBenchmarkCompleted && !gBenchmarkPaused && !frame.empty()) {
+        if (!gBenchmarkCompleted && !gBenchmarkPaused && !frame.empty()) {
             auto now = std::chrono::steady_clock::now();
             double procDt = std::chrono::duration_cast<std::chrono::duration<double>>(now - lastProcessTime).count();
             if (procDt >= processInterval) {
@@ -695,6 +684,92 @@ int main(int argc, char** argv) {
 
     std::cout << "[Benchmark] Done. Goodbye!" << std::endl;
     return 0;
+}
+
+// 绘制当前帧跟踪到的特征点，青色=新建、绿色=匹配的已加载、红色=未匹配的已加载
+void drawTrackedPoints(const std::vector<cv::KeyPoint>& vKeys, const std::vector<ORB_SLAM2::MapPoint*>& vMPs,
+                       cv::Mat& im, float cx, float cy) {
+    float scaleX = ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR, scaleY = ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR;
+    if (cx > 0.0f && cy > 0.0f) {
+        scaleX = (float)im.cols / (ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR * cx);
+        scaleY = (float)im.rows / (ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR * cy);
+    }
+
+    const int N = (int)vKeys.size();
+    for (int i = 0; i < N; i++) {
+        if (i >= (int)vMPs.size()) break;
+        ORB_SLAM2::MapPoint* pMP = vMPs[i];
+        if (pMP) {
+            cv::Scalar color = cv::Scalar(ORB_SLAM2::UI_COLOR_NEW_POINT_B, ORB_SLAM2::UI_COLOR_NEW_POINT_G, ORB_SLAM2::UI_COLOR_NEW_POINT_R);
+            if (pMP->mbFromLoadedMap) {
+                color = cv::Scalar(ORB_SLAM2::UI_COLOR_LOADED_POINT_B, ORB_SLAM2::UI_COLOR_LOADED_POINT_G, ORB_SLAM2::UI_COLOR_LOADED_POINT_R);
+            }
+            cv::circle(im, cv::Point2f(vKeys[i].pt.x * scaleX, vKeys[i].pt.y * scaleY), ORB_SLAM2::UI_POINT_RADIUS, color, -1);
+        }
+    }
+}
+
+// 绘制所有地图点，用于AR重定位时显示完整点云
+void drawAllMapPoints(const cv::Mat& Tcw, const std::vector<ORB_SLAM2::MapPoint*>& allMapPoints,
+                      cv::Mat& im, float fx, float fy, float cx, float cy, bool drawOnlyLoaded) {
+    if (Tcw.empty() || allMapPoints.empty() || Tcw.rows < 3 || Tcw.cols < 4)
+        return;
+
+    const float R11 = Tcw.at<float>(0, 0), R12 = Tcw.at<float>(0, 1), R13 = Tcw.at<float>(0, 2);
+    const float R21 = Tcw.at<float>(1, 0), R22 = Tcw.at<float>(1, 1), R23 = Tcw.at<float>(1, 2);
+    const float R31 = Tcw.at<float>(2, 0), R32 = Tcw.at<float>(2, 1), R33 = Tcw.at<float>(2, 2);
+    const float tx = Tcw.at<float>(0, 3);
+    const float ty = Tcw.at<float>(1, 3);
+    const float tz = Tcw.at<float>(2, 3);
+
+    const int imgWidth = im.cols;
+    const int imgHeight = im.rows;
+
+    int drawnCount = 0;
+    const int maxDrawPoints = ORB_SLAM2::UI_MAX_DRAWN_POINTS;
+
+    const float dispScaleX = (ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR * cx > 0.0f) ? (float)im.cols / (ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR * cx) : ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR;
+    const float dispScaleY = (ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR * cy > 0.0f) ? (float)im.rows / (ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR * cy) : ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR;
+    const float fx2 = fx * dispScaleX;
+    const float fy2 = fy * dispScaleY;
+    const float cx2 = cx * dispScaleX;
+    const float cy2 = cy * dispScaleY;
+
+    const cv::Scalar colorLoaded(ORB_SLAM2::UI_COLOR_LOADED_POINT_B, ORB_SLAM2::UI_COLOR_LOADED_POINT_G, ORB_SLAM2::UI_COLOR_LOADED_POINT_R);
+    const cv::Scalar colorNew(ORB_SLAM2::UI_COLOR_NEW_POINT_B, ORB_SLAM2::UI_COLOR_NEW_POINT_G, ORB_SLAM2::UI_COLOR_NEW_POINT_R);
+
+    for (size_t i = 0; i < allMapPoints.size(); i++) {
+        ORB_SLAM2::MapPoint* pMP = allMapPoints[i];
+        if (!pMP || pMP->isBad())
+            continue;
+        if (drawOnlyLoaded && !pMP->mbFromLoadedMap)
+            continue;
+
+        cv::Point3f Pw;
+        pMP->GetWorldPos(Pw);
+
+        const float Xw = Pw.x, Yw = Pw.y, Zw = Pw.z;
+        const float Xc = R11 * Xw + R12 * Yw + R13 * Zw + tx;
+        const float Yc = R21 * Xw + R22 * Yw + R23 * Zw + ty;
+        const float Zc = R31 * Xw + R32 * Yw + R33 * Zw + tz;
+
+        if (Zc <= ORB_SLAM2::PROJECT_MIN_DEPTH)
+            continue;
+
+        const float invZ = 1.0f / Zc;
+        const float u_display = fx2 * Xc * invZ + cx2;
+        const float v_display = fy2 * Yc * invZ + cy2;
+
+        if (u_display < 0 || u_display >= imgWidth || v_display < 0 || v_display >= imgHeight)
+            continue;
+
+        cv::circle(im, cv::Point2f(u_display, v_display), ORB_SLAM2::UI_CLOUD_POINT_RADIUS,
+                   pMP->mbFromLoadedMap ? colorLoaded : colorNew, -1);
+
+        drawnCount++;
+        if (drawnCount >= maxDrawPoints)
+            break;
+    }
 }
 
 // 绘制 AR 立方体线框
@@ -920,12 +995,22 @@ void initMenu() {
     menuSections.push_back(benchSec);
 }
 
+// 将 ROI 裁剪到图像有效范围内，防止过小视频帧（如竖屏/低分辨率视频）导致越界崩溃。
+// 返回裁剪后是否仍有有效区域；无效时上层应跳过对应绘制。
+static bool clampRoiToImage(cv::Rect& r, const cv::Mat& img) {
+    cv::Rect bounds(0, 0, img.cols, img.rows);
+    r &= bounds;
+    return r.width > 0 && r.height > 0;
+}
+
 // 绘制 GUI 仪表盘与抽屉
 void drawGUI(cv::Mat& frame, int trackingState, int fps, const MemoryInfo& memInfo, int curLoop, int totalLoops) {
     // 1. 左上角状态仪表盘
     cv::Rect panelRect(15, 15, 300, 155);
-    cv::Mat panelOverlay(panelRect.size(), frame.type(), cv::Scalar(25, 25, 25));
-    cv::addWeighted(panelOverlay, 0.78, frame(panelRect), 0.22, 0, frame(panelRect));
+    if (clampRoiToImage(panelRect, frame)) {
+        cv::Mat panelOverlay(panelRect.size(), frame.type(), cv::Scalar(25, 25, 25));
+        cv::addWeighted(panelOverlay, 0.78, frame(panelRect), 0.22, 0, frame(panelRect));
+    }
     cv::rectangle(frame, panelRect, cv::Scalar(90, 90, 90), 1, cv::LINE_AA);
 
     std::string stateStr = "No Input";
@@ -972,8 +1057,10 @@ void drawGUI(cv::Mat& frame, int trackingState, int fps, const MemoryInfo& memIn
         int tabW = 8, tabH = 96;
         int tabX = frame.cols - tabW, tabY = (frame.rows - tabH) / 2;
         cv::Rect tabRect(tabX, tabY, tabW, tabH);
-        cv::Mat tabOverlay(tabRect.size(), frame.type(), cv::Scalar(45, 45, 45));
-        cv::addWeighted(tabOverlay, 0.65, frame(tabRect), 0.35, 0, frame(tabRect));
+        if (clampRoiToImage(tabRect, frame)) {
+            cv::Mat tabOverlay(tabRect.size(), frame.type(), cv::Scalar(45, 45, 45));
+            cv::addWeighted(tabOverlay, 0.65, frame(tabRect), 0.35, 0, frame(tabRect));
+        }
         cv::rectangle(frame, tabRect, cv::Scalar(90, 90, 90), 1, cv::LINE_AA);
         for (int i = 0; i < 3; i++) {
             int ly = tabY + tabH / 2 - 7 + i * 7;
@@ -984,8 +1071,10 @@ void drawGUI(cv::Mat& frame, int trackingState, int fps, const MemoryInfo& memIn
     }
 
     cv::Rect drawerRect(drawerX, 0, kDrawerWidth, frame.rows);
-    cv::Mat drawerOverlay(drawerRect.size(), frame.type(), cv::Scalar(15, 15, 15));
-    cv::addWeighted(drawerOverlay, 0.84, frame(drawerRect), 0.16, 0, frame(drawerRect));
+    if (clampRoiToImage(drawerRect, frame)) {
+        cv::Mat drawerOverlay(drawerRect.size(), frame.type(), cv::Scalar(15, 15, 15));
+        cv::addWeighted(drawerOverlay, 0.84, frame(drawerRect), 0.16, 0, frame(drawerRect));
+    }
     cv::line(frame, cv::Point(drawerX, 0), cv::Point(drawerX, frame.rows), cv::Scalar(60, 60, 60), 1, cv::LINE_AA);
 
     int currentY = 20;
@@ -1044,6 +1133,7 @@ void drawMemoryDashboard(cv::Mat& frame, const MemoryInfo& memInfo, const std::v
 
     cv::Rect panelRect(panelX, panelY, panelW, panelH);
     if (panelY < 180) return; // 避免遮挡顶部仪表盘
+    if (!clampRoiToImage(panelRect, frame)) return; // 帧过小/过窄时跳过，防止越界
 
     cv::Mat panelOverlay(panelRect.size(), frame.type(), cv::Scalar(20, 20, 25));
     cv::addWeighted(panelOverlay, 0.82, frame(panelRect), 0.18, 0, frame(panelRect));
@@ -1136,69 +1226,95 @@ void drawMemoryDashboard(cv::Mat& frame, const MemoryInfo& memInfo, const std::v
     }
 }
 
-// 评测完成时绘制综合性能评分卡模态窗口
+// 评测完成时绘制综合性能评分卡模态窗口（自适应任意分辨率）
 void drawScoreCardModal(cv::Mat& frame, const ScoreCard& card) {
-    int modalW = 520;
-    int modalH = 340;
-    int modalX = (frame.cols - modalW) / 2;
-    int modalY = (frame.rows - modalH) / 2;
+    // 设计基准尺寸（s=1.0 时模态框大小，用于 1280x720 等宽屏）
+    const float baseW = 520.0f, baseH = 340.0f;
+    const int margin = 10;
+
+    // 根据当前帧大小计算等比缩放系数：小帧自动缩小以完整显示，
+    // 大帧不放大（保持设计尺寸），避免任何分辨率下越界。
+    float s = std::min(1.0f,
+                       std::min((float)(frame.cols - 2 * margin) / baseW,
+                                (float)(frame.rows - 2 * margin) / baseH));
+    if (s <= 0.0f) return; // 帧过小无法显示
+
+    const int modalW = (int)std::lround(baseW * s);
+    const int modalH = (int)std::lround(baseH * s);
+    const int modalX = (frame.cols - modalW) / 2;
+    const int modalY = (frame.rows - modalH) / 2;
+
+    // 坐标 / 尺寸 / 字号 / 线宽统一按 s 等比缩放，保证布局在任意分辨率下完整
+    auto SX = [&](float v) { return modalX + (int)std::lround(v * s); };
+    auto SY = [&](float v) { return modalY + (int)std::lround(v * s); };
+    auto SW = [&](float v) { return (int)std::lround(v * s); };
+    auto FS = [&](float v) { return std::max(0.2f, v * s); };          // 字号（最小 0.2 保证可读）
+    auto TH = [&](float v) { return std::max(1, (int)std::lround(v * s)); }; // 线宽 / 字粗
+
+    // 背景整体压暗，突出评分卡（模态效果）
+    cv::Mat dim(frame.size(), frame.type(), cv::Scalar(0, 0, 0));
+    cv::addWeighted(dim, 0.35, frame, 0.65, 0, frame);
 
     cv::Rect modalRect(modalX, modalY, modalW, modalH);
     cv::Mat overlay(modalRect.size(), frame.type(), cv::Scalar(15, 15, 20));
     cv::addWeighted(overlay, 0.88, frame(modalRect), 0.12, 0, frame(modalRect));
-    cv::rectangle(frame, modalRect, cv::Scalar(0, 215, 255), 2, cv::LINE_AA);
+    cv::rectangle(frame, modalRect, cv::Scalar(0, 215, 255), TH(2), cv::LINE_AA);
 
-    // 标题与 Badge
-    cv::putText(frame, "SLAM BENCHMARK COMPREHENSIVE SCORECARD", cv::Point(modalX + 25, modalY + 38),
-                cv::FONT_HERSHEY_SIMPLEX, 0.52, cv::Scalar(255, 255, 255), 1, cv::LINE_AA);
-    cv::line(frame, cv::Point(modalX + 25, modalY + 48), cv::Point(modalX + modalW - 25, modalY + 48),
-             cv::Scalar(80, 80, 90), 1, cv::LINE_AA);
+    // 标题与分隔线
+    cv::putText(frame, "SLAM BENCHMARK COMPREHENSIVE SCORECARD",
+                cv::Point(SX(25), SY(38)), cv::FONT_HERSHEY_SIMPLEX, FS(0.52),
+                cv::Scalar(255, 255, 255), TH(1), cv::LINE_AA);
+    cv::line(frame, cv::Point(SX(25), SY(48)), cv::Point(SX(495), SY(48)),
+             cv::Scalar(80, 80, 90), TH(1), cv::LINE_AA);
 
-    // 左侧：总分与 Badge
+    // 左侧：总分 Badge（按等级着色）
     cv::Scalar gradeColor(0, 255, 136); // 翠绿-S+/S/A
     if (card.grade == "B") gradeColor = cv::Scalar(0, 215, 255);
     else if (card.grade == "C") gradeColor = cv::Scalar(30, 180, 230);
     else if (card.grade == "D") gradeColor = cv::Scalar(30, 30, 230);
 
-    cv::Rect badgeRect(modalX + 30, modalY + 65, 140, 120);
+    cv::Rect badgeRect(SX(30), SY(65), SW(140), SW(120));
     cv::rectangle(frame, badgeRect, cv::Scalar(30, 30, 40), -1);
-    cv::rectangle(frame, badgeRect, gradeColor, 2, cv::LINE_AA);
+    cv::rectangle(frame, badgeRect, gradeColor, TH(2), cv::LINE_AA);
 
     char scoreStr[32];
     snprintf(scoreStr, sizeof(scoreStr), "%.1f", card.overallScore);
-    cv::putText(frame, scoreStr, cv::Point(badgeRect.x + 25, badgeRect.y + 55),
-                cv::FONT_HERSHEY_SIMPLEX, 1.2, cv::Scalar(255, 255, 255), 2, cv::LINE_AA);
-    cv::putText(frame, "Grade " + card.grade, cv::Point(badgeRect.x + 32, badgeRect.y + 95),
-                cv::FONT_HERSHEY_SIMPLEX, 0.7, gradeColor, 2, cv::LINE_AA);
+    cv::putText(frame, scoreStr, cv::Point(badgeRect.x + SW(25), badgeRect.y + SW(55)),
+                cv::FONT_HERSHEY_SIMPLEX, FS(1.2), cv::Scalar(255, 255, 255), TH(2), cv::LINE_AA);
+    cv::putText(frame, "Grade " + card.grade, cv::Point(badgeRect.x + SW(32), badgeRect.y + SW(95)),
+                cv::FONT_HERSHEY_SIMPLEX, FS(0.7), gradeColor, TH(2), cv::LINE_AA);
 
     // 右侧：4 项维度分拆条形图
-    int barX = modalX + 190;
-    int barY = modalY + 75;
-    int barW = 280;
+    int barX = SX(190);
+    int barY = SY(75);
+    int barW = SW(280);
+    int barH = SW(10);
 
-    auto drawSubBar = [&](const std::string& label, double val, int yOffset) {
-        cv::putText(frame, label, cv::Point(barX, barY + yOffset), cv::FONT_HERSHEY_SIMPLEX, 0.38, cv::Scalar(220, 220, 220), 1);
+    auto drawSubBar = [&](const std::string& label, double val, int yOff) {
+        cv::putText(frame, label, cv::Point(barX, barY + yOff), cv::FONT_HERSHEY_SIMPLEX, FS(0.38),
+                    cv::Scalar(220, 220, 220), TH(1));
         char vStr[16];
         snprintf(vStr, sizeof(vStr), "%.1f", val);
-        cv::putText(frame, vStr, cv::Point(barX + barW - 35, barY + yOffset), cv::FONT_HERSHEY_SIMPLEX, 0.38, cv::Scalar(0, 220, 255), 1);
+        cv::putText(frame, vStr, cv::Point(barX + barW - SW(35), barY + yOff), cv::FONT_HERSHEY_SIMPLEX, FS(0.38),
+                    cv::Scalar(0, 220, 255), TH(1));
 
-        cv::Rect bR(barX, barY + yOffset + 6, barW, 10);
+        cv::Rect bR(barX, barY + yOff + SW(6), barW, barH);
         cv::rectangle(frame, bR, cv::Scalar(40, 40, 50), -1);
         int fillW = (int)(barW * (val / 100.0));
         if (fillW > 0) {
-            cv::rectangle(frame, cv::Rect(barX, barY + yOffset + 6, fillW, 10), cv::Scalar(0, 215, 255), -1);
+            cv::rectangle(frame, cv::Rect(barX, barY + yOff + SW(6), fillW, barH), cv::Scalar(0, 215, 255), -1);
         }
-        cv::rectangle(frame, bR, cv::Scalar(80, 80, 90), 1);
+        cv::rectangle(frame, bR, cv::Scalar(80, 80, 90), TH(1));
     };
 
     drawSubBar("Tracking Quality (40%)", card.trackingScore, 0);
-    drawSubBar("Real-Time Latency (30%)", card.latencyScore, 30);
-    drawSubBar("Map Stability (20%)", card.stabilityScore, 60);
-    drawSubBar("Memory Health (10%)", card.memoryScore, 90);
+    drawSubBar("Real-Time Latency (30%)", card.latencyScore, SW(30));
+    drawSubBar("Map Stability (20%)", card.stabilityScore, SW(60));
+    drawSubBar("Memory Health (10%)", card.memoryScore, SW(90));
 
     // 下方核心数据指标
-    cv::line(frame, cv::Point(modalX + 25, modalY + 215), cv::Point(modalX + modalW - 25, modalY + 215),
-             cv::Scalar(80, 80, 90), 1, cv::LINE_AA);
+    cv::line(frame, cv::Point(SX(25), SY(215)), cv::Point(SX(495), SY(215)),
+             cv::Scalar(80, 80, 90), TH(1), cv::LINE_AA);
 
     char line1[128], line2[128];
     snprintf(line1, sizeof(line1), "Frames: %d | OK Ratio: %.1f%% | Mean Latency: %.2f ms",
@@ -1206,13 +1322,16 @@ void drawScoreCardModal(cv::Mat& frame, const ScoreCard& card) {
     snprintf(line2, sizeof(line2), "Final Map: %d MPs, %d KFs | Peak Memory: %.1f MB",
              card.finalMPs, card.finalKFs, card.peakRssMB);
 
-    cv::putText(frame, line1, cv::Point(modalX + 30, modalY + 242), cv::FONT_HERSHEY_SIMPLEX, 0.42, cv::Scalar(220, 220, 220), 1, cv::LINE_AA);
-    cv::putText(frame, line2, cv::Point(modalX + 30, modalY + 268), cv::FONT_HERSHEY_SIMPLEX, 0.42, cv::Scalar(220, 220, 220), 1, cv::LINE_AA);
+    cv::putText(frame, line1, cv::Point(SX(30), SY(242)), cv::FONT_HERSHEY_SIMPLEX, FS(0.42),
+                cv::Scalar(220, 220, 220), TH(1), cv::LINE_AA);
+    cv::putText(frame, line2, cv::Point(SX(30), SY(268)), cv::FONT_HERSHEY_SIMPLEX, FS(0.42),
+                cv::Scalar(220, 220, 220), TH(1), cv::LINE_AA);
 
     // 底部操作提示
-    cv::rectangle(frame, cv::Rect(modalX + 20, modalY + modalH - 45, modalW - 40, 30), cv::Scalar(35, 35, 45), -1);
+    cv::rectangle(frame, cv::Rect(SX(20), SY(295), SW(480), SW(30)), cv::Scalar(35, 35, 45), -1);
     cv::putText(frame, "Press 'ESC' / 'q' to exit or click 'Restart Benchmark' in drawer",
-                cv::Point(modalX + 45, modalY + modalH - 25), cv::FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(0, 255, 255), 1, cv::LINE_AA);
+                cv::Point(SX(45), SY(315)), cv::FONT_HERSHEY_SIMPLEX, FS(0.4),
+                cv::Scalar(0, 255, 255), TH(1), cv::LINE_AA);
 }
 
 // 鼠标响应

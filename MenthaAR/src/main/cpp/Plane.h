@@ -20,7 +20,9 @@ public:
     Plane(const std::vector<ORB_SLAM2::MapPoint*> &vMPs, const cv::Mat &Tcw);
 
     // 从法向量和原点构造平面
-    Plane(const float &nx, const float &ny, const float &nz, const float &ox, const float &oy, const float &oz);
+    Plane(const float &nx, const float &ny, const float &nz,
+          const float &ox, const float &oy, const float &oz,
+          const float &rang = 0.0f);
 
     // SO(3)李代数指数映射：将旋转向量转换为旋转矩阵（Rodrigues公式）
     cv::Mat ExpSO3(const float &x, const float &y, const float &z);

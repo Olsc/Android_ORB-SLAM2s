@@ -56,36 +56,19 @@ void FrameDrawer::SetMap(Map* pMap)
 
 void FrameDrawer::Update(Tracking *pTracker)
 {
+    // 本工程的 Viewer 已被裁剪，此类的全部绘制数据（KeyPoint 拷贝、
+    // VO/Map 标志、初始化帧）没有任何消费者——原先每帧 O(N) 深拷贝 + 两次
+    // N 位分配 + 整段持锁是纯死重。仅保留状态记录（将来重建 Viewer 的话
+    // 在此恢复完整实现即可）。
     unique_lock<mutex> lock(mMutex);
-    mvCurrentKeys=pTracker->mCurrentFrame.mvKeys;
-    N = mvCurrentKeys.size();
-    mvbVO = vector<bool>(N,false);
-    mvbMap = vector<bool>(N,false);
+    mState = static_cast<int>(pTracker->mLastProcessedState);
+    N = 0;
+    mvCurrentKeys.clear();
+    mvbVO.clear();
+    mvbMap.clear();
+    mvIniKeys.clear();
+    mvIniMatches.clear();
     mbOnlyTracking = pTracker->mbOnlyTracking;
-
-    if(pTracker->mLastProcessedState==Tracking::NOT_INITIALIZED)
-    {
-        mvIniKeys=pTracker->mInitialFrame.mvKeys;
-        mvIniMatches=pTracker->mvIniMatches;
-    }
-    else if(pTracker->mLastProcessedState==Tracking::OK)
-    {
-        for(int i=0;i<N;i++)
-        {
-            MapPoint* pMP = pTracker->mCurrentFrame.mvpMapPoints[i];
-            if(pMP)
-            {
-                if(!pTracker->mCurrentFrame.mvbOutlier[i])
-                {
-                    if(pMP->Observations()>0)
-                        mvbMap[i]=true;
-                    else
-                        mvbVO[i]=true;
-                }
-            }
-        }
-    }
-    mState=static_cast<int>(pTracker->mLastProcessedState);
 }
 
 } // namespace ORB_SLAM2

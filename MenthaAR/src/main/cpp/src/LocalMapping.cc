@@ -79,6 +79,28 @@ void LocalMapping::ClearQueues()
     mlpRecentAddedMapPoints.clear();
 }
 
+bool LocalMapping::HasPendingEvent()
+{
+    {
+        unique_lock<mutex> lk(mMutexNewKFs);
+        if(!mlNewKeyFrames.empty()) return true;
+    }
+    // 各标志为原子量；Release/RequestFinish/RequestReset 均在写后 NotifyEvent，
+    // 谓词在此 cv 的锁内读取不会丢失唤醒
+    return mbFinishRequested.load(std::memory_order_acquire) ||
+           mbResetRequested.load(std::memory_order_acquire) ||
+           mbStopRequested.load(std::memory_order_acquire) ||
+           mbStopped.load(std::memory_order_acquire);
+}
+
+void LocalMapping::NotifyEvent()
+{
+    // 必须在 mMutexEvent 下 notify：与 wait 的谓词检查互斥，
+    // 消除"谓词判定为假之后、真正阻塞之前"的丢失唤醒窗口
+    std::unique_lock<std::mutex> evLock(mMutexEvent);
+    mCvEvent.notify_all();
+}
+
 void LocalMapping::Run()
 {
     VT_PROFILE_FUNCTION();
@@ -86,12 +108,12 @@ void LocalMapping::Run()
 
     while(1)
     {
-        // 跟踪线程将看到局部建图线程正忙
-        SetAcceptKeyFrames(false);
-
         // 检查队列中是否有关键帧
         if(CheckNewKeyFrames())
         {
+            // 忙标志仅在真正处理关键帧期间为 false
+            SetAcceptKeyFrames(false);
+
             {
                 VT_PROFILE_SCOPE("LocalMapping::ProcessNewKeyFrame");
                 // BoW 转换并插入地图
@@ -145,43 +167,43 @@ void LocalMapping::Run()
                 VT_PROFILE_SCOPE("LocalMapping::InsertLoopKF");
                 mpLoopCloser->InsertKeyFrame(mpCurrentKeyFrame);
             }
+
+            SetAcceptKeyFrames(true);
         }
         else if(Stop())
         {
-            // 安全停止区域
+            // 安全停止区域（纯生命周期与 RAII 保证，零超时盲等）
             VT_PROFILE_SCOPE("LocalMapping::Stopped");
             {
                 std::unique_lock<std::mutex> lock(mMutexEvent);
-                while(isStopped() && !CheckFinish())
-                {
-                    // 阻塞等待 Release() 唤醒
-                    if(mCvEvent.wait_for(lock, std::chrono::milliseconds(LOCAL_MAPPING_STOP_WAIT_TIMEOUT_MS))
-                            == std::cv_status::timeout)
-                    {
-                        // 超时了还没人 Release — 自动恢复，避免 LM 永久卡死
-                        unique_lock<mutex> stopLock(mMutexStop);
-                        mbStopped.store(false);
-                        mbStopRequested.store(false);
-                        // 继续主循环，跟踪线程会看到 LM 已恢复正常
-                    }
-                }
+                mCvEvent.wait(lock, [this]{
+                    return !mbStopped.load(std::memory_order_acquire) ||
+                           !mbStopRequested.load(std::memory_order_acquire) ||
+                           mbFinishRequested.load(std::memory_order_acquire) ||
+                           mbResetRequested.load(std::memory_order_acquire);
+                });
             }
+
+            if(!stopRequested())
+            {
+                unique_lock<mutex> stopLock(mMutexStop);
+                mbStopped.store(false, std::memory_order_release);
+            }
+            SetAcceptKeyFrames(true);
+
             if(CheckFinish())
                 break;
         }
 
         ResetIfRequested();
 
-        // 跟踪线程将看到局部建图线程正忙
-        SetAcceptKeyFrames(true);
-
         if(CheckFinish())
             break;
 
-        // 等待事件（新 KF/Stop/Finish/Reset），有事件立即唤醒，最多等 3ms
+        // 空闲时零唤醒
         {
             std::unique_lock<std::mutex> lock(mMutexEvent);
-            mCvEvent.wait_for(lock, std::chrono::milliseconds(LOCAL_MAPPING_EVENT_WAIT_MS));
+            mCvEvent.wait(lock, [this]{ return HasPendingEvent(); });
         }
     }
 
@@ -190,10 +212,12 @@ void LocalMapping::Run()
 
 void LocalMapping::InsertKeyFrame(KeyFrame *pKF)
 {
-    unique_lock<mutex> lock(mMutexNewKFs);
-    mlNewKeyFrames.push_back(pKF);
+    {
+        unique_lock<mutex> lock(mMutexNewKFs);
+        mlNewKeyFrames.push_back(pKF);
+    }
     mbAbortBA.store(true);
-    mCvEvent.notify_one();
+    NotifyEvent();
 }
 
 bool LocalMapping::CheckNewKeyFrames()
@@ -232,7 +256,7 @@ void LocalMapping::ProcessNewKeyFrame()
                 }
             }
         }
-    }    
+    }
 
     // 更新共视步图中的链接
     mpCurrentKeyFrame->UpdateConnections();
@@ -386,7 +410,7 @@ void LocalMapping::CreateNewMapPoints()
             const float kp2_ur = -1.0f;
             bool bStereo2 = false;
 
-            // 检查光线之间的视差（标量替换优化 cv::Mat 分配）
+            // 检查光线之间的视差
             const float xn1x = (kp1.pt.x-cx1)*invfx1;
             const float xn1y = (kp1.pt.y-cy1)*invfy1;
             // xn2 = [(kp2.pt.x-cx2)*invfx2, (kp2.pt.y-cy2)*invfy2, 1]
@@ -434,7 +458,7 @@ void LocalMapping::CreateNewMapPoints()
             if(z2<=0)
                 continue;
 
-            // 检查第一个关键帧中的重投影误差（交叉相乘消除 1.0/z1 浮点除法，100% 数学等价）
+            // 检查第一个关键帧中的重投影误差
             const float &sigmaSquare1 = mpCurrentKeyFrame->mvLevelSigma2[kp1.octave];
             const float x1 = Rcw1f[0]*x3Dx + Rcw1f[1]*x3Dy + Rcw1f[2]*x3Dz + tcw1f[0];
             const float y1 = Rcw1f[3]*x3Dx + Rcw1f[4]*x3Dy + Rcw1f[5]*x3Dz + tcw1f[1];
@@ -446,7 +470,7 @@ void LocalMapping::CreateNewMapPoints()
                     continue;
             }
 
-            // 检查第二个关键帧中的重投影误差（交叉相乘消除 1.0/z2 浮点除法，100% 数学等价）
+            // 检查第二个关键帧中的重投影误差
             const float sigmaSquare2 = pKF2->mvLevelSigma2[kp2.octave];
             const float x2 = Rcw2f[0]*x3Dx + Rcw2f[1]*x3Dy + Rcw2f[2]*x3Dz + tcw2f[0];
             const float y2 = Rcw2f[3]*x3Dx + Rcw2f[4]*x3Dy + Rcw2f[5]*x3Dz + tcw2f[1];
@@ -458,7 +482,6 @@ void LocalMapping::CreateNewMapPoints()
             }
 
             // 检查尺度一致性
-            // 使用平方距离进行快速零值检查，避免不必要的sqrt
             const float n1x = x3Dx - Ow1.x, n1y = x3Dy - Ow1.y, n1z = x3Dz - Ow1.z;
             const float n2x = x3Dx - Ow2.x, n2y = x3Dy - Ow2.y, n2z = x3Dz - Ow2.z;
             const float dist1Sq = n1x*n1x + n1y*n1y + n1z*n1z;
@@ -480,7 +503,7 @@ void LocalMapping::CreateNewMapPoints()
             // 三角化成功
             MapPoint* pMP = new MapPoint(x3D,mpCurrentKeyFrame,mpMap);
 
-            pMP->AddObservation(mpCurrentKeyFrame,idx1);            
+            pMP->AddObservation(mpCurrentKeyFrame,idx1);
             pMP->AddObservation(pKF2,idx2);
 
             mpCurrentKeyFrame->AddMapPoint(pMP,idx1);
@@ -579,7 +602,7 @@ void LocalMapping::SearchInNeighbors()
 
 cv::Mat LocalMapping::ComputeF12(KeyFrame *&pKF1, KeyFrame *&pKF2)
 {
-    // 栈版读取位姿（锁内拷贝，替代 4 次 clone）
+    // 栈版读取位姿
     float R1f[9], R2f[9], t1f[3], t2f[3];
     pKF1->GetRotation(R1f);
     pKF1->GetTranslation(t1f);
@@ -610,27 +633,39 @@ cv::Mat LocalMapping::ComputeF12(KeyFrame *&pKF1, KeyFrame *&pKF2)
 
 void LocalMapping::RequestStop()
 {
-    unique_lock<mutex> lock(mMutexStop);
-    mbStopRequested.store(true);
+    {
+        unique_lock<mutex> lock(mMutexStop);
+        mbStopRequested.store(true);
+    }
     mbAbortBA.store(true);
-    mCvEvent.notify_one();
+    NotifyEvent();
 }
 
 void LocalMapping::CancelStopRequest()
 {
-    unique_lock<mutex> lock(mMutexStop);
-    mbStopRequested.store(false);
-    mbStopped.store(false);
+    {
+        unique_lock<mutex> lock(mMutexStop);
+        mbStopRequested.store(false);
+        mbStopped.store(false);
+    }
+    // 若 LM 已陷入 Stopped 态的 cv 等待，需唤醒它以观察取消后的状态
+    NotifyEvent();
 }
 
 bool LocalMapping::Stop()
 {
+    bool bNeedNotify = false;
     unique_lock<mutex> lock(mMutexStop);
     if(mbStopRequested.load() && !mbNotStop.load())
     {
         mbStopped.store(true);
-        // 通知 WaitForStopped 的调用方（LoopClosing）状态已变化
-        mCvEvent.notify_one();
+        bNeedNotify = true;
+    }
+
+    if(bNeedNotify)
+    {
+        // 通知 WaitForStopped 的调用方（LoopClosing）状态已变化（锁外事件通知）
+        NotifyEvent();
         return true;
     }
 
@@ -642,11 +677,15 @@ bool LocalMapping::isStopped()
     return mbStopped.load();
 }
 
-void LocalMapping::WaitForStopped(int timeoutMs)
+bool LocalMapping::WaitForStopped()
 {
-    if (isStopped()) return;
+    if (isStopped()) return true;
     std::unique_lock<std::mutex> lock(mMutexEvent);
-    mCvEvent.wait_for(lock, std::chrono::milliseconds(timeoutMs));
+    mCvEvent.wait(lock, [this]{
+        return mbStopped.load(std::memory_order_acquire) ||
+               mbFinishRequested.load(std::memory_order_acquire);
+    });
+    return isStopped();
 }
 
 bool LocalMapping::stopRequested()
@@ -658,15 +697,16 @@ void LocalMapping::Release()
 {
     // 锁顺序 mMutexStop → mMutexFinish: 与 Stopped 循环的
     // isStopped(mMutexStop) → CheckFinish(mMutexFinish) 保持一致
-    unique_lock<mutex> lock(mMutexStop);
-    unique_lock<mutex> lock2(mMutexFinish);
-    if(mbFinished)
-        return;
-    mbStopped.store(false);
-    mbStopRequested.store(false);
-    // 通知 Stopped 循环退出等待（mCvEvent.wait 在 mMutexStop 下阻塞时，
-    // notify 在 mMutexStop/mMutexFinish 释放后发送，确保数据可见性）
-    mCvEvent.notify_one();
+    {
+        unique_lock<mutex> lock(mMutexStop);
+        unique_lock<mutex> lock2(mMutexFinish);
+        if(mbFinished)
+            return;
+        mbStopped.store(false);
+        mbStopRequested.store(false);
+    }
+    // 事件通知在两把锁释放后进行（mMutexEvent 下 notify，确保可见性与不丢唤醒）
+    NotifyEvent();
 }
 
 bool LocalMapping::AcceptKeyFrames()
@@ -674,7 +714,7 @@ bool LocalMapping::AcceptKeyFrames()
     if(mbAcceptKeyFrames.load())
         return true;
 
-    // 即使建图线程正忙，如果队列中积压的关键帧较少（少于3帧），也允许继续插入，以极大地提升跟踪稳定性，避免运动卡顿
+    // 即使建图线程正忙，若队列积压的关键帧较少（少于3帧），也允许继续插入，以保证跟踪稳定性
     unique_lock<mutex> lockQueue(mMutexNewKFs);
     return mlNewKeyFrames.size() < LOCAL_MAPPING_MAX_QUEUED_KFS;
 }
@@ -783,9 +823,6 @@ void LocalMapping::KeyFrameCulling()
     }
 
     // 第二阶段：每次只删除 1 个冗余关键帧（其余留待下一轮 KeyFrameCulling）。
-    // SetBadFlag 会在锁外级联 EraseObservation → ComputeDistinctiveDescriptors（O(n²)），
-    // 一次删除多个 KF 会与 Tracking 争抢数千次 MapPoint 锁，造成单次数秒冻结；
-    // 改为每轮删 1 个，把开销摊薄到多轮，不改变算法语义、不降精度。
     for(size_t i=0; i<vpRedundantKFs.size(); i++)
     {
         KeyFrame* pKF = vpRedundantKFs[i];
@@ -808,16 +845,16 @@ void LocalMapping::RequestReset()
 {
     {
         unique_lock<mutex> lock(mMutexReset);
-        mbResetRequested = true;
+        mbResetRequested.store(true);
         mbAbortBA.store(true); // 立即中断正在进行的BA，确保Reset能被快速处理
     }
-    mCvEvent.notify_one();
+    NotifyEvent();
 }
 
 void LocalMapping::ResetIfRequested()
 {
     unique_lock<mutex> lock(mMutexReset);
-    if(mbResetRequested)
+    if(mbResetRequested.load())
     {
         mlNewKeyFrames.clear();
         mlpRecentAddedMapPoints.clear();
@@ -839,15 +876,17 @@ void LocalMapping::WaitForResetComplete()
 
 void LocalMapping::RequestFinish()
 {
-    unique_lock<mutex> lock(mMutexFinish);
-    mbFinishRequested = true;
-    mCvEvent.notify_one();
+    {
+        unique_lock<mutex> lock(mMutexFinish);
+        mbFinishRequested.store(true);
+    }
+    NotifyEvent();
 }
 
 bool LocalMapping::CheckFinish()
 {
     unique_lock<mutex> lock(mMutexFinish);
-    return mbFinishRequested;
+    return mbFinishRequested.load();
 }
 
 void LocalMapping::SetFinish()
@@ -909,7 +948,7 @@ void LocalMapping::CheckLimits()
     {
         vector<MapPoint*> vpMPs = mpMap->GetAllMapPoints();
 
-        // 使用 nth_element 代替 sort，将最旧的 nToEraseMP 个点放到前面
+        // 使用 nth_element，将最旧的 nToEraseMP 个点放到前面
         int nToEraseMP = nMPs - MAX_MAPPOINTS + MAPPOINT_CULL_BATCH_SIZE;
         if(nToEraseMP > (int)vpMPs.size()) nToEraseMP = vpMPs.size();
 
@@ -935,7 +974,7 @@ void LocalMapping::CheckLimits()
              if(spLocalMPs.count(pMP)) continue;
 
              // 保护最近看到的点（在最近 N 帧内）
-             if(pMP->mnLastFrameSeen >= mpCurrentKeyFrame->mnFrameId - LOCAL_MAPPING_CULL_PROTECT_FRAMES) continue; 
+             if(pMP->mnLastFrameSeen >= mpCurrentKeyFrame->mnFrameId - LOCAL_MAPPING_CULL_PROTECT_FRAMES) continue;
 
              pMP->SetBadFlag();
              nErasedMP++;

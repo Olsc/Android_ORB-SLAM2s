@@ -198,7 +198,7 @@ map<KeyFrame*, size_t> MapPoint::GetObservations()
     return mObservations;
 }
 
-void MapPoint::ShareObservations(std::map<KeyFrame*, int>& counter, unsigned long excludeId)
+void MapPoint::ShareObservations(std::unordered_map<KeyFrame*, int>& counter, unsigned long excludeId)
 {
     unique_lock<mutex> lock(mMutexFeatures);
     for(std::map<KeyFrame*, size_t>::const_iterator mit=mObservations.begin(), mend=mObservations.end(); mit!=mend; mit++)
@@ -269,6 +269,9 @@ void MapPoint::Replace(MapPoint* pMP)
 {
     if(pMP->mnId==this->mnId)
         return;
+    // 目标点已坏则不合并（否则观测会被并入死点丢失）
+    if(pMP->isBad())
+        return;
 
     int nvisible, nfound;
     map<KeyFrame*,size_t> obs;
@@ -278,8 +281,8 @@ void MapPoint::Replace(MapPoint* pMP)
         obs=mObservations;
         mObservations.clear();
         mbBad=true;
-        nvisible = mnVisible;
-        nfound = mnFound;
+        nvisible = mnVisible.load(std::memory_order_relaxed);
+        nfound = mnFound.load(std::memory_order_relaxed);
         mpReplaced = pMP;
     }
 
@@ -313,52 +316,44 @@ bool MapPoint::isBad()
 
 void MapPoint::IncreaseVisible(int n)
 {
-    unique_lock<mutex> lock(mMutexFeatures);
-    mnVisible+=n;
+    // 原子计数（热路径每帧数百次调用）
+    mnVisible.fetch_add(n, std::memory_order_relaxed);
 }
 
 void MapPoint::IncreaseFound(int n)
 {
-    unique_lock<mutex> lock(mMutexFeatures);
-    mnFound+=n;
+    mnFound.fetch_add(n, std::memory_order_relaxed);
 }
 
 float MapPoint::GetFoundRatio()
 {
-    unique_lock<mutex> lock(mMutexFeatures);
-    return static_cast<float>(mnFound)/mnVisible;
+    // mnVisible 至少为 1（构造函数初始化），无需除零保护
+    return static_cast<float>(mnFound.load(std::memory_order_relaxed)) /
+           mnVisible.load(std::memory_order_relaxed);
 }
 
 void MapPoint::ComputeDistinctiveDescriptors()
 {
-    // 检索所有观测到的描述符
-    map<KeyFrame*,size_t> observations;
-
-    {
-        unique_lock<mutex> lock1(mMutexFeatures);
-        if(mbBad)
-            return;
-        observations=mObservations;
-    }
-
-    if(observations.empty())
-        return;
-
     const uint8_t* descPtrs[MAPPOINT_DESC_MAX_OBS];
     cv::Mat descMats[MAPPOINT_DESC_MAX_OBS];
     size_t nDescs = 0;
 
-    for(map<KeyFrame*,size_t>::iterator mit=observations.begin(), mend=observations.end(); mit!=mend; mit++)
     {
-        KeyFrame* pKF = mit->first;
+        unique_lock<mutex> lock1(mMutexFeatures);
+        if(mbBad || mObservations.empty())
+            return;
 
-        if(!pKF->isBad())
+        for(const auto& mit : mObservations)
         {
-            if (nDescs < MAPPOINT_DESC_MAX_OBS)
+            KeyFrame* pKF = mit.first;
+            if(pKF && !pKF->isBad())
             {
-                descPtrs[nDescs] = pKF->mDescriptors.ptr<uint8_t>(mit->second);
-                descMats[nDescs] = pKF->mDescriptors.row(mit->second);
-                nDescs++;
+                if (nDescs < MAPPOINT_DESC_MAX_OBS)
+                {
+                    descPtrs[nDescs] = pKF->mDescriptors.ptr<uint8_t>(mit.second);
+                    descMats[nDescs] = pKF->mDescriptors.row(mit.second);
+                    nDescs++;
+                }
             }
         }
     }
@@ -439,52 +434,56 @@ bool MapPoint::IsInKeyFrame(KeyFrame *pKF)
 
 void MapPoint::UpdateNormalAndDepth()
 {
-    map<KeyFrame*,size_t> observations;
-    KeyFrame* pRefKF;
-    cv::Mat Pos;
+    struct ObsItem {
+        KeyFrame* pKF;
+        size_t idx;
+        cv::Point3f Owi;
+    };
+    ObsItem obsItems[64];
+    size_t nObs = 0;
+    KeyFrame* pRefKF = nullptr;
+    size_t refIdx = 0;
+    cv::Point3f pos;
+
     {
         unique_lock<mutex> lock1(mMutexFeatures);
         unique_lock<mutex> lock2(mMutexPos);
-        if(mbBad)
+        if(mbBad || mObservations.empty())
             return;
-        observations=mObservations;
-        pRefKF=mpRefKF;
-        Pos = mWorldPos.clone();
-    }
+        pRefKF = mpRefKF;
+        pos = cv::Point3f(mWorldPos.at<float>(0), mWorldPos.at<float>(1), mWorldPos.at<float>(2));
 
-    if(observations.empty())
-        return;
-
-    // 兼容加载点：若参考关键帧为空或无效，则选取任一可用观测关键帧
-    if(!pRefKF || pRefKF->isBad())
-    {
-        auto it = observations.begin();
-        if(it==observations.end()) return;
-        pRefKF = it->first;
-        if(!pRefKF) return;
+        if(!pRefKF || pRefKF->isBad())
         {
-            unique_lock<mutex> lock1(mMutexFeatures);
+            pRefKF = mObservations.begin()->first;
             mpRefKF = pRefKF;
+        }
+
+        for(const auto& mit : mObservations)
+        {
+            KeyFrame* pKF = mit.first;
+            if(pKF && !pKF->isBad() && nObs < 64)
+            {
+                obsItems[nObs].pKF = pKF;
+                obsItems[nObs].idx = mit.second;
+                pKF->GetCameraCenter(obsItems[nObs].Owi);
+                if(pKF == pRefKF) {
+                    refIdx = mit.second;
+                }
+                nObs++;
+            }
         }
     }
 
-    cv::Mat normal = cv::Mat::zeros(3,1,CV_32F);
-    int n=0;
-    // Pos 的标量副本，避免循环内 Mat 运算
-    const float posx = Pos.at<float>(0);
-    const float posy = Pos.at<float>(1);
-    const float posz = Pos.at<float>(2);
-    for(map<KeyFrame*,size_t>::iterator mit=observations.begin(), mend=observations.end(); mit!=mend; mit++)
-    {
-        KeyFrame* pKF = mit->first;
-        // 栈版读取相机中心
-        cv::Point3f Owi;
-        pKF->GetCameraCenter(Owi);
+    if(nObs == 0 || !pRefKF)
+        return;
 
-        // normali = Pos - Owi（标量）
-        const float nx = posx - Owi.x;
-        const float ny = posy - Owi.y;
-        const float nz = posz - Owi.z;
+    cv::Mat normal = cv::Mat::zeros(3,1,CV_32F);
+    for(size_t i = 0; i < nObs; ++i)
+    {
+        const float nx = pos.x - obsItems[i].Owi.x;
+        const float ny = pos.y - obsItems[i].Owi.y;
+        const float nz = pos.z - obsItems[i].Owi.z;
         const float normSq = nx*nx + ny*ny + nz*nz;
         if(normSq > 1e-12f) {
             const float invNorm = 1.0f / sqrt(normSq);
@@ -492,28 +491,25 @@ void MapPoint::UpdateNormalAndDepth()
             normal.at<float>(1) += ny * invNorm;
             normal.at<float>(2) += nz * invNorm;
         }
-        n++;
     }
 
     cv::Point3f pRefOwi;
     pRefKF->GetCameraCenter(pRefOwi);
 
-    // PC = Pos - pRefKF 相机中心（标量）
-    const float pcx = posx - pRefOwi.x;
-    const float pcy = posy - pRefOwi.y;
-    const float pcz = posz - pRefOwi.z;
+    const float pcx = pos.x - pRefOwi.x;
+    const float pcy = pos.y - pRefOwi.y;
+    const float pcz = pos.z - pRefOwi.z;
     const float dist = sqrt(pcx*pcx + pcy*pcy + pcz*pcz);
 
-    const int level = pRefKF->mvKeysUn[observations[pRefKF]].octave;
-    const float levelScaleFactor =  pRefKF->mvScaleFactors[level];
+    const int level = (refIdx < pRefKF->mvKeysUn.size()) ? pRefKF->mvKeysUn[refIdx].octave : 0;
+    const float levelScaleFactor = pRefKF->mvScaleFactors[level];
     const int nLevels = pRefKF->mnScaleLevels;
 
     {
         unique_lock<mutex> lock3(mMutexPos);
         mfMaxDistance = dist*levelScaleFactor;
         mfMinDistance = mfMaxDistance/pRefKF->mvScaleFactors[nLevels-1];
-        mNormalVector = normal/n;
-        // 同步预计算不变性边界
+        mNormalVector = normal / static_cast<float>(nObs);
         mfMinDistInvariance.store(MAPPOINT_MIN_DIST_INVARIANCE_FACTOR*mfMinDistance, std::memory_order_relaxed);
         mfMaxDistInvariance.store(MAPPOINT_MAX_DIST_INVARIANCE_FACTOR*mfMaxDistance, std::memory_order_relaxed);
     }

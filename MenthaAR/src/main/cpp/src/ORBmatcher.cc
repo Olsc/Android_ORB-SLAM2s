@@ -174,7 +174,7 @@ bool ORBmatcher::CheckDistEpipolarLine(const cv::KeyPoint &kp1,const cv::KeyPoin
     if(den==0)
         return false;
 
-    // 优化: 消除除法 num*num/den < th 等价于 num*num < den*th
+    // 等价变换消除除法：num*num/den < th 等价于 num*num < den*th
     // 数学等价: a/b < c ⇔ a < b*c (当b>0)
     const float epiTh = ORB_MATCHER_EPILINE_TH * pKF2->mvLevelSigma2[kp2.octave];
     return num*num < den * epiTh;
@@ -190,9 +190,14 @@ int ORBmatcher::SearchByHBST(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoi
 
     int nmatches=0;
 
-    vector<int> rotHist[HISTO_LENGTH];
-    for(int i=0;i<HISTO_LENGTH;i++)
-        rotHist[i].reserve(ROT_HIST_RESERVE);
+    // 旋转直方图缓冲复用（thread_local + clear）
+    static thread_local vector<int> rotHist[HISTO_LENGTH];
+    static thread_local bool rotHistInit = false;
+    if(!rotHistInit){
+        for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].reserve(ROT_HIST_RESERVE);
+        rotHistInit = true;
+    }
+    for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].clear();
     const float factor = 1.0f/HISTO_LENGTH;
 
     if(pKF->mDescriptors.empty() || F.mDescriptors.empty())
@@ -330,7 +335,7 @@ int ORBmatcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapP
     // 分解 Scw
     cv::Mat sRcw = Scw.rowRange(0,3).colRange(0,3);
     const float scw = sqrt(sRcw.row(0).dot(sRcw.row(0)));
-    // 用乘法代替矩阵除法以加快计算速度，因为计算机算乘法明显快于除法
+    // 用乘法等价代替矩阵除法
     const float inv_scw = 1.0f/scw;
     cv::Mat Rcw = sRcw * inv_scw;
     cv::Mat tcw = Scw.rowRange(0,3).col(3) * inv_scw;
@@ -357,11 +362,11 @@ int ORBmatcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapP
         if(pMP->isBad() || spAlreadyFound.count(pMP))
             continue;
 
-        // 获取3D坐标 (使用 Point3f 替代 cv::Mat，消除堆分配)
+        // 获取3D坐标 
         cv::Point3f p3Dw;
         pMP->GetWorldPos(p3Dw);
 
-        // 转换到相机坐标系 (标量乘加替代矩阵乘法)
+        // 转换到相机坐标系
         const float p3DcX = R00 * p3Dw.x + R01 * p3Dw.y + R02 * p3Dw.z + tx;
         const float p3DcY = R10 * p3Dw.x + R11 * p3Dw.y + R12 * p3Dw.z + ty;
         const float p3DcZ = R20 * p3Dw.x + R21 * p3Dw.y + R22 * p3Dw.z + tz;
@@ -456,9 +461,14 @@ int ORBmatcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f
     int nmatches=0;
     vnMatches12 = vector<int>(F1.mvKeysUn.size(),-1);
 
-    vector<int> rotHist[HISTO_LENGTH];
-    for(int i=0;i<HISTO_LENGTH;i++)
-        rotHist[i].reserve(ROT_HIST_RESERVE);
+    // 旋转直方图缓冲复用（thread_local + clear）
+    static thread_local vector<int> rotHist[HISTO_LENGTH];
+    static thread_local bool rotHistInit = false;
+    if(!rotHistInit){
+        for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].reserve(ROT_HIST_RESERVE);
+        rotHistInit = true;
+    }
+    for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].clear();
     const float factor = 1.0f/HISTO_LENGTH;
 
     vector<int> vMatchedDistance(F2.mvKeysUn.size(),INT_MAX);
@@ -476,7 +486,8 @@ int ORBmatcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f
         if(vIndices2.empty())
             continue;
 
-        cv::Mat d1 = F1.mDescriptors.row(i1);
+        // 直接用行首指针，免去每点 2 次 cv::Mat 行头构造（含原子引用计数）
+        const uint8_t* d1 = F1.mDescriptors.ptr<uint8_t>(i1);
 
         int bestDist = INT_MAX;
         int bestDist2 = INT_MAX;
@@ -486,7 +497,7 @@ int ORBmatcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f
         {
             size_t i2 = *vit;
 
-            cv::Mat d2 = F2.mDescriptors.row(i2);
+            const uint8_t* d2 = F2.mDescriptors.ptr<uint8_t>(i2);
 
             int dist = DescriptorDistance(d1,d2);
 
@@ -584,9 +595,14 @@ int ORBmatcher::SearchByHBST(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> 
     vpMatches12 = vector<MapPoint*>(vpMapPoints1.size(), static_cast<MapPoint*>(NULL));
     vector<bool> vbMatched2(vpMapPoints2.size(), false);
 
-    vector<int> rotHist[HISTO_LENGTH];
-    for (int i = 0; i < HISTO_LENGTH; i++)
-        rotHist[i].reserve(ROT_HIST_RESERVE);
+    // 旋转直方图缓冲复用（thread_local + clear）
+    static thread_local vector<int> rotHist[HISTO_LENGTH];
+    static thread_local bool rotHistInit = false;
+    if(!rotHistInit){
+        for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].reserve(ROT_HIST_RESERVE);
+        rotHistInit = true;
+    }
+    for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].clear();
 
     const float factor = 1.0f / HISTO_LENGTH;
 
@@ -720,7 +736,7 @@ int ORBmatcher::SearchByHBST(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> 
 
 int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F12,
                                        vector<pair<size_t, size_t> > &vMatchedPairs, const bool bOnlyStereo)
-{    
+{
     if (!pKF1 || pKF1->isBad() || !pKF2 || pKF2->isBad())
         return 0;
 
@@ -751,9 +767,14 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
     vector<bool> vbMatched2(pKF2->N,false);
     vector<int> vMatches12(pKF1->N,-1);
 
-    vector<int> rotHist[HISTO_LENGTH];
-    for(int i=0;i<HISTO_LENGTH;i++)
-        rotHist[i].reserve(ROT_HIST_RESERVE);
+    // 旋转直方图缓冲复用（thread_local + clear）
+    static thread_local vector<int> rotHist[HISTO_LENGTH];
+    static thread_local bool rotHistInit = false;
+    if(!rotHistInit){
+        for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].reserve(ROT_HIST_RESERVE);
+        rotHistInit = true;
+    }
+    for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].clear();
 
     const float factor = 1.0f/HISTO_LENGTH;
 
@@ -900,11 +921,11 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
         if(pMP->isBad() || pMP->IsInKeyFrame(pKF))
             continue;
 
-        // 使用栈分配的 Point3f 替代 cv::Mat 获取 3D 坐标，消除堆分配
+        // 使用栈分配的 Point3f
         cv::Point3f p3Dw;
         pMP->GetWorldPos(p3Dw);
 
-        // 标量级 3D 旋转与平移变换，替代 cv::Mat 矩阵乘法
+        // 标量级 3D 旋转与平移变换
         const float p3DcX = R00*p3Dw.x + R01*p3Dw.y + R02*p3Dw.z + tx;
         const float p3DcY = R10*p3Dw.x + R11*p3Dw.y + R12*p3Dw.z + ty;
         const float p3DcZ = R20*p3Dw.x + R21*p3Dw.y + R22*p3Dw.z + tz;
@@ -944,7 +965,7 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
         // 只在需要时计算实际距离
         const float dist3D = sqrt(dist3DSq);
 
-        // 使用栈分配的 Point3f 替代 cv::Mat 获取法向量
+        // 使用栈分配的 Point3f
         cv::Point3f Pn;
         pMP->GetNormal(Pn);
 
@@ -1066,11 +1087,11 @@ int ORBmatcher::Fuse(KeyFrame *pKF, cv::Mat Scw, const vector<MapPoint *> &vpPoi
         if(pMP->isBad() || spAlreadyFound.count(pMP))
             continue;
 
-        // 获取3D坐标 (使用 Point3f 替代 cv::Mat，消除堆分配)
+        // 获取3D坐标
         cv::Point3f p3Dw;
         pMP->GetWorldPos(p3Dw);
 
-        // 转换到相机坐标系 (标量乘加替代矩阵乘法)
+        // 转换到相机坐标系
         const float p3DcX = R00 * p3Dw.x + R01 * p3Dw.y + R02 * p3Dw.z + tx;
         const float p3DcY = R10 * p3Dw.x + R11 * p3Dw.y + R12 * p3Dw.z + ty;
         const float p3DcZ = R20 * p3Dw.x + R21 * p3Dw.y + R22 * p3Dw.z + tz;
@@ -1239,7 +1260,7 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
         if(pMP->isBad())
             continue;
 
-        // 获取3D坐标 (使用 Point3f 替代 cv::Mat，消除堆分配)
+        // 获取3D坐标
         cv::Point3f p3Dw;
         pMP->GetWorldPos(p3Dw);
 
@@ -1345,7 +1366,7 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
         if(pMP->isBad())
             continue;
 
-        // 获取3D坐标 (使用 Point3f 替代 cv::Mat，消除堆分配)
+        // 获取3D坐标
         cv::Point3f p3Dw;
         pMP->GetWorldPos(p3Dw);
 
@@ -1454,10 +1475,14 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
 {
     int nmatches = 0;
 
-    // 旋转直方图（用于检查旋转一致性）
-    vector<int> rotHist[HISTO_LENGTH];
-    for(int i=0;i<HISTO_LENGTH;i++)
-        rotHist[i].reserve(ROT_HIST_RESERVE);
+    // 旋转直方图缓冲复用（thread_local + clear）
+    static thread_local vector<int> rotHist[HISTO_LENGTH];
+    static thread_local bool rotHistInit = false;
+    if(!rotHistInit){
+        for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].reserve(ROT_HIST_RESERVE);
+        rotHistInit = true;
+    }
+    for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].clear();
     const float factor = 1.0f/HISTO_LENGTH;
 
     const cv::Mat Rcw = CurrentFrame.mTcw.rowRange(0,3).colRange(0,3);
@@ -1487,7 +1512,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
         {
             if(!LastFrame.mvbOutlier[i])
             {
-                // 投影 (使用 Point3f 替代 cv::Mat，消除堆分配)
+                // 投影
                 cv::Point3f x3Dw;
                 pMP->GetWorldPos(x3Dw);
                 const float xc = R00*x3Dw.x + R01*x3Dw.y + R02*x3Dw.z + tx;
@@ -1605,10 +1630,14 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const set
     const float tx = tcw.at<float>(0), ty = tcw.at<float>(1), tz = tcw.at<float>(2);
     const float Ox = Ow.at<float>(0), Oy = Ow.at<float>(1), Oz = Ow.at<float>(2);
 
-    // 旋转直方图（用于检查旋转一致性）
-    vector<int> rotHist[HISTO_LENGTH];
-    for(int i=0;i<HISTO_LENGTH;i++)
-        rotHist[i].reserve(ROT_HIST_RESERVE);
+    // 旋转直方图缓冲复用（thread_local + clear）
+    static thread_local vector<int> rotHist[HISTO_LENGTH];
+    static thread_local bool rotHistInit = false;
+    if(!rotHistInit){
+        for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].reserve(ROT_HIST_RESERVE);
+        rotHistInit = true;
+    }
+    for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].clear();
     const float factor = 1.0f/HISTO_LENGTH;
 
     const vector<MapPoint*> vpMPs = pKF->GetMapPointMatches();
@@ -1621,7 +1650,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const set
         {
             if(!pMP->isBad() && !sAlreadyFound.count(pMP))
             {
-                // 投影 (使用 Point3f 替代 cv::Mat，消除堆分配)
+                // 投影
                 cv::Point3f x3Dw;
                 pMP->GetWorldPos(x3Dw);
                 const float xc = R00*x3Dw.x + R01*x3Dw.y + R02*x3Dw.z + tx;

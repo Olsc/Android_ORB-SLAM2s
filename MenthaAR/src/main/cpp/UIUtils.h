@@ -16,14 +16,6 @@
 #include <GLES/gl.h>
 #endif
 
-// 绘制当前帧跟踪到的特征点，蓝=新建、绿=匹配的已加载、红=未匹配的已加载
-void drawTrackedPoints(const std::vector<cv::KeyPoint> &vKeys, const std::vector<ORB_SLAM2::MapPoint *> &vMPs,
-                       cv::Mat &im, float cx = 0.0f, float cy = 0.0f);
-
-// 绘制所有地图点，用于AR重定位时显示完整点云
-void drawAllMapPoints(const cv::Mat &Tcw, const std::vector<ORB_SLAM2::MapPoint*> &allMapPoints,
-                      cv::Mat &im, float fx, float fy, float cx, float cy, bool drawOnlyLoaded = true);
-
 // 使用RANSAC算法检测平面，失败返回NULL
 Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &vMPs, const int iterations);
 

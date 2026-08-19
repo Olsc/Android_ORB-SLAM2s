@@ -72,8 +72,10 @@ public:
     // 构造函数：初始化SLAM系统，启动局部建图、闭环检测与可视化线程
     System(const string &strSettingsFile, const eSensor sensor);
 
-    // 处理单目图像帧：提取ORB特征、跟踪、局部地图跟踪并决定是否创建关键帧
-    // 返回相机位姿矩阵Tcw，跟踪失败时返回空矩阵
+    // 析构函数：确保所有线程被 join、子模块与地图被释放（Shutdown 未被调用时兜底）
+    ~System();
+
+    // 处理单目图像帧：提取ORB特征、跟踪、局部地图跟踪并决定是否创建关键帧，返回相机位姿矩阵Tcw，跟踪失败时返回空矩阵
     cv::Mat TrackMonocular(const cv::Mat &im, const double &timestamp);
 
     // 动态更新相机内参，当分辨率改变时由JNI层调用
@@ -143,8 +145,11 @@ public:
 private:
     // 多地图容器
     std::vector<Map*> mvpMaps;
+    // 子地图 ID 单调计数器（初始地图 mnId=0，此后递增分配，
+    // 避免逐出旧地图后 mvpMaps.size() 变小导致新地图 ID 与现存地图重复）
+    unsigned long mnNextMapId = 1;
 
-    // ========== 传感器配置 ==========
+    // 传感器配置
     eSensor mSensor;  // 输入传感器类型
 
     // 用于位置识别的关键帧数据库（重定位和回环检测）。
@@ -159,8 +164,7 @@ private:
     // 局部建图器。它管理局部地图并执行局部束调整。
     LocalMapping* mpLocalMapper;
 
-    // 回环闭合器。它搜索每个新关键帧的回环。如果存在回环，它会执行
-    // 位姿图优化，然后执行完整的束调整（在新线程中）。
+    // 回环闭合器。它搜索每个新关键帧的回环。如果存在回环，它会执行位姿图优化，然后执行完整的束调整（在新线程中）。
     LoopClosing* mpLoopCloser;
 
     FrameDrawer* mpFrameDrawer;
@@ -180,10 +184,6 @@ private:
     std::vector<MapPoint*> mTrackedMapPoints;
     std::vector<cv::KeyPoint> mTrackedKeyPointsUn;
     std::mutex mMutexState;
-
-    // CreateNewMap 限频保护：防止高性能机器上频繁丢失导致连续触发新建子地图
-    std::mutex mMutexNewMap;
-    std::chrono::steady_clock::time_point mLastNewMapTime;
 };
 
 }// namespace ORB_SLAM2

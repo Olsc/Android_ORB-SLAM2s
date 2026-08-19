@@ -1,6 +1,6 @@
 # ORB-SLAM2s 隐私政策与使用条款
 
-**最后更新日期：2026年7月10日**
+**最后更新日期：2026年8月17日**
 
 ---
 
@@ -19,10 +19,10 @@
 7. **暗帧自动跳过**：自动检测过暗环境，暂停 SLAM 跟踪以防止计算资源浪费和跟踪丢失；
 8. **3D物体交互管理**：支持 3D 物体的放置、双指缩放等交互操作；
 9. **3DOF姿态跟踪**：利用设备内置传感器（旋转矢量传感器/加速度计+磁力计）实现三自由度方向跟踪；
-10. **Web远程查看**：内置 SSL 加密的 HTTP Web 服务器（基于 HTTPS），可通过浏览器远程查看相机画面和 SLAM 数据；
-11. **多地图支持**：支持多个地图文件的同时加载、匹配和管理。
+10. **多地图支持**：支持多个地图文件的同时加载、匹配和管理；
+11. **完全解耦的 IPC 架构与开放二次开发**：SLAM 核心计算引擎已完全解耦并分离为独立进程服务（`:slam_process`），通过双缓冲共享内存（SharedMemory）与 AIDL 异步 IPC 协议与 UI/渲染管线交互。该架构彻底实现计算与渲染解耦，提供标准化的 IPC Client 接口，全面开放支持算法二次开发、后端替换与多引擎生态接入。
 
-本项目**仅**在 Android 移动平台上运行，其底层采用 C/C++ 编写的 ORB-SLAM2 核心引擎（通过 JNI 接口调用），上层使用 Java 语言构建用户界面和 AR 渲染管线。
+本项目**仅**在 Android 移动平台上运行，其底层采用 C/C++ 编写的 ORB-SLAM2 核心引擎（封装于独立的 `:slam_process` 服务进程中），上层使用 Java/Kotlin 构建用户界面与 AR 渲染管线，两者通过进程间通信（IPC）机制高效协同。
 
 ---
 
@@ -61,20 +61,19 @@ ORB-SLAM2s（本 Android 适配与增强项目）采用 **GNU General Public Lic
 
 本项目建设于以下开源库之上，各库有其独立的许可证：
 
-| 组件 | 许可证 | 说明 |
-|------|--------|------|
-| ORB-SLAM2 核心库 | GPL-3.0 | 由 Raul Mur-Artal 等人开发的原始 SLAM 库 |
-| DBoW2（已修改） | 修改版 BSD（含通知条款） | 词袋模型库，用于地点识别 |
-| g2o（已修改） | BSD 2-Clause（核心） | 图优化库，用于非线性优化（部分组件 GPL-3.0/LGPL-3.0） |
-| Eigen3 | MPL-2.0（大部分） | 线性代数库（3.4+ 部分组件含 Apache-2.0/BSD-3-Clause 兼容代码） |
-| OpenCV | Apache 2.0 | 计算机视觉库（部分文件 BSD-3-Clause） |
-| AndroidX / CameraX | Apache 2.0 | Android 官方相机和 UI 组件库 |
-| Google Material Design | Apache 2.0 | 用户界面设计库 |
-| **srrg_hbst (HBST)** | **BSD 3-Clause** | **层次化可扩展二叉搜索树 — 用于快速增量式图像匹配与重定位** |
-| **Google Filament** | **Apache 2.0** | **基于物理的 3D 渲染引擎，用于 AR 物体显示（支持 GLB/glTF 模型）** |
-| ZXing ("Zebra Crossing") | Apache 2.0 | 二维码生成库，用于 Web 服务器局域网扫码访问 |
-| Google Guava | Apache 2.0 | Java 核心库扩展 |
-| **Markwon (io.noties.markwon)** | **Apache 2.0** | **Markdown 渲染库 — 用于在应用内展示此隐私政策** |
+| 组件                            | 许可证                   | 说明                                                               |
+| ------------------------------- | ------------------------ | ------------------------------------------------------------------ |
+| ORB-SLAM2 核心库                | GPL-3.0                  | 由 Raul Mur-Artal 等人开发的原始 SLAM 库                           |
+| DBoW2（已修改）                 | 修改版 BSD（含通知条款） | 词袋模型库，用于地点识别                                           |
+| g2o（已修改）                   | BSD 2-Clause（核心）     | 图优化库，用于非线性优化（部分组件 GPL-3.0/LGPL-3.0）              |
+| Eigen3                          | MPL-2.0（大部分）        | 线性代数库（3.4+ 部分组件含 Apache-2.0/BSD-3-Clause 兼容代码）     |
+| OpenCV                          | Apache 2.0               | 计算机视觉库（部分文件 BSD-3-Clause）                              |
+| AndroidX / CameraX              | Apache 2.0               | Android 官方相机和 UI 组件库                                       |
+| Google Material Design          | Apache 2.0               | 用户界面设计库                                                     |
+| **srrg_hbst (HBST)**            | **BSD 3-Clause**         | **层次化可扩展二叉搜索树 — 用于快速增量式图像匹配与重定位**        |
+| **Google Filament**             | **Apache 2.0**           | **基于物理的 3D 渲染引擎，用于 AR 物体显示（支持 GLB/glTF 模型）** |
+| Google Guava                    | Apache 2.0               | Java 核心库扩展                                                    |
+| **Markwon (io.noties.markwon)** | **Apache 2.0**           | **Markdown 渲染库 — 用于在应用内展示此隐私政策**                   |
 
 对于商业用途的闭源版本需求，请联系 ORB-SLAM2 原作者（orbslam@unizar.es）。
 
@@ -112,53 +111,36 @@ ORB-SLAM2s（本 Android 适配与增强项目）采用 **GNU General Public Lic
 - **写入内容**: 仅写入 `.bin`（序列化地图数据）和 `.json`（元数据描述）两种文件类型。
 - **存储路径**: 仅写入 `getExternalFilesDir("SLAM/maps")` 目录，不会修改用户的其他文件。
 
-### 4.4 `android.permission.INTERNET`（互联网访问）
-
-- **用途**: 在本设备上启动 HTTP Web 服务器，用于通过浏览器远程查看相机画面和 SLAM 数据
-- **使用位置**: `WebServer.java` —— 内置的 SSL 加密 Web 服务器
-- **必要性**: **可选权限**。仅在用户手动点击"启动 Web 服务器"按钮时使用。用于：
-  1. 在局域网内通过浏览器实时查看 SLAM 点云和相机画面；
-  2. 支持浏览器上传图像帧进行 SLAM 处理（Web 模式）。
-  此功能完全由用户主动触发并可控。
-- **非联网用途**: 本项目**不会**主动连接任何互联网服务器、不发送数据到远程服务器、不包含任何远程分析、统计或遥测功能。
-- **说明**: 此权限仅用于设备本地（含局域网）的 Web 服务，不构成对云端的数据传输。
-
-### 4.5 `android.permission.ACCESS_NETWORK_STATE`（访问网络状态）
-
-- **用途**: 获取设备当前局域网 IP 地址，用于 Web 服务器的 URL 展示和二维码生成
-- **使用位置**: `ArCamUIActivity.java` 中的 `getDeviceIpAddress()` 方法
-- **必要性**: **可选权限**。仅在启用 Web 服务器功能时使用，用于向用户显示局域网访问地址。
-- **使用方式**: 枚举 `NetworkInterface` 获取非回环的 IPv4 地址，不追踪网络行为，不读取具体网络内容。
-
 ---
 
 ## 五、硬件功能使用清单
 
 ### 5.1 相机硬件
 
-| 项目 | 说明 |
-|------|------|
-| **声明** | `<uses-feature android:name="android.hardware.camera" />` |
-| **用途** | SLAM 实时跟踪、AR 渲染的基础输入源。分辨率动态计算（基准 1280x720，保持 16:9 比例）。 |
+| 项目       | 说明                                                                                                                   |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------- |
+| **声明**   | `<uses-feature android:name="android.hardware.camera" />`                                                              |
+| **用途**   | SLAM 实时跟踪、AR 渲染的基础输入源。分辨率动态计算（基准 1280x720，保持 16:9 比例）。                                  |
 | **数据流** | CameraX 的 `ImageAnalysis` 输出 RGBA_8888 格式帧 → 转换为 OpenCV 的 Mat 对象（RGBA + Gray）→ 传入 JNI 层做 SLAM 处理。 |
 
 ### 5.2 自动对焦
 
-| 项目 | 说明 |
-|------|------|
-| **声明** | `<uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />` |
-| **用途** | 用户点击屏幕时触发居中对焦和测光，提升图像质量和跟踪稳定性。 |
-| **非必需** | 标志为 `required="false"` —— 设备若不支持自动对焦，相机仍可正常工作。 |
+| 项目       | 说明                                                                                         |
+| ---------- | -------------------------------------------------------------------------------------------- |
+| **声明**   | `<uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />` |
+| **用途**   | 用户点击屏幕时触发居中对焦和测光，提升图像质量和跟踪稳定性。                                 |
+| **非必需** | 标志为 `required="false"` —— 设备若不支持自动对焦，相机仍可正常工作。                        |
 
 ### 5.3 传感器（运行时使用，非 Manifest 声明）
 
-| 传感器类型 | 用途 | 优先级 |
-|-----------|------|--------|
-| **TYPE_ROTATION_VECTOR**（旋转矢量传感器） | 3DOF 方向跟踪，计算设备的 3D 姿态 | 首选 |
-| **TYPE_ACCELEROMETER**（加速度计） | 无旋转矢量传感器时的备用方案 | 次选（与磁力计组合） |
-| **TYPE_MAGNETIC_FIELD**（磁力计） | 无旋转矢量传感器时的备用方案 | 次选（与加速度计组合） |
+| 传感器类型                                 | 用途                              | 优先级                 |
+| ------------------------------------------ | --------------------------------- | ---------------------- |
+| **TYPE_ROTATION_VECTOR**（旋转矢量传感器） | 3DOF 方向跟踪，计算设备的 3D 姿态 | 首选                   |
+| **TYPE_ACCELEROMETER**（加速度计）         | 无旋转矢量传感器时的备用方案      | 次选（与磁力计组合）   |
+| **TYPE_MAGNETIC_FIELD**（磁力计）          | 无旋转矢量传感器时的备用方案      | 次选（与加速度计组合） |
 
 **说明**：
+
 - 传感器数据的采样率设置为 `SensorManager.SENSOR_DELAY_GAME`（游戏级别，约 20ms 间隔）；
 - 传感器数据均在设备本地处理，**不会被上传、存储或传输到任何外部位置**；
 - 传感器坐标系经过横屏重映射处理，以适应应用固定的横屏方向。
@@ -181,43 +163,34 @@ ORB-SLAM2s（本 Android 适配与增强项目）采用 **GNU General Public Lic
 - ❌ 不包含任何第三方广告 SDK 或分析 SDK；
 - ❌ 不主动连接任何远程服务器。
 
-### 6.2 本地数据处理
+### 6.2 本地数据处理与跨进程通信（IPC）
 
-| 数据类型 | 处理方式 | 存储 |
-|---------|---------|------|
-| **摄像头帧** | 实时处理：灰度化和 RGBA 转换后在内存中处理。处理完成后，帧数据即被丢弃。 | 不存储 |
-| **SLAM 地图（用户主动保存时）** | 序列化为二进制 `.bin` 文件 + `.json` 元数据文件 | 保存到 `getExternalFilesDir("SLAM/maps/")` |
-| **地图元数据** | 包括：地图名称、关键帧数量、地图点数量、创建时间、是否包含平面检测 | 同上 |
-| **ORB 词汇表** | 预置文件，用于特征匹配（只读） | `getExternalFilesDir("SLAM/")` |
-| **相机参数配置** | 预置文件（只读） | `getExternalFilesDir("SLAM/")` |
-| **日志信息** | 使用 Android Logcat 输出调试日志，仅在开发者模式下可见 | 系统日志缓冲区（循环覆盖） |
+| 数据类型                        | 处理方式                                                                                                                                      | 存储                                       |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| **摄像头帧**                    | 实时处理：写入匿名共享内存（Ashmem/SharedMemory 双缓冲），通过 oneway AIDL 通知 `:slam_process` 进程直接处理。处理完成后即被下一帧覆盖/释放。 | 不存储                                     |
+| **跨进程数据流**                | 点云坐标、MVP 变换矩阵、跟踪状态通过共享内存 Header 与内存映射在主进程与 SLAM 进程间直接交换，全程位于本地 RAM，零网络传输。                  | 不存储                                     |
+| **SLAM 地图（用户主动保存时）** | 序列化为二进制 `.bin` 文件 + `.json` 元数据文件                                                                                               | 保存到 `getExternalFilesDir("SLAM/maps/")` |
+| **地图元数据**                  | 包括：地图名称、关键帧数量、地图点数量、创建时间、是否包含平面检测                                                                            | 同上                                       |
+| **ORB 词汇表**                  | 预置文件，用于特征匹配（只读）                                                                                                                | `getExternalFilesDir("SLAM/")`             |
+| **相机参数配置**                | 预置文件（只读）                                                                                                                              | `getExternalFilesDir("SLAM/")`             |
+| **日志信息**                    | 使用 Android Logcat 输出调试日志，仅在开发者模式下可见                                                                                        | 系统日志缓冲区（循环覆盖）                 |
 
 ### 6.3 崩溃处理
 
 本应用**不包含任何自定义的崩溃收集机制**。应用崩溃时由 Android 系统默认行为处理（弹出"应用已停止"对话框）。
 
+- 得益于 **IPC 进程分离架构**，SLAM 原生算法运行于独立的 `:slam_process`，当底层算法遭遇极端异常崩溃时，主 UI 进程可通过 ServiceConnection 监听断开并安全降级，避免应用全盘闪退；
 - 应用本身**不收集、不存储、不上传任何崩溃信息**到任何远程服务器；
 - Android 系统可能会在用户主动同意的情况下，收集基本的崩溃栈信息用于系统诊断（此行为由 Android 系统控制，与本应用无关）。
 
-### 6.4 Web 服务器模式说明
-
-用户可手动启动内置的 SSL Web 服务器（端口 8080，HTTPS）。在此模式下：
-
-- **数据流**：浏览器摄像头帧 → 加密传输（TLS/SSL）→ 设备本地处理 → 返回 SLAM 数据；
-- **数据传输范围**：仅限于局域网内（同一 WiFi 子网），不会传输到公网；
-- **用户控制**：Web 服务器完全由用户手动开启和关闭，默认关闭状态；
-- **二维码生成**：生成的二维码仅包含局域网 IP 地址和端口，用于同一局域网内扫码连接；
-- **安全措施**：Web 服务器使用自签名证书进行 TLS/SSL 加密，并设置了 `Access-Control-Allow-Origin: *` 以支持跨域请求。
-
-### 6.5 第三方库的数据处理
+### 6.4 第三方库的数据处理
 
 本项目使用的第三方库均在设备本地运行，不涉及数据传输：
 
 - **OpenCV**：图像处理（特征提取、矩阵运算），全部在本地 CPU 上执行；
-- **ORB-SLAM2 核心（C++）**：SLAM 算法引擎，全部在本地执行；
+- **ORB-SLAM2 核心（C++）**：SLAM 算法引擎，封装在 `:slam_process` 中全部在本地执行；
 - **srrg_hbst (HBST)**：层次化二叉搜索树，用于图像匹配与重定位，全部在本地执行；
 - **Google Filament + gltfio**：基于物理的 3D 渲染引擎，用于 AR 物体显示（GLB/glTF），渲染在本地 GPU 上执行；
-- **ZXing**：二维码编码，全部在本地执行；
 - **Google Guava / AndroidX**：系统工具类，不涉及用户数据；
 - **Markwon**：Markdown 渲染库，仅用于在应用内展示本隐私政策，全部在本地执行。
 
@@ -226,13 +199,12 @@ ORB-SLAM2s（本 Android 适配与增强项目）采用 **GNU General Public Lic
 ## 七、安全说明
 
 1. **应用签名**：分发本应用的 APK/AAB 应由开发者使用私钥签名，确保应用的完整性和来源可信。
-2. **网络安全**：Web 服务器模式使用自签名 TLS 证书加密传输，浏览器首次连接时会提示安全风险（自签名证书），请用户确认后再使用。
-3. **明文流量说明**：应用的 `AndroidManifest.xml` 声明了 `android:usesCleartextTraffic="true"`。这是严格必要的——用于可选的局域网 Web 服务器功能在本地 LAN 上提供 HTTP 内容。应用不会向公共互联网发送未加密的流量。在 Android 9+（API 28+）上，Web 服务器对所有数据传输使用 TLS/SSL 加密（HTTPS）。
-4. **数据隔离**：所有应用数据存储在应用的 `getExternalFilesDir()` 沙箱目录中，Android 系统会限制其他应用的访问。
-5. **权限最小化**：仅申请 SLAM 和 AR 功能所必需的最少权限，不申请任何多余权限。
-6. **无后台服务**：应用无常驻后台服务，退出时释放所有资源（摄像头、传感器、GL 上下文）。
-7. **应用备份与数据泄漏防范**：应用的 `AndroidManifest.xml` 声明了 `android:allowBackup="true"` 以提供便利。在 Android 12+（API 31+）上，用户可在设备设置中禁用备份，以防止地图文件和应用数据被包含在系统备份中。处理敏感地图数据的用户应考虑禁用应用备份功能。
-8. **原生代码崩溃处理**：应用的 C++ 原生层包含信号处理框架，可拦截原生崩溃（如 SIGSEGV、SIGABRT）并生成诊断日志。这些日志仅写入 Android Logcat 缓冲区（仅在开发者/调试模式下可访问），应用本身从不收集、存储或传输这些日志。此机制仅用于开发过程中的调试目的。
+2. **数据隔离**：所有应用数据存储在应用的 `getExternalFilesDir()` 沙箱目录中，Android 系统会限制其他应用的访问。
+3. **进程隔离与安全边界**：SLAM 核心服务运行于私有独立进程（`:slam_process`），并在 `AndroidManifest.xml` 中明确声明 `android:exported="false"`，外部未授权应用无法直接绑定或调用该服务；同时具备进程级故障隔离特性。
+4. **权限最小化**：仅申请 SLAM 和 AR 功能所必需的最少权限，不申请任何多余权限。
+5. **无后台常驻服务**：应用无常驻后台服务，退出时释放所有资源（摄像头、传感器、IPC 绑定、GL 上下文）。
+6. **应用备份与数据泄漏防范**：应用的 `AndroidManifest.xml` 声明了 `android:allowBackup="true"` 以提供便利。在 Android 12+（API 31+）上，用户可在设备设置中禁用备份，以防止地图文件和应用数据被包含在系统备份中。处理敏感地图数据的用户应考虑禁用应用备份功能。
+7. **原生代码崩溃处理**：应用的 C++ 原生层包含信号处理框架，可拦截原生崩溃（如 SIGSEGV、SIGABRT）并生成诊断日志。这些日志仅写入 Android Logcat 缓冲区（仅在开发者/调试模式下可访问），应用本身从不收集、存储或传输这些日志。此机制仅用于开发过程中的调试目的。
 
 ---
 
@@ -273,6 +245,7 @@ ORB-SLAM2s（本 Android 适配与增强项目）采用 **GNU General Public Lic
 下载、使用或分发本软件（ORB-SLAM2s）或其任何衍生版本时，**严禁**将本软件用于以下用途：
 
 ### 9.1 违法与恶意用途
+
 - ❌ 任何违反中华人民共和国法律、法规的行为；
 - ❌ 任何违反用户所在国家或地区法律的行为；
 - ❌ 侵犯他人隐私权（如偷拍、非法监控）；
@@ -283,11 +256,13 @@ ORB-SLAM2s（本 Android 适配与增强项目）采用 **GNU General Public Lic
 - ❌ 用于未经安全认证的航空器、航天器的导航或任意飞行控制系统；
 
 ### 9.2 高风险活动
+
 - ❌ 未经安全认证，在核设施、化工厂、生命维持系统等对安全性有极高要求的环境中使用；
 - ❌ 未经安全认证，在可能导致人身伤害或财产损失的场景中使用；
 - ❌ 未经充分安全测试和合规认证，集成到航空航天、轨道交通、自动驾驶等关键基础设施中；
 
 ### 9.3 知识产权与合规
+
 - ❌ 移除或掩盖本软件及上游开源组件（ORB-SLAM2、DBoW2、g2o 等）的版权声明和许可证信息；
 - ❌ 在违反 GPL-3.0 许可证条款的前提下分发本软件的修改版本或衍生作品（必须同样以 GPL-3.0 发布并提供源代码）；
 - ❌ 将本软件或其组件用于专利侵权或协助专利侵权。
@@ -333,26 +308,27 @@ ORB-SLAM2s（本 Android 适配与增强项目）采用 **GNU General Public Lic
 
 本项目基于以下开源库构建，并集成了相应的第三方组件。各库的知识产权归属和许可证声明如下：
 
-| 组件 | 版权所有者 | 许可证 |
-|------|-----------|--------|
-| **ORB-SLAM2 核心算法** | Raul Mur-Artal, Juan D. Tardos, J. M. M. Montiel, Dorian Galvez-Lopez | GPL-3.0 |
-| **DBoW2（已修改）** | Dorian Galvez-Lopez | 修改版 BSD（含通知条款） |
-| **g2o（已修改）** | Rainer Kuemmerle, Giorgio Grisetti, Hauke Strasdat, Kurt Konolige, Wolfram Burgard | BSD 2-Clause（核心）；部分组件为 GPL-3.0 / LGPL-3.0 |
-| **Eigen3** | Benoît Jacob, Gaël Guennebaud 及贡献者 | MPL-2.0（核心；3.4+ 部分组件包含 Apache-2.0 / BSD-3-Clause / GPL-3.0 兼容代码） |
-| **OpenCV** | Intel Corporation, Willow Garage, Itseez, NVIDIA, AMD, OpenCV Foundation 及贡献者 | Apache 2.0（部分文件为 BSD-3-Clause） |
-| **srrg_hbst (HBST)** | Dominik Schlegel, Giorgio Grisetti / srrg-software | BSD 3-Clause |
-| **Google Filament** | Google LLC | Apache 2.0 |
-| **gltfio / filament-utils** | Google LLC | Apache 2.0 |
-| **ZXing ("Zebra Crossing")** | Sean Owen 及 ZXing 项目贡献者 | Apache 2.0 |
-| **Google Guava** | Google LLC | Apache 2.0 |
-| **Markwon (io.noties.markwon)** | Dimitry Ivanov (noties) | Apache 2.0 |
-| **AndroidX / CameraX** | Google LLC / Android Open Source Project | Apache 2.0 |
-| **Android 支持库 / Appcompat** | Google LLC / Android Open Source Project | Apache 2.0 |
-| **Material Components (Material Design)** | Google LLC | Apache 2.0 |
-| **ORB-SLAM2s 适配增强代码** | 本项目贡献者（见 GitHub 贡献者列表） | GPL-3.0 |
-| **项目名称 "ORB-SLAM2s"** | 本项目维护者 | 不构成商标注册 |
+| 组件                                      | 版权所有者                                                                         | 许可证                                                                          |
+| ----------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| **ORB-SLAM2 核心算法**                    | Raul Mur-Artal, Juan D. Tardos, J. M. M. Montiel, Dorian Galvez-Lopez              | GPL-3.0                                                                         |
+| **DBoW2（已修改）**                       | Dorian Galvez-Lopez                                                                | 修改版 BSD（含通知条款）                                                        |
+| **g2o（已修改）**                         | Rainer Kuemmerle, Giorgio Grisetti, Hauke Strasdat, Kurt Konolige, Wolfram Burgard | BSD 2-Clause（核心）；部分组件为 GPL-3.0 / LGPL-3.0                             |
+| **Eigen3**                                | Benoît Jacob, Gaël Guennebaud 及贡献者                                             | MPL-2.0（核心；3.4+ 部分组件包含 Apache-2.0 / BSD-3-Clause / GPL-3.0 兼容代码） |
+| **OpenCV**                                | Intel Corporation, Willow Garage, Itseez, NVIDIA, AMD, OpenCV Foundation 及贡献者  | Apache 2.0（部分文件为 BSD-3-Clause）                                           |
+| **srrg_hbst (HBST)**                      | Dominik Schlegel, Giorgio Grisetti / srrg-software                                 | BSD 3-Clause                                                                    |
+| **Google Filament**                       | Google LLC                                                                         | Apache 2.0                                                                      |
+| **gltfio / filament-utils**               | Google LLC                                                                         | Apache 2.0                                                                      |
+| **ZXing ("Zebra Crossing")**              | Sean Owen 及 ZXing 项目贡献者                                                      | Apache 2.0                                                                      |
+| **Google Guava**                          | Google LLC                                                                         | Apache 2.0                                                                      |
+| **Markwon (io.noties.markwon)**           | Dimitry Ivanov (noties)                                                            | Apache 2.0                                                                      |
+| **AndroidX / CameraX**                    | Google LLC / Android Open Source Project                                           | Apache 2.0                                                                      |
+| **Android 支持库 / Appcompat**            | Google LLC / Android Open Source Project                                           | Apache 2.0                                                                      |
+| **Material Components (Material Design)** | Google LLC                                                                         | Apache 2.0                                                                      |
+| **ORB-SLAM2s 适配增强代码**               | 本项目贡献者（见 GitHub 贡献者列表）                                               | GPL-3.0                                                                         |
+| **项目名称 "ORB-SLAM2s"**                 | 本项目维护者                                                                       | 不构成商标注册                                                                  |
 
 **说明**：
+
 - 各第三方库的具体使用条款请以其官方仓库的许可证原文为准。
 - 对于商业用途的闭源版本 ORB-SLAM2 授权需求，请联系原作者：orbslam (at) unizar (dot) es。
 - 本项目合作或商务合作咨询，请联系：OlscStudio@outlook.com

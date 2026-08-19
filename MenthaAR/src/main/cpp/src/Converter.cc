@@ -75,7 +75,7 @@ cv::Mat Converter::toCvMat(const g2o::Sim3 &Sim3)
 
 cv::Mat Converter::toCvMat(const Eigen::Matrix<double,4,4> &m)
 {
-    // 使用Eigen::Map进行内存映射转换，避免逐元素at<float>()开销
+    // 使用Eigen::Map进行内存映射转换
     cv::Mat cvMat(4,4,CV_32F);
     Eigen::Map<Eigen::Matrix<float,4,4,Eigen::RowMajor>>(cvMat.ptr<float>()) = m.cast<float>();
     return cvMat;

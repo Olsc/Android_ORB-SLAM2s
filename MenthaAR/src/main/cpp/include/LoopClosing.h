@@ -44,6 +44,7 @@
 
 #include <thread>
 #include <mutex>
+#include <atomic>
 #include <condition_variable>
 #include <set>
 #include <map>
@@ -83,12 +84,15 @@ public:
     void RequestReset();
     void WaitForResetComplete();
 
-    // 轻量级清空回环关键帧队列，不阻塞等待 Reset 完成。
-    // 用于 CreateNewMap 流程：避免旧 KF 在切到新地图后被 LoopClosing 处理。
+    // 轻量级清空回环关键帧队列，用于 CreateNewMap 流程。
     void ClearQueue();
 
     // 此函数将在单独的线程中运行
     void RunGlobalBundleAdjustment(unsigned long nLoopKF);
+
+    // 中止正在运行的 GBA 并 join 其线程。
+    // 由 CorrectLoop 的二次回环路径与 System::Shutdown 调用。
+    void RequestStopGBA();
 
     bool isRunningGBA(){
         std::unique_lock<std::mutex> lock(mMutexGBA);
@@ -116,7 +120,8 @@ protected:
     void CorrectLoop();
 
     void ResetIfRequested();
-    bool mbResetRequested;
+    // 原子化以便事件谓词无锁读取（写入后统一 NotifyEvent）
+    std::atomic<bool> mbResetRequested;
     std::mutex mMutexReset;
 
     bool mbResetComplete = false;
@@ -125,9 +130,13 @@ protected:
 
     bool CheckFinish();
     void SetFinish();
-    bool mbFinishRequested;
+    std::atomic<bool> mbFinishRequested;
     bool mbFinished;
     std::mutex mMutexFinish;
+
+    // 主循环事件谓词与事件通知（与 LocalMapping 同一套模式）
+    bool HasPendingEvent();
+    void NotifyEvent();
 
     Map* mpMap;
     Tracking* mpTracker;

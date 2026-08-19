@@ -46,7 +46,7 @@ https://github.com/Martin20150405/SLAM_AR_Android.git
 
 # 🎯 ORB-SLAM2s: Android Spatial Computing & Lightweight AR Demo
 
-*Маленькая буква 's' в ORB-SLAM2s означает **Smart · Swift · Small**（Умный · Быстрый · Маленький）, подчеркивая усиленный интеллект, более высокую производительность и меньший вес по сравнению с оригинальным ORB-SLAM2.*
+_Маленькая буква 's' в ORB-SLAM2s означает **Smart · Swift · Small**（Умный · Быстрый · Маленький）, подчеркивая усиленный интеллект, более высокую производительность и меньший вес по сравнению с оригинальным ORB-SLAM2._
 
 Этот проект использует строчную букву 's'. Другая статья с заглавной буквой 'S' называется ORB-SLAM2S：
 
@@ -87,7 +87,6 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 - **🌑 Обнаружение темных кадров** —— Автоматически пропускает темные или низкокачественные кадры
 - **🖱️ Управление AR-объектами** —— Размещение, масштабирование и взаимодействие с 3D-объектами
 - **🧭 3DOF отслеживание ориентации** —— Отслеживание с использованием встроенных датчиков устройства
-- **🌐 Удаленный SLAM через браузер** —— Встроенный SSL-шифрованный HTTPS Web-сервер. Используйте браузер как удаленный источник камеры — отправляйте изображения на устройство для обработки SLAM и просматривайте 3D облако точек и данные о положении в реальном времени
 - **📑 Поддержка нескольких карт** —— Одновременная загрузка и управление несколькими файлами карт
 
 ---
@@ -96,14 +95,14 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 
 В настоящее время в основном тестируется на процессорах Qualcomm Snapdragon：
 
-| SoC | Устройство | Производительность |
-|---|---|---|
-| Snapdragon 8 Elite | Xiaomi 15 | 30 FPS |
-| Snapdragon 8+ Gen1 | Redmi K60 | 30 FPS |
-| Snapdragon 870 | Xiaomi 10S | 30 FPS |
-| Snapdragon 7s Gen 2 | Redmi Pad Pro | 30 FPS |
-| Snapdragon 835 | Xiaomi 6 | 15–30 FPS |
-| Snapdragon AR1 Gen 1 | Rokid Glass3 | 10–25 FPS |
+| SoC                  | Устройство    | Производительность |
+| -------------------- | ------------- | ------------------ |
+| Snapdragon 8 Elite   | Xiaomi 15     | 30 FPS             |
+| Snapdragon 8+ Gen1   | Redmi K60     | 30 FPS             |
+| Snapdragon 870       | Xiaomi 10S    | 30 FPS             |
+| Snapdragon 7s Gen 2  | Redmi Pad Pro | 30 FPS             |
+| Snapdragon 835       | Xiaomi 6      | 15–30 FPS          |
+| Snapdragon AR1 Gen 1 | Rokid Glass3  | 10–25 FPS          |
 
 ### 🌑 Обнаружение темных кадров
 
@@ -163,11 +162,11 @@ ORB-SLAM2 — это библиотека SLAM в реальном времен�
 
 ### 📖 Связанные публикации
 
-**[Монокамера]** Raúl Mur-Artal, J. M. M. Montiel and Juan D. Tardós. **ORB-SLAM: A Versatile and Accurate Monocular SLAM System**. *IEEE Transactions on Robotics,* vol. 31, no. 5, pp. 1147–1163, 2015. (**2015 IEEE Transactions on Robotics Best Paper Award**). **[PDF](http://webdiis.unizar.es/~raulmur/MurMontielTardosTRO15.pdf)**
+**[Монокамера]** Raúl Mur-Artal, J. M. M. Montiel and Juan D. Tardós. **ORB-SLAM: A Versatile and Accurate Monocular SLAM System**. _IEEE Transactions on Robotics,_ vol. 31, no. 5, pp. 1147–1163, 2015. (**2015 IEEE Transactions on Robotics Best Paper Award**). **[PDF](http://webdiis.unizar.es/~raulmur/MurMontielTardosTRO15.pdf)**
 
-**[Стерео и RGB-D]** Raúl Mur-Artal and Juan D. Tardós. **ORB-SLAM2: an Open-Source SLAM System for Monocular, Stereo and RGB-D Cameras**. *IEEE Transactions on Robotics,* vol. 33, no. 5, pp. 1255–1262, 2017. **[PDF](https://128.84.21.199/pdf/1610.06475.pdf)**
+**[Стерео и RGB-D]** Raúl Mur-Artal and Juan D. Tardós. **ORB-SLAM2: an Open-Source SLAM System for Monocular, Stereo and RGB-D Cameras**. _IEEE Transactions on Robotics,_ vol. 33, no. 5, pp. 1255–1262, 2017. **[PDF](https://128.84.21.199/pdf/1610.06475.pdf)**
 
-**[DBoW2 Place Recognizer]** Dorian Gálvez-López and Juan D. Tardós. **Bags of Binary Words for Fast Place Recognition in Image Sequences**. *IEEE Transactions on Robotics,* vol. 28, no. 5, pp. 1188–1197, 2012. **[PDF](http://doriangalvez.com/php/dl.php?dlp=GalvezTRO12.pdf)**
+**[DBoW2 Place Recognizer]** Dorian Gálvez-López and Juan D. Tardós. **Bags of Binary Words for Fast Place Recognition in Image Sequences**. _IEEE Transactions on Robotics,_ vol. 28, no. 5, pp. 1188–1197, 2012. **[PDF](http://doriangalvez.com/php/dl.php?dlp=GalvezTRO12.pdf)**
 
 ---
 
@@ -250,15 +249,23 @@ ORB-SLAM2 основная библиотека выпущена под [GPLv3 �
 
 ## DBoW2 и g2o（Включены в папку Thirdparty）
 
-Мы используем [DBoW2](https://github.com/dorian3d/DBoW2) и [g2o](https://github.com/RainerKuemmerle/g2o) библиотеки для алгоритмических ссылок. Обе библиотеки (включая лицензии) находятся в папке *Thirdparty*.
+Мы используем [DBoW2](https://github.com/dorian3d/DBoW2) и [g2o](https://github.com/RainerKuemmerle/g2o) библиотеки для алгоритмических ссылок. Обе библиотеки (включая лицензии) находятся в папке _Thirdparty_.
 
 ---
 
 # 🧭 О инерциальной навигации (IMU)
 
-Ссылка：https://github.com/Olsc/Android_3dof  
+Ссылка：https://github.com/Olsc/Android_3dof
 
-*Исследование интеграции в проекте еще не завершено.*
+_Исследование интеграции в проекте еще не завершено._
+
+---
+
+# 🧮 Теоретическая вычислительная сложность
+
+![benchmark](workload_benchmark_tools/benchmark_workload.svg)
+
+---
 
 # 🐳 Талисман
 
@@ -266,7 +273,8 @@ ORB-SLAM2 основная библиотека выпущена под [GPLv3 �
 
 ![Mascot](img/mascot-q.png)
 
-*Персонаж: Мята*
+_Персонаж: Мята_
+
 </div>
 
 ---

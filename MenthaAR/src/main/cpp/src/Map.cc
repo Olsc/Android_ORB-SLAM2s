@@ -143,7 +143,7 @@ long unsigned int Map::GetMaxKFid()
 
 void Map::clear()
 {
-    // 使用临时集合将数据移出锁外进行删除，极大减少持锁时间，解决Reset时的卡顿
+    // 使用临时集合将数据移出锁外删除，缩短持锁时间，避免Reset时阻塞
     std::set<MapPoint*> spMP;
     std::set<KeyFrame*> spKF;
     std::set<MapPoint*> spMPTrash;

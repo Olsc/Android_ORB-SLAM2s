@@ -245,6 +245,8 @@ protected:
 
     // 当前帧中的匹配数
     int mnMatchesInliers;
+    int mnLocalMatchesInliers;   // 本地实时扫描建立的内点数
+    int mnLoadedMapInliers;      // 来自已加载地图的内点数
 
     //上一帧、关键帧和重定位信息
     KeyFrame* mpLastKeyFrame;
@@ -289,9 +291,13 @@ protected:
 
     // 为加载的地图点缓存的参考描述符（用于后台匹配）
     cv::Mat mRefDesc; // 描述符行
-    std::vector<MapPoint*> mRefIdxToMP;
+    // 缓存主体改为不可变快照的 shared_ptr——读端仅在锁内拷贝指针（O(1)）
+    std::shared_ptr<const std::vector<MapPoint*>> mpRefIdxToMP;
     size_t mRefCachedMPCount = 0;
     double mRefLastBuildTs = 0.0;
+    // 重建节流改为增量驱动（地图点 +5% 或 KF +3 才重建）
+    long long mRefLastBuildMPCount = 0;
+    long long mRefLastBuildKFCount = 0;
     std::atomic<bool> mRefBuilding{false};
     // 缓存失效请求标志：主线程置位，后台重定位线程消费并重建
     std::atomic<bool> mRefCacheDirty{false};
@@ -304,7 +310,7 @@ protected:
         float maxD;
         int mapId = 0;
     };
-    std::vector<RefMPSnapshot> mRefSnapshots;
+    std::shared_ptr<const std::vector<RefMPSnapshot>> mpRefSnapshots;
 
     // 简单的3D网格索引，用于加速空间查询
     struct LoadedMapGrid {
@@ -318,7 +324,7 @@ protected:
         void Build(const std::vector<RefMPSnapshot>& snaps, float size = LOADED_MAP_GRID_CELL_SIZE);
         // 获取包围盒内的候选点 (原始版本,返回矩形区域)
         void GetCandidatesInBBox(const cv::Point3f& center, float radius, std::vector<int>& outIndices) const;
-        // 获取包围盒内的候选点 (优化版本,精确圆形过滤)
+        // 获取包围盒内的候选点（精确圆形过滤）
         void GetCandidatesInSphere(const cv::Point3f& center, float radius,
                                   const std::vector<RefMPSnapshot>& snaps,
                                   std::vector<int>& outIndices) const;
@@ -329,7 +335,7 @@ protected:
     int mConsecutiveFail = 0;
     int mConsecutiveLostFrames = 0;
 
-    // ===== 异步重定位结果缓冲区（仅对齐）=====
+    // 异步重定位结果缓冲区（仅对齐）
     struct RelocAlignResult{
         cv::Mat T_map_from_slam; // 4x4
         int inliers = 0;
@@ -346,7 +352,7 @@ protected:
     void PublishRelocAlignment(const cv::Mat &TmapFromSlam, int inliers, float conf, double ts, int mapId);
     bool TryConsumeRelocAlignment(RelocAlignResult &out);
 
-    // ===== 配置旋钮 =====
+    // 配置旋钮
     int mCfgTopKWords = SYSTEM_RELOC_CONFIG_TOP_K;
     int mCfgMaxCandidates = SYSTEM_RELOC_CONFIG_MAX_CANDIDATES;
     int mCfgMatchChunk = SYSTEM_RELOC_CONFIG_MATCH_CHUNK;
@@ -374,7 +380,6 @@ protected:
     // 重试上限见 Config.h 的 TRACKING_MAX_REF_CACHE_RETRIES
 
     // 最近一次成功触发 CreateNewMap 时的当前帧 id，用于做冷却限频。
-    // 配合 TRACKING_NEW_MAP_COOLDOWN_FRAMES 使用，避免高频丢失导致连续触发新建子地图。
     unsigned int mLastNewMapFrameId = 0;
 
     // 动态搜索半径，根据跟踪状态自适应调整（正常:TH=4, 丢失:TH=8, 重定位后:TH=6）。

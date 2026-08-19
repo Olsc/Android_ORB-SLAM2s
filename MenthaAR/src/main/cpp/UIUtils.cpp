@@ -8,33 +8,6 @@
 #include "Matrix.h"
 #include "include/Config.h"
 
-// 绘制当前帧跟踪到的特征点，青色=新建、绿色=匹配的已加载、红色=未匹配的已加载
-void drawTrackedPoints(const std::vector<cv::KeyPoint> &vKeys, const std::vector<ORB_SLAM2::MapPoint *> &vMPs,
-                       cv::Mat &im, float cx, float cy)
-{
-    // 计算从SLAM分辨率到显示分辨率的缩放因子
-    float scaleX = ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR, scaleY = ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR;
-    if (cx > 0.0f && cy > 0.0f) {
-        scaleX = (float)im.cols / (ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR * cx);
-        scaleY = (float)im.rows / (ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR * cy);
-    }
-
-    const int N = (int)vKeys.size();
-    for(int i=0; i<N; i++) {
-        if(i>=vMPs.size()) break;
-        ORB_SLAM2::MapPoint* pMP = vMPs[i];
-        if(pMP) {
-            // 根据地图点来源和匹配状态选择颜色
-            cv::Scalar color = cv::Scalar(ORB_SLAM2::UI_COLOR_NEW_POINT_B, ORB_SLAM2::UI_COLOR_NEW_POINT_G, ORB_SLAM2::UI_COLOR_NEW_POINT_R);  // 默认：新建点为青色
-            if(pMP->mbFromLoadedMap){
-                color = cv::Scalar(ORB_SLAM2::UI_COLOR_LOADED_POINT_B, ORB_SLAM2::UI_COLOR_LOADED_POINT_G, ORB_SLAM2::UI_COLOR_LOADED_POINT_R);  // 已加载地图点统一绿色（所有加载点在本帧均为内点，无需红色分支）
-            }
-            // 将关键点从SLAM分辨率缩放到显示分辨率
-            cv::circle(im, cv::Point2f(vKeys[i].pt.x * scaleX, vKeys[i].pt.y * scaleY), ORB_SLAM2::UI_POINT_RADIUS, color, -1);
-        }
-    }
-}
-
 // 使用RANSAC算法从3D地图点中检测平面，选择中值距离最小的模型
 Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &vMPs, const int iterations)
 {
@@ -120,7 +93,7 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
             vDistances[i] = fabs(vPoints[i].x*a + vPoints[i].y*b + vPoints[i].z*c + d)*f;
         }
 
-        // 计算中值距离（取前20%的点的边界值；nth_element 替代全排序）
+        // 计算中值距离（取前20%的点的边界值）
         vector<float> vSorted = vDistances;
         int nth = max((int)(ORB_SLAM2::PLANE_MEDIAN_TAIL_RATIO*N), ORB_SLAM2::PLANE_MEDIAN_MIN_SAMPLES);
         if(nth >= (int)vSorted.size()) nth = (int)vSorted.size() - 1;
@@ -181,87 +154,4 @@ void getColMajorMatrixFromMat(float M[],cv::Mat &Tcw){
     M[13] = Tcw.at<float>(1,3);
     M[14] = Tcw.at<float>(2,3);
     M[15]  = 1.0;
-}
-
-// 绘制所有地图点，用于AR重定位时显示完整点云
-void drawAllMapPoints(const cv::Mat &Tcw, const std::vector<ORB_SLAM2::MapPoint*> &allMapPoints,
-                      cv::Mat &im, float fx, float fy, float cx, float cy, bool drawOnlyLoaded)
-{
-    if(Tcw.empty() || allMapPoints.empty())
-        return;
-
-    // 确保Tcw是有效的位姿矩阵
-    if(Tcw.rows < 3 || Tcw.cols < 4)
-        return;
-
-    // 提取旋转矩阵和平移向量（一次性完成，避免重复at<>操作）
-    const float R11 = Tcw.at<float>(0,0), R12 = Tcw.at<float>(0,1), R13 = Tcw.at<float>(0,2);
-    const float R21 = Tcw.at<float>(1,0), R22 = Tcw.at<float>(1,1), R23 = Tcw.at<float>(1,2);
-    const float R31 = Tcw.at<float>(2,0), R32 = Tcw.at<float>(2,1), R33 = Tcw.at<float>(2,2);
-    const float tx = Tcw.at<float>(0,3);
-    const float ty = Tcw.at<float>(1,3);
-    const float tz = Tcw.at<float>(2,3);
-
-    const int imgWidth = im.cols;
-    const int imgHeight = im.rows;
-
-    int drawnCount = 0;
-    const int maxDrawPoints = ORB_SLAM2::UI_MAX_DRAWN_POINTS;  // 性能保护：限制最大绘制点数
-
-    // 计算从SLAM分辨率到显示分辨率的动态缩放因子
-    const float dispScaleX = (ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR * cx > 0.0f) ? (float)im.cols / (ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR * cx) : ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR;
-    const float dispScaleY = (ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR * cy > 0.0f) ? (float)im.rows / (ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR * cy) : ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR;
-    const float fx2 = fx * dispScaleX;
-    const float fy2 = fy * dispScaleY;
-    const float cx2 = cx * dispScaleX;
-    const float cy2 = cy * dispScaleY;
-
-    const cv::Scalar colorLoaded(ORB_SLAM2::UI_COLOR_LOADED_POINT_B, ORB_SLAM2::UI_COLOR_LOADED_POINT_G, ORB_SLAM2::UI_COLOR_LOADED_POINT_R);   // 绿色：已加载点
-    const cv::Scalar colorNew(ORB_SLAM2::UI_COLOR_NEW_POINT_B, ORB_SLAM2::UI_COLOR_NEW_POINT_G, ORB_SLAM2::UI_COLOR_NEW_POINT_R);   // 青色：在线扫描建图点
-
-    for(size_t i = 0; i < allMapPoints.size(); i++)
-    {
-        ORB_SLAM2::MapPoint* pMP = allMapPoints[i];
-
-        // 快速过滤无效点
-        if(!pMP || pMP->isBad())
-            continue;
-
-        if(drawOnlyLoaded && !pMP->mbFromLoadedMap)
-            continue;
-
-        // 获取3D世界坐标 (使用栈分配和零拷贝接口，彻底消除堆开销)
-        cv::Point3f Pw;
-        pMP->GetWorldPos(Pw);
-
-        const float Xw = Pw.x;
-        const float Yw = Pw.y;
-        const float Zw = Pw.z;
-
-        // 世界坐标转相机坐标（手动矩阵乘法，避免OpenCV函数调用开销）
-        const float Xc = R11*Xw + R12*Yw + R13*Zw + tx;
-        const float Yc = R21*Xw + R22*Yw + R23*Zw + ty;
-        const float Zc = R31*Xw + R32*Yw + R33*Zw + tz;
-
-        // 深度检查（早期剔除策略）
-        if(Zc <= ORB_SLAM2::PROJECT_MIN_DEPTH)  // 点在相机后方或过近
-            continue;
-
-        // 投影到图像平面
-        const float invZ = 1.0f / Zc;
-        const float u_display = fx2 * Xc * invZ + cx2;
-        const float v_display = fy2 * Yc * invZ + cy2;
-
-        // 边界检查（早期剔除策略）
-        if(u_display < 0 || u_display >= imgWidth || v_display < 0 || v_display >= imgHeight)
-            continue;
-
-        // 绘制点
-        cv::circle(im, cv::Point2f(u_display, v_display), ORB_SLAM2::UI_CLOUD_POINT_RADIUS,
-                   pMP->mbFromLoadedMap ? colorLoaded : colorNew, -1);
-
-        drawnCount++;
-        if(drawnCount >= maxDrawPoints)
-            break;  // 达到最大点数限制，保证实时性
-    }
 }

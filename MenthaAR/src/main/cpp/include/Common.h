@@ -44,7 +44,7 @@
 
 #include <unistd.h>
 
-// OpenCV 3/4 桌面向后兼容头文件 (解决 CvMat 和 CV_BGRA2GRAY 等遗留符号报错问题)
+// OpenCV 3/4 桌面向后兼容头文件
 #include <opencv2/core/core_c.h>
 #include <opencv2/core/types_c.h>
 #include <opencv2/imgproc/imgproc_c.h>

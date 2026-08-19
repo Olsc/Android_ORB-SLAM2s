@@ -48,6 +48,7 @@
 #include <iomanip>
 #include <sstream>
 #include "MenthaProfiler.h" // 性能分析器
+#include <atomic>
 
 namespace ORB_SLAM2
 {
@@ -55,7 +56,8 @@ namespace ORB_SLAM2
 System::System(const std::string &strSettingsFile, const eSensor sensor):mSensor(sensor),  mbReset(false),mbResetKeepMap(false)
 {
     {
-        cv::setNumThreads(0);
+        cv::setNumThreads(2);
+        LOGD("System: OpenCV 并行线程数=%d", cv::getNumThreads());
     }
 
     // 输出欢迎消息-此处虽注释掉但要保留！
@@ -139,9 +141,7 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
         }
     }
 
-    /////////////
     cv::Mat Tcw = mpTracker->GrabImageMonocular(im,timestamp);
-    /////////////
 
     std::unique_lock<std::mutex> lock2(mMutexState);
     mTrackingState = mpTracker->mState;
@@ -152,15 +152,12 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
 
 bool System::MapChanged()
 {
-    static int n=0;
+    // 原为函数级 static int：detect JNI 线程与主线程并发调用存在数据竞争
+    static std::atomic<int> n{0};
     int curn = mpMap->GetLastBigChangeIdx();
-    if(n<curn)
-    {
-        n=curn;
-        return true;
-    }
-    else
-        return false;
+    int prev = n.load(std::memory_order_relaxed);
+    while(prev < curn && !n.compare_exchange_weak(prev, curn)) {}
+    return prev < curn;
 }
 
 void System::Reset(bool bKeepMap)
@@ -175,19 +172,50 @@ void System::Reset(bool bKeepMap)
 
 void System::Shutdown()
 {
+    // 幂等保护：线程已 join 后不再重复关停
+    if(!mptLocalMapping && !mptLoopClosing)
+        return;
+
+    // 先停后台重定位线程（防止 join 期间仍访问地图数据）
+    if(mpTracker)
+        mpTracker->StopGlobalRelocThread();
+
+    // 停止可能正在运行的 GBA（join 而非 detach，见 LoopClosing::RequestStopGBA）
+    if(mpLoopCloser)
+        mpLoopCloser->RequestStopGBA();
+
     mpLocalMapper->RequestFinish();
     mpLoopCloser->RequestFinish();
 
-    // 等待所有线程真正停止
-    std::mutex mtx;
-    std::condition_variable cv;
-    std::unique_lock<std::mutex> lock(mtx);
-    while(!mpLocalMapper->isFinished() || !mpLoopCloser->isFinished()
-          || mpLoopCloser->isRunningGBA())
-    {
-        cv.wait_for(lock, std::chrono::milliseconds(THREAD_POLL_WAIT_MS));
-    }
+    // 确定性等待，零空转
+    if(mptLocalMapping && mptLocalMapping->joinable())
+        mptLocalMapping->join();
+    if(mptLoopClosing && mptLoopClosing->joinable())
+        mptLoopClosing->join();
 
+    delete mptLocalMapping; mptLocalMapping = nullptr;
+    delete mptLoopClosing;  mptLoopClosing = nullptr;
+}
+
+System::~System()
+{
+    Shutdown();
+    // Shutdown 后 LM/LC/GlobalReloc 线程均已 join；按依赖序释放子模块后，
+    // 已无任何持有者，可安全释放子地图中的全部 KeyFrame/MapPoint。
+    // 注意：Map 没有析构清理（~Map 不能调 clear()——CreateNewMap 的子地图
+    // 逐出路径中 KFD/回环队列仍持有旧地图 KF 指针，析构时 clear 会产生
+    // 悬空指针），因此必须在此显式 clear() 后再 delete。
+    delete mpTracker;       // Tracking 析构不再有线程成员（后台线程已停）
+    delete mpLocalMapper;
+    delete mpLoopCloser;
+    delete mpFrameDrawer;
+    delete mpKeyFrameDatabase;
+    for(Map* pMap : mvpMaps)
+    {
+        if(pMap) { pMap->clear(); delete pMap; }
+    }
+    mvpMaps.clear();
+    mpMap = nullptr;
 }
 
 void System::SaveKeyFrameTrajectoryTUM(const std::string &filename)
@@ -268,24 +296,12 @@ bool System::HasLoadedMap()
 
 void System::CreateNewMap()
 {
-    // ===== 限频保护：加 5 秒冷却期，防止频繁切换导致主线程被阻塞数十~数百毫秒 =====
-    {
-        std::unique_lock<std::mutex> lock(mMutexNewMap);
-        auto now = std::chrono::steady_clock::now();
-        if (mLastNewMapTime.time_since_epoch().count() != 0) {
-            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - mLastNewMapTime).count();
-            if (elapsed < NEW_MAP_COOLDOWN_MS) {
-                LOGD("System::CreateNewMap 距上次仅 %lld ms (< %d ms)，跳过以防抖动", NEW_MAP_COOLDOWN_MS,
-                     (long long)elapsed);
-                return;
-            }
-        }
-        mLastNewMapTime = now;
-    }
+    // 限频已由 Tracking 侧的帧计数冷却（TRACKING_NEW_MAP_COOLDOWN_FRAMES=150）承担，
+    // 原先的 5 秒墙钟冷却属于时间驱动防抖，且与帧计数冷却重复，删除。
 
     LOGD("System::CreateNewMap 开始创建新子地图");
 
-    // ===== 1. 暂停 LocalMapping/LoopClosing 接收新数据 =====
+    // 1. 暂停 LocalMapping/LoopClosing 接收新数据
     if (mpLocalMapper) {
         mpLocalMapper->SetAcceptKeyFrames(false);
         mpLocalMapper->InterruptBA();
@@ -299,12 +315,12 @@ void System::CreateNewMap()
         mpLoopCloser->ClearQueue();
     }
 
-    // ===== 2. 停止后台重定位线程（防止切 Map 期间访问悬空指针） =====
+    // 2. 停止后台重定位线程（防止切 Map 期间访问悬空指针）
     if (mpTracker) {
         mpTracker->StopGlobalRelocThread();
     }
 
-    // ===== 3. 清空与旧 Map 绑定的重定位/对齐缓存 =====
+    // 3. 清空与旧 Map 绑定的重定位/对齐缓存
     // 此时后台线程已停止，无竞争。不清 Map 本身，旧 Map 继续保留在 mvpMaps 中。
     if (mpTracker) {
         mpTracker->ClearRelocCacheForMapSwitch();
@@ -315,7 +331,7 @@ void System::CreateNewMap()
         mpTracker->InformOnlyTracking(false);
     }
 
-    // ===== 5. 创建新 Map 并切换 =====
+    // 5. 创建新 Map 并切换
     std::vector<MapPoint*> savedLoadedMPs;
     {
         std::vector<MapPoint*> allMPs = mpMap->GetAllMapPoints();
@@ -347,7 +363,7 @@ void System::CreateNewMap()
     }
 
     Map* pNewMap = new Map();
-    pNewMap->mnId = mvpMaps.size();
+    pNewMap->mnId = mnNextMapId++;   // 单调递增，避免逐出旧地图后 ID 复用冲突
     mvpMaps.push_back(pNewMap);
 
     LOGD("System::CreateNewMap 新地图 ID=%lu (旧地图保留为子地图，共 %zu 个)",
@@ -364,18 +380,18 @@ void System::CreateNewMap()
              (int)savedLoadedMPs.size(), pNewMap->mnId);
     }
 
-    // ===== 6. 轻量重置跟踪运行时状态 =====
+    // 6. 轻量重置跟踪运行时状态
     // PrepareForNewMap 代替 Reset()：不阻塞 spin、不清旧 Map、不停重定位线程，全程 < 1 ms
     if (mpTracker) {
         mpTracker->PrepareForNewMap();
     }
 
-    // ===== 7. 重启后台重定位线程 =====
+    // 7. 重启后台重定位线程
     if (mpTracker) {
         mpTracker->StartGlobalRelocThread();
     }
 
-    // ===== 8. 恢复 LocalMapping =====
+    // 8. 恢复 LocalMapping
     if (mpLocalMapper) {
         mpLocalMapper->SetAcceptKeyFrames(true);
     }
@@ -413,7 +429,7 @@ std::vector<MapPoint*> System::GetAllMapPoints(){ return mpMap->GetAllMapPoints(
 
 void System::SaveMap(const std::string &filename, int maxMapPoints)
 {
-    // 增强的二进制序列化：保存完整的KF和MP信息以提高重定位精度
+    // 二进制序列化：保存完整的KF和MP信息以提高重定位精度
     LOGD("保存地图: 开始保存地图到 %s (特征点上限=%d)", filename.c_str(), maxMapPoints);
     std::vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();
     std::vector<MapPoint*> vpMPs = mpMap->GetAllMapPoints();
@@ -498,7 +514,7 @@ void System::SaveMap(const std::string &filename, int maxMapPoints)
             if(!descriptors.empty() && descriptors.rows == numKeys) {
                 uint32_t descCols = descriptors.cols;
                 ofs.write(reinterpret_cast<const char*>(&descCols), sizeof(descCols));
-                ofs.write(reinterpret_cast<const char*>(descriptors.data), 
+                ofs.write(reinterpret_cast<const char*>(descriptors.data),
                          descriptors.rows * descriptors.cols * sizeof(uchar));
             } else {
                 uint32_t descCols = 0;
@@ -530,7 +546,7 @@ void System::SaveMap(const std::string &filename, int maxMapPoints)
         // 法向量和深度范围
         cv::Mat nrm = pMP->GetNormal();
         float n3[3] = {0,0,1};
-        if(!nrm.empty()){ n3[0]=nrm.at<float>(0); n3[1]=nrm.at<float>(1); n3[2]=nrm.at<float>(2);}        
+        if(!nrm.empty()){ n3[0]=nrm.at<float>(0); n3[1]=nrm.at<float>(1); n3[2]=nrm.at<float>(2);}
         ofs.write(reinterpret_cast<const char*>(n3), sizeof(n3));
         float mind = pMP->GetMinDistanceInvariance();
         float maxd = pMP->GetMaxDistanceInvariance();
@@ -549,8 +565,8 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
         LOGE("加载地图: 无法打开文件 %s", filename.c_str());
         return;
     }
-    uint32_t magic=0, version=0; 
-    ifs.read(reinterpret_cast<char*>(&magic),4); 
+    uint32_t magic=0, version=0;
+    ifs.read(reinterpret_cast<char*>(&magic),4);
     ifs.read(reinterpret_cast<char*>(&version),4);
 
     // 只支持MAP1格式
@@ -566,8 +582,8 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
         return;
     }
     LOGD("加载地图: 格式 MAP1 v%u", version);
-    uint32_t nKFs=0, nMPs=0; 
-    ifs.read(reinterpret_cast<char*>(&nKFs),4); 
+    uint32_t nKFs=0, nMPs=0;
+    ifs.read(reinterpret_cast<char*>(&nKFs),4);
     ifs.read(reinterpret_cast<char*>(&nMPs),4);
     LOGD("加载地图: 关键帧=%u 地图点=%u", nKFs, nMPs);
 
@@ -612,7 +628,7 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
     // 注意：不完全清空KeyFrameDatabase，保留当前扫描建立的关键帧
     // mpKeyFrameDatabase->clear(); // 暂时注释，避免影响当前跟踪
 
-    // 优化重定位配置以提高加载地图后的跟踪稳定性
+    // 调整重定位配置以提高加载地图后的跟踪稳定性
     mpTracker->SetRelocConfig(SYSTEM_RELOC_CONFIG_TOP_K, SYSTEM_RELOC_CONFIG_MAX_CANDIDATES, SYSTEM_RELOC_CONFIG_MATCH_CHUNK, SYSTEM_RELOC_CONFIG_BG_SLEEP_US, SYSTEM_RELOC_CONFIG_MAX_BIND_INLIERS, SYSTEM_RELOC_CONFIG_MAX_PROJ_BINDS);
 
     // 加载关键帧（MAP1格式包含完整特征点和描述子）
@@ -648,7 +664,7 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
             ifs.read(reinterpret_cast<char*>(&descCols), sizeof(descCols));
             if(descCols > 0) {
                 cv::Mat descriptors(numKeys, descCols, CV_8U);
-                ifs.read(reinterpret_cast<char*>(descriptors.data), 
+                ifs.read(reinterpret_cast<char*>(descriptors.data),
                         numKeys * descCols * sizeof(uchar));
             }
         }
@@ -682,8 +698,8 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
 
         // 读取法线和深度范围
         float n3[3]; ifs.read(reinterpret_cast<char*>(n3), sizeof(n3));
-        float mind=0, maxd=0; 
-        ifs.read(reinterpret_cast<char*>(&mind),4); 
+        float mind=0, maxd=0;
+        ifs.read(reinterpret_cast<char*>(&mind),4);
         ifs.read(reinterpret_cast<char*>(&maxd),4);
         cv::Mat nrm = (cv::Mat_<float>(3,1) << n3[0], n3[1], n3[2]);
         pMP->SetNormalAndDepth(nrm, mind, maxd);
@@ -714,16 +730,16 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
                 if(!p->GetNormal().empty()) cntLoadedWithNormal++;
             }
         }
-        LOGD("加载地图: 点数=%d, 描述子=%d (%.1f%%), 法线=%d (%.1f%%)", 
-             cntLoaded, cntLoadedWithDesc, 
+        LOGD("加载地图: 点数=%d, 描述子=%d (%.1f%%), 法线=%d (%.1f%%)",
+             cntLoaded, cntLoadedWithDesc,
              cntLoaded > 0 ? (100.0f * cntLoadedWithDesc / cntLoaded) : 0.0f,
              cntLoadedWithNormal,
              cntLoaded > 0 ? (100.0f * cntLoadedWithNormal / cntLoaded) : 0.0f);
     }
 
     // 标记重建参考缓存（[M2] 由后台重定位线程异步重建，避免加载时主线程卡顿）
-    if(mpTracker){ 
-        mpTracker->InvalidateRefCache(); 
+    if(mpTracker){
+        mpTracker->InvalidateRefCache();
         LOGD("加载地图: 参考缓存已标记重建");
     }
 
@@ -731,7 +747,7 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
     if(mpTracker) mpTracker->InformOnlyTracking(false);
     if(mpLocalMapper) mpLocalMapper->Release();
 
-    LOGD("加载地图: 完成 KF=%lu MP=%lu", 
+    LOGD("加载地图: 完成 KF=%lu MP=%lu",
          mpMap->KeyFramesInMap(), mpMap->MapPointsInMap());
 }
 
