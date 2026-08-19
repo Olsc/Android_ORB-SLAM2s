@@ -250,11 +250,6 @@ int main(int argc, char** argv) {
                     vKeys = slamSys->GetTrackedKeyPointsUn();
                 }
             }
-        } else {
-            status = 0;
-            vMPs.clear();
-            vKeys.clear();
-            gShouldDrawArObject = false;
         }
 
         // 确定当前是否可以绘制 3D 虚拟物体

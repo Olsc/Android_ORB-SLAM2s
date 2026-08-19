@@ -8,6 +8,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.format.Formatter;
 import android.util.Log;
 import android.view.Display;
 import android.view.MotionEvent;
@@ -285,10 +286,7 @@ public class MainActivity extends AppCompatActivity implements CameraPreviewView
         String[] mapNames = new String[maps.size()];
         for (int i = 0; i < maps.size(); i++) {
             MapManager.MapInfo info = maps.get(i);
-            mapNames[i] = info.name + "\n" +
-                    getString(R.string.map_stats_keyframes, info.keyFrames) + " | " +
-                    getString(R.string.map_stats_mappoints, info.mapPoints) + " | " +
-                    getString(R.string.map_stats_size, info.fileSize / 1024);
+            mapNames[i] = info.name + " (" + Formatter.formatFileSize(this, info.fileSize) + ")";
         }
 
         if (!showManage) {
