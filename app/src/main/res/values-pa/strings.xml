@@ -5,7 +5,6 @@
     <string name="btn_save">ਸੇਵ ਕਰੋ</string>
     <string name="btn_load">ਲੋਡ ਕਰੋ</string>
     <string name="btn_map">ਨਕਸ਼ਾ</string>
-    <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓ਪੁਆਇੰਟ ਕਲਾਊਡ</string>
     <string name="loading_slam_init">SLAM ਸਿਸਟਮ ਸ਼ੁਰੂ ਹੋ ਰਿਹਾ ਹੈ…</string>
     <string name="loading_slam_wait">ਕਿਰਪਾ ਕਰਕੇ ਉਡੀਕ ਕਰੋ, ਇਸ ਵਿੱਚ ਕੁਝ ਸਮਾਂ ਲੱਗ ਸਕਦਾ ਹੈ</string>
@@ -16,9 +15,6 @@
     <string name="hint_pointcloud_disabled">ਪੁਆਇੰਟ ਕਲਾਊਡ ਅਸਮਰੱਥ ਹੈ</string>
     <string name="btn_pointcloud_enabled">✓ਪੁਆਇੰਟ ਕਲਾਊਡ</string>
     <string name="btn_pointcloud_disabled">ਪੁਆਇੰਟ ਕਲਾਊਡ</string>
-    <string name="hint_slam_enabled">SLAM ਸਮਰੱਥ ਹੈ</string>
-    <string name="hint_slam_disabled">SLAM ਅਸਮਰੱਥ ਹੈ</string>
-    <string name="btn_slam_disabled">SLAM</string>
     <string name="input_map_name">ਨਕਸ਼ੇ ਦਾ ਨਾਮ ਦਰਜ ਕਰੋ</string>
     <string name="dialog_save_map">ਨਕਸ਼ਾ ਸੇਵ ਕਰੋ</string>
     <string name="button_cancel">ਰੱਦ ਕਰੋ</string>
@@ -35,25 +31,27 @@
     <string name="button_back">ਪਿੱਛੇ</string>
     <string name="dialog_map_details">ਨਕਸ਼ੇ ਦੇ ਵੇਰਵੇ</string>
     <string name="map_details_name">ਨਕਸ਼ੇ ਦਾ ਨਾਮ: %1$s</string>
+    <string name="map_details_keyframes">ਕੀ-ਫਰੇਮ: %1$d</string>
+    <string name="map_details_mappoints">ਨਕਸ਼ਾ ਬਿੰਦੂ: %1$d</string>
     <string name="map_details_size">ਫਾਈਲ ਆਕਾਰ: %1$d KB</string>
     <string name="map_details_time">ਬਣਾਇਆ ਗਿਆ: %1$s</string>
+    <string name="map_details_plane">ਸਮਤਲ ਹੈ: %1$s</string>
+    <string name="map_details_plane_yes">ਹਾਂ</string>
+    <string name="map_details_plane_no">ਨਹੀਂ</string>
     <string name="button_ok">ਠੀਕ ਹੈ</string>
     <string name="map_stats_format">KFs: %1$d | MPs: %2$d | ਪਲੇਨ: %3$s</string>
     <string name="map_stats_plane_yes">ਹਾਂ</string>
     <string name="map_stats_plane_no">ਨਹੀਂ</string>
     <string name="hint_map_saved">ਨਕਸ਼ਾ ਸੇਵ ਕੀਤਾ ਗਿਆ: %1$s</string>
-    <string name="hint_map_save_failed">ਸੇਵ ਕਰਨਾ ਅਸਫਲ ਰਿਹਾ: %1$s</string>
-    <string name="hint_map_file_not_found">ਨਕਸ਼ਾ ਫਾਈਲ ਨਹੀਂ ਮਿਲੀ</string>
     <string name="hint_map_loaded">ਨਕਸ਼ਾ ਲੋਡ ਹੋ ਗਿਆ: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">%1$d ਨਕਸ਼ੇ ਲੋਡ ਹੋ ਗਏ</item>
+        <item quantity="one">%1$d ਨਕਸ਼ੇ ਲੋਡ ਹੋ ਗਏ</item>
     </plurals>
-    <string name="hint_map_load_failed">ਲੋਡ ਕਰਨਾ ਅਸਫਲ ਰਿਹਾ: %1$s</string>
     <string name="permission_camera_storage_required">ਕੈਮਰਾ ਅਤੇ ਸਟੋਰੇਜ ਇਜਾਜ਼ਤਾਂ ਦੀ ਲੋੜ ਹੈ। ਕਿਰਪਾ ਕਰਕੇ ਸੈਟਿੰਗਾਂ ਵਿੱਚ ਇਜਾਜ਼ਤ ਦਿਓ।</string>
 
     <string name="category_ar">AR ਕੰਟਰੋਲ</string>
     <string name="category_map">ਨਕਸ਼ਾ</string>
-    <string name="category_slam">SLAM</string>
     <string name="category_display">ਡਿਸਪਲੇ</string>
 
     <string name="btn_3dof">3DOF</string>
@@ -61,18 +59,6 @@
     <string name="hint_3dof_unavailable">3DOF ਵਿਸ਼ੇਸ਼ਤਾ ਉਪਲਬਧ ਨਹੀਂ ਹੈ</string>
     <string name="hint_3dof_spawned">3DOF ਕਿਊਬ 5 ਮੀਟਰ ਅੱਗੇ ਬਣਾਇਆ ਗਿਆ</string>
     <string name="hint_3dof_closed">3DOF ਮੋਡ ਬੰਦ ਹੈ</string>
-    <string name="btn_web_server_close">ਵੈੱਬ ਸਰਵਰ ਬੰਦ ਕਰੋ</string>
-    <string name="btn_web_server_open">ਵੈੱਬ ਸਰਵਰ ਖੋਲ੍ਹੋ</string>
-    <string name="hint_web_server_closed">ਵੈੱਬ ਸਰਵਰ ਬੰਦ ਹੈ</string>
-
-    <string name="btn_web_server">ਵੈੱਬ ਸਰਵਰ</string>
-
-
-    <string name="title_web_server">ਵੈੱਬ ਸਰਵਰ</string>
-    <string name="web_fps_label"> (ਵੈੱਬ)</string>
-    <string name="hint_waiting_browser_frame">ਬ੍ਰਾਊਜ਼ਰ ਚਿੱਤਰ ਦੀ ਉਡੀਕ ਕਰ ਰਿਹਾ ਹੈ…</string>
-    <string name="hint_web_server_started">ਵੈੱਬ ਸਰਵਰ ਸ਼ੁਰੂ ਹੋ ਗਿਆ: %1$s</string>
-    <string name="web_url_default">http://0.0.0.0:8080</string>
 
     <string name="privacy_scroll_hint">↓ ਪੂਰਾ ਸਮਝੌਤਾ ਪੜ੍ਹਨ ਲਈ ਕਿਰਪਾ ਕਰਕੇ ਹੇਠਾਂ ਸਕ੍ਰੌਲ ਕਰੋ</string>
     <string name="privacy_scroll_done">✓ ਤੁਸੀਂ ਪੂਰਾ ਸਮਝੌਤਾ ਪੜ੍ਹ ਲਿਆ ਹੈ</string>

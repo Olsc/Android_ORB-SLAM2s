@@ -74,7 +74,6 @@ public class SharedMemoryBuffer {
     public static final int OFF_FRAME_H = 12;
     public static final int OFF_UI_WRITE_SEQ = 16;
     public static final int OFF_SLAM_DONE_SEQ = 20;
-    public static final int OFF_TRACKING_STATE = 24;
     public static final int OFF_DRAW_FLAG = 28;
     public static final int OFF_POINTCLOUD_BYTES = 32;
     public static final int OFF_MVP = 40;   // 48 floats = 192 字节
@@ -208,9 +207,6 @@ public class SharedMemoryBuffer {
 
     /** SLAM 已处理完成的帧序号（UI 读取，用于背压判断与渲染版本检测） */
     public int readSlamDoneSeq() { return readInt(OFF_SLAM_DONE_SEQ); }
-
-    /** 跟踪状态（SLAM 进程写入） */
-    public int readTrackingState() { return readInt(OFF_TRACKING_STATE); }
 
     /** 是否应绘制 AR 物体（SLAM 进程写入） */
     public int readDrawFlag() { return readInt(OFF_DRAW_FLAG); }

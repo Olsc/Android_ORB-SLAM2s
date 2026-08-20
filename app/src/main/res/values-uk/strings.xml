@@ -5,7 +5,6 @@
     <string name="btn_save">Зберегти</string>
     <string name="btn_load">Завантажити</string>
     <string name="btn_map">Карта</string>
-    <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓Хмара точок</string>
     <string name="loading_slam_init">Ініціалізація системи SLAM…</string>
     <string name="loading_slam_wait">Будь ласка, зачекайте, це може зайняти деякий час</string>
@@ -16,9 +15,6 @@
     <string name="hint_pointcloud_disabled">Хмару точок вимкнено</string>
     <string name="btn_pointcloud_enabled">✓Хмара точок</string>
     <string name="btn_pointcloud_disabled">Хмара точок</string>
-    <string name="hint_slam_enabled">SLAM увімкнено</string>
-    <string name="hint_slam_disabled">SLAM вимкнено</string>
-    <string name="btn_slam_disabled">SLAM</string>
     <string name="input_map_name">Введіть назву карти</string>
     <string name="dialog_save_map">Зберегти карту</string>
     <string name="button_cancel">Скасувати</string>
@@ -35,25 +31,29 @@
     <string name="button_back">Назад</string>
     <string name="dialog_map_details">Деталі карти</string>
     <string name="map_details_name">Назва карти: %1$s</string>
+    <string name="map_details_keyframes">Ключові кадри: %1$d</string>
+    <string name="map_details_mappoints">Точок карти: %1$d</string>
     <string name="map_details_size">Розмір файлу: %1$d KB</string>
     <string name="map_details_time">Створено: %1$s</string>
+    <string name="map_details_plane">Є площина: %1$s</string>
+    <string name="map_details_plane_yes">Так</string>
+    <string name="map_details_plane_no">Ні</string>
     <string name="button_ok">OK</string>
     <string name="map_stats_format">КК: %1$d | ТК: %2$d | Пл.: %3$s</string>
     <string name="map_stats_plane_yes">Так</string>
     <string name="map_stats_plane_no">Ні</string>
     <string name="hint_map_saved">Карту збережено: %1$s</string>
-    <string name="hint_map_save_failed">Збереження не вдалося: %1$s</string>
-    <string name="hint_map_file_not_found">Файл карти не знайдено</string>
     <string name="hint_map_loaded">Карту завантажено: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">Завантажено карт: %1$d</item>
+        <item quantity="one">Завантажено карт: %1$d</item>
+        <item quantity="few">Завантажено карт: %1$d</item>
+        <item quantity="many">Завантажено карт: %1$d</item>
     </plurals>
-    <string name="hint_map_load_failed">Завантаження не вдалося: %1$s</string>
     <string name="permission_camera_storage_required">Необхідні дозволи камери та сховища. Надайте дозволи в налаштуваннях.</string>
 
     <string name="category_ar">Управління AR</string>
     <string name="category_map">Карта</string>
-    <string name="category_slam">SLAM</string>
     <string name="category_display">Відображення</string>
 
     <string name="btn_3dof">3DOF</string>
@@ -61,18 +61,6 @@
     <string name="hint_3dof_unavailable">Функція 3DOF недоступна</string>
     <string name="hint_3dof_spawned">Куб 3DOF створено за 5 метрів попереду</string>
     <string name="hint_3dof_closed">Режим 3DOF закрито</string>
-    <string name="btn_web_server_close">Закрити веб-сервер</string>
-    <string name="btn_web_server_open">Відкрити веб-сервер</string>
-    <string name="hint_web_server_closed">Веб-сервер закрито</string>
-
-    <string name="btn_web_server">Веб-сервер</string>
-
-
-    <string name="title_web_server">Веб-сервер</string>
-    <string name="web_fps_label"> (Веб)</string>
-    <string name="hint_waiting_browser_frame">Очікування зображення браузера…</string>
-    <string name="hint_web_server_started">Веб-сервер запущено: %1$s</string>
-    <string name="web_url_default">http://0.0.0.0:8080</string>
 
     <string name="privacy_scroll_hint">↓ Прокрутіть до кінця, щоб прочитати повну угоду</string>
     <string name="privacy_scroll_done">✓ Ви прочитали повну угоду</string>

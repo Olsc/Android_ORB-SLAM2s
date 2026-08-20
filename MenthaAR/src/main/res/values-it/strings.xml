@@ -1,13 +1,12 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="hint_map_saved">Mappa salvata: %1$s</string>
-    <string name="hint_map_save_failed">Salvataggio non riuscito: %1$s</string>
-    <string name="hint_map_file_not_found">File della mappa non trovato</string>
     <string name="hint_map_loaded">Mappa caricata: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">%1$d mappe caricate</item>
+        <item quantity="one">%1$d mappe caricate</item>
+        <item quantity="many">%1$d mappe caricate</item>
     </plurals>
-    <string name="hint_map_load_failed">Caricamento non riuscito: %1$s</string>
     <string name="hint_map_deleted">Mappa eliminata</string>
     <string name="hint_map_delete_failed">Eliminazione non riuscita</string>
 </resources>

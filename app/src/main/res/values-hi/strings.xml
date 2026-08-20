@@ -5,7 +5,6 @@
     <string name="btn_save">सहेजें</string>
     <string name="btn_load">लोड करें</string>
     <string name="btn_map">मानचित्र</string>
-    <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓बिंदु बादल</string>
     <string name="loading_slam_init">SLAM सिस्टम प्रारंभ हो रहा है…</string>
     <string name="loading_slam_wait">कृपया प्रतीक्षा करें, इसमें कुछ समय लग सकता है</string>
@@ -16,9 +15,6 @@
     <string name="hint_pointcloud_disabled">बिंदु बादल अक्षम</string>
     <string name="btn_pointcloud_enabled">✓बिंदु बादल</string>
     <string name="btn_pointcloud_disabled">बिंदु बादल</string>
-    <string name="hint_slam_enabled">SLAM सक्षम</string>
-    <string name="hint_slam_disabled">SLAM अक्षम</string>
-    <string name="btn_slam_disabled">SLAM</string>
     <string name="input_map_name">मानचित्र का नाम दर्ज करें</string>
     <string name="dialog_save_map">मानचित्र सहेजें</string>
     <string name="button_cancel">रद्द करें</string>
@@ -35,25 +31,27 @@
     <string name="button_back">वापस</string>
     <string name="dialog_map_details">मानचित्र विवरण</string>
     <string name="map_details_name">मानचित्र नाम: %1$s</string>
+    <string name="map_details_keyframes">कीफ़्रेम: %1$d</string>
+    <string name="map_details_mappoints">मानचित्र बिंदु: %1$d</string>
     <string name="map_details_size">फ़ाइल आकार: %1$d KB</string>
     <string name="map_details_time">बनाया गया: %1$s</string>
+    <string name="map_details_plane">समतल है: %1$s</string>
+    <string name="map_details_plane_yes">हाँ</string>
+    <string name="map_details_plane_no">नहीं</string>
     <string name="button_ok">ठीक है</string>
     <string name="map_stats_format">KFs: %1$d | MPs: %2$d | तल: %3$s</string>
     <string name="map_stats_plane_yes">हाँ</string>
     <string name="map_stats_plane_no">नहीं</string>
     <string name="hint_map_saved">मानचित्र सहेजा गया: %1$s</string>
-    <string name="hint_map_save_failed">सहेजना विफल: %1$s</string>
-    <string name="hint_map_file_not_found">मानचित्र फ़ाइल नहीं मिली</string>
     <string name="hint_map_loaded">मानचित्र लोड हुआ: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">%1$d मानचित्र लोड हुए</item>
+        <item quantity="one">%1$d मानचित्र लोड हुए</item>
     </plurals>
-    <string name="hint_map_load_failed">लोड विफल: %1$s</string>
     <string name="permission_camera_storage_required">कैमरा और संग्रहण अनुमतियाँ आवश्यक हैं। कृपया सेटिंग में अनुमतियाँ दें।</string>
 
     <string name="category_ar">AR नियंत्रण</string>
     <string name="category_map">मानचित्र</string>
-    <string name="category_slam">SLAM</string>
     <string name="category_display">प्रदर्शन</string>
 
     <string name="btn_3dof">3DOF</string>
@@ -61,18 +59,6 @@
     <string name="hint_3dof_unavailable">3DOF सुविधा अनुपलब्ध</string>
     <string name="hint_3dof_spawned">3DOF घन 5 मीटर आगे बनाया गया</string>
     <string name="hint_3dof_closed">3DOF मोड बंद</string>
-    <string name="btn_web_server_close">वेब सर्वर बंद करें</string>
-    <string name="btn_web_server_open">वेब सर्वर खोलें</string>
-    <string name="hint_web_server_closed">वेब सर्वर बंद</string>
-
-    <string name="btn_web_server">वेब सर्वर</string>
-
-
-    <string name="title_web_server">वेब सर्वर</string>
-    <string name="web_fps_label"> (वेब)</string>
-    <string name="hint_waiting_browser_frame">ब्राउज़र छवि की प्रतीक्षा में…</string>
-    <string name="hint_web_server_started">वेब सर्वर शुरू: %1$s</string>
-    <string name="web_url_default">http://0.0.0.0:8080</string>
 
     <string name="privacy_scroll_hint">↓ पूरे समझौते को पढ़ने के लिए नीचे स्क्रॉल करें</string>
     <string name="privacy_scroll_done">✓ आपने पूरा समझौता पढ़ लिया है</string>

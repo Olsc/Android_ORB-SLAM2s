@@ -6,8 +6,6 @@ package com.orb.slam2s.constant;
  */
 
 public class GlobalConstant {
-    public static final int PLANE_DETECTED=233;
-
     // 参考分辨率 (基准值，用于比例计算)
     public static final int REFERENCE_WIDTH = 1280;
     public static final int REFERENCE_HEIGHT = 720;

@@ -5,7 +5,6 @@
     <string name="btn_save">సేవ్ చేయండి</string>
     <string name="btn_load">లోడ్ చేయండి</string>
     <string name="btn_map">మ్యాప్</string>
-    <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓పాయింట్ క్లౌడ్</string>
     <string name="loading_slam_init">SLAM సిస్టమ్ ప్రారంభించబడుతోంది…</string>
     <string name="loading_slam_wait">దయచేసి వేచి ఉండండి, దీనికి కొద్ది సమయం పట్టవచ్చు</string>
@@ -16,9 +15,6 @@
     <string name="hint_pointcloud_disabled">పాయింట్ క్లౌడ్ నిలిపివేయబడింది</string>
     <string name="btn_pointcloud_enabled">✓పాయింట్ క్లౌడ్</string>
     <string name="btn_pointcloud_disabled">పాయింట్ క్లౌడ్</string>
-    <string name="hint_slam_enabled">SLAM ప్రారంభించబడింది</string>
-    <string name="hint_slam_disabled">SLAM నిలిపివేయబడింది</string>
-    <string name="btn_slam_disabled">SLAM</string>
     <string name="input_map_name">మ్యాప్ పేరును నమోదు చేయండి</string>
     <string name="dialog_save_map">మ్యాప్ సేవ్ చేయండి</string>
     <string name="button_cancel">రద్దు చేయండి</string>
@@ -35,25 +31,27 @@
     <string name="button_back">వెనుకకు</string>
     <string name="dialog_map_details">మ్యాప్ వివరాలు</string>
     <string name="map_details_name">మ్యాప్ పేరు: %1$s</string>
+    <string name="map_details_keyframes">కీఫ్రేమ్లు: %1$d</string>
+    <string name="map_details_mappoints">మ్యాప్ పాయింట్లు: %1$d</string>
     <string name="map_details_size">ఫైల్ పరిమాణం: %1$d KB</string>
     <string name="map_details_time">సృష్టించబడింది: %1$s</string>
+    <string name="map_details_plane">విమానం ఉంది: %1$s</string>
+    <string name="map_details_plane_yes">అవును</string>
+    <string name="map_details_plane_no">కాదు</string>
     <string name="button_ok">సరే</string>
     <string name="map_stats_format">KFs: %1$d | MPs: %2$d | విమానం: %3$s</string>
     <string name="map_stats_plane_yes">అవును</string>
     <string name="map_stats_plane_no">కాదు</string>
     <string name="hint_map_saved">మ్యాప్ సేవ్ చేయబడింది: %1$s</string>
-    <string name="hint_map_save_failed">సేవ్ చేయడం విఫలమైంది: %1$s</string>
-    <string name="hint_map_file_not_found">మ్యాప్ ఫైల్ కనుగొనబడలేదు</string>
     <string name="hint_map_loaded">మ్యాప్ లోడ్ చేయబడింది: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">%1$d మ్యాప్‌లు లోడ్ చేయబడ్డాయి</item>
+        <item quantity="one">%1$d మ్యాప్‌లు లోడ్ చేయబడ్డాయి</item>
     </plurals>
-    <string name="hint_map_load_failed">లోడ్ చేయడం విఫలమైంది: %1$s</string>
     <string name="permission_camera_storage_required">కెమెరా మరియు నిల్వ అనుమతులు అవసరం. దయచేసి సెట్టింగ్‌లలో అనుమతించండి.</string>
 
     <string name="category_ar">AR నియంత్రణలు</string>
     <string name="category_map">మ్యాప్</string>
-    <string name="category_slam">SLAM</string>
     <string name="category_display">ప్రదర్శన</string>
 
     <string name="btn_3dof">3DOF</string>
@@ -61,18 +59,6 @@
     <string name="hint_3dof_unavailable">3DOF ఫీచర్ అందుబాటులో లేదు</string>
     <string name="hint_3dof_spawned">3DOF క్యూబ్ 5 మీటర్ల ముందు సృష్టించబడింది</string>
     <string name="hint_3dof_closed">3DOF మోడ్ మూసివేయబడింది</string>
-    <string name="btn_web_server_close">వెబ్ సర్వర్ మూసివేయండి</string>
-    <string name="btn_web_server_open">వెబ్ సర్వర్ తెరవండి</string>
-    <string name="hint_web_server_closed">వెబ్ సర్వర్ మూసివేయబడింది</string>
-
-    <string name="btn_web_server">వెబ్ సర్వర్</string>
-
-
-    <string name="title_web_server">వెబ్ సర్వర్</string>
-    <string name="web_fps_label"> (వెబ్)</string>
-    <string name="hint_waiting_browser_frame">బ్రౌజర్ చిత్రం కోసం వేచి ఉంది…</string>
-    <string name="hint_web_server_started">వెబ్ సర్వర్ ప్రారంభించబడింది: %1$s</string>
-    <string name="web_url_default">http://0.0.0.0:8080</string>
 
     <string name="privacy_scroll_hint">↓ పూర్తి ఒప్పందాన్ని చదవడానికి దయచేసి క్రిందికి స్క్రోల్ చేయండి</string>
     <string name="privacy_scroll_done">✓ మీరు పూర్తి ఒప్పందాన్ని చదివారు</string>

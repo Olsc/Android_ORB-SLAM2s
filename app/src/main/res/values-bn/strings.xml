@@ -5,7 +5,6 @@
     <string name="btn_save">সংরক্ষণ</string>
     <string name="btn_load">লোড</string>
     <string name="btn_map">মানচিত্র</string>
-    <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓পয়েন্ট ক্লাউড</string>
     <string name="loading_slam_init">SLAM সিস্টেম শুরু হচ্ছে…</string>
     <string name="loading_slam_wait">অনুগ্রহ করে অপেক্ষা করুন, এটি কিছু সময় নিতে পারে</string>
@@ -16,9 +15,6 @@
     <string name="hint_pointcloud_disabled">পয়েন্ট ক্লাউড নিষ্ক্রিয়</string>
     <string name="btn_pointcloud_enabled">✓পয়েন্ট ক্লাউড</string>
     <string name="btn_pointcloud_disabled">পয়েন্ট ক্লাউড</string>
-    <string name="hint_slam_enabled">SLAM সক্রিয়</string>
-    <string name="hint_slam_disabled">SLAM নিষ্ক্রিয়</string>
-    <string name="btn_slam_disabled">SLAM</string>
     <string name="input_map_name">মানচিত্রের নাম লিখুন</string>
     <string name="dialog_save_map">মানচিত্র সংরক্ষণ</string>
     <string name="button_cancel">বাতিল</string>
@@ -35,25 +31,27 @@
     <string name="button_back">পিছনে</string>
     <string name="dialog_map_details">মানচিত্র বিস্তারিত</string>
     <string name="map_details_name">মানচিত্রের নাম: %1$s</string>
+    <string name="map_details_keyframes">কীফ্রেম: %1$d</string>
+    <string name="map_details_mappoints">মানচিত্র পয়েন্ট: %1$d</string>
     <string name="map_details_size">ফাইলের আকার: %1$d KB</string>
     <string name="map_details_time">তৈরি: %1$s</string>
+    <string name="map_details_plane">সমতল আছে: %1$s</string>
+    <string name="map_details_plane_yes">হ্যাঁ</string>
+    <string name="map_details_plane_no">না</string>
     <string name="button_ok">ঠিক আছে</string>
     <string name="map_stats_format">KFs: %1$d | MPs: %2$d | প্লেন: %3$s</string>
     <string name="map_stats_plane_yes">হ্যাঁ</string>
     <string name="map_stats_plane_no">না</string>
     <string name="hint_map_saved">মানচিত্র সংরক্ষিত: %1$s</string>
-    <string name="hint_map_save_failed">সংরক্ষণ ব্যর্থ: %1$s</string>
-    <string name="hint_map_file_not_found">মানচিত্র ফাইল পাওয়া যায়নি</string>
     <string name="hint_map_loaded">মানচিত্র লোড হয়েছে: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">%1$d মানচিত্র লোড হয়েছে</item>
+        <item quantity="one">%1$d মানচিত্র লোড হয়েছে</item>
     </plurals>
-    <string name="hint_map_load_failed">লোড ব্যর্থ: %1$s</string>
     <string name="permission_camera_storage_required">ক্যামেরা ও স্টোরেজ অনুমতি প্রয়োজন। সেটিংসে অনুমতি দিন।</string>
 
     <string name="category_ar">AR নিয়ন্ত্রণ</string>
     <string name="category_map">মানচিত্র</string>
-    <string name="category_slam">SLAM</string>
     <string name="category_display">প্রদর্শন</string>
 
     <string name="btn_3dof">3DOF</string>
@@ -61,18 +59,6 @@
     <string name="hint_3dof_unavailable">3DOF ফিচার অনুপলব্ধ</string>
     <string name="hint_3dof_spawned">3DOF কিউব ৫ মিটার সামনে তৈরি হয়েছে</string>
     <string name="hint_3dof_closed">3DOF মোড বন্ধ</string>
-    <string name="btn_web_server_close">ওয়েব সার্ভার বন্ধ করুন</string>
-    <string name="btn_web_server_open">ওয়েব সার্ভার খুলুন</string>
-    <string name="hint_web_server_closed">ওয়েব সার্ভার বন্ধ</string>
-
-    <string name="btn_web_server">ওয়েব সার্ভার</string>
-
-
-    <string name="title_web_server">ওয়েব সার্ভার</string>
-    <string name="web_fps_label"> (ওয়েব)</string>
-    <string name="hint_waiting_browser_frame">ব্রাউজার ছবির জন্য অপেক্ষা করছে…</string>
-    <string name="hint_web_server_started">ওয়েব সার্ভার শুরু হয়েছে: %1$s</string>
-    <string name="web_url_default">http://0.0.0.0:8080</string>
 
     <string name="privacy_scroll_hint">↓ সম্পূর্ণ চুক্তি পড়তে নিচে স্ক্রোল করুন</string>
     <string name="privacy_scroll_done">✓ আপনি সম্পূর্ণ চুক্তি পড়েছেন</string>

@@ -24,13 +24,9 @@
  */
 package com.orb.slam2s.ipc;
 
-import com.orb.slam2s.ipc.ISlamCallback;
 import android.os.ParcelFileDescriptor;
 
 interface ISlamService {
-    void registerCallback(ISlamCallback callback);
-    void unregisterCallback(ISlamCallback callback);
-
     // 低频/耗时操作：oneway 避免占用 binder 线程（initSLAM 需加载词汇表约 1 秒）
     oneway void initSLAM(String resDir);
 
@@ -42,15 +38,10 @@ interface ISlamService {
 
     oneway void detectPlane();
     void updateResolution(int width, int height);
-    void getV(inout float[] viewMatrix);
-    int getTrackingStatus();
     void setPointCloudDisplay(boolean enable);
     boolean isPointCloudDisplayEnabled();
     void saveMap(String mapPath);
     void loadMapWithId(String mapPath, int mapId, boolean append);
     int[] getMapStats();
-    float[] getTrackedPoints(int maxPoints);
-    float[] getMiniMapPoints(int maxPoints);
-    float[] getAllArObjectsData();
     void updateArObjectScale(float scaleFactor);
 }

@@ -21,13 +21,14 @@
 
 > **In a nutshell**: An enhanced spatial computing tool based on ORB-SLAM2 for Android, providing stable 6DoF spatial positioning for mobile devices.
 
-<p align="center">
+<p style="text-align:center">
 <img alt="Java" src="https://img.shields.io/badge/Java-ED8B00?style=flat-square&logo=openjdk&logoColor=white"/>
 <img alt="C++11" src="https://img.shields.io/badge/C++-00599C?style=flat-square&logo=cplusplus&logoColor=white"/>
 <img alt="Android" src="https://img.shields.io/badge/Android-3DDC84?style=flat-square&logo=android&logoColor=white"/>
 <img alt="OpenCV" src="https://img.shields.io/badge/OpenCV-5C3EE8?style=flat-square&logo=opencv&logoColor=white"/>
 <img alt="NDK" src="https://img.shields.io/badge/NDK-0C1E33?style=flat-square&logo=android&logoColor=white"/>
-<img alt="GPL-3.0" src="https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square"/>
+<img alt="App License: Apache-2.0" src="https://img.shields.io/badge/App_License-Apache--2.0-green?style=flat-square"/>
+<img alt="Engine License: GPL-3.0" src="https://img.shields.io/badge/Engine_License-GPL--3.0-blue?style=flat-square"/>
 </p>
 
 ---
@@ -101,8 +102,8 @@ Currently tested primarily on Qualcomm Snapdragon platform CPUs:
 | Snapdragon 8+ Gen1   | Redmi K60     | 30 FPS      |
 | Snapdragon 870       | Xiaomi 10S    | 30 FPS      |
 | Snapdragon 7s Gen 2  | Redmi Pad Pro | 30 FPS      |
-| Snapdragon 835       | Xiaomi 6      | 15–30 FPS   |
-| Snapdragon AR1 Gen 1 | Rokid Glass3  | 10–25 FPS   |
+| Snapdragon 835       | Xiaomi 6      | 15-30 FPS   |
+| Snapdragon AR1 Gen 1 | Rokid Glass3  | 10-25 FPS   |
 
 ### 🌑 Dark Frame Detection
 
@@ -174,13 +175,19 @@ ORB-SLAM2 is a real-time SLAM library for **Monocular**, **Stereo** and **RGB-D*
 
 ## ORB-SLAM2 Core Library
 
-The ORB-SLAM2 core library is released under a [GPLv3 license](https://github.com/raulmur/ORB_SLAM2/blob/master/License-gpl.txt). For a list of all code/library dependencies (and associated licenses), please see [Dependencies.md](https://github.com/raulmur/ORB_SLAM2/blob/master/Dependencies.md).
+The ORB-SLAM2 core library is released under a [GPLv3 license](https://github.com/raulmur/ORB_SLAM2/blob/master/LICENSE.txt). For a list of all code/library dependencies (and associated licenses), please see [Dependencies.md](https://github.com/raulmur/ORB_SLAM2/blob/master/Dependencies.md).
 
 For a closed-source version of ORB-SLAM2 for commercial purposes, please contact the authors: orbslam (at) unizar (dot) es.
 
 ## This Project (ORB-SLAM2s)
 
-This Android adaptation and enhancement project (ORB-SLAM2s) is also licensed under the **GPL-3.0 License**. See the [LICENSE.txt](LICENSE.txt) and [License-gpl.txt](License-gpl.txt) files for details.
+This project adopts a modular license architecture based on Android IPC process isolation:
+
+- **`app/` Module**: Licensed under the **[Apache License, Version 2.0](app/LICENSE)** (Apache-2.0). Contains UI, camera preview, Filament 3D rendering, and sensor components.
+- **`MenthaAR/` Engine Module**: Derived from ORB-SLAM2 and released under the **[GNU General Public License v3.0](MenthaAR/LICENSE)** (GPLv3). Contains native C++ SLAM algorithms and processing.
+- **Inter-Process Communication (IPC)**: The `app` module and `MenthaAR` engine run in separate Android OS processes and communicate strictly via Binder IPC and SharedMemory (Ashmem/memfd), preserving license boundaries between modules.
+
+See [LICENSE.txt](LICENSE.txt), [app/LICENSE](app/LICENSE), and [MenthaAR/LICENSE](MenthaAR/LICENSE) for details.
 
 For project collaboration or other field cooperation inquiries, please contact: **OlscStudio@outlook.com**
 

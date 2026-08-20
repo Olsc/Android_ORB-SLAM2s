@@ -5,7 +5,6 @@
     <string name="btn_save">しまゆん</string>
     <string name="btn_load">ふぃちだす</string>
     <string name="btn_map">マップ</string>
-    <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓点群</string>
     <string name="loading_slam_init">SLAMシステム初期化中…</string>
     <string name="loading_slam_wait">まっとーけー、ちょっとかかいびーん</string>
@@ -16,9 +15,6 @@
     <string name="hint_pointcloud_disabled">点群無効</string>
     <string name="btn_pointcloud_enabled">✓点群</string>
     <string name="btn_pointcloud_disabled">点群</string>
-    <string name="hint_slam_enabled">SLAM有効</string>
-    <string name="hint_slam_disabled">SLAM無効</string>
-    <string name="btn_slam_disabled">SLAM</string>
     <string name="input_map_name">マップ名いりーくぃみそーれー</string>
     <string name="dialog_save_map">マップしまゆん</string>
     <string name="button_cancel">やめる</string>
@@ -35,25 +31,26 @@
     <string name="button_back">戻る</string>
     <string name="dialog_map_details">マップ詳細</string>
     <string name="map_details_name">マップ名: %1$s</string>
+    <string name="map_details_keyframes">キーフレーム: %1$d</string>
+    <string name="map_details_mappoints">マップポイント: %1$d</string>
     <string name="map_details_size">ファイル大きさ: %1$d KB</string>
     <string name="map_details_time">作りたる日: %1$s</string>
+    <string name="map_details_plane">平面あるか: %1$s</string>
+    <string name="map_details_plane_yes">あい</string>
+    <string name="map_details_plane_no">ない</string>
     <string name="button_ok">ゆたさるぐとぅ</string>
     <string name="map_stats_format">KF: %1$d | MP: %2$d | 平面: %3$s</string>
     <string name="map_stats_plane_yes">あん</string>
     <string name="map_stats_plane_no">ねーびらん</string>
     <string name="hint_map_saved">マップしまいたびたる: %1$s</string>
-    <string name="hint_map_save_failed">しまい失敗: %1$s</string>
-    <string name="hint_map_file_not_found">マップファイルめんそーれーびらん</string>
     <string name="hint_map_loaded">マップふぃちだちたびたる: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">%1$d 枚マップふぃちだちたびたる</item>
     </plurals>
-    <string name="hint_map_load_failed">ふぃちだし失敗: %1$s</string>
     <string name="permission_camera_storage_required">カメラとストレージの権限がいりびーん。設定から権限くぃみそーれー。</string>
 
     <string name="category_ar">AR操作</string>
     <string name="category_map">マップ</string>
-    <string name="category_slam">SLAM</string>
     <string name="category_display">表示</string>
 
     <string name="btn_3dof">3DOF</string>
@@ -61,18 +58,6 @@
     <string name="hint_3dof_unavailable">3DOF機能使えびらん</string>
     <string name="hint_3dof_spawned">3DOFキューブが5メートル先に生成</string>
     <string name="hint_3dof_closed">3DOFモード閉じたびたる</string>
-    <string name="btn_web_server_close">Webサーバー閉じる</string>
-    <string name="btn_web_server_open">Webサーバー開ける</string>
-    <string name="hint_web_server_closed">Webサーバー閉じたびたる</string>
-
-    <string name="btn_web_server">Webサーバー</string>
-
-
-    <string name="title_web_server">Webサーバー</string>
-    <string name="web_fps_label"> (Web)</string>
-    <string name="hint_waiting_browser_frame">ブラウザー画像まっとーん…</string>
-    <string name="hint_web_server_started">Webサーバー起動: %1$s</string>
-    <string name="web_url_default">http://0.0.0.0:8080</string>
 
     <string name="privacy_scroll_hint">↓ 全文読むためにスクロールしてくださいびり</string>
     <string name="privacy_scroll_done">✓ 全文読みたびたん</string>

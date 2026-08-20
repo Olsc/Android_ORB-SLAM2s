@@ -99,7 +99,7 @@ android {
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation 'androidx.preference:preference:1.2.1'
-    implementation 'androidx.appcompat:appcompat:1.7.1'
+    implementation 'androidx.appcompat:appcompat:1.8.0'
     implementation 'com.google.android.material:material:1.14.0'
 
     implementation project(':MenthaAR')
@@ -109,13 +109,13 @@ dependencies {
     implementation 'androidx.camera:camera-camera2:1.6.1'
     implementation 'androidx.camera:camera-lifecycle:1.6.1'
     implementation 'androidx.camera:camera-view:1.6.1'
-    implementation 'com.google.guava:guava:33.6.0-android'
+    implementation 'com.google.guava:guava:33.7.1-android'
     implementation 'io.noties.markwon:core:4.6.2'
     implementation 'io.noties.markwon:ext-tables:4.6.2'
 
-implementation 'com.google.android.filament:filament-android:1.74.1'
-implementation 'com.google.android.filament:gltfio-android:1.74.1'
-implementation 'com.google.android.filament:filament-utils-android:1.74.1'
+implementation 'com.google.android.filament:filament-android:1.75.0'
+implementation 'com.google.android.filament:gltfio-android:1.75.0'
+implementation 'com.google.android.filament:filament-utils-android:1.75.0'
 }
 
 configurations.all {

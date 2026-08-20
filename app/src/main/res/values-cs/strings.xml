@@ -5,7 +5,6 @@
     <string name="btn_save">Uložit</string>
     <string name="btn_load">Načíst</string>
     <string name="btn_map">Mapa</string>
-    <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓Mrak bodů</string>
     <string name="loading_slam_init">Inicializace systému SLAM…</string>
     <string name="loading_slam_wait">Prosím čekejte, může to chvíli trvat</string>
@@ -16,9 +15,6 @@
     <string name="hint_pointcloud_disabled">Mrak bodů deaktivován</string>
     <string name="btn_pointcloud_enabled">✓Mrak bodů</string>
     <string name="btn_pointcloud_disabled">Mrak bodů</string>
-    <string name="hint_slam_enabled">SLAM aktivován</string>
-    <string name="hint_slam_disabled">SLAM deaktivován</string>
-    <string name="btn_slam_disabled">SLAM</string>
     <string name="input_map_name">Zadejte název mapy</string>
     <string name="dialog_save_map">Uložit mapu</string>
     <string name="button_cancel">Zrušit</string>
@@ -35,25 +31,29 @@
     <string name="button_back">Zpět</string>
     <string name="dialog_map_details">Podrobnosti mapy</string>
     <string name="map_details_name">Název mapy: %1$s</string>
+    <string name="map_details_keyframes">Klíčové snímky: %1$d</string>
+    <string name="map_details_mappoints">Body mapy: %1$d</string>
     <string name="map_details_size">Velikost souboru: %1$d KB</string>
     <string name="map_details_time">Vytvořeno: %1$s</string>
+    <string name="map_details_plane">Má rovinu: %1$s</string>
+    <string name="map_details_plane_yes">Ano</string>
+    <string name="map_details_plane_no">Ne</string>
     <string name="button_ok">OK</string>
     <string name="map_stats_format">KS: %1$d | BM: %2$d | Rov.: %3$s</string>
     <string name="map_stats_plane_yes">Ano</string>
     <string name="map_stats_plane_no">Ne</string>
     <string name="hint_map_saved">Mapa uložena: %1$s</string>
-    <string name="hint_map_save_failed">Uložení selhalo: %1$s</string>
-    <string name="hint_map_file_not_found">Soubor mapy nebyl nalezen</string>
     <string name="hint_map_loaded">Mapa načtena: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">Načteno map: %1$d</item>
+        <item quantity="one">Načteno map: %1$d</item>
+        <item quantity="few">Načteno map: %1$d</item>
+        <item quantity="many">Načteno map: %1$d</item>
     </plurals>
-    <string name="hint_map_load_failed">Načtení selhalo: %1$s</string>
     <string name="permission_camera_storage_required">Jsou vyžadována oprávnění pro kameru a úložiště. Udělte oprávnění v nastavení.</string>
 
     <string name="category_ar">Ovládání AR</string>
     <string name="category_map">Mapa</string>
-    <string name="category_slam">SLAM</string>
     <string name="category_display">Zobrazení</string>
 
     <string name="btn_3dof">3DOF</string>
@@ -61,18 +61,6 @@
     <string name="hint_3dof_unavailable">Funkce 3DOF není dostupná</string>
     <string name="hint_3dof_spawned">Kostka 3DOF vytvořena 5 metrů vpředu</string>
     <string name="hint_3dof_closed">Režim 3DOF uzavřen</string>
-    <string name="btn_web_server_close">Zavřít webový server</string>
-    <string name="btn_web_server_open">Otevřít webový server</string>
-    <string name="hint_web_server_closed">Webový server uzavřen</string>
-
-    <string name="btn_web_server">Webový server</string>
-
-
-    <string name="title_web_server">Webový server</string>
-    <string name="web_fps_label"> (Web)</string>
-    <string name="hint_waiting_browser_frame">Čeká se na obraz prohlížeče…</string>
-    <string name="hint_web_server_started">Webový server spuštěn: %1$s</string>
-    <string name="web_url_default">http://0.0.0.0:8080</string>
 
     <string name="privacy_scroll_hint">↓ Přejděte dolů a přečtěte si celou dohodu</string>
     <string name="privacy_scroll_done">✓ Přečetli jste celou dohodu</string>

@@ -5,7 +5,6 @@
     <string name="btn_save">Αποθήκευση</string>
     <string name="btn_load">Φόρτωση</string>
     <string name="btn_map">Χάρτης</string>
-    <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓Νέφος σημείων</string>
     <string name="loading_slam_init">Αρχικοποίηση συστήματος SLAM…</string>
     <string name="loading_slam_wait">Παρακαλώ περιμένετε, αυτό μπορεί να πάρει λίγο χρόνο</string>
@@ -16,9 +15,6 @@
     <string name="hint_pointcloud_disabled">Νέφος σημείων απενεργοποιήθηκε</string>
     <string name="btn_pointcloud_enabled">✓Νέφος σημείων</string>
     <string name="btn_pointcloud_disabled">Νέφος σημείων</string>
-    <string name="hint_slam_enabled">SLAM ενεργοποιήθηκε</string>
-    <string name="hint_slam_disabled">SLAM απενεργοποιήθηκε</string>
-    <string name="btn_slam_disabled">SLAM</string>
     <string name="input_map_name">Εισάγετε όνομα χάρτη</string>
     <string name="dialog_save_map">Αποθήκευση χάρτη</string>
     <string name="button_cancel">Ακύρωση</string>
@@ -35,25 +31,27 @@
     <string name="button_back">Πίσω</string>
     <string name="dialog_map_details">Λεπτομέρειες χάρτη</string>
     <string name="map_details_name">Όνομα χάρτη: %1$s</string>
+    <string name="map_details_keyframes">Βασικά καρέ: %1$d</string>
+    <string name="map_details_mappoints">Σημεία χάρτη: %1$d</string>
     <string name="map_details_size">Μέγεθος αρχείου: %1$d KB</string>
     <string name="map_details_time">Δημιουργήθηκε: %1$s</string>
+    <string name="map_details_plane">Έχει επίπεδο: %1$s</string>
+    <string name="map_details_plane_yes">Ναι</string>
+    <string name="map_details_plane_no">Όχι</string>
     <string name="button_ok">Εντάξει</string>
     <string name="map_stats_format">ΒΠ: %1$d | ΣΧ: %2$d | Επίπ.: %3$s</string>
     <string name="map_stats_plane_yes">Ναι</string>
     <string name="map_stats_plane_no">Όχι</string>
     <string name="hint_map_saved">Ο χάρτης αποθηκεύτηκε: %1$s</string>
-    <string name="hint_map_save_failed">Αποτυχία αποθήκευσης: %1$s</string>
-    <string name="hint_map_file_not_found">Το αρχείο χάρτη δεν βρέθηκε</string>
     <string name="hint_map_loaded">Ο χάρτης φορτώθηκε: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">Φορτώθηκαν %1$d χάρτες</item>
+        <item quantity="one">Φορτώθηκαν %1$d χάρτες</item>
     </plurals>
-    <string name="hint_map_load_failed">Αποτυχία φόρτωσης: %1$s</string>
     <string name="permission_camera_storage_required">Απαιτούνται άδειες κάμερας και αποθηκευτικού χώρου. Παρακαλώ χορηγήστε άδειες στις ρυθμίσεις.</string>
 
     <string name="category_ar">Έλεγχοι AR</string>
     <string name="category_map">Χάρτης</string>
-    <string name="category_slam">SLAM</string>
     <string name="category_display">Οθόνη</string>
 
     <string name="btn_3dof">3DOF</string>
@@ -61,18 +59,6 @@
     <string name="hint_3dof_unavailable">Η λειτουργία 3DOF δεν είναι διαθέσιμη</string>
     <string name="hint_3dof_spawned">Κύβος 3DOF δημιουργήθηκε 5 μέτρα μπροστά</string>
     <string name="hint_3dof_closed">Η λειτουργία 3DOF έκλεισε</string>
-    <string name="btn_web_server_close">Κλείσιμο διακομιστή web</string>
-    <string name="btn_web_server_open">Άνοιγμα διακομιστή web</string>
-    <string name="hint_web_server_closed">Ο διακομιστής web έκλεισε</string>
-
-    <string name="btn_web_server">Διακομιστής web</string>
-
-
-    <string name="title_web_server">Διακομιστής web</string>
-    <string name="web_fps_label"> (Web)</string>
-    <string name="hint_waiting_browser_frame">Αναμονή εικόνας προγράμματος περιήγησης…</string>
-    <string name="hint_web_server_started">Ο διακομιστής web ξεκίνησε: %1$s</string>
-    <string name="web_url_default">http://0.0.0.0:8080</string>
 
     <string name="privacy_scroll_hint">↓ Παρακαλώ κάντε κύλιση μέχρι κάτω για να διαβάσετε τη συμφωνία</string>
     <string name="privacy_scroll_done">✓ Διαβάσατε τη συμφωνία ολόκληρη</string>

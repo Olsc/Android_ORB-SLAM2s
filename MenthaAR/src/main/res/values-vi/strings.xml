@@ -1,13 +1,10 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="hint_map_saved">Đã lưu bản đồ: %1$s</string>
-    <string name="hint_map_save_failed">Lưu thất bại: %1$s</string>
-    <string name="hint_map_file_not_found">Không tìm thấy tệp bản đồ</string>
     <string name="hint_map_loaded">Đã tải bản đồ: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">Đã tải %1$d bản đồ</item>
     </plurals>
-    <string name="hint_map_load_failed">Tải thất bại: %1$s</string>
     <string name="hint_map_deleted">Đã xóa bản đồ</string>
     <string name="hint_map_delete_failed">Xóa thất bại</string>
 </resources>

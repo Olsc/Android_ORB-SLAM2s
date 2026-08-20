@@ -1,12 +1,24 @@
+/*
+ * Copyright (C) 2026 Olsc <OlscStudio@outlook.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.orb.slam2s.graphics;
 
-import android.content.Context;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
-import android.os.Build;
 import android.util.Log;
-import android.view.WindowManager;
 
 import com.orb.slam2s.sensors.OrientationSensor;
 
@@ -42,13 +54,11 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
     private ShortBuffer indexBuffer;
 
     private static final int CUBE_INDEX_COUNT = 36;
-    private final Context context;
 
     // 控制是否显示立方体
     private boolean mShowCube = false;
 
-    public ThreeDofCubeRenderer(Context context, OrientationSensor sensor) {
-        this.context = context;
+    public ThreeDofCubeRenderer(OrientationSensor sensor) {
         this.orientationSensor = sensor;
     }
 
@@ -109,7 +119,6 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
             return;
         }
 
-        int rotation = getDisplayRotation();
         float[] rotationMatrix = orientationSensor.getRotationMatrix();
 
         boolean isIdentity = true;
@@ -118,20 +127,20 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
         }
 
         if (!mInitialized && !isIdentity) {
-            mObjectWorldPos = calculate3DofInsertionPoint(rotationMatrix, rotation, mDistance);
+            mObjectWorldPos = calculate3DofInsertionPoint(rotationMatrix, mDistance);
             mInitialized = true;
             Log.d(TAG, String.format("立方体世界坐标已初始化: [%.2f, %.2f, %.2f]",
                     mObjectWorldPos[0], mObjectWorldPos[1], mObjectWorldPos[2]));
         }
 
         if (mInitialized) {
-            compute3DofMVP(mvpMatrix, rotationMatrix, rotation, mRatio, mObjectWorldPos);
+            compute3DofMVP(mvpMatrix, rotationMatrix, mRatio, mObjectWorldPos);
             drawCube();
         }
     }
 
     // 纯 Java 计算 3DOF 物体世界坐标插入点（视角前方指定距离）
-    private float[] calculate3DofInsertionPoint(float[] rotationMatrix, int rotation, float distance) {
+    private float[] calculate3DofInsertionPoint(float[] rotationMatrix, float distance) {
         float[] invViewMatrix = new float[16];
         Matrix.transposeM(invViewMatrix, 0, rotationMatrix, 0);
 
@@ -142,7 +151,7 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
     }
 
     // 纯 Java 计算 3DOF MVP 矩阵
-    private void compute3DofMVP(float[] outMvp, float[] rotationMatrix, int rotation, float ratio, float[] objectPos) {
+    private void compute3DofMVP(float[] outMvp, float[] rotationMatrix, float ratio, float[] objectPos) {
         float[] projectionMatrix = new float[16];
         Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, -1, 1, AR_3DOF_ZNEAR, AR_3DOF_ZFAR);
 
@@ -247,24 +256,5 @@ public class ThreeDofCubeRenderer implements GLSurfaceView.Renderer {
 
         GLES20.glDisableVertexAttribArray(positionHandle);
         GLES20.glDisableVertexAttribArray(colorHandle);
-    }
-
-    private int getDisplayRotation() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            try {
-                return context.getDisplay().getRotation();
-            } catch (Exception | NoSuchMethodError ignored) {
-            }
-        }
-        return getLegacyRotation();
-    }
-
-    @SuppressWarnings("deprecation")
-    private int getLegacyRotation() {
-        WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-        if (wm != null) {
-            return wm.getDefaultDisplay().getRotation();
-        }
-        return 0;
     }
 }

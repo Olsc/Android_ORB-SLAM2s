@@ -1,9 +1,6 @@
 package com.orb.slam2s.slamar;
 
-import android.content.Context;
 import android.util.Log;
-
-import com.orb.slam2s.constant.GlobalConstant;
 
 // NativeHelper类：与JNI层交互，处理摄像头帧、平面检测、SLAM初始化等功能
 public class NativeHelper {
@@ -19,16 +16,11 @@ public class NativeHelper {
         System.loadLibrary("MenthaAR_Engine"); // 整合后的 SLAM_AR（含 OpenCV 原生模块）
     }
 
-    private int lastTrackingResult; // 最后的追踪结果
     private int planeDetectResult; // 平面检测结果
-    private boolean planeDetected; // 是否检测到平面
 
     private final int[] statusBuf = new int[3];
-    private Context context;
 
-    public NativeHelper(Context context) {
-        this.context = context;
-        planeDetected = false;
+    public NativeHelper() {
     }
 
     // 检测平面（在 SLAM 处理线程内调用）
@@ -36,7 +28,6 @@ public class NativeHelper {
     public int detectPlane() {
         detect(statusBuf);
         planeDetectResult = statusBuf[1];
-        planeDetected = (planeDetectResult == GlobalConstant.PLANE_DETECTED);
         return planeDetectResult;
     }
 
@@ -56,9 +47,8 @@ public class NativeHelper {
         nativeDetachFrameBuffer();
     }
 
-    public int processFrameSharedMem(int bufIndex, int seq, int width, int height, int[] statusBuf) {
+    public void processFrameSharedMem(int bufIndex, int seq, int width, int height, int[] statusBuf) {
         nativeProcessFrameSharedMem(bufIndex, seq, width, height, statusBuf);
-        return statusBuf[0];
     }
 
     // 统一获取MVP
@@ -108,9 +98,4 @@ public class NativeHelper {
 
     // 视图矩阵
     public native void getV(float viewM[]);
-
-    // 获取最后的追踪结果
-    public int getLastTrackingResult() {
-        return lastTrackingResult;
-    }
 }

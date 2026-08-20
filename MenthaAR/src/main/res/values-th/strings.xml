@@ -1,13 +1,10 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="hint_map_saved">บันทึกแผนที่แล้ว: %1$s</string>
-    <string name="hint_map_save_failed">การบันทึกล้มเหลว: %1$s</string>
-    <string name="hint_map_file_not_found">ไม่พบไฟล์แผนที่</string>
     <string name="hint_map_loaded">โหลดแผนที่แล้ว: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">โหลดแผนที่ %1$d แผนที่แล้ว</item>
     </plurals>
-    <string name="hint_map_load_failed">การโหลดล้มเหลว: %1$s</string>
     <string name="hint_map_deleted">ลบแผนที่แล้ว</string>
     <string name="hint_map_delete_failed">การลบล้มเหลว</string>
 </resources>

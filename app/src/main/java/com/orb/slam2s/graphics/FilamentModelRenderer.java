@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2026 Olsc <OlscStudio@outlook.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.orb.slam2s.graphics;
 
 import android.content.Context;
@@ -67,7 +82,6 @@ public class FilamentModelRenderer {
     private final float[] modelCenter = new float[3];
     private final float[] modelHalfExtent = new float[3];
     private float autoScaleFactor = 1.0f;
-    private boolean hasBoundingBox = false;
 
     private float currentScaleFactor = 1.0f;
     private static final float MIN_SCALE = 0.05f;
@@ -303,7 +317,7 @@ public class FilamentModelRenderer {
         new Thread(() -> {
             try (InputStream is = context.getAssets().open(modelPath)) {
                 byte[] bytes = new byte[is.available()];
-                int bytesRead = is.read(bytes);
+                is.read(bytes);
 
                 final ByteBuffer buffer = ByteBuffer.allocateDirect(bytes.length);
                 buffer.put(bytes);
@@ -324,7 +338,6 @@ public class FilamentModelRenderer {
                                 float[] halfExtent = box.getHalfExtent();
                                 System.arraycopy(center, 0, modelCenter, 0, 3);
                                 System.arraycopy(halfExtent, 0, modelHalfExtent, 0, 3);
-                                hasBoundingBox = true;
 
                                 float maxDim = Math.max(halfExtent[0], Math.max(halfExtent[1], halfExtent[2])) * 2.0f;
                                 if (maxDim > 0.0f) {
@@ -336,7 +349,6 @@ public class FilamentModelRenderer {
                                 autoScaleFactor = 1.0f;
                             }
                         } catch (Exception e) {
-                            hasBoundingBox = false;
                             autoScaleFactor = 1.0f;
                         }
 
@@ -486,23 +498,6 @@ public class FilamentModelRenderer {
         userRotationX += pitchDelta;
         userRotationX = userRotationX % 360.0f;
         if (userRotationX < 0) userRotationX += 360.0f;
-    }
-
-    public void requestReset() {
-        shouldDraw = false;
-        matricesReady = false;
-        currentScaleFactor = 1.0f;
-    }
-
-    public void setDraw(boolean flag) {
-        boolean changed = (shouldDraw != flag);
-        shouldDraw = flag;
-        if (!flag) {
-            matricesReady = false;
-        }
-        if (changed && drawStateListener != null) {
-            drawStateListener.onDrawStateChanged(flag);
-        }
     }
 
     public void destroy() {

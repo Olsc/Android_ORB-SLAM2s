@@ -22,8 +22,6 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
-import android.os.RemoteCallbackList;
-import android.os.RemoteException;
 import android.util.Log;
 
 import com.orb.slam2s.slamar.NativeHelper;
@@ -43,7 +41,6 @@ public class SlamService extends Service {
     private static final String TAG = "SlamService";
 
     private NativeHelper nativeHelper;
-    private final RemoteCallbackList<ISlamCallback> callbacks = new RemoteCallbackList<>();
 
     // 专用 SLAM 处理线程
     private Thread slamThread;
@@ -54,23 +51,8 @@ public class SlamService extends Service {
     // 帧共享内存（仅持有 fd，native 层 mmap 后直接读写 header/帧/点云）
     private ParcelFileDescriptor framePfd;
     private final int[] frameStatus = new int[2];  // [0]=tracking, [1]=shouldDraw
-    private final java.util.concurrent.atomic.AtomicInteger lastTracking = new java.util.concurrent.atomic.AtomicInteger(0);
 
     private final ISlamService.Stub binder = new ISlamService.Stub() {
-        @Override
-        public void registerCallback(ISlamCallback callback) {
-            if (callback != null) {
-                callbacks.register(callback);
-            }
-        }
-
-        @Override
-        public void unregisterCallback(ISlamCallback callback) {
-            if (callback != null) {
-                callbacks.unregister(callback);
-            }
-        }
-
         @Override
         public void initSLAM(String resDir) {
             // oneway 投递到处理线程执行，耗时加载不阻塞 binder 线程
@@ -78,13 +60,11 @@ public class SlamService extends Service {
                 try {
                     Log.d(TAG, "[:slam_process] 初始化 SLAM 资源目录: " + resDir);
                     if (nativeHelper == null) {
-                        nativeHelper = new NativeHelper(getApplicationContext());
+                        nativeHelper = new NativeHelper();
                     }
                     nativeHelper.initSLAM(resDir);
-                    notifySLAMInitialized(true, "SLAM 系统初始化完成");
                 } catch (Exception e) {
                     Log.e(TAG, "[:slam_process] 初始化失败: " + e.getMessage(), e);
-                    notifySLAMInitialized(false, e.getMessage());
                 }
             });
         }
@@ -129,18 +109,6 @@ public class SlamService extends Service {
         }
 
         @Override
-        public void getV(float[] viewMatrix) {
-            if (nativeHelper != null && viewMatrix != null && viewMatrix.length == 16) {
-                nativeHelper.getV(viewMatrix);
-            }
-        }
-
-        @Override
-        public int getTrackingStatus() {
-            return lastTracking.get();
-        }
-
-        @Override
         public void setPointCloudDisplay(boolean enable) {
             if (nativeHelper != null) {
                 nativeHelper.setPointCloudDisplay(enable);
@@ -169,21 +137,6 @@ public class SlamService extends Service {
         @Override
         public int[] getMapStats() {
             return nativeHelper != null ? nativeHelper.getMapStats() : new int[0];
-        }
-
-        @Override
-        public float[] getTrackedPoints(int maxPoints) {
-            return nativeHelper != null ? nativeHelper.getTrackedPoints(maxPoints) : new float[0];
-        }
-
-        @Override
-        public float[] getMiniMapPoints(int maxPoints) {
-            return nativeHelper != null ? nativeHelper.getMiniMapPoints(maxPoints) : new float[0];
-        }
-
-        @Override
-        public float[] getAllArObjectsData() {
-            return nativeHelper != null ? nativeHelper.getAllArObjectsData() : new float[0];
         }
 
         @Override
@@ -263,15 +216,13 @@ public class SlamService extends Service {
         } catch (Exception e) {
             Log.e(TAG, "处理共享内存帧异常: " + e.getMessage());
         }
-        lastTracking.set(frameStatus[0]);
     }
 
     private void doDetectPlane() {
         if (nativeHelper == null) return;
         try {
-            int result = nativeHelper.detectPlane();
             // MVP 由 native 写回共享内存，UI 渲染线程直接读取，无需 binder 推送
-            notifyPlaneDetected(result);
+            nativeHelper.detectPlane();
         } catch (Exception e) {
             Log.e(TAG, "detectPlane 异常: " + e.getMessage());
         }
@@ -283,7 +234,7 @@ public class SlamService extends Service {
     public void onCreate() {
         super.onCreate();
         Log.d(TAG, "SlamService 创建 (进程: :slam_process)");
-        nativeHelper = new NativeHelper(getApplicationContext());
+        nativeHelper = new NativeHelper();
         startSlamThread();
     }
 
@@ -310,31 +261,5 @@ public class SlamService extends Service {
             } catch (Exception ignored) {}
             framePfd = null;
         }
-    }
-
-    // 回调
-
-    private void notifyPlaneDetected(int result) {
-        int n = callbacks.beginBroadcast();
-        for (int i = 0; i < n; i++) {
-            try {
-                callbacks.getBroadcastItem(i).onPlaneDetected(result);
-            } catch (RemoteException e) {
-                Log.e(TAG, "广播 onPlaneDetected 异常: " + e.getMessage());
-            }
-        }
-        callbacks.finishBroadcast();
-    }
-
-    private void notifySLAMInitialized(boolean success, String msg) {
-        int n = callbacks.beginBroadcast();
-        for (int i = 0; i < n; i++) {
-            try {
-                callbacks.getBroadcastItem(i).onSLAMInitialized(success, msg);
-            } catch (RemoteException e) {
-                Log.e(TAG, "广播 onSLAMInitialized 异常: " + e.getMessage());
-            }
-        }
-        callbacks.finishBroadcast();
     }
 }

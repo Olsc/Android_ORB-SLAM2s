@@ -5,7 +5,6 @@
     <string name="btn_save">Spara</string>
     <string name="btn_load">Ladda</string>
     <string name="btn_map">Karta</string>
-    <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓Punktmoln</string>
     <string name="loading_slam_init">Initierar SLAM-system…</string>
     <string name="loading_slam_wait">Vänta, detta kan ta en stund</string>
@@ -16,9 +15,6 @@
     <string name="hint_pointcloud_disabled">Punktmoln inaktiverat</string>
     <string name="btn_pointcloud_enabled">✓Punktmoln</string>
     <string name="btn_pointcloud_disabled">Punktmoln</string>
-    <string name="hint_slam_enabled">SLAM aktiverat</string>
-    <string name="hint_slam_disabled">SLAM inaktiverat</string>
-    <string name="btn_slam_disabled">SLAM</string>
     <string name="input_map_name">Ange kartans namn</string>
     <string name="dialog_save_map">Spara karta</string>
     <string name="button_cancel">Avbryt</string>
@@ -35,25 +31,27 @@
     <string name="button_back">Tillbaka</string>
     <string name="dialog_map_details">Kartdetaljer</string>
     <string name="map_details_name">Kartans namn: %1$s</string>
+    <string name="map_details_keyframes">Nyckelbilder: %1$d</string>
+    <string name="map_details_mappoints">Kartpunkter: %1$d</string>
     <string name="map_details_size">Filstorlek: %1$d KB</string>
     <string name="map_details_time">Skapad: %1$s</string>
+    <string name="map_details_plane">Har plan: %1$s</string>
+    <string name="map_details_plane_yes">Ja</string>
+    <string name="map_details_plane_no">Nej</string>
     <string name="button_ok">OK</string>
     <string name="map_stats_format">NB: %1$d | KP: %2$d | Plan: %3$s</string>
     <string name="map_stats_plane_yes">Ja</string>
     <string name="map_stats_plane_no">Nej</string>
     <string name="hint_map_saved">Karta sparad: %1$s</string>
-    <string name="hint_map_save_failed">Sparande misslyckades: %1$s</string>
-    <string name="hint_map_file_not_found">Kartfil hittades inte</string>
     <string name="hint_map_loaded">Karta laddad: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">%1$d kartor laddade</item>
+        <item quantity="one">%1$d kartor laddade</item>
     </plurals>
-    <string name="hint_map_load_failed">Laddning misslyckades: %1$s</string>
     <string name="permission_camera_storage_required">Kamera- och lagringsbehörigheter krävs. Bevilja behörigheter i inställningarna.</string>
 
     <string name="category_ar">AR-styrning</string>
     <string name="category_map">Karta</string>
-    <string name="category_slam">SLAM</string>
     <string name="category_display">Visning</string>
 
     <string name="btn_3dof">3DOF</string>
@@ -61,18 +59,6 @@
     <string name="hint_3dof_unavailable">3DOF-funktion ej tillgänglig</string>
     <string name="hint_3dof_spawned">3DOF-kub skapad 5 meter framför</string>
     <string name="hint_3dof_closed">3DOF-läge stängt</string>
-    <string name="btn_web_server_close">Stäng webbserver</string>
-    <string name="btn_web_server_open">Öppna webbserver</string>
-    <string name="hint_web_server_closed">Webbserver stängd</string>
-
-    <string name="btn_web_server">Webbserver</string>
-
-
-    <string name="title_web_server">Webbserver</string>
-    <string name="web_fps_label"> (Webb)</string>
-    <string name="hint_waiting_browser_frame">Väntar på webbläsarbild…</string>
-    <string name="hint_web_server_started">Webbserver startad: %1$s</string>
-    <string name="web_url_default">http://0.0.0.0:8080</string>
 
     <string name="privacy_scroll_hint">↓ Bläddra till botten för att läsa hela avtalet</string>
     <string name="privacy_scroll_done">✓ Du har läst hela avtalet</string>
