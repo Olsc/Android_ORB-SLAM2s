@@ -59,9 +59,6 @@
     <string name="hint_3dof_spawned">สร้างลูกบาศก์ 3DOF ข้างหน้า 5 เมตร</string>
     <string name="hint_3dof_closed">ปิดโหมด 3DOF แล้ว</string>
 
-
-
-
     <string name="privacy_scroll_hint">↓ กรุณาเลื่อนลงถึงด้านล่างเพื่ออ่านข้อตกลงฉบับสมบูรณ์</string>
     <string name="privacy_scroll_done">✓ คุณได้อ่านข้อตกลงฉบับสมบูรณ์แล้ว</string>
     <string name="privacy_agree">ยอมรับ &amp; ดำเนินการต่อ</string>

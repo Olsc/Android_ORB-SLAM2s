@@ -60,9 +60,6 @@
     <string name="hint_3dof_spawned">3DOF-kuutio luotu 5 metriä edessä</string>
     <string name="hint_3dof_closed">3DOF-tila suljettu</string>
 
-
-
-
     <string name="privacy_scroll_hint">↓ Vieritä alas lukeaksesi koko sopimuksen</string>
     <string name="privacy_scroll_done">✓ Olet lukenut koko sopimuksen</string>
     <string name="privacy_agree">Hyväksy &amp; Jatka</string>

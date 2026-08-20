@@ -60,9 +60,6 @@
     <string name="hint_3dof_spawned">3DOF-kube oprettet 5 meter foran</string>
     <string name="hint_3dof_closed">3DOF-tilstand lukket</string>
 
-
-
-
     <string name="privacy_scroll_hint">↓ Rul ned for at læse hele aftalen</string>
     <string name="privacy_scroll_done">✓ Du har læst hele aftalen</string>
     <string name="privacy_agree">Accepter &amp; Fortsæt</string>

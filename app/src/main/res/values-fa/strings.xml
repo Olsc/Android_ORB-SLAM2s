@@ -60,9 +60,6 @@
     <string name="hint_3dof_spawned">مکعب 3DOF در 5 متر جلو ایجاد شد</string>
     <string name="hint_3dof_closed">حالت 3DOF بسته شد</string>
 
-
-
-
     <string name="privacy_scroll_hint">↓ لطفاً به پایین اسکرول کنید تا توافقنامه کامل را بخوانید</string>
     <string name="privacy_scroll_done">✓ توافقنامه کامل را خواندید</string>
     <string name="privacy_agree">موافقت &amp; ادامه</string>

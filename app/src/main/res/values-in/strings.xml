@@ -59,9 +59,6 @@
     <string name="hint_3dof_spawned">Kubus 3DOF dibuat 5 meter di depan</string>
     <string name="hint_3dof_closed">Mode 3DOF ditutup</string>
 
-
-
-
     <string name="privacy_scroll_hint">↓ Gulir ke bawah untuk membaca perjanjian lengkap</string>
     <string name="privacy_scroll_done">✓ Anda telah membaca perjanjian lengkap</string>
     <string name="privacy_agree">Setuju &amp; Lanjutkan</string>

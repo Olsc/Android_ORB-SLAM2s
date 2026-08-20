@@ -60,9 +60,6 @@
     <string name="hint_3dof_spawned">3DOF-kube laget 5 meter foran</string>
     <string name="hint_3dof_closed">3DOF-modus lukket</string>
 
-
-
-
     <string name="privacy_scroll_hint">↓ Bla ned for å lese hele avtalen</string>
     <string name="privacy_scroll_done">✓ Du har lest hele avtalen</string>
     <string name="privacy_agree">Godta &amp; Fortsett</string>

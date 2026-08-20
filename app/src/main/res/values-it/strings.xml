@@ -61,9 +61,6 @@
     <string name="hint_3dof_spawned">Cubo 3DOF generato a 5 metri davanti</string>
     <string name="hint_3dof_closed">Modalità 3DOF chiusa</string>
 
-
-
-
     <string name="privacy_scroll_hint">↓ Scorrere fino in fondo per leggere l\'accordo completo</string>
     <string name="privacy_scroll_done">✓ Hai letto l\'accordo completo</string>
     <string name="privacy_agree">Accetta &amp; Continua</string>

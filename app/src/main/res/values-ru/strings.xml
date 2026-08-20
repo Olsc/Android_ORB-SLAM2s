@@ -62,9 +62,6 @@
     <string name="hint_3dof_spawned">Куб 3DOF создан в 5 метрах впереди</string>
     <string name="hint_3dof_closed">Режим 3DOF закрыт</string>
 
-
-
-
     <string name="privacy_scroll_hint">↓ Прокрутите вниз, чтобы прочитать полное соглашение</string>
     <string name="privacy_scroll_done">✓ Вы прочитали полное соглашение</string>
     <string name="privacy_agree">Принять &amp; Продолжить</string>

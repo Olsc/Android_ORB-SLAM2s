@@ -60,9 +60,6 @@
     <string name="hint_3dof_spawned">Mchemraba wa 3DOF uliundwa mita 5 mbele</string>
     <string name="hint_3dof_closed">Hali ya 3DOF imefungwa</string>
 
-
-
-
     <string name="privacy_scroll_hint">↓ Tafadhali telezesha chini kusoma makubaliano kamili</string>
     <string name="privacy_scroll_done">✓ Umesoma makubaliano kamili</string>
     <string name="privacy_agree">Kubali &amp; Endelea</string>

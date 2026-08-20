@@ -60,9 +60,6 @@
     <string name="hint_3dof_spawned">3DOF küpü 5 metre ileride oluşturuldu</string>
     <string name="hint_3dof_closed">3DOF modu kapatıldı</string>
 
-
-
-
     <string name="privacy_scroll_hint">↓ Tam sözleşmeyi okumak için en alta kaydırın</string>
     <string name="privacy_scroll_done">✓ Tam sözleşmeyi okudunuz</string>
     <string name="privacy_agree">Kabul Et &amp; Devam Et</string>

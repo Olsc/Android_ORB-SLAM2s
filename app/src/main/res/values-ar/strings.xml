@@ -64,9 +64,6 @@
     <string name="hint_3dof_spawned">تم إنشاء مكعب 3DOF على بُعد 5 أمتار أمامك</string>
     <string name="hint_3dof_closed">تم إغلاق وضع 3DOF</string>
 
-
-
-
     <string name="privacy_scroll_hint">↓ يرجى التمرير إلى الأسفل لقراءة الاتفاقية كاملة</string>
     <string name="privacy_scroll_done">✓ لقد قرأت الاتفاقية كاملة</string>
     <string name="privacy_agree">موافقة &amp; متابعة</string>

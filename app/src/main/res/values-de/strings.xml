@@ -60,9 +60,6 @@
     <string name="hint_3dof_spawned">3DOF-Würfel 5 Meter voraus erzeugt</string>
     <string name="hint_3dof_closed">3DOF-Modus geschlossen</string>
 
-
-
-
     <string name="privacy_scroll_hint">↓ Bitte zum Ende scrollen, um die vollständige Vereinbarung zu lesen</string>
     <string name="privacy_scroll_done">✓ Sie haben die vollständige Vereinbarung gelesen</string>
     <string name="privacy_agree">Zustimmen &amp; Weiter</string>

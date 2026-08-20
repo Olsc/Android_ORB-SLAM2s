@@ -60,9 +60,6 @@
     <string name="hint_3dof_spawned">3DOF কিউব ৫ মিটার সামনে তৈরি হয়েছে</string>
     <string name="hint_3dof_closed">3DOF মোড বন্ধ</string>
 
-
-
-
     <string name="privacy_scroll_hint">↓ সম্পূর্ণ চুক্তি পড়তে নিচে স্ক্রোল করুন</string>
     <string name="privacy_scroll_done">✓ আপনি সম্পূর্ণ চুক্তি পড়েছেন</string>
     <string name="privacy_agree">সম্মত &amp; চালিয়ে যান</string>

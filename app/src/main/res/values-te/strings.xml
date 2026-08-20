@@ -60,9 +60,6 @@
     <string name="hint_3dof_spawned">3DOF క్యూబ్ 5 మీటర్ల ముందు సృష్టించబడింది</string>
     <string name="hint_3dof_closed">3DOF మోడ్ మూసివేయబడింది</string>
 
-
-
-
     <string name="privacy_scroll_hint">↓ పూర్తి ఒప్పందాన్ని చదవడానికి దయచేసి క్రిందికి స్క్రోల్ చేయండి</string>
     <string name="privacy_scroll_done">✓ మీరు పూర్తి ఒప్పందాన్ని చదివారు</string>
     <string name="privacy_agree">అంగీకరిస్తున్నాను &amp; కొనసాగించండి</string>

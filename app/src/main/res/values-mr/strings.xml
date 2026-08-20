@@ -60,9 +60,6 @@
     <string name="hint_3dof_spawned">3DOF घन 5 मीटर समोर तयार झाला</string>
     <string name="hint_3dof_closed">3DOF मोड बंद</string>
 
-
-
-
     <string name="privacy_scroll_hint">↓ संपूर्ण करार वाचण्यासाठी खाली स्क्रोल करा</string>
     <string name="privacy_scroll_done">✓ आपण संपूर्ण करार वाचला आहे</string>
     <string name="privacy_agree">सहमत &amp; चालू ठेवा</string>

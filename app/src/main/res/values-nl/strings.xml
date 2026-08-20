@@ -60,9 +60,6 @@
     <string name="hint_3dof_spawned">3DOF-kubus 5 meter voor u gegenereerd</string>
     <string name="hint_3dof_closed">3DOF-modus gesloten</string>
 
-
-
-
     <string name="privacy_scroll_hint">↓ Scroll naar beneden om de volledige overeenkomst te lezen</string>
     <string name="privacy_scroll_done">✓ U heeft de volledige overeenkomst gelezen</string>
     <string name="privacy_agree">Akkoord &amp; Doorgaan</string>

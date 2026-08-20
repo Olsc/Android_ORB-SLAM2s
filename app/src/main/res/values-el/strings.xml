@@ -60,9 +60,6 @@
     <string name="hint_3dof_spawned">Κύβος 3DOF δημιουργήθηκε 5 μέτρα μπροστά</string>
     <string name="hint_3dof_closed">Η λειτουργία 3DOF έκλεισε</string>
 
-
-
-
     <string name="privacy_scroll_hint">↓ Παρακαλώ κάντε κύλιση μέχρι κάτω για να διαβάσετε τη συμφωνία</string>
     <string name="privacy_scroll_done">✓ Διαβάσατε τη συμφωνία ολόκληρη</string>
     <string name="privacy_agree">Συμφωνώ &amp; Συνέχεια</string>

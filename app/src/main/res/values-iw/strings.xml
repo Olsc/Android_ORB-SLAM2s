@@ -61,9 +61,6 @@
     <string name="hint_3dof_spawned">קוביית 3DOF נוצרה 5 מטר קדימה</string>
     <string name="hint_3dof_closed">מצב 3DOF נסגר</string>
 
-
-
-
     <string name="privacy_scroll_hint">↓ אנא גלול לתחתית כדי לקרוא את ההסכם המלא</string>
     <string name="privacy_scroll_done">✓ קראת את ההסכם המלא</string>
     <string name="privacy_agree">מסכים &amp; ממשיך</string>

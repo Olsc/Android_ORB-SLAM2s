@@ -59,14 +59,9 @@
     <string name="hint_3dof_spawned">3DOF立方体已在前方5米处生成</string>
     <string name="hint_3dof_closed">3DOF模式已关闭</string>
 
-
-
-
-
     <string name="privacy_scroll_hint">↓ 请滑动至底部阅读完整协议</string>
     <string name="privacy_scroll_done">✓ 您已阅读完整协议</string>
     <string name="privacy_agree">同意并继续</string>
     <string name="privacy_load_error">加载隐私政策失败，请重试。</string>
 
 </resources>
-

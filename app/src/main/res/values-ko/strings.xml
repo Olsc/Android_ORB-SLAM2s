@@ -59,9 +59,6 @@
     <string name="hint_3dof_spawned">3DOF 큐브가 5미터 앞에 생성됨</string>
     <string name="hint_3dof_closed">3DOF 모드 종료됨</string>
 
-
-
-
     <string name="privacy_scroll_hint">↓ 전체 계약서를 읽으려면 맨 아래로 스크롤하세요</string>
     <string name="privacy_scroll_done">✓ 전체 계약서를 읽으셨습니다</string>
     <string name="privacy_agree">동의 &amp; 계속</string>

@@ -60,9 +60,6 @@
     <string name="hint_3dof_spawned">3DOF kocka 5 méterrel előrébb létrehozva</string>
     <string name="hint_3dof_closed">3DOF mód bezárva</string>
 
-
-
-
     <string name="privacy_scroll_hint">↓ Görgessen le a teljes megállapodás elolvasásához</string>
     <string name="privacy_scroll_done">✓ Elolvasta a teljes megállapodást</string>
     <string name="privacy_agree">Elfogadom &amp; Folytatom</string>

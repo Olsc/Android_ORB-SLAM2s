@@ -61,9 +61,6 @@
     <string name="hint_3dof_spawned">Cub 3DOF generat la 5 metri înainte</string>
     <string name="hint_3dof_closed">Mod 3DOF închis</string>
 
-
-
-
     <string name="privacy_scroll_hint">↓ Derulați până la capăt pentru a citi acordul complet</string>
     <string name="privacy_scroll_done">✓ Ați citit acordul complet</string>
     <string name="privacy_agree">De acord &amp; Continuare</string>

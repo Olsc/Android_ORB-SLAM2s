@@ -60,9 +60,6 @@
     <string name="hint_3dof_spawned">3DOF கனசதுரம் 5 மீட்டர் முன்னால் உருவாக்கப்பட்டது</string>
     <string name="hint_3dof_closed">3DOF பயன்முறை மூடப்பட்டது</string>
 
-
-
-
     <string name="privacy_scroll_hint">↓ முழு ஒப்பந்தத்தையும் படிக்க கீழே உருட்டவும்</string>
     <string name="privacy_scroll_done">✓ முழு ஒப்பந்தத்தையும் படித்தீர்கள்</string>
     <string name="privacy_agree">ஒப்புக்கொள்கிறேன் &amp; தொடர்கிறேன்</string>
