@@ -45,7 +45,7 @@ The application includes a built-in privacy consent screen (`PrivacyConsentActiv
 ORB-SLAM2s (this Android adaptation and enhancement project) adopts a multi-module license architecture based on Android IPC process isolation:
 
 - **App Shell Module (`app/`)**: Released under the **Apache License, Version 2.0 (Apache-2.0)**. Copy available at [app/LICENSE](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/app/LICENSE).
-- **MenthaAR Engine Module (`MenthaAR/`)**: Derived from ORB-SLAM2 and released under the **GNU General Public License v3.0 (GPL-3.0)**. Copies available at [LICENSE.txt](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/LICENSE.txt) and [License-gpl.txt](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/MenthaAR/License-gpl.txt).
+- **MenthaAR Engine Module (`MenthaAR/`)**: Derived from ORB-SLAM2 and released under the **GNU General Public License v3.0 (GPL-3.0)**. Copies available at [LICENSE.txt](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/LICENSE.txt) and [MenthaAR/LICENSE](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/MenthaAR/LICENSE).
 - **IPC Process Isolation**: The `app` module and `MenthaAR` engine run in separate OS processes and communicate strictly via Binder IPC and SharedMemory (Ashmem/memfd), maintaining distinct legal license boundaries.
 
 Within applicable license terms:

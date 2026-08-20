@@ -175,7 +175,7 @@ ORB-SLAM2 is a real-time SLAM library for **Monocular**, **Stereo** and **RGB-D*
 
 ## ORB-SLAM2 Core Library
 
-The ORB-SLAM2 core library is released under a [GPLv3 license](https://github.com/raulmur/ORB_SLAM2/blob/master/License-gpl.txt). For a list of all code/library dependencies (and associated licenses), please see [Dependencies.md](https://github.com/raulmur/ORB_SLAM2/blob/master/Dependencies.md).
+The ORB-SLAM2 core library is released under a [GPLv3 license](https://github.com/raulmur/ORB_SLAM2/blob/master/MenthaAR/LICENSE). For a list of all code/library dependencies (and associated licenses), please see [Dependencies.md](https://github.com/raulmur/ORB_SLAM2/blob/master/Dependencies.md).
 
 For a closed-source version of ORB-SLAM2 for commercial purposes, please contact the authors: orbslam (at) unizar (dot) es.
 
@@ -184,10 +184,10 @@ For a closed-source version of ORB-SLAM2 for commercial purposes, please contact
 This project adopts a modular license architecture based on Android IPC process isolation:
 
 - **`app/` Module**: Licensed under the **[Apache License, Version 2.0](app/LICENSE)** (Apache-2.0). Contains UI, camera preview, Filament 3D rendering, and sensor components.
-- **`MenthaAR/` Engine Module**: Derived from ORB-SLAM2 and released under the **[GNU General Public License v3.0](MenthaAR/License-gpl.txt)** (GPLv3). Contains native C++ SLAM algorithms and processing.
+- **`MenthaAR/` Engine Module**: Derived from ORB-SLAM2 and released under the **[GNU General Public License v3.0](MenthaAR/LICENSE)** (GPLv3). Contains native C++ SLAM algorithms and processing.
 - **Inter-Process Communication (IPC)**: The `app` module and `MenthaAR` engine run in separate Android OS processes and communicate strictly via Binder IPC and SharedMemory (Ashmem/memfd), preserving license boundaries between modules.
 
-See [LICENSE.txt](LICENSE.txt), [app/LICENSE](app/LICENSE), and [License-gpl.txt](MenthaAR/License-gpl.txt) for details.
+See [LICENSE.txt](LICENSE.txt), [app/LICENSE](app/LICENSE), and [MenthaAR/LICENSE](MenthaAR/LICENSE) for details.
 
 For project collaboration or other field cooperation inquiries, please contact: **OlscStudio@outlook.com**
 

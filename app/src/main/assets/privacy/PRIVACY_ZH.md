@@ -45,7 +45,7 @@
 ORB-SLAM2s（本 Android 适配与增强项目）采用基于 Android IPC 进程隔离的分层/多模块开源许可架构：
 
 - **App 外壳模块 (`app/`)**：采用 **Apache License 2.0 (Apache-2.0)** 许可证发布。副本见 [app/LICENSE](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/app/LICENSE)。
-- **MenthaAR 引擎模块 (`MenthaAR/`)**：基于 ORB-SLAM2 衍生，采用 **GNU General Public License v3.0 (GPL-3.0)** 许可证发布。副本见 [LICENSE.txt](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/LICENSE.txt) 和 [License-gpl.txt](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/MenthaAR/License-gpl.txt)。
+- **MenthaAR 引擎模块 (`MenthaAR/`)**：基于 ORB-SLAM2 衍生，采用 **GNU General Public License v3.0 (GPL-3.0)** 许可证发布。副本见 [LICENSE.txt](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/LICENSE.txt) 和 [MenthaAR/LICENSE](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/MenthaAR/LICENSE)。
 - **IPC 进程隔离机制**：`app` 模块与 `MenthaAR` 引擎各自在独立的 Android 操作系统进程中运行，通过 Binder IPC 及共享内存（Ashmem/memfd）交换数据，各自保持独立的许可证法律边界。
 
 在授权许可范围内：

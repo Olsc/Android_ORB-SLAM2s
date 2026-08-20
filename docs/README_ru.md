@@ -174,7 +174,7 @@ ORB-SLAM2 — это библиотека SLAM в реальном времен�
 
 ## ORB-SLAM2 Core Library
 
-ORB-SLAM2 основная библиотека выпущена под [GPLv3 лицензией](https://github.com/raulmur/ORB_SLAM2/blob/master/License-gpl.txt). Для списка всех зависимостей кода/библиотек (и связанных лицензий) см. [Dependencies.md](https://github.com/raulmur/ORB_SLAM2/blob/master/Dependencies.md).
+ORB-SLAM2 основная библиотека выпущена под [GPLv3 лицензией](https://github.com/raulmur/ORB_SLAM2/blob/master/MenthaAR/LICENSE). Для списка всех зависимостей кода/библиотек (и связанных лицензий) см. [Dependencies.md](https://github.com/raulmur/ORB_SLAM2/blob/master/Dependencies.md).
 
 Для закрытой версии ORB-SLAM2 для коммерческого использования, пожалуйста, свяжитесь с авторами：orbslam (at) unizar (dot) es.
 
@@ -183,10 +183,10 @@ ORB-SLAM2 основная библиотека выпущена под [GPLv3 �
 В данном проекте используется многомодульная архитектура лицензирования, основанная на межпроцессной изоляции Android IPC:
 
 - **Модуль `app/`**: Лицензирован под **[Apache License 2.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/app/LICENSE)** (Apache-2.0). Содержит пользовательский интерфейс, предварительный просмотр камеры, 3D-рендеринг Filament и компоненты датчиков.
-- **Движок `MenthaAR/`**: Создан на основе ORB-SLAM2 и распространяется под **[GNU General Public License v3.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/MenthaAR/License-gpl.txt)** (GPLv3). Содержит алгоритмы C++ SLAM и нативную обработку.
+- **Движок `MenthaAR/`**: Создан на основе ORB-SLAM2 и распространяется под **[GNU General Public License v3.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/MenthaAR/LICENSE)** (GPLv3). Содержит алгоритмы C++ SLAM и нативную обработку.
 - **Межпроцессное взаимодействие (IPC)**: Модуль `app` и движок `MenthaAR` работают в отдельных процессах ОС Android и взаимодействуют исключительно через Binder IPC и общую память (Ashmem/memfd), сохраняя границы лицензий между модулями.
 
-Подробности см. в файлах [LICENSE.txt](../LICENSE.txt), [app/LICENSE](../app/LICENSE) и [License-gpl.txt](../MenthaAR/License-gpl.txt).
+Подробности см. в файлах [LICENSE.txt](../LICENSE.txt), [app/LICENSE](../app/LICENSE) и [MenthaAR/LICENSE](../MenthaAR/LICENSE).
 
 Для сотрудничества по проекту или других вопросов обращайтесь：**OlscStudio@outlook.com**
 

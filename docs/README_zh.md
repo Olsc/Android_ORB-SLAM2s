@@ -175,7 +175,7 @@ ORB-SLAM2 是一个实时 SLAM 库，用于**单目**、**立体**和 **RGB-D** 
 
 ## ORB-SLAM2 核心库
 
-ORB-SLAM2 核心库以 [GPLv3 许可证](https://github.com/raulmur/ORB_SLAM2/blob/master/License-gpl.txt)发布。有关所有代码/库依赖项（及相关许可证）的列表，请参见 [Dependencies.md](https://github.com/raulmur/ORB_SLAM2/blob/master/Dependencies.md)。
+ORB-SLAM2 核心库以 [GPLv3 许可证](https://github.com/raulmur/ORB_SLAM2/blob/master/MenthaAR/LICENSE)发布。有关所有代码/库依赖项（及相关许可证）的列表，请参见 [Dependencies.md](https://github.com/raulmur/ORB_SLAM2/blob/master/Dependencies.md)。
 
 如需商业用途的闭源版本 ORB-SLAM2，请联系作者：orbslam (at) unizar (dot) es。
 
@@ -184,10 +184,10 @@ ORB-SLAM2 核心库以 [GPLv3 许可证](https://github.com/raulmur/ORB_SLAM2/bl
 本项目基于 Android IPC 进程隔离采用分层/多模块开源许可架构：
 
 - **`app/` 模块**：采用 **[Apache License 2.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/app/LICENSE)** (Apache-2.0) 授权。包含 UI 交互、相机预览、Filament 3D 渲染与传感器组件。
-- **`MenthaAR/` 引擎模块**：基于 ORB-SLAM2 衍生，采用 **[GNU General Public License v3.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/MenthaAR/License-gpl.txt)** (GPLv3) 授权。包含 C++ SLAM 核心算法与原生底层处理。
+- **`MenthaAR/` 引擎模块**：基于 ORB-SLAM2 衍生，采用 **[GNU General Public License v3.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/MenthaAR/LICENSE)** (GPLv3) 授权。包含 C++ SLAM 核心算法与原生底层处理。
 - **IPC 进程隔离通信**：`app` 模块与 `MenthaAR` 引擎运行在独立的 Android 系统进程中，仅通过 Binder IPC 和共享内存（Ashmem/memfd）通信，各自保持独立的许可证边界。
 
-详情请参见 [LICENSE.txt](../LICENSE.txt)、[app/LICENSE](../app/LICENSE) 和 [License-gpl.txt](../MenthaAR/License-gpl.txt) 文件。
+详情请参见 [LICENSE.txt](../LICENSE.txt)、[app/LICENSE](../app/LICENSE) 和 [MenthaAR/LICENSE](../MenthaAR/LICENSE) 文件。
 
 项目合作或其他领域合作咨询，请联系：**OlscStudio@outlook.com**
 
