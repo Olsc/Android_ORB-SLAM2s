@@ -5,7 +5,6 @@
     <string name="btn_save">Mentés</string>
     <string name="btn_load">Betöltés</string>
     <string name="btn_map">Térkép</string>
-    <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓Pontfelhő</string>
     <string name="loading_slam_init">SLAM rendszer inicializálása…</string>
     <string name="loading_slam_wait">Kérjük, várjon, ez egy pillanatot vehet igénybe</string>
@@ -16,9 +15,6 @@
     <string name="hint_pointcloud_disabled">Pontfelhő letiltva</string>
     <string name="btn_pointcloud_enabled">✓Pontfelhő</string>
     <string name="btn_pointcloud_disabled">Pontfelhő</string>
-    <string name="hint_slam_enabled">SLAM engedélyezve</string>
-    <string name="hint_slam_disabled">SLAM letiltva</string>
-    <string name="btn_slam_disabled">SLAM</string>
     <string name="input_map_name">Adja meg a térkép nevét</string>
     <string name="dialog_save_map">Térkép mentése</string>
     <string name="button_cancel">Mégse</string>
@@ -35,25 +31,27 @@
     <string name="button_back">Vissza</string>
     <string name="dialog_map_details">Térkép részletei</string>
     <string name="map_details_name">Térkép neve: %1$s</string>
+    <string name="map_details_keyframes">Kulcskockák: %1$d</string>
+    <string name="map_details_mappoints">Térképpontok: %1$d</string>
     <string name="map_details_size">Fájlméret: %1$d KB</string>
     <string name="map_details_time">Létrehozva: %1$s</string>
+    <string name="map_details_plane">Sík: %1$s</string>
+    <string name="map_details_plane_yes">Igen</string>
+    <string name="map_details_plane_no">Nem</string>
     <string name="button_ok">OK</string>
     <string name="map_stats_format">KK: %1$d | TP: %2$d | Sík: %3$s</string>
     <string name="map_stats_plane_yes">Igen</string>
     <string name="map_stats_plane_no">Nem</string>
     <string name="hint_map_saved">Térkép mentve: %1$s</string>
-    <string name="hint_map_save_failed">Mentés sikertelen: %1$s</string>
-    <string name="hint_map_file_not_found">A térképfájl nem található</string>
     <string name="hint_map_loaded">Térkép betöltve: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">%1$d térkép betöltve</item>
+        <item quantity="one">%1$d térkép betöltve</item>
     </plurals>
-    <string name="hint_map_load_failed">Betöltés sikertelen: %1$s</string>
     <string name="permission_camera_storage_required">Kamera és tárolási engedélyek szükségesek. Kérjük, adjon engedélyeket a beállításokban.</string>
 
     <string name="category_ar">AR vezérlők</string>
     <string name="category_map">Térkép</string>
-    <string name="category_slam">SLAM</string>
     <string name="category_display">Kijelző</string>
 
     <string name="btn_3dof">3DOF</string>
@@ -61,18 +59,9 @@
     <string name="hint_3dof_unavailable">A 3DOF funkció nem érhető el</string>
     <string name="hint_3dof_spawned">3DOF kocka 5 méterrel előrébb létrehozva</string>
     <string name="hint_3dof_closed">3DOF mód bezárva</string>
-    <string name="btn_web_server_close">Webszerver bezárása</string>
-    <string name="btn_web_server_open">Webszerver megnyitása</string>
-    <string name="hint_web_server_closed">Webszerver bezárva</string>
-
-    <string name="btn_web_server">Webszerver</string>
 
 
-    <string name="title_web_server">Webszerver</string>
-    <string name="web_fps_label"> (Web)</string>
-    <string name="hint_waiting_browser_frame">Böngésző képre vár…</string>
-    <string name="hint_web_server_started">Webszerver elindítva: %1$s</string>
-    <string name="web_url_default">http://0.0.0.0:8080</string>
+
 
     <string name="privacy_scroll_hint">↓ Görgessen le a teljes megállapodás elolvasásához</string>
     <string name="privacy_scroll_done">✓ Elolvasta a teljes megállapodást</string>

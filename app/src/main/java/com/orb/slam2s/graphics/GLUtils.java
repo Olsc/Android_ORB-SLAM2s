@@ -2,7 +2,6 @@ package com.orb.slam2s.graphics;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.opengl.GLES20;
 import android.util.Log;
 
@@ -122,16 +121,6 @@ public final class GLUtils {
         return textures[0];
     }
 
-    // 从 Bitmap 获取纹理并输出尺寸
-    public static int getTextureFromBitmap(final Bitmap bitmap, int[] outSize) {
-        if (bitmap == null || bitmap.isRecycled()) return 0;
-        if (outSize != null && outSize.length >= 2) {
-            outSize[0] = bitmap.getWidth();
-            outSize[1] = bitmap.getHeight();
-        }
-        return loadTexture(bitmap, 0);
-    }
-
     // 绑定 2D 纹理
     public static void bindTexture2D(int textureId, int activeTextureUnit, int uniformHandle, int textureUnitIndex) {
         if (textureId != 0) {
@@ -141,22 +130,4 @@ public final class GLUtils {
         }
     }
 
-    // 从 Assets 加载 Bitmap
-    public static Bitmap loadBitmapFromAssets(Context context, String filePath) {
-        try (InputStream is = context.getAssets().open(filePath)) {
-            BitmapFactory.Options options = new BitmapFactory.Options();
-            options.inScaled = false;
-            return BitmapFactory.decodeStream(is);
-        } catch (IOException e) {
-            Log.e(TAG, "从 assets 加载位图失败: " + filePath, e);
-            return null;
-        }
-    }
-
-    // 从 Raw 资源加载 Bitmap
-    public static Bitmap loadBitmapFromRaw(Context context, int resourceId) {
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inScaled = false;
-        return BitmapFactory.decodeResource(context.getResources(), resourceId, options);
-    }
 }

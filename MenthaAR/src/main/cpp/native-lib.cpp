@@ -51,8 +51,6 @@ std::mutex gMapPointsMutex;
 std::atomic<bool> gEnablePointCloudDisplay{true};  // 默认启用点云显示
 
 // SLAM丢失自动重置相关变量
-double lastOkTime = 0.0;            // 上次SLAM正常工作的时间
-bool wasLost = false;                // 上一帧是否处于LOST状态
 const double LOST_RESET_TIMEOUT = ORB_SLAM2::LOST_RESET_TIMEOUT; // 名义超时（秒），仅用于换算帧数
 int gLostFrameCount = 0;             // 连续丢失帧计数
 
@@ -489,16 +487,12 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
     const int LOST_RESET_FRAMES = (int)(LOST_RESET_TIMEOUT * ORB_SLAM2::SYSTEM_FPS);
 
     if(!isLost) {
-        lastOkTime = timeStamp;
-        wasLost = false;
         gLostFrameCount = 0;
     } else {
         // SLAM处于LOST状态
         if(++gLostFrameCount >= LOST_RESET_FRAMES) {
             LOGD("SLAM连续丢失 %d 帧，执行轻量重置（保留加载的地图）...", gLostFrameCount);
             currentSlamSys->Reset(true);  // 保留地图的重置
-            wasLost = false;
-            lastOkTime = timeStamp;
             gLostFrameCount = 0;
             LOGD("SLAM轻量重置完成，已加载的地图数据已保留");
         }
@@ -754,8 +748,8 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeGetMVP(JNIEnv *env, jobject instan
         static int sW = -1, sH = -1;
         static float sFx = -1, sFy = -1, sCx = -1, sCy = -1;
         static float sProj[16] = {0};
-        const int w = (int)(imageWidth/ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR);
-        const int h = (int)(imageHeight/ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR);
+        const int w = (int)((float)imageWidth / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR);
+        const int h = (int)((float)imageHeight / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR);
         std::lock_guard<std::mutex> lk(sProjMutex);
         if(w != sW || h != sH || fx != sFx || fy != sFy || cx != sCx || cy != sCy)
         {
@@ -900,8 +894,8 @@ Java_com_orb_slam2s_slamar_NativeHelper_getAllArObjectsData(JNIEnv *env, jobject
         }
     } else if (gAnchor.valid && gAnchor.plane) {
         data.push_back(1.0f);
-        for(int i=0; i<16; i++) {
-            data.push_back(gCurrentModelMatrix[i]);
+        for(float m : gCurrentModelMatrix) {
+            data.push_back(m);
         }
         data.push_back(gArObjectScale.load(std::memory_order_relaxed));
     } else {
@@ -935,7 +929,6 @@ Java_com_orb_slam2s_slamar_NativeHelper_isPointCloudDisplayEnabled(JNIEnv *env, 
 #define SH_HEADER_SIZE 256
 #define SH_OFF_FRAME_W 8
 #define SH_OFF_FRAME_H 12
-#define SH_OFF_UI_WRITE_SEQ 16
 #define SH_OFF_SLAM_DONE_SEQ 20
 #define SH_OFF_TRACKING_STATE 24
 #define SH_OFF_DRAW_FLAG 28
@@ -1231,8 +1224,6 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeShutdown(JNIEnv* env, jobject inst
         }
         slamInitialized = false;
         timeStamp = 0.0;
-        lastOkTime = 0.0;
-        wasLost = false;
         gLostFrameCount = 0;
     }
 

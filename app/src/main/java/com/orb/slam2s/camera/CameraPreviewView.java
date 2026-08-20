@@ -180,7 +180,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
         }
     }
 
-    private boolean connectCamera() {
+    private void connectCamera() {
         try {
             ListenableFuture<ProcessCameraProvider> future = ProcessCameraProvider.getInstance(getContext());
             future.addListener(() -> {
@@ -339,9 +339,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
             }, ContextCompat.getMainExecutor(getContext()));
         } catch (Exception ex) {
             Log.e(TAG, "初始化 CameraX 异常: " + ex.getMessage());
-            return false;
         }
-        return true;
     }
 
     private void disconnectCamera() {

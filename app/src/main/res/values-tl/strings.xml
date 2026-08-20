@@ -5,7 +5,6 @@
     <string name="btn_save">I-save</string>
     <string name="btn_load">I-load</string>
     <string name="btn_map">Mapa</string>
-    <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓Point Cloud</string>
     <string name="loading_slam_init">Sinisimulan ang SLAM system…</string>
     <string name="loading_slam_wait">Mangyaring maghintay, maaaring tumagal ito ng ilang sandali</string>
@@ -16,9 +15,6 @@
     <string name="hint_pointcloud_disabled">Point cloud hindi pinagana</string>
     <string name="btn_pointcloud_enabled">✓Point Cloud</string>
     <string name="btn_pointcloud_disabled">Point Cloud</string>
-    <string name="hint_slam_enabled">SLAM pinagana</string>
-    <string name="hint_slam_disabled">SLAM hindi pinagana</string>
-    <string name="btn_slam_disabled">SLAM</string>
     <string name="input_map_name">Ilagay ang pangalan ng mapa</string>
     <string name="dialog_save_map">I-save ang Mapa</string>
     <string name="button_cancel">Kanselahin</string>
@@ -35,25 +31,27 @@
     <string name="button_back">Bumalik</string>
     <string name="dialog_map_details">Detalye ng Mapa</string>
     <string name="map_details_name">Pangalan ng Mapa: %1$s</string>
+    <string name="map_details_keyframes">Mga Keyframe: %1$d</string>
+    <string name="map_details_mappoints">Mga Punto ng Mapa: %1$d</string>
     <string name="map_details_size">Laki ng File: %1$d KB</string>
     <string name="map_details_time">Nilikha: %1$s</string>
+    <string name="map_details_plane">May Eroplano: %1$s</string>
+    <string name="map_details_plane_yes">Oo</string>
+    <string name="map_details_plane_no">Hindi</string>
     <string name="button_ok">OK</string>
     <string name="map_stats_format">KFs: %1$d | MPs: %2$d | Eroplano: %3$s</string>
     <string name="map_stats_plane_yes">Oo</string>
     <string name="map_stats_plane_no">Hindi</string>
     <string name="hint_map_saved">Nai-save ang mapa: %1$s</string>
-    <string name="hint_map_save_failed">Nabigo ang pag-save: %1$s</string>
-    <string name="hint_map_file_not_found">Hindi nahanap ang file ng mapa</string>
     <string name="hint_map_loaded">Na-load ang mapa: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">Na-load ang %1$d na mapa</item>
+        <item quantity="one">Na-load ang %1$d na mapa</item>
     </plurals>
-    <string name="hint_map_load_failed">Nabigo ang pag-load: %1$s</string>
     <string name="permission_camera_storage_required">Kailangan ang mga pahintulot sa camera at storage. Mangyaring ibigay ang pahintulot sa mga setting.</string>
 
     <string name="category_ar">Mga Kontrol ng AR</string>
     <string name="category_map">Mapa</string>
-    <string name="category_slam">SLAM</string>
     <string name="category_display">Display</string>
 
     <string name="btn_3dof">3DOF</string>
@@ -61,18 +59,9 @@
     <string name="hint_3dof_unavailable">Hindi available ang feature na 3DOF</string>
     <string name="hint_3dof_spawned">Nalilikha ang 3DOF cube 5 metro sa harap</string>
     <string name="hint_3dof_closed">Sarado na ang 3DOF mode</string>
-    <string name="btn_web_server_close">Isara ang Web Server</string>
-    <string name="btn_web_server_open">Buksan ang Web Server</string>
-    <string name="hint_web_server_closed">Sarado na ang web server</string>
-
-    <string name="btn_web_server">Web Server</string>
 
 
-    <string name="title_web_server">Web Server</string>
-    <string name="web_fps_label"> (Web)</string>
-    <string name="hint_waiting_browser_frame">Naghihintay ng larawan mula sa browser…</string>
-    <string name="hint_web_server_started">Nagsimula na ang web server: %1$s</string>
-    <string name="web_url_default">http://0.0.0.0:8080</string>
+
 
     <string name="privacy_scroll_hint">↓ Mangyaring mag-scroll pababa para mabasa ang buong kasunduan</string>
     <string name="privacy_scroll_done">✓ Nabasa mo na ang buong kasunduan</string>

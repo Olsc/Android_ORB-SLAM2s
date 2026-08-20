@@ -1,6 +1,7 @@
 package com.orb.slam2s.app;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -15,6 +16,8 @@ import com.orb.slam2s.R;
 import com.orb.slam2s.ui.MainActivity;
 
 // SplashActivity：启动权限检查与主界面分发
+// 该 Activity 承担权限检查与分发逻辑（非纯启动图），不采用 Android 12+ SplashScreen API
+@SuppressLint("CustomSplashScreen")
 public class SplashActivity extends Activity {
     private static final int REQUEST_PERMISSION = 233;
 

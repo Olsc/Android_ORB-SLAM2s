@@ -1,13 +1,10 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="hint_map_saved">Peta disimpan: %1$s</string>
-    <string name="hint_map_save_failed">Gagal menyimpan: %1$s</string>
-    <string name="hint_map_file_not_found">File peta tidak ditemukan</string>
     <string name="hint_map_loaded">Peta dimuat: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">%1$d peta dimuat</item>
     </plurals>
-    <string name="hint_map_load_failed">Gagal memuat: %1$s</string>
     <string name="hint_map_deleted">Peta dihapus</string>
     <string name="hint_map_delete_failed">Gagal menghapus</string>
 </resources>

@@ -5,7 +5,6 @@
     <string name="btn_save">Tallenna</string>
     <string name="btn_load">Lataa</string>
     <string name="btn_map">Kartta</string>
-    <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓Pistepilvi</string>
     <string name="loading_slam_init">Alustetaan SLAM-järjestelmää…</string>
     <string name="loading_slam_wait">Odota hetki, tämä voi viedä hetken</string>
@@ -16,9 +15,6 @@
     <string name="hint_pointcloud_disabled">Pistepilvi poistettu käytöstä</string>
     <string name="btn_pointcloud_enabled">✓Pistepilvi</string>
     <string name="btn_pointcloud_disabled">Pistepilvi</string>
-    <string name="hint_slam_enabled">SLAM käytössä</string>
-    <string name="hint_slam_disabled">SLAM poistettu käytöstä</string>
-    <string name="btn_slam_disabled">SLAM</string>
     <string name="input_map_name">Syötä kartan nimi</string>
     <string name="dialog_save_map">Tallenna kartta</string>
     <string name="button_cancel">Peruuta</string>
@@ -35,25 +31,27 @@
     <string name="button_back">Takaisin</string>
     <string name="dialog_map_details">Kartan tiedot</string>
     <string name="map_details_name">Kartan nimi: %1$s</string>
+    <string name="map_details_keyframes">Avainkehykset: %1$d</string>
+    <string name="map_details_mappoints">Kartan pisteet: %1$d</string>
     <string name="map_details_size">Tiedostokoko: %1$d KB</string>
     <string name="map_details_time">Luotu: %1$s</string>
+    <string name="map_details_plane">Taso: %1$s</string>
+    <string name="map_details_plane_yes">Kyllä</string>
+    <string name="map_details_plane_no">Ei</string>
     <string name="button_ok">OK</string>
     <string name="map_stats_format">AK: %1$d | KP: %2$d | Taso: %3$s</string>
     <string name="map_stats_plane_yes">Kyllä</string>
     <string name="map_stats_plane_no">Ei</string>
     <string name="hint_map_saved">Kartta tallennettu: %1$s</string>
-    <string name="hint_map_save_failed">Tallennus epäonnistui: %1$s</string>
-    <string name="hint_map_file_not_found">Kartan tiedostoa ei löydy</string>
     <string name="hint_map_loaded">Kartta ladattu: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">%1$d karttaa ladattu</item>
+        <item quantity="one">%1$d karttaa ladattu</item>
     </plurals>
-    <string name="hint_map_load_failed">Lataus epäonnistui: %1$s</string>
     <string name="permission_camera_storage_required">Kamera- ja tallennusluvat vaaditaan. Anna luvat asetuksissa.</string>
 
     <string name="category_ar">AR-ohjaimet</string>
     <string name="category_map">Kartta</string>
-    <string name="category_slam">SLAM</string>
     <string name="category_display">Näyttö</string>
 
     <string name="btn_3dof">3DOF</string>
@@ -61,18 +59,9 @@
     <string name="hint_3dof_unavailable">3DOF-ominaisuus ei ole käytettävissä</string>
     <string name="hint_3dof_spawned">3DOF-kuutio luotu 5 metriä edessä</string>
     <string name="hint_3dof_closed">3DOF-tila suljettu</string>
-    <string name="btn_web_server_close">Sulje verkkopalvelin</string>
-    <string name="btn_web_server_open">Avaa verkkopalvelin</string>
-    <string name="hint_web_server_closed">Verkkopalvelin suljettu</string>
-
-    <string name="btn_web_server">Verkkopalvelin</string>
 
 
-    <string name="title_web_server">Verkkopalvelin</string>
-    <string name="web_fps_label"> (Verkko)</string>
-    <string name="hint_waiting_browser_frame">Odotetaan selaimen kuvaa…</string>
-    <string name="hint_web_server_started">Verkkopalvelin käynnistetty: %1$s</string>
-    <string name="web_url_default">http://0.0.0.0:8080</string>
+
 
     <string name="privacy_scroll_hint">↓ Vieritä alas lukeaksesi koko sopimuksen</string>
     <string name="privacy_scroll_done">✓ Olet lukenut koko sopimuksen</string>

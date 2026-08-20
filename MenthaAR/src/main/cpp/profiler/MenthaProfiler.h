@@ -67,13 +67,13 @@ private:
 
 #else
 
-// 非开发模式下宏定义为空
-#define VT_PROFILE_INITIALIZE(path)
-#define VT_PROFILE_SHUTDOWN()
-#define VT_PROFILE_BEGIN(name)
-#define VT_PROFILE_END(name)
-#define VT_PROFILE_FUNCTION()
-#define VT_PROFILE_SCOPE(name)
+// 非开发模式下宏定义为空语句，避免产生悬空分号（EmptyDeclOrStmt 警告）
+#define VT_PROFILE_INITIALIZE(path) ((void)0)
+#define VT_PROFILE_SHUTDOWN() ((void)0)
+#define VT_PROFILE_BEGIN(name) ((void)0)
+#define VT_PROFILE_END(name) ((void)0)
+#define VT_PROFILE_FUNCTION() ((void)0)
+#define VT_PROFILE_SCOPE(name) ((void)0)
 
 #endif // MENTHA_DEVELOP_MODE
 

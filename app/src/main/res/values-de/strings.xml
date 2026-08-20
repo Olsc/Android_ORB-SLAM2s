@@ -5,7 +5,6 @@
     <string name="btn_save">Speichern</string>
     <string name="btn_load">Laden</string>
     <string name="btn_map">Karte</string>
-    <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓Punktwolke</string>
     <string name="loading_slam_init">SLAM-System wird initialisiert…</string>
     <string name="loading_slam_wait">Bitte warten, das kann einen Moment dauern</string>
@@ -16,9 +15,6 @@
     <string name="hint_pointcloud_disabled">Punktwolke deaktiviert</string>
     <string name="btn_pointcloud_enabled">✓Punktwolke</string>
     <string name="btn_pointcloud_disabled">Punktwolke</string>
-    <string name="hint_slam_enabled">SLAM aktiviert</string>
-    <string name="hint_slam_disabled">SLAM deaktiviert</string>
-    <string name="btn_slam_disabled">SLAM</string>
     <string name="input_map_name">Kartenname eingeben</string>
     <string name="dialog_save_map">Karte speichern</string>
     <string name="button_cancel">Abbrechen</string>
@@ -35,25 +31,27 @@
     <string name="button_back">Zurück</string>
     <string name="dialog_map_details">Kartendetails</string>
     <string name="map_details_name">Kartenname: %1$s</string>
+    <string name="map_details_keyframes">Schlüsselbilder: %1$d</string>
+    <string name="map_details_mappoints">Kartenpunkte: %1$d</string>
     <string name="map_details_size">Dateigröße: %1$d KB</string>
     <string name="map_details_time">Erstellt: %1$s</string>
+    <string name="map_details_plane">Ebene vorhanden: %1$s</string>
+    <string name="map_details_plane_yes">Ja</string>
+    <string name="map_details_plane_no">Nein</string>
     <string name="button_ok">OK</string>
     <string name="map_stats_format">KFs: %1$d | MPs: %2$d | Ebene: %3$s</string>
     <string name="map_stats_plane_yes">Ja</string>
     <string name="map_stats_plane_no">Nein</string>
     <string name="hint_map_saved">Karte gespeichert: %1$s</string>
-    <string name="hint_map_save_failed">Speichern fehlgeschlagen: %1$s</string>
-    <string name="hint_map_file_not_found">Kartendatei nicht gefunden</string>
     <string name="hint_map_loaded">Karte geladen: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">%1$d Karten geladen</item>
+        <item quantity="one">%1$d Karten geladen</item>
     </plurals>
-    <string name="hint_map_load_failed">Laden fehlgeschlagen: %1$s</string>
     <string name="permission_camera_storage_required">Kamera- und Speicherberechtigung erforderlich. Bitte Berechtigungen in den Einstellungen erteilen.</string>
 
     <string name="category_ar">AR-Steuerung</string>
     <string name="category_map">Karte</string>
-    <string name="category_slam">SLAM</string>
     <string name="category_display">Anzeige</string>
 
     <string name="btn_3dof">3DOF</string>
@@ -61,18 +59,9 @@
     <string name="hint_3dof_unavailable">3DOF-Funktion nicht verfügbar</string>
     <string name="hint_3dof_spawned">3DOF-Würfel 5 Meter voraus erzeugt</string>
     <string name="hint_3dof_closed">3DOF-Modus geschlossen</string>
-    <string name="btn_web_server_close">Webserver schließen</string>
-    <string name="btn_web_server_open">Webserver öffnen</string>
-    <string name="hint_web_server_closed">Webserver geschlossen</string>
-
-    <string name="btn_web_server">Webserver</string>
 
 
-    <string name="title_web_server">Webserver</string>
-    <string name="web_fps_label"> (Web)</string>
-    <string name="hint_waiting_browser_frame">Warte auf Browser-Bild…</string>
-    <string name="hint_web_server_started">Webserver gestartet: %1$s</string>
-    <string name="web_url_default">http://0.0.0.0:8080</string>
+
 
     <string name="privacy_scroll_hint">↓ Bitte zum Ende scrollen, um die vollständige Vereinbarung zu lesen</string>
     <string name="privacy_scroll_done">✓ Sie haben die vollständige Vereinbarung gelesen</string>

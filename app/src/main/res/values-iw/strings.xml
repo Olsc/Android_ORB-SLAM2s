@@ -5,7 +5,6 @@
     <string name="btn_save">שמור</string>
     <string name="btn_load">טען</string>
     <string name="btn_map">מפה</string>
-    <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓ענן נקודות</string>
     <string name="loading_slam_init">מאתחל את מערכת SLAM…</string>
     <string name="loading_slam_wait">אנא המתן, זה עשוי לקחת זמן מה</string>
@@ -16,9 +15,6 @@
     <string name="hint_pointcloud_disabled">ענן נקודות הושבת</string>
     <string name="btn_pointcloud_enabled">✓ענן נקודות</string>
     <string name="btn_pointcloud_disabled">ענן נקודות</string>
-    <string name="hint_slam_enabled">SLAM הופעל</string>
-    <string name="hint_slam_disabled">SLAM הושבת</string>
-    <string name="btn_slam_disabled">SLAM</string>
     <string name="input_map_name">הזן שם מפה</string>
     <string name="dialog_save_map">שמור מפה</string>
     <string name="button_cancel">ביטול</string>
@@ -35,25 +31,28 @@
     <string name="button_back">חזרה</string>
     <string name="dialog_map_details">פרטי מפה</string>
     <string name="map_details_name">שם מפה: %1$s</string>
+    <string name="map_details_keyframes">פריימים מרכזיים: %1$d</string>
+    <string name="map_details_mappoints">נקודות מפה: %1$d</string>
     <string name="map_details_size">גודל קובץ: %1$d KB</string>
     <string name="map_details_time">נוצר: %1$s</string>
+    <string name="map_details_plane">יש מישור: %1$s</string>
+    <string name="map_details_plane_yes">כן</string>
+    <string name="map_details_plane_no">לא</string>
     <string name="button_ok">אישור</string>
     <string name="map_stats_format">KFs: %1$d | MPs: %2$d | מישור: %3$s</string>
     <string name="map_stats_plane_yes">כן</string>
     <string name="map_stats_plane_no">לא</string>
     <string name="hint_map_saved">המפה נשמרה: %1$s</string>
-    <string name="hint_map_save_failed">שמירה נכשלה: %1$s</string>
-    <string name="hint_map_file_not_found">קובץ המפה לא נמצא</string>
     <string name="hint_map_loaded">המפה נטענה: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">%1$d מפות נטענו</item>
+        <item quantity="one">%1$d מפות נטענו</item>
+        <item quantity="two">%1$d מפות נטענו</item>
     </plurals>
-    <string name="hint_map_load_failed">טעינה נכשלה: %1$s</string>
     <string name="permission_camera_storage_required">נדרשות הרשאות מצלמה ואחסון. אנא אשר הרשאות בהגדרות.</string>
 
     <string name="category_ar">פקדי AR</string>
     <string name="category_map">מפה</string>
-    <string name="category_slam">SLAM</string>
     <string name="category_display">תצוגה</string>
 
     <string name="btn_3dof">3DOF</string>
@@ -61,18 +60,9 @@
     <string name="hint_3dof_unavailable">תכונת 3DOF אינה זמינה</string>
     <string name="hint_3dof_spawned">קוביית 3DOF נוצרה 5 מטר קדימה</string>
     <string name="hint_3dof_closed">מצב 3DOF נסגר</string>
-    <string name="btn_web_server_close">סגור שרת אינטרנט</string>
-    <string name="btn_web_server_open">פתח שרת אינטרנט</string>
-    <string name="hint_web_server_closed">שרת האינטרנט נסגר</string>
-
-    <string name="btn_web_server">שרת אינטרנט</string>
 
 
-    <string name="title_web_server">שרת אינטרנט</string>
-    <string name="web_fps_label"> (אינטרנט)</string>
-    <string name="hint_waiting_browser_frame">ממתין לתמונת הדפדפן…</string>
-    <string name="hint_web_server_started">שרת האינטרנט הופעל: %1$s</string>
-    <string name="web_url_default">http://0.0.0.0:8080</string>
+
 
     <string name="privacy_scroll_hint">↓ אנא גלול לתחתית כדי לקרוא את ההסכם המלא</string>
     <string name="privacy_scroll_done">✓ קראת את ההסכם המלא</string>

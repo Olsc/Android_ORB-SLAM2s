@@ -22,13 +22,13 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme"
-        android:name="com.orb.slam2s.app.SLAMApplication">
+        android:theme="@style/AppTheme">
         <activity
             android:name="com.orb.slam2s.app.PrivacyConsentActivity"
             android:exported="true"
             android:screenOrientation="sensorLandscape"
-            android:theme="@style/Theme.AppCompat.NoActionBar">
+            android:theme="@style/Theme.AppCompat.NoActionBar"
+            tools:ignore="DiscouragedApi">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -37,13 +37,14 @@
         <activity
             android:name="com.orb.slam2s.app.SplashActivity"
             android:exported="false"
-            android:screenOrientation="fullSensor" />
+            android:screenOrientation="fullSensor"
+            tools:ignore="DiscouragedApi,CustomSplashScreen" />
         <activity
             android:name="com.orb.slam2s.ui.MainActivity"
             android:theme="@style/ListTheme"
             android:screenOrientation="sensorLandscape"
             android:configChanges="orientation|screenSize"
-            tools:ignore="Instantiatable" />
+            tools:ignore="Instantiatable,DiscouragedApi" />
     </application>
 
 </manifest>

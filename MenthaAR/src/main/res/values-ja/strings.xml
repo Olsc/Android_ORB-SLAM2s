@@ -1,13 +1,10 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="hint_map_saved">マップが保存されました: %1$s</string>
-    <string name="hint_map_save_failed">保存失敗: %1$s</string>
-    <string name="hint_map_file_not_found">マップファイルが見つかりません</string>
     <string name="hint_map_loaded">マップが読み込まれました: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">%1$d 個のマップを読み込みました</item>
     </plurals>
-    <string name="hint_map_load_failed">読み込み失敗: %1$s</string>
     <string name="hint_map_deleted">マップが削除されました</string>
     <string name="hint_map_delete_failed">削除失敗</string>
 </resources>

@@ -5,7 +5,6 @@
     <string name="btn_save">保存</string>
     <string name="btn_load">読込</string>
     <string name="btn_map">マップ</string>
-    <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓点群</string>
     <string name="loading_slam_init">SLAMシステムを初期化中…</string>
     <string name="loading_slam_wait">しばらくお待ちください</string>
@@ -16,9 +15,6 @@
     <string name="hint_pointcloud_disabled">点群を無効化しました</string>
     <string name="btn_pointcloud_enabled">✓点群</string>
     <string name="btn_pointcloud_disabled">点群</string>
-    <string name="hint_slam_enabled">SLAMを有効化しました</string>
-    <string name="hint_slam_disabled">SLAMを無効化しました</string>
-    <string name="btn_slam_disabled">SLAM</string>
     <string name="input_map_name">マップ名を入力</string>
     <string name="dialog_save_map">マップを保存</string>
     <string name="button_cancel">キャンセル</string>
@@ -35,25 +31,26 @@
     <string name="button_back">戻る</string>
     <string name="dialog_map_details">マップ詳細</string>
     <string name="map_details_name">マップ名: %1$s</string>
+    <string name="map_details_keyframes">キーフレーム: %1$d</string>
+    <string name="map_details_mappoints">マップポイント: %1$d</string>
     <string name="map_details_size">ファイルサイズ: %1$d KB</string>
     <string name="map_details_time">作成日時: %1$s</string>
+    <string name="map_details_plane">平面あり: %1$s</string>
+    <string name="map_details_plane_yes">はい</string>
+    <string name="map_details_plane_no">いいえ</string>
     <string name="button_ok">OK</string>
     <string name="map_stats_format">KF: %1$d | MP: %2$d | 平面: %3$s</string>
     <string name="map_stats_plane_yes">あり</string>
     <string name="map_stats_plane_no">なし</string>
     <string name="hint_map_saved">マップが保存されました: %1$s</string>
-    <string name="hint_map_save_failed">保存に失敗しました: %1$s</string>
-    <string name="hint_map_file_not_found">マップファイルが見つかりません</string>
     <string name="hint_map_loaded">マップが読み込まれました: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">%1$d 件のマップを読み込みました</item>
     </plurals>
-    <string name="hint_map_load_failed">読込に失敗しました: %1$s</string>
     <string name="permission_camera_storage_required">カメラとストレージの権限が必要です。設定から権限を付与してください。</string>
 
     <string name="category_ar">AR操作</string>
     <string name="category_map">マップ</string>
-    <string name="category_slam">SLAM</string>
     <string name="category_display">表示</string>
 
     <string name="btn_3dof">3DOF</string>
@@ -61,18 +58,9 @@
     <string name="hint_3dof_unavailable">3DOF機能は利用できません</string>
     <string name="hint_3dof_spawned">3DOFキューブが5メートル先に生成されました</string>
     <string name="hint_3dof_closed">3DOFモードを終了しました</string>
-    <string name="btn_web_server_close">Webサーバーを閉じる</string>
-    <string name="btn_web_server_open">Webサーバーを開く</string>
-    <string name="hint_web_server_closed">Webサーバーを閉じました</string>
-
-    <string name="btn_web_server">Webサーバー</string>
 
 
-    <string name="title_web_server">Webサーバー</string>
-    <string name="web_fps_label"> (Web)</string>
-    <string name="hint_waiting_browser_frame">ブラウザー画像を待機中…</string>
-    <string name="hint_web_server_started">Webサーバー起動: %1$s</string>
-    <string name="web_url_default">http://0.0.0.0:8080</string>
+
 
     <string name="privacy_scroll_hint">↓ 全文を読むには最後までスクロールしてください</string>
     <string name="privacy_scroll_done">✓ 全文をお読みいただきました</string>

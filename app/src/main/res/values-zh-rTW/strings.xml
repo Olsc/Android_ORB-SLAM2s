@@ -5,7 +5,6 @@
     <string name="btn_save">儲存</string>
     <string name="btn_load">載入</string>
     <string name="btn_map">地圖</string>
-    <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓點雲</string>
     <string name="loading_slam_init">正在初始化 SLAM 系統…</string>
     <string name="loading_slam_wait">請稍候，這可能需要一些時間</string>
@@ -16,9 +15,6 @@
     <string name="hint_pointcloud_disabled">點雲已停用</string>
     <string name="btn_pointcloud_enabled">✓點雲</string>
     <string name="btn_pointcloud_disabled">點雲</string>
-    <string name="hint_slam_enabled">SLAM 已啟用</string>
-    <string name="hint_slam_disabled">SLAM 已停用</string>
-    <string name="btn_slam_disabled">SLAM</string>
     <string name="input_map_name">輸入地圖名稱</string>
     <string name="dialog_save_map">儲存地圖</string>
     <string name="button_cancel">取消</string>
@@ -35,25 +31,26 @@
     <string name="button_back">返回</string>
     <string name="dialog_map_details">地圖詳情</string>
     <string name="map_details_name">地圖名稱：%1$s</string>
+    <string name="map_details_keyframes">關鍵幀: %1$d</string>
+    <string name="map_details_mappoints">地圖點: %1$d</string>
     <string name="map_details_size">檔案大小：%1$d KB</string>
     <string name="map_details_time">建立時間：%1$s</string>
+    <string name="map_details_plane">有平面: %1$s</string>
+    <string name="map_details_plane_yes">是</string>
+    <string name="map_details_plane_no">否</string>
     <string name="button_ok">確定</string>
     <string name="map_stats_format">關鍵影格: %1$d | 地圖點: %2$d | 平面: %3$s</string>
     <string name="map_stats_plane_yes">是</string>
     <string name="map_stats_plane_no">否</string>
     <string name="hint_map_saved">地圖已儲存：%1$s</string>
-    <string name="hint_map_save_failed">儲存失敗：%1$s</string>
-    <string name="hint_map_file_not_found">找不到地圖檔案</string>
     <string name="hint_map_loaded">地圖已載入：%1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">已載入 %1$d 個地圖</item>
     </plurals>
-    <string name="hint_map_load_failed">載入失敗：%1$s</string>
     <string name="permission_camera_storage_required">需要相機與儲存空間權限，請在設定中授權。</string>
 
     <string name="category_ar">AR 控制</string>
     <string name="category_map">地圖管理</string>
-    <string name="category_slam">SLAM 控制</string>
     <string name="category_display">顯示控制</string>
 
     <string name="btn_3dof">3DOF</string>
@@ -61,18 +58,9 @@
     <string name="hint_3dof_unavailable">3DOF 功能不可用</string>
     <string name="hint_3dof_spawned">3DOF 立方體已在前方 5 公尺處生成</string>
     <string name="hint_3dof_closed">3DOF 模式已關閉</string>
-    <string name="btn_web_server_close">關閉 Web 伺服器</string>
-    <string name="btn_web_server_open">開啟 Web 伺服器</string>
-    <string name="hint_web_server_closed">Web 伺服器已關閉</string>
-
-    <string name="btn_web_server">Web 伺服器</string>
 
 
-    <string name="title_web_server">Web 伺服器</string>
-    <string name="web_fps_label"> (Web)</string>
-    <string name="hint_waiting_browser_frame">正在等待瀏覽器影像…</string>
-    <string name="hint_web_server_started">Web 伺服器已啟動：%1$s</string>
-    <string name="web_url_default">http://0.0.0.0:8080</string>
+
 
     <string name="privacy_scroll_hint">↓ 請滑動至底部閱讀完整協議</string>
     <string name="privacy_scroll_done">✓ 您已閱讀完整協議</string>

@@ -5,7 +5,6 @@
     <string name="btn_save">محفوظ کریں</string>
     <string name="btn_load">لوڈ کریں</string>
     <string name="btn_map">نقشہ</string>
-    <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓پوائنٹ کلاؤڈ</string>
     <string name="loading_slam_init">SLAM سسٹم شروع ہو رہا ہے…</string>
     <string name="loading_slam_wait">برائے کرم انتظار کریں، اس میں کچھ وقت لگ سکتا ہے</string>
@@ -16,9 +15,6 @@
     <string name="hint_pointcloud_disabled">پوائنٹ کلاؤڈ غیر فعال</string>
     <string name="btn_pointcloud_enabled">✓پوائنٹ کلاؤڈ</string>
     <string name="btn_pointcloud_disabled">پوائنٹ کلاؤڈ</string>
-    <string name="hint_slam_enabled">SLAM فعال</string>
-    <string name="hint_slam_disabled">SLAM غیر فعال</string>
-    <string name="btn_slam_disabled">SLAM</string>
     <string name="input_map_name">نقشے کا نام درج کریں</string>
     <string name="dialog_save_map">نقشہ محفوظ کریں</string>
     <string name="button_cancel">منسوخ کریں</string>
@@ -35,25 +31,27 @@
     <string name="button_back">واپس</string>
     <string name="dialog_map_details">نقشے کی تفصیلات</string>
     <string name="map_details_name">نقشے کا نام: %1$s</string>
+    <string name="map_details_keyframes">کلیدی فریمز: %1$d</string>
+    <string name="map_details_mappoints">نقشہ پوائنٹس: %1$d</string>
     <string name="map_details_size">فائل سائز: %1$d KB</string>
     <string name="map_details_time">بنایا گیا: %1$s</string>
+    <string name="map_details_plane">ہوائی جہاز ہے: %1$s</string>
+    <string name="map_details_plane_yes">ہاں</string>
+    <string name="map_details_plane_no">نہیں</string>
     <string name="button_ok">ٹھیک ہے</string>
     <string name="map_stats_format">KFs: %1$d | MPs: %2$d | طیارہ: %3$s</string>
     <string name="map_stats_plane_yes">ہاں</string>
     <string name="map_stats_plane_no">نہیں</string>
     <string name="hint_map_saved">نقشہ محفوظ: %1$s</string>
-    <string name="hint_map_save_failed">محفوظ کرنے میں ناکامی: %1$s</string>
-    <string name="hint_map_file_not_found">نقشے کی فائل نہیں ملی</string>
     <string name="hint_map_loaded">نقشہ لوڈ ہو گیا: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">%1$d نقشے لوڈ ہوئے</item>
+        <item quantity="one">%1$d نقشے لوڈ ہوئے</item>
     </plurals>
-    <string name="hint_map_load_failed">لوڈ کرنے میں ناکامی: %1$s</string>
     <string name="permission_camera_storage_required">کیمرہ اور اسٹوریج کی اجازت درکار ہے۔ ترتیبات میں اجازت دیں۔</string>
 
     <string name="category_ar">AR کنٹرول</string>
     <string name="category_map">نقشہ</string>
-    <string name="category_slam">SLAM</string>
     <string name="category_display">ڈسپلے</string>
 
     <string name="btn_3dof">3DOF</string>
@@ -61,18 +59,9 @@
     <string name="hint_3dof_unavailable">3DOF فیچر دستیاب نہیں</string>
     <string name="hint_3dof_spawned">3DOF مکعب 5 میٹر آگے بنایا گیا</string>
     <string name="hint_3dof_closed">3DOF موڈ بند</string>
-    <string name="btn_web_server_close">ویب سرور بند کریں</string>
-    <string name="btn_web_server_open">ویب سرور کھولیں</string>
-    <string name="hint_web_server_closed">ویب سرور بند ہو گیا</string>
-
-    <string name="btn_web_server">ویب سرور</string>
 
 
-    <string name="title_web_server">ویب سرور</string>
-    <string name="web_fps_label"> (ویب)</string>
-    <string name="hint_waiting_browser_frame">براؤزر تصویر کا انتظار ہے…</string>
-    <string name="hint_web_server_started">ویب سرور شروع ہو گیا: %1$s</string>
-    <string name="web_url_default">http://0.0.0.0:8080</string>
+
 
     <string name="privacy_scroll_hint">↓ مکمل معاہدہ پڑھنے کے لیے نیچے سکرول کریں</string>
     <string name="privacy_scroll_done">✓ آپ نے مکمل معاہدہ پڑھ لیا ہے</string>

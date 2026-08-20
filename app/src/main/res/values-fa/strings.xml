@@ -5,7 +5,6 @@
     <string name="btn_save">ذخیره</string>
     <string name="btn_load">بارگذاری</string>
     <string name="btn_map">نقشه</string>
-    <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓ابر نقطه</string>
     <string name="loading_slam_init">در حال راه‌اندازی سیستم SLAM…</string>
     <string name="loading_slam_wait">لطفاً صبر کنید، این ممکن است کمی طول بکشد</string>
@@ -16,9 +15,6 @@
     <string name="hint_pointcloud_disabled">ابر نقطه غیرفعال شد</string>
     <string name="btn_pointcloud_enabled">✓ابر نقطه</string>
     <string name="btn_pointcloud_disabled">ابر نقطه</string>
-    <string name="hint_slam_enabled">SLAM فعال شد</string>
-    <string name="hint_slam_disabled">SLAM غیرفعال شد</string>
-    <string name="btn_slam_disabled">SLAM</string>
     <string name="input_map_name">نام نقشه را وارد کنید</string>
     <string name="dialog_save_map">ذخیره نقشه</string>
     <string name="button_cancel">لغو</string>
@@ -35,25 +31,27 @@
     <string name="button_back">بازگشت</string>
     <string name="dialog_map_details">جزئیات نقشه</string>
     <string name="map_details_name">نام نقشه: %1$s</string>
+    <string name="map_details_keyframes">فریمهای کلیدی: %1$d</string>
+    <string name="map_details_mappoints">نقاط نقشه: %1$d</string>
     <string name="map_details_size">اندازه فایل: %1$d KB</string>
     <string name="map_details_time">ایجاد شده: %1$s</string>
+    <string name="map_details_plane">دارای صفحه است: %1$s</string>
+    <string name="map_details_plane_yes">بله</string>
+    <string name="map_details_plane_no">خیر</string>
     <string name="button_ok">باشه</string>
     <string name="map_stats_format">KFs: %1$d | MPs: %2$d | صفحه: %3$s</string>
     <string name="map_stats_plane_yes">بله</string>
     <string name="map_stats_plane_no">خیر</string>
     <string name="hint_map_saved">نقشه ذخیره شد: %1$s</string>
-    <string name="hint_map_save_failed">ذخیره ناموفق بود: %1$s</string>
-    <string name="hint_map_file_not_found">فایل نقشه پیدا نشد</string>
     <string name="hint_map_loaded">نقشه بارگذاری شد: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">%1$d نقشه بارگذاری شد</item>
+        <item quantity="one">%1$d نقشه بارگذاری شد</item>
     </plurals>
-    <string name="hint_map_load_failed">بارگذاری ناموفق بود: %1$s</string>
     <string name="permission_camera_storage_required">مجوز دوربین و حافظه لازم است. لطفاً در تنظیمات مجوز دهید.</string>
 
     <string name="category_ar">کنترل AR</string>
     <string name="category_map">نقشه</string>
-    <string name="category_slam">SLAM</string>
     <string name="category_display">نمایش</string>
 
     <string name="btn_3dof">3DOF</string>
@@ -61,18 +59,9 @@
     <string name="hint_3dof_unavailable">قابلیت 3DOF در دسترس نیست</string>
     <string name="hint_3dof_spawned">مکعب 3DOF در 5 متر جلو ایجاد شد</string>
     <string name="hint_3dof_closed">حالت 3DOF بسته شد</string>
-    <string name="btn_web_server_close">بستن سرور وب</string>
-    <string name="btn_web_server_open">باز کردن سرور وب</string>
-    <string name="hint_web_server_closed">سرور وب بسته شد</string>
-
-    <string name="btn_web_server">سرور وب</string>
 
 
-    <string name="title_web_server">سرور وب</string>
-    <string name="web_fps_label"> (وب)</string>
-    <string name="hint_waiting_browser_frame">در انتظار تصویر مرورگر…</string>
-    <string name="hint_web_server_started">سرور وب شروع شد: %1$s</string>
-    <string name="web_url_default">http://0.0.0.0:8080</string>
+
 
     <string name="privacy_scroll_hint">↓ لطفاً به پایین اسکرول کنید تا توافقنامه کامل را بخوانید</string>
     <string name="privacy_scroll_done">✓ توافقنامه کامل را خواندید</string>

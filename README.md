@@ -1,7 +1,7 @@
 ![Banner](docs/img/banner_1.png)
 ![Banner](docs/img/banner_2.png)
 
-<div align="center">
+<div style="text-align:center">
 
 [简体中文](docs/README_zh.md) · [English](README.md) · [Русский](docs/README_ru.md) · [한국어](docs/README_ko.md) · [日本語](docs/README_ja.md)
 
@@ -9,7 +9,7 @@
 
 ---
 
-<div align="center">
+<div style="text-align:center">
 
 # 🌿 MenthaAR
 
@@ -21,7 +21,7 @@
 
 > **In a nutshell**: An enhanced spatial computing tool based on ORB-SLAM2 for Android, providing stable 6DoF spatial positioning for mobile devices.
 
-<p align="center">
+<p style="text-align:center">
 <img alt="Java" src="https://img.shields.io/badge/Java-ED8B00?style=flat-square&logo=openjdk&logoColor=white"/>
 <img alt="C++11" src="https://img.shields.io/badge/C++-00599C?style=flat-square&logo=cplusplus&logoColor=white"/>
 <img alt="Android" src="https://img.shields.io/badge/Android-3DDC84?style=flat-square&logo=android&logoColor=white"/>
@@ -101,8 +101,8 @@ Currently tested primarily on Qualcomm Snapdragon platform CPUs:
 | Snapdragon 8+ Gen1   | Redmi K60     | 30 FPS      |
 | Snapdragon 870       | Xiaomi 10S    | 30 FPS      |
 | Snapdragon 7s Gen 2  | Redmi Pad Pro | 30 FPS      |
-| Snapdragon 835       | Xiaomi 6      | 15–30 FPS   |
-| Snapdragon AR1 Gen 1 | Rokid Glass3  | 10–25 FPS   |
+| Snapdragon 835       | Xiaomi 6      | 15-30 FPS   |
+| Snapdragon AR1 Gen 1 | Rokid Glass3  | 10-25 FPS   |
 
 ### 🌑 Dark Frame Detection
 
@@ -269,7 +269,7 @@ _This project has not yet completed research and integration._
 
 # 🐳 Mascot
 
-<div align="center">
+<div style="text-align:center">
 
 ![Mascot](docs/img/mascot-q.png)
 

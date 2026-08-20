@@ -5,7 +5,6 @@
     <string name="btn_save">Guardar</string>
     <string name="btn_load">Cargar</string>
     <string name="btn_map">Mapa</string>
-    <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓Nube de puntos</string>
     <string name="loading_slam_init">Inicializando sistema SLAM…</string>
     <string name="loading_slam_wait">Por favor espere, esto puede tardar un momento</string>
@@ -16,9 +15,6 @@
     <string name="hint_pointcloud_disabled">Nube de puntos desactivada</string>
     <string name="btn_pointcloud_enabled">✓Nube de puntos</string>
     <string name="btn_pointcloud_disabled">Nube de puntos</string>
-    <string name="hint_slam_enabled">SLAM activado</string>
-    <string name="hint_slam_disabled">SLAM desactivado</string>
-    <string name="btn_slam_disabled">SLAM</string>
     <string name="input_map_name">Ingrese el nombre del mapa</string>
     <string name="dialog_save_map">Guardar mapa</string>
     <string name="button_cancel">Cancelar</string>
@@ -35,25 +31,28 @@
     <string name="button_back">Atrás</string>
     <string name="dialog_map_details">Detalles del mapa</string>
     <string name="map_details_name">Nombre del mapa: %1$s</string>
+    <string name="map_details_keyframes">Fotogramas clave: %1$d</string>
+    <string name="map_details_mappoints">Puntos del mapa: %1$d</string>
     <string name="map_details_size">Tamaño del archivo: %1$d KB</string>
     <string name="map_details_time">Creado: %1$s</string>
+    <string name="map_details_plane">Tiene plano: %1$s</string>
+    <string name="map_details_plane_yes">Sí</string>
+    <string name="map_details_plane_no">No</string>
     <string name="button_ok">Aceptar</string>
     <string name="map_stats_format">KFs: %1$d | MPs: %2$d | Plano: %3$s</string>
     <string name="map_stats_plane_yes">Sí</string>
     <string name="map_stats_plane_no">No</string>
     <string name="hint_map_saved">Mapa guardado: %1$s</string>
-    <string name="hint_map_save_failed">Error al guardar: %1$s</string>
-    <string name="hint_map_file_not_found">Archivo de mapa no encontrado</string>
     <string name="hint_map_loaded">Mapa cargado: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">%1$d mapas cargados</item>
+        <item quantity="one">%1$d mapas cargados</item>
+        <item quantity="many">%1$d mapas cargados</item>
     </plurals>
-    <string name="hint_map_load_failed">Error al cargar: %1$s</string>
     <string name="permission_camera_storage_required">Se requieren permisos de cámara y almacenamiento. Por favor, concédalos en los ajustes.</string>
 
     <string name="category_ar">Controles AR</string>
     <string name="category_map">Mapa</string>
-    <string name="category_slam">SLAM</string>
     <string name="category_display">Pantalla</string>
 
     <string name="btn_3dof">3DOF</string>
@@ -61,18 +60,9 @@
     <string name="hint_3dof_unavailable">Función 3DOF no disponible</string>
     <string name="hint_3dof_spawned">Cubo 3DOF generado a 5 metros adelante</string>
     <string name="hint_3dof_closed">Modo 3DOF cerrado</string>
-    <string name="btn_web_server_close">Cerrar servidor web</string>
-    <string name="btn_web_server_open">Abrir servidor web</string>
-    <string name="hint_web_server_closed">Servidor web cerrado</string>
-
-    <string name="btn_web_server">Servidor web</string>
 
 
-    <string name="title_web_server">Servidor web</string>
-    <string name="web_fps_label"> (Web)</string>
-    <string name="hint_waiting_browser_frame">Esperando imagen del navegador…</string>
-    <string name="hint_web_server_started">Servidor web iniciado: %1$s</string>
-    <string name="web_url_default">http://0.0.0.0:8080</string>
+
 
     <string name="privacy_scroll_hint">↓ Desplácese hasta el final para leer el acuerdo completo</string>
     <string name="privacy_scroll_done">✓ Ha leído el acuerdo completo</string>

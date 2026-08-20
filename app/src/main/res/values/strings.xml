@@ -5,7 +5,6 @@
     <string name="btn_save">Save</string>
     <string name="btn_load">Load</string>
     <string name="btn_map">Map</string>
-    <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓Point Cloud</string>
     <string name="loading_slam_init">Initializing SLAM system…</string>
     <string name="loading_slam_wait">Please wait, this may take a while</string>
@@ -16,9 +15,6 @@
     <string name="hint_pointcloud_disabled">Point cloud disabled</string>
     <string name="btn_pointcloud_enabled">✓Point Cloud</string>
     <string name="btn_pointcloud_disabled">Point Cloud</string>
-    <string name="hint_slam_enabled">SLAM enabled</string>
-    <string name="hint_slam_disabled">SLAM disabled</string>
-    <string name="btn_slam_disabled">SLAM</string>
     <string name="input_map_name">Enter map name</string>
     <string name="dialog_save_map">Save Map</string>
     <string name="button_cancel">Cancel</string>
@@ -43,25 +39,19 @@
     <string name="map_details_plane_yes">Yes</string>
     <string name="map_details_plane_no">No</string>
     <string name="button_ok">OK</string>
-    <string name="map_stats_keyframes">Keyframes: %1$d</string>
-    <string name="map_stats_mappoints">Map Points: %1$d</string>
-    <string name="map_stats_size">Size: %1$dKB</string>
     <string name="map_stats_format">KFs: %1$d | MPs: %2$d | Plane: %3$s</string>
     <string name="map_stats_plane_yes">Yes</string>
     <string name="map_stats_plane_no">No</string>
     <string name="hint_map_saved">Map saved: %1$s</string>
-    <string name="hint_map_save_failed">Save failed: %1$s</string>
-    <string name="hint_map_file_not_found">Map file not found</string>
     <string name="hint_map_loaded">Map loaded: %1$s</string>
     <plurals name="hint_maps_loaded">
+        <item quantity="one">Loaded %1$d map</item>
         <item quantity="other">Loaded %1$d maps</item>
     </plurals>
-    <string name="hint_map_load_failed">Load failed: %1$s</string>
     <string name="permission_camera_storage_required">Camera and storage permissions are required. Please grant permissions in settings.</string>
 
     <string name="category_ar">AR Controls</string>
     <string name="category_map">Map</string>
-    <string name="category_slam">SLAM</string>
     <string name="category_display">Display</string>
 
     <string name="btn_3dof">3DOF</string>
@@ -69,20 +59,6 @@
     <string name="hint_3dof_unavailable">3DOF feature unavailable</string>
     <string name="hint_3dof_spawned">3DOF cube spawned 5 meters ahead</string>
     <string name="hint_3dof_closed">3DOF mode closed</string>
-    <string name="btn_web_server_close">Close Web Server</string>
-    <string name="btn_web_server_open">Open Web Server</string>
-    <string name="hint_web_server_closed">Web server closed</string>
-
-    <string name="btn_web_server">Web Server</string>
-
-
-    <string name="title_web_server">Web Server</string>
-    <string name="web_fps_label"> (Web)</string>
-    <string name="hint_waiting_browser_frame">Waiting for browser image…</string>
-    <string name="hint_web_server_started">Web server started: %1$s</string>
-    <string name="web_url_default">http://0.0.0.0:8080</string>
-    <string name="btn_close_qr">Close</string>
-    <string name="qr_code_desc">QR code for connecting a browser</string>
 
     <string name="privacy_scroll_hint">↓ Please scroll to the bottom to read the full agreement</string>
     <string name="privacy_scroll_done">✓ You have read the full agreement</string>

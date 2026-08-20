@@ -1,13 +1,13 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="hint_map_saved">Mapa zapisana: %1$s</string>
-    <string name="hint_map_save_failed">Zapisywanie nie powiodło się: %1$s</string>
-    <string name="hint_map_file_not_found">Nie znaleziono pliku mapy</string>
     <string name="hint_map_loaded">Mapa wczytana: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">Wczytano %1$d map</item>
+        <item quantity="one">Wczytano %1$d map</item>
+        <item quantity="few">Wczytano %1$d map</item>
+        <item quantity="many">Wczytano %1$d map</item>
     </plurals>
-    <string name="hint_map_load_failed">Wczytywanie nie powiodło się: %1$s</string>
     <string name="hint_map_deleted">Mapa usunięta</string>
     <string name="hint_map_delete_failed">Usuwanie nie powiodło się</string>
 </resources>

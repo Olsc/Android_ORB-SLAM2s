@@ -5,7 +5,6 @@
     <string name="btn_save">حفظ</string>
     <string name="btn_load">تحميل</string>
     <string name="btn_map">خريطة</string>
-    <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓سحابة نقطية</string>
     <string name="loading_slam_init">جارٍ تهيئة نظام SLAM…</string>
     <string name="loading_slam_wait">يرجى الانتظار، قد يستغرق هذا بعض الوقت</string>
@@ -16,9 +15,6 @@
     <string name="hint_pointcloud_disabled">السحابة النقطية مُعطَّلة</string>
     <string name="btn_pointcloud_enabled">✓سحابة نقطية</string>
     <string name="btn_pointcloud_disabled">سحابة نقطية</string>
-    <string name="hint_slam_enabled">SLAM مُفعَّل</string>
-    <string name="hint_slam_disabled">SLAM مُعطَّل</string>
-    <string name="btn_slam_disabled">SLAM</string>
     <string name="input_map_name">أدخل اسم الخريطة</string>
     <string name="dialog_save_map">حفظ الخريطة</string>
     <string name="button_cancel">إلغاء</string>
@@ -35,25 +31,31 @@
     <string name="button_back">رجوع</string>
     <string name="dialog_map_details">تفاصيل الخريطة</string>
     <string name="map_details_name">اسم الخريطة: %1$s</string>
+    <string name="map_details_keyframes">الإطارات الرئيسية: %1$d</string>
+    <string name="map_details_mappoints">نقاط الخريطة: %1$d</string>
     <string name="map_details_size">حجم الملف: %1$d كيلوبايت</string>
     <string name="map_details_time">تاريخ الإنشاء: %1$s</string>
+    <string name="map_details_plane">يحتوي على مستوى: %1$s</string>
+    <string name="map_details_plane_yes">نعم</string>
+    <string name="map_details_plane_no">لا</string>
     <string name="button_ok">موافق</string>
     <string name="map_stats_format">IR: %1$d | NQ: %2$d | مستوى: %3$s</string>
     <string name="map_stats_plane_yes">نعم</string>
     <string name="map_stats_plane_no">لا</string>
     <string name="hint_map_saved">تم حفظ الخريطة: %1$s</string>
-    <string name="hint_map_save_failed">فشل الحفظ: %1$s</string>
-    <string name="hint_map_file_not_found">ملف الخريطة غير موجود</string>
     <string name="hint_map_loaded">تم تحميل الخريطة: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">تم تحميل %1$d خريطة</item>
+        <item quantity="zero">تم تحميل %1$d خريطة</item>
+        <item quantity="one">تم تحميل %1$d خريطة</item>
+        <item quantity="two">تم تحميل %1$d خريطة</item>
+        <item quantity="few">تم تحميل %1$d خريطة</item>
+        <item quantity="many">تم تحميل %1$d خريطة</item>
     </plurals>
-    <string name="hint_map_load_failed">فشل التحميل: %1$s</string>
     <string name="permission_camera_storage_required">أذونات الكاميرا والتخزين مطلوبة. يرجى منح الأذونات في الإعدادات.</string>
 
     <string name="category_ar">أدوات AR</string>
     <string name="category_map">الخريطة</string>
-    <string name="category_slam">SLAM</string>
     <string name="category_display">العرض</string>
 
     <string name="btn_3dof">3DOF</string>
@@ -61,18 +63,9 @@
     <string name="hint_3dof_unavailable">ميزة 3DOF غير متاحة</string>
     <string name="hint_3dof_spawned">تم إنشاء مكعب 3DOF على بُعد 5 أمتار أمامك</string>
     <string name="hint_3dof_closed">تم إغلاق وضع 3DOF</string>
-    <string name="btn_web_server_close">إغلاق خادم الويب</string>
-    <string name="btn_web_server_open">فتح خادم الويب</string>
-    <string name="hint_web_server_closed">تم إغلاق خادم الويب</string>
-
-    <string name="btn_web_server">خادم الويب</string>
 
 
-    <string name="title_web_server">خادم الويب</string>
-    <string name="web_fps_label"> (ويب)</string>
-    <string name="hint_waiting_browser_frame">في انتظار صورة المتصفح…</string>
-    <string name="hint_web_server_started">تم تشغيل خادم الويب: %1$s</string>
-    <string name="web_url_default">http://0.0.0.0:8080</string>
+
 
     <string name="privacy_scroll_hint">↓ يرجى التمرير إلى الأسفل لقراءة الاتفاقية كاملة</string>
     <string name="privacy_scroll_done">✓ لقد قرأت الاتفاقية كاملة</string>

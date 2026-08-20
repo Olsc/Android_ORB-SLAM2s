@@ -5,7 +5,6 @@
     <string name="btn_save">Lagre</string>
     <string name="btn_load">Last inn</string>
     <string name="btn_map">Kart</string>
-    <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓Punktsky</string>
     <string name="loading_slam_init">Initialiserer SLAM-system…</string>
     <string name="loading_slam_wait">Vennligst vent, dette kan ta litt tid</string>
@@ -16,9 +15,6 @@
     <string name="hint_pointcloud_disabled">Punktsky deaktivert</string>
     <string name="btn_pointcloud_enabled">✓Punktsky</string>
     <string name="btn_pointcloud_disabled">Punktsky</string>
-    <string name="hint_slam_enabled">SLAM aktivert</string>
-    <string name="hint_slam_disabled">SLAM deaktivert</string>
-    <string name="btn_slam_disabled">SLAM</string>
     <string name="input_map_name">Skriv inn kartnavn</string>
     <string name="dialog_save_map">Lagre kart</string>
     <string name="button_cancel">Avbryt</string>
@@ -35,25 +31,27 @@
     <string name="button_back">Tilbake</string>
     <string name="dialog_map_details">Kartdetaljer</string>
     <string name="map_details_name">Kartnavn: %1$s</string>
+    <string name="map_details_keyframes">Nøkkelbilder: %1$d</string>
+    <string name="map_details_mappoints">Kartpunkter: %1$d</string>
     <string name="map_details_size">Filstørrelse: %1$d KB</string>
     <string name="map_details_time">Opprettet: %1$s</string>
+    <string name="map_details_plane">Har plan: %1$s</string>
+    <string name="map_details_plane_yes">Ja</string>
+    <string name="map_details_plane_no">Nei</string>
     <string name="button_ok">OK</string>
     <string name="map_stats_format">NB: %1$d | KP: %2$d | Plan: %3$s</string>
     <string name="map_stats_plane_yes">Ja</string>
     <string name="map_stats_plane_no">Nei</string>
     <string name="hint_map_saved">Kart lagret: %1$s</string>
-    <string name="hint_map_save_failed">Lagring mislyktes: %1$s</string>
-    <string name="hint_map_file_not_found">Kartfil ikke funnet</string>
     <string name="hint_map_loaded">Kart lastet inn: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">%1$d kart lastet inn</item>
+        <item quantity="one">%1$d kart lastet inn</item>
     </plurals>
-    <string name="hint_map_load_failed">Lasting mislyktes: %1$s</string>
     <string name="permission_camera_storage_required">Tillatelser til kamera og lagring kreves. Gi tillatelser i innstillinger.</string>
 
     <string name="category_ar">AR-kontroller</string>
     <string name="category_map">Kart</string>
-    <string name="category_slam">SLAM</string>
     <string name="category_display">Visning</string>
 
     <string name="btn_3dof">3DOF</string>
@@ -61,18 +59,9 @@
     <string name="hint_3dof_unavailable">3DOF-funksjon ikke tilgjengelig</string>
     <string name="hint_3dof_spawned">3DOF-kube laget 5 meter foran</string>
     <string name="hint_3dof_closed">3DOF-modus lukket</string>
-    <string name="btn_web_server_close">Lukk webserver</string>
-    <string name="btn_web_server_open">Åpne webserver</string>
-    <string name="hint_web_server_closed">Webserver lukket</string>
-
-    <string name="btn_web_server">Webserver</string>
 
 
-    <string name="title_web_server">Webserver</string>
-    <string name="web_fps_label"> (Web)</string>
-    <string name="hint_waiting_browser_frame">Venter på nettleserbilde…</string>
-    <string name="hint_web_server_started">Webserver startet: %1$s</string>
-    <string name="web_url_default">http://0.0.0.0:8080</string>
+
 
     <string name="privacy_scroll_hint">↓ Bla ned for å lese hele avtalen</string>
     <string name="privacy_scroll_done">✓ Du har lest hele avtalen</string>

@@ -5,7 +5,6 @@
     <string name="btn_save">Zapisz</string>
     <string name="btn_load">Wczytaj</string>
     <string name="btn_map">Mapa</string>
-    <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓Chmura punktów</string>
     <string name="loading_slam_init">Inicjalizacja systemu SLAM…</string>
     <string name="loading_slam_wait">Proszę czekać, może to chwilę potrwać</string>
@@ -16,9 +15,6 @@
     <string name="hint_pointcloud_disabled">Chmura punktów wyłączona</string>
     <string name="btn_pointcloud_enabled">✓Chmura punktów</string>
     <string name="btn_pointcloud_disabled">Chmura punktów</string>
-    <string name="hint_slam_enabled">SLAM włączony</string>
-    <string name="hint_slam_disabled">SLAM wyłączony</string>
-    <string name="btn_slam_disabled">SLAM</string>
     <string name="input_map_name">Wpisz nazwę mapy</string>
     <string name="dialog_save_map">Zapisz mapę</string>
     <string name="button_cancel">Anuluj</string>
@@ -35,25 +31,29 @@
     <string name="button_back">Wstecz</string>
     <string name="dialog_map_details">Szczegóły mapy</string>
     <string name="map_details_name">Nazwa mapy: %1$s</string>
+    <string name="map_details_keyframes">Klatki kluczowe: %1$d</string>
+    <string name="map_details_mappoints">Punkty mapy: %1$d</string>
     <string name="map_details_size">Rozmiar pliku: %1$d KB</string>
     <string name="map_details_time">Utworzono: %1$s</string>
+    <string name="map_details_plane">Ma płaszczyznę: %1$s</string>
+    <string name="map_details_plane_yes">Tak</string>
+    <string name="map_details_plane_no">Nie</string>
     <string name="button_ok">OK</string>
     <string name="map_stats_format">KK: %1$d | PM: %2$d | Płaszcz.: %3$s</string>
     <string name="map_stats_plane_yes">Tak</string>
     <string name="map_stats_plane_no">Nie</string>
     <string name="hint_map_saved">Mapa zapisana: %1$s</string>
-    <string name="hint_map_save_failed">Zapis nie powiódł się: %1$s</string>
-    <string name="hint_map_file_not_found">Plik mapy nie znaleziony</string>
     <string name="hint_map_loaded">Mapa wczytana: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">Wczytano map: %1$d</item>
+        <item quantity="one">Wczytano map: %1$d</item>
+        <item quantity="few">Wczytano map: %1$d</item>
+        <item quantity="many">Wczytano map: %1$d</item>
     </plurals>
-    <string name="hint_map_load_failed">Wczytanie nie powiodło się: %1$s</string>
     <string name="permission_camera_storage_required">Wymagane uprawnienia kamery i pamięci. Przyznaj uprawnienia w ustawieniach.</string>
 
     <string name="category_ar">Sterowanie AR</string>
     <string name="category_map">Mapa</string>
-    <string name="category_slam">SLAM</string>
     <string name="category_display">Wyświetlacz</string>
 
     <string name="btn_3dof">3DOF</string>
@@ -61,18 +61,9 @@
     <string name="hint_3dof_unavailable">Funkcja 3DOF niedostępna</string>
     <string name="hint_3dof_spawned">Sześcian 3DOF wygenerowany 5 metrów przed Tobą</string>
     <string name="hint_3dof_closed">Tryb 3DOF zamknięty</string>
-    <string name="btn_web_server_close">Zamknij serwer web</string>
-    <string name="btn_web_server_open">Otwórz serwer web</string>
-    <string name="hint_web_server_closed">Serwer web zamknięty</string>
-
-    <string name="btn_web_server">Serwer web</string>
 
 
-    <string name="title_web_server">Serwer web</string>
-    <string name="web_fps_label"> (Web)</string>
-    <string name="hint_waiting_browser_frame">Oczekiwanie na obraz przeglądarki…</string>
-    <string name="hint_web_server_started">Serwer web uruchomiony: %1$s</string>
-    <string name="web_url_default">http://0.0.0.0:8080</string>
+
 
     <string name="privacy_scroll_hint">↓ Przewiń do końca, aby przeczytać pełną umowę</string>
     <string name="privacy_scroll_done">✓ Przeczytałeś pełną umowę</string>

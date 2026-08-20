@@ -5,7 +5,6 @@
     <string name="btn_save">保存</string>
     <string name="btn_load">加载</string>
     <string name="btn_map">地图</string>
-    <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓点云</string>
     <string name="loading_slam_init">正在初始化SLAM系统…</string>
     <string name="loading_slam_wait">请稍候，这可能需要一些时间</string>
@@ -16,9 +15,6 @@
     <string name="hint_pointcloud_disabled">点云已隐藏</string>
     <string name="btn_pointcloud_enabled">✓点云</string>
     <string name="btn_pointcloud_disabled">点云</string>
-    <string name="hint_slam_enabled">SLAM已启用</string>
-    <string name="hint_slam_disabled">SLAM已关闭</string>
-    <string name="btn_slam_disabled">SLAM</string>
     <string name="input_map_name">输入地图名称</string>
     <string name="dialog_save_map">保存地图</string>
     <string name="button_cancel">取消</string>
@@ -35,17 +31,19 @@
     <string name="button_back">返回</string>
     <string name="dialog_map_details">地图详情</string>
     <string name="map_details_name">地图名称: %1$s</string>
+    <string name="map_details_keyframes">关键帧: %1$d</string>
+    <string name="map_details_mappoints">地图点: %1$d</string>
     <string name="map_details_size">文件大小: %1$d KB</string>
     <string name="map_details_time">创建时间: %1$s</string>
+    <string name="map_details_plane">有平面: %1$s</string>
+    <string name="map_details_plane_yes">是</string>
+    <string name="map_details_plane_no">否</string>
     <string name="button_ok">确定</string>
     <string name="map_stats_format">关键帧: %1$d | 地图点: %2$d | 平面: %3$s</string>
     <string name="map_stats_plane_yes">是</string>
     <string name="map_stats_plane_no">否</string>
     <string name="hint_map_saved">地图已保存: %1$s</string>
-    <string name="hint_map_save_failed">保存失败: %1$s</string>
-    <string name="hint_map_file_not_found">地图文件不存在</string>
     <string name="hint_map_loaded">地图已加载: %1$s</string>
-    <string name="hint_map_load_failed">加载失败: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">已加载 %1$d 个地图</item>
     </plurals>
@@ -53,7 +51,6 @@
 
     <string name="category_ar">AR控制</string>
     <string name="category_map">地图管理</string>
-    <string name="category_slam">SLAM控制</string>
     <string name="category_display">显示控制</string>
 
     <string name="btn_3dof">3DOF</string>
@@ -61,19 +58,10 @@
     <string name="hint_3dof_unavailable">3DOF功能不可用</string>
     <string name="hint_3dof_spawned">3DOF立方体已在前方5米处生成</string>
     <string name="hint_3dof_closed">3DOF模式已关闭</string>
-    <string name="btn_web_server_close">关闭Web端</string>
-    <string name="btn_web_server_open">开启Web端</string>
-    <string name="hint_web_server_closed">Web服务已关闭</string>
-
-    <string name="btn_web_server">Web端</string>
-
-    <string name="title_web_server">Web服务器</string>
 
 
-    <string name="web_fps_label"> (Web端)</string>
-    <string name="hint_waiting_browser_frame">正在等待浏览器图像…</string>
-    <string name="hint_web_server_started">Web服务器已启动: %1$s</string>
-    <string name="web_url_default">http://0.0.0.0:8080</string>
+
+
 
     <string name="privacy_scroll_hint">↓ 请滑动至底部阅读完整协议</string>
     <string name="privacy_scroll_done">✓ 您已阅读完整协议</string>

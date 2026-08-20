@@ -635,7 +635,7 @@ public class MainActivity extends AppCompatActivity implements CameraPreviewView
         mThreeDofGLView.getHolder().setFormat(android.graphics.PixelFormat.TRANSLUCENT);
         mThreeDofGLView.setZOrderOnTop(true);
 
-        mThreeDofRenderer = new ThreeDofCubeRenderer(this, mOrientationSensor);
+        mThreeDofRenderer = new ThreeDofCubeRenderer(mOrientationSensor);
         mThreeDofGLView.setRenderer(mThreeDofRenderer);
         mThreeDofGLView.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
 

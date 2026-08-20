@@ -5,7 +5,6 @@
     <string name="btn_save">சேமிக்கவும்</string>
     <string name="btn_load">ஏற்றவும்</string>
     <string name="btn_map">வரைபடம்</string>
-    <string name="btn_slam">✓SLAM</string>
     <string name="btn_point_cloud">✓புள்ளி மேகம்</string>
     <string name="loading_slam_init">SLAM அமைப்பை துவக்குகிறது…</string>
     <string name="loading_slam_wait">தயவுசெய்து காத்திருங்கள், இது சிறிது நேரம் எடுக்கலாம்</string>
@@ -16,9 +15,6 @@
     <string name="hint_pointcloud_disabled">புள்ளி மேகம் முடக்கப்பட்டது</string>
     <string name="btn_pointcloud_enabled">✓புள்ளி மேகம்</string>
     <string name="btn_pointcloud_disabled">புள்ளி மேகம்</string>
-    <string name="hint_slam_enabled">SLAM இயக்கப்பட்டது</string>
-    <string name="hint_slam_disabled">SLAM முடக்கப்பட்டது</string>
-    <string name="btn_slam_disabled">SLAM</string>
     <string name="input_map_name">வரைபட பெயரை உள்ளிடவும்</string>
     <string name="dialog_save_map">வரைபடத்தை சேமிக்கவும்</string>
     <string name="button_cancel">ரத்துசெய்</string>
@@ -35,25 +31,27 @@
     <string name="button_back">பின்செல்</string>
     <string name="dialog_map_details">வரைபட விவரங்கள்</string>
     <string name="map_details_name">வரைபட பெயர்: %1$s</string>
+    <string name="map_details_keyframes">முக்கிய பிரேம்கள்: %1$d</string>
+    <string name="map_details_mappoints">வரைபட புள்ளிகள்: %1$d</string>
     <string name="map_details_size">கோப்பு அளவு: %1$d KB</string>
     <string name="map_details_time">உருவாக்கப்பட்டது: %1$s</string>
+    <string name="map_details_plane">தளம் உள்ளது: %1$s</string>
+    <string name="map_details_plane_yes">ஆம்</string>
+    <string name="map_details_plane_no">இல்லை</string>
     <string name="button_ok">சரி</string>
     <string name="map_stats_format">KFs: %1$d | MPs: %2$d | தளம்: %3$s</string>
     <string name="map_stats_plane_yes">ஆம்</string>
     <string name="map_stats_plane_no">இல்லை</string>
     <string name="hint_map_saved">வரைபடம் சேமிக்கப்பட்டது: %1$s</string>
-    <string name="hint_map_save_failed">சேமிப்பு தோல்வி: %1$s</string>
-    <string name="hint_map_file_not_found">வரைபட கோப்பு கண்டுபிடிக்கப்படவில்லை</string>
     <string name="hint_map_loaded">வரைபடம் ஏற்றப்பட்டது: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">%1$d வரைபடங்கள் ஏற்றப்பட்டன</item>
+        <item quantity="one">%1$d வரைபடங்கள் ஏற்றப்பட்டன</item>
     </plurals>
-    <string name="hint_map_load_failed">ஏற்றல் தோல்வி: %1$s</string>
     <string name="permission_camera_storage_required">கேமரா மற்றும் சேமிப்பக அனுமதிகள் தேவை. அமைப்புகளில் அனுமதி வழங்கவும்.</string>
 
     <string name="category_ar">AR கட்டுப்பாடுகள்</string>
     <string name="category_map">வரைபடம்</string>
-    <string name="category_slam">SLAM</string>
     <string name="category_display">காட்சி</string>
 
     <string name="btn_3dof">3DOF</string>
@@ -61,18 +59,9 @@
     <string name="hint_3dof_unavailable">3DOF அம்சம் கிடைக்கவில்லை</string>
     <string name="hint_3dof_spawned">3DOF கனசதுரம் 5 மீட்டர் முன்னால் உருவாக்கப்பட்டது</string>
     <string name="hint_3dof_closed">3DOF பயன்முறை மூடப்பட்டது</string>
-    <string name="btn_web_server_close">இணைய சேவையகத்தை மூடவும்</string>
-    <string name="btn_web_server_open">இணைய சேவையகத்தை திறக்கவும்</string>
-    <string name="hint_web_server_closed">இணைய சேவையகம் மூடப்பட்டது</string>
-
-    <string name="btn_web_server">இணைய சேவையகம்</string>
 
 
-    <string name="title_web_server">இணைய சேவையகம்</string>
-    <string name="web_fps_label"> (இணையம்)</string>
-    <string name="hint_waiting_browser_frame">உலாவி படத்திற்காக காத்திருக்கிறது…</string>
-    <string name="hint_web_server_started">இணைய சேவையகம் தொடங்கியது: %1$s</string>
-    <string name="web_url_default">http://0.0.0.0:8080</string>
+
 
     <string name="privacy_scroll_hint">↓ முழு ஒப்பந்தத்தையும் படிக்க கீழே உருட்டவும்</string>
     <string name="privacy_scroll_done">✓ முழு ஒப்பந்தத்தையும் படித்தீர்கள்</string>

@@ -1,13 +1,15 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="hint_map_saved">تم حفظ الخريطة: %1$s</string>
-    <string name="hint_map_save_failed">فشل الحفظ: %1$s</string>
-    <string name="hint_map_file_not_found">ملف الخريطة غير موجود</string>
     <string name="hint_map_loaded">تم تحميل الخريطة: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="other">تم تحميل %1$d خرائط</item>
+        <item quantity="zero">تم تحميل %1$d خرائط</item>
+        <item quantity="one">تم تحميل %1$d خرائط</item>
+        <item quantity="two">تم تحميل %1$d خرائط</item>
+        <item quantity="few">تم تحميل %1$d خرائط</item>
+        <item quantity="many">تم تحميل %1$d خرائط</item>
     </plurals>
-    <string name="hint_map_load_failed">فشل التحميل: %1$s</string>
     <string name="hint_map_deleted">تم حذف الخريطة</string>
     <string name="hint_map_delete_failed">فشل الحذف</string>
 </resources>

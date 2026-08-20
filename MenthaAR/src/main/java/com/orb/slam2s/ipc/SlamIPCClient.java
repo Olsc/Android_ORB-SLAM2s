@@ -222,33 +222,6 @@ public class SlamIPCClient {
         }
     }
 
-    /** 读取最新视图矩阵（外部消费者使用，低频） */
-    public void getV(float[] viewMatrix) {
-        if (slamService != null && viewMatrix != null && viewMatrix.length == 16) {
-            try {
-                slamService.getV(viewMatrix);
-            } catch (RemoteException e) {
-                Log.e(TAG, "getV 异常: " + e.getMessage());
-            }
-        }
-    }
-
-    /** 读取最新跟踪状态（低频） */
-    public int getTrackingStatus() {
-        if (slamService != null) {
-            try {
-                return slamService.getTrackingStatus();
-            } catch (RemoteException e) {
-                Log.e(TAG, "getTrackingStatus 异常: " + e.getMessage());
-            }
-        }
-        return 0;
-    }
-
-    public int getLastTrackingResult() {
-        return sharedMemoryBuffer != null ? sharedMemoryBuffer.readTrackingState() : getTrackingStatus();
-    }
-
     public void setPointCloudDisplay(boolean enable) {
         if (slamService != null) {
             try {
@@ -299,39 +272,6 @@ public class SlamIPCClient {
             }
         }
         return new int[0];
-    }
-
-    public float[] getTrackedPoints(int maxPoints) {
-        if (slamService != null) {
-            try {
-                return slamService.getTrackedPoints(maxPoints);
-            } catch (RemoteException e) {
-                Log.e(TAG, "getTrackedPoints 异常: " + e.getMessage());
-            }
-        }
-        return new float[0];
-    }
-
-    public float[] getMiniMapPoints(int maxPoints) {
-        if (slamService != null) {
-            try {
-                return slamService.getMiniMapPoints(maxPoints);
-            } catch (RemoteException e) {
-                Log.e(TAG, "getMiniMapPoints 异常: " + e.getMessage());
-            }
-        }
-        return new float[0];
-    }
-
-    public float[] getAllArObjectsData() {
-        if (slamService != null) {
-            try {
-                return slamService.getAllArObjectsData();
-            } catch (RemoteException e) {
-                Log.e(TAG, "getAllArObjectsData 异常: " + e.getMessage());
-            }
-        }
-        return new float[0];
     }
 
     public void updateArObjectScale(float scaleFactor) {
