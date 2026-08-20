@@ -1,7 +1,7 @@
 ![Banner](docs/img/banner_1.png)
 ![Banner](docs/img/banner_2.png)
 
-<div style="text-align:center">
+<div align="center">
 
 [简体中文](docs/README_zh.md) · [English](README.md) · [Русский](docs/README_ru.md) · [한국어](docs/README_ko.md) · [日本語](docs/README_ja.md)
 
@@ -9,7 +9,7 @@
 
 ---
 
-<div style="text-align:center">
+<div align="center">
 
 # 🌿 MenthaAR
 
@@ -276,7 +276,7 @@ _This project has not yet completed research and integration._
 
 # 🐳 Mascot
 
-<div style="text-align:center">
+<div align="center">
 
 ![Mascot](docs/img/mascot-q.png)
 
