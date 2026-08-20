@@ -62,10 +62,6 @@ android {
     compileSdkMinor 1
 }
 
-dependencies {
-    // OpenCV 改用原生编译（TEMP/opencv），不再需要 Java Library
-}
-
 tasks.configureEach { task ->
     if (task.name.toLowerCase().contains("lint")) {
         task.enabled = false
