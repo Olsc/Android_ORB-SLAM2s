@@ -40,22 +40,19 @@
 
 ## 三、开源许可证
 
-### 3.1 本项目许可证
+### 3.1 本项目许可证架构
 
-ORB-SLAM2s（本 Android 适配与增强项目）采用 **GNU General Public License v3.0（GPL-3.0）** 发布。
+ORB-SLAM2s（本 Android 适配与增强项目）采用基于 Android IPC 进程隔离的分层/多模块开源许可架构：
 
-- 许可证文件副本：[LICENSE.txt](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/LICENSE.txt) 和 [License-gpl.txt](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/License-gpl.txt)
-- 官方 GPL-3.0 协议全文：https://www.gnu.org/licenses/gpl-3.0.html
+- **App 外壳模块 (`app/`)**：采用 **Apache License 2.0 (Apache-2.0)** 许可证发布。副本见 [app/LICENSE](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/app/LICENSE)。
+- **MenthaAR 引擎模块 (`MenthaAR/`)**：基于 ORB-SLAM2 衍生，采用 **GNU General Public License v3.0 (GPL-3.0)** 许可证发布。副本见 [LICENSE.txt](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/LICENSE.txt) 和 [License-gpl.txt](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/MenthaAR/License-gpl.txt)。
+- **IPC 进程隔离机制**：`app` 模块与 `MenthaAR` 引擎各自在独立的 Android 操作系统进程中运行，通过 Binder IPC 及共享内存（Ashmem/memfd）交换数据，各自保持独立的许可证法律边界。
 
-根据 GPL-3.0 许可证的规定：
+在授权许可范围内：
 
-- **您可以自由地**：复制、分发、修改本软件。
-- **您必须遵循**：
-  - 在分发任何修改版本或衍生作品时，必须同样采用 GPL-3.0 许可证发布；
-  - 必须提供修改说明；
-  - 必须随分发提供完整的源代码；
-  - 必须在软件中保留版权声明和许可证声明；
-  - **本软件按"原样"提供，不附带任何明示或暗示的担保**（详见第 15 条免责声明和第 16 条责任限制条款）。
+- **`app/` 模块 (Apache-2.0)**：允许自由使用、修改、商业化及闭源集成，保留版权及许可证声明即可。
+- **`MenthaAR/` 引擎模块 (GPL-3.0)**：分发该模块的修改版本或衍生作品时需遵循 GPL-3.0 规定提供源代码及保留相关版权声明。
+- **免责声明**：本软件按"原样"提供，不附带任何明示或暗示的担保。
 
 ### 3.2 上游依赖许可证
 

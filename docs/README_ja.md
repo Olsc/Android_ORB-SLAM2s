@@ -180,7 +180,13 @@ ORB-SLAM2 コアライブラリは [GPLv3 ライセンス](https://github.com/ra
 
 ## このプロジェクト (ORB-SLAM2s)
 
-この Android アダプテーションおよび強化プロジェクト（ORB-SLAM2s）も **GPL-3.0 ライセンス**の下でライセンスされています。詳細については、[LICENSE.txt](../LICENSE.txt) および [License-gpl.txt](../License-gpl.txt) ファイルを参照してください。
+本プロジェクトは、Android IPC プロセス分離に基づくマルチモジュール・ライセンスアーキテクチャを採用しています：
+
+- **`app/` モジュール**: **[Apache License 2.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/app/LICENSE)** (Apache-2.0) の下でライセンスされています。UI、カメラプレビュー、Filament 3D レンダリング、センサーコンポーネントが含まれます。
+- **`MenthaAR/` エンジンモジュール**: ORB-SLAM2 から派生し、**[GNU General Public License v3.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/MenthaAR/License-gpl.txt)** (GPLv3) の下でライセンスされています。C++ SLAM コアアルゴリズムとネイティブ処理が含まれます。
+- **IPC プロセス分離通信**: `app` モジュールと `MenthaAR` エンジンは独立した Android OS プロセスで実行され、Binder IPC および共有メモリ（Ashmem/memfd）を介して通信することで、それぞれのライセンス境界を維持しています。
+
+詳細については、[LICENSE.txt](../LICENSE.txt)、[app/LICENSE](../app/LICENSE)、および [License-gpl.txt](../MenthaAR/License-gpl.txt) を参照してください。
 
 プロジェクトコラボレーションまたはその他の分野の協力に関するお問い合わせは、**OlscStudio@outlook.com** までご連絡ください。
 

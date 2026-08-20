@@ -1,8 +1,18 @@
-ORB-SLAM2 is released under the GNU General Public License v3.0 (GPLv3). See License-gpl.txt for details.
+This project uses a modular license structure based on Android IPC process isolation:
+
+1. `app/` Module:
+   Licensed under the Apache License, Version 2.0 (Apache-2.0). See app/LICENSE for details.
+
+2. `MenthaAR/` Engine Module:
+   Derived from ORB-SLAM2 and released under the GNU General Public License v3.0 (GPLv3). See License-gpl.txt for details.
+
+3. Inter-Process Communication (IPC):
+   The `app` module and `MenthaAR` engine run in separate OS processes and communicate strictly via Binder IPC and SharedMemory (Ashmem/memfd), preserving license boundaries.
 
 Please see Dependencies.md for a list of all included code and library dependencies that are not the property of the authors of ORB-SLAM2.
 
-For a closed-source version of ORB-SLAM2 for commercial purposes, please contact the authors.
+For a closed-source version of ORB-SLAM2 for commercial purposes, please contact the original authors.
+
 
 Additional AI Model Training Restrictions:
 

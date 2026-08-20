@@ -180,7 +180,13 @@ ORB-SLAM2 основная библиотека выпущена под [GPLv3 �
 
 ## Этот проект (ORB-SLAM2s)
 
-Этот проект адаптации и улучшения для Android (ORB-SLAM2s) также лицензирован под **GPL-3.0 License**. См. файлы [LICENSE.txt](../LICENSE.txt) и [License-gpl.txt](../License-gpl.txt) для подробностей.
+В данном проекте используется многомодульная архитектура лицензирования, основанная на межпроцессной изоляции Android IPC:
+
+- **Модуль `app/`**: Лицензирован под **[Apache License 2.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/app/LICENSE)** (Apache-2.0). Содержит пользовательский интерфейс, предварительный просмотр камеры, 3D-рендеринг Filament и компоненты датчиков.
+- **Движок `MenthaAR/`**: Создан на основе ORB-SLAM2 и распространяется под **[GNU General Public License v3.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/MenthaAR/License-gpl.txt)** (GPLv3). Содержит алгоритмы C++ SLAM и нативную обработку.
+- **Межпроцессное взаимодействие (IPC)**: Модуль `app` и движок `MenthaAR` работают в отдельных процессах ОС Android и взаимодействуют исключительно через Binder IPC и общую память (Ashmem/memfd), сохраняя границы лицензий между модулями.
+
+Подробности см. в файлах [LICENSE.txt](../LICENSE.txt), [app/LICENSE](../app/LICENSE) и [License-gpl.txt](../MenthaAR/License-gpl.txt).
 
 Для сотрудничества по проекту или других вопросов обращайтесь：**OlscStudio@outlook.com**
 

@@ -40,22 +40,19 @@ The application includes a built-in privacy consent screen (`PrivacyConsentActiv
 
 ## 3. Open Source License
 
-### 3.1 Project License
+### 3.1 Project License Architecture
 
-ORB-SLAM2s (this Android adaptation and enhancement project) is released under the **GNU General Public License v3.0 (GPL-3.0)**.
+ORB-SLAM2s (this Android adaptation and enhancement project) adopts a multi-module license architecture based on Android IPC process isolation:
 
-- License file copies: [LICENSE.txt](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/LICENSE.txt) and [License-gpl.txt](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/License-gpl.txt)
-- Official GPL-3.0 full text: https://www.gnu.org/licenses/gpl-3.0.html
+- **App Shell Module (`app/`)**: Released under the **Apache License, Version 2.0 (Apache-2.0)**. Copy available at [app/LICENSE](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/app/LICENSE).
+- **MenthaAR Engine Module (`MenthaAR/`)**: Derived from ORB-SLAM2 and released under the **GNU General Public License v3.0 (GPL-3.0)**. Copies available at [LICENSE.txt](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/LICENSE.txt) and [License-gpl.txt](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/MenthaAR/License-gpl.txt).
+- **IPC Process Isolation**: The `app` module and `MenthaAR` engine run in separate OS processes and communicate strictly via Binder IPC and SharedMemory (Ashmem/memfd), maintaining distinct legal license boundaries.
 
-Under the terms of the GPL-3.0 License:
+Within applicable license terms:
 
-- **You are free to**: copy, distribute, and modify this software.
-- **You must comply with**:
-  - Any modified version or derivative work must also be distributed under GPL-3.0;
-  - You must provide a notice of modifications;
-  - You must provide complete source code with distribution;
-  - You must retain copyright notices and license statements in the software;
-  - **This software is provided "AS IS" without any warranty, express or implied** (see Section 15 Disclaimer and Section 16 Limitation of Liability in the GPL-3.0).
+- **`app/` Module (Apache-2.0)**: Allows free use, modification, commercialization, and closed-source integration, provided copyright and license notices are retained.
+- **`MenthaAR/` Engine Module (GPL-3.0)**: Requires source code disclosure and GPL-3.0 licensing for any modified version or derivative work distributed.
+- **Disclaimer**: This software is provided "AS IS" without any warranty, express or implied.
 
 ### 3.2 Upstream Dependency Licenses
 

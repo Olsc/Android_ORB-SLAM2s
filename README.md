@@ -27,7 +27,8 @@
 <img alt="Android" src="https://img.shields.io/badge/Android-3DDC84?style=flat-square&logo=android&logoColor=white"/>
 <img alt="OpenCV" src="https://img.shields.io/badge/OpenCV-5C3EE8?style=flat-square&logo=opencv&logoColor=white"/>
 <img alt="NDK" src="https://img.shields.io/badge/NDK-0C1E33?style=flat-square&logo=android&logoColor=white"/>
-<img alt="GPL-3.0" src="https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square"/>
+<img alt="App License: Apache-2.0" src="https://img.shields.io/badge/App_License-Apache--2.0-green?style=flat-square"/>
+<img alt="Engine License: GPL-3.0" src="https://img.shields.io/badge/Engine_License-GPL--3.0-blue?style=flat-square"/>
 </p>
 
 ---
@@ -180,7 +181,13 @@ For a closed-source version of ORB-SLAM2 for commercial purposes, please contact
 
 ## This Project (ORB-SLAM2s)
 
-This Android adaptation and enhancement project (ORB-SLAM2s) is also licensed under the **GPL-3.0 License**. See the [LICENSE.txt](LICENSE.txt) and [License-gpl.txt](License-gpl.txt) files for details.
+This project adopts a modular license architecture based on Android IPC process isolation:
+
+- **`app/` Module**: Licensed under the **[Apache License, Version 2.0](app/LICENSE)** (Apache-2.0). Contains UI, camera preview, Filament 3D rendering, and sensor components.
+- **`MenthaAR/` Engine Module**: Derived from ORB-SLAM2 and released under the **[GNU General Public License v3.0](MenthaAR/License-gpl.txt)** (GPLv3). Contains native C++ SLAM algorithms and processing.
+- **Inter-Process Communication (IPC)**: The `app` module and `MenthaAR` engine run in separate Android OS processes and communicate strictly via Binder IPC and SharedMemory (Ashmem/memfd), preserving license boundaries between modules.
+
+See [LICENSE.txt](LICENSE.txt), [app/LICENSE](app/LICENSE), and [License-gpl.txt](MenthaAR/License-gpl.txt) for details.
 
 For project collaboration or other field cooperation inquiries, please contact: **OlscStudio@outlook.com**
 
