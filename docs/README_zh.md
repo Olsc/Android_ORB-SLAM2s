@@ -175,7 +175,7 @@ ORB-SLAM2 是一个实时 SLAM 库，用于**单目**、**立体**和 **RGB-D** 
 
 ## ORB-SLAM2 核心库
 
-ORB-SLAM2 核心库以 [GPLv3 许可证](https://github.com/raulmur/ORB_SLAM2/blob/master/MenthaAR/LICENSE)发布。有关所有代码/库依赖项（及相关许可证）的列表，请参见 [Dependencies.md](https://github.com/raulmur/ORB_SLAM2/blob/master/Dependencies.md)。
+ORB-SLAM2 核心库以 [GPLv3 许可证](https://github.com/raulmur/ORB_SLAM2/blob/master/LICENSE.txt)发布。有关所有代码/库依赖项（及相关许可证）的列表，请参见 [Dependencies.md](https://github.com/raulmur/ORB_SLAM2/blob/master/Dependencies.md)。
 
 如需商业用途的闭源版本 ORB-SLAM2，请联系作者：orbslam (at) unizar (dot) es。
 

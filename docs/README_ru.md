@@ -174,7 +174,7 @@ ORB-SLAM2 — это библиотека SLAM в реальном времен�
 
 ## ORB-SLAM2 Core Library
 
-ORB-SLAM2 основная библиотека выпущена под [GPLv3 лицензией](https://github.com/raulmur/ORB_SLAM2/blob/master/MenthaAR/LICENSE). Для списка всех зависимостей кода/библиотек (и связанных лицензий) см. [Dependencies.md](https://github.com/raulmur/ORB_SLAM2/blob/master/Dependencies.md).
+ORB-SLAM2 основная библиотека выпущена под [GPLv3 лицензией](https://github.com/raulmur/ORB_SLAM2/blob/master/LICENSE.txt). Для списка всех зависимостей кода/библиотек (и связанных лицензий) см. [Dependencies.md](https://github.com/raulmur/ORB_SLAM2/blob/master/Dependencies.md).
 
 Для закрытой версии ORB-SLAM2 для коммерческого использования, пожалуйста, свяжитесь с авторами：orbslam (at) unizar (dot) es.
 

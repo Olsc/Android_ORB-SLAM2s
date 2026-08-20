@@ -174,7 +174,7 @@ ORB-SLAM2 は、**単眼**、**ステレオ**、および **RGB-D** カメラ用
 
 ## ORB-SLAM2 コアライブラリ
 
-ORB-SLAM2 コアライブラリは [GPLv3 ライセンス](https://github.com/raulmur/ORB_SLAM2/blob/master/MenthaAR/LICENSE)の下でリリースされています。すべてのコード/ライブラリ依存関係（および関連ライセンス）のリストについては、[Dependencies.md](https://github.com/raulmur/ORB_SLAM2/blob/master/Dependencies.md) を参照してください。
+ORB-SLAM2 コアライブラリは [GPLv3 ライセンス](https://github.com/raulmur/ORB_SLAM2/blob/master/LICENSE.txt)の下でリリースされています。すべてのコード/ライブラリ依存関係（および関連ライセンス）のリストについては、[Dependencies.md](https://github.com/raulmur/ORB_SLAM2/blob/master/Dependencies.md) を参照してください。
 
 商用目的での非オープンソース版 ORB-SLAM2 については、著者に連絡してください：orbslam (at) unizar (dot) es。
 

@@ -174,7 +174,7 @@ ORB-SLAM2는 **단안**, **스테레오** 및 **RGB-D** 카메라용 실시간 S
 
 ## ORB-SLAM2 코어 라이브러리
 
-ORB-SLAM2 코어 라이브러리는 [GPLv3 라이선스](https://github.com/raulmur/ORB_SLAM2/blob/master/MenthaAR/LICENSE)에 따라 배포됩니다. 모든 코드/라이브러리 종속성(및 관련 라이선스) 목록은 [Dependencies.md](https://github.com/raulmur/ORB_SLAM2/blob/master/Dependencies.md)를 참조하십시오.
+ORB-SLAM2 코어 라이브러리는 [GPLv3 라이선스](https://github.com/raulmur/ORB_SLAM2/blob/master/LICENSE.txt)에 따라 배포됩니다. 모든 코드/라이브러리 종속성(및 관련 라이선스) 목록은 [Dependencies.md](https://github.com/raulmur/ORB_SLAM2/blob/master/Dependencies.md)를 참조하십시오.
 
 상업적 목적으로 사용하는 폐쇄형 버전의 ORB-SLAM2가 필요한 경우, 저자에게 문의하십시오：orbslam (at) unizar (dot) es.
 
