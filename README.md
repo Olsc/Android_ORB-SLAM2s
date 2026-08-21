@@ -21,7 +21,7 @@
 
 > **In a nutshell**: An enhanced spatial computing tool based on ORB-SLAM2 for Android, providing stable 6DoF spatial positioning for mobile devices.
 
-<p style="text-align:center">
+<p align="center">
 <img alt="Java" src="https://img.shields.io/badge/Java-ED8B00?style=flat-square&logo=openjdk&logoColor=white"/>
 <img alt="C++11" src="https://img.shields.io/badge/C++-00599C?style=flat-square&logo=cplusplus&logoColor=white"/>
 <img alt="Android" src="https://img.shields.io/badge/Android-3DDC84?style=flat-square&logo=android&logoColor=white"/>

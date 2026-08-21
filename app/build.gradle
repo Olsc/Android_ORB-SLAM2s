@@ -11,7 +11,7 @@ android {
         minSdk 23
         targetSdk 37
         versionCode 1
-        versionName "0.0.7"
+        versionName "0.0.8"
 
         multiDexEnabled true
     }
@@ -104,7 +104,6 @@ dependencies {
 
     implementation project(':MenthaAR')
 
-    // CameraX
     implementation 'androidx.camera:camera-core:1.6.1'
     implementation 'androidx.camera:camera-camera2:1.6.1'
     implementation 'androidx.camera:camera-lifecycle:1.6.1'
@@ -113,9 +112,9 @@ dependencies {
     implementation 'io.noties.markwon:core:4.6.2'
     implementation 'io.noties.markwon:ext-tables:4.6.2'
 
-implementation 'com.google.android.filament:filament-android:1.75.0'
-implementation 'com.google.android.filament:gltfio-android:1.75.0'
-implementation 'com.google.android.filament:filament-utils-android:1.75.0'
+    implementation 'com.google.android.filament:filament-android:1.75.0'
+    implementation 'com.google.android.filament:gltfio-android:1.75.0'
+    implementation 'com.google.android.filament:filament-utils-android:1.75.0'
 }
 
 configurations.all {
