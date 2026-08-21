@@ -685,12 +685,23 @@ Java_com_orb_slam2s_slamar_NativeHelper_detect(JNIEnv *env, jobject instance,
         return;
     }
     if(!currentTcw.empty()){
+        // [修复] vMPs 由 processImage 在 gMapPointsMutex 保护下写入，此处原先
+        // 无锁读取（仅持 gMapDataMutex），构成 std::vector 并发读写数据竞争
+        // （可能读到撕裂的内部指针导致崩溃或解引用悬空 MapPoint）。现先持锁
+        // 拷贝快照再使用；锁序 gMapDataMutex → gMapPointsMutex 与全局一致
+        // （全工程无反向嵌套），无死锁风险。
+        std::vector<ORB_SLAM2::MapPoint*> localMPs;
+        {
+            std::lock_guard<std::mutex> _mpLock(gMapPointsMutex);
+            localMPs = vMPs;
+        }
+
         cv::Mat TcwForPlane = currentTcw;
         if(sys->HasMapAlignment()) {
             TcwForPlane = sys->GetMapAlignedPose(currentTcw);
         }
 
-        Plane* detected = detectPlane(TcwForPlane, vMPs, ORB_SLAM2::PLANE_DETECT_RANSAC_ITERS);
+        Plane* detected = detectPlane(TcwForPlane, localMPs, ORB_SLAM2::PLANE_DETECT_RANSAC_ITERS);
         if(detected && sys->MapChanged())
             detected->Recompute();
         statusBuf[1]=detected? ORB_SLAM2::PLANE_DETECTED : ORB_SLAM2::PLANE_NOT_DETECTED;

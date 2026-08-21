@@ -64,6 +64,19 @@ inline const HBSTNode* FindHBSTLeafNode(const HBSTTree* tree, const HBSTMatchabl
     return node;
 }
 
+// [优化] Fuse 预快照条目：位置/法向/描述子/尺度参数在进入多目标关键帧循环前
+// 一次性读取（每点各一次锁），内层对每个目标关键帧的遍历变为零锁零分配。
+// SearchInNeighbors 会以同一份点集连续调用 Fuse 多达上百次（20+20×5 个目标
+// KF），原先每点每次调用要重新加锁读位置/法向并克隆描述子（堆分配）。
+struct FuseItem {
+    MapPoint* pMP;
+    cv::Point3f P;          // 世界坐标
+    cv::Point3f N;          // 观测方向法向
+    float minInv, maxInv;   // 深度不变范围（已平方）
+    float maxDistance;      // PredictScale 所需 mfMaxDistance
+    uint8_t desc[ORB_DESC_COLS];
+};
+
 const int ORBmatcher::TH_HIGH = ORB_MATCHER_TH_HIGH;
 const int ORBmatcher::TH_LOW = ORB_MATCHER_TH_LOW;
 const int ORBmatcher::HISTO_LENGTH = ORB_MATCHER_HISTO_LENGTH;
@@ -95,9 +108,12 @@ int ORBmatcher::SearchByProjection(Frame &F, const vector<MapPoint*> &vpMapPoint
         if(bFactor)
             r*=th;
 
-        const vector<size_t> vIndices =
-                F.GetFeaturesInArea(pMP->mTrackProjX,pMP->mTrackProjY,r*F.mvScaleFactors[nPredictedLevel],nPredictedLevel-1,nPredictedLevel);
+        // 免分配半径搜索（本函数内单点串行使用，无嵌套）
+        static thread_local std::vector<size_t> s_vIndices;
+        s_vIndices.clear();
+        F.GetFeaturesInArea(pMP->mTrackProjX,pMP->mTrackProjY,r*F.mvScaleFactors[nPredictedLevel],s_vIndices,nPredictedLevel-1,nPredictedLevel);
 
+        const vector<size_t>& vIndices = s_vIndices;
         if(vIndices.empty())
             continue;
 
@@ -410,11 +426,14 @@ int ORBmatcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapP
 
         int nPredictedLevel = pMP->PredictScale(dist,pKF);
 
-        // 在半径内搜索
+        // 在半径内搜索（免分配缓冲）
         const float radius = th*pKF->mvScaleFactors[nPredictedLevel];
 
-        const vector<size_t> vIndices = pKF->GetFeaturesInArea(u,v,radius);
+        static thread_local std::vector<size_t> s_vIndices;
+        s_vIndices.clear();
+        pKF->GetFeaturesInArea(u,v,radius,s_vIndices);
 
+        const vector<size_t>& vIndices = s_vIndices;
         if(vIndices.empty())
             continue;
 
@@ -481,8 +500,12 @@ int ORBmatcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f
         if(level1>0)
             continue;
 
-        vector<size_t> vIndices2 = F2.GetFeaturesInArea(vbPrevMatched[i1].x,vbPrevMatched[i1].y, windowSize,level1,level1);
+        // 免分配半径搜索（本函数内单点串行使用，无嵌套）
+        static thread_local std::vector<size_t> s_vIndices2;
+        s_vIndices2.clear();
+        F2.GetFeaturesInArea(vbPrevMatched[i1].x,vbPrevMatched[i1].y, windowSize,s_vIndices2,level1,level1);
 
+        const vector<size_t>& vIndices2 = s_vIndices2;
         if(vIndices2.empty())
             continue;
 
@@ -493,7 +516,7 @@ int ORBmatcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f
         int bestDist2 = INT_MAX;
         int bestIdx2 = -1;
 
-        for(vector<size_t>::iterator vit=vIndices2.begin(); vit!=vIndices2.end(); vit++)
+        for(vector<size_t>::const_iterator vit=vIndices2.begin(); vit!=vIndices2.end(); vit++)
         {
             size_t i2 = *vit;
 
@@ -911,24 +934,48 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
 
     const int nMPs = vpMapPoints.size();
 
+    // [优化] 预快照：每点仅加锁读一次位置/法向/描述子，内层循环零锁零分配。
+    // 语义不变：这些量在单次 Fuse 调用期间视为常量（原先逐次加锁读取的值在
+    // 无并发写入时完全相同）；isBad 仍在主循环内重检（原子读），保持原有的
+    // 迟绑定行为。
+    static thread_local std::vector<FuseItem> s_items;
+    s_items.clear();
+    s_items.reserve(nMPs);
     for(int i=0; i<nMPs; i++)
     {
         MapPoint* pMP = vpMapPoints[i];
-
-        if(!pMP)
+        if(!pMP || pMP->isBad())
             continue;
+        FuseItem it;
+        it.pMP = pMP;
+        pMP->GetWorldPos(it.P);
+        pMP->GetNormal(it.N);
+        const float minDistance = pMP->GetMinDistanceInvariance();
+        const float maxDistance = pMP->GetMaxDistanceInvariance();
+        it.minInv = minDistance * minDistance;
+        it.maxInv = maxDistance * maxDistance;
+        it.maxDistance = maxDistance;
+        if(!pMP->GetDescriptor(it.desc))
+            continue;   // 无描述子的点无法参与融合（原实现同样无法有效匹配）
+        s_items.push_back(it);
+    }
 
+    // 免分配半径搜索缓冲（本函数内单点串行使用，无嵌套）
+    static thread_local std::vector<size_t> s_vIndices;
+
+    for(size_t itemIdx=0; itemIdx<s_items.size(); ++itemIdx)
+    {
+        const FuseItem &it = s_items[itemIdx];
+        MapPoint* pMP = it.pMP;
+
+        // 迟绑定重检：与原逐次检查语义一致（原子读，开销可忽略）
         if(pMP->isBad() || pMP->IsInKeyFrame(pKF))
             continue;
 
-        // 使用栈分配的 Point3f
-        cv::Point3f p3Dw;
-        pMP->GetWorldPos(p3Dw);
-
         // 标量级 3D 旋转与平移变换
-        const float p3DcX = R00*p3Dw.x + R01*p3Dw.y + R02*p3Dw.z + tx;
-        const float p3DcY = R10*p3Dw.x + R11*p3Dw.y + R12*p3Dw.z + ty;
-        const float p3DcZ = R20*p3Dw.x + R21*p3Dw.y + R22*p3Dw.z + tz;
+        const float p3DcX = R00*it.P.x + R01*it.P.y + R02*it.P.z + tx;
+        const float p3DcY = R10*it.P.x + R11*it.P.y + R12*it.P.z + ty;
+        const float p3DcZ = R20*it.P.x + R21*it.P.y + R22*it.P.z + tz;
 
         // 深度必须为正
         if(p3DcZ<0.0f)
@@ -945,52 +992,52 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
         if(!pKF->IsInImage(u,v))
             continue;
 
-        const float maxDistance = pMP->GetMaxDistanceInvariance();
-        const float minDistance = pMP->GetMinDistanceInvariance();
-
         // PO = p3Dw - Ow (使用纯标量减法)
-        const float POx = p3Dw.x - Ox;
-        const float POy = p3Dw.y - Oy;
-        const float POz = p3Dw.z - Oz;
+        const float POx = it.P.x - Ox;
+        const float POy = it.P.y - Oy;
+        const float POz = it.P.z - Oz;
 
         // 使用平方距离进行快速范围检查
         const float dist3DSq = POx*POx + POy*POy + POz*POz;
-        const float maxDistSq = maxDistance * maxDistance;
-        const float minDistSq = minDistance * minDistance;
 
         // 深度必须在图像的尺度金字塔内
-        if(dist3DSq < minDistSq || dist3DSq > maxDistSq)
+        if(dist3DSq < it.minInv || dist3DSq > it.maxInv)
             continue;
 
         // 只在需要时计算实际距离
         const float dist3D = sqrt(dist3DSq);
 
-        // 使用栈分配的 Point3f
-        cv::Point3f Pn;
-        pMP->GetNormal(Pn);
-
         // 使用纯标量点乘
-        const float dotProd = POx*Pn.x + POy*Pn.y + POz*Pn.z;
+        const float dotProd = POx*it.N.x + POy*it.N.y + POz*it.N.z;
         if(dotProd < MATCH_VIEW_COS_TH*dist3D)
             continue;
 
-        int nPredictedLevel = pMP->PredictScale(dist3D,pKF);
+        // PredictScale 内联（快照 maxDistance，免锁）
+        int nPredictedLevel = 0;
+        {
+            const std::vector<float>& scf = pKF->mvScaleFactors;
+            const int nLevels = (int)scf.size();
+            for(; nPredictedLevel < nLevels; ++nPredictedLevel)
+                if(it.maxDistance <= dist3D * scf[nPredictedLevel])
+                    break;
+            if(nPredictedLevel >= nLevels)
+                nPredictedLevel = nLevels - 1;
+        }
 
-        // 在半径内搜索
+        // 在半径内搜索（免分配缓冲）
         const float radius = th*pKF->mvScaleFactors[nPredictedLevel];
 
-        const vector<size_t> vIndices = pKF->GetFeaturesInArea(u,v,radius);
+        pKF->GetFeaturesInArea(u,v,radius,s_vIndices);
 
-        if(vIndices.empty())
+        if(s_vIndices.empty())
             continue;
 
         // 匹配半径内最相似的关键点
-        uint8_t dMP[ORB_DESC_COLS];
-        pMP->GetDescriptor(dMP);
+        const uint8_t* dMP = it.desc;
 
         int bestDist = ORB_MAX_DISTANCE;
         int bestIdx = -1;
-        for(vector<size_t>::const_iterator vit=vIndices.begin(), vend=vIndices.end(); vit!=vend; vit++)
+        for(vector<size_t>::const_iterator vit=s_vIndices.begin(), vend=s_vIndices.end(); vit!=vend; vit++)
         {
             const size_t idx = *vit;
 
@@ -1136,11 +1183,14 @@ int ORBmatcher::Fuse(KeyFrame *pKF, cv::Mat Scw, const vector<MapPoint *> &vpPoi
         // 计算预测的尺度层级
         const int nPredictedLevel = pMP->PredictScale(dist3D,pKF);
 
-        // 在半径内搜索
+        // 在半径内搜索（免分配缓冲）
         const float radius = th*pKF->mvScaleFactors[nPredictedLevel];
 
-        const vector<size_t> vIndices = pKF->GetFeaturesInArea(u,v,radius);
+        static thread_local std::vector<size_t> s_vIdxFuse2;
+        s_vIdxFuse2.clear();
+        pKF->GetFeaturesInArea(u,v,radius,s_vIdxFuse2);
 
+        const vector<size_t>& vIndices = s_vIdxFuse2;
         if(vIndices.empty())
             continue;
 
@@ -1306,11 +1356,14 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
         // 计算预测的八度
         const int nPredictedLevel = pMP->PredictScale(dist3D,pKF2);
 
-        // 在半径内搜索
+        // 在半径内搜索（免分配缓冲）
         const float radius = th*pKF2->mvScaleFactors[nPredictedLevel];
 
-        const vector<size_t> vIndices = pKF2->GetFeaturesInArea(u,v,radius);
+        static thread_local std::vector<size_t> s_vIdx1;
+        s_vIdx1.clear();
+        pKF2->GetFeaturesInArea(u,v,radius,s_vIdx1);
 
+        const vector<size_t>& vIndices = s_vIdx1;
         if(vIndices.empty())
             continue;
 
@@ -1412,11 +1465,14 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
         // 计算预测的八度
         const int nPredictedLevel = pMP->PredictScale(dist3D,pKF1);
 
-        // 在 2.5*sigma(尺度层级) 半径内搜索
+        // 在 2.5*sigma(尺度层级) 半径内搜索（免分配缓冲）
         const float radius = th*pKF1->mvScaleFactors[nPredictedLevel];
 
-        const vector<size_t> vIndices = pKF1->GetFeaturesInArea(u,v,radius);
+        static thread_local std::vector<size_t> s_vIdx2;
+        s_vIdx2.clear();
+        pKF1->GetFeaturesInArea(u,v,radius,s_vIdx2);
 
+        const vector<size_t>& vIndices = s_vIdx2;
         if(vIndices.empty())
             continue;
 
@@ -1534,18 +1590,20 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
 
                 int nLastOctave = LastFrame.mvKeys[i].octave;
 
-                // 在窗口中搜索。尺寸取决于尺度
+                // 在窗口中搜索。尺寸取决于尺度（免分配缓冲）
                 float radius = th*CurrentFrame.mvScaleFactors[nLastOctave];
 
-                vector<size_t> vIndices2;
+                static thread_local std::vector<size_t> s_vIndices2;
+                s_vIndices2.clear();
 
                 if(bForward)
-                    vIndices2 = CurrentFrame.GetFeaturesInArea(u,v, radius, nLastOctave);
+                    CurrentFrame.GetFeaturesInArea(u,v, radius, s_vIndices2, nLastOctave);
                 else if(bBackward)
-                    vIndices2 = CurrentFrame.GetFeaturesInArea(u,v, radius, 0, nLastOctave);
+                    CurrentFrame.GetFeaturesInArea(u,v, radius, s_vIndices2, 0, nLastOctave);
                 else
-                    vIndices2 = CurrentFrame.GetFeaturesInArea(u,v, radius, nLastOctave-1, nLastOctave+1);
+                    CurrentFrame.GetFeaturesInArea(u,v, radius, s_vIndices2, nLastOctave-1, nLastOctave+1);
 
+                const vector<size_t>& vIndices2 = s_vIndices2;
                 if(vIndices2.empty())
                     continue;
 
@@ -1689,11 +1747,14 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const set
 
                 int nPredictedLevel = pMP->PredictScale(dist3D,&CurrentFrame);
 
-                // 在窗口中搜索
+                // 在窗口中搜索（免分配缓冲）
                 const float radius = th*CurrentFrame.mvScaleFactors[nPredictedLevel];
 
-                const vector<size_t> vIndices2 = CurrentFrame.GetFeaturesInArea(u, v, radius, nPredictedLevel-1, nPredictedLevel+1);
+                static thread_local std::vector<size_t> s_vIdx3;
+                s_vIdx3.clear();
+                CurrentFrame.GetFeaturesInArea(u, v, radius, s_vIdx3, nPredictedLevel-1, nPredictedLevel+1);
 
+                const vector<size_t>& vIndices2 = s_vIdx3;
                 if(vIndices2.empty())
                     continue;
 

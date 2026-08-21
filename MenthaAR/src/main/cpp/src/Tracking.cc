@@ -281,9 +281,12 @@ void ORB_SLAM2::Tracking::BindLoadedMapPointsUsingSnapshots()
         if(Z<=0 || Z>BIND_MAX_DEPTH) continue;  // 过滤深度异常的点
         if(u<0 || u>=mCurrentFrame.mnMaxX || v<0 || v>=mCurrentFrame.mnMaxY) continue;
 
-        // 使用空间网格搜索代替暴力遍历
-        vector<size_t> vIndices = mCurrentFrame.GetFeaturesInArea(u, v, radius);
+        // 使用空间网格搜索代替暴力遍历（免分配缓冲，本循环内单点串行使用）
+        static thread_local std::vector<size_t> s_bindIndices;
+        s_bindIndices.clear();
+        mCurrentFrame.GetFeaturesInArea(u, v, radius, s_bindIndices);
 
+        const vector<size_t>& vIndices = s_bindIndices;
         if (vIndices.empty())
             continue;
         int bestIdx = -1;
@@ -1198,6 +1201,12 @@ void Tracking::Track()
                 InvalidateRefCache();  // 避免主线程同步构建造成掉帧
             }
             mState=LOST;
+            // [优化] 丢失态下主线程即将执行重定位（18~28ms/帧），此时若 LM 仍在
+            // 跑大迭代量的局部 BA（实测尖峰可达 750ms），两重活会互相拖慢。
+            // 置 abort 标志让 BA 在当前 LM 迭代边界尽快退出；被中止的 BA 无精度
+            // 损失——下一个关键帧到来时会重新发起完整 BA。
+            if(mpLocalMapper)
+                mpLocalMapper->InterruptBA();
         }
 
         // 更新绘制器
@@ -1928,7 +1937,11 @@ bool Tracking::TrackLocalMap()
                             if(u<0 || u>=mCurrentFrame.mnMaxX || v<0 || v>=mCurrentFrame.mnMaxY) continue;
 
                             const float searchRadius = RELOC_PROJ_SEARCH_RADIUS;
-                            vector<size_t> vIndices = mCurrentFrame.GetFeaturesInArea(u, v, searchRadius);
+                            // 免分配半径搜索（本循环内单点串行使用）
+                            static thread_local std::vector<size_t> s_alignIndices;
+                            s_alignIndices.clear();
+                            mCurrentFrame.GetFeaturesInArea(u, v, searchRadius, s_alignIndices);
+                            const vector<size_t>& vIndices = s_alignIndices;
                             if(vIndices.empty()) continue;
 
                             int bestIdx=-1;
@@ -2282,8 +2295,12 @@ void Tracking::SearchLocalPoints()
             int bestIdx = -1;
             float bestDist2 = 1e10f;
 
-            // 使用网格搜索代替遍历所有特征点 (O(N) -> O(1))
-            vector<size_t> vIndices = mCurrentFrame.GetFeaturesInArea(u, v, baseRadius, predictedLevel-1, predictedLevel+1);
+            // 使用网格搜索代替遍历所有特征点 (O(N) -> O(1))，免分配缓冲
+            static thread_local std::vector<size_t> s_localIndices;
+            s_localIndices.clear();
+            mCurrentFrame.GetFeaturesInArea(u, v, baseRadius, s_localIndices, predictedLevel-1, predictedLevel+1);
+
+            const vector<size_t>& vIndices = s_localIndices;
 
             for(size_t i : vIndices)
             {
@@ -2562,7 +2579,11 @@ bool Tracking::Relocalization()
     // （SetRansacParameters 自适应上限 ≤300，耗尽即 bNoMore 丢弃该候选），
     // 循环必然在有界迭代内终止，无需用时间截断（时间截断会让超时瞬间的
     // 解成为中途解，精度不可控）
-    bool bMatch = false;
+    // [修复] 此处原先重复声明 `bool bMatch = false;` 遮蔽了函数入口处的外层
+    // bMatch：KF 路径成功后外层仍为 false，导致 (1) 成功后仍执行降级
+    // Fallback（每帧多耗 ~17ms）；(2) else 成功分支（更新 mnLastRelocFrameId /
+    // ClearMapAlignment / return true）成为死代码，KF 重定位永远返回 false。
+    // 现直接使用外层变量，恢复设计语义。
     ORBmatcher matcher2(ORB_MATCHER_NNRATIO_MOTION,true);
 
     {

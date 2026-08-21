@@ -106,6 +106,12 @@ public:
 
     std::vector<size_t> GetFeaturesInArea(const float &x, const float  &y, const float  &r, const int minLevel=-1, const int maxLevel=-1) const;
 
+    // [优化] 免分配版本：结果写入调用方提供的缓冲区，供热点循环复用，
+    // 消除每次调用一次堆分配。语义与返回值版完全一致。
+    void GetFeaturesInArea(const float &x, const float &y, const float &r,
+                           std::vector<size_t> &vIndices,
+                           const int minLevel=-1, const int maxLevel=-1) const;
+
 public:
 
     // 特征提取器。
