@@ -64,10 +64,8 @@ inline const HBSTNode* FindHBSTLeafNode(const HBSTTree* tree, const HBSTMatchabl
     return node;
 }
 
-// [优化] Fuse 预快照条目：位置/法向/描述子/尺度参数在进入多目标关键帧循环前
-// 一次性读取（每点各一次锁），内层对每个目标关键帧的遍历变为零锁零分配。
-// SearchInNeighbors 会以同一份点集连续调用 Fuse 多达上百次（20+20×5 个目标
-// KF），原先每点每次调用要重新加锁读位置/法向并克隆描述子（堆分配）。
+// Fuse 预快照条目：位置/法向/描述子/尺度参数进入目标关键帧循环前
+// 一次性读取，内层遍历零锁零分配
 struct FuseItem {
     MapPoint* pMP;
     cv::Point3f P;          // 世界坐标
@@ -176,12 +174,10 @@ float ORBmatcher::RadiusByViewingCos(const float &viewCos)
         return MATCH_RADIUS_FAR;
 }
 
-bool ORBmatcher::CheckDistEpipolarLine(const cv::KeyPoint &kp1,const cv::KeyPoint &kp2,const cv::Mat &F12,const KeyFrame* pKF2)
+bool ORBmatcher::CheckDistEpipolarLine(const float a,const float b,const float c,
+                                       const cv::KeyPoint &kp2,const KeyFrame* pKF2)
 {
-    // 第二幅图像中的极线 l = x1'F12 = [a b c]
-    const float a = kp1.pt.x*F12.at<float>(0,0)+kp1.pt.y*F12.at<float>(1,0)+F12.at<float>(2,0);
-    const float b = kp1.pt.x*F12.at<float>(0,1)+kp1.pt.y*F12.at<float>(1,1)+F12.at<float>(2,1);
-    const float c = kp1.pt.x*F12.at<float>(0,2)+kp1.pt.y*F12.at<float>(1,2)+F12.at<float>(2,2);
+    // 第二幅图像中的极线 l = x1'·F12 = [a b c]，系数已由调用方按 kp1 预计算
 
     const float num = a*kp2.pt.x+b*kp2.pt.y+c;
 
@@ -801,6 +797,11 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
 
     const float factor = 1.0f/HISTO_LENGTH;
 
+    // F12 对整个搜索恒定：九元素一次取出，内层不再经 Mat::at 反复访存
+    const float f00=F12.at<float>(0,0), f01=F12.at<float>(0,1), f02=F12.at<float>(0,2);
+    const float f10=F12.at<float>(1,0), f11=F12.at<float>(1,1), f12v=F12.at<float>(1,2);
+    const float f20=F12.at<float>(2,0), f21=F12.at<float>(2,1), f22=F12.at<float>(2,2);
+
     // Loop over pKF1's features that DO NOT have map points
     for (int idx1 = 0; idx1 < pKF1->N; idx1++) {
         MapPoint* pMP1 = pKF1->GetMapPoint(idx1);
@@ -812,6 +813,11 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
             continue;
 
         const cv::KeyPoint &kp1 = pKF1->mvKeysUn[idx1];
+
+        // 极线系数 [a b c] 仅依赖 kp1 与 F12，在候选循环外计算一次
+        const float a = kp1.pt.x*f00+kp1.pt.y*f10+f20;
+        const float b = kp1.pt.x*f01+kp1.pt.y*f11+f21;
+        const float c = kp1.pt.x*f02+kp1.pt.y*f12v+f22;
 
         // 直接从关键帧1预构建的 HBST 树中获取 bitset 描述子，避免重复进行二进制转换
         const HBSTMatchable::Descriptor &desc1 = matchables1[idx1]->descriptor;
@@ -851,7 +857,7 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
                     continue;
             }
 
-            if (CheckDistEpipolarLine(kp1, kp2, F12, pKF2)) {
+            if (CheckDistEpipolarLine(a, b, c, kp2, pKF2)) {
                 bestIdx2 = idx2;
                 bestDist = dist;
             }
@@ -934,10 +940,8 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
 
     const int nMPs = vpMapPoints.size();
 
-    // [优化] 预快照：每点仅加锁读一次位置/法向/描述子，内层循环零锁零分配。
-    // 语义不变：这些量在单次 Fuse 调用期间视为常量（原先逐次加锁读取的值在
-    // 无并发写入时完全相同）；isBad 仍在主循环内重检（原子读），保持原有的
-    // 迟绑定行为。
+    // 预快照：每点仅加锁读一次位置/法向/描述子，单次调用期间视为常量；
+    // isBad 仍在主循环内重检（原子读），保持迟绑定行为
     static thread_local std::vector<FuseItem> s_items;
     s_items.clear();
     s_items.reserve(nMPs);

@@ -1201,10 +1201,8 @@ void Tracking::Track()
                 InvalidateRefCache();  // 避免主线程同步构建造成掉帧
             }
             mState=LOST;
-            // [优化] 丢失态下主线程即将执行重定位（18~28ms/帧），此时若 LM 仍在
-            // 跑大迭代量的局部 BA（实测尖峰可达 750ms），两重活会互相拖慢。
-            // 置 abort 标志让 BA 在当前 LM 迭代边界尽快退出；被中止的 BA 无精度
-            // 损失——下一个关键帧到来时会重新发起完整 BA。
+            // 丢失态即将转入重定位，及时中止局部 BA 避免两路重负载互相拖慢；
+            // 被中止的 BA 无精度损失，下一关键帧会重新发起完整 BA
             if(mpLocalMapper)
                 mpLocalMapper->InterruptBA();
         }
@@ -2579,11 +2577,8 @@ bool Tracking::Relocalization()
     // （SetRansacParameters 自适应上限 ≤300，耗尽即 bNoMore 丢弃该候选），
     // 循环必然在有界迭代内终止，无需用时间截断（时间截断会让超时瞬间的
     // 解成为中途解，精度不可控）
-    // [修复] 此处原先重复声明 `bool bMatch = false;` 遮蔽了函数入口处的外层
-    // bMatch：KF 路径成功后外层仍为 false，导致 (1) 成功后仍执行降级
-    // Fallback（每帧多耗 ~17ms）；(2) else 成功分支（更新 mnLastRelocFrameId /
-    // ClearMapAlignment / return true）成为死代码，KF 重定位永远返回 false。
-    // 现直接使用外层变量，恢复设计语义。
+    // 直接使用函数入口处的 bMatch：此处重复声明会遮蔽外层变量，
+    // 使 KF 重定位的成功路径变成死代码
     ORBmatcher matcher2(ORB_MATCHER_NNRATIO_MOTION,true);
 
     {

@@ -161,9 +161,8 @@ void Initializer::FindHomography(vector<bool> &vbMatchesInliers, float &score, c
     vector<bool> vbCurrentInliers(N,false);
     float currentScore;
 
-    // 自适应提前终止（与 PnPsolver 同款策略，数学依据见
-    // verify_math_equivalence.py [3]：N=log(1-p)/log(1-w^s)，
-    // p=0.99 时典型内点率下可减少 40%~90% 迭代，置信度不变）
+    // 自适应提前终止：N=log(1-p)/log(1-w^s)，高内点率时大幅减少迭代，
+    // 置信概率 INITIALIZER_RANSAC_PROB 不变
     const double ransacProb = INITIALIZER_RANSAC_PROB;
     const int minSetSize = INITIALIZER_RANSAC_MIN_SET;
     int nInlierBest = 0;
@@ -315,8 +314,7 @@ cv::Mat Initializer::ComputeH21(const vector<cv::Point2f> &vP1, const vector<cv:
     }
 
     cv::Mat u, w, vt;
-    // [优化] 去掉 FULL_UV：A 为 16x9（m>n），vt 无论何种 flag 均为 9x9 完整右奇异
-    // 向量；FULL_UV 只会把不使用的 u 从 16x9 扩为 16x16，纯浪费。输出 vt 不变。
+    // A 为 16x9 超定阵，vt 本就是完整 9x9；FULL_UV 只会白白把 u 扩成 16x16
     cv::SVD::compute(A, w, u, vt, cv::SVD::MODIFY_A);
 
     return vt.row(8).reshape(0, 3).clone();

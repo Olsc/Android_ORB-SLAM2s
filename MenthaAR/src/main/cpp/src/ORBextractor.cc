@@ -1252,18 +1252,14 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
     }
 }
 
-// 纯加法与位移位组合
-// 18*x = (x<<4) + (x<<1)
-// 34*x = (x<<5) + (x<<1)
-// 49*x = (x<<5) + (x<<4) + x
-// 54*x = (x<<5) + (x<<4) + (x<<2) + (x<<1)
-inline static int mul18(int x) { return (x << 4) + (x << 1); }
-inline static int mul34(int x) { return (x << 5) + (x << 1); }
-inline static int mul49(int x) { return (x << 5) + (x << 4) + x; }
-inline static int mul54(int x) { return (x << 5) + (x << 4) + (x << 2) + (x << 1); }
+// sigma=2 七点定点核 [36,67,98,110,98,67,36]/512（sum=512 保证 >>9 归一），
+// 累加峰值 255×512=130560 远小于 int 上限；乘子以移位加减实现
+inline static int mul36(int x) { return (x << 5) + (x << 2); }
+inline static int mul67(int x) { return (x << 6) + (x << 1) + x; }
+inline static int mul98(int x) { return (x << 6) + (x << 5) + (x << 1); }
+inline static int mul110(int x) { return (x << 7) - (x << 4) - (x << 1); }
 
-// 1D 分离式定点 7x7 高斯卷积 (sigma=2.0, 核权重比 256)
-// [18, 34, 49, 54, 49, 34, 18], sum = 256
+// 1D 分离式定点高斯卷积：水平、垂直两趟，half-up 移位舍入 (val+256)>>9
 static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPadded)
 {
     const int rows = srcPadded.rows;
@@ -1281,10 +1277,10 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
         int* tempRow = &tempBuf[r * cols];
         // 边界内像素 (3 到 cols-4)
         for (int c = 3; c < cols - 3; ++c) {
-            int val = mul18(srcRow[c-3]) + mul34(srcRow[c-2]) + mul49(srcRow[c-1]) +
-                      mul54(srcRow[c])   +
-                      mul49(srcRow[c+1]) + mul34(srcRow[c+2]) + mul18(srcRow[c+3]);
-            tempRow[c] = (val + 128) >> 8;
+            int val = mul36(srcRow[c-3]) + mul67(srcRow[c-2]) + mul98(srcRow[c-1]) +
+                      mul110(srcRow[c])   +
+                      mul98(srcRow[c+1]) + mul67(srcRow[c+2]) + mul36(srcRow[c+3]);
+            tempRow[c] = (val + 256) >> 9;
         }
         // 左边界处理 (c < 3)
         for (int c = 0; c < 3; ++c) {
@@ -1293,10 +1289,10 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
                 int colIdx = std::abs(c + k);
                 if (colIdx >= cols) colIdx = 2 * cols - 1 - colIdx;
                 int absK = std::abs(k);
-                int coeff = (absK == 0) ? mul54(srcRow[colIdx]) : ((absK == 1) ? mul49(srcRow[colIdx]) : ((absK == 2) ? mul34(srcRow[colIdx]) : mul18(srcRow[colIdx])));
+                int coeff = (absK == 0) ? mul110(srcRow[colIdx]) : ((absK == 1) ? mul98(srcRow[colIdx]) : ((absK == 2) ? mul67(srcRow[colIdx]) : mul36(srcRow[colIdx])));
                 val += coeff;
             }
-            tempRow[c] = (val + 128) >> 8;
+            tempRow[c] = (val + 256) >> 9;
         }
         // 右边界处理 (c >= cols - 3)
         for (int c = cols - 3; c < cols; ++c) {
@@ -1306,10 +1302,10 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
                 if (colIdx >= cols) colIdx = 2 * (cols - 1) - colIdx;
                 if (colIdx < 0) colIdx = -colIdx;
                 int absK = std::abs(k);
-                int coeff = (absK == 0) ? mul54(srcRow[colIdx]) : ((absK == 1) ? mul49(srcRow[colIdx]) : ((absK == 2) ? mul34(srcRow[colIdx]) : mul18(srcRow[colIdx])));
+                int coeff = (absK == 0) ? mul110(srcRow[colIdx]) : ((absK == 1) ? mul98(srcRow[colIdx]) : ((absK == 2) ? mul67(srcRow[colIdx]) : mul36(srcRow[colIdx])));
                 val += coeff;
             }
-            tempRow[c] = (val + 128) >> 8;
+            tempRow[c] = (val + 256) >> 9;
         }
     }
 
@@ -1325,10 +1321,10 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
         const int* tempRowP3 = &tempBuf[(r + 3) * cols];
 
         for (int c = 0; c < cols; ++c) {
-            int val = mul18(tempRowM3[c]) + mul34(tempRowM2[c]) + mul49(tempRowM1[c]) +
-                      mul54(tempRow0[c])  +
-                      mul49(tempRowP1[c]) + mul34(tempRowP2[c]) + mul18(tempRowP3[c]);
-            int pix = (val + 128) >> 8;
+            int val = mul36(tempRowM3[c]) + mul67(tempRowM2[c]) + mul98(tempRowM1[c]) +
+                      mul110(tempRow0[c])  +
+                      mul98(tempRowP1[c]) + mul67(tempRowP2[c]) + mul36(tempRowP3[c]);
+            int pix = (val + 256) >> 9;
             dstRow[c] = (uchar)(pix > 255 ? 255 : (pix < 0 ? 0 : pix));
         }
     }
@@ -1341,12 +1337,12 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
                 int rowIdx = std::abs(r + k);
                 if (rowIdx >= rows) rowIdx = 2 * rows - 1 - rowIdx;
                 const int absK = std::abs(k);
-                val += (absK == 0) ? mul54(tempBuf[rowIdx * cols + c])
-                                   : ((absK == 1) ? mul49(tempBuf[rowIdx * cols + c])
-                                                  : ((absK == 2) ? mul34(tempBuf[rowIdx * cols + c])
-                                                                 : mul18(tempBuf[rowIdx * cols + c])));
+                val += (absK == 0) ? mul110(tempBuf[rowIdx * cols + c])
+                                   : ((absK == 1) ? mul98(tempBuf[rowIdx * cols + c])
+                                                  : ((absK == 2) ? mul67(tempBuf[rowIdx * cols + c])
+                                                                 : mul36(tempBuf[rowIdx * cols + c])));
             }
-            int pix = (val + 128) >> 8;
+            int pix = (val + 256) >> 9;
             dstRow[c] = (uchar)(pix > 255 ? 255 : (pix < 0 ? 0 : pix));
         }
     }
@@ -1359,12 +1355,12 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
                 if (rowIdx >= rows) rowIdx = 2 * (rows - 1) - rowIdx;
                 if (rowIdx < 0) rowIdx = -rowIdx;
                 const int absK = std::abs(k);
-                val += (absK == 0) ? mul54(tempBuf[rowIdx * cols + c])
-                                   : ((absK == 1) ? mul49(tempBuf[rowIdx * cols + c])
-                                                  : ((absK == 2) ? mul34(tempBuf[rowIdx * cols + c])
-                                                                 : mul18(tempBuf[rowIdx * cols + c])));
+                val += (absK == 0) ? mul110(tempBuf[rowIdx * cols + c])
+                                   : ((absK == 1) ? mul98(tempBuf[rowIdx * cols + c])
+                                                  : ((absK == 2) ? mul67(tempBuf[rowIdx * cols + c])
+                                                                 : mul36(tempBuf[rowIdx * cols + c])));
             }
-            int pix = (val + 128) >> 8;
+            int pix = (val + 256) >> 9;
             dstRow[c] = (uchar)(pix > 255 ? 255 : (pix < 0 ? 0 : pix));
         }
     }

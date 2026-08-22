@@ -66,19 +66,8 @@ public:
 
     static std::vector<float> toQuaternion(const cv::Mat &M);
 
-    // 线性三角化（DLT）：对 4×4 矩阵 A 做 SVD，取最小奇异值对应右奇异向量（A 的零空间）。
-    // [重写] 原实现每点一次 cv::SVD::compute(4x4, FULL_UV)，是 CreateNewMapPoints
-    // （每 KF × 20 邻居 × 数百匹配）与 Initializer::CheckRT（4~8 假设 × 全部内点）
-    // 的首要热点。现改为闭式中点法，几何语义完全一致：
-    //   1) 投影光线 = DLT 两行平面的交线，方向 = 两平面法向的叉积（纯射影性质，
-    //      与 SVD 零空间同源）；
-    //   2) 相机中心 = P 的零空间（Cramer 解 P[:,0:3]·C = -P[:,3]，对 [R|t] 与
-    //      K[R|t] 两种调用形态均成立）；
-    //   3) 两异面直线最近点对取中点（Schneider & Eberly 标准式）。
-    // 精度已验证（verify_triangulation_generic.py，5 轮 × 10 种子 × 400 点 ×
-    // 两种形态）：与 SVD-DLT 无噪声解最大分量偏差 1.44e-10 m（数值噪声级），
-    // 0.3px 噪声下误差均值 8.95~9.62cm vs SVD 的 9.08~14.04cm（相当或略优）。
-    // 计算量从 ~数百 flop + 动态分配降至 ~100 flop 零分配。
+    // 线性三角化：闭式中点法。光线方向 = DLT 行平面法向叉积（与 SVD 零空间
+    // 同源），相机中心 = Cramer 解 P[:,0:3]·C = -P[:,3]，零分配。
     static bool TriangulateDLT(const cv::Mat &P1, const cv::Mat &P2,
                                float x1, float y1, float x2, float y2,
                                cv::Mat &x3D)

@@ -67,12 +67,8 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
             vAvailableIndices.pop_back();
         }
 
-        // [优化] 三点定面用叉积闭式解替代逐迭代 cv::SVDecomp(3x4, FULL_UV)。
-        // 数学等价性已验证（docs/profiler_tools/verify_math_equivalence.py，
-        // 20种子×200样本×多轮：法向角差 ≤2e-6°，d 偏差 ≤2.2e-11，子步提速约
-        // 两个数量级）：三点唯一确定平面，[x y z 1] 行零空间的 SVD 解与叉积
-        // 法向归一化后逐坐标一致。共线退化时叉积范数→0，直接跳过该样本
-        // （SVD 在此情形同样给出无意义解，拒绝语义一致）。
+        // 三点定面闭式解：叉积法向归一化后与 SVD 零空间解一致，
+        // 共线退化时范数趋零直接拒绝，语义与原 SVD 路径一致
         const cv::Point3f &p1 = vPoints[idx[0]];
         const cv::Point3f &p2 = vPoints[idx[1]];
         const cv::Point3f &p3 = vPoints[idx[2]];

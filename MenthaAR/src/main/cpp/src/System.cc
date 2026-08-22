@@ -294,6 +294,94 @@ bool System::HasLoadedMap()
     return mpTracker ? mpTracker->HasLoadedMapData() : false;
 }
 
+// 完整拆除并释放旧子地图。前提由 CreateNewMap 时序保证：reloc 已 join、
+// LM/LC 队列已清空、Tracking 线程串行执行、目标非当前地图，故可安全直删。
+void System::RetireSubmap(Map* pOldMap)
+{
+    const vector<KeyFrame*> vpKFs = pOldMap->GetAllKeyFrames();
+    const vector<MapPoint*> vpOwnMPs = pOldMap->GetAllMapPoints();
+
+    // 归属判定用容器成员关系（点/帧是否属于本图），比反向指针更稳健
+    std::set<KeyFrame*> spDyingKFs(vpKFs.begin(), vpKFs.end());
+    std::set<MapPoint*> spOwnMPs(vpOwnMPs.begin(), vpOwnMPs.end());
+
+    // 先剥离存活地图点对本图 KF 的观测（迁移点、跨图回环融合产物），
+    // 否则先删 KF 会留下悬挂观测指针，后续法线/坏点判定将解引用已释放内存
+    std::set<MapPoint*> spForeignSeen;
+    for (size_t i = 0; i < vpKFs.size(); ++i) {
+        KeyFrame* pKF = vpKFs[i];
+        if (!pKF) continue;
+        const vector<MapPoint*> vMatches = pKF->GetMapPointMatches();
+        for (size_t j = 0; j < vMatches.size(); ++j) {
+            MapPoint* pForeign = vMatches[j];
+            // 本图自有点随后整体销毁；同一外点只处理一次（观测可跨多个待删 KF）
+            if (!pForeign || spOwnMPs.count(pForeign) || !spForeignSeen.insert(pForeign).second)
+                continue;
+
+            // 预先存在的坏点不碰不删，只回收因本次剥离而退役的对象
+            const bool bWasBad = pForeign->isBad();
+            if (bWasBad)
+                continue;
+
+            // 预收集该点在本图 KF 上的全部观测（GetObservations 返回值拷贝，
+            // 之后不再遍历其内部状态，规避摘除过程中的对象状态变化）
+            vector<KeyFrame*> vObsToErase;
+            const map<KeyFrame*, size_t> obs = pForeign->GetObservations();
+            for (map<KeyFrame*, size_t>::const_iterator it = obs.begin(); it != obs.end(); ++it) {
+                if (spDyingKFs.count(it->first))
+                    vObsToErase.push_back(it->first);
+            }
+
+            // EraseObservation 在 nObs≤阈值时触发 SetBadFlag：全程只摘引用不
+            // 释放对象，绝不产生悬挂指针；失去全部锚定的点自动退役
+            for (size_t k = 0; k < vObsToErase.size(); ++k)
+                pForeign->EraseObservation(vObsToErase[k]);
+
+            // 因本次剥离而退役的点已被移出所属图容器，显式回收
+            if (pForeign->isBad())
+                delete pForeign;
+        }
+    }
+
+    // 再置空存活 KF 匹配数组中对本图点的残留引用（NULL 为数组合法状态），
+    // 被改动的 KF 记录下来，最后重算共视连接
+    std::set<KeyFrame*> spTouchedSurvivorKFs;
+    for (size_t m = 0; m < mvpMaps.size(); ++m) {
+        Map* pMap = mvpMaps[m];
+        if (!pMap || pMap == pOldMap)
+            continue;
+        const vector<KeyFrame*> vpSurvKFs = pMap->GetAllKeyFrames();
+        for (size_t i = 0; i < vpSurvKFs.size(); ++i) {
+            KeyFrame* pKF = vpSurvKFs[i];
+            if (!pKF) continue;
+            const vector<MapPoint*> vMatches = pKF->GetMapPointMatches();
+            for (size_t j = 0; j < vMatches.size(); ++j) {
+                if (vMatches[j] && spOwnMPs.count(vMatches[j])) {
+                    pKF->EraseMapPointMatch(j);
+                    spTouchedSurvivorKFs.insert(pKF);
+                }
+            }
+        }
+    }
+
+    // 关键帧从共享候选库显式摘除：KeyFrame 无析构清理，漏摘会导致
+    // 重定位/回环候选表悬挂
+    for (size_t i = 0; i < vpKFs.size(); ++i) {
+        if (vpKFs[i])
+            mpKeyFrameDatabase->erase(vpKFs[i]);
+    }
+
+    // 复用 Map::clear 的锁外删除模式整体释放本图内容；跨图幸存者引用已剥离
+    pOldMap->clear();
+
+    // 重算被改动幸存 KF 的共视连接，剔除指向已删除对象的死边；
+    // 无跨图融合时该集合为空、零开销
+    for (std::set<KeyFrame*>::iterator it = spTouchedSurvivorKFs.begin();
+         it != spTouchedSurvivorKFs.end(); ++it) {
+        (*it)->UpdateConnections();
+    }
+}
+
 void System::CreateNewMap()
 {
     // 限频已由 Tracking 侧的帧计数冷却（TRACKING_NEW_MAP_COOLDOWN_FRAMES=150）承担，
@@ -349,14 +437,14 @@ void System::CreateNewMap()
 
     // 限制子地图总数，超出时删除最旧的地图（id=0 的初始地图不删）
     if ((int)mvpMaps.size() >= MAX_SUBMAP_COUNT) {
-        // 找出最旧的非 id=0 地图并释放
+        // 找出最旧的非 id=0 地图并完整拆除
         for (size_t i = 1; i < mvpMaps.size(); ++i) {
             if (mvpMaps[i] && mvpMaps[i] != mpMap) {
-                LOGD("System::CreateNewMap 子地图数=%zu 达上限=%d，释放旧地图 id=%lu",
+                LOGD("System::CreateNewMap 子地图数=%zu 达上限=%d，完整拆除旧地图 id=%lu",
                      mvpMaps.size(), MAX_SUBMAP_COUNT, mvpMaps[i]->mnId);
                 Map* pOldMap = mvpMaps[i];
                 mvpMaps.erase(mvpMaps.begin() + i);
-                delete pOldMap;
+                RetireSubmap(pOldMap);   // 跨图引用剥离、候选库摘除、全量释放
                 break;
             }
         }
