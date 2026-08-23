@@ -301,7 +301,7 @@ void System::RetireSubmap(Map* pOldMap)
     const vector<KeyFrame*> vpKFs = pOldMap->GetAllKeyFrames();
     const vector<MapPoint*> vpOwnMPs = pOldMap->GetAllMapPoints();
 
-    // 归属判定用容器成员关系（点/帧是否属于本图），比反向指针更稳健
+    // 归属判定用容器成员关系及 GetMap() 双重校验（点/帧是否属于本图），比反向指针更稳健
     std::set<KeyFrame*> spDyingKFs(vpKFs.begin(), vpKFs.end());
     std::set<MapPoint*> spOwnMPs(vpOwnMPs.begin(), vpOwnMPs.end());
 
@@ -315,7 +315,7 @@ void System::RetireSubmap(Map* pOldMap)
         for (size_t j = 0; j < vMatches.size(); ++j) {
             MapPoint* pForeign = vMatches[j];
             // 本图自有点随后整体销毁；同一外点只处理一次（观测可跨多个待删 KF）
-            if (!pForeign || spOwnMPs.count(pForeign) || !spForeignSeen.insert(pForeign).second)
+            if (!pForeign || spOwnMPs.count(pForeign) || pForeign->GetMap() == pOldMap || !spForeignSeen.insert(pForeign).second)
                 continue;
 
             // 预先存在的坏点不碰不删，只回收因本次剥离而退役的对象
@@ -332,14 +332,10 @@ void System::RetireSubmap(Map* pOldMap)
                     vObsToErase.push_back(it->first);
             }
 
-            // EraseObservation 在 nObs≤阈值时触发 SetBadFlag：全程只摘引用不
-            // 释放对象，绝不产生悬挂指针；失去全部锚定的点自动退役
+            // EraseObservation 在 nObs≤阈值时触发 SetBadFlag：全程只摘引用并移入外点所属 Map 的 Trash，
+            // 绝不下场 delete 外点对象（外点内存由外点自己的 Map 声明周期管控，在此 delete 会引发 Destroyed Mutex/UAF 崩溃）
             for (size_t k = 0; k < vObsToErase.size(); ++k)
                 pForeign->EraseObservation(vObsToErase[k]);
-
-            // 因本次剥离而退役的点已被移出所属图容器，显式回收
-            if (pForeign->isBad())
-                delete pForeign;
         }
     }
 
@@ -356,7 +352,8 @@ void System::RetireSubmap(Map* pOldMap)
             if (!pKF) continue;
             const vector<MapPoint*> vMatches = pKF->GetMapPointMatches();
             for (size_t j = 0; j < vMatches.size(); ++j) {
-                if (vMatches[j] && spOwnMPs.count(vMatches[j])) {
+                MapPoint* pMP = vMatches[j];
+                if (pMP && (spOwnMPs.count(pMP) || pMP->GetMap() == pOldMap)) {
                     pKF->EraseMapPointMatch(j);
                     spTouchedSurvivorKFs.insert(pKF);
                 }
