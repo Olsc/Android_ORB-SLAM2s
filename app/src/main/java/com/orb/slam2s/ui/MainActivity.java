@@ -38,9 +38,16 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import android.view.ViewGroup;
+
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.orb.slam2s.R;
 import com.orb.slam2s.camera.CameraPreviewView;
@@ -167,8 +174,16 @@ public class MainActivity extends AppCompatActivity implements CameraPreviewView
     }
 
     private void initViewsAndServices() {
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (controller != null) {
+            controller.setAppearanceLightNavigationBars(false);
+            controller.setAppearanceLightStatusBars(false);
+        }
+
+        setupWindowInsets();
 
         mSlamIPCClient = new SlamIPCClient(this);
         mMapManager = new MapManager(this, mSlamIPCClient);
@@ -252,6 +267,55 @@ public class MainActivity extends AppCompatActivity implements CameraPreviewView
 
         initJoystick();
         init3DofTracker();
+    }
+
+    private void setupWindowInsets() {
+        View rootView = findViewById(R.id.ar_ui_root);
+        if (rootView == null) {
+            rootView = findViewById(android.R.id.content);
+        }
+        if (rootView == null) return;
+
+        ViewCompat.setOnApplyWindowInsetsListener(rootView, (v, windowInsets) -> {
+            Insets insets = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
+            );
+
+            // 动态避让虚拟摇杆 (left/start + bottom)
+            View joystickView = findViewById(R.id.joystick_view);
+            if (joystickView != null && joystickView.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
+                ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) joystickView.getLayoutParams();
+                int baseStart = (int) (16 * getResources().getDisplayMetrics().density);
+                int baseBottom = (int) (16 * getResources().getDisplayMetrics().density);
+                lp.setMarginStart(baseStart + insets.left);
+                lp.bottomMargin = baseBottom + insets.bottom;
+                joystickView.setLayoutParams(lp);
+            }
+
+            // 动态避让右下角操作面板 (right/end + bottom)
+            View actionPanel = findViewById(R.id.action_panel);
+            if (actionPanel != null && actionPanel.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
+                ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) actionPanel.getLayoutParams();
+                int baseEnd = (int) (8 * getResources().getDisplayMetrics().density);
+                int baseBottom = (int) (8 * getResources().getDisplayMetrics().density);
+                lp.setMarginEnd(baseEnd + insets.right);
+                lp.bottomMargin = baseBottom + insets.bottom;
+                actionPanel.setLayoutParams(lp);
+            }
+
+            // 动态避让左上角 FPS/地图信息面板 (left/start + top)
+            View infoPanel = findViewById(R.id.info_panel);
+            if (infoPanel != null && infoPanel.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
+                ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) infoPanel.getLayoutParams();
+                int baseStart = (int) (12 * getResources().getDisplayMetrics().density);
+                int baseTop = (int) (12 * getResources().getDisplayMetrics().density);
+                lp.setMarginStart(baseStart + insets.left);
+                lp.topMargin = baseTop + insets.top;
+                infoPanel.setLayoutParams(lp);
+            }
+
+            return windowInsets;
+        });
     }
 
     private void toggleExclusiveMenu(int groupId) {

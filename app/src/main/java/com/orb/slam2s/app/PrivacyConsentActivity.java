@@ -21,6 +21,7 @@ import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ScrollView;
@@ -28,6 +29,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.orb.slam2s.R;
 
@@ -71,10 +77,17 @@ public class PrivacyConsentActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_privacy_consent);
 
-        // 全屏 + 常亮
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        // 沉浸式边到边 + 常亮
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (controller != null) {
+            controller.setAppearanceLightNavigationBars(false);
+            controller.setAppearanceLightStatusBars(false);
+        }
+
+        setupWindowInsets();
 
         ScrollView scrollView = findViewById(R.id.scroll_view_privacy);
         btnAgree = findViewById(R.id.btn_agree);
@@ -110,6 +123,34 @@ public class PrivacyConsentActivity extends AppCompatActivity {
         btnAgree.setOnClickListener(v -> {
             saveAgreement();
             startNextActivity();
+        });
+    }
+
+    private void setupWindowInsets() {
+        View rootLayout = findViewById(R.id.root_privacy_layout);
+        if (rootLayout == null) return;
+
+        ViewCompat.setOnApplyWindowInsetsListener(rootLayout, (v, windowInsets) -> {
+            Insets insets = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
+            );
+
+            // 根视图增加两侧与顶部 Safe Insets
+            v.setPadding(insets.left, insets.top, insets.right, 0);
+
+            // 底部控制栏增加 Bottom Safe Inset 避让系统导航条/手势棒
+            View bottomBar = findViewById(R.id.bottom_bar);
+            if (bottomBar != null) {
+                int basePadding = (int) (10 * getResources().getDisplayMetrics().density);
+                bottomBar.setPadding(
+                        bottomBar.getPaddingLeft(),
+                        basePadding,
+                        bottomBar.getPaddingRight(),
+                        basePadding + insets.bottom
+                );
+            }
+
+            return windowInsets;
         });
     }
 
