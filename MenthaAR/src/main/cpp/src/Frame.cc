@@ -269,26 +269,33 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
 std::vector<size_t> Frame::GetFeaturesInArea(const float &x, const float  &y, const float  &r, const int minLevel, const int maxLevel) const
 {
     std::vector<size_t> vIndices;
-    // 半径搜索预留16槽位
+    GetFeaturesInArea(x, y, r, vIndices, minLevel, maxLevel);
+    return vIndices;
+}
 
-    // TODO: 临时数值，待实测调整
+void Frame::GetFeaturesInArea(const float &x, const float &y, const float &r,
+                              std::vector<size_t> &vIndices,
+                              const int minLevel, const int maxLevel) const
+{
+    // 半径搜索预留16槽位
+    vIndices.clear();
     vIndices.reserve(FRAME_SEARCH_RESERVE);
 
     const int nMinCellX = max(0,(int)floor((x-mnMinX-r)*mfGridElementWidthInv));
     if(nMinCellX>=FRAME_GRID_COLS)
-        return vIndices;
+        return;
 
     const int nMaxCellX = min((int)FRAME_GRID_COLS-1,(int)ceil((x-mnMinX+r)*mfGridElementWidthInv));
     if(nMaxCellX<0)
-        return vIndices;
+        return;
 
     const int nMinCellY = max(0,(int)floor((y-mnMinY-r)*mfGridElementHeightInv));
     if(nMinCellY>=FRAME_GRID_ROWS)
-        return vIndices;
+        return;
 
     const int nMaxCellY = min((int)FRAME_GRID_ROWS-1,(int)ceil((y-mnMinY+r)*mfGridElementHeightInv));
     if(nMaxCellY<0)
-        return vIndices;
+        return;
 
     const bool bCheckLevels = (minLevel>0) || (maxLevel>=0);
 
@@ -321,8 +328,6 @@ std::vector<size_t> Frame::GetFeaturesInArea(const float &x, const float  &y, co
             }
         }
     }
-
-    return vIndices;
 }
 
 bool Frame::PosInGrid(const cv::KeyPoint &kp, int &posX, int &posY)

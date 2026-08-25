@@ -668,23 +668,31 @@ void KeyFrame::EraseConnection(KeyFrame* pKF)
 std::vector<size_t> KeyFrame::GetFeaturesInArea(const float &x, const float &y, const float &r) const
 {
     std::vector<size_t> vIndices;
+    GetFeaturesInArea(x, y, r, vIndices);
+    return vIndices;
+}
+
+void KeyFrame::GetFeaturesInArea(const float &x, const float &y, const float &r,
+                                 std::vector<size_t> &vIndices) const
+{
+    vIndices.clear();
     vIndices.reserve(16);
 
     const int nMinCellX = max(0,(int)floor((x-mnMinX-r)*mfGridElementWidthInv));
     if(nMinCellX>=mnGridCols)
-        return vIndices;
+        return;
 
     const int nMaxCellX = min((int)mnGridCols-1,(int)ceil((x-mnMinX+r)*mfGridElementWidthInv));
     if(nMaxCellX<0)
-        return vIndices;
+        return;
 
     const int nMinCellY = max(0,(int)floor((y-mnMinY-r)*mfGridElementHeightInv));
     if(nMinCellY>=mnGridRows)
-        return vIndices;
+        return;
 
     const int nMaxCellY = min((int)mnGridRows-1,(int)ceil((y-mnMinY+r)*mfGridElementHeightInv));
     if(nMaxCellY<0)
-        return vIndices;
+        return;
 
     // 半径平方在循环外预计算
     const float rSq = r*r;
@@ -706,8 +714,6 @@ std::vector<size_t> KeyFrame::GetFeaturesInArea(const float &x, const float &y, 
             }
         }
     }
-
-    return vIndices;
 }
 
 bool KeyFrame::IsInImage(const float &x, const float &y) const

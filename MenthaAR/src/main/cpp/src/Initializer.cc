@@ -161,6 +161,12 @@ void Initializer::FindHomography(vector<bool> &vbMatchesInliers, float &score, c
     vector<bool> vbCurrentInliers(N,false);
     float currentScore;
 
+    // 自适应提前终止：N=log(1-p)/log(1-w^s)，高内点率时大幅减少迭代，
+    // 置信概率 INITIALIZER_RANSAC_PROB 不变
+    const double ransacProb = INITIALIZER_RANSAC_PROB;
+    const int minSetSize = INITIALIZER_RANSAC_MIN_SET;
+    int nInlierBest = 0;
+
     // 执行所有 RANSAC 迭代并保存得分最高的解
     for(int it=0; it<mMaxIterations; it++)
     {
@@ -184,6 +190,22 @@ void Initializer::FindHomography(vector<bool> &vbMatchesInliers, float &score, c
             H21 = H21i.clone();
             vbMatchesInliers = vbCurrentInliers;
             score = currentScore;
+            nInlierBest = 0;
+            for(int i=0; i<N; ++i) if(vbMatchesInliers[i]) nInlierBest++;
+        }
+
+        // 自适应提前终止：内点率足够高时按标准公式估算剩余需求
+        if(it >= INITIALIZER_ADAPTIVE_START_ITER && nInlierBest > 0)
+        {
+            const double w = (double)nInlierBest / (double)N;
+            double wPow = 1.0;
+            for(int k=0; k<minSetSize; ++k) wPow *= w;
+            if(wPow > 1e-9)
+            {
+                const double nNeeded = std::log(1.0-ransacProb) / std::log(1.0-wPow);
+                if(std::isfinite(nNeeded) && (double)it >= nNeeded * INITIALIZER_ADAPTIVE_SAFETY_FACTOR)
+                    break;
+            }
         }
     }
 }
@@ -210,6 +232,11 @@ void Initializer::FindFundamental(vector<bool> &vbMatchesInliers, float &score, 
     vector<bool> vbCurrentInliers(N,false);
     float currentScore;
 
+    // 自适应提前终止（同 FindHomography，置信度不变）
+    const double ransacProb = INITIALIZER_RANSAC_PROB;
+    const int minSetSize = INITIALIZER_RANSAC_MIN_SET;
+    int nInlierBest = 0;
+
     // 执行所有 RANSAC 迭代并保存得分最高的解
     for(int it=0; it<mMaxIterations; it++)
     {
@@ -233,6 +260,21 @@ void Initializer::FindFundamental(vector<bool> &vbMatchesInliers, float &score, 
             F21 = F21i.clone();
             vbMatchesInliers = vbCurrentInliers;
             score = currentScore;
+            nInlierBest = 0;
+            for(int i=0; i<N; ++i) if(vbMatchesInliers[i]) nInlierBest++;
+        }
+
+        if(it >= INITIALIZER_ADAPTIVE_START_ITER && nInlierBest > 0)
+        {
+            const double w = (double)nInlierBest / (double)N;
+            double wPow = 1.0;
+            for(int k=0; k<minSetSize; ++k) wPow *= w;
+            if(wPow > 1e-9)
+            {
+                const double nNeeded = std::log(1.0-ransacProb) / std::log(1.0-wPow);
+                if(std::isfinite(nNeeded) && (double)it >= nNeeded * INITIALIZER_ADAPTIVE_SAFETY_FACTOR)
+                    break;
+            }
         }
     }
 }
@@ -272,7 +314,8 @@ cv::Mat Initializer::ComputeH21(const vector<cv::Point2f> &vP1, const vector<cv:
     }
 
     cv::Mat u, w, vt;
-    cv::SVD::compute(A, w, u, vt, cv::SVD::MODIFY_A | cv::SVD::FULL_UV);
+    // A 为 16x9 超定阵，vt 本就是完整 9x9；FULL_UV 只会白白把 u 扩成 16x16
+    cv::SVD::compute(A, w, u, vt, cv::SVD::MODIFY_A);
 
     return vt.row(8).reshape(0, 3).clone();
 }

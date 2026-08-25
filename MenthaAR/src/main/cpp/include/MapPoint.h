@@ -152,6 +152,7 @@ public:
 
     void SetMapId(int id);
     int GetMapId();
+    Map* GetMap() const { return mpMap; }
     // 标记从持久化地图加载的点用于可视化
     bool mbFromLoadedMap = false;
     // 标记在当前帧中匹配的点（临时）

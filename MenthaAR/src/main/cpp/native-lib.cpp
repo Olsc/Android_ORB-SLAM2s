@@ -685,12 +685,20 @@ Java_com_orb_slam2s_slamar_NativeHelper_detect(JNIEnv *env, jobject instance,
         return;
     }
     if(!currentTcw.empty()){
+        // vMPs 写入侧由 gMapPointsMutex 保护，先持锁拷贝快照再做无锁使用，
+        // 锁序与全局一致（gMapDataMutex → gMapPointsMutex）
+        std::vector<ORB_SLAM2::MapPoint*> localMPs;
+        {
+            std::lock_guard<std::mutex> _mpLock(gMapPointsMutex);
+            localMPs = vMPs;
+        }
+
         cv::Mat TcwForPlane = currentTcw;
         if(sys->HasMapAlignment()) {
             TcwForPlane = sys->GetMapAlignedPose(currentTcw);
         }
 
-        Plane* detected = detectPlane(TcwForPlane, vMPs, ORB_SLAM2::PLANE_DETECT_RANSAC_ITERS);
+        Plane* detected = detectPlane(TcwForPlane, localMPs, ORB_SLAM2::PLANE_DETECT_RANSAC_ITERS);
         if(detected && sys->MapChanged())
             detected->Recompute();
         statusBuf[1]=detected? ORB_SLAM2::PLANE_DETECTED : ORB_SLAM2::PLANE_NOT_DETECTED;

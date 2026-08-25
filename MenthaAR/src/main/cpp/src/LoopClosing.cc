@@ -292,6 +292,17 @@ bool LoopClosing::ComputeSim3()
     vector<Sim3Solver*> vpSim3Solvers;
     vpSim3Solvers.resize(nInitialCandidates);
 
+    // RAII 守卫统一释放全部求解器：本函数存在多个出口，手工释放易漏；
+    // 未分配槽位为 nullptr，delete 空指针安全
+    struct Sim3SolverArrayGuard {
+        vector<Sim3Solver*>& v;
+        explicit Sim3SolverArrayGuard(vector<Sim3Solver*>& vv) : v(vv) {}
+        ~Sim3SolverArrayGuard() {
+            for(size_t i=0; i<v.size(); ++i)
+                delete v[i];
+        }
+    } solverGuard(vpSim3Solvers);
+
     vector<vector<MapPoint*> > vvpMapPointMatches;
     vvpMapPointMatches.resize(nInitialCandidates);
 
@@ -527,6 +538,10 @@ void LoopClosing::CorrectLoop()
             g2o::Sim3 g2oCorrectedSwi = g2oCorrectedSiw.inverse();
             g2o::Sim3 g2oSiw = NonCorrectedSim3[pKFi];
 
+            // 结合律预合成：T = S_cwi·S_iw 对该 KF 全部地图点恒定，
+            // 提前合成后每点只需一次 Sim3::map
+            const g2o::Sim3 g2oTsc = g2oCorrectedSwi * g2oSiw;
+
             vector<MapPoint*> vpMPsi = pKFi->GetMapPointMatches();
             for(size_t iMP=0, endMPi = vpMPsi.size(); iMP<endMPi; iMP++)
             {
@@ -537,7 +552,7 @@ void LoopClosing::CorrectLoop()
                 // 使用未校正的位姿投影，并使用校正后的位姿反向投影
                 cv::Mat P3Dw = pMPi->GetWorldPos();
                 Eigen::Matrix<double,3,1> eigP3Dw = Converter::toVector3d(P3Dw);
-                Eigen::Matrix<double,3,1> eigCorrectedP3Dw = g2oCorrectedSwi.map(g2oSiw.map(eigP3Dw));
+                Eigen::Matrix<double,3,1> eigCorrectedP3Dw = g2oTsc.map(eigP3Dw);
 
                 pMPi->SetWorldPos(Converter::toCvMat(eigCorrectedP3Dw));
                 pMPi->mnCorrectedByKF = mpCurrentKF->mnId;

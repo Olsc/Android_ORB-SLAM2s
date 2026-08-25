@@ -138,6 +138,9 @@ public:
     // 创建新地图（子地图），用于跟踪丢失时的恢复
     void CreateNewMap();
 
+    // 完整拆除旧子地图：跨图引用剥离、候选库摘除、全量释放
+    void RetireSubmap(Map* pOldMap);
+
     // 切换到指定地图
     void SwitchToMap(Map* pMap);
 
