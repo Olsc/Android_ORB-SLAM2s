@@ -179,5 +179,4 @@ void Plane::Recompute()
     // 转换为OpenGL格式
     setIdentityM(glTpw);
     getColMajorMatrixFromMat(glTpw, Tpw);
-    // transposeR(glTpw);
 }

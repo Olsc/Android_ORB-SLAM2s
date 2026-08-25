@@ -190,9 +190,8 @@ cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInlie
             return cv::Mat();
         }
 
-        // 采样去重改为 used 位图：零整表拷贝（原先每次迭代
-        // vAvailableIndices = mvAllIndices 是 N 次拷贝 × 迭代数），且
-        // 无 swap-pop 的恢复问题；minSet=4 远小于 N，重采样碰撞概率可忽略
+        // 采样去重使用 used 位图：免去每次迭代的整表拷贝与 swap-pop 恢复问题；
+        // minSet=4 远小于 N，重采样碰撞概率可忽略
         vector<bool> vUsed(N, false);
 
         int nCurrentIterations = 0;

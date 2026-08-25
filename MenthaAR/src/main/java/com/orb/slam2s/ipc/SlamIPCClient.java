@@ -33,19 +33,17 @@ import android.os.ParcelFileDescriptor;
 import android.os.RemoteException;
 import android.util.Log;
 
-/**
- * SLAM IPC 客户端（UI 进程）。
- *
- * 每帧路径（性能关键）：
- * 1. {@link #sendFrameData} 在发送线程调用：写 Y 帧到共享内存双缓冲之一，
- *    更新 uiWriteSeq，然后 oneway 投递 processFrame(seq, bufIndex, w, h) —— 不阻塞。
- * 2. SLAM 进程专用线程处理帧，native 把 tracking/draw/MVP/点云/slamDoneSeq 写回共享内存。
- * 3. 渲染线程（GL / Filament）通过 {@link #readMvp} / {@link #readPointCloud} 等
- *    直接读共享内存，全程零 binder。
- *
- * 背压：写帧 seq 前要求 slamDoneSeq >= seq-2（目标缓冲已被 SLAM 处理完），
- * 否则丢帧 —— 保证双缓冲不被覆盖，同时 SLAM 满负荷运行。
- */
+// SLAM IPC 客户端（UI 进程）。
+//
+// 每帧路径（性能关键）：
+// 1. sendFrameData() 在发送线程调用：写 Y 帧到共享内存双缓冲之一，
+//    更新 uiWriteSeq，然后 oneway 投递 processFrame(seq, bufIndex, w, h)，不阻塞。
+// 2. SLAM 进程专用线程处理帧，native 把 tracking/draw/MVP/点云/slamDoneSeq 写回共享内存。
+// 3. 渲染线程（GL / Filament）通过 readMvp()/readPointCloud() 等直接读共享内存，全程零 binder。
+// 4. 平面检测、地图保存/加载等低频控制指令走 binder（非每帧路径）。
+//
+// 背压：写帧 seq 前要求 slamDoneSeq >= seq-2（目标缓冲已被 SLAM 处理完），
+// 否则丢帧，保证双缓冲不被覆盖，同时 SLAM 满负荷运行。
 public class SlamIPCClient {
     private static final String TAG = "SlamIPCClient";
 
@@ -183,24 +181,20 @@ public class SlamIPCClient {
         }
     }
 
-    // 共享内存结果读取（渲染线程调用，零 binder）
-
-    /** 读取最新 MVP（48 floats：M[16]+V[16]+P[16]）。返回 false 表示无有效数据。 */
+    // 读取最新 MVP（48 floats：M[16]+V[16]+P[16]），返回 false 表示无有效数据
     public boolean readMvp(float[] out48) {
         return sharedMemoryBuffer != null && sharedMemoryBuffer.readMvp(out48);
     }
 
-    /** 读取是否应绘制 AR 物体 */
+    // 是否应绘制 AR 物体
     public boolean readDrawFlag() {
         return sharedMemoryBuffer != null && sharedMemoryBuffer.readDrawFlag() != 0;
     }
 
-    /** 读取点云（每点 7 floats）。返回点数，0 表示无点云。 */
+    // 读取点云（每点 7 floats），返回点数，0 表示无点云
     public int readPointCloud(float[] out, int maxFloats) {
         return sharedMemoryBuffer != null ? sharedMemoryBuffer.readPointCloud(out, maxFloats) : 0;
     }
-
-    // 低频控制接口（binder，非每帧路径）
 
     public void detectPlane() {
         if (slamService != null) {

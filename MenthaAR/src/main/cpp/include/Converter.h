@@ -72,7 +72,7 @@ public:
                                float x1, float y1, float x2, float y2,
                                cv::Mat &x3D)
     {
-        // ---- 光线方向：DLT 行平面法向叉积 ----
+        // 光线方向：DLT 行平面法向叉积
         // 平面对：na = x*P.row2 - P.row0，nb = y*P.row2 - P.row1；u = na.xyz × nb.xyz
         #define TRI_RAY(Pm, px, py, out) do { \
             const float _r00=Pm.at<float>(0,0), _r01=Pm.at<float>(0,1), _r02=Pm.at<float>(0,2); \
@@ -99,7 +99,7 @@ public:
         u[0]*=invu; u[1]*=invu; u[2]*=invu;
         v[0]*=invv; v[1]*=invv; v[2]*=invv;
 
-        // ---- 相机中心：Cramer 解 P[:,0:3]·C = -P[:,3]（对 [R|t] 与 K[R|t] 均成立）----
+        // 相机中心：Cramer 解 P[:,0:3]·C = -P[:,3]（对 [R|t] 与 K[R|t] 均成立）
         #define TRI_CENTER(Pm, out) do { \
             const float a11=Pm.at<float>(0,0), a12=Pm.at<float>(0,1), a13=Pm.at<float>(0,2); \
             const float a21=Pm.at<float>(1,0), a22=Pm.at<float>(1,1), a23=Pm.at<float>(1,2); \
@@ -118,7 +118,7 @@ public:
         TRI_CENTER(P2, Q2);
         #undef TRI_CENTER
 
-        // ---- 异面直线最近点对取中点 ----
+        // 异面直线最近点对取中点
         const float w0x = Q1[0]-Q2[0], w0y = Q1[1]-Q2[1], w0z = Q1[2]-Q2[2];
         const float A = u[0]*u[0]+u[1]*u[1]+u[2]*u[2];
         const float B = u[0]*v[0]+u[1]*v[1]+u[2]*v[2];

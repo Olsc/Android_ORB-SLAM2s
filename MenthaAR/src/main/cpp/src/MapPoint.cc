@@ -85,7 +85,7 @@ MapPoint::MapPoint(const cv::Mat &Pos, Map* pMap, Frame* pFrame, const int &idxF
     mfMaxDistance = dist*levelScaleFactor;
     mfMinDistance = mfMaxDistance/pFrame->mvScaleFactors[nLevels-1];
 
-    // 描述子改为 shared_ptr + 原子读
+    // 描述子以 shared_ptr + 原子读方式存储
     std::atomic_store(&mDescriptor, std::make_shared<const cv::Mat>(pFrame->mDescriptors.row(idxF).clone()));
     mfMinDistInvariance.store(MAPPOINT_MIN_DIST_INVARIANCE_FACTOR*mfMinDistance, std::memory_order_relaxed);
     mfMaxDistInvariance.store(MAPPOINT_MAX_DIST_INVARIANCE_FACTOR*mfMaxDistance, std::memory_order_relaxed);
@@ -235,7 +235,7 @@ int MapPoint::GetRedundantObservationsCount(KeyFrame* pKF, int scaleLevel)
 
 int MapPoint::Observations() const
 {
-    // nObs 已改为原子变量，无需加锁，零锁开销
+    // nObs 为原子变量，无需加锁
     return nObs.load(std::memory_order_relaxed);
 }
 
@@ -310,7 +310,7 @@ void MapPoint::Replace(MapPoint* pMP)
 
 bool MapPoint::isBad()
 {
-    // mbBad已改为原子变量，无需加锁，极大减少高频调用的锁开销，使用 memory_order_relaxed 以获得最佳性能
+    // mbBad 为原子变量，无需加锁，使用 memory_order_relaxed 降低高频调用的开销
     return mbBad.load(std::memory_order_relaxed);
 }
 

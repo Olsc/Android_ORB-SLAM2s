@@ -36,32 +36,28 @@ import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-/**
- * SLAM 跨进程共享内存（帧 + 结果回传）。
- *
- * 布局（header 用 LITTLE_ENDIAN，与 native 侧 C/C++ 一致）：
- * <pre>
- *   [0..3]    magic "MNTH"
- *   [4..7]    version
- *   [8..11]   frameW
- *   [12..15]  frameH
- *   [16..19]  uiWriteSeq     (UI 进程写：最新已写入共享内存的帧序号)
- *   [20..23]  slamDoneSeq    (SLAM 进程写：已处理完成的帧序号)
- *   [24..27]  trackingState  (SLAM 进程写)
- *   [28..31]  drawFlag       (SLAM 进程写)
- *   [32..35]  pointCloudBytes(SLAM 进程写：点云区有效字节数)
- *   [36..39]  reserved
- *   [40..231] mvp[48] float  (SLAM 进程写：M/V/P 各 16，共 48)
- *   [232..255] reserved
- *   [256..]              Y 帧缓冲 0 (frameW*frameH 字节)
- *   [256+w*h..]          Y 帧缓冲 1 (frameW*frameH 字节)
- *   [256+2*w*h..]        点云区 (POINTCLOUD_MAX_BYTES)
- * </pre>
- *
- * 双缓冲 + 序号同步：UI 写 buf[seq%2] 前必须满足 slamDoneSeq >= seq-2，
- * 保证 SLAM 正在读的缓冲（seq-1）不会被覆盖；SLAM 完成后写 slamDoneSeq。
- * 所有 header 字段用绝对偏移读写（不移动 ByteBuffer position），线程安全。
- */
+// SLAM 跨进程共享内存（帧 + 结果回传）。
+//
+// 布局（header 用 LITTLE_ENDIAN，与 native 侧 C/C++ 一致）：
+//   [0..3]     magic "MNTH"
+//   [4..7]     version
+//   [8..11]    frameW
+//   [12..15]   frameH
+//   [16..19]   uiWriteSeq      (UI 进程写：最新已写入共享内存的帧序号)
+//   [20..23]   slamDoneSeq     (SLAM 进程写：已处理完成的帧序号)
+//   [24..27]   trackingState   (SLAM 进程写)
+//   [28..31]   drawFlag        (SLAM 进程写)
+//   [32..35]   pointCloudBytes (SLAM 进程写：点云区有效字节数)
+//   [36..39]   reserved
+//   [40..231]  mvp[48] float   (SLAM 进程写：M/V/P 各 16，共 48)
+//   [232..255] reserved
+//   [256..]              Y 帧缓冲 0 (frameW*frameH 字节)
+//   [256+w*h..]          Y 帧缓冲 1 (frameW*frameH 字节)
+//   [256+2*w*h..]        点云区 (POINTCLOUD_MAX_BYTES)
+//
+// 双缓冲 + 序号同步：UI 写 buf[seq%2] 前必须满足 slamDoneSeq >= seq-2，
+// 保证 SLAM 正在读的缓冲（seq-1）不会被覆盖；SLAM 完成后写 slamDoneSeq。
+// 所有 header 字段用绝对偏移读写（不移动 ByteBuffer position），线程安全。
 public class SharedMemoryBuffer {
     private static final String TAG = "SharedMemoryBuffer";
 
@@ -78,7 +74,7 @@ public class SharedMemoryBuffer {
     public static final int OFF_POINTCLOUD_BYTES = 32;
     public static final int OFF_MVP = 40;   // 48 floats = 192 字节
 
-    /** 点云区上限（3000 点 × 7 floats × 4B = 84000，取 96KB 对齐） */
+    // 点云区上限（3000 点 × 7 floats × 4B = 84000，取 96KB 对齐）
     public static final int POINTCLOUD_MAX_BYTES = 96 * 1024;
 
     private SharedMemory sharedMemory;
@@ -131,9 +127,7 @@ public class SharedMemoryBuffer {
         }
     }
 
-    // 布局计算
-
-    /** 设置当前帧尺寸（影响 Y 双缓冲与点云区偏移）。必须在写帧前调用。 */
+    // 设置当前帧尺寸（影响 Y 双缓冲与点云区偏移），必须在写帧前调用
     public void setFrameSize(int w, int h) {
         this.frameW = w;
         this.frameH = h;
@@ -142,24 +136,22 @@ public class SharedMemoryBuffer {
     public int getFrameW() { return frameW; }
     public int getFrameH() { return frameH; }
 
-    /** Y 缓冲区起始偏移 */
+    // Y 缓冲区起始偏移
     private int yOffset(int bufIndex) {
         return HEADER_SIZE + (bufIndex & 1) * (frameW * frameH);
     }
 
-    /** 点云区起始偏移 */
+    // 点云区起始偏移
     private int pointCloudOffset() {
         return HEADER_SIZE + 2 * (frameW * frameH);
     }
 
-    /** 按当前帧尺寸计算完整共享内存所需大小（供创建/重建判断） */
+    // 按当前帧尺寸计算完整共享内存所需大小（供创建/重建判断）
     public static int requiredSize(int w, int h) {
         return HEADER_SIZE + 2 * w * h + POINTCLOUD_MAX_BYTES;
     }
 
-    // header 读写（绝对偏移，线程安全）
-
-    /** 初始化 header（首次写帧前调用一次）。返回 false 表示缓冲区不可用。 */
+    // 初始化 header（首次写帧前调用一次），返回 false 表示缓冲区不可用
     public boolean initHeader(int w, int h) {
         setFrameSize(w, h);
         if (mappedBuffer == null && memoryFile == null) return false;
@@ -205,13 +197,13 @@ public class SharedMemoryBuffer {
 
     public void writeUiWriteSeq(int seq) { writeInt(OFF_UI_WRITE_SEQ, seq); }
 
-    /** SLAM 已处理完成的帧序号（UI 读取，用于背压判断与渲染版本检测） */
+    // SLAM 已处理完成的帧序号（UI 读取，用于背压判断与渲染版本检测）
     public int readSlamDoneSeq() { return readInt(OFF_SLAM_DONE_SEQ); }
 
-    /** 是否应绘制 AR 物体（SLAM 进程写入） */
+    // 是否应绘制 AR 物体（SLAM 进程写入）
     public int readDrawFlag() { return readInt(OFF_DRAW_FLAG); }
 
-    /** 读取最新 MVP（48 floats：M[16]+V[16]+P[16]）。返回 false 表示无有效数据。 */
+    // 读取最新 MVP（48 floats：M[16]+V[16]+P[16]），返回 false 表示无有效数据
     public boolean readMvp(float[] out48) {
         if (out48 == null || out48.length < 48) return false;
         if (mappedBuffer != null) {
@@ -234,7 +226,7 @@ public class SharedMemoryBuffer {
         return false;
     }
 
-    /** 读取点云区（每点 7 floats：[x,y,z,r,g,b,size]）。返回点数，0 表示无数据。 */
+    // 读取点云区（每点 7 floats：[x,y,z,r,g,b,size]），返回点数，0 表示无数据
     public int readPointCloud(float[] out, int maxFloats) {
         int bytes = readInt(OFF_POINTCLOUD_BYTES);
         if (bytes <= 0 || bytes > POINTCLOUD_MAX_BYTES || out == null) return 0;
@@ -259,10 +251,7 @@ public class SharedMemoryBuffer {
         return floats;
     }
 
-    // 帧写入
-
-    // 将一帧灰度 Y 数据写入指定缓冲（bufIndex 0/1）
-    // 调用方必须已确认该缓冲可写（slamDoneSeq >= seq-2）
+    // 将一帧灰度 Y 数据写入指定缓冲（bufIndex 0/1），调用方必须已确认该缓冲可写（slamDoneSeq >= seq-2）
     public boolean writeFrame(byte[] yData, int bufIndex, int w, int h) {
         if (frameW != w || frameH != h) {
             setFrameSize(w, h);
@@ -284,8 +273,6 @@ public class SharedMemoryBuffer {
         }
         return true;
     }
-
-    // 通用访问
 
     public ParcelFileDescriptor getParcelFileDescriptor() {
         return pfd;

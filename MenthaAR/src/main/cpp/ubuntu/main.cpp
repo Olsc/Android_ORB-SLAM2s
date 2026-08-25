@@ -137,7 +137,7 @@ int main(int argc, char** argv) {
 
     // 播放时钟（视频文件）：基于视频时间戳对齐墙钟，保证按源帧率正常速度播放。
     // waitKey(1000/fps) 不可靠：waitKey 精度差，且显示/解码开销叠加在等待之上，
-    // 实际帧间隔恒 >= 理论间隔，高帧率视频明显变慢。改用 CAP_PROP_POS_MSEC 时间戳
+    // 实际帧间隔恒 >= 理论间隔，高帧率视频明显变慢。采用 CAP_PROP_POS_MSEC 时间戳
     // 与墙钟对比：视频超前则补等，落后（处理慢）则追帧。
     double playBaseMsec = -1.0;   // 基准帧的视频时间戳(ms)
     double playBaseWallMs = 0.0;  // 基准帧的墙钟(ms)
@@ -163,7 +163,7 @@ int main(int argc, char** argv) {
             if (frame.empty()) break;
         }
 
-        // ---- 播放时钟对齐（仅视频文件）----
+        // 播放时钟对齐（仅视频文件）
         // 视频超前：补等至对齐点（waitKey 同时处理键盘）；落后过多：追帧并重置基准
         char key = -1;
         if (isVideoFile) {
@@ -221,7 +221,7 @@ int main(int argc, char** argv) {
             imgRgba = frame.clone();
         }
 
-        // ---- ORB/SLAM 跟踪：固定 TARGET_FPS 时间节流 ----
+        // ORB/SLAM 跟踪：固定 TARGET_FPS 时间节流
         // 无论视频/相机源帧率多少，每 processInterval 秒只处理最新一帧，
         // 其余帧仅显示不处理，保证视频正常速度播放而 SLAM 固定 30fps
         {
@@ -609,7 +609,7 @@ void drawGUI(cv::Mat& frame, int trackingState, int fps) {
         cv::addWeighted(panelOverlay, 0.75, frame(panelRect), 0.25, 0, frame(panelRect));
     }
 
-    // 绘制仪表盘的高雅描边边框
+    // 绘制仪表盘描边边框
     cv::rectangle(frame, cv::Rect(15, 15, 280, 140), cv::Scalar(100, 100, 100), 1, cv::LINE_AA);
 
     // 跟踪状态字符映射
@@ -679,7 +679,7 @@ void drawGUI(cv::Mat& frame, int trackingState, int fps) {
     // 绘制分隔边界线
     cv::line(frame, cv::Point(drawerX, 0), cv::Point(drawerX, frame.rows), cv::Scalar(60, 60, 60), 1, cv::LINE_AA);
 
-    // 递归循环渲染每一个菜单栏组件和所包含的微调按钮
+    // 循环渲染每个菜单组及其包含的按钮
     int currentY = 20;
     int categoryHeight = 35;
     int buttonHeight = 30;

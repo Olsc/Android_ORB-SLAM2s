@@ -200,11 +200,9 @@ void System::Shutdown()
 System::~System()
 {
     Shutdown();
-    // Shutdown 后 LM/LC/GlobalReloc 线程均已 join；按依赖序释放子模块后，
-    // 已无任何持有者，可安全释放子地图中的全部 KeyFrame/MapPoint。
-    // 注意：Map 没有析构清理（~Map 不能调 clear()——CreateNewMap 的子地图
-    // 逐出路径中 KFD/回环队列仍持有旧地图 KF 指针，析构时 clear 会产生
-    // 悬空指针），因此必须在此显式 clear() 后再 delete。
+    // Shutdown 后 LM/LC/GlobalReloc 线程均已 join；按依赖序释放子模块后已无任何持有者，
+    // 可安全释放子地图中的全部 KeyFrame/MapPoint。注意 Map 析构不能调 clear()：
+    // CreateNewMap 的子地图逐出路径中 KFD/回环队列仍持旧地图 KF 指针，须在此显式 clear() 后再 delete。
     delete mpTracker;       // Tracking 析构不再有线程成员（后台线程已停）
     delete mpLocalMapper;
     delete mpLoopCloser;
@@ -381,8 +379,7 @@ void System::RetireSubmap(Map* pOldMap)
 
 void System::CreateNewMap()
 {
-    // 限频已由 Tracking 侧的帧计数冷却（TRACKING_NEW_MAP_COOLDOWN_FRAMES=150）承担，
-    // 原先的 5 秒墙钟冷却属于时间驱动防抖，且与帧计数冷却重复，删除。
+    // 创建频率限制由 Tracking 侧帧计数冷却（TRACKING_NEW_MAP_COOLDOWN_FRAMES）承担
 
     LOGD("System::CreateNewMap 开始创建新子地图");
 
