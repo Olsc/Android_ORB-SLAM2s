@@ -54,7 +54,9 @@
 
 #include <iostream>
 #include <mutex>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 #include <future>
 #include <unordered_map>
 #include <numeric>
