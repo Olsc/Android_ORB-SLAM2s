@@ -359,8 +359,8 @@ int Optimizer::PoseOptimization(Frame *pFrame)
 
     // 执行 4 次优化，每次后将观测分类为内点/外点
     // 在下一次优化中，不包括外点，但在最后它们可以再次被分类为内点。
-    // 删除 200ms 墙钟超时——4×5 次 LM 迭代本身即有界，且时间截断会使
-    // 慢设备上的位姿停在未收敛状态（精度损失且不可复现）
+    // 不设墙钟超时：迭代次数本身有界（POSE_OPT_PASSES×POSE_OPT_PASS_ITERS），
+    // 时间截断会使慢设备上的位姿停在未收敛状态
     const float chi2Mono[4]={OPTIMIZER_CHI2_TH_2D,OPTIMIZER_CHI2_TH_2D,OPTIMIZER_CHI2_TH_2D,OPTIMIZER_CHI2_TH_2D};
     const int its[POSE_OPT_PASSES]={POSE_OPT_PASS_ITERS,POSE_OPT_PASS_ITERS,POSE_OPT_PASS_ITERS,POSE_OPT_PASS_ITERS};
 

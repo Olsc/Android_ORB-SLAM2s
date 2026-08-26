@@ -315,7 +315,7 @@ void ORB_SLAM2::Tracking::BindLoadedMapPointsUsingSnapshots()
     }
 
     // 按投影误差取前 nMaxBind 个最佳候选，
-    // 再对幸存子集排序以保持与原先一致的绑定顺序（去重冲突时仍优先误差小者）
+    // 再对幸存子集排序以固定绑定顺序（去重冲突时仍优先误差小者）
     if(candidates.size() > (size_t)nMaxBind)
     {
         std::nth_element(candidates.begin(), candidates.begin() + nMaxBind, candidates.end(),
@@ -374,8 +374,8 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
 
     const vector<MapPoint*> allMPs = mpMap->GetAllMapPoints();
 
-    // 单遍扫描。第一遍只做指针级筛选（零锁零拷贝）确定 hasLoaded 与候选集，
-    // 第二遍仅对入选点取一次描述子——原先的"计数遍+填充遍"对每点取了两次描述子
+    // 扫描分两步：第一遍只做指针级筛选（零锁零拷贝）确定 hasLoaded 与候选集，
+    // 第二遍仅对入选点各取一次描述子
     bool hasLoaded = false;
     std::vector<MapPoint*> candidates;
     candidates.reserve(allMPs.size());
@@ -1469,10 +1469,9 @@ void Tracking::MonocularInitialization()
                 }
             }
             if(validCount > 0 && (distSum / validCount) < INITIALIZER_MIN_PARALLAX_PX) {
-                // 视差不足时绝不再"超时强制初始化"（小基线强制三角化
-                // 会产生深噪点，牺牲精度）。改为帧计数驱动的参考帧刷新：参考帧
-                // 距今超过 60 帧仍未积累出足够视差，说明参考帧已过时（描述子漂移、
-                // 场景变化），以当前帧重建初始化参考继续等待——纯事件驱动收敛。
+                // 视差不足时不强制初始化（小基线强制三角化会产生深噪点，牺牲精度）；
+                // 采用帧计数驱动的参考帧刷新：参考帧距今超过 60 帧仍未积累足够视差即视为过时
+                //（描述子漂移、场景变化），以当前帧重建初始化参考继续等待
                 if(mCurrentFrame.mnId - mInitialFrame.mnId > 60) {
                     mInitialFrame = Frame(mCurrentFrame);
                     mLastFrame = Frame(mCurrentFrame);
@@ -1805,7 +1804,6 @@ bool Tracking::TrackLocalMap()
 {
     UpdateLocalMap();
     // 在新匹配前清除匹配标志
-    // （删除原先 O(M) 的"局部地图组成"统计块——结果只写局部变量，从未被使用）
     for(MapPoint* p : mvpLocalMapPoints){ if(p) p->mbMatchedInCurrentFrame = false; }
 
     // 避免遍历全局已加载的地图点，这会导致严重卡顿且过早进行地图匹配。
@@ -2572,11 +2570,10 @@ bool Tracking::Relocalization()
         if(!vbDiscarded[i]) nCandidates++;
     }
 
-    // 或者执行一些P4P RANSAC迭代，直到找到由足够内点支持的相机姿态
-    // 删除 1000ms 墙钟超时——每个 PnPsolver 的 RANSAC 迭代总数有限
-    // （SetRansacParameters 自适应上限 ≤300，耗尽即 bNoMore 丢弃该候选），
-    // 循环必然在有界迭代内终止，无需用时间截断（时间截断会让超时瞬间的
-    // 解成为中途解，精度不可控）
+    // 或者执行一些P4P RANSAC迭代，直到找到由足够内点支持的相机姿态。
+    // 不设墙钟超时：每个 PnPsolver 的 RANSAC 迭代总数有限（SetRansacParameters
+    // 自适应上限 ≤300，耗尽即 bNoMore 丢弃该候选），循环必然在有界迭代内终止；
+    // 时间截断会让超时瞬间的解成为中途解，精度不可控
     // 直接使用函数入口处的 bMatch：此处重复声明会遮蔽外层变量，
     // 使 KF 重定位的成功路径变成死代码
     ORBmatcher matcher2(ORB_MATCHER_NNRATIO_MOTION,true);

@@ -26,17 +26,15 @@ import android.util.Log;
 
 import com.orb.slam2s.slamar.NativeHelper;
 
-/**
- * SLAM 独立进程服务。
- *
- * 架构要点：
- * 1. SLAM 处理（TrackMonocular 等耗时操作）运行在专用高优先级线程 {@link #slamThread}，
- *    绝不占用 binder 线程 —— binder 线程池不再被 30fps 的帧处理长期阻塞。
- * 2. 帧投递使用 oneway AIDL（processFrame 只入队立即返回），binder 事务开销降至最低。
- * 3. 处理结果（tracking/draw/MVP/点云）由 native 层直接写回共享内存 header，
- *    每帧仅一次轻量 oneway 调用，无数组回调。
- * 4. initSLAM（加载词汇表约 1 秒）同样投递到处理线程，避免 binder 线程被长时间占用。
- */
+// SLAM 独立进程服务。
+//
+// 架构要点：
+// 1. SLAM 处理（TrackMonocular 等耗时操作）运行在专用高优先级线程 slamThread，
+//    绝不占用 binder 线程，binder 线程池不再被 30fps 的帧处理长期阻塞。
+// 2. 帧投递使用 oneway AIDL（processFrame 只入队立即返回），binder 事务开销降至最低。
+// 3. 处理结果（tracking/draw/MVP/点云）由 native 层直接写回共享内存 header，
+//    每帧仅一次轻量 oneway 调用，无数组回调。
+// 4. initSLAM（加载词汇表约 1 秒）同样投递到处理线程，避免 binder 线程被长时间占用。
 public class SlamService extends Service {
     private static final String TAG = "SlamService";
 
@@ -147,8 +145,6 @@ public class SlamService extends Service {
         }
     };
 
-    // 处理线程
-
     private void postTask(Runnable r) {
         synchronized (queueLock) {
             if (!running) return;
@@ -207,8 +203,6 @@ public class SlamService extends Service {
         }
     }
 
-    // 帧处理
-
     private void processFrameInternal(int seq, int bufIndex, int w, int h) {
         try {
             // native 处理共享内存中的帧，并把 tracking/draw/MVP/点云/slamDoneSeq 写回共享内存
@@ -227,8 +221,6 @@ public class SlamService extends Service {
             Log.e(TAG, "detectPlane 异常: " + e.getMessage());
         }
     }
-
-    // 生命周期
 
     @Override
     public void onCreate() {

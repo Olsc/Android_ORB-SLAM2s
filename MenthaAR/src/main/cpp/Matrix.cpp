@@ -221,27 +221,15 @@ void setIdentityM(float m[])
 }
 
 void getRUBViewMatrixFromRDF(float inM[],float outM[]){
-    // OpenGL 视图矩阵 = Rx(180) * OpenCV 视图矩阵 * Rx(180)
-    // Rx(180) 翻转 Y 和 Z 轴。
-    // 手机AR渲染需要双重变换：不仅相机坐标系变换(左乘)，世界坐标系也变换(右乘)。
-    // 这样可以确保AR物体(RUB模型)在RUB世界中被RUB相机正确观察。
+    // OpenGL 视图矩阵 = Rx(180) * OpenCV 视图矩阵 * Rx(180)：左乘翻转 Y/Z 轴所在两行，右乘翻转两列，
+    // 使 AR 物体(RUB)在 RUB 世界中被 RUB 相机正确观察。重叠索引(5,9,6,10)取反两次不变，
+    // 最终仅需取反：行索引 1,13,2,14 与列索引 4,7,8,11
 
     if(inM != outM) {
         memcpy(outM, inM, 16 * sizeof(float));
     }
 
-    // 我们需要取反以下索引：
-    // Row 1 (indices 1, 5, 9, 13) 被左乘取反
-    // Row 2 (indices 2, 6, 10, 14) 被左乘取反
-    // Col 1 (indices 4, 5, 6, 7) 被右乘取反
-    // Col 2 (indices 8, 9, 10, 11) 被右乘取反
-
-    // 重叠部分(Row 1/2 AND Col 1/2)被取反两次 -> 保持不变
-    // 重叠索引：5, 9, 6, 10
-
-    // 最终需要取反的索引列表：
-    // 仅行：1, 13, 2, 14
-    // 仅列：4, 7, 8, 11
+    // 需要取反的元素分布：Row 1/2 由左乘取反，Col 1/2 由右乘取反，重叠部分(5,9,6,10)两次取反后不变
 
     outM[1] = -outM[1];
     outM[2] = -outM[2];
@@ -258,9 +246,7 @@ void getRUBModelMatrixFromRDF(float inM[],float outM[]){
         memcpy(outM, inM, 16 * sizeof(float));
     }
 
-    // R_x(180) * inM: inM的第1行和第2行取反，第0行和第3行保持不变
-    // 第1行索引: 1, 5, 9, 13
-    // 第2行索引: 2, 6, 10, 14
+    // R_x(180) 左乘：取反第1、2行（索引 1,5,9,13 与 2,6,10,14），第0、3行不变
     outM[1] = -outM[1];
     outM[2] = -outM[2];
     outM[5] = -outM[5];

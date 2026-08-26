@@ -161,7 +161,7 @@ void Initializer::FindHomography(vector<bool> &vbMatchesInliers, float &score, c
     vector<bool> vbCurrentInliers(N,false);
     float currentScore;
 
-    // 自适应提前终止：N=log(1-p)/log(1-w^s)，高内点率时大幅减少迭代，
+    // 自适应提前终止：按 N=log(1-p)/log(1-w^s) 估算所需迭代数，高内点率时减少迭代，
     // 置信概率 INITIALIZER_RANSAC_PROB 不变
     const double ransacProb = INITIALIZER_RANSAC_PROB;
     const int minSetSize = INITIALIZER_RANSAC_MIN_SET;

@@ -11,7 +11,7 @@
 // 使用RANSAC算法从3D地图点中检测平面，选择中值距离最小的模型
 Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &vMPs, const int iterations)
 {
-    // 提取3D点：仅保留观测次数>5的稳定地图点 (使用栈分配和零拷贝接口，彻底消除堆开销)
+    // 提取3D点：仅保留观测次数达到阈值的稳定地图点，用 reserve 预分配容量
     vector<cv::Point3f> vPoints;
     vPoints.reserve(vMPs.size());
     vector<ORB_SLAM2::MapPoint*> vPointMP;

@@ -1874,10 +1874,8 @@ void ORBmatcher::ComputeThreeMaxima(vector<int>* histo, const int L, int &ind1, 
     }
 }
 
-// 8-bit popcount 查表（256 字节，常驻 L1 cache）。
-// 这是纯标量、全 CPU 兼容的汉明距离实现：逐字节查表累加，无损精度，
-// 且比 __builtin_popcountll 在无硬件 popcount 平台（如 AArch64 未开 NEON 时）
-// 的软件 SWAR 展开更快、更省指令，也不依赖编译器内建与目标指令集。
+// 8-bit popcount 查表（256 字节，常驻 L1 cache）：纯标量、全 CPU 兼容的汉明距离实现，
+// 逐字节查表累加，无损精度；不依赖编译器内建与目标指令集，在无硬件 popcount 平台更省指令。
 static const uint8_t POPCNT8_LUT[256] = {
     0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4,
     1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,

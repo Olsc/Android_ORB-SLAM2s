@@ -291,11 +291,11 @@ protected:
 
     // 为加载的地图点缓存的参考描述符（用于后台匹配）
     cv::Mat mRefDesc; // 描述符行
-    // 缓存主体改为不可变快照的 shared_ptr——读端仅在锁内拷贝指针（O(1)）
+    // 缓存主体为不可变快照的 shared_ptr，读端仅在锁内拷贝指针（O(1)）
     std::shared_ptr<const std::vector<MapPoint*>> mpRefIdxToMP;
     size_t mRefCachedMPCount = 0;
     double mRefLastBuildTs = 0.0;
-    // 重建节流改为增量驱动（地图点 +5% 或 KF +3 才重建）
+    // 重建节流为增量驱动（地图点新增约 5% 或 KF 新增 3 个时重建）
     long long mRefLastBuildMPCount = 0;
     long long mRefLastBuildKFCount = 0;
     std::atomic<bool> mRefBuilding{false};

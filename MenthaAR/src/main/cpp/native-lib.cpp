@@ -82,8 +82,6 @@ static std::atomic<float> gArObjectScale{ORB_SLAM2::AR_OBJECT_SCALE_DEFAULT};  /
 float gCurrentModelMatrix[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
 float gCurrentViewMatrix[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
 
-// AR 锚点生命周期事件
-
 // 重置渲染层对齐滞回状态
 static void AR_ResetAlignHold() {
     gAlignHold.Reset();
@@ -405,9 +403,8 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
             gProcessingFrames.fetch_add(1, std::memory_order_relaxed);
     }
 
-    // RAII 引用计数：无论从哪个 return 退出，都在"本函数完全结束"时才递减并唤醒
-    // 等待的写操作（LoadMap 等）。原先在中途递减后仍继续访问 slamSys，与写方
-    // "计数归零即可安全写"的协议存在悬空窗口。
+    // RAII 帧引用：无论从哪个 return 退出，都在本函数结束时才递减并唤醒等待的写操作（LoadMap 等），
+    // 保证写方在计数归零后访问 slamSys 时对象必然存活
     const bool bHoldsFrameRef = (currentSlamSys != nullptr);
     struct FrameRefGuard {
         const bool armed;
@@ -437,9 +434,6 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
         }
 
         status = localStatus;
-        // 注意：gProcessingFrames 的递减已移至 processImage 完全结束处。
-        // 原先在这里递减后函数仍继续访问 slamSys（GetCurrentMapId/HasMapAlignment/
-        // GetAllMapPoints），与 LoadMap 的"等待计数归零后写地图"协议存在悬空窗口。
     } else {
         {
             std::lock_guard<std::mutex> _tcwLock(gTcwLock);
@@ -448,10 +442,7 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
         status = 0;
     }
 
-    // 确保 vMPs 在任何情况下都处于安全状态
-
-    // 使用锁内快照 currentSlamSys（持有帧引用计数期间对象保证存活），
-    // 原先在此无锁读取全局 slamSys 属数据竞争
+    // 使用锁内快照 currentSlamSys（持有帧引用计数期间对象保证存活），避免未同步读取全局指针
     if(!currentSlamSys) {
         return status;
     }
@@ -822,7 +813,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_getMapStats(JNIEnv *env, jobject instanc
 
 JNIEXPORT jfloatArray JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_getMiniMapPoints(JNIEnv *env, jobject instance, jint maxPoints) {
-    // 取点与解引用全程持 gSlamPtrLock，阻塞 nativeShutdown 直至采样结束，消除 UAF；
+    // 取点与解引用全程持 gSlamPtrLock，阻塞 nativeShutdown 直至采样结束，避免悬空解引用；
     // 有界快路径持锁亚毫秒级，GetWorldPos 仅持 MapPoint 内部锁，无反向锁序
     std::vector<float> out;
     {
@@ -842,7 +833,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_getMiniMapPoints(JNIEnv *env, jobject in
             for(size_t i=0; i<total && out.size() < limit * 3; i += step) {
                 ORB_SLAM2::MapPoint* p = v[i];
                 if(!p || p->isBad()) continue;
-                // 栈版读取
+                // 栈上出参读取世界坐标，避免额外内存分配
                 cv::Point3f Pw;
                 p->GetWorldPos(Pw);
                 out.push_back(Pw.x);
@@ -1081,6 +1072,7 @@ static void writePointCloudToSharedMemory() {
     for (size_t i = 0; i < NMPs; ++i) {
         ORB_SLAM2::MapPoint* pMP = localMPs[i];
         if (!pMP || pMP->isBad()) continue;
+        // 栈上出参读取世界坐标，避免额外内存分配
         cv::Point3f Pw;
         pMP->GetWorldPos(Pw);
 
@@ -1179,7 +1171,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeProcessFrameSharedMem(
     cv::Mat dummyOut;
 
     // writePointCloudToSharedMemory 在 processImage 返回后仍解引用 slamSys 与 MapPoint，
-    // 此处持有第二条帧引用覆盖写回段，与 nativeShutdown 的归零再 delete 协议一致，消除 UAF
+    // 此处持有第二条帧引用覆盖写回段，与 nativeShutdown 的归零再 delete 协议一致，避免悬空解引用
     bool shmHoldsFrameRef = false;
     {
         std::lock_guard<std::mutex> ptrLock(gSlamPtrLock);

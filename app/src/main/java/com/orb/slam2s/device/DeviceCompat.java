@@ -15,7 +15,6 @@
  */
 package com.orb.slam2s.device;
 
-
 import android.os.Build;
 
 // 设备兼容性处理类：针对特定设备（如 Rokid RG-glasses）进行特殊画面处理或硬件参数调整
