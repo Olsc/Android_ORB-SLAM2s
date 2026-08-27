@@ -14,6 +14,7 @@ out/
 .gradle/
 .gradle-home/
 build/
+build_vs/
 
 # Local configuration file (sdk path, etc)
 local.properties
@@ -58,7 +59,6 @@ docs/profiler_tools/mentha_profile.bin
 docs/profiler_tools/profile_trace.json
 benchmarks
 docs/key
-VtonaxAR/src/main/cpp/ubuntu/benchmark.mp4
 
 TEMP
 日志.txt
@@ -84,3 +84,7 @@ docs/workload_benchmark_tools/.benchmark_cache.json
 docs/workload_benchmark_tools/benchmark_report.html
 docs/workload_benchmark_tools/benchmark_workload.png
 # docs/workload_benchmark_tools/benchmark_workload.svg
+
+
+MenthaAR/src/main/cpp/windows/benchmark.mp4
+MenthaAR/src/main/cpp/ubuntu/benchmark.mp4

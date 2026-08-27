@@ -42,7 +42,9 @@
 #define LOGF(...) do { fprintf(stderr, "[FATAL] "); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); } while(0)
 #endif
 
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 
 // OpenCV 3/4 桌面向后兼容头文件
 #include <opencv2/core/core_c.h>
