@@ -175,56 +175,7 @@ target_compile_definitions(g2o PRIVATE
 )
 
 # ----------------------------------------------------------------------------
-# 5. 二进制资源嵌入逻辑 (采用高性能汇编链接模式)
-# ----------------------------------------------------------------------------
-set(RESOURCE_DIR ${REPO_ROOT}/MenthaAR/src/main/other)
-set(EMBEDDED_DIR ${CMAKE_CURRENT_BINARY_DIR}/embedded)
-file(MAKE_DIRECTORY ${EMBEDDED_DIR})
-
-function(embed_resource input_file symbol_base output_obj)
-    set(bin_file ${EMBEDDED_DIR}/${symbol_base}.bin)
-    set(asm_file ${EMBEDDED_DIR}/${symbol_base}.S)
-    
-    # 步骤 1: 拷贝原始二进制资源至临时编译缓存区
-    add_custom_command(
-        OUTPUT ${bin_file}
-        COMMAND ${CMAKE_COMMAND} -E copy ${input_file} ${bin_file}
-        DEPENDS ${input_file}
-        COMMENT "正在拷贝二进制资源: ${input_file}"
-        VERBATIM
-    )
-    
-    # 步骤 2: 生成跨平台通用汇编代码包装器
-    add_custom_command(
-        OUTPUT ${asm_file}
-        COMMAND ${CMAKE_COMMAND} -E echo ".section .rodata" > ${asm_file}
-        COMMAND ${CMAKE_COMMAND} -E echo ".global _binary_${symbol_base}_start" >> ${asm_file}
-        COMMAND ${CMAKE_COMMAND} -E echo ".global _binary_${symbol_base}_end" >> ${asm_file}
-        COMMAND ${CMAKE_COMMAND} -E echo ".balign 16" >> ${asm_file}
-        COMMAND ${CMAKE_COMMAND} -E echo "_binary_${symbol_base}_start:" >> ${asm_file}
-        COMMAND ${CMAKE_COMMAND} -E echo ".incbin \"${bin_file}\"" >> ${asm_file}
-        COMMAND ${CMAKE_COMMAND} -E echo "_binary_${symbol_base}_end:" >> ${asm_file}
-        DEPENDS ${bin_file}
-        COMMENT "正在生成汇编链接包装器: ${symbol_base}"
-        VERBATIM
-    )
-    
-    # 步骤 3: 采用 host 系统的 C 编译器进行编译，生成对应的目标链接文件 (.o)
-    add_custom_command(
-        OUTPUT ${output_obj}
-        COMMAND ${CMAKE_C_COMPILER} -c ${asm_file} -o ${output_obj}
-        DEPENDS ${asm_file}
-        COMMENT "正在将汇编文件包装构建为目标对象: ${symbol_base}"
-        VERBATIM
-    )
-endfunction()
-
-set(EMBEDDED_OBJS)
-
-add_custom_target(generate_embedded_resources DEPENDS "${EMBEDDED_OBJS}")
-
-# ----------------------------------------------------------------------------
-# 6. 构建 SLAM AR 核心底层基础库 (MenthaAR_Engine)
+# 5. 构建 SLAM AR 核心底层基础库 (MenthaAR_Engine)
 # ----------------------------------------------------------------------------
 add_library(MenthaAR_Engine STATIC
     # SLAM 核心组件
@@ -272,14 +223,10 @@ add_library(MenthaAR_Engine STATIC
     ${REPO_ROOT}/MenthaAR/src/main/cpp/Matrix.cpp
     ${REPO_ROOT}/MenthaAR/src/main/cpp/profiler/MenthaProfiler.cpp
     
-    # 包装生成的二进制符号目标文件
-    ${EMBEDDED_OBJS}
 )
 
-add_dependencies(MenthaAR_Engine generate_embedded_resources)
-
 # ----------------------------------------------------------------------------
-# 7. 构建桌面可执行文件 (MenthaAR_Ubuntu)
+# 6. 构建桌面可执行文件 (MenthaAR_Ubuntu)
 # ----------------------------------------------------------------------------
 add_executable(MenthaAR_Ubuntu ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
 
@@ -298,7 +245,7 @@ target_link_libraries(MenthaAR_Ubuntu
 )
 
 # ----------------------------------------------------------------------------
-# 8. 构建 Benchmark 工具 (MenthaAR_Benchmark)
+# 7. 构建 Benchmark 工具 (MenthaAR_Benchmark)
 # ----------------------------------------------------------------------------
 add_executable(MenthaAR_Benchmark ${CMAKE_CURRENT_SOURCE_DIR}/benchmark.cpp)
 
