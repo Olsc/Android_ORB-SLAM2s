@@ -120,6 +120,17 @@ void MapPoint::SetWorldPos(const cv::Mat &Pos)
     Pos.copyTo(mWorldPos);
 }
 
+void MapPoint::SetWorldPos(const cv::Point3f &pos)
+{
+    std::unique_lock<std::mutex> lock(mMutexPos);
+    if (mWorldPos.empty() || mWorldPos.rows != 3 || mWorldPos.cols != 1) {
+        mWorldPos = cv::Mat(3, 1, CV_32F);
+    }
+    mWorldPos.at<float>(0) = pos.x;
+    mWorldPos.at<float>(1) = pos.y;
+    mWorldPos.at<float>(2) = pos.z;
+}
+
 cv::Mat MapPoint::GetWorldPos()
 {
     std::unique_lock<std::mutex> lock(mMutexPos);
