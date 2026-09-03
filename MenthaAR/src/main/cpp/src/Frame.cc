@@ -206,18 +206,21 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
     const float PcZ = mRcw.at<float>(2,0)*p3f.x + mRcw.at<float>(2,1)*p3f.y + mRcw.at<float>(2,2)*p3f.z + mtcw.at<float>(2);
 
     // 检查正深度
-    if(PcZ<0.0f)
+    if(PcZ <= 0.0f)
         return false;
 
-    // 投影到图像中并检查是否超出边界
+    // 零除法视锥边界剪裁
+    const float u_num = fx*PcX + cx*PcZ;
+    if(u_num < mnMinX*PcZ || u_num > mnMaxX*PcZ)
+        return false;
+
+    const float v_num = fy*PcY + cy*PcZ;
+    if(v_num < mnMinY*PcZ || v_num > mnMaxY*PcZ)
+        return false;
+
     const float invz = 1.0f/PcZ;
-    const float u=fx*PcX*invz+cx;
-    const float v=fy*PcY*invz+cy;
-
-    if(u<mnMinX || u>mnMaxX)
-        return false;
-    if(v<mnMinY || v>mnMaxY)
-        return false;
+    const float u = u_num * invz;
+    const float v = v_num * invz;
 
     // 检查常规点的距离不变性和视角。
     // 对于没有描述符的已加载点，放宽约束以允许基于投影的匹配。

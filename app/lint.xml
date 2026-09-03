@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- 忽略旧版方形桌面图标全像素铺满警告（项目已在 res/mipmap-anydpi-v26 配置自适应图标） -->
+    <issue id="IconLauncherShape" severity="ignore" />
+</lint>

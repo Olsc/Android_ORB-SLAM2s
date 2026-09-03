@@ -63,6 +63,7 @@ public:
     MapPoint(const cv::Mat &Pos, Map* pMap);
 
     void SetWorldPos(const cv::Mat &Pos);
+    void SetWorldPos(const cv::Point3f &pos);
     cv::Mat GetWorldPos();
     void GetWorldPos(cv::Point3f& out);
 

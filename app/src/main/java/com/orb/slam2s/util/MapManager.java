@@ -34,18 +34,18 @@ public class MapManager {
     private static final String MAP_DIR_NAME = "SLAM/maps";
     private static final String MAP_METADATA_EXT = ".json";
 
-    private final Context mContext;
-    private final SlamIPCClient mSlamIPCClient;
     private final File mMapDirectory;
 
-    public MapManager(Context context, SlamIPCClient client) {
-        this.mContext = context;
-        this.mSlamIPCClient = client;
+    public MapManager(Context context) {
         this.mMapDirectory = new File(context.getExternalFilesDir(null), MAP_DIR_NAME);
 
         if (!mMapDirectory.exists()) {
             mMapDirectory.mkdirs();
         }
+    }
+
+    public MapManager(Context context, SlamIPCClient client) {
+        this(context);
     }
 
     public boolean deleteMap(String mapName) {

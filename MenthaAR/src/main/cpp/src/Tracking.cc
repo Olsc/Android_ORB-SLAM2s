@@ -848,16 +848,25 @@ void Tracking::GlobalRelocLoop(int sessionId)
                     int method = (f3d.size()==PNP_MIN_SAMPLES_P3P? cv::SOLVEPNP_P3P : cv::SOLVEPNP_EPNP);
                     ok = cv::solvePnP(f3d, f2d, Kd, Dd, rvec, tvec, false, method);
                     if(ok){
-                        // 计算重投影误差，阈值按像素（例如 5px）
+                        // 计算重投影误差
                         cv::Mat R; cv::Rodrigues(rvec, R);
+                        const double r00 = R.at<double>(0,0), r01 = R.at<double>(0,1), r02 = R.at<double>(0,2);
+                        const double r10 = R.at<double>(1,0), r11 = R.at<double>(1,1), r12 = R.at<double>(1,2);
+                        const double r20 = R.at<double>(2,0), r21 = R.at<double>(2,1), r22 = R.at<double>(2,2);
+                        const double tx = tvec.at<double>(0), ty = tvec.at<double>(1), tz = tvec.at<double>(2);
+                        const double fx_k = Kd.at<double>(0,0), fy_k = Kd.at<double>(1,1);
+                        const double cx_k = Kd.at<double>(0,2), cy_k = Kd.at<double>(1,2);
+
                         double sumErr=0.0; int cnt=(int)f3d.size();
                         for(size_t i=0;i<f3d.size();++i){
-                            cv::Mat Pw = (cv::Mat_<double>(3,1) << f3d[i].x, f3d[i].y, f3d[i].z);
-                            cv::Mat Pc = R*Pw + tvec;
-                            double Z = Pc.at<double>(2);
-                            if(Z<=1e-6){ sumErr += 1e6; continue; }
-                            double u = Kd.at<double>(0,0)*Pc.at<double>(0)/Z + Kd.at<double>(0,2);
-                            double v = Kd.at<double>(1,1)*Pc.at<double>(1)/Z + Kd.at<double>(1,2);
+                            const double X = f3d[i].x, Y = f3d[i].y, Zw = f3d[i].z;
+                            const double Xc = r00*X + r01*Y + r02*Zw + tx;
+                            const double Yc = r10*X + r11*Y + r12*Zw + ty;
+                            const double Zc = r20*X + r21*Y + r22*Zw + tz;
+                            if(Zc<=1e-6){ sumErr += 1e6; continue; }
+                            const double invZ = 1.0 / Zc;
+                            const double u = fx_k*Xc*invZ + cx_k;
+                            const double v = fy_k*Yc*invZ + cy_k;
                             double du = u - f2d[i].x; double dv = v - f2d[i].y;
                             sumErr += std::sqrt(du*du+dv*dv);
                         }
@@ -1282,10 +1291,10 @@ void Tracking::Track()
         // 如果相机丢失，进行自动打断与快速恢复
         if(mState==LOST)
         {
-            // 初始化后的前20帧内，即使丢失也不立即重置，给予重定位及加载点绑定的机会
+            // 初始化后的前20帧内，即使丢失也不立即阻塞重置
             if(mpMap->KeyFramesInMap()<=RESET_PROTECT_MAX_KFS && mCurrentFrame.mnId > mnLastKeyFrameId + RESET_PROTECT_AFTER_KF_FRAMES)
             {
-                mpSystem->Reset();
+                PrepareForNewMap();
                 return;
             }
 
@@ -1596,12 +1605,12 @@ void Tracking::CreateInitialMapMonocular()
         if(vpAllMapPoints[iMP])
         {
             MapPoint* pMP = vpAllMapPoints[iMP];
-            // 栈版读取
+            // 栈版读取与就地覆写
             cv::Point3f p3w;
             pMP->GetWorldPos(p3w);
-            pMP->SetWorldPos((cv::Mat_<float>(3,1) << p3w.x*invMedianDepth,
-                                                       p3w.y*invMedianDepth,
-                                                       p3w.z*invMedianDepth));
+            pMP->SetWorldPos(cv::Point3f(p3w.x*invMedianDepth,
+                                         p3w.y*invMedianDepth,
+                                         p3w.z*invMedianDepth));
             pMP->UpdateNormalAndDepth();
         }
     }

@@ -173,6 +173,7 @@ public class VirtualJoystickView extends View {
 
     // 无障碍要求：重写 performClick 并在触摸事件中调用，使无障碍服务能触发点击
     @Override
+    @SuppressWarnings("EmptyMethod")
     public boolean performClick() {
         return super.performClick();
     }

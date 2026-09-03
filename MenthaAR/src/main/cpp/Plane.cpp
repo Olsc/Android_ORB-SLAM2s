@@ -93,44 +93,59 @@ void Plane::Recompute()
 {
     const int N = static_cast<int>(mvMPs.size());
 
-    // 准备SVD分解所需的矩阵（N个点，每行[x,y,z,1]）
-    cv::Mat A = cv::Mat(N, 4, CV_32F);
-    A.col(3) = cv::Mat::ones(N, 1, CV_32F);
+    // 收集有效点并单次遍历计算质心
+    std::vector<cv::Point3f> validPoints;
+    validPoints.reserve(N);
+    float sumX = 0.0f, sumY = 0.0f, sumZ = 0.0f;
 
-    o = cv::Mat::zeros(3, 1, CV_32F);
-
-    int nPoints = 0;
     for (int i = 0; i < N; i++)
     {
         ORB_SLAM2::MapPoint* pMP = mvMPs[i];
-
-        if (!pMP->isBad())
+        if (pMP && !pMP->isBad())
         {
-            // 栈版读取
             cv::Point3f Xw;
             pMP->GetWorldPos(Xw);
-            o.at<float>(0) += Xw.x;  // 累加坐标（后续计算质心）
-            o.at<float>(1) += Xw.y;
-            o.at<float>(2) += Xw.z;
-            A.at<float>(nPoints,0) = Xw.x;
-            A.at<float>(nPoints,1) = Xw.y;
-            A.at<float>(nPoints,2) = Xw.z;
-            nPoints++;
+            sumX += Xw.x;
+            sumY += Xw.y;
+            sumZ += Xw.z;
+            validPoints.push_back(Xw);
         }
     }
 
-    A.resize(nPoints);  // 调整矩阵大小为实际点数
+    const int nPoints = static_cast<int>(validPoints.size());
+    if (nPoints < 3) return;
 
-    // SVD分解：平面法向量是最小奇异值对应的右奇异向量
-    cv::Mat u, w, vt;
-    cv::SVDecomp(A, w, u, vt, cv::SVD::MODIFY_A | cv::SVD::FULL_UV);
+    const float invN = 1.0f / nPoints;
+    const float meanX = sumX * invN;
+    const float meanY = sumY * invN;
+    const float meanZ = sumZ * invN;
 
-    float a = vt.at<float>(3, 0);  // 平面方程系数
-    float b = vt.at<float>(3, 1);
-    float c = vt.at<float>(3, 2);
+    o = (cv::Mat_<float>(3, 1) << meanX, meanY, meanZ);
 
-    o = o * (1.0f / nPoints);  // 计算质心作为平面原点
-    const float f = 1.0f / sqrt(a * a + b * b + c * c);  // 归一化系数
+    // 闭式 PCA：累加 3x3 协方差矩阵
+    float cxx = 0.0f, cxy = 0.0f, cxz = 0.0f;
+    float cyy = 0.0f, cyz = 0.0f, czz = 0.0f;
+    for (int i = 0; i < nPoints; i++)
+    {
+        const float dx = validPoints[i].x - meanX;
+        const float dy = validPoints[i].y - meanY;
+        const float dz = validPoints[i].z - meanZ;
+        cxx += dx * dx; cxy += dx * dy; cxz += dx * dz;
+        cyy += dy * dy; cyz += dy * dz; czz += dz * dz;
+    }
+
+    cv::Mat Cov = (cv::Mat_<float>(3, 3) << cxx, cxy, cxz,
+                                            cxy, cyy, cyz,
+                                            cxz, cyz, czz);
+    cv::Mat eval, evec;
+    // cv::eigen 按特征值降序返回，平面法向量严格等于最小特征值对应特征向量 (第2行)
+    cv::eigen(Cov, eval, evec);
+
+    float a = evec.at<float>(2, 0);
+    float b = evec.at<float>(2, 1);
+    float c = evec.at<float>(2, 2);
+
+    const float f = 1.0f / std::sqrt(a * a + b * b + c * c);
 
     // 首次计算时，计算从相机中心指向平面原点的向量
     // 用于确定法向量方向

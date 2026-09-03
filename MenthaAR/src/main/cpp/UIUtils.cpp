@@ -49,6 +49,8 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
 
     float bestDist = 1e10;
     vector<float> bestvDist;
+    vector<float> vDistances(N);
+    vector<float> vSorted(N);
 
     // RANSAC迭代: 寻找最佳平面模型
     for(int n=0; n<iterations; n++)
@@ -84,18 +86,14 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
         a *= invNrm; b *= invNrm; c *= invNrm;
         const float d = -(a*p1.x + b*p1.y + c*p1.z);
 
-        vector<float> vDistances(N,0);
-
-        const float f = 1.0f/sqrt(a*a+b*b+c*c+d*d);  // 归一化系数
-
-        // 计算所有点到平面的距离
+        // 法向量 (a,b,c) 已是单位向量，点到平面的真实欧氏距离直接为 |a*x + b*y + c*z + d|
         for(int i=0; i<N; i++)
         {
-            vDistances[i] = fabs(vPoints[i].x*a + vPoints[i].y*b + vPoints[i].z*c + d)*f;
+            vDistances[i] = std::fabs(vPoints[i].x*a + vPoints[i].y*b + vPoints[i].z*c + d);
         }
 
         // 计算中值距离（取前20%的点的边界值）
-        vector<float> vSorted = vDistances;
+        std::copy(vDistances.begin(), vDistances.end(), vSorted.begin());
         int nth = max((int)(ORB_SLAM2::PLANE_MEDIAN_TAIL_RATIO*N), ORB_SLAM2::PLANE_MEDIAN_MIN_SAMPLES);
         if(nth >= (int)vSorted.size()) nth = (int)vSorted.size() - 1;
         std::nth_element(vSorted.begin(), vSorted.begin() + nth, vSorted.end());

@@ -391,10 +391,20 @@ void LocalMapping::CreateNewMapPoints()
         const float &invfx2 = pKF2->invfx;
         const float &invfy2 = pKF2->invfy;
 
+        // 外层循环提取相机光心与旋转矩阵元素
+        const float c1[3] = {Ow1.x, Ow1.y, Ow1.z};
+        const float c2[3] = {Ow2.x, Ow2.y, Ow2.z};
+
+        const float rwc1_00 = Rwc1.at<float>(0,0), rwc1_01 = Rwc1.at<float>(0,1), rwc1_02 = Rwc1.at<float>(0,2);
+        const float rwc1_10 = Rwc1.at<float>(1,0), rwc1_11 = Rwc1.at<float>(1,1), rwc1_12 = Rwc1.at<float>(1,2);
+        const float rwc1_20 = Rwc1.at<float>(2,0), rwc1_21 = Rwc1.at<float>(2,1), rwc1_22 = Rwc1.at<float>(2,2);
+
+        const float rwc2_00 = Rwc2.at<float>(0,0), rwc2_01 = Rwc2.at<float>(0,1), rwc2_02 = Rwc2.at<float>(0,2);
+        const float rwc2_10 = Rwc2.at<float>(1,0), rwc2_11 = Rwc2.at<float>(1,1), rwc2_12 = Rwc2.at<float>(1,2);
+        const float rwc2_20 = Rwc2.at<float>(2,0), rwc2_21 = Rwc2.at<float>(2,1), rwc2_22 = Rwc2.at<float>(2,2);
+
         // 对每个匹配进行三角化
         const int nmatches = vMatchedIndices.size();
-
-        cv::Mat w,u,vt;
 
         for(int ikp=0; ikp<nmatches; ikp++)
         {
@@ -413,21 +423,22 @@ void LocalMapping::CreateNewMapPoints()
             // 检查光线之间的视差
             const float xn1x = (kp1.pt.x-cx1)*invfx1;
             const float xn1y = (kp1.pt.y-cy1)*invfy1;
-            // xn2 = [(kp2.pt.x-cx2)*invfx2, (kp2.pt.y-cy2)*invfy2, 1]
             const float xn2x = (kp2.pt.x-cx2)*invfx2;
             const float xn2y = (kp2.pt.y-cy2)*invfy2;
-            // ray1 = Rwc1 * [xn1x, xn1y, 1]  (z 分量为常数 1，直接取 Rwc 第三列)
-            const float r1x = Rwc1.at<float>(0,0)*xn1x + Rwc1.at<float>(0,1)*xn1y + Rwc1.at<float>(0,2);
-            const float r1y = Rwc1.at<float>(1,0)*xn1x + Rwc1.at<float>(1,1)*xn1y + Rwc1.at<float>(1,2);
-            const float r1z = Rwc1.at<float>(2,0)*xn1x + Rwc1.at<float>(2,1)*xn1y + Rwc1.at<float>(2,2);
-            // ray2 = Rwc2 * [xn2x, xn2y, 1]
-            const float r2x = Rwc2.at<float>(0,0)*xn2x + Rwc2.at<float>(0,1)*xn2y + Rwc2.at<float>(0,2);
-            const float r2y = Rwc2.at<float>(1,0)*xn2x + Rwc2.at<float>(1,1)*xn2y + Rwc2.at<float>(1,2);
-            const float r2z = Rwc2.at<float>(2,0)*xn2x + Rwc2.at<float>(2,1)*xn2y + Rwc2.at<float>(2,2);
+
+            // 纯标量光线投影计算
+            const float r1x = rwc1_00*xn1x + rwc1_01*xn1y + rwc1_02;
+            const float r1y = rwc1_10*xn1x + rwc1_11*xn1y + rwc1_12;
+            const float r1z = rwc1_20*xn1x + rwc1_21*xn1y + rwc1_22;
+
+            const float r2x = rwc2_00*xn2x + rwc2_01*xn2y + rwc2_02;
+            const float r2y = rwc2_10*xn2x + rwc2_11*xn2y + rwc2_12;
+            const float r2z = rwc2_20*xn2x + rwc2_21*xn2y + rwc2_22;
+
             const float dotProduct = r1x*r2x + r1y*r2y + r1z*r2z;
             const float norm1Sq = r1x*r1x + r1y*r1y + r1z*r1z;
             const float norm2Sq = r2x*r2x + r2y*r2y + r2z*r2z;
-            const float cosParallaxRays = dotProduct / sqrt(norm1Sq * norm2Sq);
+            const float cosParallaxRays = dotProduct / std::sqrt(norm1Sq * norm2Sq);
 
             float cosParallaxStereo = cosParallaxRays+1;
             float cosParallaxStereo1 = cosParallaxStereo;
@@ -438,8 +449,8 @@ void LocalMapping::CreateNewMapPoints()
             cv::Mat x3D;
             if(cosParallaxRays<cosParallaxStereo && cosParallaxRays>0 && (bStereo1 || bStereo2 || cosParallaxRays<LOCAL_MAPPING_TRIANGULATION_PARALLAX_TH))
             {
-                // 线性三角化（公共 DLT 实现，见 Converter::TriangulateDLT；w==0 时返回 false）
-                if (!Converter::TriangulateDLT(Tcw1, Tcw2, xn1x, xn1y, xn2x, xn2y, x3D))
+                // 外置光心快速三角化
+                if (!Converter::TriangulateWithCenters(Tcw1, Tcw2, c1, c2, xn1x, xn1y, xn2x, xn2y, x3D))
                     continue;
 
             }

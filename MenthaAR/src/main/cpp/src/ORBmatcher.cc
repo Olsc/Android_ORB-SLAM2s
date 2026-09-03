@@ -1895,38 +1895,15 @@ static const uint8_t POPCNT8_LUT[256] = {
     4,5,5,6,5,6,6,7,5,6,6,7,6,7,7,8
 };
 
-// ORB 描述子汉明距离 (32 字节)。ARM 平台优先走 NEON 硬件 popcount（vcntq_u8，
-// 两条 vcntq + 两条 vaddlvq 即完成）；其余 CPU 走纯标量查表法，二者均无损精度。
+// ORB 描述子汉明距离 (32 字节)。
 int ORBmatcher::DescriptorDistance(const uint8_t* pa, const uint8_t* pb)
 {
-#if defined(__ARM_NEON) || defined(__ARM_NEON__)
-    const uint8x16_t va0 = vld1q_u8(pa);
-    const uint8x16_t vb0 = vld1q_u8(pb);
-    const uint8x16_t va1 = vld1q_u8(pa + 16);
-    const uint8x16_t vb1 = vld1q_u8(pb + 16);
-
-    const uint8x16_t xor0 = veorq_u8(va0, vb0);
-    const uint8x16_t xor1 = veorq_u8(va1, vb1);
-
-    const uint8x16_t pop0 = vcntq_u8(xor0);
-    const uint8x16_t pop1 = vcntq_u8(xor1);
-
-    #if defined(__aarch64__)
-        return (int)(vaddlvq_u8(pop0) + vaddlvq_u8(pop1));
-    #else
-        // Armv7 NEON: 使用 vpaddlq 逐步归约
-        uint16x8_t sum16 = vpaddlq_u8(vaddq_u8(pop0, pop1));
-        uint32x4_t sum32 = vpaddlq_u16(sum16);
-        uint64x2_t sum64 = vpaddlq_u32(sum32);
-        return (int)(vgetq_lane_u64(sum64, 0) + vgetq_lane_u64(sum64, 1));
-    #endif
-#else
-    // 非 NEON 平台：纯标量查表法（全 CPU 兼容，比软件 SWAR 快，无损精度）
-    int d = 0;
-    for (int i = 0; i < 32; ++i)
-        d += POPCNT8_LUT[pa[i] ^ pb[i]];
-    return d;
-#endif
+    const uint64_t* a64 = reinterpret_cast<const uint64_t*>(pa);
+    const uint64_t* b64 = reinterpret_cast<const uint64_t*>(pb);
+    return __builtin_popcountll(a64[0] ^ b64[0]) +
+           __builtin_popcountll(a64[1] ^ b64[1]) +
+           __builtin_popcountll(a64[2] ^ b64[2]) +
+           __builtin_popcountll(a64[3] ^ b64[3]);
 }
 
 int ORBmatcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)

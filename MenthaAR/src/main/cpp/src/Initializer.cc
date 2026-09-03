@@ -401,36 +401,54 @@ float Initializer::CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vecto
         const float v2 = kp2.pt.y;
 
         // x2in1 = H12*x2
+        const float w2in1 = h31inv*u2 + h32inv*v2 + h33inv;
+        // 正深度判定：退化/无穷远点直接拒绝
+        if (w2in1 <= 0.0f)
+        {
+            vbMatchesInliers[i] = false;
+            continue;
+        }
 
-        const float w2in1inv = 1.0/(h31inv*u2+h32inv*v2+h33inv);
-        const float u2in1 = (h11inv*u2+h12inv*v2+h13inv)*w2in1inv;
-        const float v2in1 = (h21inv*u2+h22inv*v2+h23inv)*w2in1inv;
+        const float u2in1_w = h11inv*u2 + h12inv*v2 + h13inv;
+        const float v2in1_w = h21inv*u2 + h22inv*v2 + h23inv;
+        const float du1 = u1*w2in1 - u2in1_w;
+        const float dv1 = v1*w2in1 - v2in1_w;
+        const float squareDist1_w2 = du1*du1 + dv1*dv1;
 
-        const float squareDist1 = (u1-u2in1)*(u1-u2in1)+(v1-v2in1)*(v1-v2in1);
-
-        // 等价于: squareDist1*invSigmaSquare > th ⇔ squareDist1 > th*sigma²
-        if(squareDist1 > thSigma2)
-            bIn = false;
-        else
-            score += th - squareDist1*invSigmaSquare;
+        // 零除法等价判据: dist1^2 > thSigma2 <=> du1^2 + dv1^2 > thSigma2 * w2in1^2
+        if (squareDist1_w2 > thSigma2 * (w2in1 * w2in1))
+        {
+            vbMatchesInliers[i] = false;
+            continue;
+        }
 
         // x1in2 = H21*x1
+        const float w1in2 = h31*u1 + h32*v1 + h33;
+        if (w1in2 <= 0.0f)
+        {
+            vbMatchesInliers[i] = false;
+            continue;
+        }
 
-        const float w1in2inv = 1.0/(h31*u1+h32*v1+h33);
-        const float u1in2 = (h11*u1+h12*v1+h13)*w1in2inv;
-        const float v1in2 = (h21*u1+h22*v1+h23)*w1in2inv;
+        const float u1in2_w = h11*u1 + h12*v1 + h13;
+        const float v1in2_w = h21*u1 + h22*v1 + h23;
+        const float du2 = u2*w1in2 - u1in2_w;
+        const float dv2 = v2*w1in2 - v1in2_w;
+        const float squareDist2_w2 = du2*du2 + dv2*dv2;
 
-        const float squareDist2 = (u2-u1in2)*(u2-u1in2)+(v2-v1in2)*(v2-v1in2);
+        if (squareDist2_w2 > thSigma2 * (w1in2 * w1in2))
+        {
+            vbMatchesInliers[i] = false;
+            continue;
+        }
 
-        if(squareDist2 > thSigma2)
-            bIn = false;
-        else
-            score += th - squareDist2*invSigmaSquare;
-
-        if(bIn)
-            vbMatchesInliers[i]=true;
-        else
-            vbMatchesInliers[i]=false;
+        // 仅对完全通过的内点计算精确 score
+        const float inv_w2in1 = 1.0f / w2in1;
+        const float inv_w1in2 = 1.0f / w1in2;
+        const float squareDist1 = squareDist1_w2 * (inv_w2in1 * inv_w2in1);
+        const float squareDist2 = squareDist2_w2 * (inv_w1in2 * inv_w1in2);
+        score += th * 2.0f - (squareDist1 + squareDist2) * invSigmaSquare;
+        vbMatchesInliers[i] = true;
     }
 
     return score;
@@ -462,8 +480,6 @@ float Initializer::CheckFundamental(const cv::Mat &F21, vector<bool> &vbMatchesI
 
     for(int i=0; i<N; i++)
     {
-        bool bIn = true;
-
         const cv::KeyPoint &kp1 = mvKeys1[mvMatches12[i].first];
         const cv::KeyPoint &kp2 = mvKeys2[mvMatches12[i].second];
 
@@ -472,41 +488,52 @@ float Initializer::CheckFundamental(const cv::Mat &F21, vector<bool> &vbMatchesI
         const float u2 = kp2.pt.x;
         const float v2 = kp2.pt.y;
 
-        // l2=F21x1=(a2,b2,c2)
+        // l2 = F21 * x1 = (a2, b2, c2)
+        const float a2 = f11*u1 + f12*v1 + f13;
+        const float b2 = f21*u1 + f22*v1 + f23;
+        const float c2 = f31*u1 + f32*v1 + f33;
 
-        const float a2 = f11*u1+f12*v1+f13;
-        const float b2 = f21*u1+f22*v1+f23;
-        const float c2 = f31*u1+f32*v1+f33;
+        const float num2 = a2*u2 + b2*v2 + c2;
+        const float den2 = a2*a2 + b2*b2;
+        if (den2 < 1e-12f)
+        {
+            vbMatchesInliers[i] = false;
+            continue;
+        }
 
-        const float num2 = a2*u2+b2*v2+c2;
+        // 零除法判据：num2^2 > thSigma2 * den2 <=> num2^2 / den2 > thSigma2
+        const float num2_sq = num2 * num2;
+        if (num2_sq > thSigma2 * den2)
+        {
+            vbMatchesInliers[i] = false;
+            continue;
+        }
 
-        const float squareDist1 = num2*num2/(a2*a2+b2*b2);
+        // l1 = x2t * F21 = (a1, b1, c1)
+        const float a1 = f11*u2 + f21*v2 + f31;
+        const float b1 = f12*u2 + f22*v2 + f32;
+        const float c1 = f13*u2 + f23*v2 + f33;
 
-        // 等价于: squareDist1*invSigmaSquare > th ⇔ squareDist1 > th*sigma²
-        if(squareDist1 > thSigma2)
-            bIn = false;
-        else
-            score += thScore - squareDist1*invSigmaSquare;
+        const float num1 = a1*u1 + b1*v1 + c1;
+        const float den1 = a1*a1 + b1*b1;
+        if (den1 < 1e-12f)
+        {
+            vbMatchesInliers[i] = false;
+            continue;
+        }
 
-        // l1 =x2tF21=(a1,b1,c1)
+        const float num1_sq = num1 * num1;
+        if (num1_sq > thSigma2 * den1)
+        {
+            vbMatchesInliers[i] = false;
+            continue;
+        }
 
-        const float a1 = f11*u2+f21*v2+f31;
-        const float b1 = f12*u2+f22*v2+f32;
-        const float c1 = f13*u2+f23*v2+f33;
-
-        const float num1 = a1*u1+b1*v1+c1;
-
-        const float squareDist2 = num1*num1/(a1*a1+b1*b1);
-
-        if(squareDist2 > thSigma2)
-            bIn = false;
-        else
-            score += thScore - squareDist2*invSigmaSquare;
-
-        if(bIn)
-            vbMatchesInliers[i]=true;
-        else
-            vbMatchesInliers[i]=false;
+        // 仅在确认是内点时计算 score
+        const float squareDist1 = num2_sq / den2;
+        const float squareDist2 = num1_sq / den1;
+        score += thScore * 2.0f - (squareDist1 + squareDist2) * invSigmaSquare;
+        vbMatchesInliers[i] = true;
     }
 
     return score;
@@ -877,6 +904,8 @@ int Initializer::CheckRT(const cv::Mat &R, const cv::Mat &t, const vector<cv::Ke
     P2 = K*P2;
 
     cv::Mat O2 = -R.t()*t;
+    const float Q1[3] = {0.0f, 0.0f, 0.0f};
+    const float Q2[3] = {O2.at<float>(0), O2.at<float>(1), O2.at<float>(2)};
 
     int nGood=0;
 
@@ -889,7 +918,12 @@ int Initializer::CheckRT(const cv::Mat &R, const cv::Mat &t, const vector<cv::Ke
         const cv::KeyPoint &kp2 = vKeys2[vMatches12[i].second];
         cv::Mat p3dC1;
 
-        Triangulate(kp1,kp2,P1,P2,p3dC1);
+        // 闭式三角化：直接复用外层预计算好的相机光心，消除每个点重复 Cramer 求解光心
+        if (!Converter::TriangulateWithCenters(P1, P2, Q1, Q2, kp1.pt.x, kp1.pt.y, kp2.pt.x, kp2.pt.y, p3dC1))
+        {
+            vbGood[vMatches12[i].first]=false;
+            continue;
+        }
 
         if(!isfinite(p3dC1.at<float>(0)) || !isfinite(p3dC1.at<float>(1)) || !isfinite(p3dC1.at<float>(2)))
         {

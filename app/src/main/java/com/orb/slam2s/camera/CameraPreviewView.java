@@ -98,14 +98,6 @@ public class CameraPreviewView extends AspectGLSurfaceView {
     private final float[] mTempMvp = new float[48];
     private final float[] mVPMatrix = new float[16];
 
-    // SLAM(RDF: 右-下-前) → GL(RUB: 右-上-后) 坐标系变换矩阵
-    private static final float[] RDF_TO_RUB = {
-            1,  0,  0, 0,
-            0, -1,  0, 0,
-            0,  0, -1, 0,
-            0,  0,  0, 1
-    };
-
     private final Context mContext;
     private SlamIPCClient mSlamIPCClient;
     private volatile boolean mPendingDetectPlane;
@@ -440,8 +432,17 @@ public class CameraPreviewView extends AspectGLSurfaceView {
             if (mSlamIPCClient != null && mSlamIPCClient.isConnected() && mPointCloudRenderer != null) {
                 int floats = mSlamIPCClient.readPointCloud(mPointCloudBuffer, mPointCloudBuffer.length);
                 if (floats > 0 && mSlamIPCClient.readMvp(mTempMvp)) {
-                    // 点云在相机坐标系 (RDF)，直接由 ProjectionMatrix * RDF_TO_RUB 投影
-                    Matrix.multiplyMM(mVPMatrix, 0, mTempMvp, 32, RDF_TO_RUB, 0);
+                    // 点云在相机坐标系 (RDF)，右乘对角阵 diag(1,-1,-1,1) 数学上恒等于将第1列与第2列取反
+                    System.arraycopy(mTempMvp, 32, mVPMatrix, 0, 16);
+                    mVPMatrix[4] = -mVPMatrix[4];
+                    mVPMatrix[5] = -mVPMatrix[5];
+                    mVPMatrix[6] = -mVPMatrix[6];
+                    mVPMatrix[7] = -mVPMatrix[7];
+                    mVPMatrix[8] = -mVPMatrix[8];
+                    mVPMatrix[9] = -mVPMatrix[9];
+                    mVPMatrix[10] = -mVPMatrix[10];
+                    mVPMatrix[11] = -mVPMatrix[11];
+
                     mPointCloudRenderer.updatePoints(mPointCloudBuffer, floats);
                     GLES20.glDisable(GLES20.GL_DEPTH_TEST);
                     mPointCloudRenderer.draw(mVPMatrix);

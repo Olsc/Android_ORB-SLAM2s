@@ -103,8 +103,10 @@ PnPsolver::PnPsolver(const Frame &F, const vector<MapPoint*> &vpMapPointMatches)
                 mvP2D.push_back(kp.pt);
                 mvSigma2.push_back(F.mvLevelSigma2[kp.octave]);
 
-                cv::Mat Pos = pMP->GetWorldPos();
-                mvP3Dw.push_back(cv::Point3f(Pos.at<float>(0),Pos.at<float>(1), Pos.at<float>(2)));
+                // 栈上免分配读取世界坐标
+                cv::Point3f Pw;
+                pMP->GetWorldPos(Pw);
+                mvP3Dw.push_back(Pw);
 
                 mvKeyPointIndices.push_back(i);
                 mvAllIndices.push_back(idx);
@@ -462,14 +464,39 @@ void PnPsolver::choose_control_points(void)
 void PnPsolver::compute_barycentric_coordinates(void)
 {
   double cc[3 * 3], cc_inv[3 * 3];
-  CvMat CC     = cvMat(3, 3, CV_64F, cc);
-  CvMat CC_inv = cvMat(3, 3, CV_64F, cc_inv);
 
   for(int i = 0; i < 3; i++)
     for(int j = 1; j < 4; j++)
       cc[3 * i + j - 1] = cws[j][i] - cws[0][i];
 
-  cvInvert(&CC, &CC_inv, CV_SVD);
+  // 3x3 矩阵伴随闭式求逆：仅 1 次除法 (1/det) 与少量乘减
+  const double m00 = cc[0], m01 = cc[1], m02 = cc[2];
+  const double m10 = cc[3], m11 = cc[4], m12 = cc[5];
+  const double m20 = cc[6], m21 = cc[7], m22 = cc[8];
+
+  const double c00 = m11 * m22 - m12 * m21;
+  const double c01 = m02 * m21 - m01 * m22;
+  const double c02 = m01 * m12 - m02 * m11;
+  const double c10 = m12 * m20 - m10 * m22;
+  const double c11 = m00 * m22 - m02 * m20;
+  const double c12 = m02 * m10 - m00 * m12;
+  const double c20 = m10 * m21 - m11 * m20;
+  const double c21 = m01 * m20 - m00 * m21;
+  const double c22 = m00 * m11 - m01 * m10;
+
+  const double det = m00 * c00 + m01 * c10 + m02 * c20;
+  if(std::abs(det) > 1e-12) {
+    const double invDet = 1.0 / det;
+    cc_inv[0] = c00 * invDet; cc_inv[1] = c01 * invDet; cc_inv[2] = c02 * invDet;
+    cc_inv[3] = c10 * invDet; cc_inv[4] = c11 * invDet; cc_inv[5] = c12 * invDet;
+    cc_inv[6] = c20 * invDet; cc_inv[7] = c21 * invDet; cc_inv[8] = c22 * invDet;
+  } else {
+    // 退化奇异情况兜底
+    CvMat CC     = cvMat(3, 3, CV_64F, cc);
+    CvMat CC_inv = cvMat(3, 3, CV_64F, cc_inv);
+    cvInvert(&CC, &CC_inv, CV_SVD);
+  }
+
   double * ci = cc_inv;
   for(int i = 0; i < number_of_correspondences; i++) {
     double * pi = pws + 3 * i;
