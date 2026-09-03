@@ -104,10 +104,10 @@ dependencies {
 
     implementation project(':MenthaAR')
 
-    implementation 'androidx.camera:camera-core:1.6.1'
-    implementation 'androidx.camera:camera-camera2:1.6.1'
-    implementation 'androidx.camera:camera-lifecycle:1.6.1'
-    implementation 'androidx.camera:camera-view:1.6.1'
+    implementation 'androidx.camera:camera-core:1.6.2'
+    implementation 'androidx.camera:camera-camera2:1.6.2'
+    implementation 'androidx.camera:camera-lifecycle:1.6.2'
+    implementation 'androidx.camera:camera-view:1.6.2'
     implementation 'com.google.guava:guava:33.7.1-android'
     implementation 'io.noties.markwon:core:4.6.2'
     implementation 'io.noties.markwon:ext-tables:4.6.2'

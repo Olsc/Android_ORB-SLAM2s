@@ -16,19 +16,15 @@ public class NativeHelper {
         System.loadLibrary("MenthaAR_Engine"); // 整合后的 SLAM_AR（含 OpenCV 原生模块）
     }
 
-    private int planeDetectResult; // 平面检测结果
-
     private final int[] statusBuf = new int[3];
 
     public NativeHelper() {
     }
 
     // 检测平面（在 SLAM 处理线程内调用）
-    // MVP 结果由 native 写回共享内存，UI 渲染线程直接读取；返回平面检测结果
-    public int detectPlane() {
+    // MVP 结果由 native 写回共享内存，UI 渲染线程直接读取
+    public void detectPlane() {
         detect(statusBuf);
-        planeDetectResult = statusBuf[1];
-        return planeDetectResult;
     }
 
     // 本地方法：持久映射共享内存帧缓冲（仅在缓冲创建/尺寸变化时调用一次）

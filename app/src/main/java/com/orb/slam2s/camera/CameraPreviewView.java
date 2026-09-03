@@ -98,14 +98,6 @@ public class CameraPreviewView extends AspectGLSurfaceView {
     private final float[] mTempMvp = new float[48];
     private final float[] mVPMatrix = new float[16];
 
-    // SLAM(RDF: 右-下-前) → GL(RUB: 右-上-后) 坐标系变换矩阵
-    private static final float[] RDF_TO_RUB = {
-            1,  0,  0, 0,
-            0, -1,  0, 0,
-            0,  0, -1, 0,
-            0,  0,  0, 1
-    };
-
     private final Context mContext;
     private SlamIPCClient mSlamIPCClient;
     private volatile boolean mPendingDetectPlane;
