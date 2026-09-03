@@ -1291,10 +1291,10 @@ void Tracking::Track()
         // 如果相机丢失，进行自动打断与快速恢复
         if(mState==LOST)
         {
-            // 初始化后的前20帧内，即使丢失也不立即重置，给予重定位及加载点绑定的机会
+            // 初始化后的前20帧内，即使丢失也不立即阻塞重置
             if(mpMap->KeyFramesInMap()<=RESET_PROTECT_MAX_KFS && mCurrentFrame.mnId > mnLastKeyFrameId + RESET_PROTECT_AFTER_KF_FRAMES)
             {
-                mpSystem->Reset();
+                PrepareForNewMap();
                 return;
             }
 

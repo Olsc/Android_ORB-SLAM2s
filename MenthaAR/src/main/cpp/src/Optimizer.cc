@@ -623,7 +623,21 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
     optimizer.initializeOptimization();
     if(optimizer.activeVertices().empty())
         return;
-    optimizer.optimize(LOCAL_BA_ITERATIONS);
+
+    // 带相对残差收敛早停准则（Early-Stopping）
+    double prevChi2 = 0.0;
+    for(int it = 0; it < LOCAL_BA_ITERATIONS; ++it) {
+        if(pbStopFlag && *pbStopFlag) break;
+        optimizer.optimize(1);
+        double curChi2 = optimizer.activeChi2();
+        if(it > 0 && prevChi2 > 0.0) {
+            double relChange = std::abs(prevChi2 - curChi2) / prevChi2;
+            if(relChange < 1e-3) {
+                break;
+            }
+        }
+        prevChi2 = curChi2;
+    }
 
     bool bDoMore= true;
 
@@ -651,11 +665,24 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
         e->setRobustKernel(0);
     }
 
-    // 在没有外点的情况下再次精细优化
+    // 在没有外点的情况下再次精细优化（带收敛早停）
     optimizer.initializeOptimization(0);
     if(optimizer.activeVertices().empty())
         return;
-    optimizer.optimize(LOCAL_BA_ITERATIONS);
+
+    prevChi2 = 0.0;
+    for(int it = 0; it < LOCAL_BA_ITERATIONS; ++it) {
+        if(pbStopFlag && *pbStopFlag) break;
+        optimizer.optimize(1);
+        double curChi2 = optimizer.activeChi2();
+        if(it > 0 && prevChi2 > 0.0) {
+            double relChange = std::abs(prevChi2 - curChi2) / prevChi2;
+            if(relChange < 1e-3) {
+                break;
+            }
+        }
+        prevChi2 = curChi2;
+    }
 
     }
 
