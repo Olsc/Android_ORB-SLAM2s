@@ -208,25 +208,37 @@ static float IC_Angle(const Mat& image, Point2f pt,  const vector<int> & u_max)
     return FastIC_Angle_LUT(m_01, m_10);
 }
 
-const float factorPI = (float)(CV_PI/180.f);
+// 最多支持 16 层金字塔步长展开查找表 [level][360个角度][512个采样点]
+static const int MAX_ORB_PYRAMID_LEVELS = 16;
+static int s_LayerOffset1D[MAX_ORB_PYRAMID_LEVELS][360][ORB_BRIEF_NUM_POINTS];
+static int s_CachedStepPerLevel[MAX_ORB_PYRAMID_LEVELS] = {
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+};
+
+static void EnsureLayerStepOffsetLUT(int level, int step) {
+    if (level < 0 || level >= MAX_ORB_PYRAMID_LEVELS) return;
+    if (s_CachedStepPerLevel[level] == step) return;
+    for (int angle = 0; angle < 360; ++angle) {
+        const DescriptorOffset* off2D = descriptorOffsetLUT[angle];
+        int* off1D = s_LayerOffset1D[level][angle];
+        for (int i = 0; i < ORB_BRIEF_NUM_POINTS; ++i) {
+            off1D[i] = off2D[i].dy * step + off2D[i].dx;
+        }
+    }
+    s_CachedStepPerLevel[level] = step;
+}
+
 static void computeOrbDescriptor(const KeyPoint& kpt,
-                                 const Mat& img, const Point* pattern,
+                                 const Mat& img, const int* off,
                                  uchar* desc)
 {
-    int angleIdx = (int)(kpt.angle + 0.5f);
-    if(angleIdx < 0) angleIdx += 360;
-    if(angleIdx >= 360) angleIdx -= 360;
-
     // 快速舍入（+0.5 后截断取整）
     const int kpy = (int)(kpt.pt.y + 0.5f);
     const int kpx = (int)(kpt.pt.x + 0.5f);
     const uchar* center = &img.at<uchar>(kpy, kpx);
-    const int step = (int)img.step;
 
-    // 直接由 (dy,dx) 基表计算当前层 step 的偏移（消除每帧 8 次全表重建的 thrash）
-    const DescriptorOffset* off = descriptorOffsetLUT[angleIdx];
-
-    #define GET_VALUE(idx) center[off[idx].dy * step + off[idx].dx]
+    // 直接通过 1D 预展开步长表寻址
+    #define GET_VALUE(idx) center[off[idx]]
 
     for (int i = 0; i < ORB_DESC_COLS; ++i, off += 16)
     {
@@ -252,6 +264,50 @@ static void computeOrbDescriptor(const KeyPoint& kpt,
     }
 
     #undef GET_VALUE
+}
+
+// 兜底回退实现
+static void computeOrbDescriptorFallback(const KeyPoint& kpt,
+                                         const Mat& img, const Point* pattern,
+                                         uchar* desc)
+{
+    int angleIdx = (int)(kpt.angle + 0.5f);
+    if(angleIdx < 0) angleIdx += 360;
+    if(angleIdx >= 360) angleIdx -= 360;
+
+    const int kpy = (int)(kpt.pt.y + 0.5f);
+    const int kpx = (int)(kpt.pt.x + 0.5f);
+    const uchar* center = &img.at<uchar>(kpy, kpx);
+    const int step = (int)img.step;
+
+    const DescriptorOffset* off = descriptorOffsetLUT[angleIdx];
+
+    #define GET_VALUE_FB(idx) center[off[idx].dy * step + off[idx].dx]
+
+    for (int i = 0; i < ORB_DESC_COLS; ++i, off += 16)
+    {
+        int t0, t1, val;
+        t0 = GET_VALUE_FB(0); t1 = GET_VALUE_FB(1);
+        val = t0 < t1;
+        t0 = GET_VALUE_FB(2); t1 = GET_VALUE_FB(3);
+        val |= (t0 < t1) << 1;
+        t0 = GET_VALUE_FB(4); t1 = GET_VALUE_FB(5);
+        val |= (t0 < t1) << 2;
+        t0 = GET_VALUE_FB(6); t1 = GET_VALUE_FB(7);
+        val |= (t0 < t1) << 3;
+        t0 = GET_VALUE_FB(8); t1 = GET_VALUE_FB(9);
+        val |= (t0 < t1) << 4;
+        t0 = GET_VALUE_FB(10); t1 = GET_VALUE_FB(11);
+        val |= (t0 < t1) << 5;
+        t0 = GET_VALUE_FB(12); t1 = GET_VALUE_FB(13);
+        val |= (t0 < t1) << 6;
+        t0 = GET_VALUE_FB(14); t1 = GET_VALUE_FB(15);
+        val |= (t0 < t1) << 7;
+
+        desc[i] = (uchar)val;
+    }
+
+    #undef GET_VALUE_FB
 }
 
 static int bit_pattern_31_[ORB_BRIEF_NUM_PAIRS*4] =
@@ -1391,14 +1447,26 @@ void ORBextractor::blurAndComputeDescriptors(
         mvBlurredPyramid[level] = mvBlurredPyramidPadded[level](
             Rect(ORB_EDGE_THRESHOLD, ORB_EDGE_THRESHOLD, sz.width, sz.height));
 
-        // 本层关键点的描述子计算
+        // 本层关键点的描述子计算（步长在运行期稳定，使用 1D 预展开步长表彻底消除内层 512 次乘法）
+        const int step = (int)mvBlurredPyramid[level].step;
+        EnsureLayerStepOffsetLUT(level, step);
+        const bool bCanUseFast = (level >= 0 && level < MAX_ORB_PYRAMID_LEVELS);
+
         int start = levelDescOffset[level];
         int end = levelDescOffset[level + 1];
         for (int i = start; i < end; ++i)
         {
             KeyPoint& kp = keypoints[i];
             uchar* desc = descriptors.ptr<uchar>(i);
-            computeOrbDescriptor(kp, mvBlurredPyramid[level], &pattern[0], desc);
+            int angleIdx = (int)(kp.angle + 0.5f);
+            if(angleIdx < 0) angleIdx += 360;
+            if(angleIdx >= 360) angleIdx -= 360;
+
+            if (bCanUseFast) {
+                computeOrbDescriptor(kp, mvBlurredPyramid[level], s_LayerOffset1D[level][angleIdx], desc);
+            } else {
+                computeOrbDescriptorFallback(kp, mvBlurredPyramid[level], &pattern[0], desc);
+            }
 
             // 缩放坐标到第0层
             if (level != 0) {

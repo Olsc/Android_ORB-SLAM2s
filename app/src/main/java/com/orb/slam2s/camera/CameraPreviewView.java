@@ -440,8 +440,17 @@ public class CameraPreviewView extends AspectGLSurfaceView {
             if (mSlamIPCClient != null && mSlamIPCClient.isConnected() && mPointCloudRenderer != null) {
                 int floats = mSlamIPCClient.readPointCloud(mPointCloudBuffer, mPointCloudBuffer.length);
                 if (floats > 0 && mSlamIPCClient.readMvp(mTempMvp)) {
-                    // 点云在相机坐标系 (RDF)，直接由 ProjectionMatrix * RDF_TO_RUB 投影
-                    Matrix.multiplyMM(mVPMatrix, 0, mTempMvp, 32, RDF_TO_RUB, 0);
+                    // 点云在相机坐标系 (RDF)，右乘对角阵 diag(1,-1,-1,1) 数学上恒等于将第1列与第2列取反
+                    System.arraycopy(mTempMvp, 32, mVPMatrix, 0, 16);
+                    mVPMatrix[4] = -mVPMatrix[4];
+                    mVPMatrix[5] = -mVPMatrix[5];
+                    mVPMatrix[6] = -mVPMatrix[6];
+                    mVPMatrix[7] = -mVPMatrix[7];
+                    mVPMatrix[8] = -mVPMatrix[8];
+                    mVPMatrix[9] = -mVPMatrix[9];
+                    mVPMatrix[10] = -mVPMatrix[10];
+                    mVPMatrix[11] = -mVPMatrix[11];
+
                     mPointCloudRenderer.updatePoints(mPointCloudBuffer, floats);
                     GLES20.glDisable(GLES20.GL_DEPTH_TEST);
                     mPointCloudRenderer.draw(mVPMatrix);

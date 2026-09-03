@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 project(MenthaAR_Windows CXX C)
-
+ 
 # 设置 C++ 标准为 C++11
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
