@@ -74,4 +74,8 @@
     <string name="hint_flashlight_unavailable">Фонарик недоступен на этом устройстве</string>
     <string name="hint_no_camera">Камера не обнаружена (режим черного экрана)</string>
 
+    <string name="dialog_exit_title">Выход из приложения</string>
+    <string name="dialog_exit_message">Вы уверены, что хотите выйти из приложения?</string>
+    <string name="action_exit">Выход</string>
+
 </resources>

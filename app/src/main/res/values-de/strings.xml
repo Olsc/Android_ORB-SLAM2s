@@ -72,4 +72,8 @@
     <string name="hint_flashlight_unavailable">Taschenlampe auf diesem Gerät nicht verfügbar</string>
     <string name="hint_no_camera">Keine Kamera erkannt (Schwarzbild-Modus)</string>
 
+    <string name="dialog_exit_title">App beenden</string>
+    <string name="dialog_exit_message">Möchten Sie die App wirklich beenden?</string>
+    <string name="action_exit">Beenden</string>
+
 </resources>

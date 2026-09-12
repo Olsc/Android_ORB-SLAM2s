@@ -73,4 +73,8 @@
     <string name="hint_flashlight_unavailable">Lampe torche non disponible sur cet appareil</string>
     <string name="hint_no_camera">Aucune caméra détectée (mode écran noir)</string>
 
+    <string name="dialog_exit_title">Quitter l\'application</string>
+    <string name="dialog_exit_message">Voulez-vous vraiment quitter l\'application ?</string>
+    <string name="action_exit">Quitter</string>
+
 </resources>

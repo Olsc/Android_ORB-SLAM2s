@@ -11,6 +11,7 @@
 #include <atomic>
 #include <cmath>
 #include <map>
+#include <unordered_set>
 #include <vector>
 #include <cstring>
 #include <sys/mman.h>
@@ -59,7 +60,7 @@ AR::ArAnchor gAnchor;
 std::map<int, AR::ArAnchor> gMapAnchors;
 // 渲染层对齐滞回状态（与 SLAM 核心 mbHaveMapAlign 解耦，由 AR_RenderFrame 维护）
 AR::AlignHoldState gAlignHold;
-const int ALIGN_HOLD_FRAMES = 6;   // raw 对齐丢失后仍按"对齐帧"渲染的保持帧数（约0.1s@60fps）
+const int ALIGN_HOLD_FRAMES = ORB_SLAM2::ALIGN_HOLD_FRAMES;   // raw 对齐丢失后仍按"对齐帧"渲染的保持帧数（约0.1s@60fps）
 
 // 多地图支持
 std::mutex gMapDataMutex;
@@ -482,10 +483,10 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
     } else {
         // SLAM处于LOST状态
         if(++gLostFrameCount >= LOST_RESET_FRAMES) {
-            LOGD("SLAM连续丢失 %d 帧，执行轻量重置（保留加载的地图）...", gLostFrameCount);
-            currentSlamSys->Reset(true);  // 保留地图的重置
+            LOGD("SLAM连续丢失 %d 帧，执行全面重置恢复初始化...", gLostFrameCount);
+            currentSlamSys->Reset(false);
             gLostFrameCount = 0;
-            LOGD("SLAM轻量重置完成，已加载的地图数据已保留");
+            LOGD("SLAM重置完成");
         }
     }
 
@@ -843,11 +844,6 @@ static void writePointCloudToSharedMemory() {
         return;
     }
 
-    static int sPointCloudFrameCounter = 0;
-    if ((++sPointCloudFrameCounter & 1) != 0) {
-        return;
-    }
-
     const int maxFloats = SH_POINTCLOUD_MAX_BYTES / 4;
     float* dst = shFloatPtr(shPointCloudOffset());
     int n = 0;
@@ -887,11 +883,15 @@ static void writePointCloudToSharedMemory() {
     const float Rm10 = hasAlign ? mapTcw.at<float>(1,0) : 0, Rm11 = hasAlign ? mapTcw.at<float>(1,1) : 0, Rm12 = hasAlign ? mapTcw.at<float>(1,2) : 0, tm1 = hasAlign ? mapTcw.at<float>(1,3) : 0;
     const float Rm20 = hasAlign ? mapTcw.at<float>(2,0) : 0, Rm21 = hasAlign ? mapTcw.at<float>(2,1) : 0, Rm22 = hasAlign ? mapTcw.at<float>(2,2) : 0, tm2 = hasAlign ? mapTcw.at<float>(2,3) : 0;
 
+    std::unordered_set<ORB_SLAM2::MapPoint*> renderedMPs;
+    renderedMPs.reserve(localMPs.size() + 1024);
+
+    // 1. 优先渲染当前帧直接跟踪到的特征点（高亮清晰）
     const size_t NMPs = localMPs.size();
     for (size_t i = 0; i < NMPs; ++i) {
         ORB_SLAM2::MapPoint* pMP = localMPs[i];
         if (!pMP || pMP->isBad()) continue;
-        // 栈上出参读取世界坐标，避免额外内存分配
+
         cv::Point3f Pw;
         pMP->GetWorldPos(Pw);
 
@@ -908,29 +908,36 @@ static void writePointCloudToSharedMemory() {
             PcZ = Rs20*Pw.x + Rs21*Pw.y + Rs22*Pw.z + ts2;
         }
 
-        if (PcZ <= 0.05f) continue; // 过滤相机后方与极近异常点
+        if (PcZ <= ORB_SLAM2::POINTCLOUD_MIN_RENDER_DEPTH) continue; // 过滤相机后方与极近异常点
         if (n * 7 + 7 > maxFloats) break;
 
         dst[n*7+0] = PcX;
         dst[n*7+1] = PcY;
         dst[n*7+2] = PcZ;
         if (pMP->mbFromLoadedMap) {
-            dst[n*7+3] = 0.0f; dst[n*7+4] = 1.0f; dst[n*7+5] = 0.0f;       // 绿色
+            dst[n*7+3] = ORB_SLAM2::POINTCLOUD_COLOR_GREEN_R;
+            dst[n*7+4] = ORB_SLAM2::POINTCLOUD_COLOR_GREEN_G;
+            dst[n*7+5] = ORB_SLAM2::POINTCLOUD_COLOR_GREEN_B; // 绿色
+            dst[n*7+6] = ORB_SLAM2::POINTCLOUD_POINT_SIZE_LOADED;
         } else {
-            dst[n*7+3] = 31.0f/255.0f; dst[n*7+4] = 188.0f/255.0f; dst[n*7+5] = 210.0f/255.0f; // 青色
+            dst[n*7+3] = ORB_SLAM2::POINTCLOUD_COLOR_CYAN_R;
+            dst[n*7+4] = ORB_SLAM2::POINTCLOUD_COLOR_CYAN_G;
+            dst[n*7+5] = ORB_SLAM2::POINTCLOUD_COLOR_CYAN_B;  // 青色
+            dst[n*7+6] = ORB_SLAM2::POINTCLOUD_POINT_SIZE_TRACKED;
         }
-        dst[n*7+6] = 8.0f;
+        renderedMPs.insert(pMP);
         n++;
     }
 
-    // 补充渲染已加载的参考地图点云（仅在对齐成功时）
+    // 2. 补充渲染已加载的参考地图点云（仅在对齐成功时）
     const int status = slamSys->GetTrackingState();
-    if (status == 2 && hasAlign) {
+    if (status == 2 && hasAlign && n * 7 + 7 <= maxFloats) {
         std::vector<ORB_SLAM2::MapPoint*> allMPs = slamSys->GetAllMapPoints();
         int count = 0;
-        const int maxDrawPoints = 3000;
+        const int maxDrawPoints = ORB_SLAM2::POINTCLOUD_MAX_DRAW_LOADED;
         for (auto pMP : allMPs) {
             if (!pMP || pMP->isBad() || !pMP->mbFromLoadedMap) continue;
+            if (renderedMPs.count(pMP)) continue;
 
             cv::Point3f Pw;
             pMP->GetWorldPos(Pw);
@@ -939,14 +946,16 @@ static void writePointCloudToSharedMemory() {
             const float PcY = Rm10*Pw.x + Rm11*Pw.y + Rm12*Pw.z + tm1;
             const float PcZ = Rm20*Pw.x + Rm21*Pw.y + Rm22*Pw.z + tm2;
 
-            if (PcZ <= 0.05f) continue;
+            if (PcZ <= ORB_SLAM2::POINTCLOUD_MIN_RENDER_DEPTH) continue;
             if (n * 7 + 7 > maxFloats) break;
 
             dst[n*7+0] = PcX;
             dst[n*7+1] = PcY;
             dst[n*7+2] = PcZ;
-            dst[n*7+3] = 0.0f; dst[n*7+4] = 1.0f; dst[n*7+5] = 0.0f;
-            dst[n*7+6] = 4.0f;
+            dst[n*7+3] = ORB_SLAM2::POINTCLOUD_COLOR_GREEN_R;
+            dst[n*7+4] = ORB_SLAM2::POINTCLOUD_COLOR_GREEN_G;
+            dst[n*7+5] = ORB_SLAM2::POINTCLOUD_COLOR_GREEN_B; // 绿色
+            dst[n*7+6] = ORB_SLAM2::POINTCLOUD_POINT_SIZE_LOADED;
             n++;
 
             count++;
@@ -1043,6 +1052,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeShutdown(JNIEnv* env, jobject inst
             delete slamSys;   // ~System 释放各子模块与全部子地图
             slamSys = nullptr;
         }
+        VT_PROFILE_SHUTDOWN();
         slamInitialized = false;
         timeStamp = 0.0;
         gLostFrameCount = 0;

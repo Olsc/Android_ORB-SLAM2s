@@ -60,9 +60,11 @@ KeyFrame::KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB):
     mvInvLevelSigma2(F.mvInvLevelSigma2), mnMinX(F.mnMinX), mnMinY(F.mnMinY), mnMaxX(F.mnMaxX),
     mnMaxY(F.mnMaxY), mK(F.mK.clone()), mvpMapPoints(F.mvpMapPoints), mpKeyFrameDB(pKFDB),
     mbFirstConnection(true), mpParent(NULL), mbNotErase(false),
-    mbToBeErased(false), mbBad(false), mHalfBaseline(F.mb/2), mpMap(pMap), mpTree(F.mpTree)
+    mbToBeErased(false), mbBad(false), mbIsOrigin(false), mHalfBaseline(F.mb/2), mpMap(pMap), mpTree(F.mpTree)
 {
     mnId=nNextId++;
+    if(mnId == 0)
+        mbIsOrigin = true;
 
     mGrid.resize(mnGridCols);
     for(int i=0; i<mnGridCols;i++)
@@ -517,7 +519,7 @@ void KeyFrame::SetBadFlag()
 
     {
         unique_lock<mutex> lock(mMutexConnections);
-        if(mnId==0)
+        if(IsOrigin())
             return;
         else if(mbNotErase)
         {

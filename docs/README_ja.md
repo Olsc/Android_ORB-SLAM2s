@@ -83,7 +83,7 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 - **🎯 再ローカライゼーションとマッチング** —— 既存マップ読み込み時のポーズ推定と特徴マッチング
 - **📊 信頼度の可視化** —— キーポイントの視覚的追跡とフレーム間のマッチング統計
 - **📐 平面検出** —— 現在のポーズとポイントクラウドデータに基づく床/表面検出
-- **🎨 ネイティブ AR レンダリング** —— **Google Filament**（GLB/glTF モデル）と OpenGL ES を使用した 3D レンダリング
+- **🎨 ネイティブ AR レンダリング** —— **cgltf** と OpenGL ES を使用した高性能 3D レンダリング、GLB/glTF モデルの高速読み込みに対応
 - **🌑 暗所フレーム検出** —— 暗いまたは低品質のフレームを自動的にスキップ
 - **🖱️ AR オブジェクト管理** —— 3D オブジェクトの配置、ピンチジェスチャーによる拡大縮小
 - **🧭 3DOF 方向追跡** —— デバイス内蔵センサーによる 3 自由度の方向追跡
@@ -182,7 +182,7 @@ ORB-SLAM2 コアライブラリは [GPLv3 ライセンス](https://github.com/ra
 
 本プロジェクトは、Android IPC プロセス分離に基づくマルチモジュール・ライセンスアーキテクチャを採用しています：
 
-- **`app/` モジュール**: **[Apache License 2.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/app/LICENSE)** (Apache-2.0) の下でライセンスされています。UI、カメラプレビュー、Filament 3D レンダリング、センサーコンポーネントが含まれます。
+- **`app/` モジュール**: **[Apache License 2.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/app/LICENSE)** (Apache-2.0) の下でライセンスされています。UI、カメラプレビュー、ネイティブ cgltf/OpenGL ES 3D レンダリング、センサーコンポーネントが含まれます。
 - **`MenthaAR/` エンジンモジュール**: ORB-SLAM2 から派生し、**[GNU General Public License v3.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/MenthaAR/LICENSE)** (GPLv3) の下でライセンスされています。C++ SLAM コアアルゴリズムとネイティブ処理が含まれます。
 - **IPC プロセス分離通信**: `app` モジュールと `MenthaAR` エンジンは独立した Android OS プロセスで実行され、Binder IPC および共有メモリ（Ashmem/memfd）を介して通信することで、それぞれのライセンス境界を維持しています。
 
@@ -199,6 +199,7 @@ ORB-SLAM2 コアライブラリは [GPLv3 ライセンス](https://github.com/ra
 - **[DBoW2](https://github.com/dorian3d/DBoW2)** —— **BSD ライセンス**。基本的な語彙ベクトルおよび特徴マッチング構造に使用されます。
 - **[g2o](https://github.com/RainerKuemmerle/g2o)** —— **BSD ライセンス**（コアコンポーネント）。非線形最適化に使用されます。
 - **[Eigen3](http://eigen.tuxfamily.org/)** —— **MPL2 (Mozilla Public License v2.0)**。行列演算および代数計算に使用されます。
+- **[cgltf](https://github.com/jkuhlmann/cgltf)** —— **MIT ライセンス**。app モジュールで 3D モデルをネイティブかつ高速に読み込むためのシングルファイル C 言語 glTF 2.0 / GLB パーサー。
 
 サードパーティライセンスに関する問題については、それぞれの公式リポジトリを参照してください。
 

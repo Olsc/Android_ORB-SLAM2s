@@ -762,6 +762,9 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
     // 计算第二幅图像中的像极点
     cv::Point3f Cw;
     pKF1->GetCameraCenter(Cw);
+    float R1w[9];
+    pKF1->GetRotation(R1w);
+
     float R2w[9], t2w[3];
     pKF2->GetRotation(R2w);
     pKF2->GetTranslation(t2w);
@@ -773,6 +776,17 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
     std::shared_ptr<HBSTTree> tree2 = pKF2->GetHBSTTree();
     if (!tree2)
         return 0;
+    const auto& matchables2 = tree2->matchables();
+
+    // 计算两相机间的相对旋转 R21 = R2w * R1w^T (常数项外提)
+    float R21[9];
+    for(int r = 0; r < 3; ++r) {
+        for(int c = 0; c < 3; ++c) {
+            R21[r*3 + c] = R2w[r*3 + 0]*R1w[c*3 + 0] + 
+                           R2w[r*3 + 1]*R1w[c*3 + 1] + 
+                           R2w[r*3 + 2]*R1w[c*3 + 2];
+        }
+    }
 
     // C2 = R2w*Cw + t2w（标量）
     const float C2x = R2w[0]*Cw.x + R2w[1]*Cw.y + R2w[2]*Cw.z + t2w[0];
@@ -781,6 +795,12 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
     const float invz = 1.0f/C2z;
     const float ex = pKF2->fx*C2x*invz+pKF2->cx;
     const float ey = pKF2->fy*C2y*invz+pKF2->cy;
+
+    // 场景中值深度先验，用于约束极线投影线段的搜索包围盒
+    float medDepth = pKF1->ComputeSceneMedianDepth(TRIANGULATION_DEPTH_PERCENTILE);
+    if(medDepth <= TRACKING_MIN_SCENE_DEPTH) medDepth = 1.0f;
+    const float zMin = std::max(TRIANGULATION_DEPTH_MIN_ABS, TRIANGULATION_DEPTH_MIN_RATIO * medDepth);
+    const float zMax = std::min(TRIANGULATION_DEPTH_MAX_ABS, TRIANGULATION_DEPTH_MAX_RATIO * medDepth);
 
     int nmatches=0;
     vector<bool> vbMatched2(pKF2->N,false);
@@ -819,63 +839,104 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
         const float b = kp1.pt.x*f01+kp1.pt.y*f11+f21;
         const float c = kp1.pt.x*f02+kp1.pt.y*f12v+f22;
 
-        // 直接从关键帧1预构建的 HBST 树中获取 bitset 描述子，避免重复进行二进制转换
         const HBSTMatchable::Descriptor &desc1 = matchables1[idx1]->descriptor;
 
-        // 使用辅助内联函数遍历查找叶子节点，减少重复代码
-        const HBSTNode* node_current = FindHBSTLeafNode(tree2.get(), desc1);
-        if (!node_current)
+        // 计算特征射线在相机 2 坐标系下的方向
+        const float xn1 = (kp1.pt.x - pKF1->cx) * pKF1->invfx;
+        const float yn1 = (kp1.pt.y - pKF1->cy) * pKF1->invfy;
+        const float dc2x = R21[0]*xn1 + R21[1]*yn1 + R21[2];
+        const float dc2y = R21[3]*xn1 + R21[4]*yn1 + R21[5];
+        const float dc2z = R21[6]*xn1 + R21[7]*yn1 + R21[8];
+
+        // 计算极线段在图像 2 上的投影边界
+        const float P1z = C2z + zMin * dc2z;
+        const float P2z = C2z + zMax * dc2z;
+
+        float uMin, uMax, vMin, vMax;
+        if (P1z > 0.05f && P2z > 0.05f) {
+            const float u1 = pKF2->fx * (C2x + zMin * dc2x) / P1z + pKF2->cx;
+            const float v1 = pKF2->fy * (C2y + zMin * dc2y) / P1z + pKF2->cy;
+            const float u2 = pKF2->fx * (C2x + zMax * dc2x) / P2z + pKF2->cx;
+            const float v2 = pKF2->fy * (C2y + zMax * dc2y) / P2z + pKF2->cy;
+
+            uMin = std::min(u1, u2) - TRIANGULATION_BBOX_PADDING;
+            uMax = std::max(u1, u2) + TRIANGULATION_BBOX_PADDING;
+            vMin = std::min(v1, v2) - TRIANGULATION_BBOX_PADDING;
+            vMax = std::max(v1, v2) + TRIANGULATION_BBOX_PADDING;
+        } else {
+            uMin = pKF2->mnMinX;
+            uMax = pKF2->mnMaxX;
+            vMin = pKF2->mnMinY;
+            vMax = pKF2->mnMaxY;
+        }
+
+        const int minCellX = std::max(0, (int)floor((uMin - pKF2->mnMinX) * pKF2->mfGridElementWidthInv));
+        const int maxCellX = std::min((int)pKF2->mnGridCols - 1, (int)ceil((uMax - pKF2->mnMinX) * pKF2->mfGridElementWidthInv));
+        const int minCellY = std::max(0, (int)floor((vMin - pKF2->mnMinY) * pKF2->mfGridElementHeightInv));
+        const int maxCellY = std::min((int)pKF2->mnGridRows - 1, (int)ceil((vMax - pKF2->mnMinY) * pKF2->mfGridElementHeightInv));
+
+        if (minCellX > maxCellX || minCellY > maxCellY)
             continue;
 
-        const auto& candidates = node_current->getMatchables();
-
         int bestDist = TH_LOW;
+        int bestDist2 = INT_MAX;
         int bestIdx2 = -1;
 
-        for (const auto* candidate : candidates) {
-            size_t idx2 = candidate->objects.begin()->second;
+        for (int ix = minCellX; ix <= maxCellX; ++ix) {
+            for (int iy = minCellY; iy <= maxCellY; ++iy) {
+                const vector<size_t>& vCell = pKF2->mGrid[ix][iy];
+                for (size_t iCell = 0, iEndCell = vCell.size(); iCell < iEndCell; ++iCell) {
+                    const size_t idx2 = vCell[iCell];
 
-            if (pKF2->GetMapPoint(idx2) || vbMatched2[idx2])
-                continue;
+                    if (pKF2->GetMapPoint(idx2) || vbMatched2[idx2])
+                        continue;
 
-            const bool bStereo2 = false;
-            if (bOnlyStereo && !bStereo2)
-                continue;
+                    const bool bStereo2 = false;
+                    if (bOnlyStereo && !bStereo2)
+                        continue;
 
-            // 直接在 bitset 上通过异或和计数来计算汉明距离，实现极致速度且无内存拷贝与函数调用
-            const int dist = (desc1 ^ candidate->descriptor).count();
+                    const cv::KeyPoint &kp2 = pKF2->mvKeysUn[idx2];
 
-            if (dist > TH_LOW || dist > bestDist)
-                continue;
+                    if (!bStereo1 && !bStereo2) {
+                        const float distex = ex - kp2.pt.x;
+                        const float distey = ey - kp2.pt.y;
+                        if (distex * distex + distey * distey < TRIANGULATION_EPIPOLE_DIST_SQ * pKF2->mvScaleFactors[kp2.octave])
+                            continue;
+                    }
 
-            const cv::KeyPoint &kp2 = pKF2->mvKeysUn[idx2];
+                    if (!CheckDistEpipolarLine(a, b, c, kp2, pKF2))
+                        continue;
 
-            if (!bStereo1 && !bStereo2) {
-                const float distex = ex - kp2.pt.x;
-                const float distey = ey - kp2.pt.y;
-                if (distex * distex + distey * distey < TRIANGULATION_EPIPOLE_DIST_SQ * pKF2->mvScaleFactors[kp2.octave])
-                    continue;
-            }
+                    // 直接在 bitset 上通过异或和计数来计算汉明距离
+                    const int dist = (desc1 ^ matchables2[idx2]->descriptor).count();
 
-            if (CheckDistEpipolarLine(a, b, c, kp2, pKF2)) {
-                bestIdx2 = idx2;
-                bestDist = dist;
+                    if (dist < bestDist) {
+                        bestDist2 = bestDist;
+                        bestDist = dist;
+                        bestIdx2 = idx2;
+                    } else if (dist < bestDist2) {
+                        bestDist2 = dist;
+                    }
+                }
             }
         }
 
-        if (bestIdx2 >= 0) {
-            vMatches12[idx1] = bestIdx2;
-            vbMatched2[bestIdx2] = true;
+        if (bestIdx2 >= 0 && bestDist <= TH_LOW) {
+            // 最优/次优比检验（NNRatio）过滤歧义匹配
+            if (bestDist2 == INT_MAX || (float)bestDist <= (float)bestDist2 * ORB_MATCHER_NNRATIO_TRIANGULATION) {
+                vMatches12[idx1] = bestIdx2;
+                vbMatched2[bestIdx2] = true;
 
-            if (mbCheckOrientation) {
-                float rot = kp1.angle - pKF2->mvKeysUn[bestIdx2].angle;
-                if (rot < 0.0) rot += 360.0f;
-                int bin = round(rot * factor);
-                if (bin == HISTO_LENGTH) bin = 0;
-                assert(bin >= 0 && bin < HISTO_LENGTH);
-                rotHist[bin].push_back(idx1);
+                if (mbCheckOrientation) {
+                    float rot = kp1.angle - pKF2->mvKeysUn[bestIdx2].angle;
+                    if (rot < 0.0f) rot += 360.0f;
+                    int bin = round(rot * factor);
+                    if (bin == HISTO_LENGTH) bin = 0;
+                    assert(bin >= 0 && bin < HISTO_LENGTH);
+                    rotHist[bin].push_back(idx1);
+                }
+                nmatches++;
             }
-            nmatches++;
         }
     }
 

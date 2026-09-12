@@ -84,7 +84,7 @@ It shares similar performance optimization concepts with this project, though it
 - **🎯 Relocalization & Matching** —— Pose estimation and feature matching upon loading existing maps
 - **📊 Confidence Visualization** —— Visual tracking of keypoints and matching statistics between current frames and the loaded map
 - **📐 Plane Detection** —— Intelligent floor/surface detection based on current pose and point cloud data
-- **🎨 Native AR Rendering** —— 3D rendering via **Google Filament** (GLB/glTF models) and OpenGL ES, supporting placement and interaction with virtual objects on detected planes
+- **🎨 Native AR Rendering** —— High-performance 3D rendering via **cgltf** and OpenGL ES, supporting fast loading of GLB/glTF 3D models and interactive placement on detected planes
 - **🌑 Dark Frame Detection** —— Automatically skips dark or low-quality frames to prevent SLAM thread blocking
 - **🖱️ AR Object Management** —— Place, scale (pinch gesture), and interact with 3D objects
 - **🧭 3DOF Orientation Tracking** —— Three-degrees-of-freedom orientation tracking using onboard device sensors (Rotation Vector / Accelerometer + Magnetometer)
@@ -183,7 +183,7 @@ For a closed-source version of ORB-SLAM2 for commercial purposes, please contact
 
 This project adopts a modular license architecture based on Android IPC process isolation:
 
-- **`app/` Module**: Licensed under the **[Apache License, Version 2.0](app/LICENSE)** (Apache-2.0). Contains UI, camera preview, Filament 3D rendering, and sensor components.
+- **`app/` Module**: Licensed under the **[Apache License, Version 2.0](app/LICENSE)** (Apache-2.0). Contains UI, camera preview, native cgltf/OpenGL ES 3D rendering, and sensor components.
 - **`MenthaAR/` Engine Module**: Derived from ORB-SLAM2 and released under the **[GNU General Public License v3.0](MenthaAR/LICENSE)** (GPLv3). Contains native C++ SLAM algorithms and processing.
 - **Inter-Process Communication (IPC)**: The `app` module and `MenthaAR` engine run in separate Android OS processes and communicate strictly via Binder IPC and SharedMemory (Ashmem/memfd), preserving license boundaries between modules.
 
@@ -200,6 +200,7 @@ This project relies on several excellent open-source third-party libraries. We s
 - **[DBoW2](https://github.com/dorian3d/DBoW2)** —— **BSD License**. Used for basic vocabulary vectors and feature matching structures.
 - **[g2o](https://github.com/RainerKuemmerle/g2o)** —— **BSD License** (core components). Used for non-linear optimization.
 - **[Eigen3](http://eigen.tuxfamily.org/)** —— **MPL2 (Mozilla Public License v2.0)**. Used for matrix operations and algebraic calculations.
+- **[cgltf](https://github.com/jkuhlmann/cgltf)** —— **MIT License**. Single-file C glTF 2.0 / GLB parser used for native, high-performance 3D model loading in the app module.
 
 For any issues related to third-party licenses, please refer to their respective official repositories.
 

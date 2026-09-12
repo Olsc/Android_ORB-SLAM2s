@@ -73,4 +73,8 @@
     <string name="hint_flashlight_unavailable">Lanterna não disponível neste dispositivo</string>
     <string name="hint_no_camera">Nenhuma câmera detectada (modo tela preta)</string>
 
+    <string name="dialog_exit_title">Sair do aplicativo</string>
+    <string name="dialog_exit_message">Tem certeza de que deseja sair do aplicativo?</string>
+    <string name="action_exit">Sair</string>
+
 </resources>

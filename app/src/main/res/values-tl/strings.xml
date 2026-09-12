@@ -72,4 +72,8 @@
     <string name="hint_flashlight_unavailable">Hindi available ang flashlight sa device na ito</string>
     <string name="hint_no_camera">Walang nakitang camera (black screen mode)</string>
 
+    <string name="dialog_exit_title">Lumabas sa App</string>
+    <string name="dialog_exit_message">Sigurado ka bang gusto mong lumabas sa app?</string>
+    <string name="action_exit">Lumabas</string>
+
 </resources>

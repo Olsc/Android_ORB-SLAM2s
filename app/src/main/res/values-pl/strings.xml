@@ -74,4 +74,8 @@
     <string name="hint_flashlight_unavailable">Latarka nie jest dostępna na tym urządzeniu</string>
     <string name="hint_no_camera">Nie wykryto kamery (tryb czarnego ekranu)</string>
 
+    <string name="dialog_exit_title">Wyjście z aplikacji</string>
+    <string name="dialog_exit_message">Czy na pewno chcesz zamknąć aplikację?</string>
+    <string name="action_exit">Wyjdź</string>
+
 </resources>

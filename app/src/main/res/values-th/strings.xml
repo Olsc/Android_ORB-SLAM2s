@@ -71,4 +71,8 @@
     <string name="hint_flashlight_unavailable">อุปกรณ์นี้ไม่รองรับไฟฉาย</string>
     <string name="hint_no_camera">ไม่พบกล้อง (โหมดหน้าจอสีดำ)</string>
 
+    <string name="dialog_exit_title">ออกจากแอป</string>
+    <string name="dialog_exit_message">คุณแน่ใจหรือไม่ว่าต้องการออกจากแอปพลิเคชัน?</string>
+    <string name="action_exit">ออก</string>
+
 </resources>

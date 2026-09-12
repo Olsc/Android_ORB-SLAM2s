@@ -87,6 +87,29 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
     // 顶点指针数组（按 id 索引）
     std::vector<g2o::OptimizableGraph::Vertex*> vAllVertices;
 
+    // 找到本图的原点关键帧作为固定锚点
+    KeyFrame* pOriginKF = nullptr;
+    for(size_t i=0; i<vpKFs.size(); i++)
+    {
+        if(vpKFs[i] && !vpKFs[i]->isBad() && vpKFs[i]->IsOrigin())
+        {
+            pOriginKF = vpKFs[i];
+            break;
+        }
+    }
+    // 若无显式标记为原点的KF，以ID最小的有效KF作为固定锚点
+    if(!pOriginKF)
+    {
+        for(size_t i=0; i<vpKFs.size(); i++)
+        {
+            if(vpKFs[i] && !vpKFs[i]->isBad())
+            {
+                if(!pOriginKF || vpKFs[i]->mnId < pOriginKF->mnId)
+                    pOriginKF = vpKFs[i];
+            }
+        }
+    }
+
     // 设置关键帧顶点
     for(size_t i=0; i<vpKFs.size(); i++)
     {
@@ -104,7 +127,7 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
         Eigen::Matrix<double,3,1> t(poseF[3], poseF[7], poseF[11]);
         vSE3->setEstimate(g2o::SE3Quat(R, t));
         vSE3->setId(pKF->mnId);
-        vSE3->setFixed(pKF->mnId==0);
+        vSE3->setFixed(pKF == pOriginKF);
         optimizer.addVertex(vSE3);
         if((size_t)pKF->mnId >= vAllVertices.size())
             vAllVertices.resize((size_t)pKF->mnId + 1, nullptr);
@@ -209,7 +232,22 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
     optimizer.initializeOptimization();
     // 空优化保护：active（非固定）顶点为 0 时跳过，避免 g2o 空跑
     if(optimizer.activeVertices().empty())
+    {
+        // 确保所有参与的非 bad KF 的 mTcwGBA 被有效赋为当前位姿，防止后续传播空矩阵崩溃
+        if(nLoopKF != 0)
+        {
+            for(size_t i=0; i<vpKFs.size(); i++)
+            {
+                KeyFrame* pKF = vpKFs[i];
+                if(pKF && !pKF->isBad())
+                {
+                    pKF->mTcwGBA = pKF->GetPose();
+                    pKF->mnBAGlobalForKF = nLoopKF;
+                }
+            }
+        }
         return;
+    }
     optimizer.optimize(nIterations);
 
     // 恢复优化后的数据
@@ -453,17 +491,44 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
     }
 
     // 固定关键帧。看到局部地图点但不是局部关键帧的关键帧
-    list<KeyFrame*> lFixedCameras;
+    // 统计各固定关键帧观测到的局部地图点数量，按观测关联权重筛选最强约束的固定帧，防止极端共视膨胀
+    std::unordered_map<KeyFrame*, int> fixedKFObsCount;
     for(list<MapPoint*>::iterator lit=lLocalMapPoints.begin(), lend=lLocalMapPoints.end(); lit!=lend; lit++)
     {
         (*lit)->ForEachObservation([&](KeyFrame* pKFi, size_t) {
-            if(pKFi && pKFi->mnBALocalForKF!=pKF->mnId && pKFi->mnBAFixedForKF!=pKF->mnId)
+            if(pKFi && pKFi->mnBALocalForKF!=pKF->mnId)
             {
-                pKFi->mnBAFixedForKF=pKF->mnId;
                 if(!pKFi->isBad())
-                    lFixedCameras.push_back(pKFi);
+                    fixedKFObsCount[pKFi]++;
             }
         });
+    }
+
+    list<KeyFrame*> lFixedCameras;
+    if((int)fixedKFObsCount.size() <= LOCAL_BA_MAX_FIXED_KFS)
+    {
+        for(const auto& pair : fixedKFObsCount)
+        {
+            KeyFrame* pKFi = pair.first;
+            pKFi->mnBAFixedForKF = pKF->mnId;
+            lFixedCameras.push_back(pKFi);
+        }
+    }
+    else
+    {
+        // 超过上限，选取观测局部点最多的前 LOCAL_BA_MAX_FIXED_KFS 个关键帧
+        vector<pair<KeyFrame*, int>> vSortedFixed(fixedKFObsCount.begin(), fixedKFObsCount.end());
+        std::nth_element(vSortedFixed.begin(), vSortedFixed.begin() + LOCAL_BA_MAX_FIXED_KFS, vSortedFixed.end(),
+                         [](const pair<KeyFrame*, int>& a, const pair<KeyFrame*, int>& b){
+                             return a.second > b.second;
+                         });
+        vSortedFixed.resize(LOCAL_BA_MAX_FIXED_KFS);
+        for(const auto& pair : vSortedFixed)
+        {
+            KeyFrame* pKFi = pair.first;
+            pKFi->mnBAFixedForKF = pKF->mnId;
+            lFixedCameras.push_back(pKFi);
+        }
     }
 
     // 线程局部缓存：避免每次 new/delete 求解器对象
@@ -507,7 +572,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
         Eigen::Matrix<double,3,1> t(poseF[3], poseF[7], poseF[11]);
         vSE3->setEstimate(g2o::SE3Quat(R, t));
         vSE3->setId(pKFi->mnId);
-        vSE3->setFixed(pKFi->mnId==0);
+        vSE3->setFixed(pKFi->IsOrigin());
         optimizer.addVertex(vSE3);
         vAllVertices[pKFi->mnId] = vSE3;
         if(pKFi->mnId>maxKFid)
@@ -632,7 +697,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
         double curChi2 = optimizer.activeChi2();
         if(it > 0 && prevChi2 > 0.0) {
             double relChange = std::abs(prevChi2 - curChi2) / prevChi2;
-            if(relChange < 1e-3) {
+            if(relChange < LOCAL_BA_EARLY_STOP_REL_CHANGE) {
                 break;
             }
         }
@@ -677,7 +742,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
         double curChi2 = optimizer.activeChi2();
         if(it > 0 && prevChi2 > 0.0) {
             double relChange = std::abs(prevChi2 - curChi2) / prevChi2;
-            if(relChange < 1e-3) {
+            if(relChange < LOCAL_BA_EARLY_STOP_REL_CHANGE) {
                 break;
             }
         }

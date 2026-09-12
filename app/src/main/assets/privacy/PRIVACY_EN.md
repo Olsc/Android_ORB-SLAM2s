@@ -15,7 +15,7 @@ This project combines computer vision-based Simultaneous Localization and Mappin
 3. **Relocalization & Matching**: Recovering camera pose through feature matching when loading existing maps;
 4. **Confidence Visualization**: Visual tracking of keypoints and matching statistics between current frames and the loaded map;
 5. **Plane Detection**: Intelligent detection of horizontal floors/surfaces based on current camera pose and point cloud data;
-6. **Native AR Rendering**: 3D rendering via **Google Filament** (GLB/glTF format models) and OpenGL ES 2.0, supporting placement and interaction of virtual objects on detected planes;
+6. **Native AR Rendering**: Native 3D rendering via the lightweight C library **cgltf** (GLB/glTF model parsing) and OpenGL ES 2.0, supporting placement and interaction of virtual objects on detected planes;
 7. **Dark Frame Detection**: Automatic detection of overly dark environments, pausing SLAM tracking to prevent wasted computational resources and tracking loss;
 8. **3D Object Interaction Management**: Support for placing, scaling (pinch gesture), and interacting with 3D AR objects;
 9. **3DOF Orientation Tracking**: Three-degrees-of-freedom orientation tracking using onboard device sensors (Rotation Vector Sensor / Accelerometer + Magnetometer);
@@ -68,7 +68,7 @@ This project is built upon the following open-source libraries, each with its ow
 | AndroidX / CameraX              | Apache 2.0                              | Official Android camera and UI components                                                   |
 | Google Material Design          | Apache 2.0                              | UI design library                                                                           |
 | **srrg_hbst (HBST)**            | **BSD 3-Clause**                        | **Hierarchical Bag of Scalable Trees — fast incremental image matching for relocalization** |
-| **Google Filament**             | **Apache 2.0**                          | **Physically-based 3D rendering engine for AR object display (GLB/glTF model support)**     |
+| **cgltf**                       | **MIT**                                 | **Lightweight single-header C glTF/GLB model parser for native AR 3D rendering**            |
 | Google Guava                    | Apache 2.0                              | Java core library extensions                                                                |
 | **Markwon (io.noties.markwon)** | **Apache 2.0**                          | **Markdown rendering library — used to display this Privacy Policy within the app**         |
 
@@ -187,7 +187,7 @@ All third-party libraries used by this project run locally on the device and do 
 - **OpenCV**: Image processing (feature extraction, matrix operations), all executed locally on the CPU;
 - **ORB-SLAM2 Core (C++)**: SLAM algorithm engine, encapsulated in `:slam_process` and executed entirely locally;
 - **srrg_hbst (HBST)**: Hierarchical binary search tree for image matching and relocalization, all executed locally;
-- **Google Filament + gltfio**: Physically-based 3D rendering engine for AR object display (GLB/glTF), rendering executed locally on GPU;
+- **cgltf**: Lightweight C glTF/GLB model parser paired with OpenGL ES for AR 3D rendering, executed entirely locally;
 - **Google Guava / AndroidX**: System utility classes, not involved with user data;
 - **Markwon**: Markdown rendering library used solely for displaying the Privacy Policy within the app, all executed locally.
 
@@ -313,8 +313,7 @@ This project is built upon the following open-source libraries and integrates th
 | **Eigen3**                                   | Benoît Jacob, Gaël Guennebaud and contributors                                            | MPL-2.0 (core; 3.4+ portions also under Apache-2.0 / BSD-3-Clause / GPL-3.0) |
 | **OpenCV**                                   | Intel Corporation, Willow Garage, Itseez, NVIDIA, AMD, OpenCV Foundation and contributors | Apache 2.0 (some files BSD-3-Clause)                                         |
 | **srrg_hbst (HBST)**                         | Dominik Schlegel, Giorgio Grisetti — srrg-software                                        | BSD 3-Clause                                                                 |
-| **Google Filament**                          | Google LLC                                                                                | Apache 2.0                                                                   |
-| **gltfio / filament-utils**                  | Google LLC                                                                                | Apache 2.0                                                                   |
+| **cgltf**                                    | Johannes Kuhlmann                                                                         | MIT                                                                          |
 | **ZXing ("Zebra Crossing")**                 | Sean Owen and ZXing project contributors                                                  | Apache 2.0                                                                   |
 | **Google Guava**                             | Google LLC                                                                                | Apache 2.0                                                                   |
 | **Markwon (io.noties.markwon)**              | Dimitry Ivanov (noties)                                                                   | Apache 2.0                                                                   |

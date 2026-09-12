@@ -72,4 +72,8 @@
     <string name="hint_flashlight_unavailable">Tochi haipatikani kwenye kifaa hiki</string>
     <string name="hint_no_camera">Hakuna kamera iliyotambuliwa (hali ya skrini nyeusi)</string>
 
+    <string name="dialog_exit_title">Toka kwenye Programu</string>
+    <string name="dialog_exit_message">Una uhakika unataka kutoka kwenye programu?</string>
+    <string name="action_exit">Toka</string>
+
 </resources>

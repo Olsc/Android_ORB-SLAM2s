@@ -72,4 +72,8 @@
     <string name="hint_flashlight_unavailable">Фенерчето не е налично на това устройство</string>
     <string name="hint_no_camera">Няма открита камера (режим на черен екран)</string>
 
+    <string name="dialog_exit_title">Изход от приложението</string>
+    <string name="dialog_exit_message">Сигурни ли сте, че искате да излезете от приложението?</string>
+    <string name="action_exit">Изход</string>
+
 </resources>

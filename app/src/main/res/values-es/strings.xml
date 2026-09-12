@@ -73,4 +73,8 @@
     <string name="hint_flashlight_unavailable">Linterna no disponible en este dispositivo</string>
     <string name="hint_no_camera">No se detectó ninguna cámara (modo pantalla negra)</string>
 
+    <string name="dialog_exit_title">Salir de la aplicación</string>
+    <string name="dialog_exit_message">¿Seguro que desea salir de la aplicación?</string>
+    <string name="action_exit">Salir</string>
+
 </resources>

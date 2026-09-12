@@ -72,4 +72,8 @@
     <string name="hint_flashlight_unavailable">Zaklamp niet beschikbaar op dit apparaat</string>
     <string name="hint_no_camera">Geen camera gedetecteerd (zwart scherm-modus)</string>
 
+    <string name="dialog_exit_title">App afsluiten</string>
+    <string name="dialog_exit_message">Weet u zeker dat u de app wilt afsluiten?</string>
+    <string name="action_exit">Afsluiten</string>
+
 </resources>

@@ -72,4 +72,8 @@
     <string name="hint_flashlight_unavailable">इस डिवाइस पर फ़्लैशलाइट उपलब्ध नहीं है</string>
     <string name="hint_no_camera">कोई कैमरा नहीं मिला (ब्लैक स्क्रीन मोड)</string>
 
+    <string name="dialog_exit_title">ऐप से बाहर निकलें</string>
+    <string name="dialog_exit_message">क्या आप वाकई ऐप से बाहर निकलना चाहते हैं?</string>
+    <string name="action_exit">बाहर निकलें</string>
+
 </resources>

@@ -71,4 +71,8 @@
     <string name="hint_flashlight_unavailable">Lampu suluh tidak tersedia pada peranti ini</string>
     <string name="hint_no_camera">Tiada kamera dikesan (mod skrin hitam)</string>
 
+    <string name="dialog_exit_title">Keluar dari Aplikasi</string>
+    <string name="dialog_exit_message">Adakah anda pasti mahu keluar dari aplikasi?</string>
+    <string name="action_exit">Keluar</string>
+
 </resources>

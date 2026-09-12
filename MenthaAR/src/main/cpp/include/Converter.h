@@ -66,54 +66,62 @@ public:
 
     static std::vector<float> toQuaternion(const cv::Mat &M);
 
-    // 线性三角化：闭式中点法。光线方向 = DLT 行平面法向叉积（与 SVD 零空间同源）。
+    // 线性三角化：闭式代数 DLT 标量法（零开方操作，全标量对称矩阵克莱姆求解，经 Python 数学实测验证）
     static bool TriangulateWithCenters(const cv::Mat &P1, const cv::Mat &P2,
-                                       const float Q1[3], const float Q2[3],
+                                       const float /*Q1*/[3], const float /*Q2*/[3],
                                        float x1, float y1, float x2, float y2,
                                        cv::Mat &x3D)
     {
-        #define TRI_RAY(Pm, px, py, out) do { \
-            const float _r00=Pm.at<float>(0,0), _r01=Pm.at<float>(0,1), _r02=Pm.at<float>(0,2); \
-            const float _r10=Pm.at<float>(1,0), _r11=Pm.at<float>(1,1), _r12=Pm.at<float>(1,2); \
-            const float _r20=Pm.at<float>(2,0), _r21=Pm.at<float>(2,1), _r22=Pm.at<float>(2,2); \
-            const float _nax=px*_r20-_r00, _nay=px*_r21-_r01, _naz=px*_r22-_r02; \
-            const float _nbx=py*_r20-_r10, _nby=py*_r21-_r11, _nbz=py*_r22-_r12; \
-            out[0]=_nay*_nbz-_naz*_nby; \
-            out[1]=_naz*_nbx-_nax*_nbz; \
-            out[2]=_nax*_nby-_nay*_nbx; \
-        } while(0)
+        const float p1_00=P1.at<float>(0,0), p1_01=P1.at<float>(0,1), p1_02=P1.at<float>(0,2), p1_03=P1.at<float>(0,3);
+        const float p1_10=P1.at<float>(1,0), p1_11=P1.at<float>(1,1), p1_12=P1.at<float>(1,2), p1_13=P1.at<float>(1,3);
+        const float p1_20=P1.at<float>(2,0), p1_21=P1.at<float>(2,1), p1_22=P1.at<float>(2,2), p1_23=P1.at<float>(2,3);
 
-        float u[3], v[3];
-        TRI_RAY(P1, x1, y1, u);
-        TRI_RAY(P2, x2, y2, v);
-        #undef TRI_RAY
+        const float p2_00=P2.at<float>(0,0), p2_01=P2.at<float>(0,1), p2_02=P2.at<float>(0,2), p2_03=P2.at<float>(0,3);
+        const float p2_10=P2.at<float>(1,0), p2_11=P2.at<float>(1,1), p2_12=P2.at<float>(1,2), p2_13=P2.at<float>(1,3);
+        const float p2_20=P2.at<float>(2,0), p2_21=P2.at<float>(2,1), p2_22=P2.at<float>(2,2), p2_23=P2.at<float>(2,3);
 
-        const float unrm2 = u[0]*u[0]+u[1]*u[1]+u[2]*u[2];
-        const float vnrm2 = v[0]*v[0]+v[1]*v[1]+v[2]*v[2];
-        if(unrm2 < 1e-20f || vnrm2 < 1e-20f)
+        // 构造 DLT 代数矩阵 A (4x4) 的四行系数
+        const float a0_0 = x1*p1_20 - p1_00, a0_1 = x1*p1_21 - p1_01, a0_2 = x1*p1_22 - p1_02, a0_3 = x1*p1_23 - p1_03;
+        const float a1_0 = y1*p1_20 - p1_10, a1_1 = y1*p1_21 - p1_11, a1_2 = y1*p1_22 - p1_12, a1_3 = y1*p1_23 - p1_13;
+        const float a2_0 = x2*p2_20 - p2_00, a2_1 = x2*p2_21 - p2_01, a2_2 = x2*p2_22 - p2_02, a2_3 = x2*p2_23 - p2_03;
+        const float a3_0 = y2*p2_20 - p2_10, a3_1 = y2*p2_21 - p2_11, a3_2 = y2*p2_22 - p2_12, a3_3 = y2*p2_23 - p2_13;
+
+        // 对称半正定法方程系数矩阵 M = A[:, :3]^T * A[:, :3] (利用对称性仅算 6 项)
+        const float m00 = a0_0*a0_0 + a1_0*a1_0 + a2_0*a2_0 + a3_0*a3_0;
+        const float m01 = a0_0*a0_1 + a1_0*a1_1 + a2_0*a2_1 + a3_0*a3_1;
+        const float m02 = a0_0*a0_2 + a1_0*a1_2 + a2_0*a2_2 + a3_0*a3_2;
+        const float m11 = a0_1*a0_1 + a1_1*a1_1 + a2_1*a2_1 + a3_1*a3_1;
+        const float m12 = a0_1*a0_2 + a1_1*a1_2 + a2_1*a2_2 + a3_1*a3_2;
+        const float m22 = a0_2*a0_2 + a1_2*a1_2 + a2_2*a2_2 + a3_2*a3_2;
+
+        // 常数项向量 B = -A[:, :3]^T * A[:, 3]
+        const float b0 = -(a0_0*a0_3 + a1_0*a1_3 + a2_0*a2_3 + a3_0*a3_3);
+        const float b1 = -(a0_1*a0_3 + a1_1*a1_3 + a2_1*a2_3 + a3_1*a3_3);
+        const float b2 = -(a0_2*a0_3 + a1_2*a1_3 + a2_2*a2_3 + a3_2*a3_3);
+
+        // 克莱姆法则闭式代数解（零浮点开方开销）
+        const float c00 = m11*m22 - m12*m12;
+        const float c01 = m02*m12 - m01*m22;
+        const float c02 = m01*m12 - m02*m11;
+
+        const float det = m00*c00 + m01*c01 + m02*c02;
+        if(std::fabs(det) < 1e-12f)
             return false;
-        const float invu = 1.0f/std::sqrt(unrm2);
-        const float invv = 1.0f/std::sqrt(vnrm2);
-        u[0]*=invu; u[1]*=invu; u[2]*=invu;
-        v[0]*=invv; v[1]*=invv; v[2]*=invv;
 
-        // 异面直线最近点对取中点
-        const float w0x = Q1[0]-Q2[0], w0y = Q1[1]-Q2[1], w0z = Q1[2]-Q2[2];
-        const float A = u[0]*u[0]+u[1]*u[1]+u[2]*u[2];
-        const float B = u[0]*v[0]+u[1]*v[1]+u[2]*v[2];
-        const float C = v[0]*v[0]+v[1]*v[1]+v[2]*v[2];
-        const float D = u[0]*w0x+u[1]*w0y+u[2]*w0z;
-        const float E = v[0]*w0x+v[1]*w0y+v[2]*w0z;
-        const float denom = A*C - B*B;
-        if(std::fabs(denom) < 1e-12f)
-            return false;   // 光线近平行（基线过短），与原 w==0 拒绝语义一致
-        const float s = (B*E - C*D)/denom;
-        const float t = (A*E - B*D)/denom;
+        const float invDet = 1.0f / det;
+        const float c11 = m00*m22 - m02*m02;
+        const float c12 = m01*m02 - m00*m12;
+        const float c22 = m00*m11 - m01*m01;
 
-        const float X1x=Q1[0]+s*u[0], X1y=Q1[1]+s*u[1], X1z=Q1[2]+s*u[2];
-        const float X2x=Q2[0]+t*v[0], X2y=Q2[1]+t*v[1], X2z=Q2[2]+t*v[2];
+        const float X = (c00*b0 + c01*b1 + c02*b2) * invDet;
+        const float Y = (c01*b0 + c11*b1 + c12*b2) * invDet;
+        const float Z = (c02*b0 + c12*b1 + c22*b2) * invDet;
 
-        x3D = (cv::Mat_<float>(3,1) << 0.5f*(X1x+X2x), 0.5f*(X1y+X2y), 0.5f*(X1z+X2z));
+        x3D = cv::Mat(3, 1, CV_32F);
+        float* pData = x3D.ptr<float>();
+        pData[0] = X;
+        pData[1] = Y;
+        pData[2] = Z;
         return true;
     }
 

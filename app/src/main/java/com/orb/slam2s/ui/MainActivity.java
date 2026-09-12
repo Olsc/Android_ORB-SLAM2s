@@ -53,8 +53,8 @@ import androidx.core.view.WindowInsetsControllerCompat;
 import com.orb.slam2s.R;
 import com.orb.slam2s.camera.CameraPreviewView;
 import com.orb.slam2s.constant.GlobalConstant;
-import com.orb.slam2s.graphics.AspectSurfaceView;
-import com.orb.slam2s.graphics.FilamentModelRenderer;
+import com.orb.slam2s.graphics.AspectGLSurfaceView;
+import com.orb.slam2s.graphics.GlbModelRenderer;
 import com.orb.slam2s.graphics.ThreeDofCubeRenderer;
 import com.orb.slam2s.ipc.SlamIPCClient;
 import com.orb.slam2s.sensors.OrientationSensor;
@@ -78,7 +78,7 @@ public class MainActivity extends AppCompatActivity implements CameraPreviewView
     private SlamIPCClient mSlamIPCClient;
     private MapManager mMapManager;
     private TouchGestureHelper mTouchHelper;
-    private FilamentModelRenderer mModelRenderer;
+    private GlbModelRenderer mModelRenderer;
 
     private FpsCalculator mFpsCalculator;
     private TextView mFpsTextView;
@@ -117,10 +117,22 @@ public class MainActivity extends AppCompatActivity implements CameraPreviewView
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                Log.d(TAG, "handleOnBackPressed: 退出程序");
-                finish();
+                showExitConfirmDialog();
             }
         });
+    }
+
+    private void showExitConfirmDialog() {
+        if (isFinishing() || isDestroyed()) return;
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.dialog_exit_title)
+                .setMessage(R.string.dialog_exit_message)
+                .setPositiveButton(R.string.action_exit, (dialog, which) -> {
+                    Log.d(TAG, "用户确认退出应用");
+                    finish();
+                })
+                .setNegativeButton(R.string.button_cancel, null)
+                .show();
     }
 
     private void computeScreenResolution() {
@@ -466,12 +478,12 @@ public class MainActivity extends AppCompatActivity implements CameraPreviewView
     }
 
     private void initFilamentModel() {
-        Log.d(TAG, "initFilamentModel: 初始化 Filament GLB 渲染器");
+        Log.d(TAG, "initFilamentModel: 初始化原生 C++ GLB 渲染器");
 
-        final AspectSurfaceView glRootView = findViewById(R.id.ar_object_view_gles2_obj);
+        final AspectGLSurfaceView glRootView = findViewById(R.id.ar_object_view_gles2_obj);
         glRootView.setAspectRatio(GlobalConstant.RESOLUTION_WIDTH, GlobalConstant.RESOLUTION_HEIGHT);
 
-        mModelRenderer = FilamentModelRenderer.newInstance()
+        mModelRenderer = GlbModelRenderer.newInstance()
                 .setArObjectView(glRootView)
                 .setSlamIPCClient(mSlamIPCClient)
                 .setContext(this)
@@ -504,6 +516,10 @@ public class MainActivity extends AppCompatActivity implements CameraPreviewView
             }
         }
 
+        if (mModelRenderer != null) {
+            mModelRenderer.onPause();
+        }
+
         if (mSlamIPCClient != null) {
             mSlamIPCClient.unbindService();
         }
@@ -513,6 +529,10 @@ public class MainActivity extends AppCompatActivity implements CameraPreviewView
     protected void onResume() {
         Log.d(TAG, "onResume: 准备启动");
         super.onResume();
+
+        if (mModelRenderer != null) {
+            mModelRenderer.onResume();
+        }
 
         if (mSlamIPCClient != null) {
             mSlamIPCClient.bindService();

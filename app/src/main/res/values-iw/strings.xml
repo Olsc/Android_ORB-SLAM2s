@@ -73,4 +73,8 @@
     <string name="hint_flashlight_unavailable">הפנס אינו זמין במכשיר זה</string>
     <string name="hint_no_camera">לא זוהתה מצלמה (מצב מסך שחור)</string>
 
+    <string name="dialog_exit_title">יציאה מהאפליקציה</string>
+    <string name="dialog_exit_message">האם אתה בטוח שברצונך לצאת מהאפליקציה?</string>
+    <string name="action_exit">יציאה</string>
+
 </resources>

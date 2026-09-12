@@ -71,4 +71,8 @@
     <string name="hint_flashlight_unavailable">この端末懐中電灯使えびらん</string>
     <string name="hint_no_camera">カメラ見つからびらん（暗黒画面モード）</string>
 
+    <string name="dialog_exit_title">アプリば終了</string>
+    <string name="dialog_exit_message">アプリば終了してもよろしか？</string>
+    <string name="action_exit">終了</string>
+
 </resources>

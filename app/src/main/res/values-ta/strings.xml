@@ -72,4 +72,8 @@
     <string name="hint_flashlight_unavailable">இந்தச் சாதனத்தில் ஃபிளாஷ்லைட் கிடைக்கவில்லை</string>
     <string name="hint_no_camera">கேமரா எதுவும் கண்டறியப்படவில்லை (கருப்புத் திரை பயன்முறை)</string>
 
+    <string name="dialog_exit_title">பயன்பாட்டிலிருந்து வெளியேறு</string>
+    <string name="dialog_exit_message">பயன்பாட்டிலிருந்து வெளியேற விரும்புகிறீர்களா?</string>
+    <string name="action_exit">வெளியேறு</string>
+
 </resources>

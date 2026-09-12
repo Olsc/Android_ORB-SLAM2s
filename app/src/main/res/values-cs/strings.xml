@@ -74,4 +74,8 @@
     <string name="hint_flashlight_unavailable">Svítilna není na tomto zařízení k dispozici</string>
     <string name="hint_no_camera">Nebyla detekována žádná kamera (režim černé obrazovky)</string>
 
+    <string name="dialog_exit_title">Ukončit aplikaci</string>
+    <string name="dialog_exit_message">Opravdu chcete aplikaci ukončit?</string>
+    <string name="action_exit">Ukončit</string>
+
 </resources>

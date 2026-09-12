@@ -159,7 +159,18 @@ const int REFKF_MIN_OBSERVATIONS = 3;
 // 参考KF跟踪匹配比率（正常/新地图/单目）
 const float TRACKING_KF_REF_RATIO = 0.75f;
 const float TRACKING_KF_NEWMAP_RATIO = 0.4f;
-const float TRACKING_KF_MONO_RATIO = 0.9f;
+const float TRACKING_KF_MONO_RATIO = 0.80f;
+
+// 单目模式下关键帧插入最小间隔帧数（避免相邻帧密集无基线插入）
+const int TRACKING_MIN_FRAMES_MONO = 3;
+// 单目模式关键帧位姿相对运动平移门槛（相对中位深度的比例，防止零位移密集插帧）
+const float TRACKING_KF_MIN_TRANS_RATIO = 0.015f;
+// 单目模式关键帧相对旋转角门槛（弧度，约 2.5 度）
+const float TRACKING_KF_MIN_ROT_RAD = 0.0436f;
+// 单目场景中位深度保护底限（米）
+const float TRACKING_MIN_SCENE_DEPTH = 0.1f;
+// 单目模式下局部建图允许的最大堆积关键帧数（超过则不强行插入）
+const int TRACKING_QUEUE_LIMIT_MONO = 2;
 
 // SearchLocalPoints 投影搜索半径（像素）。建议快速运动时增大
 const int TRACKING_LOCAL_SEARCH_TH = 4;
@@ -331,7 +342,7 @@ const int RELOC_POST_SEARCH_TH = 8;
 const int RESET_COOLDOWN_FRAMES = 30;
 
 // 连续丢失超过此帧数创建新子地图
-const int TRACKING_LOST_FRAMES_FOR_NEW_MAP = 30;
+const int TRACKING_LOST_FRAMES_FOR_NEW_MAP = 60;
 
 // 新建子地图后的冷却帧数（30帧≈1秒@30fps）
 const int TRACKING_NEW_MAP_COOLDOWN_FRAMES = 30;
@@ -349,9 +360,9 @@ const float LOCAL_MAPPING_TRIANGULATION_BASELINE_RATIO = 0.01f;
 const float LOCAL_MAPPING_TRIANGULATION_PARALLAX_TH = 0.9998f;
 const float LOCAL_MAPPING_TRIANGULATION_RATIO_FACTOR = 1.5f;
 
-// 一级/二级搜索的关键帧上限
-const int LOCAL_MAPPING_NEIGHBOR_KFS = 20;
-const int LOCAL_MAPPING_SECOND_NEIGHBOR_KFS = 5;
+// 一级/二级搜索的关键帧上限（标准单目移动端配置，降低融合开销）
+const int LOCAL_MAPPING_NEIGHBOR_KFS = 10;
+const int LOCAL_MAPPING_SECOND_NEIGHBOR_KFS = 3;
 
 // 新关键帧的修剪保护帧数和输入队列最大积压数
 const int LOCAL_MAPPING_CULL_PROTECT_FRAMES = 5;
@@ -387,6 +398,7 @@ const float PROJECTION_ZFAR = 1000.0f;
 
 // 丢失自动重置超时（秒）和地图切换确认帧数
 const double LOST_RESET_TIMEOUT = 3.0;
+const int RESET_COMPLETE_TIMEOUT_MS = 500; // 线程重置完成超时等待时间（毫秒），防死锁兜底
 const int MAP_SWITCH_THRESHOLD = 3;
 
 // AR 模式最少新增点数和物体默认缩放
@@ -525,6 +537,8 @@ const int KEYFRAME_QUEUE_ACCEPT_LIMIT = 3;
 
 // 重定位后短期窗口帧数
 const int RELOC_POST_FRAMES_WINDOW = 10;
+const int RELOC_POST_KF_COOLDOWN = 5;       // 重定位后关键帧插入冷却窗口（帧数）
+const int RELOC_STRICT_CHECK_WINDOW = 5;    // 重定位后严格内点校验窗口（帧数）
 
 // 加载点近邻匹配数量上限（对齐态 / 普通态）
 const int LOADED_MATCH_MAX_ALIGNED = 500;
@@ -590,6 +604,13 @@ const float MATCH_VIEW_COS_TH = 0.5f;
 
 // 三角化搜索极线点距离平方阈值
 const int TRIANGULATION_EPIPOLE_DIST_SQ = 100;
+
+// 三角化对极几何搜索参数
+const float TRIANGULATION_DEPTH_MIN_RATIO = 0.4f; // 基于中值深度的最小搜索深度比例
+const float TRIANGULATION_DEPTH_MAX_RATIO = 3.0f; // 基于中值深度的最大搜索深度比例
+const float TRIANGULATION_DEPTH_MIN_ABS = 0.15f;  // 绝对最小深度（米）
+const float TRIANGULATION_DEPTH_MAX_ABS = 15.0f;  // 绝对最大深度（米）
+const float TRIANGULATION_BBOX_PADDING = 8.0f;    // 极线投影包围盒外扩像素
 
 // 旋转直方图主峰优势倍数与桶预分配容量
 const int ROT_HIST_DOMINANT_FACTOR = 10;
@@ -659,6 +680,13 @@ const int OPTIMIZER_DEFAULT_BA_ITERS = 5;
 // 局部 BA 窗口最大共视 KF 数 / 迭代次数
 const int LOCAL_BA_MAX_KFS = 10;
 const int LOCAL_BA_ITERATIONS = 5;
+// 局部 BA 窗口中固定关键帧最大数量上限（防止极端共视下 g2o 规模爆炸导致耗时达到数百毫秒）
+const int LOCAL_BA_MAX_FIXED_KFS = 25;
+// 局部 BA 相对残差变化早停阈值
+const double LOCAL_BA_EARLY_STOP_REL_CHANGE = 1e-3;
+
+// LocalMapping 强制修剪与限制检查的关键帧间隔（即使队列仍有关键帧，每处理此数量关键帧也强制执行修剪）
+const int LOCAL_MAPPING_FORCE_CULL_INTERVAL = 4;
 
 // Essential Graph BA 迭代次数
 const int ESSENTIAL_GRAPH_BA_ITERS = 20;
@@ -800,6 +828,25 @@ const int UI_CLOUD_POINT_RADIUS = 1;
 
 // 深度过近剔除阈值（米，相机后方/贴脸剔除）
 const float PROJECT_MIN_DEPTH = 0.01f;
+
+// 渲染层对齐滞回状态保持帧数（约0.1s@60fps）
+const int ALIGN_HOLD_FRAMES = 6;
+
+// 共享内存 3D 点云渲染参数
+const float POINTCLOUD_MIN_RENDER_DEPTH = 0.05f; // 过滤相机后方与极近异常点（米）
+const float POINTCLOUD_POINT_SIZE_TRACKED = 8.0f; // 实时跟踪点渲染尺寸
+const float POINTCLOUD_POINT_SIZE_LOADED = 4.0f;  // 已加载参考地图点渲染尺寸
+const int POINTCLOUD_MAX_DRAW_LOADED = 1500;      // 补充渲染已加载参考地图点上限
+
+// 实时跟踪青色点 RGB 归一化分量
+const float POINTCLOUD_COLOR_CYAN_R = 31.0f / 255.0f;
+const float POINTCLOUD_COLOR_CYAN_G = 188.0f / 255.0f;
+const float POINTCLOUD_COLOR_CYAN_B = 210.0f / 255.0f;
+
+// 已加载绿色点 RGB 归一化分量
+const float POINTCLOUD_COLOR_GREEN_R = 0.0f;
+const float POINTCLOUD_COLOR_GREEN_G = 1.0f;
+const float POINTCLOUD_COLOR_GREEN_B = 0.0f;
 
 // 平面检测（UIUtils）
 

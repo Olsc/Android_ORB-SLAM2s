@@ -141,10 +141,19 @@ void LocalMapping::Run()
 
             mbAbortBA.store(false);
 
-            if(!CheckNewKeyFrames() && !stopRequested())
+            static int sProcessedKFCount = 0;
+            sProcessedKFCount++;
+            const bool bForceCull = (sProcessedKFCount >= LOCAL_MAPPING_FORCE_CULL_INTERVAL);
+            if(bForceCull) {
+                sProcessedKFCount = 0;
+            }
+
+            const bool bQueueEmpty = !CheckNewKeyFrames();
+
+            if((bQueueEmpty || bForceCull) && !stopRequested())
             {
-                // 局部 BA
-                if(mpMap->KeyFramesInMap()>=LOCAL_BA_MIN_KEYFRAMES)
+                // 仅在队列为空且非强制跳过时执行局部 BA；队列有堆积时优先消化新关键帧
+                if(bQueueEmpty && mpMap->KeyFramesInMap()>=LOCAL_BA_MIN_KEYFRAMES)
                 {
                     VT_PROFILE_SCOPE("LocalMapping::LocalBundleAdjustment");
                     Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame, reinterpret_cast<bool*>(&mbAbortBA), mpMap);
@@ -152,13 +161,13 @@ void LocalMapping::Run()
 
                 {
                     VT_PROFILE_SCOPE("LocalMapping::KeyFrameCulling");
-                    // 检查冗余的局部关键帧
+                    // 检查冗余的局部关键帧（防饿死保障）
                     KeyFrameCulling();
                 }
 
                 {
                     VT_PROFILE_SCOPE("LocalMapping::CheckLimits");
-                    // 检查地图限制（统一管理）
+                    // 检查地图限制（防饿死保障，统一管理）
                     CheckLimits();
                 }
             }
@@ -342,7 +351,7 @@ void LocalMapping::CreateNewMapPoints()
     // 使用极线约束搜索匹配并三角化
     for(size_t i=0; i<vpNeighKFs.size(); i++)
     {
-        if(i>0 && CheckNewKeyFrames())
+        if((i>0 && CheckNewKeyFrames()) || mbResetRequested.load())
             return;
 
         KeyFrame* pKF2 = vpNeighKFs[i];
@@ -563,6 +572,7 @@ void LocalMapping::SearchInNeighbors()
     vector<MapPoint*> vpMapPointMatches = mpCurrentKeyFrame->GetMapPointMatches();
     for(vector<KeyFrame*>::iterator vit=vpTargetKFs.begin(), vend=vpTargetKFs.end(); vit!=vend; vit++)
     {
+        if(mbResetRequested.load()) return;
         KeyFrame* pKFi = *vit;
 
         matcher.Fuse(pKFi,vpMapPointMatches);
@@ -775,7 +785,7 @@ void LocalMapping::KeyFrameCulling()
             break;
 
         KeyFrame* pKF = *vit;
-        if(!pKF || pKF->isBad() || pKF->mnId==0)
+        if(!pKF || pKF->isBad() || pKF->IsOrigin())
             continue;
         const vector<MapPoint*> vpMapPoints = pKF->GetMapPointMatches();
 
@@ -858,6 +868,10 @@ void LocalMapping::RequestReset()
         unique_lock<mutex> lock(mMutexReset);
         mbResetRequested.store(true);
         mbAbortBA.store(true); // 立即中断正在进行的BA，确保Reset能被快速处理
+        {
+            unique_lock<mutex> completeLock(mMutexResetComplete);
+            mbResetComplete = false;
+        }
     }
     NotifyEvent();
 }
@@ -874,14 +888,14 @@ void LocalMapping::ResetIfRequested()
             unique_lock<mutex> completeLock(mMutexResetComplete);
             mbResetComplete = true;
         }
-        mCvResetComplete.notify_one();
+        mCvResetComplete.notify_all();
     }
 }
 
 void LocalMapping::WaitForResetComplete()
 {
     unique_lock<mutex> lock(mMutexResetComplete);
-    mCvResetComplete.wait(lock, [this]{ return mbResetComplete; });
+    mCvResetComplete.wait_for(lock, std::chrono::milliseconds(ORB_SLAM2::RESET_COMPLETE_TIMEOUT_MS), [this]{ return mbResetComplete; });
     mbResetComplete = false;
 }
 
@@ -942,7 +956,7 @@ void LocalMapping::CheckLimits()
             KeyFrame* pKF = vpKFs[i];
 
             // 保护规则：
-            if(pKF->mnId == 0) continue; // 不要删除第一个关键帧（原点）
+            if(pKF->IsOrigin()) continue; // 不要删除原点关键帧
             if(spLocalKFs.count(pKF)) continue; // 不要删除局部关键帧（跟踪需要）
 
             // 标记为 bad（这将触发从地图中删除并清理观测）

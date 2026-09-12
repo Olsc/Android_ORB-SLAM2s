@@ -76,4 +76,8 @@
     <string name="hint_flashlight_unavailable">المصباح اليدوي غير متوفر على هذا الجهاز</string>
     <string name="hint_no_camera">لم يتم اكتشاف كاميرا (وضع الشاشة السوداء)</string>
 
+    <string name="dialog_exit_title">الخروج من التطبيق</string>
+    <string name="dialog_exit_message">هل أنت متأكد من أنك تريد الخروج من التطبيق؟</string>
+    <string name="action_exit">خروج</string>
+
 </resources>

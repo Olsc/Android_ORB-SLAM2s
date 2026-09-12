@@ -71,4 +71,8 @@
     <string name="hint_flashlight_unavailable">현재 기기에서 손전등을 지원하지 않습니다</string>
     <string name="hint_no_camera">사용 가능한 카메라가 감지되지 않았습니다 (검은 화면 모드)</string>
 
+    <string name="dialog_exit_title">앱 종료</string>
+    <string name="dialog_exit_message">앱을 종료하시겠습니까?</string>
+    <string name="action_exit">종료</string>
+
 </resources>

@@ -72,4 +72,8 @@
     <string name="hint_flashlight_unavailable">El feneri bu cihazda kullanılamıyor</string>
     <string name="hint_no_camera">Kamera algılanmadı (Siyah ekran modu)</string>
 
+    <string name="dialog_exit_title">Uygulamadan Çık</string>
+    <string name="dialog_exit_message">Uygulamadan çıkmak istediğinizden emin misiniz?</string>
+    <string name="action_exit">Çıkış</string>
+
 </resources>

@@ -72,4 +72,8 @@
     <string name="hint_flashlight_unavailable">या डिव्हाइसवर फ्लॅशलाइट उपलब्ध नाही</string>
     <string name="hint_no_camera">कोणताही कॅमेरा आढळला नाही (काळा स्क्रीन मोड)</string>
 
+    <string name="dialog_exit_title">अॅपमधून बाहेर पडा</string>
+    <string name="dialog_exit_message">तुम्हाला नक्की अॅपमधून बाहेर पडायचे आहे का?</string>
+    <string name="action_exit">बाहेर पडा</string>
+
 </resources>

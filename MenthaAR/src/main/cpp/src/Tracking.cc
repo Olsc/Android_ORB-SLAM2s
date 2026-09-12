@@ -194,18 +194,32 @@ void ORB_SLAM2::Tracking::BindLoadedMapPointsUsingSnapshots()
     std::shared_ptr<const std::vector<MapPoint*>> refMPs;
     cv::Mat refDesc;
     bool haveAlign = false;
+    cv::Mat T_map_slam;
+    std::vector<int> gridCandidates;
+    bool useGrid = false;
     {
         std::unique_lock<std::mutex> lk(mMutexReloc);
         // 只有在成功对齐后才绑定，防止Reset后在没有对齐的情况下错误匹配
         // 但如果地图已加载但没有对齐，应该允许系统继续扫描新点，而不是强制绑定旧地图点
         if(!mbHaveMapAlign) {
-            // 没有对齐时，不进行绑定，允许系统正常扫描新点
             return;
         }
         refSnaps = mpRefSnapshots;
         refMPs  = mpRefIdxToMP;
         refDesc = mRefDesc;          // cv::Mat 浅拷贝（引用计数）
         haveAlign = mbHaveMapAlign;
+        if(!mT_map_from_slam.empty())
+            T_map_slam = mT_map_from_slam.clone();
+
+        // 在锁内一并完成网格候选点提取，消除二次加锁与潜在竞争
+        if(mRefGrid.nCols > 0 && !mCurrentFrame.mTcw.empty()) {
+            cv::Mat TcwEffective = (!T_map_slam.empty()) ? (T_map_slam * mCurrentFrame.mTcw) : mCurrentFrame.mTcw;
+            cv::Mat RwcM = TcwEffective.rowRange(0,3).colRange(0,3).t();
+            cv::Mat twcM = -RwcM * TcwEffective.rowRange(0,3).col(3);
+            cv::Point3f Ow(twcM.at<float>(0), twcM.at<float>(1), twcM.at<float>(2));
+            mRefGrid.GetCandidatesInBBox(Ow, TRACKING_GRID_SEARCH_RADIUS, gridCandidates);
+            useGrid = true;
+        }
     }
     if (refDesc.empty())
         return;
@@ -227,9 +241,10 @@ void ORB_SLAM2::Tracking::BindLoadedMapPointsUsingSnapshots()
     const float &cx = mCurrentFrame.cx;
     const float &cy = mCurrentFrame.cy;
 
-    // 提取R,t为标量数组以便快速投影
-    cv::Mat RcwM = mCurrentFrame.mTcw.rowRange(0,3).colRange(0,3);
-    cv::Mat tcwM = mCurrentFrame.mTcw.rowRange(0,3).col(3);
+    // 计算地图坐标系下的有效相机位姿与旋转平移标量
+    cv::Mat TcwEffective = (!T_map_slam.empty()) ? (T_map_slam * mCurrentFrame.mTcw) : mCurrentFrame.mTcw;
+    cv::Mat RcwM = TcwEffective.rowRange(0,3).colRange(0,3);
+    cv::Mat tcwM = TcwEffective.rowRange(0,3).col(3);
     float Rcw[9] = {
         RcwM.at<float>(0,0), RcwM.at<float>(0,1), RcwM.at<float>(0,2),
         RcwM.at<float>(1,0), RcwM.at<float>(1,1), RcwM.at<float>(1,2),
@@ -246,22 +261,7 @@ void ORB_SLAM2::Tracking::BindLoadedMapPointsUsingSnapshots()
     struct BindCandidate { int refIdx; int frameIdx; float projErr; float depth; };
     std::vector<BindCandidate> candidates; candidates.reserve(nMaxBind * 2);
 
-    // const float radius = haveAlign ? 12.0f : 8.0f;
     const float radius = haveAlign ? TRACKING_SEARCH_RADIUS_ALIGNED : TRACKING_SEARCH_RADIUS_UNALIGNED;
-
-    // 使用网格搜索减少遍历数量；持锁访问 mRefGrid，
-    // 避免与后台线程 BuildLoadedRefCache 的发布（move 赋值）竞争导致 cells 引用悬空
-    std::vector<int> gridCandidates;
-    bool useGrid = false;
-    {
-        std::unique_lock<std::mutex> lk(mMutexReloc);
-        if(mRefGrid.nCols > 0) {
-             cv::Point3f Ow;
-             mCurrentFrame.GetCameraCenter(Ow);   // 栈版
-             mRefGrid.GetCandidatesInBBox(Ow, TRACKING_GRID_SEARCH_RADIUS, gridCandidates); // 40m radius
-             useGrid = true;
-        }
-    }
 
     const size_t totalPoints = useGrid ? gridCandidates.size() : refSnaps->size();
     // 进一步限制处理数量，防止卡顿
@@ -650,7 +650,7 @@ Tracking::Tracking(System *pSys, FrameDrawer *pFrameDrawer,  Map *pMap, KeyFrame
         fps=SYSTEM_FPS;
 
     // 插入关键帧和检查重定位的最大/最小帧数
-    mMinFrames = 0;
+    mMinFrames = (mSensor==System::MONOCULAR) ? TRACKING_MIN_FRAMES_MONO : 0;
     mMaxFrames = fps;
 
     int nRGB = CAMERA_RGB;
@@ -1634,6 +1634,7 @@ void Tracking::CreateInitialMapMonocular()
 
     //mpMapDrawer->SetCurrentCameraPose(pKFcur->GetPose());
 
+    pKFini->SetOrigin(true);
     mpMap->mvpKeyFrameOrigins.push_back(pKFini);
 
     mState=OK;
@@ -1929,10 +1930,24 @@ bool Tracking::TrackLocalMap()
                         std::shared_ptr<const std::vector<RefMPSnapshot>> refSnapsStrong = mpRefSnapshots;
                         std::shared_ptr<const std::vector<MapPoint*>> refMPsStrong = mpRefIdxToMP;
                         int activeMapId = a.mapId;
+
+                        // 使用空间网格检索相机周边的候选地图点，避免遍历数万个点造成主线程数十毫秒级卡顿
+                        std::vector<int> alignGridCandidates;
+                        bool useAlignGrid = false;
+                        if(mRefGrid.nCols > 0) {
+                            cv::Mat RwcM = Tcw_map.rowRange(0,3).colRange(0,3).t();
+                            cv::Mat twcM = -RwcM * Tcw_map.rowRange(0,3).col(3);
+                            cv::Point3f Ow_map(twcM.at<float>(0), twcM.at<float>(1), twcM.at<float>(2));
+                            mRefGrid.GetCandidatesInBBox(Ow_map, TRACKING_GRID_SEARCH_RADIUS, alignGridCandidates);
+                            useAlignGrid = true;
+                        }
                         lk.unlock();
+
                         int strongBinds = 0;
-                        const size_t nSnaps = refSnapsStrong ? refSnapsStrong->size() : 0;
-                        for(size_t i=0;i<nSnaps;++i){
+                        const size_t nCandidates = useAlignGrid ? alignGridCandidates.size() : (refSnapsStrong ? refSnapsStrong->size() : 0);
+                        for(size_t c = 0; c < nCandidates; ++c){
+                            size_t i = useAlignGrid ? (size_t)alignGridCandidates[c] : c;
+                            if(!refSnapsStrong || i >= refSnapsStrong->size()) continue;
                             const RefMPSnapshot &s = (*refSnapsStrong)[i];
                             if(s.mapId != activeMapId) continue;
 
@@ -2090,7 +2105,7 @@ bool Tracking::TrackLocalMap()
 
     // 若已有地图对齐，进一步放宽阈值，确保持续跟踪
     if(mbHaveMapAlign){ thStrict = ALIGNED_STRICT_INLIERS_OVERRIDE; }
-    if(mCurrentFrame.mnId<mnLastRelocFrameId+mMaxFrames && mnMatchesInliers<thStrict)
+    if(mCurrentFrame.mnId < mnLastRelocFrameId + RELOC_STRICT_CHECK_WINDOW && mnMatchesInliers < thStrict)
         return false;
 
     if(mbHaveMapAlign){
@@ -2119,10 +2134,6 @@ bool Tracking::NeedNewKeyFrame()
 
     const int nKFs = mpMap->KeyFramesInMap();
 
-    // 如果从上次重定位以来没有经过足够多的帧，则不插入关键帧
-    if(mCurrentFrame.mnId<mnLastRelocFrameId+mMaxFrames && nKFs>mMaxFrames)
-        return false;
-
     // 参考关键帧中跟踪的地图点
     int nMinObs = REFKF_MIN_OBSERVATIONS;
     if(nKFs<=NEW_MAP_KF_COUNT)
@@ -2144,20 +2155,60 @@ bool Tracking::NeedNewKeyFrame()
     if(mSensor==System::MONOCULAR)
         thRefRatio = TRACKING_KF_MONO_RATIO;
 
-    // 条件1a：从上次关键帧插入以来已过去超过"MaxFrames"
-    const bool c1a = mCurrentFrame.mnId>=mnLastKeyFrameId+mMaxFrames;
-    // 条件1b：已过去超过"MinFrames"且局部建图空闲
-    const bool c1b = (mCurrentFrame.mnId>=mnLastKeyFrameId+mMinFrames && bLocalMappingIdle);
-    // 初期建图特例：如果地图中只有很少关键帧(<=2)，强制放宽闲置要求，允许频繁插入以迅速扩大地图
-    const bool c1_init = (nKFs<=NEW_MAP_KF_COUNT && mCurrentFrame.mnId>=mnLastKeyFrameId+mMinFrames);
-    // 条件1c：跟踪较弱（单目模式不适用）
-    const bool c1c = false;
-    // 条件2：与参考关键帧相比跟踪点较少。
-    // 重要：使用本地内点 mnLocalMatchesInliers 进行评估，避免已加载地图点充斥视野时抑制关键帧插入导致建图停止
-    const int inliersForDecision = (mnLoadedMapInliers > 0 && mnLocalMatchesInliers > 0) ? mnLocalMatchesInliers : mnMatchesInliers;
-    const bool c2 = ((inliersForDecision < nRefMatches*thRefRatio || bNeedToInsertClose) && mnMatchesInliers>=TRACKING_SUCCESS_LOADED);
+    // 单目模式运动位移与几何视差检测：防止静止或无微位移时密集产生零基线关键帧导致三角化失败
+    bool bEnoughMotion = true;
+    if(mSensor == System::MONOCULAR && nKFs > NEW_MAP_KF_COUNT && !mCurrentFrame.mTcw.empty() && mpReferenceKF)
+    {
+        cv::Point3f OwCurr;
+        mCurrentFrame.GetCameraCenter(OwCurr);
+        cv::Point3f OwRef;
+        mpReferenceKF->GetCameraCenter(OwRef);
+        float dx = OwCurr.x - OwRef.x;
+        float dy = OwCurr.y - OwRef.y;
+        float dz = OwCurr.z - OwRef.z;
+        float dist = std::sqrt(dx*dx + dy*dy + dz*dz);
 
-    if ((c1a || c1b || c1c || c1_init) && c2)
+        float medianDepth = mpReferenceKF->ComputeSceneMedianDepth(TRIANGULATION_DEPTH_PERCENTILE);
+        if(medianDepth <= TRACKING_MIN_SCENE_DEPTH) medianDepth = 1.0f;
+        float transRatio = dist / medianDepth;
+
+        float rotRad = 0.0f;
+        if(mCurrentFrame.mTcw.rows >= 3 && mCurrentFrame.mTcw.cols >= 3)
+        {
+            cv::Mat Rcw = mCurrentFrame.mTcw.rowRange(0,3).colRange(0,3);
+            float RcwRef[9];
+            mpReferenceKF->GetRotation(RcwRef);
+            float r00 = Rcw.at<float>(0,0)*RcwRef[0] + Rcw.at<float>(0,1)*RcwRef[1] + Rcw.at<float>(0,2)*RcwRef[2];
+            float r11 = Rcw.at<float>(1,0)*RcwRef[3] + Rcw.at<float>(1,1)*RcwRef[4] + Rcw.at<float>(1,2)*RcwRef[5];
+            float r22 = Rcw.at<float>(2,0)*RcwRef[6] + Rcw.at<float>(2,1)*RcwRef[7] + Rcw.at<float>(2,2)*RcwRef[8];
+            float tr = r00 + r11 + r22;
+            float cosTheta = std::max(-1.0f, std::min(1.0f, (tr - 1.0f) * 0.5f));
+            rotRad = std::acos(cosTheta);
+        }
+
+        bEnoughMotion = (transRatio >= TRACKING_KF_MIN_TRANS_RATIO || rotRad >= TRACKING_KF_MIN_ROT_RAD);
+    }
+
+    // 如果从上次重定位以来在冷却期且未产生有效运动视差，暂缓插帧；一旦具备充沛运动视差则允许立即插帧建图，防止视野移出旧关键帧导致断流丢失
+    if(mCurrentFrame.mnId < mnLastRelocFrameId + RELOC_POST_KF_COOLDOWN && !bEnoughMotion && nKFs > mMaxFrames)
+        return false;
+
+    // 帧间隔判定
+    const bool bFrameGapOK = (mCurrentFrame.mnId >= mnLastKeyFrameId + mMinFrames);
+    // 条件1a：从上次关键帧插入以来已过去超过"MaxFrames"
+    const bool c1a = (mCurrentFrame.mnId >= mnLastKeyFrameId + mMaxFrames);
+    // 初期建图特例：如果地图中只有很少关键帧(<=2)，强制放宽闲置要求，允许频繁插入以迅速扩大地图
+    const bool c1_init = (nKFs <= NEW_MAP_KF_COUNT && bFrameGapOK);
+    // 跟踪有效内点数判定
+    const int inliersForDecision = (mnLoadedMapInliers > 0 && mnLocalMatchesInliers > 0) ? mnLocalMatchesInliers : mnMatchesInliers;
+    // 条件2: 跟踪特征点衰减维护（需要插入新关键帧以维持跟踪连续性）
+    const bool c2_decay = ((inliersForDecision < nRefMatches*thRefRatio || bNeedToInsertClose) && mnMatchesInliers >= TRACKING_SUCCESS_LOADED);
+    // 条件3: 运动几何视差触发（独立充要触发源，产生充沛物理基线时立即插帧进行立体三角化建图）
+    const bool c_motion = (bEnoughMotion && bFrameGapOK && mnMatchesInliers >= TRACKING_SUCCESS_LOADED);
+
+    const bool bNeedKeyFrame = c1_init || c1a || c_motion || (bFrameGapOK && c2_decay);
+
+    if (bNeedKeyFrame)
     {
         // 如果建图接受关键帧，则插入关键帧。
         // 否则发送信号中断BA
@@ -2176,7 +2227,13 @@ bool Tracking::NeedNewKeyFrame()
                     return false;
             }
             else
-                return false;
+            {
+                // 单目模式：当建图队列堆积较小(<TRACKING_QUEUE_LIMIT_MONO)且具备有效运动视差或点数衰减时，允许插入并中断正在进行的 BA
+                if (mpLocalMapper->KeyframesInQueue() < TRACKING_QUEUE_LIMIT_MONO && (bEnoughMotion || c2_decay))
+                    return true;
+                else
+                    return false;
+            }
         }
     }
     else
@@ -2977,9 +3034,9 @@ void Tracking::ClearTrackingState()
 {
     LOGD("跟踪::清除状态 (仅运行时)");
 
-    // 清除跟踪状态但保留加载地图点：地图非空则设LOST尝试重定位
-    // 避免设为NO_IMAGES_YET导致新建坐标系与加载地图不匹配
-    if(mpMap && mpMap->KeyFramesInMap() > 0) {
+    // 清除跟踪状态但保留加载地图点：只有真正具备已对齐的加载地图时，才设LOST尝试重定位
+    // 避免纯自建图跟踪丢失后设为LOST导致永久重定位死循环无法重新初始化
+    if(mbHaveMapAlign && mpMap && mpMap->KeyFramesInMap() > 0) {
         mState = LOST;
     } else {
         mState = NO_IMAGES_YET;

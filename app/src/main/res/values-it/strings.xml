@@ -73,4 +73,8 @@
     <string name="hint_flashlight_unavailable">Torcia non disponibile su questo dispositivo</string>
     <string name="hint_no_camera">Nessuna fotocamera rilevata (modalità schermo nero)</string>
 
+    <string name="dialog_exit_title">Esci dall\'applicazione</string>
+    <string name="dialog_exit_message">Sei sicuro di voler uscire dall\'applicazione?</string>
+    <string name="action_exit">Esci</string>
+
 </resources>

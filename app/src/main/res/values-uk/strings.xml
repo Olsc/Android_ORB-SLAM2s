@@ -74,4 +74,8 @@
     <string name="hint_flashlight_unavailable">Ліхтарик недоступний на цьому пристрої</string>
     <string name="hint_no_camera">Камеру не виявлено (режим чорного екрана)</string>
 
+    <string name="dialog_exit_title">Вихід із програми</string>
+    <string name="dialog_exit_message">Ви впевнені, що бажаєте вийти з програми?</string>
+    <string name="action_exit">Вийти</string>
+
 </resources>

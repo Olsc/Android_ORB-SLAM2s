@@ -84,7 +84,7 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 - **🎯 重定位与匹配** —— 加载现有地图时的姿态估计和特征匹配
 - **📊 置信度可视化** —— 可视化跟踪关键点以及当前帧与加载地图之间的匹配统计信息
 - **📐 平面检测** —— 基于当前姿态和点云数据的智能地板/表面检测
-- **🎨 原生 AR 渲染** —— 基于 **Google Filament**（GLB/glTF 模型）和 OpenGL ES 的 3D 渲染，支持在检测到的平面上放置和交互虚拟物体
+- **🎨 原生 AR 渲染** —— 基于 **cgltf** 与 OpenGL ES 的高性能 3D 渲染，支持极速加载 GLB/glTF 模型并在检测平面上放置与交互
 - **🌑 暗帧检测** —— 自动跳过暗色或低质量帧以防止 SLAM 线程阻塞
 - **🖱️ AR 对象管理** —— 支持 3D 物体的放置、双指缩放等交互操作
 - **🧭 3DOF 姿态跟踪** —— 利用设备内置传感器（旋转矢量传感器 / 加速度计 + 磁力计）实现三自由度方向跟踪
@@ -183,7 +183,7 @@ ORB-SLAM2 核心库以 [GPLv3 许可证](https://github.com/raulmur/ORB_SLAM2/bl
 
 本项目基于 Android IPC 进程隔离采用分层/多模块开源许可架构：
 
-- **`app/` 模块**：采用 **[Apache License 2.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/app/LICENSE)** (Apache-2.0) 授权。包含 UI 交互、相机预览、Filament 3D 渲染与传感器组件。
+- **`app/` 模块**：采用 **[Apache License 2.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/app/LICENSE)** (Apache-2.0) 授权。包含 UI 交互、相机预览、原生 cgltf/OpenGL ES 3D 渲染与传感器组件。
 - **`MenthaAR/` 引擎模块**：基于 ORB-SLAM2 衍生，采用 **[GNU General Public License v3.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/MenthaAR/LICENSE)** (GPLv3) 授权。包含 C++ SLAM 核心算法与原生底层处理。
 - **IPC 进程隔离通信**：`app` 模块与 `MenthaAR` 引擎运行在独立的 Android 系统进程中，仅通过 Binder IPC 和共享内存（Ashmem/memfd）通信，各自保持独立的许可证边界。
 
@@ -200,6 +200,7 @@ ORB-SLAM2 核心库以 [GPLv3 许可证](https://github.com/raulmur/ORB_SLAM2/bl
 - **[DBoW2](https://github.com/dorian3d/DBoW2)** —— **BSD 许可证**。用于特征向量化及基础的局部特征匹配。
 - **[g2o](https://github.com/RainerKuemmerle/g2o)** —— **BSD 许可证**（其核心部分）。用于图优化及非线性误差最小化。
 - **[Eigen3](http://eigen.tuxfamily.org/)** —— **MPL2 (Mozilla Public License v2.0) 许可证**。用于矩阵及线性代数运算。
+- **[cgltf](https://github.com/jkuhlmann/cgltf)** —— **MIT 许可证**。单头文件 C 语言 glTF 2.0 / GLB 解析器，用于 app 模块中原生高效加载 3D 模型。
 
 各第三方库的具体使用条款请参考其各自的官方仓库。
 

@@ -1,3 +1,6 @@
 [submodule "VtonaxAR/src/main/cpp/Thirdparty/opencv"]
 	path = MenthaAR/src/main/cpp/Thirdparty/opencv
 	url = https://github.com/opencv/opencv.git
+[submodule "app/src/main/cpp/Thirdparty/cgltf"]
+	path = app/src/main/cpp/Thirdparty/cgltf
+	url = https://github.com/jkuhlmann/cgltf.git

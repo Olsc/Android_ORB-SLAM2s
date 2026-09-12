@@ -42,6 +42,7 @@
 
 #include "ORBmatcher.h"
 #include "Config.h"
+#include "Common.h"
 
 #include<mutex>
 #include<thread>
@@ -465,7 +466,7 @@ void LoopClosing::CorrectLoop()
     // 如果正在运行全局 Bundle Adjustment，则中止它（join 等待线程真正退出）
     RequestStopGBA();
 
-    // RAII 保护：确保无论任何分支或异常退出，局部建图线程必定被安全释放，零死锁、零状态泄漏
+    // RAII 保护：确保无论任何分支或异常退出
     LocalMappingStopScope stopScope(mpLocalMapper);
     if(!stopScope.isStopped())
     {
@@ -488,7 +489,7 @@ void LoopClosing::CorrectLoop()
     cv::Mat Twc(4,4,CV_32F);
     memcpy(Twc.data, TwcF, 16*sizeof(float));
 
-    // 1. 锁外计算位姿与校正 Sim3 矩阵（纯数学计算，无共享状态修改）
+    // 1. 锁外计算位姿与校正 Sim3 矩阵
     for(vector<KeyFrame*>::iterator vit=mvpCurrentConnectedKFs.begin(), vend=mvpCurrentConnectedKFs.end(); vit!=vend; vit++)
     {
         KeyFrame* pKFi = *vit;
@@ -668,9 +669,14 @@ void LoopClosing::ClearQueue()
 
 void LoopClosing::RequestReset()
 {
+    RequestStopGBA();
     {
         unique_lock<mutex> lock(mMutexReset);
         mbResetRequested.store(true);
+        {
+            unique_lock<mutex> completeLock(mMutexResetComplete);
+            mbResetComplete = false;
+        }
     }
     NotifyEvent();
 }
@@ -687,14 +693,14 @@ void LoopClosing::ResetIfRequested()
             unique_lock<mutex> completeLock(mMutexResetComplete);
             mbResetComplete = true;
         }
-        mCvResetComplete.notify_one();
+        mCvResetComplete.notify_all();
     }
 }
 
 void LoopClosing::WaitForResetComplete()
 {
     unique_lock<mutex> lock(mMutexResetComplete);
-    mCvResetComplete.wait(lock, [this]{ return mbResetComplete; });
+    mCvResetComplete.wait_for(lock, std::chrono::milliseconds(ORB_SLAM2::RESET_COMPLETE_TIMEOUT_MS), [this]{ return mbResetComplete; });
     mbResetComplete = false;
 }
 
@@ -727,117 +733,200 @@ void LoopClosing::RequestStopGBA()
 
 void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
 {
-    // cout << "开始全局 Bundle Adjustment" << endl;
-
-    int idx =  mnFullBAIdx;
-    Optimizer::GlobalBundleAdjustemnt(mpMap,GBA_ITERATIONS,&mbStopGBA,nLoopKF,false);
-
-    // 全局BA未覆盖新关键帧，需通过生成树传播校正
+    try
     {
-        unique_lock<mutex> lock(mMutexGBA);
-        if(idx!=mnFullBAIdx)
-        {
-            // 被新闭环中止的 GBA 也必须复位标志，否则 isRunningGBA() 将永远为 true。
-            // 线程对象已由中止方（CorrectLoop）清理。
-            mbFinishedGBA = true;
-            mbRunningGBA = false;
-            return;
-        }
+        // cout << "开始全局 Bundle Adjustment" << endl;
 
-        if(!mbStopGBA)
+        int idx =  mnFullBAIdx;
+        Optimizer::GlobalBundleAdjustemnt(mpMap,GBA_ITERATIONS,&mbStopGBA,nLoopKF,false);
+
+        // 全局BA未覆盖新关键帧，需通过生成树传播校正
         {
-            LocalMappingStopScope stopScope(mpLocalMapper);
-            if(idx != mnFullBAIdx || !stopScope.isStopped())
+            unique_lock<mutex> lock(mMutexGBA);
+            if(idx!=mnFullBAIdx)
             {
+                // 被新闭环中止的 GBA 也必须复位标志，否则 isRunningGBA() 将永远为 true。
+                // 线程对象已由中止方（CorrectLoop）清理。
                 mbFinishedGBA = true;
                 mbRunningGBA = false;
                 return;
             }
 
-            // 获取地图互斥锁
-            unique_lock<mutex> mapLock(mpMap->mMutexMapUpdate);
-
-            // 从地图的第一个关键帧开始校正关键帧
-            list<KeyFrame*> lpKFtoCheck(mpMap->mvpKeyFrameOrigins.begin(),mpMap->mvpKeyFrameOrigins.end());
-
-            while(!lpKFtoCheck.empty())
+            if(!mbStopGBA)
             {
-                KeyFrame* pKF = lpKFtoCheck.front();
-                const set<KeyFrame*> sChilds = pKF->GetChilds();
-                cv::Mat Twc = pKF->GetPoseInverse();
-                for(set<KeyFrame*>::const_iterator sit=sChilds.begin();sit!=sChilds.end();sit++)
+                LocalMappingStopScope stopScope(mpLocalMapper);
+                if(idx != mnFullBAIdx || !stopScope.isStopped())
                 {
-                    KeyFrame* pChild = *sit;
-                    if(!pChild || pChild->isBad())
+                    mbFinishedGBA = true;
+                    mbRunningGBA = false;
+                    return;
+                }
+
+                // 获取地图互斥锁
+                unique_lock<mutex> mapLock(mpMap->mMutexMapUpdate);
+
+                // 从地图的原点关键帧开始校正关键帧
+                list<KeyFrame*> lpKFtoCheck;
+                for(KeyFrame* pOrigin : mpMap->mvpKeyFrameOrigins)
+                {
+                    if(pOrigin && !pOrigin->isBad())
+                    {
+                        if(pOrigin->mTcwGBA.empty())
+                        {
+                            pOrigin->mTcwGBA = pOrigin->GetPose();
+                            pOrigin->mnBAGlobalForKF = nLoopKF;
+                        }
+                        lpKFtoCheck.push_back(pOrigin);
+                    }
+                }
+
+                // 若原点列表为空，从地图中选取 ID 最小的有效关键帧作为遍历根节点
+                if(lpKFtoCheck.empty())
+                {
+                    vector<KeyFrame*> vpAllKFs = mpMap->GetAllKeyFrames();
+                    KeyFrame* pMinKF = nullptr;
+                    for(KeyFrame* pK : vpAllKFs)
+                    {
+                        if(pK && !pK->isBad())
+                        {
+                            if(!pMinKF || pK->mnId < pMinKF->mnId)
+                                pMinKF = pK;
+                        }
+                    }
+                    if(pMinKF)
+                    {
+                        if(pMinKF->mTcwGBA.empty())
+                        {
+                            pMinKF->mTcwGBA = pMinKF->GetPose();
+                            pMinKF->mnBAGlobalForKF = nLoopKF;
+                        }
+                        lpKFtoCheck.push_back(pMinKF);
+                    }
+                }
+
+                while(!lpKFtoCheck.empty())
+                {
+                    KeyFrame* pKF = lpKFtoCheck.front();
+                    lpKFtoCheck.pop_front();
+                    if(!pKF || pKF->isBad())
                         continue;
-                    if(pChild->mnBAGlobalForKF!=nLoopKF)
+
+                    if(pKF->mTcwGBA.empty())
                     {
-                        cv::Mat Tchildc = pChild->GetPose()*Twc;
-                        pChild->mTcwGBA = Tchildc*pKF->mTcwGBA;
-                        pChild->mnBAGlobalForKF=nLoopKF;
-                        lpKFtoCheck.push_back(pChild);
+                        pKF->mTcwGBA = pKF->GetPose();
+                        pKF->mnBAGlobalForKF = nLoopKF;
                     }
-                }
 
-                pKF->mTcwBefGBA = pKF->GetPose();
-                pKF->SetPose(pKF->mTcwGBA);
-                lpKFtoCheck.pop_front();
-            }
-
-            // 校正地图点（锁内仅写坐标，法向/深度更新移出 mMutexMapUpdate，
-            // 避免大地图时 Tracking 的 UpdateLastFrame/初始化在全局锁上排队数秒）
-            const vector<MapPoint*> vpMPs = mpMap->GetAllMapPoints();
-            vector<MapPoint*> vpToUpdateNormal;
-            vpToUpdateNormal.reserve(vpMPs.size());
-
-            for(size_t i=0; i<vpMPs.size(); i++)
-            {
-                MapPoint* pMP = vpMPs[i];
-
-                if(pMP->isBad())
-                    continue;
-
-                if(pMP->mnBAGlobalForKF==nLoopKF)
-                {
-                    // 如果通过全局BA优化，则直接更新
-                    pMP->SetWorldPos(pMP->mPosGBA);
-                }
-                else
-                {
-                    // 根据其参考关键帧的校正进行更新
-                    KeyFrame* pRefKF = pMP->GetReferenceKeyFrame();
-
-                    if(pRefKF && pRefKF->mnBAGlobalForKF==nLoopKF)
+                    const set<KeyFrame*> sChilds = pKF->GetChilds();
+                    cv::Mat Twc = pKF->GetPoseInverse();
+                    for(set<KeyFrame*>::const_iterator sit=sChilds.begin();sit!=sChilds.end();sit++)
                     {
-                        // 映射到未校正的相机
-                        cv::Mat Rcw = pRefKF->mTcwBefGBA.rowRange(0,3).colRange(0,3);
-                        cv::Mat tcw = pRefKF->mTcwBefGBA.rowRange(0,3).col(3);
-                        cv::Mat Xc = Rcw*pMP->GetWorldPos()+tcw;
-
-                        // 使用校正后的相机反向投影
-                        cv::Mat Twc = pRefKF->GetPoseInverse();
-                        cv::Mat Rwc = Twc.rowRange(0,3).colRange(0,3);
-                        cv::Mat twc = Twc.rowRange(0,3).col(3);
-
-                        pMP->SetWorldPos(Rwc*Xc+twc);
+                        KeyFrame* pChild = *sit;
+                        if(!pChild || pChild->isBad())
+                            continue;
+                        if(pChild->mnBAGlobalForKF!=nLoopKF)
+                        {
+                            cv::Mat Tchildc = pChild->GetPose()*Twc;
+                            if(!Tchildc.empty() && !pKF->mTcwGBA.empty() && Tchildc.cols == pKF->mTcwGBA.rows)
+                            {
+                                pChild->mTcwGBA = Tchildc*pKF->mTcwGBA;
+                            }
+                            else
+                            {
+                                pChild->mTcwGBA = pChild->GetPose();
+                            }
+                            pChild->mnBAGlobalForKF=nLoopKF;
+                            lpKFtoCheck.push_back(pChild);
+                        }
                     }
+
+                    pKF->mTcwBefGBA = pKF->GetPose();
+                    if(!pKF->mTcwGBA.empty())
+                        pKF->SetPose(pKF->mTcwGBA);
                 }
 
-                vpToUpdateNormal.push_back(pMP);
+                // 校正地图点（锁内仅写坐标，法向/深度更新移出 mMutexMapUpdate，
+                // 避免大地图时 Tracking 的 UpdateLastFrame/初始化在全局锁上排队数秒）
+                const vector<MapPoint*> vpMPs = mpMap->GetAllMapPoints();
+                vector<MapPoint*> vpToUpdateNormal;
+                vpToUpdateNormal.reserve(vpMPs.size());
+
+                for(size_t i=0; i<vpMPs.size(); i++)
+                {
+                    MapPoint* pMP = vpMPs[i];
+
+                    if(!pMP || pMP->isBad())
+                        continue;
+
+                    if(pMP->mnBAGlobalForKF==nLoopKF)
+                    {
+                        // 如果通过全局BA优化，则直接更新
+                        if(!pMP->mPosGBA.empty())
+                            pMP->SetWorldPos(pMP->mPosGBA);
+                    }
+                    else
+                    {
+                        // 根据其参考关键帧的校正进行更新
+                        KeyFrame* pRefKF = pMP->GetReferenceKeyFrame();
+
+                        if(pRefKF && !pRefKF->isBad() && pRefKF->mnBAGlobalForKF==nLoopKF && !pRefKF->mTcwBefGBA.empty())
+                        {
+                            // 映射到未校正的相机
+                            cv::Mat Rcw = pRefKF->mTcwBefGBA.rowRange(0,3).colRange(0,3);
+                            cv::Mat tcw = pRefKF->mTcwBefGBA.rowRange(0,3).col(3);
+                            cv::Mat Xc = Rcw*pMP->GetWorldPos()+tcw;
+
+                            // 使用校正后的相机反向投影
+                            cv::Mat Twc = pRefKF->GetPoseInverse();
+                            cv::Mat Rwc = Twc.rowRange(0,3).colRange(0,3);
+                            cv::Mat twc = Twc.rowRange(0,3).col(3);
+
+                            pMP->SetWorldPos(Rwc*Xc+twc);
+                        }
+                    }
+
+                    vpToUpdateNormal.push_back(pMP);
+                }
+
+                mpMap->InformNewBigChange();
+                mapLock.unlock();   // 提前释放 mMutexMapUpdate
+
+                for(MapPoint* pMP : vpToUpdateNormal)
+                {
+                    if(pMP && !pMP->isBad())
+                        pMP->UpdateNormalAndDepth();
+                }
+
+                stopScope.release();
             }
 
-            mpMap->InformNewBigChange();
-            mapLock.unlock();   // 提前释放 mMutexMapUpdate
-
-            for(MapPoint* pMP : vpToUpdateNormal)
+            mbFinishedGBA = true;
+            mbRunningGBA = false;
+            if(mpThreadGBA)
             {
-                if(pMP && !pMP->isBad())
-                    pMP->UpdateNormalAndDepth();
+                mpThreadGBA->detach();
+                delete mpThreadGBA;
+                mpThreadGBA = nullptr;
             }
-
-            stopScope.release();
         }
-
+    }
+    catch(const std::exception& e)
+    {
+        LOGE("RunGlobalBundleAdjustment 异常: %s", e.what());
+        unique_lock<mutex> lock(mMutexGBA);
+        mbFinishedGBA = true;
+        mbRunningGBA = false;
+        if(mpThreadGBA)
+        {
+            mpThreadGBA->detach();
+            delete mpThreadGBA;
+            mpThreadGBA = nullptr;
+        }
+    }
+    catch(...)
+    {
+        LOGE("RunGlobalBundleAdjustment 未知异常");
+        unique_lock<mutex> lock(mMutexGBA);
         mbFinishedGBA = true;
         mbRunningGBA = false;
         if(mpThreadGBA)

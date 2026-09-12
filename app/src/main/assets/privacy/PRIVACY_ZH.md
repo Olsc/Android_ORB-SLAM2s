@@ -15,7 +15,7 @@
 3. **重定位与匹配**：加载已有地图后，通过特征匹配恢复相机姿态，实现重定位；
 4. **置信度可视化**：可视化跟踪关键点以及当前帧与加载地图之间的匹配统计信息；
 5. **平面检测**：基于当前相机姿态和点云数据，智能检测水平地面/表面；
-6. **原生AR渲染**：基于 **Google Filament**（GLB/glTF 格式模型）和 OpenGL ES 2.0 的 3D 渲染，支持在检测到的平面上放置和交互虚拟物体；
+6. **原生AR渲染**：基于轻量级 C 语言库 **cgltf**（GLB/glTF 格式模型解析）和 OpenGL ES 2.0 的原生 3D 渲染，支持在检测到的平面上放置和交互虚拟物体；
 7. **暗帧自动跳过**：自动检测过暗环境，暂停 SLAM 跟踪以防止计算资源浪费和跟踪丢失；
 8. **3D物体交互管理**：支持 3D 物体的放置、双指缩放等交互操作；
 9. **3DOF姿态跟踪**：利用设备内置传感器（旋转矢量传感器/加速度计+磁力计）实现三自由度方向跟踪；
@@ -68,7 +68,7 @@ ORB-SLAM2s（本 Android 适配与增强项目）采用基于 Android IPC 进程
 | AndroidX / CameraX              | Apache 2.0               | Android 官方相机和 UI 组件库                                       |
 | Google Material Design          | Apache 2.0               | 用户界面设计库                                                     |
 | **srrg_hbst (HBST)**            | **BSD 3-Clause**         | **层次化可扩展二叉搜索树 — 用于快速增量式图像匹配与重定位**        |
-| **Google Filament**             | **Apache 2.0**           | **基于物理的 3D 渲染引擎，用于 AR 物体显示（支持 GLB/glTF 模型）** |
+| **cgltf**                       | **MIT**                  | **轻量级单头文件 C 语言 glTF/GLB 模型解析器，用于原生 AR 3D 渲染** |
 | Google Guava                    | Apache 2.0               | Java 核心库扩展                                                    |
 | **Markwon (io.noties.markwon)** | **Apache 2.0**           | **Markdown 渲染库 — 用于在应用内展示此隐私政策**                   |
 
@@ -187,7 +187,7 @@ ORB-SLAM2s（本 Android 适配与增强项目）采用基于 Android IPC 进程
 - **OpenCV**：图像处理（特征提取、矩阵运算），全部在本地 CPU 上执行；
 - **ORB-SLAM2 核心（C++）**：SLAM 算法引擎，封装在 `:slam_process` 中全部在本地执行；
 - **srrg_hbst (HBST)**：层次化二叉搜索树，用于图像匹配与重定位，全部在本地执行；
-- **Google Filament + gltfio**：基于物理的 3D 渲染引擎，用于 AR 物体显示（GLB/glTF），渲染在本地 GPU 上执行；
+- **cgltf**：轻量级 C 语言 glTF/GLB 模型解析器，结合 OpenGL ES 负责 AR 物体 3D 渲染，全部在本地执行；
 - **Google Guava / AndroidX**：系统工具类，不涉及用户数据；
 - **Markwon**：Markdown 渲染库，仅用于在应用内展示本隐私政策，全部在本地执行。
 
@@ -313,8 +313,7 @@ ORB-SLAM2s（本 Android 适配与增强项目）采用基于 Android IPC 进程
 | **Eigen3**                                | Benoît Jacob, Gaël Guennebaud 及贡献者                                             | MPL-2.0（核心；3.4+ 部分组件包含 Apache-2.0 / BSD-3-Clause / GPL-3.0 兼容代码） |
 | **OpenCV**                                | Intel Corporation, Willow Garage, Itseez, NVIDIA, AMD, OpenCV Foundation 及贡献者  | Apache 2.0（部分文件为 BSD-3-Clause）                                           |
 | **srrg_hbst (HBST)**                      | Dominik Schlegel, Giorgio Grisetti / srrg-software                                 | BSD 3-Clause                                                                    |
-| **Google Filament**                       | Google LLC                                                                         | Apache 2.0                                                                      |
-| **gltfio / filament-utils**               | Google LLC                                                                         | Apache 2.0                                                                      |
+| **cgltf**                                 | Johannes Kuhlmann                                                                  | MIT                                                                             |
 | **ZXing ("Zebra Crossing")**              | Sean Owen 及 ZXing 项目贡献者                                                      | Apache 2.0                                                                      |
 | **Google Guava**                          | Google LLC                                                                         | Apache 2.0                                                                      |
 | **Markwon (io.noties.markwon)**           | Dimitry Ivanov (noties)                                                            | Apache 2.0                                                                      |

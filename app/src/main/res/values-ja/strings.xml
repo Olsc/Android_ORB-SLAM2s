@@ -71,4 +71,8 @@
     <string name="hint_flashlight_unavailable">この端末はライトに対応していません</string>
     <string name="hint_no_camera">利用可能なカメラが検出されませんでした（黒画面モード）</string>
 
+    <string name="dialog_exit_title">アプリを終了</string>
+    <string name="dialog_exit_message">アプリを終了してもよろしいですか？</string>
+    <string name="action_exit">終了</string>
+
 </resources>

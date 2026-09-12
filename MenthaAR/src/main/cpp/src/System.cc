@@ -49,6 +49,7 @@
 #include <sstream>
 #include "MenthaProfiler.h" // 性能分析器
 #include <atomic>
+#include <unordered_set>
 
 namespace ORB_SLAM2
 {
@@ -505,9 +506,43 @@ cv::Mat System::GetMapAlignedPose(const cv::Mat &TcwSlam)
     return mpTracker ? mpTracker->GetMapAlignedPose(TcwSlam) : TcwSlam.clone();
 }
 
-int System::GetNumKeyFrames(){ return static_cast<int>(mpMap->KeyFramesInMap()); }
-int System::GetNumMapPoints(){ return static_cast<int>(mpMap->MapPointsInMap()); }
-std::vector<MapPoint*> System::GetAllMapPoints(){ return mpMap->GetAllMapPoints(); }
+int System::GetNumKeyFrames()
+{
+    int total = 0;
+    for (Map* pMap : mvpMaps) {
+        if (pMap) total += static_cast<int>(pMap->KeyFramesInMap());
+    }
+    return (total > 0) ? total : (mpMap ? static_cast<int>(mpMap->KeyFramesInMap()) : 0);
+}
+
+int System::GetNumMapPoints()
+{
+    int total = 0;
+    for (Map* pMap : mvpMaps) {
+        if (pMap) total += static_cast<int>(pMap->MapPointsInMap());
+    }
+    return (total > 0) ? total : (mpMap ? static_cast<int>(mpMap->MapPointsInMap()) : 0);
+}
+
+std::vector<MapPoint*> System::GetAllMapPoints()
+{
+    // 聚合当前所有有效子地图中的地图点，确保切图后历史三维点云持续稳定呈现
+    std::vector<MapPoint*> allPoints;
+    std::unordered_set<MapPoint*> seen;
+    for (Map* pMap : mvpMaps) {
+        if (!pMap) continue;
+        std::vector<MapPoint*> pts = pMap->GetAllMapPoints();
+        for (MapPoint* p : pts) {
+            if (p && !p->isBad() && seen.insert(p).second) {
+                allPoints.push_back(p);
+            }
+        }
+    }
+    if (mpMap && seen.empty()) {
+        return mpMap->GetAllMapPoints();
+    }
+    return allPoints;
+}
 
 void System::SaveMap(const std::string &filename, int maxMapPoints)
 {

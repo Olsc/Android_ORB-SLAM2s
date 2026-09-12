@@ -73,4 +73,8 @@
     <string name="hint_flashlight_unavailable">Lanterna nu este disponibilă pe acest dispozitiv</string>
     <string name="hint_no_camera">Nicio cameră detectată (mod ecran negru)</string>
 
+    <string name="dialog_exit_title">Ieșire din aplicație</string>
+    <string name="dialog_exit_message">Sigur doriți să ieșiți din aplicație?</string>
+    <string name="action_exit">Ieșire</string>
+
 </resources>

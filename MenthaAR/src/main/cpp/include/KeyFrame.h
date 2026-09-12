@@ -51,9 +51,11 @@ class Map;
 class MapPoint;
 class Frame;
 class KeyFrameDatabase;
+class ORBmatcher;
 
 class KeyFrame
 {
+    friend class ORBmatcher;
 public:
     KeyFrame(Frame &F, Map* pMap, KeyFrameDatabase* pKFDB);
 
@@ -123,6 +125,9 @@ public:
     // 设置/检查坏标志
     void SetBadFlag();
     bool isBad();
+
+    bool IsOrigin() const { return mbIsOrigin || mnId == 0; }
+    void SetOrigin(bool bOrigin) { mbIsOrigin = bOrigin; }
 
     // 计算场景深度（q=2中位数）。用于单目。
     float ComputeSceneMedianDepth(const int q);
@@ -234,6 +239,7 @@ protected:
     bool mbNotErase;
     bool mbToBeErased;
     std::atomic<bool> mbBad;
+    bool mbIsOrigin;
 
     float mHalfBaseline; // 仅用于可视化
 

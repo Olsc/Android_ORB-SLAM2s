@@ -71,4 +71,8 @@
     <string name="hint_flashlight_unavailable">Senter tidak tersedia di perangkat ini</string>
     <string name="hint_no_camera">Tidak ada kamera terdeteksi (mode layar hitam)</string>
 
+    <string name="dialog_exit_title">Keluar dari Aplikasi</string>
+    <string name="dialog_exit_message">Apakah Anda yakin ingin keluar dari aplikasi?</string>
+    <string name="action_exit">Keluar</string>
+
 </resources>

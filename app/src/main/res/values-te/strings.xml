@@ -72,4 +72,8 @@
     <string name="hint_flashlight_unavailable">ఈ పరికరంలో ఫ్లాష్‌లైట్ అందుబాటులో లేదు</string>
     <string name="hint_no_camera">కెమెరా ఏదీ కనుగొనబడలేదు (బ్లాక్ స్క్రీన్ మోడ్)</string>
 
+    <string name="dialog_exit_title">యాప్ నుండి నిష్క్రమించు</string>
+    <string name="dialog_exit_message">మీరు నిజంగా నిష్క్రమించాలనుకుంటున్నారా?</string>
+    <string name="action_exit">నిష్క్రమించు</string>
+
 </resources>

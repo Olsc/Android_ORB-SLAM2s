@@ -71,4 +71,8 @@
     <string name="hint_flashlight_unavailable">目前裝置不支援手電筒</string>
     <string name="hint_no_camera">未偵測到可用相機（黑畫面模式）</string>
 
+    <string name="dialog_exit_title">結束應用程式</string>
+    <string name="dialog_exit_message">確定要結束應用程式嗎？</string>
+    <string name="action_exit">結束</string>
+
 </resources>
