@@ -69,9 +69,6 @@ const float KEYFRAME_REDUNDANCY_THRESHOLD = 0.93f;
 // 地图点冗余判定的最少观测KF数（观测≥此值的点不参与判定）
 const int KEYFRAME_REDUNDANCY_OBS_THRESHOLD = 3;
 
-// 新关键帧稳定所需的最小共视关键帧数
-const int KEYFRAME_MIN_STABLE_COVISM = 3;
-
 // 地图点被视为优质所需的最小观测KF数（单目模式）
 const int MAPPOINT_MIN_OBSERVATIONS_MONO = 2;
 
@@ -99,9 +96,6 @@ const float TRACKING_SEARCH_RADIUS_UNALIGNED = 8.0f;
 // 加载点投影绑定最大深度（米），超过则跳过
 const float BIND_MAX_DEPTH = 50.0f;
 
-// 全局重定位搜索半径（米）
-const float TRACKING_RELOC_SEARCH_RADIUS = 50.0f;
-
 // 重定位成功后高精度投影绑定的搜索半径（像素）
 const float RELOC_PROJ_SEARCH_RADIUS = 15.0f;
 
@@ -110,26 +104,14 @@ const int TRACKING_ALIGN_MIN_INLIERS_UPDATE = 20;
 const float TRACKING_ALIGN_MIN_CONFIDENCE_UPDATE = 0.3f;
 const int TRACKING_ALIGN_SMOOTH_SKIP_FRAMES = 3;
 
-// 参考缓存重试上限和缓存条目限制
-const int TRACKING_MAX_REF_CACHE_RETRIES = 5;
+// 缓存条目限制
 const int TRACKING_REF_CACHE_LIMIT = 30000;
-
-// 参考缓存（HBST 树）重建冷却时间（毫秒）：跟踪丢失→重建→重定位循环中，
-// 避免频繁重建整棵 HBST 树导致帧率骤降；缓存可用且未超冷却时直接复用旧缓存
-const int TRACKING_REF_CACHE_BUILD_COOLDOWN_MS = 2000;
 
 // 主线程绑定加载点的网格搜索半径（米）
 const float TRACKING_GRID_SEARCH_RADIUS = 40.0f;
 
 // 绑定加载点候选数超过此值时启用步长采样，设为0禁用
 const int TRACKING_CANDIDATE_STRIDE_THRESHOLD = 3000;
-
-// 后台重定位：候选KF数超过此值才启用姿态粗筛
-const int TRACKING_GATING_MIN_CANDIDATES = 50;
-
-// 后台重定位 KNN 比率阈值（越小越严格）和描述子距离上限
-const float TRACKING_KNN_RATIO = 0.75f;
-const int TRACKING_KNN_DIST_MAX = 60;
 
 // 后台重定位 PnP 最小内点数要求
 const int TRACKING_RELOC_PNP_MIN_INLIERS = 10;
@@ -209,9 +191,6 @@ const int COVISIBILITY_NEIGHBOR_COUNT = 10;
 
 // 初始化最小平均视差（像素）
 const float INITIALIZER_MIN_PARALLAX_PX = 8.0f;
-
-// 初始化超时时间（秒），超过时强制尝试初始化，设为0禁用
-const double INITIALIZER_TIMEOUT_SEC = 3.0;
 
 // 初始化创建初始地图的最少跟踪点数
 const int INITIALIZER_MIN_TRACKED_POINTS = 100;
@@ -335,9 +314,6 @@ const int MAIN_THREAD_BIND_INLIER_THRESHOLD = 100;
 const int RELOC_MIN_INLIERS_FOR_ALIGN = 15;
 const float RELOC_MIN_CONFIDENCE_FOR_ALIGN = 0.4f;
 
-// 重定位后短期内投影搜索窗口半径（像素）
-const int RELOC_POST_SEARCH_TH = 8;
-
 // Reset 后重定位冷却帧数
 const int RESET_COOLDOWN_FRAMES = 30;
 
@@ -375,12 +351,8 @@ const int OPTIMIZER_ESSENTIAL_GRAPH_MIN_FEAT = 100;
 
 // 重定位优化
 
-// 重定位最小共享词数和最大候选帧数
-const int RELOC_MIN_SHARED_WORDS = 10;
+// 重定位最大候选帧数
 const int RELOC_MAX_CANDIDATES = 20;
-
-// 创建新子地图冷却时间（毫秒）
-const int NEW_MAP_COOLDOWN_MS = 5000;
 
 // JNI 桥接层参数
 
@@ -401,25 +373,13 @@ const double LOST_RESET_TIMEOUT = 3.0;
 const int RESET_COMPLETE_TIMEOUT_MS = 500; // 线程重置完成超时等待时间（毫秒），防死锁兜底
 const int MAP_SWITCH_THRESHOLD = 3;
 
-// AR 模式最少新增点数和物体默认缩放
-const int MIN_NEW_POINTS_BEFORE_AR = 50;
+// AR 模式物体默认缩放
 const float AR_OBJECT_SCALE_DEFAULT = 0.20f;
 
 // 平面检测状态码和RANSAC迭代次数
 const int PLANE_DETECTED = 233;
 const int PLANE_NOT_DETECTED = 1234;
 const int PLANE_DETECT_RANSAC_ITERS = 50;
-
-// 重定位后台线程调度
-
-// 后台重定位锁等待重试间隔（毫秒）
-const int RELOC_RETRY_WAIT_MS = 1;
-
-// 缓存重建失败/为空时的重试间隔（毫秒）
-const int RELOC_CACHE_RETRY_WAIT_MS = 500;
-
-// 地图无点时后台线程休眠间隔（秒）
-const int RELOC_NO_MAP_WAIT_SEC = 2;
 
 // 对齐 EMA 平滑
 
