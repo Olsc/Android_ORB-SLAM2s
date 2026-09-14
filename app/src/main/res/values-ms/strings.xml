@@ -64,11 +64,6 @@
     <string name="privacy_agree">Setuju &amp; Teruskan</string>
     <string name="privacy_load_error">Gagal memuatkan dasar privasi. Sila cuba lagi.</string>
 
-    <string name="btn_flashlight_off">Lampu suluh: Mati</string>
-    <string name="btn_flashlight_on">✓Lampu suluh: Hidup</string>
-    <string name="hint_flashlight_on">Lampu suluh dihidupkan</string>
-    <string name="hint_flashlight_off">Lampu suluh dimatikan</string>
-    <string name="hint_flashlight_unavailable">Lampu suluh tidak tersedia pada peranti ini</string>
     <string name="hint_no_camera">Tiada kamera dikesan (mod skrin hitam)</string>
 
     <string name="dialog_exit_title">Keluar dari Aplikasi</string>

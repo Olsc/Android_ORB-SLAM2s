@@ -69,11 +69,6 @@
     <string name="privacy_agree">موافقة &amp; متابعة</string>
     <string name="privacy_load_error">فشل تحميل سياسة الخصوصية. يرجى المحاولة مرة أخرى.</string>
 
-    <string name="btn_flashlight_off">المصباح: إيقاف</string>
-    <string name="btn_flashlight_on">✓المصباح: تشغيل</string>
-    <string name="hint_flashlight_on">تم تشغيل المصباح اليدوي</string>
-    <string name="hint_flashlight_off">تم إيقاف تشغيل المصباح اليدوي</string>
-    <string name="hint_flashlight_unavailable">المصباح اليدوي غير متوفر على هذا الجهاز</string>
     <string name="hint_no_camera">لم يتم اكتشاف كاميرا (وضع الشاشة السوداء)</string>
 
     <string name="dialog_exit_title">الخروج من التطبيق</string>

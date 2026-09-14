@@ -65,11 +65,6 @@
     <string name="privacy_agree">అంగీకరిస్తున్నాను &amp; కొనసాగించండి</string>
     <string name="privacy_load_error">గోప్యతా విధానాన్ని లోడ్ చేయడం విఫలమైంది. దయచేసి మళ్లీ ప్రయత్నించండి.</string>
 
-    <string name="btn_flashlight_off">టార్చ్: ఆఫ్</string>
-    <string name="btn_flashlight_on">✓టార్చ్: ఆన్</string>
-    <string name="hint_flashlight_on">ఫ్లాష్‌లైట్ ఆన్ చేయబడింది</string>
-    <string name="hint_flashlight_off">ఫ్లాష్‌లైట్ ఆఫ్ చేయబడింది</string>
-    <string name="hint_flashlight_unavailable">ఈ పరికరంలో ఫ్లాష్‌లైట్ అందుబాటులో లేదు</string>
     <string name="hint_no_camera">కెమెరా ఏదీ కనుగొనబడలేదు (బ్లాక్ స్క్రీన్ మోడ్)</string>
 
     <string name="dialog_exit_title">యాప్ నుండి నిష్క్రమించు</string>

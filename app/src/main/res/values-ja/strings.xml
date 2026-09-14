@@ -64,11 +64,6 @@
     <string name="privacy_agree">同意して続ける</string>
     <string name="privacy_load_error">プライバシーポリシーの読み込みに失敗しました。再試行してください。</string>
 
-    <string name="btn_flashlight_off">ライト: オフ</string>
-    <string name="btn_flashlight_on">✓ライト: オン</string>
-    <string name="hint_flashlight_on">フラッシュライトを点灯しました</string>
-    <string name="hint_flashlight_off">フラッシュライトを消灯しました</string>
-    <string name="hint_flashlight_unavailable">この端末はライトに対応していません</string>
     <string name="hint_no_camera">利用可能なカメラが検出されませんでした（黒画面モード）</string>
 
     <string name="dialog_exit_title">アプリを終了</string>

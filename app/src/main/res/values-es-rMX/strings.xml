@@ -66,11 +66,6 @@
     <string name="privacy_agree">Aceptar &amp; Continuar</string>
     <string name="privacy_load_error">Error al cargar la política de privacidad. Por favor, inténtelo de nuevo.</string>
 
-    <string name="btn_flashlight_off">Linterna: No</string>
-    <string name="btn_flashlight_on">✓Linterna: Sí</string>
-    <string name="hint_flashlight_on">Linterna encendida</string>
-    <string name="hint_flashlight_off">Linterna apagada</string>
-    <string name="hint_flashlight_unavailable">Linterna no disponible en este dispositivo</string>
     <string name="hint_no_camera">No se detectó ninguna cámara (modo pantalla negra)</string>
 
     <string name="dialog_exit_title">Salir de la aplicación</string>

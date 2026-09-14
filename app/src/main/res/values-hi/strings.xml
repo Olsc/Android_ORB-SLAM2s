@@ -65,11 +65,6 @@
     <string name="privacy_agree">सहमत &amp; जारी रखें</string>
     <string name="privacy_load_error">गोपनीयता नीति लोड करने में विफल। कृपया पुनः प्रयास करें।</string>
 
-    <string name="btn_flashlight_off">टॉर्च: बंद</string>
-    <string name="btn_flashlight_on">✓टॉर्च: चालू</string>
-    <string name="hint_flashlight_on">फ़्लैशलाइट चालू की गई</string>
-    <string name="hint_flashlight_off">फ़्लैशलाइट बंद की गई</string>
-    <string name="hint_flashlight_unavailable">इस डिवाइस पर फ़्लैशलाइट उपलब्ध नहीं है</string>
     <string name="hint_no_camera">कोई कैमरा नहीं मिला (ब्लैक स्क्रीन मोड)</string>
 
     <string name="dialog_exit_title">ऐप से बाहर निकलें</string>

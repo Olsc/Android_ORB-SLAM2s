@@ -64,11 +64,6 @@
     <string name="privacy_agree">Setuju &amp; Lanjutkan</string>
     <string name="privacy_load_error">Gagal memuat kebijakan privasi. Silakan coba lagi.</string>
 
-    <string name="btn_flashlight_off">Senter: Mati</string>
-    <string name="btn_flashlight_on">✓Senter: Hidup</string>
-    <string name="hint_flashlight_on">Senter dinyalakan</string>
-    <string name="hint_flashlight_off">Senter dimatikan</string>
-    <string name="hint_flashlight_unavailable">Senter tidak tersedia di perangkat ini</string>
     <string name="hint_no_camera">Tidak ada kamera terdeteksi (mode layar hitam)</string>
 
     <string name="dialog_exit_title">Keluar dari Aplikasi</string>

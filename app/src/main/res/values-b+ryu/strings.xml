@@ -64,11 +64,6 @@
     <string name="privacy_agree">うなじゅん &amp; 続ける</string>
     <string name="privacy_load_error">プライバシーポリシー読み込み失敗。もう一回試みそーれー。</string>
 
-    <string name="btn_flashlight_off">ライト: 消ち</string>
-    <string name="btn_flashlight_on">✓ライト: 点け</string>
-    <string name="hint_flashlight_on">懐中電灯点けたびたる</string>
-    <string name="hint_flashlight_off">懐中電灯消したびたる</string>
-    <string name="hint_flashlight_unavailable">この端末懐中電灯使えびらん</string>
     <string name="hint_no_camera">カメラ見つからびらん（暗黒画面モード）</string>
 
     <string name="dialog_exit_title">アプリば終了</string>

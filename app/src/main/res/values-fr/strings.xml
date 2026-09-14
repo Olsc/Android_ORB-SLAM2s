@@ -66,11 +66,6 @@
     <string name="privacy_agree">Accepter &amp; Continuer</string>
     <string name="privacy_load_error">Échec du chargement de la politique de confidentialité. Veuillez réessayer.</string>
 
-    <string name="btn_flashlight_off">Lampe: Non</string>
-    <string name="btn_flashlight_on">✓Lampe: Oui</string>
-    <string name="hint_flashlight_on">Lampe torche allumée</string>
-    <string name="hint_flashlight_off">Lampe torche éteinte</string>
-    <string name="hint_flashlight_unavailable">Lampe torche non disponible sur cet appareil</string>
     <string name="hint_no_camera">Aucune caméra détectée (mode écran noir)</string>
 
     <string name="dialog_exit_title">Quitter l\'application</string>

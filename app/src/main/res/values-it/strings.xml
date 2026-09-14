@@ -66,11 +66,6 @@
     <string name="privacy_agree">Accetta &amp; Continua</string>
     <string name="privacy_load_error">Caricamento dell\'informativa sulla privacy fallito. Riprova.</string>
 
-    <string name="btn_flashlight_off">Torcia: No</string>
-    <string name="btn_flashlight_on">✓Torcia: Sì</string>
-    <string name="hint_flashlight_on">Torcia accesa</string>
-    <string name="hint_flashlight_off">Torcia spenta</string>
-    <string name="hint_flashlight_unavailable">Torcia non disponibile su questo dispositivo</string>
     <string name="hint_no_camera">Nessuna fotocamera rilevata (modalità schermo nero)</string>
 
     <string name="dialog_exit_title">Esci dall\'applicazione</string>

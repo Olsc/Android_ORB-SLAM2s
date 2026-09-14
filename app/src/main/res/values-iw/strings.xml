@@ -66,11 +66,6 @@
     <string name="privacy_agree">מסכים &amp; ממשיך</string>
     <string name="privacy_load_error">טעינת מדיניות הפרטיות נכשלה. אנא נסה שוב.</string>
 
-    <string name="btn_flashlight_off">פנס: כבוי</string>
-    <string name="btn_flashlight_on">✓פנס: דולק</string>
-    <string name="hint_flashlight_on">הפנס הופעל</string>
-    <string name="hint_flashlight_off">הפנס כובה</string>
-    <string name="hint_flashlight_unavailable">הפנס אינו זמין במכשיר זה</string>
     <string name="hint_no_camera">לא זוהתה מצלמה (מצב מסך שחור)</string>
 
     <string name="dialog_exit_title">יציאה מהאפליקציה</string>

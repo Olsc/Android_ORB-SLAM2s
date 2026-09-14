@@ -65,11 +65,6 @@
     <string name="privacy_agree">Приемам &amp; Продължавам</string>
     <string name="privacy_load_error">Зареждането на политиката за поверителност е неуспешно. Моля, опитайте отново.</string>
 
-    <string name="btn_flashlight_off">Фенерче: Изкл.</string>
-    <string name="btn_flashlight_on">✓Фенерче: Вкл.</string>
-    <string name="hint_flashlight_on">Фенерчето е включено</string>
-    <string name="hint_flashlight_off">Фенерчето е изключено</string>
-    <string name="hint_flashlight_unavailable">Фенерчето не е налично на това устройство</string>
     <string name="hint_no_camera">Няма открита камера (режим на черен екран)</string>
 
     <string name="dialog_exit_title">Изход от приложението</string>

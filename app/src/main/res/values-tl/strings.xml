@@ -65,11 +65,6 @@
     <string name="privacy_agree">Sumasang-ayon &amp; Magpatuloy</string>
     <string name="privacy_load_error">Nabigo ang pag-load ng patakaran sa privacy. Subukan muli.</string>
 
-    <string name="btn_flashlight_off">Flashlight: Naka-off</string>
-    <string name="btn_flashlight_on">✓Flashlight: Naka-on</string>
-    <string name="hint_flashlight_on">Naka-on ang flashlight</string>
-    <string name="hint_flashlight_off">Naka-off ang flashlight</string>
-    <string name="hint_flashlight_unavailable">Hindi available ang flashlight sa device na ito</string>
     <string name="hint_no_camera">Walang nakitang camera (black screen mode)</string>
 
     <string name="dialog_exit_title">Lumabas sa App</string>

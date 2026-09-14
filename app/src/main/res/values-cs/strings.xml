@@ -67,11 +67,6 @@
     <string name="privacy_agree">Souhlasím &amp; Pokračovat</string>
     <string name="privacy_load_error">Načtení zásad ochrany soukromí selhalo. Zkuste to znovu.</string>
 
-    <string name="btn_flashlight_off">Svítilna: Vyp.</string>
-    <string name="btn_flashlight_on">✓Svítilna: Zap.</string>
-    <string name="hint_flashlight_on">Svítilna zapnuta</string>
-    <string name="hint_flashlight_off">Svítilna vypnuta</string>
-    <string name="hint_flashlight_unavailable">Svítilna není na tomto zařízení k dispozici</string>
     <string name="hint_no_camera">Nebyla detekována žádná kamera (režim černé obrazovky)</string>
 
     <string name="dialog_exit_title">Ukončit aplikaci</string>

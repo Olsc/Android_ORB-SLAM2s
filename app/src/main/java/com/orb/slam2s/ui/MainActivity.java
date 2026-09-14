@@ -17,7 +17,6 @@ package com.orb.slam2s.ui;
 
 import android.content.Context;
 import android.content.pm.ActivityInfo;
-import android.content.res.ColorStateList;
 import android.graphics.Point;
 import android.opengl.GLSurfaceView;
 import android.os.Build;
@@ -89,7 +88,6 @@ public class MainActivity extends AppCompatActivity implements CameraPreviewView
     private Button mBtnMapList;
     private Button mBtnTogglePointCloud;
     private Button mBtn3DofCube;
-    private Button mBtnToggleFlashlight;
 
     private final Handler mUiHandler = new Handler(Looper.getMainLooper());
     private AlertDialog mLoadingDialog;
@@ -277,11 +275,6 @@ public class MainActivity extends AppCompatActivity implements CameraPreviewView
         mBtn3DofCube = findViewById(R.id.btn_3dof_cube);
         if (mBtn3DofCube != null) {
             mBtn3DofCube.setOnClickListener(v -> toggle3DofMode());
-        }
-
-        mBtnToggleFlashlight = findViewById(R.id.btn_toggle_flashlight);
-        if (mBtnToggleFlashlight != null) {
-            mBtnToggleFlashlight.setOnClickListener(v -> toggleFlashlight());
         }
 
         initJoystick();
@@ -502,10 +495,6 @@ public class MainActivity extends AppCompatActivity implements CameraPreviewView
         Log.d(TAG, "onPause: 暂停摄像头视图");
         super.onPause();
         if (mCameraPreviewView != null) {
-            if (mCameraPreviewView.isTorchOn()) {
-                mCameraPreviewView.setTorchEnabled(false, null);
-                updateFlashlightButton(false);
-            }
             mCameraPreviewView.disableView();
         }
 
@@ -804,40 +793,6 @@ public class MainActivity extends AppCompatActivity implements CameraPreviewView
             }
             showToast(getString(R.string.hint_3dof_closed));
             Log.d(TAG, "3DOF 模式已关闭");
-        }
-    }
-
-    private void toggleFlashlight() {
-        if (mCameraPreviewView == null) return;
-        if (!mCameraPreviewView.isTorchSupported()) {
-            showToast(getString(R.string.hint_flashlight_unavailable));
-            return;
-        }
-
-        mCameraPreviewView.toggleTorch(new CameraPreviewView.TorchCallback() {
-            @Override
-            public void onTorchChanged(boolean enabled) {
-                runOnUiThread(() -> {
-                    updateFlashlightButton(enabled);
-                    showToast(getString(enabled ? R.string.hint_flashlight_on : R.string.hint_flashlight_off));
-                });
-            }
-
-            @Override
-            public void onError(String message) {
-                runOnUiThread(() -> showToast(getString(R.string.hint_flashlight_unavailable)));
-            }
-        });
-    }
-
-    private void updateFlashlightButton(boolean isOn) {
-        if (mBtnToggleFlashlight == null) return;
-        if (isOn) {
-            mBtnToggleFlashlight.setText(getString(R.string.btn_flashlight_on));
-            mBtnToggleFlashlight.setBackgroundTintList(ColorStateList.valueOf(0xFFFFA000));
-        } else {
-            mBtnToggleFlashlight.setText(getString(R.string.btn_flashlight_off));
-            mBtnToggleFlashlight.setBackgroundTintList(ColorStateList.valueOf(0xFF607D8B));
         }
     }
 }
