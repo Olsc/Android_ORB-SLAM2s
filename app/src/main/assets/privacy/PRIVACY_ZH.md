@@ -95,7 +95,7 @@ ORB-SLAM2s（本 Android 适配与增强项目）采用基于 Android IPC 进程
 
 - **用途**: 读取已保存的 SLAM 地图文件、词汇表文件、相机配置文件
 - **使用位置**: `NativeHelper.java` 中的 `initSLAM()`、`loadMap()`、`loadMapWithId()`；`ZipHelper.java`
-- **必要性**: **功能必需**。启动时需读取 ORB 词汇表（`ORBvoc.txt.arm.bin`）和相机参数配置（`CameraSettings.yaml`）；加载以前保存的地图时需要读取 `.bin` 和 `.json` 文件。
+- **必要性**: **功能必需**。加载以前保存的地图时需要读取 `.bin` 和 `.json` 文件。
 - **限制**: `android:maxSdkVersion="32"` —— Android 13+（API 33+）系统将不再授予此权限，应用会使用 `getExternalFilesDir()` 等更安全的作用域存储方式。
 - **存储路径**: 仅操作 `getExternalFilesDir("SLAM")` 目录下的文件，不会读取用户的其他私人文件。
 

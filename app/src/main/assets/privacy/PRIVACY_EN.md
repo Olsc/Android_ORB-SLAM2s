@@ -95,7 +95,7 @@ The following permissions are declared in AndroidManifest.xml. Each permission s
 
 - **Purpose**: Read saved SLAM map files, vocabulary files, and camera configuration files
 - **Usage Location**: `NativeHelper.java` — `initSLAM()`, `loadMap()`, `loadMapWithId()`; `ZipHelper.java`
-- **Necessity**: **Functionally required**. The app needs to read the ORB vocabulary file (`ORBvoc.txt.arm.bin`) and camera parameter configuration (`CameraSettings.yaml`) at startup; loading previously saved maps requires reading `.bin` and `.json` files.
+- **Necessity**: **Functionally required**. loading previously saved maps requires reading `.bin` and `.json` files.
 - **Limitation**: `android:maxSdkVersion="32"` — Android 13+ (API 33+) will no longer grant this permission; the app will use scoped storage (`getExternalFilesDir()`) instead.
 - **Storage Path**: Only accesses files under `getExternalFilesDir("SLAM")`; does not read other user private files.
 
