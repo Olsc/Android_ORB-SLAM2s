@@ -64,11 +64,6 @@
     <string name="privacy_agree">ยอมรับ &amp; ดำเนินการต่อ</string>
     <string name="privacy_load_error">โหลดนโยบายความเป็นส่วนตัวล้มเหลว กรุณาลองอีกครั้ง</string>
 
-    <string name="btn_flashlight_off">ไฟฉาย: ปิด</string>
-    <string name="btn_flashlight_on">✓ไฟฉาย: เปิด</string>
-    <string name="hint_flashlight_on">เปิดไฟฉายแล้ว</string>
-    <string name="hint_flashlight_off">ปิดไฟฉายแล้ว</string>
-    <string name="hint_flashlight_unavailable">อุปกรณ์นี้ไม่รองรับไฟฉาย</string>
     <string name="hint_no_camera">ไม่พบกล้อง (โหมดหน้าจอสีดำ)</string>
 
     <string name="dialog_exit_title">ออกจากแอป</string>

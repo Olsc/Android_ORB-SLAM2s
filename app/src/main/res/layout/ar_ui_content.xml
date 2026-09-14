@@ -204,19 +204,6 @@
                 android:paddingEnd="8dp"/>
         </LinearLayout>
 
-        <Button
-            android:id="@+id/btn_toggle_flashlight"
-            android:layout_width="76dp"
-            android:layout_height="32dp"
-            android:layout_marginBottom="4dp"
-            android:text="@string/btn_flashlight_off"
-            android:textSize="11sp"
-            android:textAllCaps="false"
-            android:backgroundTint="#607D8B"
-            android:alpha="0.90"
-            android:paddingStart="6dp"
-            android:paddingEnd="6dp"/>
-
     </LinearLayout>
 
 </RelativeLayout>

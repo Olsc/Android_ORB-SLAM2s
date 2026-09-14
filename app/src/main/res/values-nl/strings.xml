@@ -65,11 +65,6 @@
     <string name="privacy_agree">Akkoord &amp; Doorgaan</string>
     <string name="privacy_load_error">Privacybeleid laden mislukt. Probeer het opnieuw.</string>
 
-    <string name="btn_flashlight_off">Zaklamp: Uit</string>
-    <string name="btn_flashlight_on">✓Zaklamp: Aan</string>
-    <string name="hint_flashlight_on">Zaklamp ingeschakeld</string>
-    <string name="hint_flashlight_off">Zaklamp uitgeschakeld</string>
-    <string name="hint_flashlight_unavailable">Zaklamp niet beschikbaar op dit apparaat</string>
     <string name="hint_no_camera">Geen camera gedetecteerd (zwart scherm-modus)</string>
 
     <string name="dialog_exit_title">App afsluiten</string>

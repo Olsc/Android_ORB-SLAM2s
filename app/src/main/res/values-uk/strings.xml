@@ -67,11 +67,6 @@
     <string name="privacy_agree">Погодитися &amp; Продовжити</string>
     <string name="privacy_load_error">Не вдалося завантажити політику конфіденційності. Будь ласка, спробуйте ще раз.</string>
 
-    <string name="btn_flashlight_off">Ліхтарик: Вимк</string>
-    <string name="btn_flashlight_on">✓Ліхтарик: Увімк</string>
-    <string name="hint_flashlight_on">Ліхтарик увімкнено</string>
-    <string name="hint_flashlight_off">Ліхтарик вимкнено</string>
-    <string name="hint_flashlight_unavailable">Ліхтарик недоступний на цьому пристрої</string>
     <string name="hint_no_camera">Камеру не виявлено (режим чорного екрана)</string>
 
     <string name="dialog_exit_title">Вихід із програми</string>

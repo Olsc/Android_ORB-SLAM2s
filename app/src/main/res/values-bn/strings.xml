@@ -65,11 +65,6 @@
     <string name="privacy_agree">সম্মত &amp; চালিয়ে যান</string>
     <string name="privacy_load_error">গোপনীয়তা নীতি লোড করতে ব্যর্থ। পুনরায় চেষ্টা করুন।</string>
 
-    <string name="btn_flashlight_off">টর্চ: বন্ধ</string>
-    <string name="btn_flashlight_on">✓টর্চ: চালু</string>
-    <string name="hint_flashlight_on">টর্চ চালু হয়েছে</string>
-    <string name="hint_flashlight_off">টর্চ বন্ধ হয়েছে</string>
-    <string name="hint_flashlight_unavailable">এই ডিভাইসে ফ্ল্যাশলাইট উপলব্ধ নয়</string>
     <string name="hint_no_camera">কোনো ক্যামেরা পাওয়া যায়নি (কালো পর্দা মোড)</string>
 
     <string name="dialog_exit_title">অ্যাপ বন্ধ করুন</string>

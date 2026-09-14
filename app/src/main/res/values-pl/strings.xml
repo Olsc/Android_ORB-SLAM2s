@@ -67,11 +67,6 @@
     <string name="privacy_agree">Akceptuj &amp; Kontynuuj</string>
     <string name="privacy_load_error">Nie udało się załadować polityki prywatności. Spróbuj ponownie.</string>
 
-    <string name="btn_flashlight_off">Latarka: Wył.</string>
-    <string name="btn_flashlight_on">✓Latarka: Wł.</string>
-    <string name="hint_flashlight_on">Latarka włączona</string>
-    <string name="hint_flashlight_off">Latarka wyłączona</string>
-    <string name="hint_flashlight_unavailable">Latarka nie jest dostępna na tym urządzeniu</string>
     <string name="hint_no_camera">Nie wykryto kamery (tryb czarnego ekranu)</string>
 
     <string name="dialog_exit_title">Wyjście z aplikacji</string>

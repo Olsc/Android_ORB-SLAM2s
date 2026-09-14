@@ -65,11 +65,6 @@
     <string name="privacy_agree">Godkänn &amp; Fortsätt</string>
     <string name="privacy_load_error">Det gick inte att läsa in integritetspolicyn. Försök igen.</string>
 
-    <string name="btn_flashlight_off">Ficklampa: Av</string>
-    <string name="btn_flashlight_on">✓Ficklampa: På</string>
-    <string name="hint_flashlight_on">Ficklampa påslagen</string>
-    <string name="hint_flashlight_off">Ficklampa avstängd</string>
-    <string name="hint_flashlight_unavailable">Ficklampa är inte tillgänglig på denna enhet</string>
     <string name="hint_no_camera">Ingen kamera upptäcktes (svart skärm-läge)</string>
 
     <string name="dialog_exit_title">Avsluta appen</string>

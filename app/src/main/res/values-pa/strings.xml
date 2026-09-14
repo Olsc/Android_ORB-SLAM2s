@@ -65,11 +65,6 @@
     <string name="privacy_agree">ਸਹਿਮਤ &amp; ਜਾਰੀ ਰੱਖੋ</string>
     <string name="privacy_load_error">ਪਰਦੇਦਾਰੀ ਨੀਤੀ ਲੋਡ ਕਰਨ ਵਿੱਚ ਅਸਫਲ। ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।</string>
 
-    <string name="btn_flashlight_off">ਟਾਰਚ: ਬੰਦ</string>
-    <string name="btn_flashlight_on">✓ਟਾਰਚ: ਚਾਲੂ</string>
-    <string name="hint_flashlight_on">ਫਲੈਸ਼ਲਾਈਟ ਚਾਲੂ ਕੀਤੀ ਗਈ</string>
-    <string name="hint_flashlight_off">ਫਲੈਸ਼ਲਾਈਟ ਬੰਦ ਕੀਤੀ ਗਈ</string>
-    <string name="hint_flashlight_unavailable">ਇਸ ਡਿਵਾਈਸ ਉੱਤੇ ਫਲੈਸ਼ਲਾਈਟ ਉਪਲਬਧ ਨਹੀਂ ਹੈ</string>
     <string name="hint_no_camera">ਕੋਈ ਕੈਮਰਾ ਨਹੀਂ ਮਿਲਿਆ (ਬਲੈਕ ਸਕ੍ਰੀਨ ਮੋਡ)</string>
 
     <string name="dialog_exit_title">ਐਪ ਤੋਂ ਬਾਹਰ ਜਾਓ</string>

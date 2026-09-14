@@ -65,11 +65,6 @@
     <string name="privacy_agree">متفق &amp; جاری رکھیں</string>
     <string name="privacy_load_error">رازداری کی پالیسی لوڈ کرنے میں ناکامی۔ دوبارہ کوشش کریں۔</string>
 
-    <string name="btn_flashlight_off">ٹارچ: بند</string>
-    <string name="btn_flashlight_on">✓ٹارچ: آن</string>
-    <string name="hint_flashlight_on">ٹارچ آن ہو گئی</string>
-    <string name="hint_flashlight_off">ٹارچ بند ہو گئی</string>
-    <string name="hint_flashlight_unavailable">اس ڈیوائس پر ٹارچ دستیاب نہیں ہے</string>
     <string name="hint_no_camera">کوئی کیمرہ نہیں ملا (بلیک اسکرین موڈ)</string>
 
     <string name="dialog_exit_title">ایپ سے باہر نکلیں</string>

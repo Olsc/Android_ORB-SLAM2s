@@ -65,11 +65,6 @@
     <string name="privacy_agree">Kubali &amp; Endelea</string>
     <string name="privacy_load_error">Imeshindwa kupakia sera ya faragha. Tafadhali jaribu tena.</string>
 
-    <string name="btn_flashlight_off">Tochi: Imezimwa</string>
-    <string name="btn_flashlight_on">✓Tochi: Imewashwa</string>
-    <string name="hint_flashlight_on">Tochi imewashwa</string>
-    <string name="hint_flashlight_off">Tochi imezimwa</string>
-    <string name="hint_flashlight_unavailable">Tochi haipatikani kwenye kifaa hiki</string>
     <string name="hint_no_camera">Hakuna kamera iliyotambuliwa (hali ya skrini nyeusi)</string>
 
     <string name="dialog_exit_title">Toka kwenye Programu</string>

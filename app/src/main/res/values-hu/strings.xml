@@ -65,11 +65,6 @@
     <string name="privacy_agree">Elfogadom &amp; Folytatom</string>
     <string name="privacy_load_error">Az adatvédelmi irányelv betöltése sikertelen. Kérjük, próbálja újra.</string>
 
-    <string name="btn_flashlight_off">Zseblámpa: Ki</string>
-    <string name="btn_flashlight_on">✓Zseblámpa: Be</string>
-    <string name="hint_flashlight_on">Zseblámpa bekapcsolva</string>
-    <string name="hint_flashlight_off">Zseblámpa kikapcsolva</string>
-    <string name="hint_flashlight_unavailable">A zseblámpa nem érhető el ezen az eszközön</string>
     <string name="hint_no_camera">Nem található kamera (fekete képernyő mód)</string>
 
     <string name="dialog_exit_title">Kilépés az alkalmazásból</string>

@@ -65,11 +65,6 @@
     <string name="privacy_agree">Godta &amp; Fortsett</string>
     <string name="privacy_load_error">Lasting av personvernpolicy mislyktes. Prøv igjen.</string>
 
-    <string name="btn_flashlight_off">Lommelykt: Av</string>
-    <string name="btn_flashlight_on">✓Lommelykt: På</string>
-    <string name="hint_flashlight_on">Lommelykt slått på</string>
-    <string name="hint_flashlight_off">Lommelykt slått av</string>
-    <string name="hint_flashlight_unavailable">Lommelykt er ikke tilgjengelig på denne enheten</string>
     <string name="hint_no_camera">Ingen kamera oppdaget (svart skjerm-modus)</string>
 
     <string name="dialog_exit_title">Avslutt appen</string>

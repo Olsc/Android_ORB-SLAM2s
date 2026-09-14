@@ -16,10 +16,8 @@
 package com.orb.slam2s.camera;
 
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.PixelFormat;
-import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
@@ -89,7 +87,6 @@ public class CameraPreviewView extends AspectGLSurfaceView {
     private ExecutorService mIpcSendExecutor;
 
     private int mCameraCount = -1;
-    private boolean mIsTorchOn = false;
 
     private byte[][] mYuvSendBuffers; // 灰度帧发送双缓冲（复用避免 GC）
     private byte[][] mRgbaBuffers;    // 相机 RGBA 帧双缓冲
@@ -110,11 +107,6 @@ public class CameraPreviewView extends AspectGLSurfaceView {
     private final AtomicBoolean mIsIpcProcessing = new AtomicBoolean(false);
 
     private FrameListener mFrameListener;
-
-    public interface TorchCallback {
-        void onTorchChanged(boolean enabled);
-        void onError(String message);
-    }
 
     public interface FrameListener {
         void onCameraStarted(int width, int height);
@@ -220,73 +212,6 @@ public class CameraPreviewView extends AspectGLSurfaceView {
             mCameraCount = getDeviceCameraCount(getContext());
         }
         return mCameraCount;
-    }
-
-    public boolean isTorchOn() {
-        return mIsTorchOn;
-    }
-
-    public boolean isTorchSupported() {
-        if (mCameraX != null) {
-            return mCameraX.getCameraInfo().hasFlashUnit();
-        }
-        return getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
-    }
-
-    public void toggleTorch(TorchCallback callback) {
-        setTorchEnabled(!mIsTorchOn, callback);
-    }
-
-    public void setTorchEnabled(boolean enable, TorchCallback callback) {
-        if (mCameraX != null && mCameraX.getCameraInfo().hasFlashUnit()) {
-            ListenableFuture<Void> future = mCameraX.getCameraControl().enableTorch(enable);
-            future.addListener(() -> {
-                try {
-                    future.get();
-                    mIsTorchOn = enable;
-                    if (callback != null) {
-                        callback.onTorchChanged(mIsTorchOn);
-                    }
-                } catch (Exception e) {
-                    Log.e(TAG, "CameraX 手电筒切换异常: " + e.getMessage());
-                    if (callback != null) {
-                        callback.onError(e.getMessage());
-                    }
-                }
-            }, ContextCompat.getMainExecutor(getContext()));
-        } else {
-            // 后备方案：通过 CameraManager 控制手电筒
-            try {
-                CameraManager cm = (CameraManager) getContext().getSystemService(Context.CAMERA_SERVICE);
-                if (cm != null) {
-                    String[] ids = cm.getCameraIdList();
-                    boolean torchFound = false;
-                    for (String id : ids) {
-                        CameraCharacteristics chars = cm.getCameraCharacteristics(id);
-                        Boolean hasFlash = chars.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
-                        if (Boolean.TRUE.equals(hasFlash)) {
-                            cm.setTorchMode(id, enable);
-                            mIsTorchOn = enable;
-                            torchFound = true;
-                            if (callback != null) {
-                                callback.onTorchChanged(mIsTorchOn);
-                            }
-                            break;
-                        }
-                    }
-                    if (!torchFound && callback != null) {
-                        callback.onError("设备无可用闪光灯");
-                    }
-                } else if (callback != null) {
-                    callback.onError("CameraManager 不可用");
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "CameraManager 手电控制异常: " + e.getMessage());
-                if (callback != null) {
-                    callback.onError(e.getMessage());
-                }
-            }
-        }
     }
 
     private void connectCamera() {
@@ -491,14 +416,6 @@ public class CameraPreviewView extends AspectGLSurfaceView {
     }
 
     private void disconnectCamera() {
-        if (mIsTorchOn) {
-            if (mCameraX != null) {
-                try {
-                    mCameraX.getCameraControl().enableTorch(false);
-                } catch (Exception ignored) {}
-            }
-            mIsTorchOn = false;
-        }
         if (mCameraProvider != null) {
             final ProcessCameraProvider provider = mCameraProvider;
             new Handler(Looper.getMainLooper()).post(() -> {

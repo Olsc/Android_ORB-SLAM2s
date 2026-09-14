@@ -67,11 +67,6 @@
     <string name="privacy_agree">Принять &amp; Продолжить</string>
     <string name="privacy_load_error">Не удалось загрузить политику конфиденциальности. Пожалуйста, попробуйте снова.</string>
 
-    <string name="btn_flashlight_off">Фонарик: Выкл</string>
-    <string name="btn_flashlight_on">✓Фонарик: Вкл</string>
-    <string name="hint_flashlight_on">Фонарик включен</string>
-    <string name="hint_flashlight_off">Фонарик выключен</string>
-    <string name="hint_flashlight_unavailable">Фонарик недоступен на этом устройстве</string>
     <string name="hint_no_camera">Камера не обнаружена (режим черного экрана)</string>
 
     <string name="dialog_exit_title">Выход из приложения</string>

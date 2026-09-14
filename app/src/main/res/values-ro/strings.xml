@@ -66,11 +66,6 @@
     <string name="privacy_agree">De acord &amp; Continuare</string>
     <string name="privacy_load_error">Eroare la încărcarea politicii de confidențialitate. Încercați din nou.</string>
 
-    <string name="btn_flashlight_off">Lanternă: Oprită</string>
-    <string name="btn_flashlight_on">✓Lanternă: Pornită</string>
-    <string name="hint_flashlight_on">Lanterna a fost pornită</string>
-    <string name="hint_flashlight_off">Lanterna a fost oprită</string>
-    <string name="hint_flashlight_unavailable">Lanterna nu este disponibilă pe acest dispozitiv</string>
     <string name="hint_no_camera">Nicio cameră detectată (mod ecran negru)</string>
 
     <string name="dialog_exit_title">Ieșire din aplicație</string>

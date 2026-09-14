@@ -65,11 +65,6 @@
     <string name="privacy_agree">ஒப்புக்கொள்கிறேன் &amp; தொடர்கிறேன்</string>
     <string name="privacy_load_error">தனியுரிமை கொள்கையை ஏற்றுவதில் தோல்வி. மீண்டும் முயற்சிக்கவும்.</string>
 
-    <string name="btn_flashlight_off">டார்ச்: ஆஃப்</string>
-    <string name="btn_flashlight_on">✓டார்ச்: ஆன்</string>
-    <string name="hint_flashlight_on">ஃபிளாஷ்லைட் இயக்கப்பட்டது</string>
-    <string name="hint_flashlight_off">ஃபிளாஷ்லைட் அணைக்கப்பட்டது</string>
-    <string name="hint_flashlight_unavailable">இந்தச் சாதனத்தில் ஃபிளாஷ்லைட் கிடைக்கவில்லை</string>
     <string name="hint_no_camera">கேமரா எதுவும் கண்டறியப்படவில்லை (கருப்புத் திரை பயன்முறை)</string>
 
     <string name="dialog_exit_title">பயன்பாட்டிலிருந்து வெளியேறு</string>

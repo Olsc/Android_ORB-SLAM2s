@@ -65,11 +65,6 @@
     <string name="privacy_agree">موافقت &amp; ادامه</string>
     <string name="privacy_load_error">بارگذاری سیاست حریم خصوصی ناموفق بود. دوباره امتحان کنید.</string>
 
-    <string name="btn_flashlight_off">چراغ‌قوه: خاموش</string>
-    <string name="btn_flashlight_on">✓چراغ‌قوه: روشن</string>
-    <string name="hint_flashlight_on">چراغ‌قوه روشن شد</string>
-    <string name="hint_flashlight_off">چراغ‌قوه خاموش شد</string>
-    <string name="hint_flashlight_unavailable">چراغ‌قوه در این دستگاه موجود نیست</string>
     <string name="hint_no_camera">دوربینی پیدا نشد (حالت صفحه سیاه)</string>
 
     <string name="dialog_exit_title">خروج از برنامه</string>

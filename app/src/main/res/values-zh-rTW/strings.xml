@@ -64,11 +64,6 @@
     <string name="privacy_agree">同意並繼續</string>
     <string name="privacy_load_error">載入隱私政策失敗，請重試。</string>
 
-    <string name="btn_flashlight_off">手電: 關</string>
-    <string name="btn_flashlight_on">✓手電: 開</string>
-    <string name="hint_flashlight_on">手電筒已開啟</string>
-    <string name="hint_flashlight_off">手電筒已關閉</string>
-    <string name="hint_flashlight_unavailable">目前裝置不支援手電筒</string>
     <string name="hint_no_camera">未偵測到可用相機（黑畫面模式）</string>
 
     <string name="dialog_exit_title">結束應用程式</string>

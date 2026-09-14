@@ -64,11 +64,6 @@
     <string name="privacy_agree">Đồng ý &amp; Tiếp tục</string>
     <string name="privacy_load_error">Không thể tải chính sách bảo mật. Vui lòng thử lại.</string>
 
-    <string name="btn_flashlight_off">Đèn pin: Tắt</string>
-    <string name="btn_flashlight_on">✓Đèn pin: Bật</string>
-    <string name="hint_flashlight_on">Đã bật đèn pin</string>
-    <string name="hint_flashlight_off">Đã tắt đèn pin</string>
-    <string name="hint_flashlight_unavailable">Thiết bị này không hỗ trợ đèn pin</string>
     <string name="hint_no_camera">Không tìm thấy camera (chế độ màn hình đen)</string>
 
     <string name="dialog_exit_title">Thoát ứng dụng</string>

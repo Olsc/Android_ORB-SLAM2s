@@ -64,11 +64,6 @@
     <string name="privacy_agree">同意并继续</string>
     <string name="privacy_load_error">加载隐私政策失败，请重试。</string>
 
-    <string name="btn_flashlight_off">手电: 关</string>
-    <string name="btn_flashlight_on">✓手电: 开</string>
-    <string name="hint_flashlight_on">手电筒已打开</string>
-    <string name="hint_flashlight_off">手电筒已关闭</string>
-    <string name="hint_flashlight_unavailable">当前设备不支持手电筒</string>
     <string name="hint_no_camera">未检测到可用相机（黑屏模式）</string>
 
     <string name="dialog_exit_title">退出应用</string>
