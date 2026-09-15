@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">ORB-SLAM2s</string>
+    <string name="app_name">薄荷AR</string>
     <string name="btn_ar_object">AR物体</string>
     <string name="btn_save">保存</string>
     <string name="btn_load">加载</string>

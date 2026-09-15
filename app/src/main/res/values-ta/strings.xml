@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">ORB-SLAM2s</string>
+    <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR பொருள்</string>
     <string name="btn_save">சேமிக்கவும்</string>
     <string name="btn_load">ஏற்றவும்</string>

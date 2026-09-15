@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">ORB-SLAM2s</string>
+    <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR 객체</string>
     <string name="btn_save">저장</string>
     <string name="btn_load">불러오기</string>
