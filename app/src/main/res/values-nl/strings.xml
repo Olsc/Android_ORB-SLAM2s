@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">ORB-SLAM2s</string>
+    <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR-object</string>
     <string name="btn_save">Opslaan</string>
     <string name="btn_load">Laden</string>
