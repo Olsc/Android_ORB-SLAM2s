@@ -27,20 +27,16 @@
 
 #include "include/System.h"
 #include "Common.h"
-#include "Plane.h"
 #include "UIUtils.h"
 #include "Matrix.h"
 #include "include/Config.h"
 
 // 全局状态变量
 ORB_SLAM2::System* slamSys = nullptr;
-Plane* pPlane = nullptr;
-bool planeLoadedFromMap = false;
 
 float fx, fy, cx, cy;
 double timeStamp = 0.0;
 bool gEnablePointCloudDisplay = true;
-bool gShouldDrawArObject = false;
 bool gShowMemoryPanel = true; // 是否开启内存分布可视化仪表盘
 
 std::mutex gSlamStateMutex;
@@ -143,7 +139,6 @@ void drawGUI(cv::Mat& frame, int trackingState, int fps, const MemoryInfo& memIn
 void drawMemoryDashboard(cv::Mat& frame, const MemoryInfo& memInfo, const std::vector<double>& rssHist);
 void drawScoreCardModal(cv::Mat& frame, const ScoreCard& card);
 void onMouse(int event, int x, int y, int flags, void* userdata);
-void drawARCube(cv::Mat& im, const cv::Mat& Tcw, Plane* plane, float fx, float fy, float cx, float cy);
 void drawTrackedPoints(const std::vector<cv::KeyPoint>& vKeys, const std::vector<ORB_SLAM2::MapPoint*>& vMPs,
                        cv::Mat& im, float cx = 0.0f, float cy = 0.0f);
 void drawAllMapPoints(const cv::Mat& Tcw, const std::vector<ORB_SLAM2::MapPoint*>& allMapPoints,
@@ -428,10 +423,6 @@ void resetBenchmarkState() {
     if (slamSys) {
         slamSys->Reset(false);
     }
-    if (pPlane) {
-        delete pPlane;
-        pPlane = nullptr;
-    }
     std::cout << "[Benchmark] State reset successfully." << std::endl;
 }
 
@@ -649,16 +640,6 @@ int main(int argc, char** argv) {
             }
         }
 
-        // 3D 虚拟 AR 判断
-        {
-            std::lock_guard<std::mutex> lock(gMapDataMutex);
-            bool alignmentOK = true;
-            if (pPlane && planeLoadedFromMap) {
-                alignmentOK = slamSys->HasMapAlignment();
-            }
-            gShouldDrawArObject = (status == ORB_SLAM2::Tracking::OK) && (pPlane != nullptr) && alignmentOK;
-        }
-
         // 可视化点云渲染 (加锁保护 vMPs 与地图数据)
         if (gEnablePointCloudDisplay) {
             std::lock_guard<std::mutex> lockPoints(gMapDataMutex);
@@ -670,15 +651,6 @@ int main(int argc, char** argv) {
             if (status == ORB_SLAM2::Tracking::OK && !vMPs.empty()) {
                 drawTrackedPoints(vKeys, vMPs, imgRgba, cx, cy);
             }
-        }
-
-        // 绘制 3D 虚拟 AR 立方体
-        if (gShouldDrawArObject) {
-            cv::Mat TcwAR = Tcw;
-            if (slamSys->HasMapAlignment()) {
-                TcwAR = slamSys->GetMapAlignedPose(Tcw);
-            }
-            drawARCube(imgRgba, TcwAR, pPlane, fx, fy, cx, cy);
         }
 
         // 获取最新内存统计
@@ -712,7 +684,6 @@ int main(int argc, char** argv) {
         slamSys->Shutdown();
         delete slamSys;
     }
-    if (pPlane) delete pPlane;
 
     std::cout << "[Benchmark] Done. Goodbye!" << std::endl;
     return 0;
@@ -804,112 +775,14 @@ void drawAllMapPoints(const cv::Mat& Tcw, const std::vector<ORB_SLAM2::MapPoint*
     }
 }
 
-// 绘制 AR 立方体线框
-void drawARCube(cv::Mat& im, const cv::Mat& Tcw, Plane* plane, float fx, float fy, float cx, float cy) {
-    if (Tcw.empty() || !plane) return;
-
-    cv::Mat Twp = plane->Tpw.inv();
-    float s = ORB_SLAM2::AR_CUBE_SCALE_FACTOR * plane->rang;
-    if (s <= ORB_SLAM2::AR_CUBE_MIN_SIZE) s = ORB_SLAM2::AR_CUBE_FALLBACK_SIZE;
-
-    std::vector<cv::Mat> ptsPlane = {
-        (cv::Mat_<float>(4, 1) << -s, -s, 0, 1),
-        (cv::Mat_<float>(4, 1) <<  s, -s, 0, 1),
-        (cv::Mat_<float>(4, 1) <<  s,  s, 0, 1),
-        (cv::Mat_<float>(4, 1) << -s,  s, 0, 1),
-        (cv::Mat_<float>(4, 1) << -s, -s, 2 * s, 1),
-        (cv::Mat_<float>(4, 1) <<  s, -s, 2 * s, 1),
-        (cv::Mat_<float>(4, 1) <<  s,  s, 2 * s, 1),
-        (cv::Mat_<float>(4, 1) << -s,  s, 2 * s, 1)
-    };
-
-    std::vector<cv::Point> ptsImg;
-    for (const auto& ptP : ptsPlane) {
-        cv::Mat ptW = Twp * ptP;
-        cv::Mat ptW3 = ptW.rowRange(0, 3) / ptW.at<float>(3);
-        cv::Mat ptW4 = (cv::Mat_<float>(4, 1) << ptW3.at<float>(0), ptW3.at<float>(1), ptW3.at<float>(2), 1);
-        cv::Mat ptC = Tcw * ptW4;
-        float Xc = ptC.at<float>(0);
-        float Yc = ptC.at<float>(1);
-        float Zc = ptC.at<float>(2);
-
-        if (Zc <= ORB_SLAM2::PROJECT_MIN_DEPTH) return;
-
-        float scaleToDisplay = (ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR * cx > 0.0f) ? (float)im.cols / (ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR * cx) : ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR;
-        float u = (fx * Xc / Zc + cx) * scaleToDisplay;
-        float v = (fy * Yc / Zc + cy) * scaleToDisplay;
-        ptsImg.push_back(cv::Point(u, v));
-    }
-
-    if (ptsImg.size() < 8) return;
-
-    cv::line(im, ptsImg[0], ptsImg[1], cv::Scalar(0, 255, 255), 2, cv::LINE_AA);
-    cv::line(im, ptsImg[1], ptsImg[2], cv::Scalar(0, 255, 255), 2, cv::LINE_AA);
-    cv::line(im, ptsImg[2], ptsImg[3], cv::Scalar(0, 255, 255), 2, cv::LINE_AA);
-    cv::line(im, ptsImg[3], ptsImg[0], cv::Scalar(0, 255, 255), 2, cv::LINE_AA);
-
-    cv::line(im, ptsImg[4], ptsImg[5], cv::Scalar(255, 0, 255), 2, cv::LINE_AA);
-    cv::line(im, ptsImg[5], ptsImg[6], cv::Scalar(255, 0, 255), 2, cv::LINE_AA);
-    cv::line(im, ptsImg[6], ptsImg[7], cv::Scalar(255, 0, 255), 2, cv::LINE_AA);
-    cv::line(im, ptsImg[7], ptsImg[4], cv::Scalar(255, 0, 255), 2, cv::LINE_AA);
-
-    cv::line(im, ptsImg[0], ptsImg[4], cv::Scalar(0, 255, 0), 2, cv::LINE_AA);
-    cv::line(im, ptsImg[1], ptsImg[5], cv::Scalar(0, 255, 0), 2, cv::LINE_AA);
-    cv::line(im, ptsImg[2], ptsImg[6], cv::Scalar(0, 255, 0), 2, cv::LINE_AA);
-    cv::line(im, ptsImg[3], ptsImg[7], cv::Scalar(0, 255, 0), 2, cv::LINE_AA);
-}
-
 // 初始化交互式按钮与菜单
 void initMenu() {
     menuSections.clear();
 
-    // 第 1 组菜单：AR 控制
-    MenuSection arSec;
-    arSec.title = "AR Controls";
-    arSec.expanded = true;
-
-    Button btnPlace;
-    btnPlace.label = "Place AR Cube";
-    btnPlace.color = cv::Scalar(30, 150, 20);
-    btnPlace.action = []() {
-        std::lock_guard<std::mutex> lock(gSlamStateMutex);
-        std::lock_guard<std::mutex> lockData(gMapDataMutex);
-        if (!Tcw.empty()) {
-            cv::Mat TcwAligned = Tcw;
-            if (slamSys && slamSys->HasMapAlignment()) {
-                TcwAligned = slamSys->GetMapAlignedPose(Tcw);
-            }
-            if (pPlane) delete pPlane;
-            pPlane = detectPlane(TcwAligned, vMPs, ORB_SLAM2::PLANE_DETECT_RANSAC_ITERS);
-            if (pPlane) {
-                if (slamSys && slamSys->MapChanged()) pPlane->Recompute();
-                planeLoadedFromMap = false;
-                std::cout << "[Benchmark GUI] Plane detected, AR ready!" << std::endl;
-            } else {
-                std::cout << "[Benchmark GUI] Plane detection failed." << std::endl;
-            }
-        }
-    };
-
-    Button btnClear;
-    btnClear.label = "Clear All";
-    btnClear.color = cv::Scalar(30, 30, 200);
-    btnClear.action = []() {
-        std::lock_guard<std::mutex> lock(gMapDataMutex);
-        if (pPlane) {
-            delete pPlane;
-            pPlane = nullptr;
-        }
-        std::cout << "[Benchmark GUI] AR objects cleared." << std::endl;
-    };
-
-    arSec.buttons.push_back(btnPlace);
-    arSec.buttons.push_back(btnClear);
-
-    // 第 2 组菜单：地图持久化
+    // 第 1 组菜单：地图持久化
     MenuSection mapSec;
     mapSec.title = "Map Persistence";
-    mapSec.expanded = false;
+    mapSec.expanded = true;
 
     Button btnSave;
     btnSave.label = "Save Map";
@@ -919,23 +792,6 @@ void initMenu() {
         if (slamSys) {
             std::cout << "[Benchmark GUI] Saving map (max 50,000 MPs) to mentha_map.bin..." << std::endl;
             slamSys->SaveMap("mentha_map.bin");
-            if (pPlane) {
-                std::ofstream ofs("mentha_map.bin.arinfo", std::ios::binary);
-                if (ofs.is_open()) {
-                    const uint32_t magic = ORB_SLAM2::AR_INFO_FILE_MAGIC;
-                    const uint32_t version = ORB_SLAM2::AR_INFO_FILE_VERSION;
-                    ofs.write(reinterpret_cast<const char*>(&magic), 4);
-                    ofs.write(reinterpret_cast<const char*>(&version), 4);
-                    uint8_t hasPlane = 1;
-                    ofs.write(reinterpret_cast<const char*>(&hasPlane), 1);
-                    float o3[3] = {pPlane->o.at<float>(0), pPlane->o.at<float>(1), pPlane->o.at<float>(2)};
-                    float n3[3] = {pPlane->n.at<float>(0), pPlane->n.at<float>(1), pPlane->n.at<float>(2)};
-                    ofs.write(reinterpret_cast<const char*>(o3), sizeof(o3));
-                    ofs.write(reinterpret_cast<const char*>(n3), sizeof(n3));
-                    ofs.write(reinterpret_cast<const char*>(&pPlane->rang), sizeof(pPlane->rang));
-                    ofs.close();
-                }
-            }
             std::cout << "[Benchmark GUI] Map saved successfully!" << std::endl;
         }
     };
@@ -948,27 +804,6 @@ void initMenu() {
         if (slamSys) {
             std::cout << "[Benchmark GUI] Loading map from mentha_map.bin..." << std::endl;
             slamSys->LoadMap("mentha_map.bin", 0, false);
-            std::ifstream ifs("mentha_map.bin.arinfo", std::ios::binary);
-            if (ifs.is_open()) {
-                uint32_t magic = 0, version = 0;
-                ifs.read(reinterpret_cast<char*>(&magic), 4);
-                ifs.read(reinterpret_cast<char*>(&version), 4);
-                if (magic == ORB_SLAM2::AR_INFO_FILE_MAGIC) {
-                    uint8_t hasPlane = 0;
-                    ifs.read(reinterpret_cast<char*>(&hasPlane), 1);
-                    if (hasPlane) {
-                        float o3[3], n3[3], rang;
-                        ifs.read(reinterpret_cast<char*>(o3), sizeof(o3));
-                        ifs.read(reinterpret_cast<char*>(n3), sizeof(n3));
-                        ifs.read(reinterpret_cast<char*>(&rang), sizeof(rang));
-                        if (pPlane) delete pPlane;
-                        pPlane = new Plane(n3[0], n3[1], n3[2], o3[0], o3[1], o3[2]);
-                        pPlane->rang = rang;
-                        planeLoadedFromMap = true;
-                    }
-                }
-                ifs.close();
-            }
             std::cout << "[Benchmark GUI] Map loaded successfully!" << std::endl;
         }
     };
@@ -976,7 +811,7 @@ void initMenu() {
     mapSec.buttons.push_back(btnSave);
     mapSec.buttons.push_back(btnLoad);
 
-    // 第 3 组菜单：显示设置
+    // 第 2 组菜单：显示设置
     MenuSection dispSec;
     dispSec.title = "Display Settings";
     dispSec.expanded = false;
@@ -998,15 +833,16 @@ void initMenu() {
     dispSec.buttons.push_back(btnToggleP);
     dispSec.buttons.push_back(btnToggleMem);
 
-    // 第 4 组菜单：评测控制
+    // 第 3 组菜单：评测控制
     MenuSection benchSec;
     benchSec.title = "Benchmark Controls";
     benchSec.expanded = true;
 
     Button btnRestart;
-    btnRestart.label = "Restart Benchmark";
-    btnRestart.color = cv::Scalar(30, 160, 160);
+    btnRestart.label = "Reset SLAM State";
+    btnRestart.color = cv::Scalar(30, 150, 20);
     btnRestart.action = []() {
+        std::lock_guard<std::mutex> lock(gSlamStateMutex);
         resetBenchmarkState();
     };
 
@@ -1021,7 +857,6 @@ void initMenu() {
     benchSec.buttons.push_back(btnRestart);
     benchSec.buttons.push_back(btnExport);
 
-    menuSections.push_back(arSec);
     menuSections.push_back(mapSec);
     menuSections.push_back(dispSec);
     menuSections.push_back(benchSec);

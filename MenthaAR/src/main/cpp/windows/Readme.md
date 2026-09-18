@@ -1,6 +1,6 @@
 # MenthaAR Windows SLAM
 
-MenthaAR 的单目视觉 SLAM 桌面版本（Windows / Visual Studio 2022），支持实时摄像头和离线视频文件的 SLAM 跟踪、点云显示、AR 物体放置。
+MenthaAR 的单目视觉 SLAM 桌面版本（Windows / Visual Studio 2022），支持实时摄像头和离线视频文件的 SLAM 跟踪与点云显示。
 
 > 与 `ubuntu/` 目录共享同一套 SLAM 引擎源码（`src/` + `include/`），仅构建脚本与平台适配层不同。
 
@@ -71,9 +71,7 @@ MenthaAR_Windows.exe 1
 
 | 分组 | 功能 |
 |------|------|
-| **AR 互动操作** | 放置/清除 AR 虚拟立方体 |
 | **地图持久化操作** | 保存/加载 SLAM 地图 (mentha_map.bin) |
-| **SLAM 引擎控制** | 重置/开关 SLAM |
 | **可视化显示设置** | 切换点云显示 |
 
 ### 键盘
