@@ -61,11 +61,24 @@
     <string name="hint_3dof_spawned">Cube 3DOF créé à 5 mètres devant</string>
     <string name="hint_3dof_closed">Mode 3DOF fermé</string>
 
-
     <string name="hint_no_camera">Aucune caméra détectée (mode écran noir)</string>
 
     <string name="dialog_exit_title">Quitter l\'application</string>
     <string name="dialog_exit_message">Voulez-vous vraiment quitter l\'application ?</string>
     <string name="action_exit">Quitter</string>
 
+    <string name="shortcut_map_manage">Gestion des cartes</string>
+    <string name="map_manage_stats">Total %1$d cartes (%2$s)</string>
+    <string name="map_manage_empty_desc">Les cartes enregistrées pendant le SLAM apparaîtront ici.</string>
+    <string name="map_details_path">Chemin du fichier : %1$s</string>
+    <string name="map_action_refresh">Actualiser</string>
+
+    <string name="shortcut_change_icon">"Changer d'icône"</string>
+    <string name="icon_select_title">"Icône de l'application"</string>
+    <string name="icon_select_desc">"Choisissez votre icône préférée. Appuyez longuement sur l'écran d'accueil pour la modifier à tout moment."</string>
+    <string name="icon_default_name">Bleu classique</string>
+    <string name="icon_custom_name">Rouge flamme</string>
+    <string name="icon_in_use">"En cours d'utilisation"</string>
+    <string name="icon_switched_hint">Icône mise à jour vers %s</string>
+    <string name="icon_note">"Remarque : selon le lanceur, l'actualisation peut prendre quelques secondes."</string>
 </resources>

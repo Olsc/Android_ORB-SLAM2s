@@ -61,11 +61,24 @@
     <string name="hint_3dof_spawned">Cubo 3DOF gerado a 5 metros à frente</string>
     <string name="hint_3dof_closed">Modo 3DOF fechado</string>
 
-
     <string name="hint_no_camera">Nenhuma câmera detectada (modo tela preta)</string>
 
     <string name="dialog_exit_title">Sair do aplicativo</string>
     <string name="dialog_exit_message">Tem certeza de que deseja sair do aplicativo?</string>
     <string name="action_exit">Sair</string>
 
+    <string name="shortcut_map_manage">Gerenciamento de mapas</string>
+    <string name="map_manage_stats">Total %1$d mapas (%2$s)</string>
+    <string name="map_manage_empty_desc">Os mapas salvos durante o SLAM aparecerão aqui.</string>
+    <string name="map_details_path">Caminho do arquivo: %1$s</string>
+    <string name="map_action_refresh">Atualizar</string>
+
+    <string name="shortcut_change_icon">Mudar ícone</string>
+    <string name="icon_select_title">Ícone do aplicativo</string>
+    <string name="icon_select_desc">Selecione seu ícone de aplicativo favorito. Pressione e segure na tela inicial para alterar a qualquer momento.</string>
+    <string name="icon_default_name">Azul clássico</string>
+    <string name="icon_custom_name">Vermelho chamas</string>
+    <string name="icon_in_use">Em uso</string>
+    <string name="icon_switched_hint">Ícone do aplicativo alterado para %s</string>
+    <string name="icon_note">Observação: Em alguns inicializadores, a atualização pode levar alguns segundos.</string>
 </resources>

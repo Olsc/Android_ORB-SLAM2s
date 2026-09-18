@@ -60,11 +60,24 @@
     <string name="hint_3dof_spawned">Mchemraba wa 3DOF uliundwa mita 5 mbele</string>
     <string name="hint_3dof_closed">Hali ya 3DOF imefungwa</string>
 
-
     <string name="hint_no_camera">Hakuna kamera iliyotambuliwa (hali ya skrini nyeusi)</string>
 
     <string name="dialog_exit_title">Toka kwenye Programu</string>
     <string name="dialog_exit_message">Una uhakika unataka kutoka kwenye programu?</string>
     <string name="action_exit">Toka</string>
 
+    <string name="shortcut_map_manage">Usimamizi wa Ramani</string>
+    <string name="map_manage_stats">Jumla ya ramani %1$d (%2$s)</string>
+    <string name="map_manage_empty_desc">Ramani zilizohifadhiwa wakati wa SLAM zitaonekana hapa.</string>
+    <string name="map_details_path">Njia ya Faili: %1$s</string>
+    <string name="map_action_refresh">Onyesha upya</string>
+
+    <string name="shortcut_change_icon">Badilisha Ikoni</string>
+    <string name="icon_select_title">Ikoni ya Programu</string>
+    <string name="icon_select_desc">Chagua ikoni ya programu unayopendelea. Bonyeza kwa muda mrefu kwenye skrini ya nyumbani ili kubadilisha wakati wowote.</string>
+    <string name="icon_default_name">Bluu ya Kiasili</string>
+    <string name="icon_custom_name">Nyekundu ya Moto</string>
+    <string name="icon_in_use">Inatumika</string>
+    <string name="icon_switched_hint">Ikoni ya programu imebadilishwa kuwa %s</string>
+    <string name="icon_note">Kumbuka: Kwenye baadhi ya vizindua, inaweza kuchukua sekunde chache kusasisha.</string>
 </resources>

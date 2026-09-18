@@ -60,11 +60,24 @@
     <string name="hint_3dof_spawned">3DOF-kuutio luotu 5 metriä edessä</string>
     <string name="hint_3dof_closed">3DOF-tila suljettu</string>
 
-
     <string name="hint_no_camera">Kameraa ei havaittu (musta näyttö -tila)</string>
 
     <string name="dialog_exit_title">Sulje sovellus</string>
     <string name="dialog_exit_message">Haluatko varmasti sulkea sovelluksen?</string>
     <string name="action_exit">Sulje</string>
 
+    <string name="shortcut_map_manage">Kartanhallinta</string>
+    <string name="map_manage_stats">Yhteensä %1$d karttaa (%2$s)</string>
+    <string name="map_manage_empty_desc">SLAM-seurannan aikana tallennetut kartat näkyvät täällä.</string>
+    <string name="map_details_path">Tiedostopolku: %1$s</string>
+    <string name="map_action_refresh">Päivitä</string>
+
+    <string name="shortcut_change_icon">Vaihda kuvake</string>
+    <string name="icon_select_title">Sovelluskuvake</string>
+    <string name="icon_select_desc">Valitse haluamasi sovelluskuvake. Voit vaihtaa sen milloin tahansa painamalla pitkään aloitusnäytössä.</string>
+    <string name="icon_default_name">Klassinen sininen</string>
+    <string name="icon_custom_name">Liekinpunainen</string>
+    <string name="icon_in_use">Käytössä</string>
+    <string name="icon_switched_hint">Sovelluskuvakkeeksi vaihdettu %s</string>
+    <string name="icon_note">Huomautus: Joissakin käynnistimissä päivitys aloitusnäytössä voi kestää muutaman sekunnin.</string>
 </resources>

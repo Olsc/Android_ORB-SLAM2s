@@ -60,7 +60,6 @@
     <string name="hint_3dof_spawned">3DOF cube spawned 5 meters ahead</string>
     <string name="hint_3dof_closed">3DOF mode closed</string>
 
-
     <string name="hint_no_camera">No camera detected (Black screen mode)</string>
 
     <string name="dialog_exit_title">Exit Application</string>
@@ -72,5 +71,14 @@
     <string name="map_manage_empty_desc">Maps saved during SLAM will appear here.</string>
     <string name="map_details_path">File Path: %1$s</string>
     <string name="map_action_refresh">Refresh</string>
+
+    <string name="shortcut_change_icon">Change Icon</string>
+    <string name="icon_select_title">App Icon</string>
+    <string name="icon_select_desc">Select your preferred app icon. Long press on home screen to change anytime.</string>
+    <string name="icon_default_name">Classic Blue</string>
+    <string name="icon_custom_name">Flame Red</string>
+    <string name="icon_in_use">In Use</string>
+    <string name="icon_switched_hint">App icon updated to %s</string>
+    <string name="icon_note">Note: Some launchers may take a few seconds to refresh.</string>
 
 </resources>

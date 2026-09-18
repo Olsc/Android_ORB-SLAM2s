@@ -60,11 +60,24 @@
     <string name="hint_3dof_spawned">3DOF క్యూబ్ 5 మీటర్ల ముందు సృష్టించబడింది</string>
     <string name="hint_3dof_closed">3DOF మోడ్ మూసివేయబడింది</string>
 
-
     <string name="hint_no_camera">కెమెరా ఏదీ కనుగొనబడలేదు (బ్లాక్ స్క్రీన్ మోడ్)</string>
 
     <string name="dialog_exit_title">యాప్ నుండి నిష్క్రమించు</string>
     <string name="dialog_exit_message">మీరు నిజంగా నిష్క్రమించాలనుకుంటున్నారా?</string>
     <string name="action_exit">నిష్క్రమించు</string>
 
+    <string name="shortcut_map_manage">మ్యాప్ నిర్వహణ</string>
+    <string name="map_manage_stats">మొత్తం %1$d మ్యాప్‌లు (%2$s)</string>
+    <string name="map_manage_empty_desc">SLAM సమయంలో సేవ్ చేయబడిన మ్యాప్‌లు ఇక్కడ కనిపిస్తాయి.</string>
+    <string name="map_details_path">ఫైల్ మార్గం: %1$s</string>
+    <string name="map_action_refresh">రిఫ్రెష్ చేయి</string>
+
+    <string name="shortcut_change_icon">చిహ్నాన్ని మార్చు</string>
+    <string name="icon_select_title">యాప్ చిహ్నం</string>
+    <string name="icon_select_desc">మీకు నచ్చిన యాప్ చిహ్నాన్ని ఎంచుకోండి. ఎప్పుడైనా మార్చడానికి హోమ్ స్క్రీన్‌పై ఎక్కువసేపు నొక్కండి.</string>
+    <string name="icon_default_name">క్లాసిక్ బ్లూ</string>
+    <string name="icon_custom_name">ఫ్లేమ్ రెడ్</string>
+    <string name="icon_in_use">ఉపయోగంలో ఉంది</string>
+    <string name="icon_switched_hint">యాప్ చిహ్నం %s కు మార్చబడింది</string>
+    <string name="icon_note">గమనిక: కొన్ని లాంచర్‌లలో హోమ్ స్క్రీన్‌పై అప్‌డేట్ కావడానికి కొన్ని సెకన్లు పట్టవచ్చు.</string>
 </resources>

@@ -60,11 +60,24 @@
     <string name="hint_3dof_spawned">3DOF घन 5 मीटर समोर तयार झाला</string>
     <string name="hint_3dof_closed">3DOF मोड बंद</string>
 
-
     <string name="hint_no_camera">कोणताही कॅमेरा आढळला नाही (काळा स्क्रीन मोड)</string>
 
     <string name="dialog_exit_title">अॅपमधून बाहेर पडा</string>
     <string name="dialog_exit_message">तुम्हाला नक्की अॅपमधून बाहेर पडायचे आहे का?</string>
     <string name="action_exit">बाहेर पडा</string>
 
+    <string name="shortcut_map_manage">नकाशा व्यवस्थापन</string>
+    <string name="map_manage_stats">एकूण %1$d नकाशे (%2$s)</string>
+    <string name="map_manage_empty_desc">SLAM दरम्यान सेव्ह केलेले नकाशे येथे दिसतील.</string>
+    <string name="map_details_path">फाइल पथ: %1$s</string>
+    <string name="map_action_refresh">रीफ्रेश करा</string>
+
+    <string name="shortcut_change_icon">चिन्ह बदला</string>
+    <string name="icon_select_title">ॲप चिन्ह</string>
+    <string name="icon_select_desc">तुमचे आवडते ॲप चिन्ह निवडा. बदलण्यासाठी होम स्क्रीनवर दीर्घकाळ दाबा.</string>
+    <string name="icon_default_name">क्लासिक ब्लू</string>
+    <string name="icon_custom_name">फ्लेम रेड</string>
+    <string name="icon_in_use">वापरात आहे</string>
+    <string name="icon_switched_hint">ॲप चिन्ह %s वर बदलले आहे</string>
+    <string name="icon_note">टीप: काही लाँचरवर होम स्क्रीनवर अपडेट होण्यासाठी काही सेकंद लागू शकतात.</string>
 </resources>

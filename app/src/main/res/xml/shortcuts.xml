@@ -11,4 +11,15 @@
             android:targetPackage="com.orb.slam2s"
             android:targetClass="com.orb.slam2s.ui.MapManageActivity" />
     </shortcut>
+    <shortcut
+        android:shortcutId="change_icon"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_icon"
+        android:shortcutShortLabel="@string/shortcut_change_icon"
+        android:shortcutLongLabel="@string/shortcut_change_icon">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.orb.slam2s"
+            android:targetClass="com.orb.slam2s.ui.IconSelectActivity" />
+    </shortcut>
 </shortcuts>

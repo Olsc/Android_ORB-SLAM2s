@@ -60,11 +60,24 @@
     <string name="hint_3dof_spawned">3DOF küpü 5 metre ileride oluşturuldu</string>
     <string name="hint_3dof_closed">3DOF modu kapatıldı</string>
 
-
     <string name="hint_no_camera">Kamera algılanmadı (Siyah ekran modu)</string>
 
     <string name="dialog_exit_title">Uygulamadan Çık</string>
     <string name="dialog_exit_message">Uygulamadan çıkmak istediğinizden emin misiniz?</string>
     <string name="action_exit">Çıkış</string>
 
+    <string name="shortcut_map_manage">Harita Yönetimi</string>
+    <string name="map_manage_stats">Toplam %1$d harita (%2$s)</string>
+    <string name="map_manage_empty_desc">SLAM sırasında kaydedilen haritalar burada görünecektir.</string>
+    <string name="map_details_path">Dosya Yolu: %1$s</string>
+    <string name="map_action_refresh">Yenile</string>
+
+    <string name="shortcut_change_icon">Simgeyi Değiştir</string>
+    <string name="icon_select_title">Uygulama Simgesi</string>
+    <string name="icon_select_desc">Tercih ettiğiniz uygulama simgesini seçin. İstediğiniz zaman değiştirmek için ana ekranda uzun basın.</string>
+    <string name="icon_default_name">Klasik Mavi</string>
+    <string name="icon_custom_name">Alev Kırmızısı</string>
+    <string name="icon_in_use">Kullanımda</string>
+    <string name="icon_switched_hint">Uygulama simgesi %s olarak değiştirildi</string>
+    <string name="icon_note">Not: Bazı başlatıcılarda ana ekranda yenilenmesi birkaç saniye sürebilir.</string>
 </resources>

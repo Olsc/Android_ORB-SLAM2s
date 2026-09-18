@@ -35,6 +35,7 @@ import androidx.core.graphics.drawable.IconCompat;
 import androidx.core.view.WindowCompat;
 
 import com.orb.slam2s.R;
+import com.orb.slam2s.ui.IconSelectActivity;
 import com.orb.slam2s.ui.MainActivity;
 import com.orb.slam2s.ui.MapManageActivity;
 
@@ -57,17 +58,28 @@ public class SplashActivity extends Activity {
 
     private void setupDynamicShortcuts() {
         try {
-            Intent intent = new Intent(this, MapManageActivity.class);
-            intent.setAction(Intent.ACTION_VIEW);
-            ShortcutInfoCompat shortcut = new ShortcutInfoCompat.Builder(this, "map_management")
+            Intent mapIntent = new Intent(this, MapManageActivity.class);
+            mapIntent.setAction(Intent.ACTION_VIEW);
+            ShortcutInfoCompat mapShortcut = new ShortcutInfoCompat.Builder(this, "map_management")
                     .setShortLabel(getString(R.string.shortcut_map_manage))
                     .setLongLabel(getString(R.string.shortcut_map_manage))
                     .setIcon(IconCompat.createWithResource(this, R.drawable.ic_shortcut_map))
-                    .setIntent(intent)
+                    .setIntent(mapIntent)
                     .build();
-            ShortcutManagerCompat.pushDynamicShortcut(this, shortcut);
+
+            Intent iconIntent = new Intent(this, IconSelectActivity.class);
+            iconIntent.setAction(Intent.ACTION_VIEW);
+            ShortcutInfoCompat iconShortcut = new ShortcutInfoCompat.Builder(this, "change_icon")
+                    .setShortLabel(getString(R.string.shortcut_change_icon))
+                    .setLongLabel(getString(R.string.shortcut_change_icon))
+                    .setIcon(IconCompat.createWithResource(this, R.drawable.ic_shortcut_icon))
+                    .setIntent(iconIntent)
+                    .build();
+
+            ShortcutManagerCompat.pushDynamicShortcut(this, mapShortcut);
+            ShortcutManagerCompat.pushDynamicShortcut(this, iconShortcut);
         } catch (Exception e) {
-            Log.w(TAG, "Failed to setup dynamic shortcut: " + e.getMessage());
+            Log.w(TAG, "注册动态快捷方式异常: " + e.getMessage());
         }
     }
 

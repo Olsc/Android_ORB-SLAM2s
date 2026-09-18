@@ -60,11 +60,24 @@
     <string name="hint_3dof_spawned">3DOF куб е създаден на 5 метра напред</string>
     <string name="hint_3dof_closed">Режимът 3DOF е затворен</string>
 
-
     <string name="hint_no_camera">Няма открита камера (режим на черен екран)</string>
 
     <string name="dialog_exit_title">Изход от приложението</string>
     <string name="dialog_exit_message">Сигурни ли сте, че искате да излезете от приложението?</string>
     <string name="action_exit">Изход</string>
 
+    <string name="shortcut_map_manage">Управление на карти</string>
+    <string name="map_manage_stats">Общо %1$d карти (%2$s)</string>
+    <string name="map_manage_empty_desc">Картите, запазени по време на SLAM, ще се появят тук.</string>
+    <string name="map_details_path">Път до файла: %1$s</string>
+    <string name="map_action_refresh">Опресняване</string>
+
+    <string name="shortcut_change_icon">Промяна на икона</string>
+    <string name="icon_select_title">Икона на приложението</string>
+    <string name="icon_select_desc">Изберете предпочитаната икона на приложението. Задръжте върху началния екран за промяна по всяко време.</string>
+    <string name="icon_default_name">Класическо синьо</string>
+    <string name="icon_custom_name">Огнено червено</string>
+    <string name="icon_in_use">В употреба</string>
+    <string name="icon_switched_hint">Иконата на приложението е променена на %s</string>
+    <string name="icon_note">Забележка: При някои стартери обновяването може да отнеме няколко секунди.</string>
 </resources>

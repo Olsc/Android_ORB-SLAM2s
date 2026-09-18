@@ -60,11 +60,24 @@
     <string name="hint_3dof_spawned">Nalilikha ang 3DOF cube 5 metro sa harap</string>
     <string name="hint_3dof_closed">Sarado na ang 3DOF mode</string>
 
-
     <string name="hint_no_camera">Walang nakitang camera (black screen mode)</string>
 
     <string name="dialog_exit_title">Lumabas sa App</string>
     <string name="dialog_exit_message">Sigurado ka bang gusto mong lumabas sa app?</string>
     <string name="action_exit">Lumabas</string>
 
+    <string name="shortcut_map_manage">Pamamahala ng Mapa</string>
+    <string name="map_manage_stats">Kabuuang %1$d mapa (%2$s)</string>
+    <string name="map_manage_empty_desc">Ang mga mapa na na-save sa panahon ng SLAM ay lilitaw dito.</string>
+    <string name="map_details_path">Path ng File: %1$s</string>
+    <string name="map_action_refresh">I-refresh</string>
+
+    <string name="shortcut_change_icon">Palitan ang Icon</string>
+    <string name="icon_select_title">Icon ng App</string>
+    <string name="icon_select_desc">Piliin ang iyong gustong icon ng app. Pindutin nang matagal sa home screen upang magpalit anumang oras.</string>
+    <string name="icon_default_name">Klasikong Asul</string>
+    <string name="icon_custom_name">Pulang Apoy</string>
+    <string name="icon_in_use">Ginagamit</string>
+    <string name="icon_switched_hint">Ang icon ng app ay napalitan sa %s</string>
+    <string name="icon_note">Tandaan: Sa ilang launcher, maaaring tumagal ng ilang segundo bago mag-refresh sa home screen.</string>
 </resources>

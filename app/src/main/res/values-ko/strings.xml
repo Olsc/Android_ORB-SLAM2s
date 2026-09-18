@@ -59,11 +59,24 @@
     <string name="hint_3dof_spawned">3DOF 큐브가 5미터 앞에 생성됨</string>
     <string name="hint_3dof_closed">3DOF 모드 종료됨</string>
 
-
     <string name="hint_no_camera">사용 가능한 카메라가 감지되지 않았습니다 (검은 화면 모드)</string>
 
     <string name="dialog_exit_title">앱 종료</string>
     <string name="dialog_exit_message">앱을 종료하시겠습니까?</string>
     <string name="action_exit">종료</string>
 
+    <string name="shortcut_map_manage">지도 관리</string>
+    <string name="map_manage_stats">총 %1$d개 지도 (%2$s)</string>
+    <string name="map_manage_empty_desc">SLAM 실행 중 저장된 지도가 여기에 표시됩니다</string>
+    <string name="map_details_path">파일 경로: %1$s</string>
+    <string name="map_action_refresh">새로고침</string>
+
+    <string name="shortcut_change_icon">아이콘 변경</string>
+    <string name="icon_select_title">앱 아이콘</string>
+    <string name="icon_select_desc">선호하는 앱 아이콘을 선택하세요. 홈 화면에서 길게 눌러 언제든지 변경할 수 있습니다.</string>
+    <string name="icon_default_name">클래식 블루</string>
+    <string name="icon_custom_name">플레임 레드</string>
+    <string name="icon_in_use">사용 중</string>
+    <string name="icon_switched_hint">앱 아이콘이 %s(으)로 변경되었습니다</string>
+    <string name="icon_note">참고: 일부 런처에서는 홈 화면에 반영되는 데 몇 초 정도 걸릴 수 있습니다.</string>
 </resources>

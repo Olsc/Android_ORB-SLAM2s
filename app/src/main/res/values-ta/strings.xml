@@ -60,11 +60,24 @@
     <string name="hint_3dof_spawned">3DOF கனசதுரம் 5 மீட்டர் முன்னால் உருவாக்கப்பட்டது</string>
     <string name="hint_3dof_closed">3DOF பயன்முறை மூடப்பட்டது</string>
 
-
     <string name="hint_no_camera">கேமரா எதுவும் கண்டறியப்படவில்லை (கருப்புத் திரை பயன்முறை)</string>
 
     <string name="dialog_exit_title">பயன்பாட்டிலிருந்து வெளியேறு</string>
     <string name="dialog_exit_message">பயன்பாட்டிலிருந்து வெளியேற விரும்புகிறீர்களா?</string>
     <string name="action_exit">வெளியேறு</string>
 
+    <string name="shortcut_map_manage">வரைபட நிர்வாகம்</string>
+    <string name="map_manage_stats">மொத்தம் %1$d வரைபடங்கள் (%2$s)</string>
+    <string name="map_manage_empty_desc">SLAM இன் போது சேமிக்கப்பட்ட வரைபடங்கள் இங்கே தோன்றும்.</string>
+    <string name="map_details_path">கோப்பு பாதை: %1$s</string>
+    <string name="map_action_refresh">புதுப்பி</string>
+
+    <string name="shortcut_change_icon">ஐகானை மாற்று</string>
+    <string name="icon_select_title">பயன்பாட்டு ஐகான்</string>
+    <string name="icon_select_desc">உங்களுக்கு விருப்பமான பயன்பாட்டு ஐகானைத் தேர்ந்தெடுக்கவும். மாற்ற முகப்புத் திரையில் நீண்ட நேரம் அழுத்தவும்.</string>
+    <string name="icon_default_name">கிளாசிக் நீலம்</string>
+    <string name="icon_custom_name">சுடர் சிவப்பு</string>
+    <string name="icon_in_use">பயன்பாட்டில் உள்ளது</string>
+    <string name="icon_switched_hint">பயன்பாட்டு ஐகான் %s என மாற்றப்பட்டது</string>
+    <string name="icon_note">குறிப்பு: சில லாஞ்சர்களில் முகப்புத் திரையில் புதுப்பிக்க சில வினாடிகள் ஆகலாம்.</string>
 </resources>
