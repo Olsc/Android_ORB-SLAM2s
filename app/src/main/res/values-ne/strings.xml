@@ -1,0 +1,84 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MenthaAR</string>
+    <string name="btn_ar_object">AR वस्तु</string>
+    <string name="btn_save">बचत गर्नुहोस्</string>
+    <string name="btn_load">लोड गर्नुहोस्</string>
+    <string name="btn_map">नक्सा</string>
+    <string name="btn_point_cloud">✓पोइन्ट क्लाउड</string>
+    <string name="loading_slam_init">SLAM प्रणाली प्रारम्भ गरिँदैछ…</string>
+    <string name="loading_slam_wait">Күте тұрыңыз</string>
+    <string name="slam_init_complete">SLAM жүйесі дайын</string>
+    <string name="slam_init_failed">Inicializácia SLAM zlyhala: %1$s</string>
+    <string name="hint_request_sent">Požiadavka odoslaná</string>
+    <string name="hint_pointcloud_enabled">Bodový oblak povolený</string>
+    <string name="hint_pointcloud_disabled">Bodový oblak zakázaný</string>
+    <string name="btn_pointcloud_enabled">✓Bodový oblak</string>
+    <string name="btn_pointcloud_disabled">Bodový oblak</string>
+    <string name="input_map_name">नक्साको नाम प्रविष्ट गर्नुहोस्</string>
+    <string name="dialog_save_map">नक्सा बचत गर्नुहोस्</string>
+    <string name="button_cancel">रद्द गर्नुहोस्</string>
+    <string name="hint_no_maps">कुनै नक्सा बचत गरिएको छैन</string>
+    <string name="dialog_map_manage">नक्सा व्यवस्थापन</string>
+    <string name="dialog_select_map">Vybrať mapu</string>
+    <string name="action_load">लोड</string>
+    <string name="action_delete">हटाउनुहोस्</string>
+    <string name="action_view_details">विवरणहरू</string>
+    <string name="dialog_confirm_delete">Potvrdiť odstránenie</string>
+    <string name="dialog_confirm_delete_message">Odstrániť mapu \"%1$s\"?</string>
+    <string name="hint_map_deleted">Mapa odstránená</string>
+    <string name="hint_map_delete_failed">Odstránenie zlyhalo</string>
+    <string name="button_back">पछाडि</string>
+    <string name="dialog_map_details">Podrobnosti mapy</string>
+    <string name="map_details_name">Názov mapy: %1$s</string>
+    <string name="map_details_keyframes">Kľúčové snímky: %1$d</string>
+    <string name="map_details_mappoints">Body mapy: %1$d</string>
+    <string name="map_details_size">Veľkosť: %1$d KB</string>
+    <string name="map_details_time">Vytvorené: %1$s</string>
+    <string name="map_details_plane">Rovina: %1$s</string>
+    <string name="map_details_plane_yes">हो</string>
+    <string name="map_details_plane_no">होइन</string>
+    <string name="button_ok">OK</string>
+    <string name="map_stats_format">KS: %1$d | BM: %2$d | Rovina: %3$s</string>
+    <string name="map_stats_plane_yes">Áno</string>
+    <string name="map_stats_plane_no">Nie</string>
+    <string name="hint_map_saved">Mapa uložená: %1$s</string>
+    <string name="hint_map_loaded">Mapa načítaná: %1$s</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="one">%1$d नक्सा लोड भयो</item>
+        <item quantity="other">%1$d नक्सा लोड भए</item>
+    </plurals>
+    <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
+
+    <string name="category_ar">Ovládanie AR</string>
+    <string name="category_map">Mapa</string>
+    <string name="category_display">Zobrazenie</string>
+
+    <string name="btn_3dof">3DOF</string>
+    <string name="btn_3dof_close">Zavrieť 3DOF</string>
+    <string name="hint_3dof_unavailable">Funkcia 3DOF nie je dostupná</string>
+    <string name="hint_3dof_spawned">Kocka 3DOF vytvorená 5 metrov vpred</string>
+    <string name="hint_3dof_closed">Režim 3DOF zatvorený</string>
+
+    <string name="hint_no_camera">Nezistila sa kamera</string>
+
+    <string name="dialog_exit_title">Ukončiť aplikáciu</string>
+    <string name="dialog_exit_message">Naozaj chcete aplikáciu ukončiť?</string>
+    <string name="action_exit">Ukončiť</string>
+
+    <string name="shortcut_map_manage">नक्सा व्यवस्थापन</string>
+    <string name="map_manage_stats">जम्मा %1$d नक्सा (%2$s)</string>
+    <string name="map_manage_empty_desc">Mapy uložené počas SLAM sa zobrazia tu.</string>
+    <string name="map_details_path">Cesta: %1$s</string>
+    <string name="map_action_refresh">ताजा गर्नुहोस्</string>
+
+    <string name="shortcut_change_icon">आइकन परिवर्तन गर्नुहोस्</string>
+    <string name="icon_select_title">एप आइकन</string>
+    <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
+    <string name="icon_default_name">क्लासिक निलो</string>
+    <string name="icon_custom_name">ज्वाला रातो</string>
+    <string name="icon_in_use">प्रयोगमा</string>
+    <string name="icon_switched_hint">एप आइकन %s मा परिवर्तन गरियो</string>
+    <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
+
+</resources>

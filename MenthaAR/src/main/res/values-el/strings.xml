@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hint_map_saved">Ο χάρτης αποθηκεύτηκε: %1$s</string>
+    <string name="hint_map_loaded">Ο χάρτης φορτώθηκε: %1$s</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">Φορτώθηκαν %1$d χάρτες</item>
+        <item quantity="one">Φορτώθηκαν %1$d χάρτες</item>
+    </plurals>
+    <string name="hint_map_deleted">Ο χάρτης διαγράφηκε</string>
+    <string name="hint_map_delete_failed">Αποτυχία διαγραφής</string>
+</resources>

@@ -1,0 +1,84 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MenthaAR</string>
+    <string name="btn_ar_object">AR Object</string>
+    <string name="btn_save">Save</string>
+    <string name="btn_load">Load</string>
+    <string name="btn_map">Map</string>
+    <string name="btn_point_cloud">✓Point Cloud</string>
+    <string name="loading_slam_init">Initializing SLAM system…</string>
+    <string name="loading_slam_wait">Please wait, this may take a while</string>
+    <string name="slam_init_complete">SLAM system initialized</string>
+    <string name="slam_init_failed">SLAM initialization failed: %1$s</string>
+    <string name="hint_request_sent">Request sent</string>
+    <string name="hint_pointcloud_enabled">Point cloud enabled</string>
+    <string name="hint_pointcloud_disabled">Point cloud disabled</string>
+    <string name="btn_pointcloud_enabled">✓Point Cloud</string>
+    <string name="btn_pointcloud_disabled">Point Cloud</string>
+    <string name="input_map_name">Enter map name</string>
+    <string name="dialog_save_map">Save Map</string>
+    <string name="button_cancel">Cancel</string>
+    <string name="hint_no_maps">No saved maps</string>
+    <string name="dialog_map_manage">Map Management</string>
+    <string name="dialog_select_map">Select Map</string>
+    <string name="action_load">Load</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_view_details">View Details</string>
+    <string name="dialog_confirm_delete">Confirm Delete</string>
+    <string name="dialog_confirm_delete_message">Delete map \"%1$s\"?</string>
+    <string name="hint_map_deleted">Map deleted</string>
+    <string name="hint_map_delete_failed">Delete failed</string>
+    <string name="button_back">Back</string>
+    <string name="dialog_map_details">Map Details</string>
+    <string name="map_details_name">Map Name: %1$s</string>
+    <string name="map_details_keyframes">Keyframes: %1$d</string>
+    <string name="map_details_mappoints">Map Points: %1$d</string>
+    <string name="map_details_size">File Size: %1$d KB</string>
+    <string name="map_details_time">Created: %1$s</string>
+    <string name="map_details_plane">Has Plane: %1$s</string>
+    <string name="map_details_plane_yes">Yes</string>
+    <string name="map_details_plane_no">No</string>
+    <string name="button_ok">OK</string>
+    <string name="map_stats_format">KFs: %1$d | MPs: %2$d | Plane: %3$s</string>
+    <string name="map_stats_plane_yes">Yes</string>
+    <string name="map_stats_plane_no">No</string>
+    <string name="hint_map_saved">Map saved: %1$s</string>
+    <string name="hint_map_loaded">Map loaded: %1$s</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="one">Loaded %1$d map</item>
+        <item quantity="other">Loaded %1$d maps</item>
+    </plurals>
+    <string name="permission_camera_storage_required">Camera and storage permissions are required. Please grant permissions in settings.</string>
+
+    <string name="category_ar">AR Controls</string>
+    <string name="category_map">Map</string>
+    <string name="category_display">Display</string>
+
+    <string name="btn_3dof">3DOF</string>
+    <string name="btn_3dof_close">Close 3DOF</string>
+    <string name="hint_3dof_unavailable">3DOF feature unavailable</string>
+    <string name="hint_3dof_spawned">3DOF cube spawned 5 meters ahead</string>
+    <string name="hint_3dof_closed">3DOF mode closed</string>
+
+    <string name="hint_no_camera">No camera detected (Black screen mode)</string>
+
+    <string name="dialog_exit_title">Exit Application</string>
+    <string name="dialog_exit_message">Are you sure you want to exit?</string>
+    <string name="action_exit">Exit</string>
+
+    <string name="shortcut_map_manage">Map Management</string>
+    <string name="map_manage_stats">Total %1$d maps (%2$s)</string>
+    <string name="map_manage_empty_desc">Maps saved during SLAM will appear here.</string>
+    <string name="map_details_path">File Path: %1$s</string>
+    <string name="map_action_refresh">Refresh</string>
+
+    <string name="shortcut_change_icon">Change Icon</string>
+    <string name="icon_select_title">App Icon</string>
+    <string name="icon_select_desc">Select your preferred app icon. Long press on home screen to change anytime.</string>
+    <string name="icon_default_name">Classic Blue</string>
+    <string name="icon_custom_name">Flame Red</string>
+    <string name="icon_in_use">In Use</string>
+    <string name="icon_switched_hint">App icon updated to %s</string>
+    <string name="icon_note">Note: Some launchers may take a few seconds to refresh.</string>
+
+</resources>

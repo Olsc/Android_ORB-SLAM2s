@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hint_map_saved">মানচিত্র সংরক্ষিত: %1$s</string>
+    <string name="hint_map_loaded">মানচিত্র লোড হয়েছে: %1$s</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d মানচিত্র লোড হয়েছে</item>
+        <item quantity="one">%1$d মানচিত্র লোড হয়েছে</item>
+    </plurals>
+    <string name="hint_map_deleted">মানচিত্র মুছে গেছে</string>
+    <string name="hint_map_delete_failed">মুছতে ব্যর্থ</string>
+</resources>

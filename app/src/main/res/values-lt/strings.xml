@@ -1,0 +1,84 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MenthaAR</string>
+    <string name="btn_ar_object">AR objektas</string>
+    <string name="btn_save">Išsaugoti</string>
+    <string name="btn_load">Įkelti</string>
+    <string name="btn_map">Žemėlapis</string>
+    <string name="btn_point_cloud">✓Taškų debesis</string>
+    <string name="loading_slam_init">Inicijuojama SLAM sistema…</string>
+    <string name="loading_slam_wait">Čakajte prosím, môže to chvíľu trvať</string>
+    <string name="slam_init_complete">Systém SLAM inicializovaný</string>
+    <string name="slam_init_failed">Inicializácia SLAM zlyhala: %1$s</string>
+    <string name="hint_request_sent">Požiadavka odoslaná</string>
+    <string name="hint_pointcloud_enabled">Bodový oblak povolený</string>
+    <string name="hint_pointcloud_disabled">Bodový oblak zakázaný</string>
+    <string name="btn_pointcloud_enabled">✓Bodový oblak</string>
+    <string name="btn_pointcloud_disabled">Bodový oblak</string>
+    <string name="input_map_name">Įveskite žemėlapio pavadinimą</string>
+    <string name="dialog_save_map">Išsaugoti žemėlapį</string>
+    <string name="button_cancel">Atšaukti</string>
+    <string name="hint_no_maps">Nėra išsaugotų žemėlapių</string>
+    <string name="dialog_map_manage">Žemėlapio valdymas</string>
+    <string name="dialog_select_map">Vybrať mapu</string>
+    <string name="action_load">Įkelti</string>
+    <string name="action_delete">Ištrinti</string>
+    <string name="action_view_details">Išsamiau</string>
+    <string name="dialog_confirm_delete">Potvrdiť odstránenie</string>
+    <string name="dialog_confirm_delete_message">Odstrániť mapu \"%1$s\"?</string>
+    <string name="hint_map_deleted">Mapa odstránená</string>
+    <string name="hint_map_delete_failed">Odstránenie zlyhalo</string>
+    <string name="button_back">Atgal</string>
+    <string name="dialog_map_details">Podrobnosti mapy</string>
+    <string name="map_details_name">Názov mapy: %1$s</string>
+    <string name="map_details_keyframes">Kľúčové snímky: %1$d</string>
+    <string name="map_details_mappoints">Body mapy: %1$d</string>
+    <string name="map_details_size">Veľkosť: %1$d KB</string>
+    <string name="map_details_time">Vytvorené: %1$s</string>
+    <string name="map_details_plane">Rovina: %1$s</string>
+    <string name="map_details_plane_yes">Taip</string>
+    <string name="map_details_plane_no">Ne</string>
+    <string name="button_ok">OK</string>
+    <string name="map_stats_format">KS: %1$d | BM: %2$d | Rovina: %3$s</string>
+    <string name="map_stats_plane_yes">Áno</string>
+    <string name="map_stats_plane_no">Nie</string>
+    <string name="hint_map_saved">Mapa uložená: %1$s</string>
+    <string name="hint_map_loaded">Mapa načítaná: %1$s</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="one">Įkeltas %1$d žemėlapis</item>
+        <item quantity="other">Įkelta %1$d žemėlapių</item>
+    </plurals>
+    <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
+
+    <string name="category_ar">Ovládanie AR</string>
+    <string name="category_map">Mapa</string>
+    <string name="category_display">Zobrazenie</string>
+
+    <string name="btn_3dof">3DOF</string>
+    <string name="btn_3dof_close">Zavrieť 3DOF</string>
+    <string name="hint_3dof_unavailable">Funkcia 3DOF nie je dostupná</string>
+    <string name="hint_3dof_spawned">Kocka 3DOF vytvorená 5 metrov vpred</string>
+    <string name="hint_3dof_closed">Režim 3DOF zatvorený</string>
+
+    <string name="hint_no_camera">Nezistila sa kamera</string>
+
+    <string name="dialog_exit_title">Ukončiť aplikáciu</string>
+    <string name="dialog_exit_message">Naozaj chcete aplikáciu ukončiť?</string>
+    <string name="action_exit">Ukončiť</string>
+
+    <string name="shortcut_map_manage">Žemėlapių valdymas</string>
+    <string name="map_manage_stats">Iš viso %1$d žemėlapiai (%2$s)</string>
+    <string name="map_manage_empty_desc">Mapy uložené počas SLAM sa zobrazia tu.</string>
+    <string name="map_details_path">Cesta: %1$s</string>
+    <string name="map_action_refresh">Atnaujinti</string>
+
+    <string name="shortcut_change_icon">Keisti piktogramą</string>
+    <string name="icon_select_title">Programėlės piktograma</string>
+    <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
+    <string name="icon_default_name">Klasikinė mėlyna</string>
+    <string name="icon_custom_name">Liepsnojanti raudona</string>
+    <string name="icon_in_use">Naudojama</string>
+    <string name="icon_switched_hint">Piktograma pakeista į %s</string>
+    <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
+
+</resources>

@@ -1,0 +1,84 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MenthaAR</string>
+    <string name="btn_ar_object">Objeto AR</string>
+    <string name="btn_save">Guardar</string>
+    <string name="btn_load">Cargar</string>
+    <string name="btn_map">Mapa</string>
+    <string name="btn_point_cloud">✓Nube de puntos</string>
+    <string name="loading_slam_init">Inicializando sistema SLAM…</string>
+    <string name="loading_slam_wait">Por favor espere, esto puede tardar un momento</string>
+    <string name="slam_init_complete">Sistema SLAM inicializado</string>
+    <string name="slam_init_failed">Error al inicializar SLAM: %1$s</string>
+    <string name="hint_request_sent">Solicitud enviada</string>
+    <string name="hint_pointcloud_enabled">Nube de puntos activada</string>
+    <string name="hint_pointcloud_disabled">Nube de puntos desactivada</string>
+    <string name="btn_pointcloud_enabled">✓Nube de puntos</string>
+    <string name="btn_pointcloud_disabled">Nube de puntos</string>
+    <string name="input_map_name">Ingrese el nombre del mapa</string>
+    <string name="dialog_save_map">Guardar mapa</string>
+    <string name="button_cancel">Cancelar</string>
+    <string name="hint_no_maps">No hay mapas guardados</string>
+    <string name="dialog_map_manage">Gestión de mapas</string>
+    <string name="dialog_select_map">Seleccionar mapa</string>
+    <string name="action_load">Cargar</string>
+    <string name="action_delete">Eliminar</string>
+    <string name="action_view_details">Ver detalles</string>
+    <string name="dialog_confirm_delete">Confirmar eliminación</string>
+    <string name="dialog_confirm_delete_message">¿Eliminar mapa \"%1$s\"?</string>
+    <string name="hint_map_deleted">Mapa eliminado</string>
+    <string name="hint_map_delete_failed">Error al eliminar</string>
+    <string name="button_back">Atrás</string>
+    <string name="dialog_map_details">Detalles del mapa</string>
+    <string name="map_details_name">Nombre del mapa: %1$s</string>
+    <string name="map_details_keyframes">Fotogramas clave: %1$d</string>
+    <string name="map_details_mappoints">Puntos del mapa: %1$d</string>
+    <string name="map_details_size">Tamaño del archivo: %1$d KB</string>
+    <string name="map_details_time">Creado: %1$s</string>
+    <string name="map_details_plane">Tiene plano: %1$s</string>
+    <string name="map_details_plane_yes">Sí</string>
+    <string name="map_details_plane_no">No</string>
+    <string name="button_ok">Aceptar</string>
+    <string name="map_stats_format">KFs: %1$d | MPs: %2$d | Plano: %3$s</string>
+    <string name="map_stats_plane_yes">Sí</string>
+    <string name="map_stats_plane_no">No</string>
+    <string name="hint_map_saved">Mapa guardado: %1$s</string>
+    <string name="hint_map_loaded">Mapa cargado: %1$s</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d mapas cargados</item>
+        <item quantity="one">%1$d mapas cargados</item>
+        <item quantity="many">%1$d mapas cargados</item>
+    </plurals>
+    <string name="permission_camera_storage_required">Se requieren permisos de cámara y almacenamiento. Por favor, concédalos en los ajustes.</string>
+
+    <string name="category_ar">Controles AR</string>
+    <string name="category_map">Mapa</string>
+    <string name="category_display">Pantalla</string>
+
+    <string name="btn_3dof">3DOF</string>
+    <string name="btn_3dof_close">Cerrar 3DOF</string>
+    <string name="hint_3dof_unavailable">Función 3DOF no disponible</string>
+    <string name="hint_3dof_spawned">Cubo 3DOF generado a 5 metros adelante</string>
+    <string name="hint_3dof_closed">Modo 3DOF cerrado</string>
+
+    <string name="hint_no_camera">No se detectó ninguna cámara (modo pantalla negra)</string>
+
+    <string name="dialog_exit_title">Salir de la aplicación</string>
+    <string name="dialog_exit_message">¿Seguro que desea salir de la aplicación?</string>
+    <string name="action_exit">Salir</string>
+
+    <string name="shortcut_map_manage">Gestión de mapas</string>
+    <string name="map_manage_stats">Total %1$d mapas (%2$s)</string>
+    <string name="map_manage_empty_desc">Los mapas guardados durante SLAM aparecerán aquí.</string>
+    <string name="map_details_path">Ruta del archivo: %1$s</string>
+    <string name="map_action_refresh">Actualizar</string>
+
+    <string name="shortcut_change_icon">Cambiar icono</string>
+    <string name="icon_select_title">Icono de la app</string>
+    <string name="icon_select_desc">Selecciona tu icono preferido. Mantén presionado en la pantalla de inicio para cambiarlo en cualquier momento.</string>
+    <string name="icon_default_name">Azul clásico</string>
+    <string name="icon_custom_name">Rojo fuego</string>
+    <string name="icon_in_use">En uso</string>
+    <string name="icon_switched_hint">Icono de la app cambiado a %s</string>
+    <string name="icon_note">Nota: En algunos lanzadores, la actualización puede tardar unos segundos.</string>
+</resources>

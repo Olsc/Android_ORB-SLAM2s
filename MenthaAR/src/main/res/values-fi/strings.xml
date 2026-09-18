@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hint_map_saved">Kartta tallennettu: %1$s</string>
+    <string name="hint_map_loaded">Kartta ladattu: %1$s</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d karttaa ladattu</item>
+        <item quantity="one">%1$d karttaa ladattu</item>
+    </plurals>
+    <string name="hint_map_deleted">Kartta poistettu</string>
+    <string name="hint_map_delete_failed">Poistaminen epäonnistui</string>
+</resources>

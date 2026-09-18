@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hint_map_saved">మ్యాప్ సేవ్ చేయబడింది: %1$s</string>
+    <string name="hint_map_loaded">మ్యాప్ లోడ్ చేయబడింది: %1$s</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d మ్యాప్‌లు లోడ్ చేయబడ్డాయి</item>
+        <item quantity="one">%1$d మ్యాప్‌లు లోడ్ చేయబడ్డాయి</item>
+    </plurals>
+    <string name="hint_map_deleted">మ్యాప్ తొలగించబడింది</string>
+    <string name="hint_map_delete_failed">తొలగింపు విఫలమైంది</string>
+</resources>

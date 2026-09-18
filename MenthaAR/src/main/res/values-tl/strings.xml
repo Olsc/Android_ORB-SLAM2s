@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hint_map_saved">Nai-save ang mapa: %1$s</string>
+    <string name="hint_map_loaded">Na-load ang mapa: %1$s</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">Na-load ang %1$d na mapa</item>
+        <item quantity="one">Na-load ang %1$d na mapa</item>
+    </plurals>
+    <string name="hint_map_deleted">Nabura ang mapa</string>
+    <string name="hint_map_delete_failed">Nabigo ang pagbura</string>
+</resources>
