@@ -1,6 +1,6 @@
 # MenthaAR Ubuntu SLAM
 
-MenthaAR 的单目视觉 SLAM 桌面版本，支持实时摄像头和离线视频文件的 SLAM 跟踪、点云显示、AR 物体放置。
+MenthaAR 的单目视觉 SLAM 桌面版本，支持实时摄像头和离线视频文件的 SLAM 跟踪与点云显示。
 
 ---
 
@@ -9,7 +9,7 @@ MenthaAR 的单目视觉 SLAM 桌面版本，支持实时摄像头和离线视�
 ```bash
 # 更新系统源并安装基础构建链
 sudo apt-get update
-sudo apt-get install -y build-essential cmake libgtk-3-dev libtbb-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev
+sudo apt-get install -y build-essential cmake libgtk-3-dev libtbb-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libjpeg-dev
 sudo apt-get install -y ffmpeg
 ```
 
@@ -60,9 +60,7 @@ make -j$(nproc)
 
 | 分组 | 功能 |
 |------|------|
-| **AR 互动操作** | 放置/清除 AR 虚拟立方体 |
 | **地图持久化操作** | 保存/加载 SLAM 地图 (mentha_map.bin) |
-| **SLAM 引擎控制** | 重置/开关 SLAM |
 | **可视化显示设置** | 切换点云显示 |
 
 ### 键盘
