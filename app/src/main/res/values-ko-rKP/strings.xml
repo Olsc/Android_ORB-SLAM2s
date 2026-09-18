@@ -59,10 +59,6 @@
     <string name="hint_3dof_spawned">3DOF 정육면체가 5미터 앞에 생성됨</string>
     <string name="hint_3dof_closed">3DOF 방식 종료됨</string>
 
-    <string name="privacy_scroll_hint">↓ 전체 협의서를 읽으려면 맨 아래로 스크롤하십시오</string>
-    <string name="privacy_scroll_done">✓ 전체 협의서를 읽으셨습니다</string>
-    <string name="privacy_agree">동의 &amp; 계속</string>
-    <string name="privacy_load_error">개인정보보호정책을 불러오지 못했습니다. 다시 시도해 주십시오.</string>
 
     <string name="hint_no_camera">리용 가능한 카메라가 감지되지 않았습니다 (검은 화면 방식)</string>
 

@@ -60,15 +60,17 @@
     <string name="hint_3dof_spawned">3DOF cube spawned 5 meters ahead</string>
     <string name="hint_3dof_closed">3DOF mode closed</string>
 
-    <string name="privacy_scroll_hint">↓ Please scroll to the bottom to read the full agreement</string>
-    <string name="privacy_scroll_done">✓ You have read the full agreement</string>
-    <string name="privacy_agree">Agree &amp; Continue</string>
-    <string name="privacy_load_error">Failed to load privacy policy. Please try again.</string>
 
     <string name="hint_no_camera">No camera detected (Black screen mode)</string>
 
     <string name="dialog_exit_title">Exit Application</string>
     <string name="dialog_exit_message">Are you sure you want to exit?</string>
     <string name="action_exit">Exit</string>
+
+    <string name="shortcut_map_manage">Map Management</string>
+    <string name="map_manage_stats">Total %1$d maps (%2$s)</string>
+    <string name="map_manage_empty_desc">Maps saved during SLAM will appear here.</string>
+    <string name="map_details_path">File Path: %1$s</string>
+    <string name="map_action_refresh">Refresh</string>
 
 </resources>

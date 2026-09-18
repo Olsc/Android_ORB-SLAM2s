@@ -103,6 +103,7 @@ public class MapManager {
                 } else {
                     info.fileSize = file.length();
                 }
+                info.filePath = file.getAbsolutePath();
 
                 maps.add(info);
             }
@@ -111,6 +112,14 @@ public class MapManager {
         Collections.sort(maps, (m1, m2) -> Long.compare(m2.createTime, m1.createTime));
 
         return maps;
+    }
+
+    public File getMapDirectory() {
+        return mMapDirectory;
+    }
+
+    public File getMapFile(String mapName) {
+        return new File(mMapDirectory, mapName + ".bin");
     }
 
     private MapInfo loadMetadata(String mapName) {
@@ -147,5 +156,6 @@ public class MapManager {
         public long fileSize;
         public long createTime;
         public boolean hasPlane;
+        public String filePath;
     }
 }

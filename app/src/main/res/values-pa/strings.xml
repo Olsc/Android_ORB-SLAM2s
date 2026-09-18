@@ -60,10 +60,6 @@
     <string name="hint_3dof_spawned">3DOF ਕਿਊਬ 5 ਮੀਟਰ ਅੱਗੇ ਬਣਾਇਆ ਗਿਆ</string>
     <string name="hint_3dof_closed">3DOF ਮੋਡ ਬੰਦ ਹੈ</string>
 
-    <string name="privacy_scroll_hint">↓ ਪੂਰਾ ਸਮਝੌਤਾ ਪੜ੍ਹਨ ਲਈ ਕਿਰਪਾ ਕਰਕੇ ਹੇਠਾਂ ਸਕ੍ਰੌਲ ਕਰੋ</string>
-    <string name="privacy_scroll_done">✓ ਤੁਸੀਂ ਪੂਰਾ ਸਮਝੌਤਾ ਪੜ੍ਹ ਲਿਆ ਹੈ</string>
-    <string name="privacy_agree">ਸਹਿਮਤ &amp; ਜਾਰੀ ਰੱਖੋ</string>
-    <string name="privacy_load_error">ਪਰਦੇਦਾਰੀ ਨੀਤੀ ਲੋਡ ਕਰਨ ਵਿੱਚ ਅਸਫਲ। ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।</string>
 
     <string name="hint_no_camera">ਕੋਈ ਕੈਮਰਾ ਨਹੀਂ ਮਿਲਿਆ (ਬਲੈਕ ਸਕ੍ਰੀਨ ਮੋਡ)</string>
 

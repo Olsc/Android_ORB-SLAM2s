@@ -28,27 +28,36 @@
         android:theme="@style/AppTheme"
         android:enableOnBackInvokedCallback="true">
         <activity
-            android:name="com.orb.slam2s.app.PrivacyConsentActivity"
+            android:name="com.orb.slam2s.app.SplashActivity"
             android:exported="true"
-            android:screenOrientation="sensorLandscape"
-            android:theme="@style/Theme.AppCompat.NoActionBar"
-            tools:ignore="DiscouragedApi">
+            android:screenOrientation="fullSensor"
+            tools:ignore="DiscouragedApi,CustomSplashScreen">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
-        <activity
-            android:name="com.orb.slam2s.app.SplashActivity"
-            android:exported="false"
-            android:screenOrientation="fullSensor"
-            tools:ignore="DiscouragedApi,CustomSplashScreen" />
         <activity
             android:name="com.orb.slam2s.ui.MainActivity"
             android:theme="@style/ListTheme"
             android:screenOrientation="sensorLandscape"
             android:configChanges="orientation|screenSize"
             tools:ignore="Instantiatable,DiscouragedApi" />
+        <activity
+            android:name="com.orb.slam2s.ui.MapManageActivity"
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat.NoActionBar"
+            android:screenOrientation="fullSensor"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+            tools:ignore="DiscouragedApi">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>

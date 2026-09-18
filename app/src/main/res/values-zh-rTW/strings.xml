@@ -59,15 +59,17 @@
     <string name="hint_3dof_spawned">3DOF 立方體已在前方 5 公尺處生成</string>
     <string name="hint_3dof_closed">3DOF 模式已關閉</string>
 
-    <string name="privacy_scroll_hint">↓ 請滑動至底部閱讀完整協議</string>
-    <string name="privacy_scroll_done">✓ 您已閱讀完整協議</string>
-    <string name="privacy_agree">同意並繼續</string>
-    <string name="privacy_load_error">載入隱私政策失敗，請重試。</string>
 
     <string name="hint_no_camera">未偵測到可用相機（黑畫面模式）</string>
 
     <string name="dialog_exit_title">結束應用程式</string>
     <string name="dialog_exit_message">確定要結束應用程式嗎？</string>
     <string name="action_exit">結束</string>
+
+    <string name="shortcut_map_manage">地圖管理</string>
+    <string name="map_manage_stats">共 %1$d 個地圖 (%2$s)</string>
+    <string name="map_manage_empty_desc">在 SLAM 運行過程中保存的地圖將保存在本地</string>
+    <string name="map_details_path">文件路徑: %1$s</string>
+    <string name="map_action_refresh">刷新</string>
 
 </resources>

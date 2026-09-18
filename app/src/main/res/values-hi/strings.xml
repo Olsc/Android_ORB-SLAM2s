@@ -60,10 +60,6 @@
     <string name="hint_3dof_spawned">3DOF घन 5 मीटर आगे बनाया गया</string>
     <string name="hint_3dof_closed">3DOF मोड बंद</string>
 
-    <string name="privacy_scroll_hint">↓ पूरे समझौते को पढ़ने के लिए नीचे स्क्रॉल करें</string>
-    <string name="privacy_scroll_done">✓ आपने पूरा समझौता पढ़ लिया है</string>
-    <string name="privacy_agree">सहमत &amp; जारी रखें</string>
-    <string name="privacy_load_error">गोपनीयता नीति लोड करने में विफल। कृपया पुनः प्रयास करें।</string>
 
     <string name="hint_no_camera">कोई कैमरा नहीं मिला (ब्लैक स्क्रीन मोड)</string>
 
