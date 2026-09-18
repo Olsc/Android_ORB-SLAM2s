@@ -130,10 +130,8 @@ int main(int argc, char** argv) {
     auto lastProcessTime = std::chrono::steady_clock::now();
     const double processInterval = 1.0 / TARGET_FPS;
 
-    // 播放时钟（视频文件）：基于视频时间戳对齐墙钟，保证按源帧率正常速度播放。
-    // waitKey(1000/fps) 不可靠：waitKey 精度差，且显示/解码开销叠加在等待之上，
-    // 实际帧间隔恒 >= 理论间隔，高帧率视频明显变慢。采用 CAP_PROP_POS_MSEC 时间戳
-    // 与墙钟对比：视频超前则补等，落后（处理慢）则追帧。
+    // 视频播放时钟：基于视频时间戳对齐墙钟，超前补等、落后追帧
+    // 保证按源帧率平稳播放，规避 waitKey 累积时延导致的视频慢放
     double playBaseMsec = -1.0;   // 基准帧的视频时间戳(ms)
     double playBaseWallMs = 0.0;  // 基准帧的墙钟(ms)
     long frameIdx = 0;            // 帧序号（时间戳不可用时的兜底）

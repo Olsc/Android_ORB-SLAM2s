@@ -24,6 +24,9 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileWriter;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -92,6 +95,21 @@ public class MapManager {
                 String mapName = file.getName().replace(".bin", "");
                 MapInfo info = loadMetadata(mapName);
 
+                // 若缺少元数据或信息为空，直接从 .bin 实际文件头解析真实帧数与地图点数并补齐 JSON
+                if (info == null || (info.keyFrames == 0 && info.mapPoints == 0)) {
+                    MapInfo binInfo = readBinHeader(file);
+                    if (info == null) {
+                        info = binInfo;
+                    } else if (binInfo != null && (binInfo.keyFrames > 0 || binInfo.mapPoints > 0)) {
+                        info.keyFrames = binInfo.keyFrames;
+                        info.mapPoints = binInfo.mapPoints;
+                        info.hasPlane = binInfo.hasPlane;
+                    }
+                    if (info != null) {
+                        saveMetadata(info);
+                    }
+                }
+
                 if (info == null) {
                     info = new MapInfo();
                     info.name = mapName;
@@ -120,6 +138,76 @@ public class MapManager {
 
     public File getMapFile(String mapName) {
         return new File(mMapDirectory, mapName + ".bin");
+    }
+
+    public void saveMetadata(MapInfo info) {
+        if (info == null) return;
+        try {
+            File metaFile = new File(mMapDirectory, info.name + MAP_METADATA_EXT);
+            JSONObject json = new JSONObject();
+            json.put("name", info.name);
+            json.put("keyFrames", info.keyFrames);
+            json.put("mapPoints", info.mapPoints);
+            json.put("createTime", info.createTime);
+            json.put("hasPlane", info.hasPlane);
+            json.put("fileSize", info.fileSize);
+
+            try (FileWriter writer = new FileWriter(metaFile)) {
+                writer.write(json.toString(2));
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "保存元数据失败: " + e.getMessage(), e);
+        }
+    }
+
+    // 从 .bin 二进制文件头读取关键帧与地图点数量
+    private MapInfo readBinHeader(File file) {
+        String mapName = file.getName().replace(".bin", "");
+        MapInfo info = new MapInfo();
+        info.name = mapName;
+        info.fileSize = file.length();
+        info.createTime = file.lastModified();
+        info.keyFrames = 0;
+        info.mapPoints = 0;
+        info.hasPlane = false;
+
+        // .bin 头部格式: magic(4B) + version(4B) + nKFs(4B) + nMPs(4B)
+        if (file.length() >= 16) {
+            try (FileInputStream fis = new FileInputStream(file)) {
+                byte[] header = new byte[16];
+                int read = fis.read(header);
+                if (read >= 16) {
+                    ByteBuffer buf = ByteBuffer.wrap(header).order(ByteOrder.LITTLE_ENDIAN);
+                    int magic = buf.getInt();
+                    int version = buf.getInt();
+                    int nKFs = buf.getInt();
+                    int nMPs = buf.getInt();
+                    // 兼容标准地图格式 (0x4D415031: MAP1)
+                    if (magic == 0x4D415031 || magic == 0x534D4150 || nKFs > 0 || nMPs > 0) {
+                        info.keyFrames = Math.max(0, nKFs);
+                        info.mapPoints = Math.max(0, nMPs);
+                    }
+                }
+            } catch (Exception e) {
+                Log.w(TAG, "解析 .bin 头失败: " + e.getMessage());
+            }
+        }
+
+        File arInfoFile = new File(mMapDirectory, mapName + ".bin.arinfo");
+        if (arInfoFile.exists()) {
+            info.hasPlane = true;
+            if (arInfoFile.length() >= 9) {
+                try (FileInputStream fis = new FileInputStream(arInfoFile)) {
+                    byte[] arHeader = new byte[9];
+                    if (fis.read(arHeader) >= 9) {
+                        info.hasPlane = (arHeader[8] != 0);
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        }
+
+        return info;
     }
 
     private MapInfo loadMetadata(String mapName) {

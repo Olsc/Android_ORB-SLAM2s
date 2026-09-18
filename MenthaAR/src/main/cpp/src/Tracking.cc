@@ -916,7 +916,7 @@ void Tracking::GlobalRelocLoop(int sessionId)
                         }
                     }
 
-                    // 仅在最佳地图优胜（内点>=15且多于第二名20%）且内点足够时发布
+                    // 仅在最佳地图得票显著领先且内点数满足阈值时发布对齐结果
                     if (bestMapId != -1 && maxVote >= RELOC_MIN_INLIERS_FOR_ALIGN && (maxVote > secondMaxVote * RELOC_MAP_VOTE_MARGIN)) {
                         // 使用平滑更新机制，减少单帧抖动
                         UpdateAlignmentSmooth(T_map_from_slam, inliersCnt, conf, ts);
@@ -2638,12 +2638,8 @@ bool Tracking::Relocalization()
         if(!vbDiscarded[i]) nCandidates++;
     }
 
-    // 或者执行一些P4P RANSAC迭代，直到找到由足够内点支持的相机姿态。
-    // 不设墙钟超时：每个 PnPsolver 的 RANSAC 迭代总数有限（SetRansacParameters
-    // 自适应上限 ≤300，耗尽即 bNoMore 丢弃该候选），循环必然在有界迭代内终止；
-    // 时间截断会让超时瞬间的解成为中途解，精度不可控
-    // 直接使用函数入口处的 bMatch：此处重复声明会遮蔽外层变量，
-    // 使 KF 重定位的成功路径变成死代码
+    // 执行 PnP RANSAC 迭代求解有效位姿，各候选解迭代有界以保证收敛
+    // 复用外层 bMatch 状态，避免变量遮蔽导致重定位成功路径失效
     ORBmatcher matcher2(ORB_MATCHER_NNRATIO_MOTION,true);
 
     {
@@ -3006,9 +3002,8 @@ void Tracking::Reset()
     }
     mLastInitAttemptTime = 0.0;
 
-    // 必须先启动后台线程，再调用 BuildLoadedRefCache！
-    // 原因：BuildLoadedRefCache 内部有 mbRelocThreadStop 的退出检查，
-    // 如果先调用会导致超过100个地图点时缓存被截断。
+    // 先启动后台重定位线程，确保 BuildLoadedRefCache 运行标志有效
+    // 避免因未启动线程导致缓存构建提前截断
     StartGlobalRelocThread();
     LOGD("跟踪::重置结束");
 

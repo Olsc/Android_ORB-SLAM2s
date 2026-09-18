@@ -641,12 +641,12 @@ int ORBmatcher::SearchByHBST(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> 
         return 0;
     const auto& matchables1 = tree1->matchables();
 
-    // Obtain the pre-built cached tree of KeyFrame pKF2
+    // 获取关键帧 pKF2 预构建的特征缓存树
     std::shared_ptr<HBSTTree> tree2 = pKF2->GetHBSTTree();
     if (!tree2)
         return 0;
 
-    // Loop over KeyFrame pKF1's features
+    // 遍历关键帧 pKF1 的所有特征点
     for (int idx1 = 0; idx1 < nDescriptors1; idx1++) {
         MapPoint* pMP1 = vpMapPoints1[idx1];
         if (!pMP1 || pMP1->isBad())
@@ -822,7 +822,7 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
     const float f10=F12.at<float>(1,0), f11=F12.at<float>(1,1), f12v=F12.at<float>(1,2);
     const float f20=F12.at<float>(2,0), f21=F12.at<float>(2,1), f22=F12.at<float>(2,2);
 
-    // Loop over pKF1's features that DO NOT have map points
+    // 遍历关键帧 pKF1 中未关联地图点的特征点
     for (int idx1 = 0; idx1 < pKF1->N; idx1++) {
         MapPoint* pMP1 = pKF1->GetMapPoint(idx1);
         if (pMP1)

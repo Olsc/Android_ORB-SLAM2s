@@ -66,9 +66,9 @@ public:
 
     static std::vector<float> toQuaternion(const cv::Mat &M);
 
-    // 线性三角化：闭式代数 DLT 标量法（零开方操作，全标量对称矩阵克莱姆求解，经 Python 数学实测验证）
+    // 线性三角化：闭式代数 DLT 标量法，基于全标量对称矩阵克莱姆法则求解
     static bool TriangulateWithCenters(const cv::Mat &P1, const cv::Mat &P2,
-                                       const float /*Q1*/[3], const float /*Q2*/[3],
+                                       const float[3], const float[3],
                                        float x1, float y1, float x2, float y2,
                                        cv::Mat &x3D)
     {

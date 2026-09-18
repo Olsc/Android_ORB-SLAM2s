@@ -36,8 +36,7 @@ import java.io.InputStream;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-// 基于原生 C++ (cgltf + OpenGL ES) 的 AR 3D 模型 (GLB) 极速渲染器
-// 彻底移除 Google Filament 依赖，实现 <200KB 极致原生渲染与零 GC 开销
+// 基于原生 C++ (cgltf + OpenGL ES) 的 AR 3D 模型渲染器，负责高效解析与渲染 GLB 资产
 public class GlbModelRenderer implements GLSurfaceView.Renderer {
     private static final String TAG = "GlbModelRenderer";
 

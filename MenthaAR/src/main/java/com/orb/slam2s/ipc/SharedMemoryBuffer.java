@@ -36,28 +36,8 @@ import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-// SLAM 跨进程共享内存（帧 + 结果回传）。
-//
-// 布局（header 用 LITTLE_ENDIAN，与 native 侧 C/C++ 一致）：
-//   [0..3]     magic "MNTH"
-//   [4..7]     version
-//   [8..11]    frameW
-//   [12..15]   frameH
-//   [16..19]   uiWriteSeq      (UI 进程写：最新已写入共享内存的帧序号)
-//   [20..23]   slamDoneSeq     (SLAM 进程写：已处理完成的帧序号)
-//   [24..27]   trackingState   (SLAM 进程写)
-//   [28..31]   drawFlag        (SLAM 进程写)
-//   [32..35]   pointCloudBytes (SLAM 进程写：点云区有效字节数)
-//   [36..39]   reserved
-//   [40..231]  mvp[48] float   (SLAM 进程写：M/V/P 各 16，共 48)
-//   [232..255] reserved
-//   [256..]              Y 帧缓冲 0 (frameW*frameH 字节)
-//   [256+w*h..]          Y 帧缓冲 1 (frameW*frameH 字节)
-//   [256+2*w*h..]        点云区 (POINTCLOUD_MAX_BYTES)
-//
-// 双缓冲 + 序号同步：UI 写 buf[seq%2] 前必须满足 slamDoneSeq >= seq-2，
-// 保证 SLAM 正在读的缓冲（seq-1）不会被覆盖；SLAM 完成后写 slamDoneSeq。
-// 所有 header 字段用绝对偏移读写（不移动 ByteBuffer position），线程安全。
+// SLAM 跨进程共享内存管理类：负责 Y 双缓冲、点云区及 Header 元数据的绝对偏移读写
+// 基于双缓冲与序号同步实现低延迟无锁跨进程交互，避免频繁 IPC 拷贝开销
 public class SharedMemoryBuffer {
     private static final String TAG = "SharedMemoryBuffer";
 
