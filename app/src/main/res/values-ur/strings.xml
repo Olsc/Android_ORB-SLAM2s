@@ -80,4 +80,15 @@
     <string name="icon_in_use">زیر استعمال</string>
     <string name="icon_switched_hint">ایپ آئیکن %s میں تبدیل کر دیا گیا ہے</string>
     <string name="icon_note">نوٹ: کچھ لانچرز پر ہوم اسکرین پر اپ ڈیٹ ہونے میں چند سیکنڈ لگ سکتے ہیں۔</string>
+
+    <string name="btn_switch_camera">کیمرہ تبدیل کریں</string>
+    <string name="hint_camera_switched_back">پچھلے کیمرے پر تبدیل ہو گیا</string>
+    <string name="hint_camera_switched_front">سامنے والے کیمرے پر تبدیل ہو گیا</string>
+    <string name="hint_camera_switched_other">کیمرہ %1$s پر تبدیل ہو گیا</string>
+    <string name="hint_camera_switch_single">صرف ایک کیمرہ دستیاب ہے</string>
+    <string name="hint_camera_switch_failed">کیمرہ تبدیل کرنا ناکام رہا</string>
+    <string name="camera_facing_back">پچھلا کیمرہ (%1$s)</string>
+    <string name="camera_facing_front">اگلا کیمرہ (%1$s)</string>
+    <string name="camera_facing_other">کیمرہ %1$s</string>
+    <string name="dialog_select_camera">کیمرہ منتخب کریں</string>
 </resources>

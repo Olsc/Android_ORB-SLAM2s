@@ -80,4 +80,15 @@
     <string name="icon_in_use">பயன்பாட்டில் உள்ளது</string>
     <string name="icon_switched_hint">பயன்பாட்டு ஐகான் %s என மாற்றப்பட்டது</string>
     <string name="icon_note">குறிப்பு: சில லாஞ்சர்களில் முகப்புத் திரையில் புதுப்பிக்க சில வினாடிகள் ஆகலாம்.</string>
+
+    <string name="btn_switch_camera">கேமரா மாற்று</string>
+    <string name="hint_camera_switched_back">பின் கேமராவிற்கு மாற்றப்பட்டது</string>
+    <string name="hint_camera_switched_front">முன் கேமராவிற்கு மாற்றப்பட்டது</string>
+    <string name="hint_camera_switched_other">கேமரா %1$s க்கு மாற்றப்பட்டது</string>
+    <string name="hint_camera_switch_single">ஒரே ஒரு கேமரா மட்டுமே உள்ளது</string>
+    <string name="hint_camera_switch_failed">கேமரா மாற்றுதல் தோல்வியடைந்தது</string>
+    <string name="camera_facing_back">பின் கேமரா (%1$s)</string>
+    <string name="camera_facing_front">முன் கேமரா (%1$s)</string>
+    <string name="camera_facing_other">கேமரா %1$s</string>
+    <string name="dialog_select_camera">கேமராவைத் தேர்ந்தெடுக்கவும்</string>
 </resources>

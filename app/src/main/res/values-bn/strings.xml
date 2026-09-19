@@ -80,4 +80,15 @@
     <string name="icon_in_use">ব্যবহৃত হচ্ছে</string>
     <string name="icon_switched_hint">অ্যাপ আইকন %s এ পরিবর্তন করা হয়েছে</string>
     <string name="icon_note">দ্রষ্টব্য: কিছু লঞ্চারে হোম স্ক্রিনে আপডেট হতে কয়েক সেকেন্ড সময় লাগতে পারে।</string>
+
+    <string name="btn_switch_camera">ক্যামেরা পরিবর্তন</string>
+    <string name="hint_camera_switched_back">পিছনের ক্যামেরায় পরিবর্তন করা হয়েছে</string>
+    <string name="hint_camera_switched_front">সামনের ক্যামেরায় পরিবর্তন করা হয়েছে</string>
+    <string name="hint_camera_switched_other">ক্যামেরা %1$s এ পরিবর্তন করা হয়েছে</string>
+    <string name="hint_camera_switch_single">কেবল একটি ক্যামেরা উপলব্ধ রয়েছে</string>
+    <string name="hint_camera_switch_failed">ক্যামেরা পরিবর্তন ব্যর্থ হয়েছে</string>
+    <string name="camera_facing_back">পিছনের ক্যামেরা (%1$s)</string>
+    <string name="camera_facing_front">সামনের ক্যামেরা (%1$s)</string>
+    <string name="camera_facing_other">ক্যামেরা %1$s</string>
+    <string name="dialog_select_camera">ক্যামেরা নির্বাচন করুন</string>
 </resources>

@@ -80,4 +80,15 @@
     <string name="icon_in_use">В употреба</string>
     <string name="icon_switched_hint">Иконата на приложението е променена на %s</string>
     <string name="icon_note">Забележка: При някои стартери обновяването може да отнеме няколко секунди.</string>
+
+    <string name="btn_switch_camera">Смяна камера</string>
+    <string name="hint_camera_switched_back">Превключено към задната камера</string>
+    <string name="hint_camera_switched_front">Превключено към предната камера</string>
+    <string name="hint_camera_switched_other">Превключено към камера %1$s</string>
+    <string name="hint_camera_switch_single">Налична е само една камера</string>
+    <string name="hint_camera_switch_failed">Неуспешно превключване на камерата</string>
+    <string name="camera_facing_back">Задна камера (%1$s)</string>
+    <string name="camera_facing_front">Предна камера (%1$s)</string>
+    <string name="camera_facing_other">Камера %1$s</string>
+    <string name="dialog_select_camera">Избор на камера</string>
 </resources>

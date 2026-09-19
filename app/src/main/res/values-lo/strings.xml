@@ -81,4 +81,14 @@
     <string name="icon_switched_hint">ປ່ຽນໄອຄອນເປັນ %s ແລ້ວ</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
+    <string name="btn_switch_camera">ປ່ຽນກ້ອງ</string>
+    <string name="hint_camera_switched_back">ປ່ຽນເປັນກ້ອງຫຼັງແລ້ວ</string>
+    <string name="hint_camera_switched_front">ປ່ຽນເປັນກ້ອງໜ້າແລ້ວ</string>
+    <string name="hint_camera_switched_other">ປ່ຽນເປັນກ້ອງ %1$s ແລ້ວ</string>
+    <string name="hint_camera_switch_single">ມີກ້ອງພຽງໜ່ວຍດຽວ</string>
+    <string name="hint_camera_switch_failed">ປ່ຽນກ້ອງບໍ່ສຳເລັດ</string>
+    <string name="camera_facing_back">ກ້ອງຫຼັງ (%1$s)</string>
+    <string name="camera_facing_front">ກ້ອງໜ້າ (%1$s)</string>
+    <string name="camera_facing_other">ກ້ອງ %1$s</string>
+    <string name="dialog_select_camera">ເລືອກກ້ອງ</string>
 </resources>

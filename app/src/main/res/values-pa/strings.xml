@@ -80,4 +80,15 @@
     <string name="icon_in_use">ਵਰਤੋਂ ਵਿੱਚ</string>
     <string name="icon_switched_hint">ਐਪ ਆਈਕਨ %s ਵਿੱਚ ਬਦਲਿਆ ਗਿਆ</string>
     <string name="icon_note">ਨੋਟ: ਕੁਝ ਲਾਂਚਰਾਂ ਤੇ ਹੋਮ ਸਕ੍ਰੀਨ ਤੇ ਅੱਪਡੇਟ ਹੋਣ ਵਿੱਚ ਕੁਝ ਸਕਿੰਟ ਲੱਗ ਸਕਦੇ ਹਨ।</string>
+
+    <string name="btn_switch_camera">ਕੈਮਰਾ ਬਦਲੋ</string>
+    <string name="hint_camera_switched_back">ਪਿਛਲੇ ਕੈਮਰੇ \'ਤੇ ਬਦਲਿਆ ਗਿਆ</string>
+    <string name="hint_camera_switched_front">ਅਗਲੇ ਕੈਮਰੇ \'ਤੇ ਬਦਲਿਆ ਗਿਆ</string>
+    <string name="hint_camera_switched_other">ਕੈਮਰਾ %1$s \'ਤੇ ਬਦਲਿਆ ਗਿਆ</string>
+    <string name="hint_camera_switch_single">ਸਿਰਫ਼ ਇੱਕ ਕੈਮਰਾ ਉਪਲਬਧ ਹੈ</string>
+    <string name="hint_camera_switch_failed">ਕੈਮਰਾ ਬਦਲਣਾ ਅਸਫਲ ਰਿਹਾ</string>
+    <string name="camera_facing_back">ਪਿਛਲਾ ਕੈਮਰਾ (%1$s)</string>
+    <string name="camera_facing_front">ਅਗਲਾ ਕੈਮਰਾ (%1$s)</string>
+    <string name="camera_facing_other">ਕੈਮਰਾ %1$s</string>
+    <string name="dialog_select_camera">ਕੈਮਰਾ ਚੁਣੋ</string>
 </resources>

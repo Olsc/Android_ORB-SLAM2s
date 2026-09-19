@@ -81,4 +81,14 @@
     <string name="icon_switched_hint">Ikona aplikácie zmenená na %s</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
+    <string name="btn_switch_camera">Prepnúť kameru</string>
+    <string name="hint_camera_switched_back">Prepnuté na zadnú kameru</string>
+    <string name="hint_camera_switched_front">Prepnuté na prednú kameru</string>
+    <string name="hint_camera_switched_other">Prepnuté na kameru %1$s</string>
+    <string name="hint_camera_switch_single">K dispozícii je iba jedna kamera</string>
+    <string name="hint_camera_switch_failed">Prepnutie kamery zlyhalo</string>
+    <string name="camera_facing_back">Zadná kamera (%1$s)</string>
+    <string name="camera_facing_front">Predná kamera (%1$s)</string>
+    <string name="camera_facing_other">Kamera %1$s</string>
+    <string name="dialog_select_camera">Vyberte kameru</string>
 </resources>

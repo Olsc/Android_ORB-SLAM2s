@@ -80,4 +80,15 @@
     <string name="icon_in_use">Σε χρήση</string>
     <string name="icon_switched_hint">Το εικονίδιο της εφαρμογής ενημερώθηκε σε %s</string>
     <string name="icon_note">Σημείωση: Σε ορισμένους εκκινητές, η ενημέρωση ενδέχεται να διαρκέσει μερικά δευτερόλεπτα.</string>
+
+    <string name="btn_switch_camera">Αλλαγή κάμερας</string>
+    <string name="hint_camera_switched_back">Εναλλαγή στην πίσω κάμερα</string>
+    <string name="hint_camera_switched_front">Εναλλαγή στην μπροστινή κάμερα</string>
+    <string name="hint_camera_switched_other">Εναλλαγή στην κάμερα %1$s</string>
+    <string name="hint_camera_switch_single">Μόνο μία κάμερα είναι διαθέσιμη</string>
+    <string name="hint_camera_switch_failed">Αποτυχία αλλαγής κάμερας</string>
+    <string name="camera_facing_back">Πίσω κάμερα (%1$s)</string>
+    <string name="camera_facing_front">Μπροστινή κάμερα (%1$s)</string>
+    <string name="camera_facing_other">Κάμερα %1$s</string>
+    <string name="dialog_select_camera">Επιλογή κάμερας</string>
 </resources>

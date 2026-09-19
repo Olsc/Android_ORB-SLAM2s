@@ -82,4 +82,15 @@
     <string name="icon_in_use">Используется</string>
     <string name="icon_switched_hint">Значок приложения изменен на %s</string>
     <string name="icon_note">Примечание: на некоторых рабочих столах обновление может занять несколько секунд.</string>
+
+    <string name="btn_switch_camera">Смена камеры</string>
+    <string name="hint_camera_switched_back">Переключено на заднюю камеру</string>
+    <string name="hint_camera_switched_front">Переключено на фронтальную камеру</string>
+    <string name="hint_camera_switched_other">Переключено на камеру %1$s</string>
+    <string name="hint_camera_switch_single">Доступна только одна камера</string>
+    <string name="hint_camera_switch_failed">Не удалось переключить камеру</string>
+    <string name="camera_facing_back">Задняя камера (%1$s)</string>
+    <string name="camera_facing_front">Фронтальная камера (%1$s)</string>
+    <string name="camera_facing_other">Камера %1$s</string>
+    <string name="dialog_select_camera">Выбор камеры</string>
 </resources>

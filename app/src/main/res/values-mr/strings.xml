@@ -80,4 +80,15 @@
     <string name="icon_in_use">वापरात आहे</string>
     <string name="icon_switched_hint">ॲप चिन्ह %s वर बदलले आहे</string>
     <string name="icon_note">टीप: काही लाँचरवर होम स्क्रीनवर अपडेट होण्यासाठी काही सेकंद लागू शकतात.</string>
+
+    <string name="btn_switch_camera">कॅमेरा बदला</string>
+    <string name="hint_camera_switched_back">मागील कॅमेऱ्यावर बदलले</string>
+    <string name="hint_camera_switched_front">पुढील कॅमेऱ्यावर बदलले</string>
+    <string name="hint_camera_switched_other">कॅमेरा %1$s वर बदलले</string>
+    <string name="hint_camera_switch_single">फक्त एक कॅमेरा उपलब्ध आहे</string>
+    <string name="hint_camera_switch_failed">कॅमेरा बदलणे अयशस्वी झाले</string>
+    <string name="camera_facing_back">मागील कॅमेरा (%1$s)</string>
+    <string name="camera_facing_front">पुढील कॅमेरा (%1$s)</string>
+    <string name="camera_facing_other">कॅमेरा %1$s</string>
+    <string name="dialog_select_camera">कॅमेरा निवडा</string>
 </resources>

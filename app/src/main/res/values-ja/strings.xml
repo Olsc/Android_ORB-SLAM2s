@@ -79,4 +79,15 @@
     <string name="icon_in_use">使用中</string>
     <string name="icon_switched_hint">アプリアイコンを %s に変更しました</string>
     <string name="icon_note">注：一部のランチャーではホーム画面の反映に数秒かかる場合があります。</string>
+
+    <string name="btn_switch_camera">カメラ切替</string>
+    <string name="hint_camera_switched_back">背面カメラに切り替えました</string>
+    <string name="hint_camera_switched_front">前面カメラに切り替えました</string>
+    <string name="hint_camera_switched_other">カメラ %1$s に切り替えました</string>
+    <string name="hint_camera_switch_single">利用可能なカメラは1つのみです</string>
+    <string name="hint_camera_switch_failed">カメラの切り替えに失敗しました</string>
+    <string name="camera_facing_back">背面カメラ (%1$s)</string>
+    <string name="camera_facing_front">前面カメラ (%1$s)</string>
+    <string name="camera_facing_other">カメラ %1$s</string>
+    <string name="dialog_select_camera">カメラを選択</string>
 </resources>

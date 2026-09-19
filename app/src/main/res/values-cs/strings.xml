@@ -82,4 +82,15 @@
     <string name="icon_in_use">Používá se</string>
     <string name="icon_switched_hint">Ikona aplikace změněna na %s</string>
     <string name="icon_note">Poznámka: U některých launcherů může obnovení na domovské obrazovce trvat několik sekund.</string>
+
+    <string name="btn_switch_camera">Přepnout kameru</string>
+    <string name="hint_camera_switched_back">Přepnuto na zadní kameru</string>
+    <string name="hint_camera_switched_front">Přepnuto na přední kameru</string>
+    <string name="hint_camera_switched_other">Přepnuto na kameru %1$s</string>
+    <string name="hint_camera_switch_single">K dispozici je pouze jedna kamera</string>
+    <string name="hint_camera_switch_failed">Přepnutí kamery se nezdařilo</string>
+    <string name="camera_facing_back">Zadní kamera (%1$s)</string>
+    <string name="camera_facing_front">Přední kamera (%1$s)</string>
+    <string name="camera_facing_other">Kamera %1$s</string>
+    <string name="dialog_select_camera">Vyberte kameru</string>
 </resources>

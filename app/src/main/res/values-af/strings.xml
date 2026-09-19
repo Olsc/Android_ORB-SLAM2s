@@ -81,4 +81,14 @@
     <string name="icon_switched_hint">Ikoon verander na %s</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
+    <string name="btn_switch_camera">Wissel kamera</string>
+    <string name="hint_camera_switched_back">Oorgeskakel na agterkamera</string>
+    <string name="hint_camera_switched_front">Oorgeskakel na voorkamera</string>
+    <string name="hint_camera_switched_other">Oorgeskakel na kamera %1$s</string>
+    <string name="hint_camera_switch_single">Slegs een kamera beskikbaar</string>
+    <string name="hint_camera_switch_failed">Kon nie kamera wissel nie</string>
+    <string name="camera_facing_back">Agterkamera (%1$s)</string>
+    <string name="camera_facing_front">Voorkamera (%1$s)</string>
+    <string name="camera_facing_other">Kamera %1$s</string>
+    <string name="dialog_select_camera">Kies kamera</string>
 </resources>

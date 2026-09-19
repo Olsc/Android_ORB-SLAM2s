@@ -81,4 +81,14 @@
     <string name="icon_switched_hint">Isithonjana sishintshwe saba ngu-%s</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
+    <string name="btn_switch_camera">Shintsha Ikhamera</string>
+    <string name="hint_camera_switched_back">Kushintshelwe kukhamera yangemuva</string>
+    <string name="hint_camera_switched_front">Kushintshelwe kukhamera yangaphambili</string>
+    <string name="hint_camera_switched_other">Kushintshelwe kukhamera engu-%1$s</string>
+    <string name="hint_camera_switch_single">Ikhamera eyodwa kuphela etholakalayo</string>
+    <string name="hint_camera_switch_failed">Yehlulekile ukushintsha ikhamera</string>
+    <string name="camera_facing_back">Ikhamera Yangemuva (%1$s)</string>
+    <string name="camera_facing_front">Ikhamera Yangaphambili (%1$s)</string>
+    <string name="camera_facing_other">Ikhamera %1$s</string>
+    <string name="dialog_select_camera">Khetha Ikhamera</string>
 </resources>

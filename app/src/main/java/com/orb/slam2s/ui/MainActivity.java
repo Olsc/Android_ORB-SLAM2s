@@ -61,9 +61,14 @@ import com.orb.slam2s.util.FpsCalculator;
 import com.orb.slam2s.util.MapManager;
 import com.orb.slam2s.util.TouchGestureHelper;
 
+import androidx.camera.camera2.interop.Camera2CameraInfo;
+import androidx.camera.core.CameraInfo;
+import androidx.camera.core.CameraSelector;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 // SLAM AR 主控制 Activity（调度相机、3D 模型渲染、3DOF 追踪、地图管理与交互控制）
@@ -87,6 +92,7 @@ public class MainActivity extends AppCompatActivity implements CameraPreviewView
     private Button mBtnLoadMap;
     private Button mBtnMapList;
     private Button mBtnTogglePointCloud;
+    private Button mBtnSwitchCamera;
     private Button mBtn3DofCube;
 
     private final Handler mUiHandler = new Handler(Looper.getMainLooper());
@@ -257,6 +263,15 @@ public class MainActivity extends AppCompatActivity implements CameraPreviewView
         mBtnTogglePointCloud = findViewById(R.id.btn_toggle_pointcloud);
         if (mBtnTogglePointCloud != null) {
             mBtnTogglePointCloud.setOnClickListener(v -> togglePointCloudDisplay());
+        }
+
+        mBtnSwitchCamera = findViewById(R.id.btn_switch_camera);
+        if (mBtnSwitchCamera != null) {
+            mBtnSwitchCamera.setOnClickListener(v -> switchCamera());
+            mBtnSwitchCamera.setOnLongClickListener(v -> {
+                showCameraSelectDialog();
+                return true;
+            });
         }
 
         Button btnGroupAr = findViewById(R.id.btn_group_ar);
@@ -725,6 +740,82 @@ public class MainActivity extends AppCompatActivity implements CameraPreviewView
         } else {
             Log.e(TAG, "无法切换点云显示：SlamIPCClient 未连接");
         }
+    }
+
+    private void switchCamera() {
+        if (mCameraPreviewView == null) return;
+        CameraPreviewView.CameraSwitchResult result = mCameraPreviewView.switchCamera();
+        if (result.status == CameraPreviewView.CameraSwitchResult.STATUS_SUCCESS) {
+            if (result.lensFacing == CameraSelector.LENS_FACING_BACK) {
+                showToast(getString(R.string.hint_camera_switched_back));
+            } else if (result.lensFacing == CameraSelector.LENS_FACING_FRONT) {
+                showToast(getString(R.string.hint_camera_switched_front));
+            } else {
+                showToast(getString(R.string.hint_camera_switched_other, result.cameraId != null ? result.cameraId : ""));
+            }
+        } else if (result.status == CameraPreviewView.CameraSwitchResult.STATUS_SINGLE_CAMERA) {
+            showToast(getString(R.string.hint_camera_switch_single));
+        } else {
+            showToast(getString(R.string.hint_camera_switch_failed));
+        }
+    }
+
+    private void showCameraSelectDialog() {
+        if (mCameraPreviewView == null) return;
+        List<CameraInfo> cameraList = mCameraPreviewView.getAvailableCameraInfos();
+        if (cameraList == null || cameraList.isEmpty()) {
+            showToast(getString(R.string.hint_no_camera));
+            return;
+        }
+        if (cameraList.size() <= 1) {
+            showToast(getString(R.string.hint_camera_switch_single));
+            return;
+        }
+
+        int currentIndex = mCameraPreviewView.getCurrentCameraIndex();
+        String[] cameraNames = new String[cameraList.size()];
+        for (int i = 0; i < cameraList.size(); i++) {
+            CameraInfo info = cameraList.get(i);
+            String id = String.valueOf(i);
+            try {
+                id = Camera2CameraInfo.from(info).getCameraId();
+            } catch (Throwable ignored) {}
+
+            String name;
+            if (info.getLensFacing() == CameraSelector.LENS_FACING_BACK) {
+                name = getString(R.string.camera_facing_back, id);
+            } else if (info.getLensFacing() == CameraSelector.LENS_FACING_FRONT) {
+                name = getString(R.string.camera_facing_front, id);
+            } else {
+                name = getString(R.string.camera_facing_other, id);
+            }
+            if (i == currentIndex) {
+                name += " (" + getString(R.string.icon_in_use) + ")";
+            }
+            cameraNames[i] = name;
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.dialog_select_camera)
+                .setSingleChoiceItems(cameraNames, currentIndex, (dialog, which) -> {
+                    dialog.dismiss();
+                    if (which != currentIndex) {
+                        CameraPreviewView.CameraSwitchResult result = mCameraPreviewView.switchCameraTo(which);
+                        if (result.status == CameraPreviewView.CameraSwitchResult.STATUS_SUCCESS) {
+                            if (result.lensFacing == CameraSelector.LENS_FACING_BACK) {
+                                showToast(getString(R.string.hint_camera_switched_back));
+                            } else if (result.lensFacing == CameraSelector.LENS_FACING_FRONT) {
+                                showToast(getString(R.string.hint_camera_switched_front));
+                            } else {
+                                showToast(getString(R.string.hint_camera_switched_other, result.cameraId != null ? result.cameraId : ""));
+                            }
+                        } else {
+                            showToast(getString(R.string.hint_camera_switch_failed));
+                        }
+                    }
+                })
+                .setNegativeButton(R.string.button_cancel, null)
+                .show();
     }
 
     private void init3DofTracker() {

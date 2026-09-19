@@ -80,4 +80,15 @@
     <string name="icon_in_use">In Verwendung</string>
     <string name="icon_switched_hint">App-Symbol geändert zu %s</string>
     <string name="icon_note">Hinweis: Bei einigen Launchern kann die Aktualisierung einige Sekunden dauern.</string>
+
+    <string name="btn_switch_camera">Kamera wechseln</string>
+    <string name="hint_camera_switched_back">Zur Rückkamera gewechselt</string>
+    <string name="hint_camera_switched_front">Zur Frontkamera gewechselt</string>
+    <string name="hint_camera_switched_other">Zu Kamera %1$s gewechselt</string>
+    <string name="hint_camera_switch_single">Nur eine Kamera verfügbar</string>
+    <string name="hint_camera_switch_failed">Kamerawechsel fehlgeschlagen</string>
+    <string name="camera_facing_back">Rückkamera (%1$s)</string>
+    <string name="camera_facing_front">Frontkamera (%1$s)</string>
+    <string name="camera_facing_other">Kamera %1$s</string>
+    <string name="dialog_select_camera">Kamera auswählen</string>
 </resources>

@@ -81,4 +81,14 @@
     <string name="icon_switched_hint">Белгіше %s болып өзгертілді</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
+    <string name="btn_switch_camera">Камераны ауыстыру</string>
+    <string name="hint_camera_switched_back">Артқы камераға ауыстырылды</string>
+    <string name="hint_camera_switched_front">Алдыңғы камераға ауыстырылды</string>
+    <string name="hint_camera_switched_other">%1$s камерасына ауыстырылды</string>
+    <string name="hint_camera_switch_single">Тек бір камера қолжетімді</string>
+    <string name="hint_camera_switch_failed">Камераны ауыстыру сәтсіз аяқталды</string>
+    <string name="camera_facing_back">Артқы камера (%1$s)</string>
+    <string name="camera_facing_front">Алдыңғы камера (%1$s)</string>
+    <string name="camera_facing_other">Камера %1$s</string>
+    <string name="dialog_select_camera">Камераны таңдау</string>
 </resources>

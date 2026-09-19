@@ -80,4 +80,15 @@
     <string name="icon_in_use">In gebruik</string>
     <string name="icon_switched_hint">App-pictogram gewijzigd in %s</string>
     <string name="icon_note">Opmerking: Bij sommige launchers kan het vernieuwen enkele seconden duren.</string>
+
+    <string name="btn_switch_camera">Camera wisselen</string>
+    <string name="hint_camera_switched_back">Naar achtercamera gewisseld</string>
+    <string name="hint_camera_switched_front">Naar frontcamera gewisseld</string>
+    <string name="hint_camera_switched_other">Naar camera %1$s gewisseld</string>
+    <string name="hint_camera_switch_single">Slechts één camera beschikbaar</string>
+    <string name="hint_camera_switch_failed">Wisselen van camera mislukt</string>
+    <string name="camera_facing_back">Achtercamera (%1$s)</string>
+    <string name="camera_facing_front">Frontcamera (%1$s)</string>
+    <string name="camera_facing_other">Camera %1$s</string>
+    <string name="dialog_select_camera">Camera selecteren</string>
 </resources>

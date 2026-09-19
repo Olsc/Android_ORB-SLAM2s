@@ -79,4 +79,15 @@
     <string name="icon_in_use">Đang sử dụng</string>
     <string name="icon_switched_hint">Đã đổi biểu tượng ứng dụng thành %s</string>
     <string name="icon_note">Lưu ý: Một số launcher có thể mất vài giây để cập nhật biểu tượng trên màn hình chính.</string>
+
+    <string name="btn_switch_camera">Đổi camera</string>
+    <string name="hint_camera_switched_back">Đã chuyển sang camera sau</string>
+    <string name="hint_camera_switched_front">Đã chuyển sang camera trước</string>
+    <string name="hint_camera_switched_other">Đã chuyển sang camera %1$s</string>
+    <string name="hint_camera_switch_single">Chỉ có một camera khả dụng</string>
+    <string name="hint_camera_switch_failed">Đổi camera thất bại</string>
+    <string name="camera_facing_back">Camera sau (%1$s)</string>
+    <string name="camera_facing_front">Camera trước (%1$s)</string>
+    <string name="camera_facing_other">Camera %1$s</string>
+    <string name="dialog_select_camera">Chọn camera</string>
 </resources>

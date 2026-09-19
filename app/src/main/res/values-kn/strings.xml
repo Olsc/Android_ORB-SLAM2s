@@ -81,4 +81,14 @@
     <string name="icon_switched_hint">ಐಕಾನ್ %s ಗೆ ಬದಲಾಗಿದೆ</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
+    <string name="btn_switch_camera">ಕ್ಯಾಮರಾ ಬದಲಾಯಿಸಿ</string>
+    <string name="hint_camera_switched_back">ಹಿಂಬದಿಯ ಕ್ಯಾಮರಾಗೆ ಬದಲಾಯಿಸಲಾಗಿದೆ</string>
+    <string name="hint_camera_switched_front">ಮುಂಬದಿಯ ಕ್ಯಾಮರಾಗೆ ಬದಲಾಯಿಸಲಾಗಿದೆ</string>
+    <string name="hint_camera_switched_other">ಕ್ಯಾಮರಾ %1$s ಗೆ ಬದಲಾಯಿಸಲಾಗಿದೆ</string>
+    <string name="hint_camera_switch_single">ಕೇವಲ ಒಂದು ಕ್ಯಾಮರಾ ಲಭ್ಯವಿದೆ</string>
+    <string name="hint_camera_switch_failed">ಕ್ಯಾಮರಾ ಬದಲಾಯಿಸಲು ವಿಫಲವಾಗಿದೆ</string>
+    <string name="camera_facing_back">ಹಿಂಬದಿಯ ಕ್ಯಾಮರಾ (%1$s)</string>
+    <string name="camera_facing_front">ಮುಂಬದಿಯ ಕ್ಯಾಮರಾ (%1$s)</string>
+    <string name="camera_facing_other">ಕ್ಯಾಮರಾ %1$s</string>
+    <string name="dialog_select_camera">ಕ್ಯಾಮರಾ ಆಯ್ಕೆಮಾಡಿ</string>
 </resources>

@@ -81,4 +81,14 @@
     <string name="icon_switched_hint">Պատկերակը փոխվեց՝ %s</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
+    <string name="btn_switch_camera">Փոխել տեսախցիկը</string>
+    <string name="hint_camera_switched_back">Փոխարկվել է հետևի տեսախցիկի</string>
+    <string name="hint_camera_switched_front">Փոխարկվել է առջևի տեսախցիկի</string>
+    <string name="hint_camera_switched_other">Փոխարկվել է %1$s տեսախցիկի</string>
+    <string name="hint_camera_switch_single">Հասանելի է միայն մեկ տեսախցիկ</string>
+    <string name="hint_camera_switch_failed">Տեսախցիկը փոխել չհաջողվեց</string>
+    <string name="camera_facing_back">Հետևի տեսախցիկ (%1$s)</string>
+    <string name="camera_facing_front">Առջևի տեսախցիկ (%1$s)</string>
+    <string name="camera_facing_other">Տեսախցիկ %1$s</string>
+    <string name="dialog_select_camera">Ընտրել տեսախցիկ</string>
 </resources>

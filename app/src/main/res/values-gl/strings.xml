@@ -81,4 +81,14 @@
     <string name="icon_switched_hint">Icona canviada a %s</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
+    <string name="btn_switch_camera">Cambiar cámara</string>
+    <string name="hint_camera_switched_back">Cambiouse á cámara traseira</string>
+    <string name="hint_camera_switched_front">Cambiouse á cámara frontal</string>
+    <string name="hint_camera_switched_other">Cambiouse á cámara %1$s</string>
+    <string name="hint_camera_switch_single">Só hai unha cámara dispoñible</string>
+    <string name="hint_camera_switch_failed">Erro ao cambiar de cámara</string>
+    <string name="camera_facing_back">Cámara traseira (%1$s)</string>
+    <string name="camera_facing_front">Cámara frontal (%1$s)</string>
+    <string name="camera_facing_other">Cámara %1$s</string>
+    <string name="dialog_select_camera">Seleccionar cámara</string>
 </resources>

@@ -80,4 +80,15 @@
     <string name="icon_in_use">उपयोग में</string>
     <string name="icon_switched_hint">ऐप आइकन बदलकर %s कर दिया गया है</string>
     <string name="icon_note">नोट: कुछ लॉन्चर में होम स्क्रीन पर अपडेट होने में कुछ सेकंड लग सकते हैं।</string>
+
+    <string name="btn_switch_camera">कैमरा बदलें</string>
+    <string name="hint_camera_switched_back">पिछले कैमरे पर स्विच किया गया</string>
+    <string name="hint_camera_switched_front">सामने के कैमरे पर स्विच किया गया</string>
+    <string name="hint_camera_switched_other">कैमरा %1$s पर स्विच किया गया</string>
+    <string name="hint_camera_switch_single">केवल एक कैमरा उपलब्ध है</string>
+    <string name="hint_camera_switch_failed">कैमरा बदलने में विफल</string>
+    <string name="camera_facing_back">पिछला कैमरा (%1$s)</string>
+    <string name="camera_facing_front">अगला कैमरा (%1$s)</string>
+    <string name="camera_facing_other">कैमरा %1$s</string>
+    <string name="dialog_select_camera">कैमरा चुनें</string>
 </resources>

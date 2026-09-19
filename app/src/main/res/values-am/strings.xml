@@ -81,4 +81,14 @@
     <string name="icon_switched_hint">አዶ ወደ %s ተቀይሯል</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
+    <string name="btn_switch_camera">ካሜራ ቀይር</string>
+    <string name="hint_camera_switched_back">ወደ ኋላ ካሜራ ተቀይሯል</string>
+    <string name="hint_camera_switched_front">ወደ ፊት ካሜራ ተቀይሯል</string>
+    <string name="hint_camera_switched_other">ወደ ካሜራ %1$s ተቀይሯል</string>
+    <string name="hint_camera_switch_single">አንድ ካሜራ ብቻ ነው የሚገኘው</string>
+    <string name="hint_camera_switch_failed">ካሜራ መቀየር አልተሳካም</string>
+    <string name="camera_facing_back">የኋላ ካሜራ (%1$s)</string>
+    <string name="camera_facing_front">የፊት ካሜራ (%1$s)</string>
+    <string name="camera_facing_other">ካሜራ %1$s</string>
+    <string name="dialog_select_camera">ካሜራ ይምረጡ</string>
 </resources>

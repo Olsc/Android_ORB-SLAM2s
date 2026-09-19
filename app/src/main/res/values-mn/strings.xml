@@ -81,4 +81,14 @@
     <string name="icon_switched_hint">Дүрс %s болж өөрчлөгдлөө</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
+    <string name="btn_switch_camera">Камер солих</string>
+    <string name="hint_camera_switched_back">Ард талын камер руу шилжлээ</string>
+    <string name="hint_camera_switched_front">Урд талын камер руу шилжлээ</string>
+    <string name="hint_camera_switched_other">%1$s камер руу шилжлээ</string>
+    <string name="hint_camera_switch_single">Зөвхөн нэг камер боломжтой</string>
+    <string name="hint_camera_switch_failed">Камер солиход алдаа гарлаа</string>
+    <string name="camera_facing_back">Ард талын камер (%1$s)</string>
+    <string name="camera_facing_front">Урд талын камер (%1$s)</string>
+    <string name="camera_facing_other">Камер %1$s</string>
+    <string name="dialog_select_camera">Камер сонгох</string>
 </resources>

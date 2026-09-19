@@ -81,4 +81,14 @@
     <string name="icon_switched_hint">Ikona promijenjena u %s</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
+    <string name="btn_switch_camera">Promijeni kameru</string>
+    <string name="hint_camera_switched_back">Prebačeno na zadnju kameru</string>
+    <string name="hint_camera_switched_front">Prebačeno na prednju kameru</string>
+    <string name="hint_camera_switched_other">Prebačeno na kameru %1$s</string>
+    <string name="hint_camera_switch_single">Dostupna je samo jedna kamera</string>
+    <string name="hint_camera_switch_failed">Promjena kamere nije uspjela</string>
+    <string name="camera_facing_back">Zadnja kamera (%1$s)</string>
+    <string name="camera_facing_front">Prednja kamera (%1$s)</string>
+    <string name="camera_facing_other">Kamera %1$s</string>
+    <string name="dialog_select_camera">Izaberite kameru</string>
 </resources>

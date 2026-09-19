@@ -79,4 +79,15 @@
     <string name="icon_in_use">กำลังใช้งาน</string>
     <string name="icon_switched_hint">เปลี่ยนไอคอนแอปเป็น %s แล้ว</string>
     <string name="icon_note">หมายเหตุ: ลอนเชอร์บางตัวอาจใช้เวลาสองสามวินาทีในการอัปเดตไอคอนบนหน้าจอหลัก</string>
+
+    <string name="btn_switch_camera">สลับกล้อง</string>
+    <string name="hint_camera_switched_back">สลับไปยังกล้องหลังแล้ว</string>
+    <string name="hint_camera_switched_front">สลับไปยังกล้องหน้าแล้ว</string>
+    <string name="hint_camera_switched_other">สลับไปยังกล้อง %1$s แล้ว</string>
+    <string name="hint_camera_switch_single">มีกล้องที่ใช้งานได้เพียงตัวเดียว</string>
+    <string name="hint_camera_switch_failed">สลับกล้องไม่สำเร็จ</string>
+    <string name="camera_facing_back">กล้องหลัง (%1$s)</string>
+    <string name="camera_facing_front">กล้องหน้า (%1$s)</string>
+    <string name="camera_facing_other">กล้อง %1$s</string>
+    <string name="dialog_select_camera">เลือกกล้อง</string>
 </resources>

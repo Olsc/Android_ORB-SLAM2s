@@ -80,4 +80,15 @@
     <string name="icon_in_use">Ginagamit</string>
     <string name="icon_switched_hint">Ang icon ng app ay napalitan sa %s</string>
     <string name="icon_note">Tandaan: Sa ilang launcher, maaaring tumagal ng ilang segundo bago mag-refresh sa home screen.</string>
+
+    <string name="btn_switch_camera">Palitan ang Camera</string>
+    <string name="hint_camera_switched_back">Lumipat sa camera sa likod</string>
+    <string name="hint_camera_switched_front">Lumipat sa camera sa harap</string>
+    <string name="hint_camera_switched_other">Lumipat sa camera %1$s</string>
+    <string name="hint_camera_switch_single">Isa lang ang available na camera</string>
+    <string name="hint_camera_switch_failed">Nabigong palitan ang camera</string>
+    <string name="camera_facing_back">Camera sa Likod (%1$s)</string>
+    <string name="camera_facing_front">Camera sa Harap (%1$s)</string>
+    <string name="camera_facing_other">Camera %1$s</string>
+    <string name="dialog_select_camera">Pumili ng Camera</string>
 </resources>

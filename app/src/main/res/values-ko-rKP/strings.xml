@@ -79,4 +79,15 @@
     <string name="icon_in_use">사용 중</string>
     <string name="icon_switched_hint">앱 아이콘이 %s(으)로 변경되었습니다</string>
     <string name="icon_note">참고: 일부 런처에서는 홈 화면에 반영되는 데 몇 초 정도 걸릴 수 있습니다.</string>
+
+    <string name="btn_switch_camera">카메라 전환</string>
+    <string name="hint_camera_switched_back">후면 카메라로 전환되였습니다</string>
+    <string name="hint_camera_switched_front">전면 카메라로 전환되였습니다</string>
+    <string name="hint_camera_switched_other">카메라 %1$s(으)로 전환되였습니다</string>
+    <string name="hint_camera_switch_single">리용 가능한 카메라가 하나뿐입니다</string>
+    <string name="hint_camera_switch_failed">카메라 전환 실패</string>
+    <string name="camera_facing_back">후면 카메라 (%1$s)</string>
+    <string name="camera_facing_front">전면 카메라 (%1$s)</string>
+    <string name="camera_facing_other">카메라 %1$s</string>
+    <string name="dialog_select_camera">카메라 선택</string>
 </resources>

@@ -81,4 +81,15 @@
     <string name="icon_in_use">În uz</string>
     <string name="icon_switched_hint">Pictograma aplicației a fost schimbată la %s</string>
     <string name="icon_note">Notă: Pe unele lansatoare, actualizarea pe ecranul de pornire poate dura câteva secunde.</string>
+
+    <string name="btn_switch_camera">Schimbă camera</string>
+    <string name="hint_camera_switched_back">Comutat la camera din spate</string>
+    <string name="hint_camera_switched_front">Comutat la camera frontală</string>
+    <string name="hint_camera_switched_other">Comutat la camera %1$s</string>
+    <string name="hint_camera_switch_single">O singură cameră disponibilă</string>
+    <string name="hint_camera_switch_failed">Schimbarea camerei a eșuat</string>
+    <string name="camera_facing_back">Cameră spate (%1$s)</string>
+    <string name="camera_facing_front">Cameră frontală (%1$s)</string>
+    <string name="camera_facing_other">Cameră %1$s</string>
+    <string name="dialog_select_camera">Selectează camera</string>
 </resources>

@@ -31,7 +31,9 @@ import android.view.SurfaceHolder;
 import android.view.View;
 
 import androidx.annotation.NonNull;
+import androidx.camera.camera2.interop.Camera2CameraInfo;
 import androidx.camera.core.Camera;
+import androidx.camera.core.CameraInfo;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.FocusMeteringAction;
 import androidx.camera.core.ImageAnalysis;
@@ -54,6 +56,8 @@ import com.orb.slam2s.ipc.SharedMemoryBuffer;
 import com.orb.slam2s.ipc.SlamIPCClient;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -87,6 +91,8 @@ public class CameraPreviewView extends AspectGLSurfaceView {
     private ExecutorService mIpcSendExecutor;
 
     private int mCameraCount = -1;
+    private List<CameraInfo> mAvailableCameraInfos = new ArrayList<>();
+    private int mCurrentCameraIndex = -1;
 
     private byte[][] mYuvSendBuffers; // 灰度帧发送双缓冲（复用避免 GC）
     private byte[][] mRgbaBuffers;    // 相机 RGBA 帧双缓冲
@@ -113,6 +119,22 @@ public class CameraPreviewView extends AspectGLSurfaceView {
         void onCameraStopped();
         void onCameraFrame();
         default void onCameraUnavailable(int cameraCount) {}
+    }
+
+    public static class CameraSwitchResult {
+        public static final int STATUS_SUCCESS = 0;
+        public static final int STATUS_SINGLE_CAMERA = 1;
+        public static final int STATUS_FAILED = 2;
+
+        public final int status;
+        public final int lensFacing;
+        public final String cameraId;
+
+        public CameraSwitchResult(int status, int lensFacing, String cameraId) {
+            this.status = status;
+            this.lensFacing = lensFacing;
+            this.cameraId = cameraId;
+        }
     }
 
     public CameraPreviewView(Context context) {
@@ -381,19 +403,40 @@ public class CameraPreviewView extends AspectGLSurfaceView {
                         }
                     });
 
-                    CameraSelector selector;
-                    if (mCameraProvider.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA)) {
-                        selector = CameraSelector.DEFAULT_BACK_CAMERA;
-                    } else if (mCameraProvider.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA)) {
-                        Log.w(TAG, "无后置相机，回退至前置相机");
-                        selector = CameraSelector.DEFAULT_FRONT_CAMERA;
-                    } else {
-                        Log.w(TAG, "无可用前后置相机，保持黑屏");
+                    mAvailableCameraInfos = new ArrayList<>(mCameraProvider.getAvailableCameraInfos());
+                    if (mAvailableCameraInfos.isEmpty()) {
+                        Log.w(TAG, "CameraProvider 未找到可用相机，保持黑屏");
                         if (mFrameListener != null) {
                             mFrameListener.onCameraUnavailable(0);
                         }
                         return;
                     }
+
+                    // 默认优先选择手机后摄 (CameraSelector.LENS_FACING_BACK)
+                    int targetIndex = -1;
+                    for (int i = 0; i < mAvailableCameraInfos.size(); i++) {
+                        CameraInfo info = mAvailableCameraInfos.get(i);
+                        if (info.getLensFacing() == CameraSelector.LENS_FACING_BACK) {
+                            targetIndex = i;
+                            break;
+                        }
+                    }
+                    if (targetIndex < 0) {
+                        // 若无后置相机，优先找前置相机，其次使用第 0 个
+                        for (int i = 0; i < mAvailableCameraInfos.size(); i++) {
+                            CameraInfo info = mAvailableCameraInfos.get(i);
+                            if (info.getLensFacing() == CameraSelector.LENS_FACING_FRONT) {
+                                targetIndex = i;
+                                break;
+                            }
+                        }
+                    }
+                    if (targetIndex < 0) {
+                        targetIndex = 0;
+                    }
+
+                    mCurrentCameraIndex = targetIndex;
+                    CameraSelector selector = mAvailableCameraInfos.get(mCurrentCameraIndex).getCameraSelector();
 
                     mCameraProvider.unbindAll();
                     mCameraX = mCameraProvider.bindToLifecycle((LifecycleOwner) getContext(), selector, mImageAnalysis);
@@ -447,6 +490,68 @@ public class CameraPreviewView extends AspectGLSurfaceView {
             mCameraX.getCameraControl().startFocusAndMetering(action);
         } catch (Exception e) {
             Log.e(TAG, "居中自动对焦错误: " + e.getMessage());
+        }
+    }
+
+    public List<CameraInfo> getAvailableCameraInfos() {
+        if (mCameraProvider != null) {
+            mAvailableCameraInfos = new ArrayList<>(mCameraProvider.getAvailableCameraInfos());
+        }
+        return mAvailableCameraInfos;
+    }
+
+    public int getCurrentCameraIndex() {
+        return mCurrentCameraIndex;
+    }
+
+    public CameraSwitchResult switchCamera() {
+        if (mCameraProvider == null || mState != STATE_STARTED) {
+            Log.w(TAG, "相机未启动或 Provider 为空，无法切换");
+            return new CameraSwitchResult(CameraSwitchResult.STATUS_FAILED, -1, null);
+        }
+        List<CameraInfo> cameras = getAvailableCameraInfos();
+        if (cameras.size() <= 1) {
+            Log.w(TAG, "设备仅有 " + cameras.size() + " 个可用相机，无法切换");
+            return new CameraSwitchResult(CameraSwitchResult.STATUS_SINGLE_CAMERA, -1, null);
+        }
+        int nextIndex = (mCurrentCameraIndex + 1) % cameras.size();
+        return switchCameraTo(nextIndex);
+    }
+
+    public CameraSwitchResult switchCameraTo(int targetIndex) {
+        if (mCameraProvider == null || mState != STATE_STARTED) {
+            return new CameraSwitchResult(CameraSwitchResult.STATUS_FAILED, -1, null);
+        }
+        List<CameraInfo> cameras = getAvailableCameraInfos();
+        if (targetIndex < 0 || targetIndex >= cameras.size()) {
+            Log.e(TAG, "目标相机索引越界: " + targetIndex + ", 可用相机数: " + cameras.size());
+            return new CameraSwitchResult(CameraSwitchResult.STATUS_FAILED, -1, null);
+        }
+        CameraInfo targetCamera = cameras.get(targetIndex);
+        CameraSelector selector = targetCamera.getCameraSelector();
+        try {
+            mCameraProvider.unbindAll();
+            mCameraX = mCameraProvider.bindToLifecycle((LifecycleOwner) getContext(), selector, mImageAnalysis);
+            mCurrentCameraIndex = targetIndex;
+            int lensFacing = targetCamera.getLensFacing();
+            String camId = String.valueOf(targetIndex);
+            try {
+                camId = Camera2CameraInfo.from(targetCamera).getCameraId();
+            } catch (Throwable ignored) {}
+            Log.i(TAG, "成功切换至相机 index=" + targetIndex + ", lensFacing=" + lensFacing + ", id=" + camId);
+            return new CameraSwitchResult(CameraSwitchResult.STATUS_SUCCESS, lensFacing, camId);
+        } catch (Exception e) {
+            Log.e(TAG, "切换相机异常: " + e.getMessage(), e);
+            // 尝试恢复原相机
+            if (mCurrentCameraIndex >= 0 && mCurrentCameraIndex < cameras.size()) {
+                try {
+                    mCameraX = mCameraProvider.bindToLifecycle((LifecycleOwner) getContext(),
+                            cameras.get(mCurrentCameraIndex).getCameraSelector(), mImageAnalysis);
+                } catch (Exception restoreEx) {
+                    Log.e(TAG, "恢复原相机失败: " + restoreEx.getMessage());
+                }
+            }
+            return new CameraSwitchResult(CameraSwitchResult.STATUS_FAILED, -1, null);
         }
     }
 

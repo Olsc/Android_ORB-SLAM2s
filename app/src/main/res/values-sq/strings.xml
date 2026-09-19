@@ -81,4 +81,14 @@
     <string name="icon_switched_hint">Ikona u ndryshua në %s</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
+    <string name="btn_switch_camera">Ndërro kamerën</string>
+    <string name="hint_camera_switched_back">U kalua te kamera e pasme</string>
+    <string name="hint_camera_switched_front">U kalua te kamera e përparme</string>
+    <string name="hint_camera_switched_other">U kalua te kamera %1$s</string>
+    <string name="hint_camera_switch_single">Është e disponueshme vetëm një kamerë</string>
+    <string name="hint_camera_switch_failed">Ndërrimi i kamerës dështoi</string>
+    <string name="camera_facing_back">Kamera e pasme (%1$s)</string>
+    <string name="camera_facing_front">Kamera e përparme (%1$s)</string>
+    <string name="camera_facing_other">Kamera %1$s</string>
+    <string name="dialog_select_camera">Zgjidh kamerën</string>
 </resources>
