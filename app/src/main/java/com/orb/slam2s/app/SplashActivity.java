@@ -29,10 +29,15 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.pm.ShortcutInfoCompat;
+import androidx.core.content.pm.ShortcutManagerCompat;
+import androidx.core.graphics.drawable.IconCompat;
 import androidx.core.view.WindowCompat;
 
 import com.orb.slam2s.R;
+import com.orb.slam2s.ui.IconSelectActivity;
 import com.orb.slam2s.ui.MainActivity;
+import com.orb.slam2s.ui.MapManageActivity;
 
 // SplashActivity：启动权限检查与主界面分发
 // 该 Activity 承担权限检查与分发逻辑（非纯启动图），不采用 Android 12+ SplashScreen API
@@ -45,8 +50,36 @@ public class SplashActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        setupDynamicShortcuts();
         if (checkPermission()) {
             launchMainActivity();
+        }
+    }
+
+    private void setupDynamicShortcuts() {
+        try {
+            Intent mapIntent = new Intent(this, MapManageActivity.class);
+            mapIntent.setAction(Intent.ACTION_VIEW);
+            ShortcutInfoCompat mapShortcut = new ShortcutInfoCompat.Builder(this, "map_management")
+                    .setShortLabel(getString(R.string.shortcut_map_manage))
+                    .setLongLabel(getString(R.string.shortcut_map_manage))
+                    .setIcon(IconCompat.createWithResource(this, R.drawable.ic_shortcut_map))
+                    .setIntent(mapIntent)
+                    .build();
+
+            Intent iconIntent = new Intent(this, IconSelectActivity.class);
+            iconIntent.setAction(Intent.ACTION_VIEW);
+            ShortcutInfoCompat iconShortcut = new ShortcutInfoCompat.Builder(this, "change_icon")
+                    .setShortLabel(getString(R.string.shortcut_change_icon))
+                    .setLongLabel(getString(R.string.shortcut_change_icon))
+                    .setIcon(IconCompat.createWithResource(this, R.drawable.ic_shortcut_icon))
+                    .setIntent(iconIntent)
+                    .build();
+
+            ShortcutManagerCompat.pushDynamicShortcut(this, mapShortcut);
+            ShortcutManagerCompat.pushDynamicShortcut(this, iconShortcut);
+        } catch (Exception e) {
+            Log.w(TAG, "注册动态快捷方式异常: " + e.getMessage());
         }
     }
 

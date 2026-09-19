@@ -102,8 +102,8 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 | Snapdragon 8+ Gen1   | 红米 K60      | 30 FPS    |
 | Snapdragon 870       | 小米 10S      | 30 FPS    |
 | Snapdragon 7s Gen 2  | Redmi Pad Pro | 30 FPS    |
-| Snapdragon 835       | 小米 6        | 15–30 FPS |
-| Snapdragon AR1 Gen 1 | Rokid Glass3  | 10–25 FPS |
+| Snapdragon 835       | 小米 6        | 30 FPS |
+| Snapdragon AR1 Gen 1 | Rokid Glass3  | 20–30 FPS |
 
 ### 🌑 暗帧检测
 
@@ -120,7 +120,6 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 - [x] 暗帧跳过逻辑
 - [x] 3D AR 对象管理
 - [x] 多个地图文件的同时加载和匹配
-- [x] 与 **Unity3D** 集成
 
 ## 🗺️ 未来路线图
 
@@ -130,6 +129,7 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 - [ ] 加深传感器融合（VIO —— 视觉惯性测程）
 - [ ] SLAM 频率降采样和自适应噪声处理
 - [ ] 精细的传感器门控逻辑
+- [ ] 与 **Unity3D** 集成
 
 ---
 

@@ -26,29 +26,78 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
-        android:enableOnBackInvokedCallback="true">
+        android:enableOnBackInvokedCallback="true"
+        tools:targetApi="tiramisu">
         <activity
-            android:name="com.orb.slam2s.app.PrivacyConsentActivity"
+            android:name="com.orb.slam2s.app.SplashActivity"
             android:exported="true"
-            android:screenOrientation="sensorLandscape"
-            android:theme="@style/Theme.AppCompat.NoActionBar"
-            tools:ignore="DiscouragedApi">
+            android:screenOrientation="fullSensor"
+            tools:ignore="DiscouragedApi,CustomSplashScreen" />
+
+        <activity-alias
+            android:name="com.orb.slam2s.app.SplashActivityDefault"
+            android:targetActivity="com.orb.slam2s.app.SplashActivity"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:roundIcon="@mipmap/ic_launcher_round"
+            android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
-        <activity
-            android:name="com.orb.slam2s.app.SplashActivity"
-            android:exported="false"
-            android:screenOrientation="fullSensor"
-            tools:ignore="DiscouragedApi,CustomSplashScreen" />
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+        </activity-alias>
+
+        <activity-alias
+            android:name="com.orb.slam2s.app.SplashActivityCustom"
+            android:targetActivity="com.orb.slam2s.app.SplashActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_custom"
+            android:roundIcon="@mipmap/ic_launcher_custom_round"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+        </activity-alias>
+
         <activity
             android:name="com.orb.slam2s.ui.MainActivity"
             android:theme="@style/ListTheme"
             android:screenOrientation="sensorLandscape"
             android:configChanges="orientation|screenSize"
             tools:ignore="Instantiatable,DiscouragedApi" />
+        <activity
+            android:name="com.orb.slam2s.ui.MapManageActivity"
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat.NoActionBar"
+            android:screenOrientation="fullSensor"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+            tools:ignore="DiscouragedApi">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.orb.slam2s.ui.IconSelectActivity"
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat.NoActionBar"
+            android:screenOrientation="fullSensor"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+            tools:ignore="DiscouragedApi">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>

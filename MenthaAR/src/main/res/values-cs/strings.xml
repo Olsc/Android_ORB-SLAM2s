@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hint_map_saved">Mapa uložena: %1$s</string>
+    <string name="hint_map_loaded">Mapa načtena: %1$s</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">Načteno map: %1$d</item>
+        <item quantity="one">Načteno map: %1$d</item>
+        <item quantity="few">Načteno map: %1$d</item>
+        <item quantity="many">Načteno map: %1$d</item>
+    </plurals>
+    <string name="hint_map_deleted">Mapa smazána</string>
+    <string name="hint_map_delete_failed">Smazání selhalo</string>
+</resources>

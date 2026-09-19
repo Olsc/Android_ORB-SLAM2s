@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hint_map_saved">המפה נשמרה: %1$s</string>
+    <string name="hint_map_loaded">המפה נטענה: %1$s</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d מפות נטענו</item>
+        <item quantity="one">%1$d מפות נטענו</item>
+        <item quantity="two">%1$d מפות נטענו</item>
+    </plurals>
+    <string name="hint_map_deleted">המפה נמחקה</string>
+    <string name="hint_map_delete_failed">מחיקה נכשלה</string>
+</resources>

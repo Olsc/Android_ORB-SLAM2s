@@ -60,15 +60,35 @@
     <string name="hint_3dof_spawned">3DOF-kub skapad 5 meter framför</string>
     <string name="hint_3dof_closed">3DOF-läge stängt</string>
 
-    <string name="privacy_scroll_hint">↓ Bläddra till botten för att läsa hela avtalet</string>
-    <string name="privacy_scroll_done">✓ Du har läst hela avtalet</string>
-    <string name="privacy_agree">Godkänn &amp; Fortsätt</string>
-    <string name="privacy_load_error">Det gick inte att läsa in integritetspolicyn. Försök igen.</string>
-
     <string name="hint_no_camera">Ingen kamera upptäcktes (svart skärm-läge)</string>
 
     <string name="dialog_exit_title">Avsluta appen</string>
     <string name="dialog_exit_message">Är du säker på att du vill avsluta appen?</string>
     <string name="action_exit">Avsluta</string>
 
+    <string name="shortcut_map_manage">Karthantering</string>
+    <string name="map_manage_stats">Totalt %1$d kartor (%2$s)</string>
+    <string name="map_manage_empty_desc">Kartor som sparats under SLAM visas här.</string>
+    <string name="map_details_path">Filsökväg: %1$s</string>
+    <string name="map_action_refresh">Uppdatera</string>
+
+    <string name="shortcut_change_icon">Byt ikon</string>
+    <string name="icon_select_title">Appikon</string>
+    <string name="icon_select_desc">Välj önskad appikon. Tryck länge på startskärmen för att ändra när som helst.</string>
+    <string name="icon_default_name">Klassisk blå</string>
+    <string name="icon_custom_name">Flamröd</string>
+    <string name="icon_in_use">Används</string>
+    <string name="icon_switched_hint">Appikonen har ändrats till %s</string>
+    <string name="icon_note">Obs: På vissa startprogram kan det ta några sekunder att uppdatera på startskärmen.</string>
+
+    <string name="btn_switch_camera">Byt kamera</string>
+    <string name="hint_camera_switched_back">Bytte till bakre kamera</string>
+    <string name="hint_camera_switched_front">Bytte till främre kamera</string>
+    <string name="hint_camera_switched_other">Bytte till kamera %1$s</string>
+    <string name="hint_camera_switch_single">Endast en kamera tillgänglig</string>
+    <string name="hint_camera_switch_failed">Det gick inte att byta kamera</string>
+    <string name="camera_facing_back">Bakre kamera (%1$s)</string>
+    <string name="camera_facing_front">Främre kamera (%1$s)</string>
+    <string name="camera_facing_other">Kamera %1$s</string>
+    <string name="dialog_select_camera">Välj kamera</string>
 </resources>

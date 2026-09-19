@@ -1,0 +1,94 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MenthaAR</string>
+    <string name="btn_ar_object">AR օբյեկտ</string>
+    <string name="btn_save">Պահպանել</string>
+    <string name="btn_load">Բեռնել</string>
+    <string name="btn_map">Քարտեզ</string>
+    <string name="btn_point_cloud">✓Կետերի ամպ</string>
+    <string name="loading_slam_init">SLAM համակարգի սկզբնավորում…</string>
+    <string name="loading_slam_wait">Күте тұрыңыз</string>
+    <string name="slam_init_complete">SLAM жүйесі дайын</string>
+    <string name="slam_init_failed">Inicializácia SLAM zlyhala: %1$s</string>
+    <string name="hint_request_sent">Požiadavka odoslaná</string>
+    <string name="hint_pointcloud_enabled">Bodový oblak povolený</string>
+    <string name="hint_pointcloud_disabled">Bodový oblak zakázaný</string>
+    <string name="btn_pointcloud_enabled">✓Bodový oblak</string>
+    <string name="btn_pointcloud_disabled">Bodový oblak</string>
+    <string name="input_map_name">Մուտքագրեք քարտեզի անունը</string>
+    <string name="dialog_save_map">Պահպանել քարտեզը</string>
+    <string name="button_cancel">Չեղարկել</string>
+    <string name="hint_no_maps">Պահպանված քարտեզներ չկան</string>
+    <string name="dialog_map_manage">Քարտեզների կառավարում</string>
+    <string name="dialog_select_map">Vybrať mapu</string>
+    <string name="action_load">Բեռնել</string>
+    <string name="action_delete">Ջնջել</string>
+    <string name="action_view_details">Մանրամասներ</string>
+    <string name="dialog_confirm_delete">Potvrdiť odstránenie</string>
+    <string name="dialog_confirm_delete_message">Odstrániť mapu \"%1$s\"?</string>
+    <string name="hint_map_deleted">Mapa odstránená</string>
+    <string name="hint_map_delete_failed">Odstránenie zlyhalo</string>
+    <string name="button_back">Հետ</string>
+    <string name="dialog_map_details">Podrobnosti mapy</string>
+    <string name="map_details_name">Názov mapy: %1$s</string>
+    <string name="map_details_keyframes">Kľúčové snímky: %1$d</string>
+    <string name="map_details_mappoints">Body mapy: %1$d</string>
+    <string name="map_details_size">Veľkosť: %1$d KB</string>
+    <string name="map_details_time">Vytvorené: %1$s</string>
+    <string name="map_details_plane">Rovina: %1$s</string>
+    <string name="map_details_plane_yes">Այո</string>
+    <string name="map_details_plane_no">Ոչ</string>
+    <string name="button_ok">OK</string>
+    <string name="map_stats_format">KS: %1$d | BM: %2$d | Rovina: %3$s</string>
+    <string name="map_stats_plane_yes">Áno</string>
+    <string name="map_stats_plane_no">Nie</string>
+    <string name="hint_map_saved">Mapa uložená: %1$s</string>
+    <string name="hint_map_loaded">Mapa načítaná: %1$s</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="one">Բեռնվել է %1$d քարտեզ</item>
+        <item quantity="other">Բեռնվել է %1$d քարտեզ</item>
+    </plurals>
+    <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
+
+    <string name="category_ar">Ovládanie AR</string>
+    <string name="category_map">Mapa</string>
+    <string name="category_display">Zobrazenie</string>
+
+    <string name="btn_3dof">3DOF</string>
+    <string name="btn_3dof_close">Zavrieť 3DOF</string>
+    <string name="hint_3dof_unavailable">Funkcia 3DOF nie je dostupná</string>
+    <string name="hint_3dof_spawned">Kocka 3DOF vytvorená 5 metrov vpred</string>
+    <string name="hint_3dof_closed">Režim 3DOF zatvorený</string>
+
+    <string name="hint_no_camera">Nezistila sa kamera</string>
+
+    <string name="dialog_exit_title">Ukončiť aplikáciu</string>
+    <string name="dialog_exit_message">Naozaj chcete aplikáciu ukončiť?</string>
+    <string name="action_exit">Ukončiť</string>
+
+    <string name="shortcut_map_manage">Քարտեզների կառավարում</string>
+    <string name="map_manage_stats">Ընդամենը %1$d քարտեզ (%2$s)</string>
+    <string name="map_manage_empty_desc">Mapy uložené počas SLAM sa zobrazia tu.</string>
+    <string name="map_details_path">Cesta: %1$s</string>
+    <string name="map_action_refresh">Թարմացնել</string>
+
+    <string name="shortcut_change_icon">Փոխել պատկերակը</string>
+    <string name="icon_select_title">Հավելվածի պատկերակ</string>
+    <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
+    <string name="icon_default_name">Դասական կապույտ</string>
+    <string name="icon_custom_name">Կրակոտ կարմիր</string>
+    <string name="icon_in_use">Օգտագործվում է</string>
+    <string name="icon_switched_hint">Պատկերակը փոխվեց՝ %s</string>
+    <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
+
+    <string name="btn_switch_camera">Փոխել տեսախցիկը</string>
+    <string name="hint_camera_switched_back">Փոխարկվել է հետևի տեսախցիկի</string>
+    <string name="hint_camera_switched_front">Փոխարկվել է առջևի տեսախցիկի</string>
+    <string name="hint_camera_switched_other">Փոխարկվել է %1$s տեսախցիկի</string>
+    <string name="hint_camera_switch_single">Հասանելի է միայն մեկ տեսախցիկ</string>
+    <string name="hint_camera_switch_failed">Տեսախցիկը փոխել չհաջողվեց</string>
+    <string name="camera_facing_back">Հետևի տեսախցիկ (%1$s)</string>
+    <string name="camera_facing_front">Առջևի տեսախցիկ (%1$s)</string>
+    <string name="camera_facing_other">Տեսախցիկ %1$s</string>
+    <string name="dialog_select_camera">Ընտրել տեսախցիկ</string>
+</resources>

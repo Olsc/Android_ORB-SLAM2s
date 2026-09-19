@@ -1,0 +1,94 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MenthaAR</string>
+    <string name="btn_ar_object">AR-voorwerp</string>
+    <string name="btn_save">Stoor</string>
+    <string name="btn_load">Laai</string>
+    <string name="btn_map">Kaart</string>
+    <string name="btn_point_cloud">✓Puntwolk</string>
+    <string name="loading_slam_init">Inisialiseer SLAM-stelsel…</string>
+    <string name="loading_slam_wait">Wag asseblief</string>
+    <string name="slam_init_complete">SLAM-stelsel geïnisialiseer</string>
+    <string name="slam_init_failed">Inicializácia SLAM zlyhala: %1$s</string>
+    <string name="hint_request_sent">Požiadavka odoslaná</string>
+    <string name="hint_pointcloud_enabled">Bodový oblak povolený</string>
+    <string name="hint_pointcloud_disabled">Bodový oblak zakázaný</string>
+    <string name="btn_pointcloud_enabled">✓Bodový oblak</string>
+    <string name="btn_pointcloud_disabled">Bodový oblak</string>
+    <string name="input_map_name">Voer kaartnaam in</string>
+    <string name="dialog_save_map">Stoor kaart</string>
+    <string name="button_cancel">Kanselleer</string>
+    <string name="hint_no_maps">Geen gestoorde kaarte nie</string>
+    <string name="dialog_map_manage">Kaartbestuur</string>
+    <string name="dialog_select_map">Vybrať mapu</string>
+    <string name="action_load">Laai</string>
+    <string name="action_delete">Vee uit</string>
+    <string name="action_view_details">Besonderhede</string>
+    <string name="dialog_confirm_delete">Potvrdiť odstránenie</string>
+    <string name="dialog_confirm_delete_message">Odstrániť mapu \"%1$s\"?</string>
+    <string name="hint_map_deleted">Mapa odstránená</string>
+    <string name="hint_map_delete_failed">Odstránenie zlyhalo</string>
+    <string name="button_back">Terug</string>
+    <string name="dialog_map_details">Podrobnosti mapy</string>
+    <string name="map_details_name">Názov mapy: %1$s</string>
+    <string name="map_details_keyframes">Kľúčové snímky: %1$d</string>
+    <string name="map_details_mappoints">Body mapy: %1$d</string>
+    <string name="map_details_size">Veľkosť: %1$d KB</string>
+    <string name="map_details_time">Vytvorené: %1$s</string>
+    <string name="map_details_plane">Rovina: %1$s</string>
+    <string name="map_details_plane_yes">Ja</string>
+    <string name="map_details_plane_no">Nee</string>
+    <string name="button_ok">OK</string>
+    <string name="map_stats_format">KS: %1$d | BM: %2$d | Rovina: %3$s</string>
+    <string name="map_stats_plane_yes">Áno</string>
+    <string name="map_stats_plane_no">Nie</string>
+    <string name="hint_map_saved">Mapa uložená: %1$s</string>
+    <string name="hint_map_loaded">Mapa načítaná: %1$s</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="one">%1$d kaart gelaai</item>
+        <item quantity="other">%1$d kaarte gelaai</item>
+    </plurals>
+    <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
+
+    <string name="category_ar">Ovládanie AR</string>
+    <string name="category_map">Mapa</string>
+    <string name="category_display">Zobrazenie</string>
+
+    <string name="btn_3dof">3DOF</string>
+    <string name="btn_3dof_close">Zavrieť 3DOF</string>
+    <string name="hint_3dof_unavailable">Funkcia 3DOF nie je dostupná</string>
+    <string name="hint_3dof_spawned">Kocka 3DOF vytvorená 5 metrov vpred</string>
+    <string name="hint_3dof_closed">Režim 3DOF zatvorený</string>
+
+    <string name="hint_no_camera">Nezistila sa kamera</string>
+
+    <string name="dialog_exit_title">Ukončiť aplikáciu</string>
+    <string name="dialog_exit_message">Naozaj chcete aplikáciu ukončiť?</string>
+    <string name="action_exit">Ukončiť</string>
+
+    <string name="shortcut_map_manage">Kaartbestuur</string>
+    <string name="map_manage_stats">Totaal %1$d kaarte (%2$s)</string>
+    <string name="map_manage_empty_desc">Mapy uložené počas SLAM sa zobrazia tu.</string>
+    <string name="map_details_path">Cesta: %1$s</string>
+    <string name="map_action_refresh">Herlaai</string>
+
+    <string name="shortcut_change_icon">Verander ikoon</string>
+    <string name="icon_select_title">Toep-ikoon</string>
+    <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
+    <string name="icon_default_name">Klassieke blou</string>
+    <string name="icon_custom_name">Vlamrooi</string>
+    <string name="icon_in_use">In gebruik</string>
+    <string name="icon_switched_hint">Ikoon verander na %s</string>
+    <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
+
+    <string name="btn_switch_camera">Wissel kamera</string>
+    <string name="hint_camera_switched_back">Oorgeskakel na agterkamera</string>
+    <string name="hint_camera_switched_front">Oorgeskakel na voorkamera</string>
+    <string name="hint_camera_switched_other">Oorgeskakel na kamera %1$s</string>
+    <string name="hint_camera_switch_single">Slegs een kamera beskikbaar</string>
+    <string name="hint_camera_switch_failed">Kon nie kamera wissel nie</string>
+    <string name="camera_facing_back">Agterkamera (%1$s)</string>
+    <string name="camera_facing_front">Voorkamera (%1$s)</string>
+    <string name="camera_facing_other">Kamera %1$s</string>
+    <string name="dialog_select_camera">Kies kamera</string>
+</resources>

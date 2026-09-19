@@ -56,9 +56,7 @@ void FrameDrawer::SetMap(Map* pMap)
 
 void FrameDrawer::Update(Tracking *pTracker)
 {
-    // 本工程的 Viewer 已被裁剪，此类的全部绘制数据（KeyPoint 拷贝、
-    // VO/Map 标志、初始化帧）没有消费者，故仅保留状态记录；
-    // 将来重建 Viewer 时在此恢复完整实现即可。
+    // 裁剪后无绘制数据消费者，仅保留跟踪状态记录
     unique_lock<mutex> lock(mMutex);
     mState = static_cast<int>(pTracker->mLastProcessedState);
     N = 0;

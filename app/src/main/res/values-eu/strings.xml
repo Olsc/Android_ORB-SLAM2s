@@ -1,0 +1,94 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MenthaAR</string>
+    <string name="btn_ar_object">AR objektua</string>
+    <string name="btn_save">Gorde</string>
+    <string name="btn_load">Kargatu</string>
+    <string name="btn_map">Mapa</string>
+    <string name="btn_point_cloud">✓Puntu-hodeia</string>
+    <string name="loading_slam_init">SLAM sistema abiarazten…</string>
+    <string name="loading_slam_wait">Čakajte prosím, môže to chvíľu trvať</string>
+    <string name="slam_init_complete">Systém SLAM inicializovaný</string>
+    <string name="slam_init_failed">Inicializácia SLAM zlyhala: %1$s</string>
+    <string name="hint_request_sent">Požiadavka odoslaná</string>
+    <string name="hint_pointcloud_enabled">Bodový oblak povolený</string>
+    <string name="hint_pointcloud_disabled">Bodový oblak zakázaný</string>
+    <string name="btn_pointcloud_enabled">✓Bodový oblak</string>
+    <string name="btn_pointcloud_disabled">Bodový oblak</string>
+    <string name="input_map_name">Sartu maparen izena</string>
+    <string name="dialog_save_map">Gorde mapa</string>
+    <string name="button_cancel">Utzi</string>
+    <string name="hint_no_maps">Ez dago gordetako maparik</string>
+    <string name="dialog_map_manage">Mapen kudeaketa</string>
+    <string name="dialog_select_map">Vybrať mapu</string>
+    <string name="action_load">Kargatu</string>
+    <string name="action_delete">Ezabatu</string>
+    <string name="action_view_details">Xehetasunak</string>
+    <string name="dialog_confirm_delete">Potvrdiť odstránenie</string>
+    <string name="dialog_confirm_delete_message">Odstrániť mapu \"%1$s\"?</string>
+    <string name="hint_map_deleted">Mapa odstránená</string>
+    <string name="hint_map_delete_failed">Odstránenie zlyhalo</string>
+    <string name="button_back">Atzera</string>
+    <string name="dialog_map_details">Podrobnosti mapy</string>
+    <string name="map_details_name">Názov mapy: %1$s</string>
+    <string name="map_details_keyframes">Kľúčové snímky: %1$d</string>
+    <string name="map_details_mappoints">Body mapy: %1$d</string>
+    <string name="map_details_size">Veľkosť: %1$d KB</string>
+    <string name="map_details_time">Vytvorené: %1$s</string>
+    <string name="map_details_plane">Rovina: %1$s</string>
+    <string name="map_details_plane_yes">Bai</string>
+    <string name="map_details_plane_no">Ez</string>
+    <string name="button_ok">OK</string>
+    <string name="map_stats_format">KS: %1$d | BM: %2$d | Rovina: %3$s</string>
+    <string name="map_stats_plane_yes">Áno</string>
+    <string name="map_stats_plane_no">Nie</string>
+    <string name="hint_map_saved">Mapa uložená: %1$s</string>
+    <string name="hint_map_loaded">Mapa načítaná: %1$s</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="one">Mapa %1$d kargatu da</item>
+        <item quantity="other">%1$d mapa kargatu dira</item>
+    </plurals>
+    <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
+
+    <string name="category_ar">Ovládanie AR</string>
+    <string name="category_map">Mapa</string>
+    <string name="category_display">Zobrazenie</string>
+
+    <string name="btn_3dof">3DOF</string>
+    <string name="btn_3dof_close">Zavrieť 3DOF</string>
+    <string name="hint_3dof_unavailable">Funkcia 3DOF nie je dostupná</string>
+    <string name="hint_3dof_spawned">Kocka 3DOF vytvorená 5 metrov vpred</string>
+    <string name="hint_3dof_closed">Režim 3DOF zatvorený</string>
+
+    <string name="hint_no_camera">Nezistila sa kamera</string>
+
+    <string name="dialog_exit_title">Ukončiť aplikáciu</string>
+    <string name="dialog_exit_message">Naozaj chcete aplikáciu ukončiť?</string>
+    <string name="action_exit">Ukončiť</string>
+
+    <string name="shortcut_map_manage">Mapen kudeaketa</string>
+    <string name="map_manage_stats">Guztira %1$d mapa (%2$s)</string>
+    <string name="map_manage_empty_desc">Mapy uložené počas SLAM sa zobrazia tu.</string>
+    <string name="map_details_path">Cesta: %1$s</string>
+    <string name="map_action_refresh">Berritu</string>
+
+    <string name="shortcut_change_icon">Aldatu ikonoa</string>
+    <string name="icon_select_title">Aplikazioaren ikonoa</string>
+    <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
+    <string name="icon_default_name">Urdin klasikoa</string>
+    <string name="icon_custom_name">Sugar gorria</string>
+    <string name="icon_in_use">Erabiltzen</string>
+    <string name="icon_switched_hint">Ikonoa %s(e)ra aldatu da</string>
+    <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
+
+    <string name="btn_switch_camera">Aldatu kamera</string>
+    <string name="hint_camera_switched_back">Atzeko kamerara aldatu da</string>
+    <string name="hint_camera_switched_front">Aurreko kamerara aldatu da</string>
+    <string name="hint_camera_switched_other">%1$s kamerara aldatu da</string>
+    <string name="hint_camera_switch_single">Kamera bakarra dago erabilgarri</string>
+    <string name="hint_camera_switch_failed">Ezin izan da kamera aldatu</string>
+    <string name="camera_facing_back">Atzeko kamera (%1$s)</string>
+    <string name="camera_facing_front">Aurreko kamera (%1$s)</string>
+    <string name="camera_facing_other">%1$s kamera</string>
+    <string name="dialog_select_camera">Hautatu kamera</string>
+</resources>

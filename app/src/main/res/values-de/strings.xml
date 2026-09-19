@@ -60,15 +60,35 @@
     <string name="hint_3dof_spawned">3DOF-Würfel 5 Meter voraus erzeugt</string>
     <string name="hint_3dof_closed">3DOF-Modus geschlossen</string>
 
-    <string name="privacy_scroll_hint">↓ Bitte zum Ende scrollen, um die vollständige Vereinbarung zu lesen</string>
-    <string name="privacy_scroll_done">✓ Sie haben die vollständige Vereinbarung gelesen</string>
-    <string name="privacy_agree">Zustimmen &amp; Weiter</string>
-    <string name="privacy_load_error">Datenschutzrichtlinie konnte nicht geladen werden. Bitte erneut versuchen.</string>
-
     <string name="hint_no_camera">Keine Kamera erkannt (Schwarzbild-Modus)</string>
 
     <string name="dialog_exit_title">App beenden</string>
     <string name="dialog_exit_message">Möchten Sie die App wirklich beenden?</string>
     <string name="action_exit">Beenden</string>
 
+    <string name="shortcut_map_manage">Kartenverwaltung</string>
+    <string name="map_manage_stats">Gesamt %1$d Karten (%2$s)</string>
+    <string name="map_manage_empty_desc">Während des SLAM gespeicherte Karten werden hier angezeigt.</string>
+    <string name="map_details_path">Dateipfad: %1$s</string>
+    <string name="map_action_refresh">Aktualisieren</string>
+
+    <string name="shortcut_change_icon">Symbol ändern</string>
+    <string name="icon_select_title">App-Symbol</string>
+    <string name="icon_select_desc">Wählen Sie Ihr bevorzugtes App-Symbol. Durch langes Drücken auf dem Startbildschirm können Sie es jederzeit ändern.</string>
+    <string name="icon_default_name">Klassisches Blau</string>
+    <string name="icon_custom_name">Flammendes Rot</string>
+    <string name="icon_in_use">In Verwendung</string>
+    <string name="icon_switched_hint">App-Symbol geändert zu %s</string>
+    <string name="icon_note">Hinweis: Bei einigen Launchern kann die Aktualisierung einige Sekunden dauern.</string>
+
+    <string name="btn_switch_camera">Kamera wechseln</string>
+    <string name="hint_camera_switched_back">Zur Rückkamera gewechselt</string>
+    <string name="hint_camera_switched_front">Zur Frontkamera gewechselt</string>
+    <string name="hint_camera_switched_other">Zu Kamera %1$s gewechselt</string>
+    <string name="hint_camera_switch_single">Nur eine Kamera verfügbar</string>
+    <string name="hint_camera_switch_failed">Kamerawechsel fehlgeschlagen</string>
+    <string name="camera_facing_back">Rückkamera (%1$s)</string>
+    <string name="camera_facing_front">Frontkamera (%1$s)</string>
+    <string name="camera_facing_other">Kamera %1$s</string>
+    <string name="dialog_select_camera">Kamera auswählen</string>
 </resources>

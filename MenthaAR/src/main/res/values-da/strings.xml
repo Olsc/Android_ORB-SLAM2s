@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hint_map_saved">Kort gemt: %1$s</string>
+    <string name="hint_map_loaded">Kort indlæst: %1$s</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d kort indlæst</item>
+        <item quantity="one">%1$d kort indlæst</item>
+    </plurals>
+    <string name="hint_map_deleted">Kort slettet</string>
+    <string name="hint_map_delete_failed">Sletning mislykkedes</string>
+</resources>

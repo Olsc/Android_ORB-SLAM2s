@@ -59,15 +59,35 @@
     <string name="hint_3dof_spawned">3DOF 큐브가 5미터 앞에 생성됨</string>
     <string name="hint_3dof_closed">3DOF 모드 종료됨</string>
 
-    <string name="privacy_scroll_hint">↓ 전체 계약서를 읽으려면 맨 아래로 스크롤하세요</string>
-    <string name="privacy_scroll_done">✓ 전체 계약서를 읽으셨습니다</string>
-    <string name="privacy_agree">동의 &amp; 계속</string>
-    <string name="privacy_load_error">개인정보 처리방침을 불러오지 못했습니다. 다시 시도해 주세요.</string>
-
     <string name="hint_no_camera">사용 가능한 카메라가 감지되지 않았습니다 (검은 화면 모드)</string>
 
     <string name="dialog_exit_title">앱 종료</string>
     <string name="dialog_exit_message">앱을 종료하시겠습니까?</string>
     <string name="action_exit">종료</string>
 
+    <string name="shortcut_map_manage">지도 관리</string>
+    <string name="map_manage_stats">총 %1$d개 지도 (%2$s)</string>
+    <string name="map_manage_empty_desc">SLAM 실행 중 저장된 지도가 여기에 표시됩니다</string>
+    <string name="map_details_path">파일 경로: %1$s</string>
+    <string name="map_action_refresh">새로고침</string>
+
+    <string name="shortcut_change_icon">아이콘 변경</string>
+    <string name="icon_select_title">앱 아이콘</string>
+    <string name="icon_select_desc">선호하는 앱 아이콘을 선택하세요. 홈 화면에서 길게 눌러 언제든지 변경할 수 있습니다.</string>
+    <string name="icon_default_name">클래식 블루</string>
+    <string name="icon_custom_name">플레임 레드</string>
+    <string name="icon_in_use">사용 중</string>
+    <string name="icon_switched_hint">앱 아이콘이 %s(으)로 변경되었습니다</string>
+    <string name="icon_note">참고: 일부 런처에서는 홈 화면에 반영되는 데 몇 초 정도 걸릴 수 있습니다.</string>
+
+    <string name="btn_switch_camera">카메라 전환</string>
+    <string name="hint_camera_switched_back">후면 카메라로 전환되었습니다</string>
+    <string name="hint_camera_switched_front">전면 카메라로 전환되었습니다</string>
+    <string name="hint_camera_switched_other">카메라 %1$s(으)로 전환되었습니다</string>
+    <string name="hint_camera_switch_single">사용 가능한 카메라가 하나뿐입니다</string>
+    <string name="hint_camera_switch_failed">카메라 전환 실패</string>
+    <string name="camera_facing_back">후면 카메라 (%1$s)</string>
+    <string name="camera_facing_front">전면 카메라 (%1$s)</string>
+    <string name="camera_facing_other">카메라 %1$s</string>
+    <string name="dialog_select_camera">카메라 선택</string>
 </resources>

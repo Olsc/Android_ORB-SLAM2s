@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hint_map_saved">Картата е запазена: %1$s</string>
+    <string name="hint_map_loaded">Картата е заредена: %1$s</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d карти заредени</item>
+        <item quantity="one">%1$d карти заредени</item>
+    </plurals>
+    <string name="hint_map_deleted">Картата е изтрита</string>
+    <string name="hint_map_delete_failed">Изтриването е неуспешно</string>
+</resources>

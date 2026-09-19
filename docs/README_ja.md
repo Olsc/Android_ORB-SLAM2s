@@ -101,8 +101,8 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 | Snapdragon 8+ Gen1   | Redmi K60     | 30 FPS         |
 | Snapdragon 870       | Xiaomi 10S    | 30 FPS         |
 | Snapdragon 7s Gen 2  | Redmi Pad Pro | 30 FPS         |
-| Snapdragon 835       | Xiaomi 6      | 15–30 FPS      |
-| Snapdragon AR1 Gen 1 | Rokid Glass3  | 10–25 FPS      |
+| Snapdragon 835       | Xiaomi 6      | 30 FPS      |
+| Snapdragon AR1 Gen 1 | Rokid Glass3  | 20–30 FPS      |
 
 ### 🌑 暗所フレーム検出
 
@@ -119,7 +119,6 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 - [x] 暗所フレームスキップロジック
 - [x] 3D AR オブジェクト管理
 - [x] 複数マップファイルの同時読み込みとマッチング
-- [x] **Unity3D** との統合
 
 ## 🗺️ 今後のロードマップ
 
@@ -129,6 +128,7 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 - [ ] センサーフュージョンの深化（VIO —— Visual Inertial Odometry）
 - [ ] SLAM 周波数のダウンサンプリングと適応ノイズ処理
 - [ ] 精密なセンサーチェッキングロジック
+- [ ] **Unity3D** との統合
 
 ---
 

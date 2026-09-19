@@ -101,8 +101,8 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 | Snapdragon 8+ Gen1   | Redmi K60     | 30 FPS    |
 | Snapdragon 870       | Xiaomi 10S    | 30 FPS    |
 | Snapdragon 7s Gen 2  | Redmi Pad Pro | 30 FPS    |
-| Snapdragon 835       | Xiaomi 6      | 15–30 FPS |
-| Snapdragon AR1 Gen 1 | Rokid Glass3  | 10–25 FPS |
+| Snapdragon 835       | Xiaomi 6      | 30 FPS |
+| Snapdragon AR1 Gen 1 | Rokid Glass3  | 20–30 FPS |
 
 ### 🌑 어두운 프레임 감지
 
@@ -119,7 +119,6 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 - [x] 어두운 프레임 건너뛰기 로직
 - [x] 3D AR 오브젝트 관리
 - [x] 다중 지도 파일의 동시 로드 및 매칭
-- [x] **Unity3D** 통합
 
 ## 🗺️ 향후 로드맵
 
@@ -129,6 +128,7 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 - [ ] 센서 퓨전 심화（VIO —— 시각 관성 주행 거리 측정）
 - [ ] SLAM 주파수 다운샘플링 및 적응형 노이즈 처리
 - [ ] 정밀 센서 게이팅 로직
+- [ ] **Unity3D** 통합
 
 ---
 

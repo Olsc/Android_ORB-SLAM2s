@@ -60,15 +60,35 @@
     <string name="hint_3dof_spawned">3DOF క్యూబ్ 5 మీటర్ల ముందు సృష్టించబడింది</string>
     <string name="hint_3dof_closed">3DOF మోడ్ మూసివేయబడింది</string>
 
-    <string name="privacy_scroll_hint">↓ పూర్తి ఒప్పందాన్ని చదవడానికి దయచేసి క్రిందికి స్క్రోల్ చేయండి</string>
-    <string name="privacy_scroll_done">✓ మీరు పూర్తి ఒప్పందాన్ని చదివారు</string>
-    <string name="privacy_agree">అంగీకరిస్తున్నాను &amp; కొనసాగించండి</string>
-    <string name="privacy_load_error">గోప్యతా విధానాన్ని లోడ్ చేయడం విఫలమైంది. దయచేసి మళ్లీ ప్రయత్నించండి.</string>
-
     <string name="hint_no_camera">కెమెరా ఏదీ కనుగొనబడలేదు (బ్లాక్ స్క్రీన్ మోడ్)</string>
 
     <string name="dialog_exit_title">యాప్ నుండి నిష్క్రమించు</string>
     <string name="dialog_exit_message">మీరు నిజంగా నిష్క్రమించాలనుకుంటున్నారా?</string>
     <string name="action_exit">నిష్క్రమించు</string>
 
+    <string name="shortcut_map_manage">మ్యాప్ నిర్వహణ</string>
+    <string name="map_manage_stats">మొత్తం %1$d మ్యాప్‌లు (%2$s)</string>
+    <string name="map_manage_empty_desc">SLAM సమయంలో సేవ్ చేయబడిన మ్యాప్‌లు ఇక్కడ కనిపిస్తాయి.</string>
+    <string name="map_details_path">ఫైల్ మార్గం: %1$s</string>
+    <string name="map_action_refresh">రిఫ్రెష్ చేయి</string>
+
+    <string name="shortcut_change_icon">చిహ్నాన్ని మార్చు</string>
+    <string name="icon_select_title">యాప్ చిహ్నం</string>
+    <string name="icon_select_desc">మీకు నచ్చిన యాప్ చిహ్నాన్ని ఎంచుకోండి. ఎప్పుడైనా మార్చడానికి హోమ్ స్క్రీన్‌పై ఎక్కువసేపు నొక్కండి.</string>
+    <string name="icon_default_name">క్లాసిక్ బ్లూ</string>
+    <string name="icon_custom_name">ఫ్లేమ్ రెడ్</string>
+    <string name="icon_in_use">ఉపయోగంలో ఉంది</string>
+    <string name="icon_switched_hint">యాప్ చిహ్నం %s కు మార్చబడింది</string>
+    <string name="icon_note">గమనిక: కొన్ని లాంచర్‌లలో హోమ్ స్క్రీన్‌పై అప్‌డేట్ కావడానికి కొన్ని సెకన్లు పట్టవచ్చు.</string>
+
+    <string name="btn_switch_camera">కెమెరా మార్చు</string>
+    <string name="hint_camera_switched_back">వెనుక కెమెరాకు మార్చబడింది</string>
+    <string name="hint_camera_switched_front">ముందు కెమెరాకు మార్చబడింది</string>
+    <string name="hint_camera_switched_other">కెమెరా %1$s కు మార్చబడింది</string>
+    <string name="hint_camera_switch_single">ఒకే ఒక కెమెరా అందుబాటులో ఉంది</string>
+    <string name="hint_camera_switch_failed">కెమెరా మార్చడం విఫలమైంది</string>
+    <string name="camera_facing_back">వెనుక కెమెరా (%1$s)</string>
+    <string name="camera_facing_front">ముందు కెమెరా (%1$s)</string>
+    <string name="camera_facing_other">కెమెరా %1$s</string>
+    <string name="dialog_select_camera">కెమెరాను ఎంచుకోండి</string>
 </resources>

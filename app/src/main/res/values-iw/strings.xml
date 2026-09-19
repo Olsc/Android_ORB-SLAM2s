@@ -61,15 +61,35 @@
     <string name="hint_3dof_spawned">קוביית 3DOF נוצרה 5 מטר קדימה</string>
     <string name="hint_3dof_closed">מצב 3DOF נסגר</string>
 
-    <string name="privacy_scroll_hint">↓ אנא גלול לתחתית כדי לקרוא את ההסכם המלא</string>
-    <string name="privacy_scroll_done">✓ קראת את ההסכם המלא</string>
-    <string name="privacy_agree">מסכים &amp; ממשיך</string>
-    <string name="privacy_load_error">טעינת מדיניות הפרטיות נכשלה. אנא נסה שוב.</string>
-
     <string name="hint_no_camera">לא זוהתה מצלמה (מצב מסך שחור)</string>
 
     <string name="dialog_exit_title">יציאה מהאפליקציה</string>
     <string name="dialog_exit_message">האם אתה בטוח שברצונך לצאת מהאפליקציה?</string>
     <string name="action_exit">יציאה</string>
 
+    <string name="shortcut_map_manage">ניהול מפות</string>
+    <string name="map_manage_stats">סה״כ %1$d מפות (%2$s)</string>
+    <string name="map_manage_empty_desc">מפות שנשמרו במהלך SLAM יופיעו כאן.</string>
+    <string name="map_details_path">נתיב קובץ: %1$s</string>
+    <string name="map_action_refresh">רענן</string>
+
+    <string name="shortcut_change_icon">שינוי סמל</string>
+    <string name="icon_select_title">סמל האפליקציה</string>
+    <string name="icon_select_desc">בחר את סמל האפליקציה המועדף עליך. לחץ לחיצה ארוכה במסך הבית לשינוי בכל עת.</string>
+    <string name="icon_default_name">כחול קלאסי</string>
+    <string name="icon_custom_name">אדום להבה</string>
+    <string name="icon_in_use">בשימוש</string>
+    <string name="icon_switched_hint">סמל האפליקציה שונה ל-%s</string>
+    <string name="icon_note">הערה: בחלק מממשקי הבית ייתכן שיידרשו מספר שניות לעדכון הסמל.</string>
+
+    <string name="btn_switch_camera">החלף מצלמה</string>
+    <string name="hint_camera_switched_back">הוחלף למצלמה אחורית</string>
+    <string name="hint_camera_switched_front">הוחלף למצלמה קדמית</string>
+    <string name="hint_camera_switched_other">הוחלף למצלמה %1$s</string>
+    <string name="hint_camera_switch_single">יש רק מצלמה אחת זמינה</string>
+    <string name="hint_camera_switch_failed">החלפת מצלמה נכשלה</string>
+    <string name="camera_facing_back">מצלמה אחורית (%1$s)</string>
+    <string name="camera_facing_front">מצלמה קדמית (%1$s)</string>
+    <string name="camera_facing_other">מצלמה %1$s</string>
+    <string name="dialog_select_camera">בחר מצלמה</string>
 </resources>

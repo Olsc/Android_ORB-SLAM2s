@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hint_map_saved">Ramani imehifadhiwa: %1$s</string>
+    <string name="hint_map_loaded">Ramani imepakiwa: %1$s</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">Ramani %1$d zimepakiwa</item>
+        <item quantity="one">Ramani %1$d zimepakiwa</item>
+    </plurals>
+    <string name="hint_map_deleted">Ramani imefutwa</string>
+    <string name="hint_map_delete_failed">Kufuta kumeshindwa</string>
+</resources>

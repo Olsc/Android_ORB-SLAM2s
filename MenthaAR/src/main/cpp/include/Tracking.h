@@ -296,7 +296,7 @@ protected:
     std::shared_ptr<const std::vector<MapPoint*>> mpRefIdxToMP;
     size_t mRefCachedMPCount = 0;
     double mRefLastBuildTs = 0.0;
-    // 重建节流为增量驱动（地图点新增约 5% 或 KF 新增 3 个时重建）
+    // 重建节流：由地图点增量或关键帧增量驱动重建
     long long mRefLastBuildMPCount = 0;
     long long mRefLastBuildKFCount = 0;
     std::atomic<bool> mRefBuilding{false};

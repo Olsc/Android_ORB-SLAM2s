@@ -33,17 +33,8 @@ import android.os.ParcelFileDescriptor;
 import android.os.RemoteException;
 import android.util.Log;
 
-// SLAM IPC 客户端（UI 进程）。
-//
-// 每帧路径（性能关键）：
-// 1. sendFrameData() 在发送线程调用：写 Y 帧到共享内存双缓冲之一，
-//    更新 uiWriteSeq，然后 oneway 投递 processFrame(seq, bufIndex, w, h)，不阻塞。
-// 2. SLAM 进程专用线程处理帧，native 把 tracking/draw/MVP/点云/slamDoneSeq 写回共享内存。
-// 3. 渲染线程（GL / Filament）通过 readMvp()/readPointCloud() 等直接读共享内存，全程零 binder。
-// 4. 平面检测、地图保存/加载等低频控制指令走 binder（非每帧路径）。
-//
-// 背压：写帧 seq 前要求 slamDoneSeq >= seq-2（目标缓冲已被 SLAM 处理完），
-// 否则丢帧，保证双缓冲不被覆盖，同时 SLAM 满负荷运行。
+// SLAM 跨进程通信客户端：通过共享内存实现无锁高速视频帧推送与位姿/点云读取
+// 结合背压丢帧策略保障双缓冲稳定性，控制指令通过 AIDL 异步分发
 public class SlamIPCClient {
     private static final String TAG = "SlamIPCClient";
 

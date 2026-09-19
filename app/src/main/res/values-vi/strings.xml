@@ -59,15 +59,35 @@
     <string name="hint_3dof_spawned">Khối 3DOF được tạo cách 5 mét phía trước</string>
     <string name="hint_3dof_closed">Chế độ 3DOF đã đóng</string>
 
-    <string name="privacy_scroll_hint">↓ Vui lòng cuộn xuống để đọc toàn bộ thỏa thuận</string>
-    <string name="privacy_scroll_done">✓ Bạn đã đọc toàn bộ thỏa thuận</string>
-    <string name="privacy_agree">Đồng ý &amp; Tiếp tục</string>
-    <string name="privacy_load_error">Không thể tải chính sách bảo mật. Vui lòng thử lại.</string>
-
     <string name="hint_no_camera">Không tìm thấy camera (chế độ màn hình đen)</string>
 
     <string name="dialog_exit_title">Thoát ứng dụng</string>
     <string name="dialog_exit_message">Bạn có chắc chắn muốn thoát khỏi ứng dụng không?</string>
     <string name="action_exit">Thoát</string>
 
+    <string name="shortcut_map_manage">Quản lý bản đồ</string>
+    <string name="map_manage_stats">Tổng số %1$d bản đồ (%2$s)</string>
+    <string name="map_manage_empty_desc">Các bản đồ được lưu trong quá trình SLAM sẽ xuất hiện ở đây.</string>
+    <string name="map_details_path">Đường dẫn tệp: %1$s</string>
+    <string name="map_action_refresh">Làm mới</string>
+
+    <string name="shortcut_change_icon">Đổi biểu tượng</string>
+    <string name="icon_select_title">Biểu tượng ứng dụng</string>
+    <string name="icon_select_desc">Chọn biểu tượng ứng dụng bạn thích. Nhấn giữ trên màn hình chính để thay đổi bất kỳ lúc nào.</string>
+    <string name="icon_default_name">Xanh cổ điển</string>
+    <string name="icon_custom_name">Đỏ ngọn lửa</string>
+    <string name="icon_in_use">Đang sử dụng</string>
+    <string name="icon_switched_hint">Đã đổi biểu tượng ứng dụng thành %s</string>
+    <string name="icon_note">Lưu ý: Một số launcher có thể mất vài giây để cập nhật biểu tượng trên màn hình chính.</string>
+
+    <string name="btn_switch_camera">Đổi camera</string>
+    <string name="hint_camera_switched_back">Đã chuyển sang camera sau</string>
+    <string name="hint_camera_switched_front">Đã chuyển sang camera trước</string>
+    <string name="hint_camera_switched_other">Đã chuyển sang camera %1$s</string>
+    <string name="hint_camera_switch_single">Chỉ có một camera khả dụng</string>
+    <string name="hint_camera_switch_failed">Đổi camera thất bại</string>
+    <string name="camera_facing_back">Camera sau (%1$s)</string>
+    <string name="camera_facing_front">Camera trước (%1$s)</string>
+    <string name="camera_facing_other">Camera %1$s</string>
+    <string name="dialog_select_camera">Chọn camera</string>
 </resources>

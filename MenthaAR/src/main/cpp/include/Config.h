@@ -262,7 +262,7 @@ const float PNP_RANSAC_TH2 = 5.991f;
 
 // 自适应RANSAC提前终止参数
 const int PNP_ADAPTIVE_START_ITER = 30;   // 至少迭代30次后才检查提前终止
-const float PNP_ADAPTIVE_MIN_RATIO = 0.3f;  // 内点率低于30%时不触发提前终止
+const float PNP_ADAPTIVE_MIN_RATIO = 0.3f;  // 内点率过低时不触发提前终止
 const float PNP_ADAPTIVE_SAFETY_FACTOR = 1.5f;  // 安全系数：理论×1.5后提前终止
 
 // 帧网格划分：48×64，约640×360时每格13.3×7.5像素
@@ -406,7 +406,7 @@ const float PNP_REPROJ_ERROR_TH = 5.0f;
 // 后台重定位置信度归一化内点数
 const float RELOC_CONF_NORM_INLIERS = 50.0f;
 
-// 地图投票胜出需比第二名多出的比例（20%）
+// 地图投票胜出领先倍率阈值
 const float RELOC_MAP_VOTE_MARGIN = 1.2f;
 
 // 重定位候选数硬上限

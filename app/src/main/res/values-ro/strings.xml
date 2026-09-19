@@ -61,15 +61,35 @@
     <string name="hint_3dof_spawned">Cub 3DOF generat la 5 metri înainte</string>
     <string name="hint_3dof_closed">Mod 3DOF închis</string>
 
-    <string name="privacy_scroll_hint">↓ Derulați până la capăt pentru a citi acordul complet</string>
-    <string name="privacy_scroll_done">✓ Ați citit acordul complet</string>
-    <string name="privacy_agree">De acord &amp; Continuare</string>
-    <string name="privacy_load_error">Eroare la încărcarea politicii de confidențialitate. Încercați din nou.</string>
-
     <string name="hint_no_camera">Nicio cameră detectată (mod ecran negru)</string>
 
     <string name="dialog_exit_title">Ieșire din aplicație</string>
     <string name="dialog_exit_message">Sigur doriți să ieșiți din aplicație?</string>
     <string name="action_exit">Ieșire</string>
 
+    <string name="shortcut_map_manage">Administrare hărți</string>
+    <string name="map_manage_stats">Total %1$d hărți (%2$s)</string>
+    <string name="map_manage_empty_desc">Hărțile salvate în timpul SLAM vor apărea aici.</string>
+    <string name="map_details_path">Cale fișier: %1$s</string>
+    <string name="map_action_refresh">Reîmprospătare</string>
+
+    <string name="shortcut_change_icon">Schimbă pictograma</string>
+    <string name="icon_select_title">Pictogramă aplicație</string>
+    <string name="icon_select_desc">Selectați pictograma preferată a aplicației. Apăsați lung pe ecranul de pornire pentru a schimba oricând.</string>
+    <string name="icon_default_name">Albastru clasic</string>
+    <string name="icon_custom_name">Roșu flacără</string>
+    <string name="icon_in_use">În uz</string>
+    <string name="icon_switched_hint">Pictograma aplicației a fost schimbată la %s</string>
+    <string name="icon_note">Notă: Pe unele lansatoare, actualizarea pe ecranul de pornire poate dura câteva secunde.</string>
+
+    <string name="btn_switch_camera">Schimbă camera</string>
+    <string name="hint_camera_switched_back">Comutat la camera din spate</string>
+    <string name="hint_camera_switched_front">Comutat la camera frontală</string>
+    <string name="hint_camera_switched_other">Comutat la camera %1$s</string>
+    <string name="hint_camera_switch_single">O singură cameră disponibilă</string>
+    <string name="hint_camera_switch_failed">Schimbarea camerei a eșuat</string>
+    <string name="camera_facing_back">Cameră spate (%1$s)</string>
+    <string name="camera_facing_front">Cameră frontală (%1$s)</string>
+    <string name="camera_facing_other">Cameră %1$s</string>
+    <string name="dialog_select_camera">Selectează camera</string>
 </resources>

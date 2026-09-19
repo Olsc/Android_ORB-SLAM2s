@@ -59,15 +59,35 @@
     <string name="hint_3dof_spawned">3DOFキューブが5メートル先に生成されました</string>
     <string name="hint_3dof_closed">3DOFモードを終了しました</string>
 
-    <string name="privacy_scroll_hint">↓ 全文を読むには最後までスクロールしてください</string>
-    <string name="privacy_scroll_done">✓ 全文をお読みいただきました</string>
-    <string name="privacy_agree">同意して続ける</string>
-    <string name="privacy_load_error">プライバシーポリシーの読み込みに失敗しました。再試行してください。</string>
-
     <string name="hint_no_camera">利用可能なカメラが検出されませんでした（黒画面モード）</string>
 
     <string name="dialog_exit_title">アプリを終了</string>
     <string name="dialog_exit_message">アプリを終了してもよろしいですか？</string>
     <string name="action_exit">終了</string>
 
+    <string name="shortcut_map_manage">マップ管理</string>
+    <string name="map_manage_stats">合計 %1$d 個のマップ (%2$s)</string>
+    <string name="map_manage_empty_desc">SLAMの実行中に保存されたマップはここに表示されます</string>
+    <string name="map_details_path">ファイルパス: %1$s</string>
+    <string name="map_action_refresh">更新</string>
+
+    <string name="shortcut_change_icon">アイコン変更</string>
+    <string name="icon_select_title">アプリアイコン</string>
+    <string name="icon_select_desc">お好みのアプリアイコンを選択してください。ホーム画面で長押ししていつでも変更できます。</string>
+    <string name="icon_default_name">クラシックブルー</string>
+    <string name="icon_custom_name">フレイムレッド</string>
+    <string name="icon_in_use">使用中</string>
+    <string name="icon_switched_hint">アプリアイコンを %s に変更しました</string>
+    <string name="icon_note">注：一部のランチャーではホーム画面の反映に数秒かかる場合があります。</string>
+
+    <string name="btn_switch_camera">カメラ切替</string>
+    <string name="hint_camera_switched_back">背面カメラに切り替えました</string>
+    <string name="hint_camera_switched_front">前面カメラに切り替えました</string>
+    <string name="hint_camera_switched_other">カメラ %1$s に切り替えました</string>
+    <string name="hint_camera_switch_single">利用可能なカメラは1つのみです</string>
+    <string name="hint_camera_switch_failed">カメラの切り替えに失敗しました</string>
+    <string name="camera_facing_back">背面カメラ (%1$s)</string>
+    <string name="camera_facing_front">前面カメラ (%1$s)</string>
+    <string name="camera_facing_other">カメラ %1$s</string>
+    <string name="dialog_select_camera">カメラを選択</string>
 </resources>

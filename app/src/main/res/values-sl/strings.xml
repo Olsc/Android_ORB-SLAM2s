@@ -1,0 +1,96 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MenthaAR</string>
+    <string name="btn_ar_object">AR predmet</string>
+    <string name="btn_save">Shrani</string>
+    <string name="btn_load">Naloži</string>
+    <string name="btn_map">Zemljevid</string>
+    <string name="btn_point_cloud">✓Oblak točk</string>
+    <string name="loading_slam_init">Inicializacija sistema SLAM…</string>
+    <string name="loading_slam_wait">Počakajte trenutek</string>
+    <string name="slam_init_complete">Sistem SLAM inicializiran</string>
+    <string name="slam_init_failed">Inicializácia SLAM zlyhala: %1$s</string>
+    <string name="hint_request_sent">Požiadavka odoslaná</string>
+    <string name="hint_pointcloud_enabled">Bodový oblak povolený</string>
+    <string name="hint_pointcloud_disabled">Bodový oblak zakázaný</string>
+    <string name="btn_pointcloud_enabled">✓Bodový oblak</string>
+    <string name="btn_pointcloud_disabled">Bodový oblak</string>
+    <string name="input_map_name">Vnesite ime zemljevida</string>
+    <string name="dialog_save_map">Shrani zemljevid</string>
+    <string name="button_cancel">Prekliči</string>
+    <string name="hint_no_maps">Ni shranjenih zemljevidov</string>
+    <string name="dialog_map_manage">Upravljanje zemljevida</string>
+    <string name="dialog_select_map">Vybrať mapu</string>
+    <string name="action_load">Naloži</string>
+    <string name="action_delete">Izbriši</string>
+    <string name="action_view_details">Podrobnosti</string>
+    <string name="dialog_confirm_delete">Potvrdiť odstránenie</string>
+    <string name="dialog_confirm_delete_message">Odstrániť mapu \"%1$s\"?</string>
+    <string name="hint_map_deleted">Mapa odstránená</string>
+    <string name="hint_map_delete_failed">Odstránenie zlyhalo</string>
+    <string name="button_back">Nazaj</string>
+    <string name="dialog_map_details">Podrobnosti zemljevida</string>
+    <string name="map_details_name">Ime: %1$s</string>
+    <string name="map_details_keyframes">Ključne sličice: %1$d</string>
+    <string name="map_details_mappoints">Točke: %1$d</string>
+    <string name="map_details_size">Velikost: %1$d KB</string>
+    <string name="map_details_time">Vytvorené: %1$s</string>
+    <string name="map_details_plane">Rovina: %1$s</string>
+    <string name="map_details_plane_yes">Da</string>
+    <string name="map_details_plane_no">Ne</string>
+    <string name="button_ok">OK</string>
+    <string name="map_stats_format">KS: %1$d | BM: %2$d | Rovina: %3$s</string>
+    <string name="map_stats_plane_yes">Da</string>
+    <string name="map_stats_plane_no">Ne</string>
+    <string name="hint_map_saved">Mapa uložená: %1$s</string>
+    <string name="hint_map_loaded">Mapa načítaná: %1$s</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="one">Naložen %1$d zemljevid</item>
+        <item quantity="two">Naložena %1$d zemljevida</item>
+        <item quantity="few">Naloženi %1$d zemljevidi</item>
+        <item quantity="other">Naloženih %1$d zemljevidov</item>
+    </plurals>
+    <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
+
+    <string name="category_ar">Ovládanie AR</string>
+    <string name="category_map">Mapa</string>
+    <string name="category_display">Zobrazenie</string>
+
+    <string name="btn_3dof">3DOF</string>
+    <string name="btn_3dof_close">Zavrieť 3DOF</string>
+    <string name="hint_3dof_unavailable">Funkcia 3DOF nie je dostupná</string>
+    <string name="hint_3dof_spawned">Kocka 3DOF vytvorená 5 metrov vpred</string>
+    <string name="hint_3dof_closed">Režim 3DOF zatvorený</string>
+
+    <string name="hint_no_camera">Nezistila sa kamera</string>
+
+    <string name="dialog_exit_title">Ukončiť aplikáciu</string>
+    <string name="dialog_exit_message">Naozaj chcete aplikáciu ukončiť?</string>
+    <string name="action_exit">Ukončiť</string>
+
+    <string name="shortcut_map_manage">Upravljanje zemljevidov</string>
+    <string name="map_manage_stats">Skupaj %1$d zemljevidov (%2$s)</string>
+    <string name="map_manage_empty_desc">Mapy uložené počas SLAM sa zobrazia tu.</string>
+    <string name="map_details_path">Cesta: %1$s</string>
+    <string name="map_action_refresh">Osveži</string>
+
+    <string name="shortcut_change_icon">Spremeni ikono</string>
+    <string name="icon_select_title">Ikona aplikacije</string>
+    <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
+    <string name="icon_default_name">Klasična modra</string>
+    <string name="icon_custom_name">Ognjeno rdeča</string>
+    <string name="icon_in_use">V uporabi</string>
+    <string name="icon_switched_hint">Ikona spremenjena v %s</string>
+    <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
+
+    <string name="btn_switch_camera">Preklopi kamero</string>
+    <string name="hint_camera_switched_back">Preklopljeno na zadnjo kamero</string>
+    <string name="hint_camera_switched_front">Preklopljeno na sprednjo kamero</string>
+    <string name="hint_camera_switched_other">Preklopljeno na kamero %1$s</string>
+    <string name="hint_camera_switch_single">Na voljo je samo ena kamera</string>
+    <string name="hint_camera_switch_failed">Preklop kamere ni uspel</string>
+    <string name="camera_facing_back">Zadnja kamera (%1$s)</string>
+    <string name="camera_facing_front">Sprednja kamera (%1$s)</string>
+    <string name="camera_facing_other">Kamera %1$s</string>
+    <string name="dialog_select_camera">Izberite kamero</string>
+</resources>

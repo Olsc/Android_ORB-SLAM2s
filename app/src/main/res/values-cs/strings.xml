@@ -62,15 +62,35 @@
     <string name="hint_3dof_spawned">Kostka 3DOF vytvořena 5 metrů vpředu</string>
     <string name="hint_3dof_closed">Režim 3DOF uzavřen</string>
 
-    <string name="privacy_scroll_hint">↓ Přejděte dolů a přečtěte si celou dohodu</string>
-    <string name="privacy_scroll_done">✓ Přečetli jste celou dohodu</string>
-    <string name="privacy_agree">Souhlasím &amp; Pokračovat</string>
-    <string name="privacy_load_error">Načtení zásad ochrany soukromí selhalo. Zkuste to znovu.</string>
-
     <string name="hint_no_camera">Nebyla detekována žádná kamera (režim černé obrazovky)</string>
 
     <string name="dialog_exit_title">Ukončit aplikaci</string>
     <string name="dialog_exit_message">Opravdu chcete aplikaci ukončit?</string>
     <string name="action_exit">Ukončit</string>
 
+    <string name="shortcut_map_manage">Správa map</string>
+    <string name="map_manage_stats">Celkem %1$d map (%2$s)</string>
+    <string name="map_manage_empty_desc">Zde se zobrazí mapy uložené během SLAM.</string>
+    <string name="map_details_path">Cesta k souboru: %1$s</string>
+    <string name="map_action_refresh">Obnovit</string>
+
+    <string name="shortcut_change_icon">Změnit ikonu</string>
+    <string name="icon_select_title">Ikona aplikace</string>
+    <string name="icon_select_desc">Vyberte preferovanou ikonu aplikace. Dlouhým stisknutím na domovské obrazovce ji můžete kdykoli změnit.</string>
+    <string name="icon_default_name">Klasická modrá</string>
+    <string name="icon_custom_name">Plamenná červená</string>
+    <string name="icon_in_use">Používá se</string>
+    <string name="icon_switched_hint">Ikona aplikace změněna na %s</string>
+    <string name="icon_note">Poznámka: U některých launcherů může obnovení na domovské obrazovce trvat několik sekund.</string>
+
+    <string name="btn_switch_camera">Přepnout kameru</string>
+    <string name="hint_camera_switched_back">Přepnuto na zadní kameru</string>
+    <string name="hint_camera_switched_front">Přepnuto na přední kameru</string>
+    <string name="hint_camera_switched_other">Přepnuto na kameru %1$s</string>
+    <string name="hint_camera_switch_single">K dispozici je pouze jedna kamera</string>
+    <string name="hint_camera_switch_failed">Přepnutí kamery se nezdařilo</string>
+    <string name="camera_facing_back">Zadní kamera (%1$s)</string>
+    <string name="camera_facing_front">Přední kamera (%1$s)</string>
+    <string name="camera_facing_other">Kamera %1$s</string>
+    <string name="dialog_select_camera">Vyberte kameru</string>
 </resources>

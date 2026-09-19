@@ -59,15 +59,35 @@
     <string name="hint_3dof_spawned">สร้างลูกบาศก์ 3DOF ข้างหน้า 5 เมตร</string>
     <string name="hint_3dof_closed">ปิดโหมด 3DOF แล้ว</string>
 
-    <string name="privacy_scroll_hint">↓ กรุณาเลื่อนลงถึงด้านล่างเพื่ออ่านข้อตกลงฉบับสมบูรณ์</string>
-    <string name="privacy_scroll_done">✓ คุณได้อ่านข้อตกลงฉบับสมบูรณ์แล้ว</string>
-    <string name="privacy_agree">ยอมรับ &amp; ดำเนินการต่อ</string>
-    <string name="privacy_load_error">โหลดนโยบายความเป็นส่วนตัวล้มเหลว กรุณาลองอีกครั้ง</string>
-
     <string name="hint_no_camera">ไม่พบกล้อง (โหมดหน้าจอสีดำ)</string>
 
     <string name="dialog_exit_title">ออกจากแอป</string>
     <string name="dialog_exit_message">คุณแน่ใจหรือไม่ว่าต้องการออกจากแอปพลิเคชัน?</string>
     <string name="action_exit">ออก</string>
 
+    <string name="shortcut_map_manage">จัดการแผนที่</string>
+    <string name="map_manage_stats">รวม %1$d แผนที่ (%2$s)</string>
+    <string name="map_manage_empty_desc">แผนที่ที่บันทึกระหว่างการทำงานของ SLAM จะปรากฏที่นี่</string>
+    <string name="map_details_path">เส้นทางไฟล์: %1$s</string>
+    <string name="map_action_refresh">รีเฟรช</string>
+
+    <string name="shortcut_change_icon">เปลี่ยนไอคอน</string>
+    <string name="icon_select_title">ไอคอนแอป</string>
+    <string name="icon_select_desc">เลือกไอคอนแอปที่คุณต้องการ กดค้างที่หน้าจอหลักเพื่อเปลี่ยนได้ตลอดเวลา</string>
+    <string name="icon_default_name">คลาสสิกบลู</string>
+    <string name="icon_custom_name">เฟลมเรด</string>
+    <string name="icon_in_use">กำลังใช้งาน</string>
+    <string name="icon_switched_hint">เปลี่ยนไอคอนแอปเป็น %s แล้ว</string>
+    <string name="icon_note">หมายเหตุ: ลอนเชอร์บางตัวอาจใช้เวลาสองสามวินาทีในการอัปเดตไอคอนบนหน้าจอหลัก</string>
+
+    <string name="btn_switch_camera">สลับกล้อง</string>
+    <string name="hint_camera_switched_back">สลับไปยังกล้องหลังแล้ว</string>
+    <string name="hint_camera_switched_front">สลับไปยังกล้องหน้าแล้ว</string>
+    <string name="hint_camera_switched_other">สลับไปยังกล้อง %1$s แล้ว</string>
+    <string name="hint_camera_switch_single">มีกล้องที่ใช้งานได้เพียงตัวเดียว</string>
+    <string name="hint_camera_switch_failed">สลับกล้องไม่สำเร็จ</string>
+    <string name="camera_facing_back">กล้องหลัง (%1$s)</string>
+    <string name="camera_facing_front">กล้องหน้า (%1$s)</string>
+    <string name="camera_facing_other">กล้อง %1$s</string>
+    <string name="dialog_select_camera">เลือกกล้อง</string>
 </resources>

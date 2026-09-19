@@ -60,15 +60,35 @@
     <string name="hint_3dof_spawned">3DOF kocka 5 méterrel előrébb létrehozva</string>
     <string name="hint_3dof_closed">3DOF mód bezárva</string>
 
-    <string name="privacy_scroll_hint">↓ Görgessen le a teljes megállapodás elolvasásához</string>
-    <string name="privacy_scroll_done">✓ Elolvasta a teljes megállapodást</string>
-    <string name="privacy_agree">Elfogadom &amp; Folytatom</string>
-    <string name="privacy_load_error">Az adatvédelmi irányelv betöltése sikertelen. Kérjük, próbálja újra.</string>
-
     <string name="hint_no_camera">Nem található kamera (fekete képernyő mód)</string>
 
     <string name="dialog_exit_title">Kilépés az alkalmazásból</string>
     <string name="dialog_exit_message">Biztosan ki szeretne lépni az alkalmazásból?</string>
     <string name="action_exit">Kilépés</string>
 
+    <string name="shortcut_map_manage">Térképkezelés</string>
+    <string name="map_manage_stats">Összesen %1$d térkép (%2$s)</string>
+    <string name="map_manage_empty_desc">A SLAM során mentett térképek itt jelennek meg.</string>
+    <string name="map_details_path">Fájl elérési útja: %1$s</string>
+    <string name="map_action_refresh">Frissítés</string>
+
+    <string name="shortcut_change_icon">Ikon módosítása</string>
+    <string name="icon_select_title">Alkalmazásikon</string>
+    <string name="icon_select_desc">Válassza ki a kívánt alkalmazásikont. A kezdőképernyőn hosszan nyomva bármikor módosíthatja.</string>
+    <string name="icon_default_name">Klasszikus kék</string>
+    <string name="icon_custom_name">Lángvörös</string>
+    <string name="icon_in_use">Használatban</string>
+    <string name="icon_switched_hint">Alkalmazásikon módosítva: %s</string>
+    <string name="icon_note">Megjegyzés: Egyes indítóknál a kezdőképernyőn történő frissítés néhány másodpercet igénybe vehet.</string>
+
+    <string name="btn_switch_camera">Kameraváltás</string>
+    <string name="hint_camera_switched_back">Váltás a hátlapi kamerára</string>
+    <string name="hint_camera_switched_front">Váltás az előlapi kamerára</string>
+    <string name="hint_camera_switched_other">Váltás a(z) %1$s kamerára</string>
+    <string name="hint_camera_switch_single">Csak egy kamera érhető el</string>
+    <string name="hint_camera_switch_failed">Sikertelen kameraváltás</string>
+    <string name="camera_facing_back">Hátlapi kamera (%1$s)</string>
+    <string name="camera_facing_front">Előlapi kamera (%1$s)</string>
+    <string name="camera_facing_other">Kamera %1$s</string>
+    <string name="dialog_select_camera">Kamera kiválasztása</string>
 </resources>

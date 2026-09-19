@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hint_map_saved">வரைபடம் சேமிக்கப்பட்டது: %1$s</string>
+    <string name="hint_map_loaded">வரைபடம் ஏற்றப்பட்டது: %1$s</string>
+    <plurals name="hint_maps_loaded">
+        <item quantity="other">%1$d வரைபடங்கள் ஏற்றப்பட்டன</item>
+        <item quantity="one">%1$d வரைபடங்கள் ஏற்றப்பட்டன</item>
+    </plurals>
+    <string name="hint_map_deleted">வரைபடம் நீக்கப்பட்டது</string>
+    <string name="hint_map_delete_failed">நீக்கல் தோல்வி</string>
+</resources>
