@@ -31,7 +31,9 @@ import android.view.SurfaceHolder;
 import android.view.View;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.OptIn;
 import androidx.camera.camera2.interop.Camera2CameraInfo;
+import androidx.camera.camera2.interop.ExperimentalCamera2Interop;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraInfo;
 import androidx.camera.core.CameraSelector;
@@ -229,6 +231,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
         return 0;
     }
 
+    @SuppressWarnings("unused")
     public int getCameraCount() {
         if (mCameraCount < 0) {
             mCameraCount = getDeviceCameraCount(getContext());
@@ -518,6 +521,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
         return switchCameraTo(nextIndex);
     }
 
+    @OptIn(markerClass = ExperimentalCamera2Interop.class)
     public CameraSwitchResult switchCameraTo(int targetIndex) {
         if (mCameraProvider == null || mState != STATE_STARTED) {
             return new CameraSwitchResult(CameraSwitchResult.STATUS_FAILED, -1, null);

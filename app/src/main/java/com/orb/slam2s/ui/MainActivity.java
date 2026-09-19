@@ -41,8 +41,10 @@ import android.widget.Toast;
 import android.view.ViewGroup;
 
 import androidx.activity.OnBackPressedCallback;
+import androidx.annotation.OptIn;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.camera.camera2.interop.ExperimentalCamera2Interop;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
@@ -760,6 +762,7 @@ public class MainActivity extends AppCompatActivity implements CameraPreviewView
         }
     }
 
+    @OptIn(markerClass = ExperimentalCamera2Interop.class)
     private void showCameraSelectDialog() {
         if (mCameraPreviewView == null) return;
         List<CameraInfo> cameraList = mCameraPreviewView.getAvailableCameraInfos();

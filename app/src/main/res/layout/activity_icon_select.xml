@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/root_icon_select_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#FF0D111A"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    tools:ignore="Overdraw">
 
-    <!-- Top App Bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="56dp"
@@ -57,7 +58,6 @@
                 android:textSize="13sp"
                 android:layout_marginBottom="16dp" />
 
-            <!-- Option 1: Default Blue -->
             <LinearLayout
                 android:id="@+id/card_icon_default"
                 android:layout_width="match_parent"
@@ -114,7 +114,6 @@
                     android:focusable="false" />
             </LinearLayout>
 
-            <!-- Option 2: Custom Red -->
             <LinearLayout
                 android:id="@+id/card_icon_custom"
                 android:layout_width="match_parent"

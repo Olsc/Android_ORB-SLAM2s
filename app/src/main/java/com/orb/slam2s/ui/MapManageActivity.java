@@ -15,6 +15,7 @@
  */
 package com.orb.slam2s.ui;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.text.format.Formatter;
 import android.view.LayoutInflater;
@@ -108,6 +109,7 @@ public class MapManageActivity extends AppCompatActivity {
         }
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     private void loadMaps() {
         mMapList.clear();
         ArrayList<MapManager.MapInfo> maps = mMapManager.getAllMaps();
@@ -146,7 +148,8 @@ public class MapManageActivity extends AppCompatActivity {
         sb.append(getString(R.string.map_details_size, mapInfo.fileSize / 1024)).append(" (").append(formattedSize).append(")\n");
         sb.append(getString(R.string.map_details_time, mDateFormat.format(new Date(mapInfo.createTime)))).append("\n");
         sb.append(getString(R.string.map_details_plane, mapInfo.hasPlane ? getString(R.string.map_details_plane_yes) : getString(R.string.map_details_plane_no))).append("\n\n");
-        sb.append(getString(R.string.map_details_path, mapFile.getAbsolutePath())).append("\n");
+        String displayPath = mapInfo.filePath != null ? mapInfo.filePath : mapFile.getAbsolutePath();
+        sb.append(getString(R.string.map_details_path, displayPath)).append("\n");
         sb.append("AR Info: ").append(arInfoFile.exists() ? getString(R.string.map_details_plane_yes) : getString(R.string.map_details_plane_no)).append("\n");
         sb.append("Metadata JSON: ").append(metaFile.exists() ? getString(R.string.map_details_plane_yes) : getString(R.string.map_details_plane_no));
 

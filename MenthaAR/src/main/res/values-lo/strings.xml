@@ -3,7 +3,6 @@
     <string name="hint_map_saved">Mapa uložená: %1$s</string>
     <string name="hint_map_loaded">Mapa načítaná: %1$s</string>
     <plurals name="hint_maps_loaded">
-        <item quantity="one">ໂຫຼດແຜນທີ່ %1$d ແລ້ວ</item>
         <item quantity="other">ໂຫຼດແຜນທີ່ %1$d ແລ້ວ</item>
     </plurals>
     <string name="hint_map_deleted">Mapa odstránená</string>

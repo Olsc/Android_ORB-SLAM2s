@@ -181,7 +181,9 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         Log.i(TAG, "onSurfaceCreated: 初始化原生 OpenGL ES 环境");
         if (nativeHandle != 0) {
-            nativeInitGL(nativeHandle);
+            if (!nativeInitGL(nativeHandle)) {
+                Log.e(TAG, "onSurfaceCreated: nativeInitGL 失败");
+            }
         }
     }
 

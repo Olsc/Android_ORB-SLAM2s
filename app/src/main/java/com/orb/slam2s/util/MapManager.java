@@ -47,7 +47,7 @@ public class MapManager {
         }
     }
 
-    public MapManager(Context context, SlamIPCClient client) {
+    public MapManager(Context context, @SuppressWarnings("unused") SlamIPCClient client) {
         this(context);
     }
 
@@ -179,7 +179,7 @@ public class MapManager {
                 if (read >= 16) {
                     ByteBuffer buf = ByteBuffer.wrap(header).order(ByteOrder.LITTLE_ENDIAN);
                     int magic = buf.getInt();
-                    int version = buf.getInt();
+                    buf.getInt(); // version (4B)
                     int nKFs = buf.getInt();
                     int nMPs = buf.getInt();
                     // 兼容标准地图格式 (0x4D415031: MAP1)

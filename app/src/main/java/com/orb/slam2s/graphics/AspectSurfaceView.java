@@ -20,6 +20,7 @@ import android.util.AttributeSet;
 import android.view.SurfaceView;
 
 // 宽高比自适应 SurfaceView（专供 Filament / 自定义 Surface 渲染）
+@SuppressWarnings("unused")
 public class AspectSurfaceView extends SurfaceView {
     private int surfaceWidth;
     private int surfaceHeight;

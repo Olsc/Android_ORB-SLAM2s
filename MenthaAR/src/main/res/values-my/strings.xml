@@ -3,7 +3,6 @@
     <string name="hint_map_saved">Mapa uložená: %1$s</string>
     <string name="hint_map_loaded">Mapa načítaná: %1$s</string>
     <plurals name="hint_maps_loaded">
-        <item quantity="one">မြေပုံ %1$d ခု ဖွင့်ပြီးပါပြီ</item>
         <item quantity="other">မြေပုံ %1$d ခု ဖွင့်ပြီးပါပြီ</item>
     </plurals>
     <string name="hint_map_deleted">Mapa odstránená</string>

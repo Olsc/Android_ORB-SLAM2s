@@ -45,7 +45,6 @@
     <string name="hint_map_saved">Mapa uložená: %1$s</string>
     <string name="hint_map_loaded">Mapa načítaná: %1$s</string>
     <plurals name="hint_maps_loaded">
-        <item quantity="one">បានផ្ទុកផែនទី %1$d</item>
         <item quantity="other">បានផ្ទុកផែនទី %1$d</item>
     </plurals>
     <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>

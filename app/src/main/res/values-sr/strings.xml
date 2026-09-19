@@ -46,6 +46,7 @@
     <string name="hint_map_loaded">Mapa načítaná: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="one">Учитана %1$d мапа</item>
+        <item quantity="few">Учитане %1$d мапе</item>
         <item quantity="other">Учитано %1$d мапа</item>
     </plurals>
     <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
