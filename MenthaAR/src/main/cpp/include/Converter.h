@@ -140,7 +140,7 @@ public:
         return true;
     }
 
-    // 原接口兼容实现：单次求解光心后委托给 TriangulateWithCenters
+    // 三角化 DLT：求解两相机光心后委托给 TriangulateWithCenters 完成
     static bool TriangulateDLT(const cv::Mat &P1, const cv::Mat &P2,
                                float x1, float y1, float x2, float y2,
                                cv::Mat &x3D)

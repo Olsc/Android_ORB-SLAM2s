@@ -694,7 +694,7 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
         return;
     }
     if(version != SYSTEM_MAP_FILE_VERSION) {
-        LOGE("加载地图: 不支持的版本 v%u，只支持 v3", version);
+        LOGE("加载地图: 不支持的版本 v%u，只支持 v%u", version, SYSTEM_MAP_FILE_VERSION);
         ifs.close();
         return;
     }

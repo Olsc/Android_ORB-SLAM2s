@@ -120,14 +120,10 @@ public class IconManager {
         return getPreferredIconType(context);
     }
 
-    // 读取用户偏好（兼容旧版本的 CUSTOM 命名），作为组件状态缺失时的兜底
+    // 读取用户偏好，作为组件状态缺失时的兜底
     private static IconType getPreferredIconType(Context context) {
         SharedPreferences sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         String saved = sp.getString(KEY_CURRENT_ICON, IconType.DEFAULT.name());
-        if ("CUSTOM".equals(saved)) {
-            // 旧版本“烈焰红”的持久化值，重命名为 RED 后需要迁移
-            return IconType.RED;
-        }
         for (IconOption option : OPTIONS) {
             if (option.type.name().equals(saved)) {
                 return option.type;
