@@ -79,7 +79,7 @@
     <string name="icon_select_title">აპლიკაციის ხატულა</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
     <string name="icon_default_name">ტექნოლოგიური ლურჯი</string>
-    <string name="icon_red_name">მომხიბვლელი წითელი</string>
+    <string name="icon_red_name">ცეცხლოვანი წითელი</string>
     <string name="icon_mint_name">საყვარელი პიტნა</string>
     <string name="icon_in_use">გამოიყენება</string>
     <string name="icon_switched_hint">ხატულა შეიცვალა: %s</string>

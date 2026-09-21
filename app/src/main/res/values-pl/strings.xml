@@ -83,7 +83,7 @@
     <string name="icon_select_title">Ikona aplikacji</string>
     <string name="icon_select_desc">Wybierz preferowaną ikonę aplikacji. Naciśnij i przytrzymaj na ekranie głównym, aby zmienić w dowolnym momencie.</string>
     <string name="icon_default_name">Technologiczny błękit</string>
-    <string name="icon_red_name">Czarujący czerwony</string>
+    <string name="icon_red_name">Ognista czerwień</string>
     <string name="icon_mint_name">Urocza mięta</string>
     <string name="icon_in_use">W użyciu</string>
     <string name="icon_switched_hint">Zmieniono ikonę aplikacji na %s</string>

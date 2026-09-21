@@ -79,7 +79,7 @@
     <string name="icon_select_title">Қолданба белгішесі</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
     <string name="icon_default_name">Технологиялық көк</string>
-    <string name="icon_red_name">Сүйкімді қызыл</string>
+    <string name="icon_red_name">Жалынды қызыл</string>
     <string name="icon_mint_name">Тәтті жалбыз</string>
     <string name="icon_in_use">Қолданылуда</string>
     <string name="icon_switched_hint">Белгіше %s болып өзгертілді</string>

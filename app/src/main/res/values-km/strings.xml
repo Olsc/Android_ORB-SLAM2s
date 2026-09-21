@@ -77,7 +77,7 @@
     <string name="icon_select_title">រូបតំណាងកម្មវិធី</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
     <string name="icon_default_name">ខៀវបច្ចេកវិទ្យា</string>
-    <string name="icon_red_name">ក្រហមទាក់ទាញ</string>
+    <string name="icon_red_name">ក្រហមអណ្តាតភ្លើង</string>
     <string name="icon_mint_name">មីនត៍គួរស្រលាញ់</string>
     <string name="icon_in_use">កំពុងប្រើ</string>
     <string name="icon_switched_hint">បានប្តូររូបតំណាងទៅ %s</string>

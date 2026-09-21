@@ -77,7 +77,7 @@
     <string name="icon_select_title">အက်ပ်အိုင်ကွန်</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
     <string name="icon_default_name">နည်းပညာအပြာ</string>
-    <string name="icon_red_name">ဆွဲဆောင်မှုရှိသောအနီ</string>
+    <string name="icon_red_name">မီးတောက်အနီ</string>
     <string name="icon_mint_name">ချစ်စရာပူစီနံ</string>
     <string name="icon_in_use">အသုံးပြုနေသည်</string>
     <string name="icon_switched_hint">အိုင်ကွန်ကို %s သို့ ပြောင်းပြီးပါပြီ</string>

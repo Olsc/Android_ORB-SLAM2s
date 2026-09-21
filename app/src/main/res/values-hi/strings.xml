@@ -79,7 +79,7 @@
     <string name="icon_select_title">ऐप आइकन</string>
     <string name="icon_select_desc">अपना पसंदीदा ऐप आइकन चुनें। कभी भी बदलने के लिए होम स्क्रीन पर देर तक दबाएं।</string>
     <string name="icon_default_name">टेक ब्लू</string>
-    <string name="icon_red_name">मनमोहक लाल</string>
+    <string name="icon_red_name">ज्वाला लाल</string>
     <string name="icon_mint_name">क्यूट मिंट</string>
     <string name="icon_in_use">उपयोग में</string>
     <string name="icon_switched_hint">ऐप आइकन बदलकर %s कर दिया गया है</string>

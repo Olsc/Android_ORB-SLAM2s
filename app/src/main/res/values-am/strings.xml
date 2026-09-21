@@ -79,7 +79,7 @@
     <string name="icon_select_title">የመተግበሪያ አዶ</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
     <string name="icon_default_name">ቴክ ሰማያዊ</string>
-    <string name="icon_red_name">ማራኪ ቀይ</string>
+    <string name="icon_red_name">የነበልባል ቀይ</string>
     <string name="icon_mint_name">ጣፋጭ ናና</string>
     <string name="icon_in_use">በጥቅም ላይ</string>
     <string name="icon_switched_hint">አዶ ወደ %s ተቀይሯል</string>

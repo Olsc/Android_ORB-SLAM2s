@@ -77,7 +77,7 @@
     <string name="icon_select_title">ไอคอนแอป</string>
     <string name="icon_select_desc">เลือกไอคอนแอปที่คุณต้องการ กดค้างที่หน้าจอหลักเพื่อเปลี่ยนได้ตลอดเวลา</string>
     <string name="icon_default_name">เทคบลู</string>
-    <string name="icon_red_name">แดงมีเสน่ห์</string>
+    <string name="icon_red_name">แดงเปลวเพลิง</string>
     <string name="icon_mint_name">มินต์น่ารัก</string>
     <string name="icon_in_use">กำลังใช้งาน</string>
     <string name="icon_switched_hint">เปลี่ยนไอคอนแอปเป็น %s แล้ว</string>

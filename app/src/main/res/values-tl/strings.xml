@@ -79,7 +79,7 @@
     <string name="icon_select_title">Icon ng App</string>
     <string name="icon_select_desc">Piliin ang iyong gustong icon ng app. Pindutin nang matagal sa home screen upang magpalit anumang oras.</string>
     <string name="icon_default_name">Tech Blue</string>
-    <string name="icon_red_name">Kaakit-akit na Pula</string>
+    <string name="icon_red_name">Nagliliyab na Pula</string>
     <string name="icon_mint_name">Cute na Mint</string>
     <string name="icon_in_use">Ginagamit</string>
     <string name="icon_switched_hint">Ang icon ng app ay napalitan sa %s</string>

@@ -81,7 +81,7 @@
     <string name="icon_select_title">"Icône de l'application"</string>
     <string name="icon_select_desc">"Choisissez votre icône préférée. Appuyez longuement sur l'écran d'accueil pour la modifier à tout moment."</string>
     <string name="icon_default_name">Bleu technologique</string>
-    <string name="icon_red_name">Rouge séduisant</string>
+    <string name="icon_red_name">Rouge flamme</string>
     <string name="icon_mint_name">Menthe mignonne</string>
     <string name="icon_in_use">"En cours d'utilisation"</string>
     <string name="icon_switched_hint">Icône mise à jour vers %s</string>

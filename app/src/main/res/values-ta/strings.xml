@@ -79,7 +79,7 @@
     <string name="icon_select_title">பயன்பாட்டு ஐகான்</string>
     <string name="icon_select_desc">உங்களுக்கு விருப்பமான பயன்பாட்டு ஐகானைத் தேர்ந்தெடுக்கவும். மாற்ற முகப்புத் திரையில் நீண்ட நேரம் அழுத்தவும்.</string>
     <string name="icon_default_name">டெக் நீலம்</string>
-    <string name="icon_red_name">கவர்ச்சிகரமான சிவப்பு</string>
+    <string name="icon_red_name">தழல் சிவப்பு</string>
     <string name="icon_mint_name">அழகான மின்ட்</string>
     <string name="icon_in_use">பயன்பாட்டில் உள்ளது</string>
     <string name="icon_switched_hint">பயன்பாட்டு ஐகான் %s என மாற்றப்பட்டது</string>

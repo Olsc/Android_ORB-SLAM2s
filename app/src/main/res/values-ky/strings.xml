@@ -79,7 +79,7 @@
     <string name="icon_select_title">Колдонмо сөлөкөтү</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
     <string name="icon_default_name">Технологиялык көк</string>
-    <string name="icon_red_name">Сүйкүмдүү кызыл</string>
+    <string name="icon_red_name">Жалындуу кызыл</string>
     <string name="icon_mint_name">Таттуу жалбыз</string>
     <string name="icon_in_use">Қолданылуда</string>
     <string name="icon_switched_hint">Белгіше %s болып өзгертілді</string>

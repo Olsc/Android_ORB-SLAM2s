@@ -81,7 +81,7 @@
     <string name="icon_select_title">Lietotnes ikona</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
     <string name="icon_default_name">Tehnoloģiski zila</string>
-    <string name="icon_red_name">Burvīgi sarkana</string>
+    <string name="icon_red_name">Liesmas sarkans</string>
     <string name="icon_mint_name">Mīļa piparmētra</string>
     <string name="icon_in_use">Tiek lietots</string>
     <string name="icon_switched_hint">Ikona mainīta uz %s</string>

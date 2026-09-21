@@ -77,7 +77,7 @@
     <string name="icon_select_title">ໄອຄອນແອັບ</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
     <string name="icon_default_name">ສີຟ້າເຕັກໂນໂລຊີ</string>
-    <string name="icon_red_name">ສີແດງເສດສະໜຸ</string>
+    <string name="icon_red_name">ສີແດງປອກໄຟ</string>
     <string name="icon_mint_name">ສະໝຸນໄພໜ້າຮັກ</string>
     <string name="icon_in_use">ກຳລັງໃຊ້ງານ</string>
     <string name="icon_switched_hint">ປ່ຽນໄອຄອນເປັນ %s ແລ້ວ</string>

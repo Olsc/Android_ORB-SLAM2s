@@ -77,7 +77,7 @@
     <string name="icon_select_title">Biểu tượng ứng dụng</string>
     <string name="icon_select_desc">Chọn biểu tượng ứng dụng bạn thích. Nhấn giữ trên màn hình chính để thay đổi bất kỳ lúc nào.</string>
     <string name="icon_default_name">Xanh công nghệ</string>
-    <string name="icon_red_name">Đỏ quyến rũ</string>
+    <string name="icon_red_name">Đỏ lửa</string>
     <string name="icon_mint_name">Bạc hà dễ thương</string>
     <string name="icon_in_use">Đang sử dụng</string>
     <string name="icon_switched_hint">Đã đổi biểu tượng ứng dụng thành %s</string>

@@ -79,7 +79,7 @@
     <string name="icon_select_title">Rakenduse ikoon</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
     <string name="icon_default_name">Tehnoloogiline sinine</string>
-    <string name="icon_red_name">Võluv punane</string>
+    <string name="icon_red_name">Leegipunane</string>
     <string name="icon_mint_name">Nunnu münt</string>
     <string name="icon_in_use">Kasutusel</string>
     <string name="icon_switched_hint">Ikooniks määratud %s</string>

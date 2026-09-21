@@ -79,7 +79,7 @@
     <string name="icon_select_title">App-Symbol</string>
     <string name="icon_select_desc">Wählen Sie Ihr bevorzugtes App-Symbol. Durch langes Drücken auf dem Startbildschirm können Sie es jederzeit ändern.</string>
     <string name="icon_default_name">Technikblau</string>
-    <string name="icon_red_name">Bezauberndes Rot</string>
+    <string name="icon_red_name">Flammenrot</string>
     <string name="icon_mint_name">Süße Minze</string>
     <string name="icon_in_use">In Verwendung</string>
     <string name="icon_switched_hint">App-Symbol geändert zu %s</string>

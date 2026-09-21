@@ -79,7 +79,7 @@
     <string name="icon_select_title">Aplikazioaren ikonoa</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
     <string name="icon_default_name">Urdin teknologikoa</string>
-    <string name="icon_red_name">Gorri liluragarria</string>
+    <string name="icon_red_name">Sugar gorria</string>
     <string name="icon_mint_name">Mendafin goxoa</string>
     <string name="icon_in_use">Erabiltzen</string>
     <string name="icon_switched_hint">Ikonoa %s(e)ra aldatu da</string>

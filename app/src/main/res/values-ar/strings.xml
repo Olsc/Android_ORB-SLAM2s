@@ -87,7 +87,7 @@
     <string name="icon_select_title">أيقونة التطبيق</string>
     <string name="icon_select_desc">اختر أيقونة التطبيق المفضلة لديك. اضغط مطولاً على الشاشة الرئيسية للتغيير في أي وقت.</string>
     <string name="icon_default_name">أزرق تقني</string>
-    <string name="icon_red_name">أحمر فاتن</string>
+    <string name="icon_red_name">أحمر لهبي</string>
     <string name="icon_mint_name">نعناع لطيف</string>
     <string name="icon_in_use">قيد الاستخدام</string>
     <string name="icon_switched_hint">تم تغيير أيقونة التطبيق إلى %s</string>

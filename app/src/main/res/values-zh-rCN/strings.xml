@@ -77,7 +77,7 @@
     <string name="icon_select_title">个性化桌面图标</string>
     <string name="icon_select_desc">选择喜爱的应用桌面图标，长按桌面图标可随时切换</string>
     <string name="icon_default_name">科技蓝</string>
-    <string name="icon_red_name">魅惑红</string>
+    <string name="icon_red_name">烈焰红</string>
     <string name="icon_mint_name">萌萌薄荷</string>
     <string name="icon_in_use">使用中</string>
     <string name="icon_switched_hint">桌面图标已切换为：%s</string>

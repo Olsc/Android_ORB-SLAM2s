@@ -79,7 +79,7 @@
     <string name="icon_select_title">යෙදුම් අයිකනය</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
     <string name="icon_default_name">තාක්ෂණික නිල්</string>
-    <string name="icon_red_name">මනහර රතු</string>
+    <string name="icon_red_name">දැල්වෙන රතු</string>
     <string name="icon_mint_name">ලස්සන මින්ට්</string>
     <string name="icon_in_use">භාවිතයේ පවතී</string>
     <string name="icon_switched_hint">අයිකනය %s ලෙස වෙනස් කරන ලදී</string>

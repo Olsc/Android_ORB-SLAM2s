@@ -79,7 +79,7 @@
     <string name="icon_select_title">Forritstákn</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
     <string name="icon_default_name">Tækniblátt</string>
-    <string name="icon_red_name">Heillandi rautt</string>
+    <string name="icon_red_name">Logandi rautt</string>
     <string name="icon_mint_name">Sæt mynta</string>
     <string name="icon_in_use">Í notkun</string>
     <string name="icon_switched_hint">Forritstákni breytt í %s</string>

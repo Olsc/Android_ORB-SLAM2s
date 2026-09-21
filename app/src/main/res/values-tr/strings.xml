@@ -79,7 +79,7 @@
     <string name="icon_select_title">Uygulama Simgesi</string>
     <string name="icon_select_desc">Tercih ettiğiniz uygulama simgesini seçin. İstediğiniz zaman değiştirmek için ana ekranda uzun basın.</string>
     <string name="icon_default_name">Teknoloji Mavisi</string>
-    <string name="icon_red_name">Büyüleyici Kırmızı</string>
+    <string name="icon_red_name">Alev Kırmızısı</string>
     <string name="icon_mint_name">Sevimli Nane</string>
     <string name="icon_in_use">Kullanımda</string>
     <string name="icon_switched_hint">Uygulama simgesi %s olarak değiştirildi</string>

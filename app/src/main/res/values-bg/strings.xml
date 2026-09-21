@@ -79,7 +79,7 @@
     <string name="icon_select_title">Икона на приложението</string>
     <string name="icon_select_desc">Изберете предпочитаната икона на приложението. Задръжте върху началния екран за промяна по всяко време.</string>
     <string name="icon_default_name">Технологично синьо</string>
-    <string name="icon_red_name">Очарователно червено</string>
+    <string name="icon_red_name">Пламъчно червено</string>
     <string name="icon_mint_name">Сладка мента</string>
     <string name="icon_in_use">В употреба</string>
     <string name="icon_switched_hint">Иконата на приложението е променена на %s</string>

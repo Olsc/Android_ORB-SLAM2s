@@ -83,7 +83,7 @@
     <string name="icon_select_title">Значок приложения</string>
     <string name="icon_select_desc">Выберите желаемый значок приложения. Удерживайте значок на главном экране для быстрой смены.</string>
     <string name="icon_default_name">Технологичный синий</string>
-    <string name="icon_red_name">Очаровательный красный</string>
+    <string name="icon_red_name">Огненно-красный</string>
     <string name="icon_mint_name">Милая мята</string>
     <string name="icon_in_use">Используется</string>
     <string name="icon_switched_hint">Значок приложения изменен на %s</string>
