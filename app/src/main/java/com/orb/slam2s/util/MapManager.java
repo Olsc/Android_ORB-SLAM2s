@@ -18,8 +18,6 @@ package com.orb.slam2s.util;
 import android.content.Context;
 import android.util.Log;
 
-import com.orb.slam2s.ipc.SlamIPCClient;
-
 import org.json.JSONObject;
 
 import java.io.File;
@@ -45,10 +43,6 @@ public class MapManager {
         if (!mMapDirectory.exists()) {
             mMapDirectory.mkdirs();
         }
-    }
-
-    public MapManager(Context context, @SuppressWarnings("unused") SlamIPCClient client) {
-        this(context);
     }
 
     public boolean deleteMap(String mapName) {
@@ -179,7 +173,7 @@ public class MapManager {
                 if (read >= 16) {
                     ByteBuffer buf = ByteBuffer.wrap(header).order(ByteOrder.LITTLE_ENDIAN);
                     int magic = buf.getInt();
-                    buf.getInt(); // version (4B)
+                    buf.getInt(); // version (4B, 暂未使用，仅跳过)
                     int nKFs = buf.getInt();
                     int nMPs = buf.getInt();
                     // 兼容标准地图格式 (0x4D415031: MAP1)

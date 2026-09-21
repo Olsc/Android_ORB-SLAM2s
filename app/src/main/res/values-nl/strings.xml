@@ -67,7 +67,10 @@
     <string name="action_exit">Afsluiten</string>
 
     <string name="shortcut_map_manage">Kaartbeheer</string>
-    <string name="map_manage_stats">Totaal %1$d kaarten (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="one">Totaal %1$d kaarten (%2$s)</item>
+        <item quantity="other">Totaal %1$d kaarten (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">Kaarten opgeslagen tijdens SLAM verschijnen hier.</string>
     <string name="map_details_path">Bestandspad: %1$s</string>
     <string name="map_action_refresh">Vernieuwen</string>
@@ -75,8 +78,9 @@
     <string name="shortcut_change_icon">Pictogram wijzigen</string>
     <string name="icon_select_title">App-pictogram</string>
     <string name="icon_select_desc">Kies uw gewenste app-pictogram. Druk lang op het startscherm om op elk gewenst moment te wijzigen.</string>
-    <string name="icon_default_name">Klassiek blauw</string>
-    <string name="icon_custom_name">Vlammend rood</string>
+    <string name="icon_default_name">Techblauw</string>
+    <string name="icon_red_name">Charmant rood</string>
+    <string name="icon_mint_name">Schattige munt</string>
     <string name="icon_in_use">In gebruik</string>
     <string name="icon_switched_hint">App-pictogram gewijzigd in %s</string>
     <string name="icon_note">Opmerking: Bij sommige launchers kan het vernieuwen enkele seconden duren.</string>

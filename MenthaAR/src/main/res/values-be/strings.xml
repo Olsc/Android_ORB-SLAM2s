@@ -4,7 +4,7 @@
     <string name="hint_map_loaded">Mapa načítaná: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="one">Загружана %1$d карта</item>
-        <item quantity="few">Загружана %1$d карты</item>
+        <item quantity="few">Загружаны %1$d карты</item>
         <item quantity="many">Загружана %1$d карт</item>
         <item quantity="other">Загружана %1$d карт</item>
     </plurals>

@@ -67,7 +67,10 @@
     <string name="action_exit">Ukončiť</string>
 
     <string name="shortcut_map_manage">Xarita boshqaruvi</string>
-    <string name="map_manage_stats">Jami %1$d ta xarita (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="one">Jami %1$d ta xarita (%2$s)</item>
+        <item quantity="other">Jami %1$d ta xarita (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">Mapy uložené počas SLAM sa zobrazia tu.</string>
     <string name="map_details_path">Cesta: %1$s</string>
     <string name="map_action_refresh">Yangilash</string>
@@ -75,8 +78,9 @@
     <string name="shortcut_change_icon">"Belgini o'zgartirish"</string>
     <string name="icon_select_title">Ilova belgisi</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
-    <string name="icon_default_name">"Klassik ko'k"</string>
-    <string name="icon_custom_name">Olovrang qizil</string>
+    <string name="icon_default_name">"Texnologik ko'k"</string>
+    <string name="icon_red_name">Maftunkor qizil</string>
+    <string name="icon_mint_name">Shirin yalpiz</string>
     <string name="icon_in_use">Ishlatilmoqda</string>
     <string name="icon_switched_hint">"Belgi %s ga o'zgartirildi"</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>

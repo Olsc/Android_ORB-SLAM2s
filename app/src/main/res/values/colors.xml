@@ -3,5 +3,6 @@
     <color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="ic_launcher_background">#032234</color>
-    <color name="ic_launcher_custom_background">#C81619</color>
+    <color name="ic_launcher_red_background">#C81619</color>
+    <color name="ic_launcher_mint_background">#13171A</color>
 </resources>

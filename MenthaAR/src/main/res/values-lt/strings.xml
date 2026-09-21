@@ -5,7 +5,7 @@
     <plurals name="hint_maps_loaded">
         <item quantity="one">Įkeltas %1$d žemėlapis</item>
         <item quantity="few">Įkelti %1$d žemėlapiai</item>
-        <item quantity="many">Įkelta %1$d žemėlapio</item>
+        <item quantity="many">Įkelto %1$d žemėlapio</item>
         <item quantity="other">Įkelta %1$d žemėlapių</item>
     </plurals>
     <string name="hint_map_deleted">Mapa odstránená</string>

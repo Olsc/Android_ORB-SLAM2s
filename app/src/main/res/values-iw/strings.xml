@@ -68,7 +68,11 @@
     <string name="action_exit">יציאה</string>
 
     <string name="shortcut_map_manage">ניהול מפות</string>
-    <string name="map_manage_stats">סה״כ %1$d מפות (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="one">סה״כ %1$d מפות (%2$s)</item>
+        <item quantity="two">סה״כ %1$d מפות (%2$s)</item>
+        <item quantity="other">סה״כ %1$d מפות (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">מפות שנשמרו במהלך SLAM יופיעו כאן.</string>
     <string name="map_details_path">נתיב קובץ: %1$s</string>
     <string name="map_action_refresh">רענן</string>
@@ -76,8 +80,9 @@
     <string name="shortcut_change_icon">שינוי סמל</string>
     <string name="icon_select_title">סמל האפליקציה</string>
     <string name="icon_select_desc">בחר את סמל האפליקציה המועדף עליך. לחץ לחיצה ארוכה במסך הבית לשינוי בכל עת.</string>
-    <string name="icon_default_name">כחול קלאסי</string>
-    <string name="icon_custom_name">אדום להבה</string>
+    <string name="icon_default_name">כחול טכנולוגי</string>
+    <string name="icon_red_name">אדום מקסים</string>
+    <string name="icon_mint_name">נענע חמודה</string>
     <string name="icon_in_use">בשימוש</string>
     <string name="icon_switched_hint">סמל האפליקציה שונה ל-%s</string>
     <string name="icon_note">הערה: בחלק מממשקי הבית ייתכן שיידרשו מספר שניות לעדכון הסמל.</string>

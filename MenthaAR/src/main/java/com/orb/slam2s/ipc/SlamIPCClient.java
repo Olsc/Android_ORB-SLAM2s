@@ -119,7 +119,7 @@ public class SlamIPCClient {
         if (width <= 0 || height <= 0) return;
 
         synchronized (sendLock) {
-            // 尺寸变化或缓冲不足 → 重建共享内存并重新 attach
+            // 尺寸变化或缓冲不足时，重建共享内存并重新 attach
             int requiredSize = SharedMemoryBuffer.requiredSize(width, height);
             if (sharedMemoryBuffer == null
                     || sharedMemoryBuffer.getBufferSize() < requiredSize
@@ -141,7 +141,7 @@ public class SlamIPCClient {
             int seq = lastSeq + 1;
             int bufIndex = seq & 1;
 
-            // 背压：目标缓冲（seq%2）必须空闲 —— SLAM 已完成 seq-2
+            // 背压：目标缓冲（seq%2）必须空闲，即 SLAM 已完成 seq-2
             if (sharedMemoryBuffer.readSlamDoneSeq() < seq - 2) {
                 // SLAM 处理落后于发送，丢帧（不覆盖正在处理的缓冲）
                 return;

@@ -67,7 +67,10 @@
     <string name="action_exit">Lumabas</string>
 
     <string name="shortcut_map_manage">Pamamahala ng Mapa</string>
-    <string name="map_manage_stats">Kabuuang %1$d mapa (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="one">Kabuuang %1$d mapa (%2$s)</item>
+        <item quantity="other">Kabuuang %1$d mapa (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">Ang mga mapa na na-save sa panahon ng SLAM ay lilitaw dito.</string>
     <string name="map_details_path">Path ng File: %1$s</string>
     <string name="map_action_refresh">I-refresh</string>
@@ -75,8 +78,9 @@
     <string name="shortcut_change_icon">Palitan ang Icon</string>
     <string name="icon_select_title">Icon ng App</string>
     <string name="icon_select_desc">Piliin ang iyong gustong icon ng app. Pindutin nang matagal sa home screen upang magpalit anumang oras.</string>
-    <string name="icon_default_name">Klasikong Asul</string>
-    <string name="icon_custom_name">Pulang Apoy</string>
+    <string name="icon_default_name">Tech Blue</string>
+    <string name="icon_red_name">Kaakit-akit na Pula</string>
+    <string name="icon_mint_name">Cute na Mint</string>
     <string name="icon_in_use">Ginagamit</string>
     <string name="icon_switched_hint">Ang icon ng app ay napalitan sa %s</string>
     <string name="icon_note">Tandaan: Sa ilang launcher, maaaring tumagal ng ilang segundo bago mag-refresh sa home screen.</string>

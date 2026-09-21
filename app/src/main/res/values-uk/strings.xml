@@ -69,7 +69,12 @@
     <string name="action_exit">Вийти</string>
 
     <string name="shortcut_map_manage">Управління картами</string>
-    <string name="map_manage_stats">Всього карт: %1$d (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="one">Всього карт: %1$d (%2$s)</item>
+        <item quantity="few">Всього карт: %1$d (%2$s)</item>
+        <item quantity="many">Всього карт: %1$d (%2$s)</item>
+        <item quantity="other">Всього карт: %1$d (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">Збережені під час SLAM карти відображатимуться тут.</string>
     <string name="map_details_path">Шлях до файлу: %1$s</string>
     <string name="map_action_refresh">Оновити</string>
@@ -77,8 +82,9 @@
     <string name="shortcut_change_icon">Змінити піктограму</string>
     <string name="icon_select_title">Піктограма програми</string>
     <string name="icon_select_desc">Оберіть бажану піктограму програми. Утримуйте на головному екрані, щоб змінити будь-коли.</string>
-    <string name="icon_default_name">Класичний синій</string>
-    <string name="icon_custom_name">"Полум'яний червоний"</string>
+    <string name="icon_default_name">Технологічний синій</string>
+    <string name="icon_red_name">Чарівний червоний</string>
+    <string name="icon_mint_name">"Мила м'ята"</string>
     <string name="icon_in_use">Використовується</string>
     <string name="icon_switched_hint">Піктограму програми змінено на %s</string>
     <string name="icon_note">Примітка: на деяких робочих столах оновлення може тривати кілька секунд.</string>

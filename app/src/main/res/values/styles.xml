@@ -16,4 +16,8 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 
+    <style name="DarkNoActionBarTheme" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">#FF0D111A</item>
+    </style>
+
 </resources>

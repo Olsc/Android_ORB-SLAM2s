@@ -67,7 +67,10 @@
     <string name="action_exit">Έξοδος</string>
 
     <string name="shortcut_map_manage">Διαχείριση χαρτών</string>
-    <string name="map_manage_stats">Σύνολο %1$d χάρτες (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="one">Σύνολο %1$d χάρτες (%2$s)</item>
+        <item quantity="other">Σύνολο %1$d χάρτες (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">Οι χάρτες που αποθηκεύτηκαν κατά το SLAM θα εμφανίζονται εδώ.</string>
     <string name="map_details_path">Διαδρομή αρχείου: %1$s</string>
     <string name="map_action_refresh">Ανανέωση</string>
@@ -75,8 +78,9 @@
     <string name="shortcut_change_icon">Αλλαγή εικονιδίου</string>
     <string name="icon_select_title">Εικονίδιο εφαρμογής</string>
     <string name="icon_select_desc">Επιλέξτε το εικονίδιο εφαρμογής που προτιμάτε. Πατήστε παρατεταμένα στην αρχική οθόνη για αλλαγή ανά πάσα στιγμή.</string>
-    <string name="icon_default_name">Κλασικό μπλε</string>
-    <string name="icon_custom_name">Φλογερό κόκκινο</string>
+    <string name="icon_default_name">Τεχνολογικό μπλε</string>
+    <string name="icon_red_name">Σαγηνευτικό κόκκινο</string>
+    <string name="icon_mint_name">Χαριτωμένο μέντα</string>
     <string name="icon_in_use">Σε χρήση</string>
     <string name="icon_switched_hint">Το εικονίδιο της εφαρμογής ενημερώθηκε σε %s</string>
     <string name="icon_note">Σημείωση: Σε ορισμένους εκκινητές, η ενημέρωση ενδέχεται να διαρκέσει μερικά δευτερόλεπτα.</string>

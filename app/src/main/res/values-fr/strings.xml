@@ -68,7 +68,11 @@
     <string name="action_exit">Quitter</string>
 
     <string name="shortcut_map_manage">Gestion des cartes</string>
-    <string name="map_manage_stats">Total %1$d cartes (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="one">Total %1$d cartes (%2$s)</item>
+        <item quantity="many">Total %1$d cartes (%2$s)</item>
+        <item quantity="other">Total %1$d cartes (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">Les cartes enregistrées pendant le SLAM apparaîtront ici.</string>
     <string name="map_details_path">Chemin du fichier : %1$s</string>
     <string name="map_action_refresh">Actualiser</string>
@@ -76,8 +80,9 @@
     <string name="shortcut_change_icon">"Changer d'icône"</string>
     <string name="icon_select_title">"Icône de l'application"</string>
     <string name="icon_select_desc">"Choisissez votre icône préférée. Appuyez longuement sur l'écran d'accueil pour la modifier à tout moment."</string>
-    <string name="icon_default_name">Bleu classique</string>
-    <string name="icon_custom_name">Rouge flamme</string>
+    <string name="icon_default_name">Bleu technologique</string>
+    <string name="icon_red_name">Rouge séduisant</string>
+    <string name="icon_mint_name">Menthe mignonne</string>
     <string name="icon_in_use">"En cours d'utilisation"</string>
     <string name="icon_switched_hint">Icône mise à jour vers %s</string>
     <string name="icon_note">"Remarque : selon le lanceur, l'actualisation peut prendre quelques secondes."</string>

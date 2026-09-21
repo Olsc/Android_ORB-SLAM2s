@@ -67,7 +67,10 @@
     <string name="action_exit">Ukončiť</string>
 
     <string name="shortcut_map_manage">සිතියම් කළමනාකරණය</string>
-    <string name="map_manage_stats">සමස්ත සිතියම් %1$d (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="one">සමස්ත සිතියම් %1$d (%2$s)</item>
+        <item quantity="other">සමස්ත සිතියම් %1$d (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">Mapy uložené počas SLAM sa zobrazia tu.</string>
     <string name="map_details_path">Cesta: %1$s</string>
     <string name="map_action_refresh">නැවුම් කරන්න</string>
@@ -75,8 +78,9 @@
     <string name="shortcut_change_icon">අයිකනය වෙනස් කරන්න</string>
     <string name="icon_select_title">යෙදුම් අයිකනය</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
-    <string name="icon_default_name">සම්භාව්‍ය නිල්</string>
-    <string name="icon_custom_name">දැල්වෙන රතු</string>
+    <string name="icon_default_name">තාක්ෂණික නිල්</string>
+    <string name="icon_red_name">මනහර රතු</string>
+    <string name="icon_mint_name">ලස්සන මින්ට්</string>
     <string name="icon_in_use">භාවිතයේ පවතී</string>
     <string name="icon_switched_hint">අයිකනය %s ලෙස වෙනස් කරන ලදී</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>

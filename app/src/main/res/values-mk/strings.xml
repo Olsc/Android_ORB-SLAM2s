@@ -67,7 +67,10 @@
     <string name="action_exit">Ukončiť</string>
 
     <string name="shortcut_map_manage">Управување со мапи</string>
-    <string name="map_manage_stats">Укупно %1$d мапа (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="one">Укупно %1$d мапа (%2$s)</item>
+        <item quantity="other">Укупно %1$d мапа (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">Mapy uložené počas SLAM sa zobrazia tu.</string>
     <string name="map_details_path">Cesta: %1$s</string>
     <string name="map_action_refresh">Освежи</string>
@@ -75,8 +78,9 @@
     <string name="shortcut_change_icon">Промени икона</string>
     <string name="icon_select_title">Икона на апликација</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
-    <string name="icon_default_name">Класична плава</string>
-    <string name="icon_custom_name">Ватрено црвена</string>
+    <string name="icon_default_name">Технолошка плава</string>
+    <string name="icon_red_name">Шармантна црвена</string>
+    <string name="icon_mint_name">Слатка нане</string>
     <string name="icon_in_use">У употреби</string>
     <string name="icon_switched_hint">Икона промењена у %s</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>

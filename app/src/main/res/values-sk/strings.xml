@@ -69,7 +69,12 @@
     <string name="action_exit">Ukončiť</string>
 
     <string name="shortcut_map_manage">Správa máp</string>
-    <string name="map_manage_stats">Spolu %1$d máp (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="one">Spolu %1$d máp (%2$s)</item>
+        <item quantity="few">Spolu %1$d máp (%2$s)</item>
+        <item quantity="many">Spolu %1$d máp (%2$s)</item>
+        <item quantity="other">Spolu %1$d máp (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">Mapy uložené počas SLAM sa zobrazia tu.</string>
     <string name="map_details_path">Cesta: %1$s</string>
     <string name="map_action_refresh">Obnoviť</string>
@@ -77,8 +82,9 @@
     <string name="shortcut_change_icon">Zmeniť ikonu</string>
     <string name="icon_select_title">Ikona aplikácie</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
-    <string name="icon_default_name">Klasická modrá</string>
-    <string name="icon_custom_name">Plamenná červená</string>
+    <string name="icon_default_name">Technologická modrá</string>
+    <string name="icon_red_name">Očarujúca červená</string>
+    <string name="icon_mint_name">Roztomilá mäta</string>
     <string name="icon_in_use">Používa sa</string>
     <string name="icon_switched_hint">Ikona aplikácie zmenená na %s</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>

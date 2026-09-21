@@ -27,7 +27,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:enableOnBackInvokedCallback="true"
-        tools:targetApi="tiramisu">
+        tools:targetApi="33">
         <activity
             android:name="com.orb.slam2s.app.SplashActivity"
             android:exported="true"
@@ -52,12 +52,29 @@
         </activity-alias>
 
         <activity-alias
-            android:name="com.orb.slam2s.app.SplashActivityCustom"
+            android:name="com.orb.slam2s.app.SplashActivityRed"
             android:targetActivity="com.orb.slam2s.app.SplashActivity"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_launcher_custom"
-            android:roundIcon="@mipmap/ic_launcher_custom_round"
+            android:icon="@mipmap/ic_launcher_red"
+            android:roundIcon="@mipmap/ic_launcher_red_round"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+        </activity-alias>
+
+        <activity-alias
+            android:name="com.orb.slam2s.app.SplashActivityMint"
+            android:targetActivity="com.orb.slam2s.app.SplashActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_mint"
+            android:roundIcon="@mipmap/ic_launcher_mint_round"
             android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -77,7 +94,7 @@
         <activity
             android:name="com.orb.slam2s.ui.MapManageActivity"
             android:exported="true"
-            android:theme="@style/Theme.AppCompat.NoActionBar"
+            android:theme="@style/DarkNoActionBarTheme"
             android:screenOrientation="fullSensor"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
             tools:ignore="DiscouragedApi">
@@ -89,7 +106,7 @@
         <activity
             android:name="com.orb.slam2s.ui.IconSelectActivity"
             android:exported="true"
-            android:theme="@style/Theme.AppCompat.NoActionBar"
+            android:theme="@style/DarkNoActionBarTheme"
             android:screenOrientation="fullSensor"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
             tools:ignore="DiscouragedApi">

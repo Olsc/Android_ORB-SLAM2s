@@ -66,7 +66,9 @@
     <string name="action_exit">Thoát</string>
 
     <string name="shortcut_map_manage">Quản lý bản đồ</string>
-    <string name="map_manage_stats">Tổng số %1$d bản đồ (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="other">Tổng số %1$d bản đồ (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">Các bản đồ được lưu trong quá trình SLAM sẽ xuất hiện ở đây.</string>
     <string name="map_details_path">Đường dẫn tệp: %1$s</string>
     <string name="map_action_refresh">Làm mới</string>
@@ -74,8 +76,9 @@
     <string name="shortcut_change_icon">Đổi biểu tượng</string>
     <string name="icon_select_title">Biểu tượng ứng dụng</string>
     <string name="icon_select_desc">Chọn biểu tượng ứng dụng bạn thích. Nhấn giữ trên màn hình chính để thay đổi bất kỳ lúc nào.</string>
-    <string name="icon_default_name">Xanh cổ điển</string>
-    <string name="icon_custom_name">Đỏ ngọn lửa</string>
+    <string name="icon_default_name">Xanh công nghệ</string>
+    <string name="icon_red_name">Đỏ quyến rũ</string>
+    <string name="icon_mint_name">Bạc hà dễ thương</string>
     <string name="icon_in_use">Đang sử dụng</string>
     <string name="icon_switched_hint">Đã đổi biểu tượng ứng dụng thành %s</string>
     <string name="icon_note">Lưu ý: Một số launcher có thể mất vài giây để cập nhật biểu tượng trên màn hình chính.</string>

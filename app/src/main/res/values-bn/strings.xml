@@ -67,7 +67,10 @@
     <string name="action_exit">বন্ধ করুন</string>
 
     <string name="shortcut_map_manage">মানচিত্র ব্যবস্থাপনা</string>
-    <string name="map_manage_stats">মোট %1$d মানচিত্র (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="one">মোট %1$d মানচিত্র (%2$s)</item>
+        <item quantity="other">মোট %1$d মানচিত্র (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">SLAM চলাকালীন সংরক্ষিত মানচিত্র এখানে প্রদর্শিত হবে।</string>
     <string name="map_details_path">ফাইলের পাথ: %1$s</string>
     <string name="map_action_refresh">রিফ্রেশ</string>
@@ -75,8 +78,9 @@
     <string name="shortcut_change_icon">আইকন পরিবর্তন</string>
     <string name="icon_select_title">অ্যাপ আইকন</string>
     <string name="icon_select_desc">আপনার পছন্দের অ্যাপ আইকন নির্বাচন করুন। পরিবর্তন করতে হোম স্ক্রিনে দীর্ঘক্ষণ চাপুন।</string>
-    <string name="icon_default_name">ক্লাসিক ব্লু</string>
-    <string name="icon_custom_name">ফ্লেম রেড</string>
+    <string name="icon_default_name">টেক ব্লু</string>
+    <string name="icon_red_name">কমনীয় লাল</string>
+    <string name="icon_mint_name">কিউট মিন্ট</string>
     <string name="icon_in_use">ব্যবহৃত হচ্ছে</string>
     <string name="icon_switched_hint">অ্যাপ আইকন %s এ পরিবর্তন করা হয়েছে</string>
     <string name="icon_note">দ্রষ্টব্য: কিছু লঞ্চারে হোম স্ক্রিনে আপডেট হতে কয়েক সেকেন্ড সময় লাগতে পারে।</string>

@@ -71,7 +71,14 @@
     <string name="action_exit">خروج</string>
 
     <string name="shortcut_map_manage">إدارة الخرائط</string>
-    <string name="map_manage_stats">الإجمالي %1$d خرائط (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="zero">الإجمالي %1$d خرائط (%2$s)</item>
+        <item quantity="one">الإجمالي %1$d خرائط (%2$s)</item>
+        <item quantity="two">الإجمالي %1$d خرائط (%2$s)</item>
+        <item quantity="few">الإجمالي %1$d خرائط (%2$s)</item>
+        <item quantity="many">الإجمالي %1$d خرائط (%2$s)</item>
+        <item quantity="other">الإجمالي %1$d خرائط (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">ستظهر هنا الخرائط المحفوظة أثناء تتبع SLAM.</string>
     <string name="map_details_path">مسار الملف: %1$s</string>
     <string name="map_action_refresh">تحديث</string>
@@ -79,8 +86,9 @@
     <string name="shortcut_change_icon">تغيير الأيقونة</string>
     <string name="icon_select_title">أيقونة التطبيق</string>
     <string name="icon_select_desc">اختر أيقونة التطبيق المفضلة لديك. اضغط مطولاً على الشاشة الرئيسية للتغيير في أي وقت.</string>
-    <string name="icon_default_name">أزرق كلاسيكي</string>
-    <string name="icon_custom_name">أحمر ناري</string>
+    <string name="icon_default_name">أزرق تقني</string>
+    <string name="icon_red_name">أحمر فاتن</string>
+    <string name="icon_mint_name">نعناع لطيف</string>
     <string name="icon_in_use">قيد الاستخدام</string>
     <string name="icon_switched_hint">تم تغيير أيقونة التطبيق إلى %s</string>
     <string name="icon_note">ملاحظة: قد تستغرق بعض واجهات النظام بضع ثوانٍ لتحديث الأيقونة على الشاشة الرئيسية.</string>

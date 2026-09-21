@@ -69,7 +69,12 @@
     <string name="action_exit">Выход</string>
 
     <string name="shortcut_map_manage">Управление картами</string>
-    <string name="map_manage_stats">Всего карт: %1$d (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="one">Всего карт: %1$d (%2$s)</item>
+        <item quantity="few">Всего карт: %1$d (%2$s)</item>
+        <item quantity="many">Всего карт: %1$d (%2$s)</item>
+        <item quantity="other">Всего карт: %1$d (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">Сохраненные во время SLAM карты появятся здесь.</string>
     <string name="map_details_path">Путь к файлу: %1$s</string>
     <string name="map_action_refresh">Обновить</string>
@@ -77,8 +82,9 @@
     <string name="shortcut_change_icon">Сменить значок</string>
     <string name="icon_select_title">Значок приложения</string>
     <string name="icon_select_desc">Выберите желаемый значок приложения. Удерживайте значок на главном экране для быстрой смены.</string>
-    <string name="icon_default_name">Классический синий</string>
-    <string name="icon_custom_name">Пламенный красный</string>
+    <string name="icon_default_name">Технологичный синий</string>
+    <string name="icon_red_name">Очаровательный красный</string>
+    <string name="icon_mint_name">Милая мята</string>
     <string name="icon_in_use">Используется</string>
     <string name="icon_switched_hint">Значок приложения изменен на %s</string>
     <string name="icon_note">Примечание: на некоторых рабочих столах обновление может занять несколько секунд.</string>

@@ -206,7 +206,7 @@ public class MainActivity extends AppCompatActivity implements CameraPreviewView
         setupWindowInsets();
 
         mSlamIPCClient = new SlamIPCClient(this);
-        mMapManager = new MapManager(this, mSlamIPCClient);
+        mMapManager = new MapManager(this);
 
         mCameraPreviewView = findViewById(R.id.my_fake_glsurface_view);
         mCameraPreviewView.setVisibility(View.VISIBLE);

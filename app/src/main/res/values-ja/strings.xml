@@ -66,7 +66,9 @@
     <string name="action_exit">終了</string>
 
     <string name="shortcut_map_manage">マップ管理</string>
-    <string name="map_manage_stats">合計 %1$d 個のマップ (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="other">合計 %1$d 個のマップ (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">SLAMの実行中に保存されたマップはここに表示されます</string>
     <string name="map_details_path">ファイルパス: %1$s</string>
     <string name="map_action_refresh">更新</string>
@@ -74,8 +76,9 @@
     <string name="shortcut_change_icon">アイコン変更</string>
     <string name="icon_select_title">アプリアイコン</string>
     <string name="icon_select_desc">お好みのアプリアイコンを選択してください。ホーム画面で長押ししていつでも変更できます。</string>
-    <string name="icon_default_name">クラシックブルー</string>
-    <string name="icon_custom_name">フレイムレッド</string>
+    <string name="icon_default_name">テックブルー</string>
+    <string name="icon_red_name">チャーミングレッド</string>
+    <string name="icon_mint_name">キュートミント</string>
     <string name="icon_in_use">使用中</string>
     <string name="icon_switched_hint">アプリアイコンを %s に変更しました</string>
     <string name="icon_note">注：一部のランチャーではホーム画面の反映に数秒かかる場合があります。</string>

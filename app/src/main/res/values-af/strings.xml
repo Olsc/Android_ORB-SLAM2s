@@ -67,7 +67,10 @@
     <string name="action_exit">Ukončiť</string>
 
     <string name="shortcut_map_manage">Kaartbestuur</string>
-    <string name="map_manage_stats">Totaal %1$d kaarte (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="one">Totaal %1$d kaarte (%2$s)</item>
+        <item quantity="other">Totaal %1$d kaarte (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">Mapy uložené počas SLAM sa zobrazia tu.</string>
     <string name="map_details_path">Cesta: %1$s</string>
     <string name="map_action_refresh">Herlaai</string>
@@ -75,8 +78,9 @@
     <string name="shortcut_change_icon">Verander ikoon</string>
     <string name="icon_select_title">Toep-ikoon</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
-    <string name="icon_default_name">Klassieke blou</string>
-    <string name="icon_custom_name">Vlamrooi</string>
+    <string name="icon_default_name">Tegnies blou</string>
+    <string name="icon_red_name">Sjarmante rooi</string>
+    <string name="icon_mint_name">Oulike ment</string>
     <string name="icon_in_use">In gebruik</string>
     <string name="icon_switched_hint">Ikoon verander na %s</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>

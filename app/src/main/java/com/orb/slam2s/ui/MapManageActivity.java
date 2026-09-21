@@ -34,7 +34,9 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.orb.slam2s.R;
@@ -123,7 +125,9 @@ public class MapManageActivity extends AppCompatActivity {
         }
 
         String formattedSize = Formatter.formatFileSize(this, totalSize);
-        mTvStorageStats.setText(getString(R.string.map_manage_stats, mMapList.size(), formattedSize));
+        int mapCount = mMapList.size();
+        mTvStorageStats.setText(getResources().getQuantityString(
+                R.plurals.map_manage_stats, mapCount, mapCount, formattedSize));
 
         if (mMapList.isEmpty()) {
             mEmptyLayout.setVisibility(View.VISIBLE);
@@ -131,8 +135,8 @@ public class MapManageActivity extends AppCompatActivity {
         } else {
             mEmptyLayout.setVisibility(View.GONE);
             mRecyclerView.setVisibility(View.VISIBLE);
-            mAdapter.notifyDataSetChanged();
         }
+        mAdapter.submitList(new ArrayList<>(mMapList));
     }
 
     private void showMapDetailsDialog(MapManager.MapInfo mapInfo) {
@@ -176,7 +180,28 @@ public class MapManageActivity extends AppCompatActivity {
                 .show();
     }
 
-    private class MapAdapter extends RecyclerView.Adapter<MapViewHolder> {
+    private static final DiffUtil.ItemCallback<MapManager.MapInfo> MAP_DIFF_CALLBACK =
+            new DiffUtil.ItemCallback<MapManager.MapInfo>() {
+        @Override
+        public boolean areItemsTheSame(@NonNull MapManager.MapInfo oldItem, @NonNull MapManager.MapInfo newItem) {
+            return oldItem.name != null && oldItem.name.equals(newItem.name);
+        }
+
+        @Override
+        public boolean areContentsTheSame(@NonNull MapManager.MapInfo oldItem, @NonNull MapManager.MapInfo newItem) {
+            return oldItem.keyFrames == newItem.keyFrames
+                    && oldItem.mapPoints == newItem.mapPoints
+                    && oldItem.fileSize == newItem.fileSize
+                    && oldItem.createTime == newItem.createTime
+                    && oldItem.hasPlane == newItem.hasPlane;
+        }
+    };
+
+    private class MapAdapter extends ListAdapter<MapManager.MapInfo, MapViewHolder> {
+
+        MapAdapter() {
+            super(MAP_DIFF_CALLBACK);
+        }
 
         @NonNull
         @Override
@@ -187,13 +212,7 @@ public class MapManageActivity extends AppCompatActivity {
 
         @Override
         public void onBindViewHolder(@NonNull MapViewHolder holder, int position) {
-            MapManager.MapInfo info = mMapList.get(position);
-            holder.bind(info);
-        }
-
-        @Override
-        public int getItemCount() {
-            return mMapList.size();
+            holder.bind(getItem(position));
         }
     }
 

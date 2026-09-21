@@ -66,7 +66,9 @@
     <string name="action_exit">結束</string>
 
     <string name="shortcut_map_manage">地圖管理</string>
-    <string name="map_manage_stats">共 %1$d 個地圖 (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="other">共 %1$d 個地圖 (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">在 SLAM 運行過程中保存的地圖將保存在本地</string>
     <string name="map_details_path">文件路徑: %1$s</string>
     <string name="map_action_refresh">刷新</string>
@@ -74,8 +76,9 @@
     <string name="shortcut_change_icon">更換圖示</string>
     <string name="icon_select_title">個性化桌面圖示</string>
     <string name="icon_select_desc">選擇喜愛的應用桌面圖示，長按桌面圖示可隨時切換</string>
-    <string name="icon_default_name">經典科技藍</string>
-    <string name="icon_custom_name">烈焰個性紅</string>
+    <string name="icon_default_name">科技藍</string>
+    <string name="icon_red_name">魅惑紅</string>
+    <string name="icon_mint_name">萌萌薄荷</string>
     <string name="icon_in_use">使用中</string>
     <string name="icon_switched_hint">桌面圖示已切換為：%s</string>
     <string name="icon_note">提示：部分手機桌面可能需要 1~2 秒刷新圖示顯示</string>

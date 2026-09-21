@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:targetApi="n_mr1">
+    tools:targetApi="25">
     <shortcut
         android:shortcutId="map_management"
         android:enabled="true"

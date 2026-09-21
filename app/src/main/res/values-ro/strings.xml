@@ -68,7 +68,11 @@
     <string name="action_exit">Ieșire</string>
 
     <string name="shortcut_map_manage">Administrare hărți</string>
-    <string name="map_manage_stats">Total %1$d hărți (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="one">Total %1$d hărți (%2$s)</item>
+        <item quantity="few">Total %1$d hărți (%2$s)</item>
+        <item quantity="other">Total %1$d hărți (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">Hărțile salvate în timpul SLAM vor apărea aici.</string>
     <string name="map_details_path">Cale fișier: %1$s</string>
     <string name="map_action_refresh">Reîmprospătare</string>
@@ -76,8 +80,9 @@
     <string name="shortcut_change_icon">Schimbă pictograma</string>
     <string name="icon_select_title">Pictogramă aplicație</string>
     <string name="icon_select_desc">Selectați pictograma preferată a aplicației. Apăsați lung pe ecranul de pornire pentru a schimba oricând.</string>
-    <string name="icon_default_name">Albastru clasic</string>
-    <string name="icon_custom_name">Roșu flacără</string>
+    <string name="icon_default_name">Albastru tehnologic</string>
+    <string name="icon_red_name">Roșu fermecător</string>
+    <string name="icon_mint_name">Mentă drăgălașă</string>
     <string name="icon_in_use">În uz</string>
     <string name="icon_switched_hint">Pictograma aplicației a fost schimbată la %s</string>
     <string name="icon_note">Notă: Pe unele lansatoare, actualizarea pe ecranul de pornire poate dura câteva secunde.</string>

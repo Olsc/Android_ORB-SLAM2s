@@ -69,7 +69,12 @@
     <string name="action_exit">Ukončiť</string>
 
     <string name="shortcut_map_manage">Upravljanje zemljevidov</string>
-    <string name="map_manage_stats">Skupaj %1$d zemljevidov (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="one">Skupaj %1$d zemljevidov (%2$s)</item>
+        <item quantity="two">Skupaj %1$d zemljevidov (%2$s)</item>
+        <item quantity="few">Skupaj %1$d zemljevidov (%2$s)</item>
+        <item quantity="other">Skupaj %1$d zemljevidov (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">Mapy uložené počas SLAM sa zobrazia tu.</string>
     <string name="map_details_path">Cesta: %1$s</string>
     <string name="map_action_refresh">Osveži</string>
@@ -77,8 +82,9 @@
     <string name="shortcut_change_icon">Spremeni ikono</string>
     <string name="icon_select_title">Ikona aplikacije</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
-    <string name="icon_default_name">Klasična modra</string>
-    <string name="icon_custom_name">Ognjeno rdeča</string>
+    <string name="icon_default_name">Tehnološka modra</string>
+    <string name="icon_red_name">Očarljiva rdeča</string>
+    <string name="icon_mint_name">Ljubka meta</string>
     <string name="icon_in_use">V uporabi</string>
     <string name="icon_switched_hint">Ikona spremenjena v %s</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>

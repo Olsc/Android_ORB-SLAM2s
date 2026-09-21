@@ -67,7 +67,10 @@
     <string name="action_exit">నిష్క్రమించు</string>
 
     <string name="shortcut_map_manage">మ్యాప్ నిర్వహణ</string>
-    <string name="map_manage_stats">మొత్తం %1$d మ్యాప్‌లు (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="one">మొత్తం %1$d మ్యాప్‌లు (%2$s)</item>
+        <item quantity="other">మొత్తం %1$d మ్యాప్‌లు (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">SLAM సమయంలో సేవ్ చేయబడిన మ్యాప్‌లు ఇక్కడ కనిపిస్తాయి.</string>
     <string name="map_details_path">ఫైల్ మార్గం: %1$s</string>
     <string name="map_action_refresh">రిఫ్రెష్ చేయి</string>
@@ -75,8 +78,9 @@
     <string name="shortcut_change_icon">చిహ్నాన్ని మార్చు</string>
     <string name="icon_select_title">యాప్ చిహ్నం</string>
     <string name="icon_select_desc">మీకు నచ్చిన యాప్ చిహ్నాన్ని ఎంచుకోండి. ఎప్పుడైనా మార్చడానికి హోమ్ స్క్రీన్‌పై ఎక్కువసేపు నొక్కండి.</string>
-    <string name="icon_default_name">క్లాసిక్ బ్లూ</string>
-    <string name="icon_custom_name">ఫ్లేమ్ రెడ్</string>
+    <string name="icon_default_name">టెక్ బ్లూ</string>
+    <string name="icon_red_name">ఆకర్షణీయమైన ఎరుపు</string>
+    <string name="icon_mint_name">క్యూట్ మింట్</string>
     <string name="icon_in_use">ఉపయోగంలో ఉంది</string>
     <string name="icon_switched_hint">యాప్ చిహ్నం %s కు మార్చబడింది</string>
     <string name="icon_note">గమనిక: కొన్ని లాంచర్‌లలో హోమ్ స్క్రీన్‌పై అప్‌డేట్ కావడానికి కొన్ని సెకన్లు పట్టవచ్చు.</string>

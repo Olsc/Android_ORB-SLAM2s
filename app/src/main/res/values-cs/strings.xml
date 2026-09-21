@@ -69,7 +69,12 @@
     <string name="action_exit">Ukončit</string>
 
     <string name="shortcut_map_manage">Správa map</string>
-    <string name="map_manage_stats">Celkem %1$d map (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="one">Celkem %1$d map (%2$s)</item>
+        <item quantity="few">Celkem %1$d map (%2$s)</item>
+        <item quantity="many">Celkem %1$d map (%2$s)</item>
+        <item quantity="other">Celkem %1$d map (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">Zde se zobrazí mapy uložené během SLAM.</string>
     <string name="map_details_path">Cesta k souboru: %1$s</string>
     <string name="map_action_refresh">Obnovit</string>
@@ -77,8 +82,9 @@
     <string name="shortcut_change_icon">Změnit ikonu</string>
     <string name="icon_select_title">Ikona aplikace</string>
     <string name="icon_select_desc">Vyberte preferovanou ikonu aplikace. Dlouhým stisknutím na domovské obrazovce ji můžete kdykoli změnit.</string>
-    <string name="icon_default_name">Klasická modrá</string>
-    <string name="icon_custom_name">Plamenná červená</string>
+    <string name="icon_default_name">Technologická modrá</string>
+    <string name="icon_red_name">Okouzlující červená</string>
+    <string name="icon_mint_name">Roztomilá máta</string>
     <string name="icon_in_use">Používá se</string>
     <string name="icon_switched_hint">Ikona aplikace změněna na %s</string>
     <string name="icon_note">Poznámka: U některých launcherů může obnovení na domovské obrazovce trvat několik sekund.</string>

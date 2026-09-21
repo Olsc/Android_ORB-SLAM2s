@@ -68,7 +68,11 @@
     <string name="action_exit">Esci</string>
 
     <string name="shortcut_map_manage">Gestione mappe</string>
-    <string name="map_manage_stats">Totale %1$d mappe (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="one">Totale %1$d mappe (%2$s)</item>
+        <item quantity="many">Totale %1$d mappe (%2$s)</item>
+        <item quantity="other">Totale %1$d mappe (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">Le mappe salvate durante lo SLAM appariranno qui.</string>
     <string name="map_details_path">Percorso del file: %1$s</string>
     <string name="map_action_refresh">Aggiorna</string>
@@ -76,8 +80,9 @@
     <string name="shortcut_change_icon">Cambia icona</string>
     <string name="icon_select_title">"Icona dell'app"</string>
     <string name="icon_select_desc">Scegli la tua icona preferita. Tieni premuto sulla schermata iniziale per cambiarla in qualsiasi momento.</string>
-    <string name="icon_default_name">Blu classico</string>
-    <string name="icon_custom_name">Rosso fiamma</string>
+    <string name="icon_default_name">Blu tecnologico</string>
+    <string name="icon_red_name">Rosso affascinante</string>
+    <string name="icon_mint_name">Menta carina</string>
     <string name="icon_in_use">In uso</string>
     <string name="icon_switched_hint">"Icona dell'app aggiornata a %s"</string>
     <string name="icon_note">"Nota: in alcuni launcher l'aggiornamento potrebbe richiedere alcuni secondi."</string>

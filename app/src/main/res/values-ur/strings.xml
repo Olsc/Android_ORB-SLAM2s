@@ -67,7 +67,10 @@
     <string name="action_exit">باہر نکلیں</string>
 
     <string name="shortcut_map_manage">نقشے کا انتظام</string>
-    <string name="map_manage_stats">کل %1$d نقشے (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="one">کل %1$d نقشے (%2$s)</item>
+        <item quantity="other">کل %1$d نقشے (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">SLAM کے دوران محفوظ کیے گئے نقشے یہاں ظاہر ہوں گے۔</string>
     <string name="map_details_path">فائل کا راستہ: %1$s</string>
     <string name="map_action_refresh">تازہ کریں</string>
@@ -75,8 +78,9 @@
     <string name="shortcut_change_icon">آئیکن تبدیل کریں</string>
     <string name="icon_select_title">ایپ کا آئیکن</string>
     <string name="icon_select_desc">اپنا پسندیدہ ایپ آئیکن منتخب کریں۔ کسی بھی وقت تبدیل کرنے کے لیے ہوم اسکرین پر دیر تک دبائیں۔</string>
-    <string name="icon_default_name">کلاسک نیلا</string>
-    <string name="icon_custom_name">شعلہ سرخ</string>
+    <string name="icon_default_name">ٹیک نیلا</string>
+    <string name="icon_red_name">دلکش سرخ</string>
+    <string name="icon_mint_name">پیاری پودینہ</string>
     <string name="icon_in_use">زیر استعمال</string>
     <string name="icon_switched_hint">ایپ آئیکن %s میں تبدیل کر دیا گیا ہے</string>
     <string name="icon_note">نوٹ: کچھ لانچرز پر ہوم اسکرین پر اپ ڈیٹ ہونے میں چند سیکنڈ لگ سکتے ہیں۔</string>

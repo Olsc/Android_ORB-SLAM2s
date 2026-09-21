@@ -66,7 +66,9 @@
     <string name="action_exit">Keluar</string>
 
     <string name="shortcut_map_manage">Pengurusan Peta</string>
-    <string name="map_manage_stats">Jumlah %1$d peta (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="other">Jumlah %1$d peta (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">Peta yang disimpan semasa SLAM akan dipaparkan di sini.</string>
     <string name="map_details_path">Laluan Fail: %1$s</string>
     <string name="map_action_refresh">Segarkan</string>
@@ -74,8 +76,9 @@
     <string name="shortcut_change_icon">Tukar Ikon</string>
     <string name="icon_select_title">Ikon Aplikasi</string>
     <string name="icon_select_desc">Pilih ikon aplikasi pilihan anda. Tekan lama pada skrin utama untuk menukar pada bila-bila masa.</string>
-    <string name="icon_default_name">Biru Klasik</string>
-    <string name="icon_custom_name">Merah Api</string>
+    <string name="icon_default_name">Biru Teknologi</string>
+    <string name="icon_red_name">Merah Menawan</string>
+    <string name="icon_mint_name">Mint Comel</string>
     <string name="icon_in_use">Sedang Digunakan</string>
     <string name="icon_switched_hint">Ikon aplikasi ditukar kepada %s</string>
     <string name="icon_note">Nota: Pada sesetengah pelancar, ia mungkin mengambil masa beberapa saat untuk dikemas kini.</string>
