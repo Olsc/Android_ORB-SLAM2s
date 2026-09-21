@@ -84,4 +84,15 @@
     <string name="icon_in_use">I bruk</string>
     <string name="icon_switched_hint">Appikon endret til %s</string>
     <string name="icon_note">Merk: På enkelte startere kan det ta noen sekunder å oppdatere på startskjermen.</string>
+
+    <string name="btn_switch_camera">Bytt kamera</string>
+    <string name="hint_camera_switched_back">Byttet til bakkamera</string>
+    <string name="hint_camera_switched_front">Byttet til frontkamera</string>
+    <string name="hint_camera_switched_other">Byttet til kamera %1$s</string>
+    <string name="hint_camera_switch_single">Bare ett kamera tilgjengelig</string>
+    <string name="hint_camera_switch_failed">Kunne ikke bytte kamera</string>
+    <string name="camera_facing_back">Bakkamera (%1$s)</string>
+    <string name="camera_facing_front">Frontkamera (%1$s)</string>
+    <string name="camera_facing_other">Kamera %1$s</string>
+    <string name="dialog_select_camera">Velg kamera</string>
 </resources>

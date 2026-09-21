@@ -85,4 +85,14 @@
     <string name="icon_switched_hint">İkon %s olaraq dəyişdirildi</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
+    <string name="btn_switch_camera">Kameranı dəyiş</string>
+    <string name="hint_camera_switched_back">Arxa kameraya keçirildi</string>
+    <string name="hint_camera_switched_front">Ön kameraya keçirildi</string>
+    <string name="hint_camera_switched_other">Kamera %1$s-ə keçirildi</string>
+    <string name="hint_camera_switch_single">Yalnız bir kamera mövcuddur</string>
+    <string name="hint_camera_switch_failed">Kameranı dəyişmək alınmadı</string>
+    <string name="camera_facing_back">Arxa kamera (%1$s)</string>
+    <string name="camera_facing_front">Ön kamera (%1$s)</string>
+    <string name="camera_facing_other">Kamera %1$s</string>
+    <string name="dialog_select_camera">Kamera seçin</string>
 </resources>

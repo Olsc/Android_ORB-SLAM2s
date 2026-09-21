@@ -11,7 +11,6 @@
     android:orientation="vertical"
     android:padding="16dp">
 
-    <!-- Title and Size -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -41,7 +40,6 @@
             android:textStyle="bold" />
     </LinearLayout>
 
-    <!-- Chips (KeyFrames, MapPoints, Plane) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -90,7 +88,6 @@
             android:textSize="12sp" />
     </LinearLayout>
 
-    <!-- Time and Actions -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

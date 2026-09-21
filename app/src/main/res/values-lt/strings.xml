@@ -89,4 +89,14 @@
     <string name="icon_switched_hint">Piktograma pakeista į %s</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
+    <string name="btn_switch_camera">Perjungti kamerą</string>
+    <string name="hint_camera_switched_back">Perjungta į galinę kamerą</string>
+    <string name="hint_camera_switched_front">Perjungta į priekinę kamerą</string>
+    <string name="hint_camera_switched_other">Perjungta į kamerą %1$s</string>
+    <string name="hint_camera_switch_single">Pasiekiama tik viena kamera</string>
+    <string name="hint_camera_switch_failed">Nepavyko perjungti kameros</string>
+    <string name="camera_facing_back">Galinė kamera (%1$s)</string>
+    <string name="camera_facing_front">Priekinė kamera (%1$s)</string>
+    <string name="camera_facing_other">Kamera %1$s</string>
+    <string name="dialog_select_camera">Pasirinkite kamerą</string>
 </resources>

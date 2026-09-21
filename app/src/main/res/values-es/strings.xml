@@ -86,4 +86,15 @@
     <string name="icon_in_use">En uso</string>
     <string name="icon_switched_hint">Icono de la app cambiado a %s</string>
     <string name="icon_note">Nota: En algunos lanzadores, la actualización puede tardar unos segundos.</string>
+
+    <string name="btn_switch_camera">Cambiar cámara</string>
+    <string name="hint_camera_switched_back">Cambiado a la cámara trasera</string>
+    <string name="hint_camera_switched_front">Cambiado a la cámara frontal</string>
+    <string name="hint_camera_switched_other">Cambiado a la cámara %1$s</string>
+    <string name="hint_camera_switch_single">Solo hay una cámara disponible</string>
+    <string name="hint_camera_switch_failed">Error al cambiar de cámara</string>
+    <string name="camera_facing_back">Cámara trasera (%1$s)</string>
+    <string name="camera_facing_front">Cámara frontal (%1$s)</string>
+    <string name="camera_facing_other">Cámara %1$s</string>
+    <string name="dialog_select_camera">Seleccionar cámara</string>
 </resources>

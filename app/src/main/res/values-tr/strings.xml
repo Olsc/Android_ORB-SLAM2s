@@ -84,4 +84,15 @@
     <string name="icon_in_use">Kullanımda</string>
     <string name="icon_switched_hint">Uygulama simgesi %s olarak değiştirildi</string>
     <string name="icon_note">Not: Bazı başlatıcılarda ana ekranda yenilenmesi birkaç saniye sürebilir.</string>
+
+    <string name="btn_switch_camera">Kamera Değiştir</string>
+    <string name="hint_camera_switched_back">Arka kameraya geçildi</string>
+    <string name="hint_camera_switched_front">Ön kameraya geçildi</string>
+    <string name="hint_camera_switched_other">Kamera %1$s olarak değiştirildi</string>
+    <string name="hint_camera_switch_single">Yalnızca bir kamera mevcut</string>
+    <string name="hint_camera_switch_failed">Kamera değiştirilemedi</string>
+    <string name="camera_facing_back">Arka Kamera (%1$s)</string>
+    <string name="camera_facing_front">Ön Kamera (%1$s)</string>
+    <string name="camera_facing_other">Kamera %1$s</string>
+    <string name="dialog_select_camera">Kamera Seç</string>
 </resources>

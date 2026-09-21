@@ -88,4 +88,15 @@
     <string name="icon_in_use">Використовується</string>
     <string name="icon_switched_hint">Піктограму програми змінено на %s</string>
     <string name="icon_note">Примітка: на деяких робочих столах оновлення може тривати кілька секунд.</string>
+
+    <string name="btn_switch_camera">Зміна камери</string>
+    <string name="hint_camera_switched_back">Переключено на задню камеру</string>
+    <string name="hint_camera_switched_front">Переключено на фронтальну камеру</string>
+    <string name="hint_camera_switched_other">Переключено на камеру %1$s</string>
+    <string name="hint_camera_switch_single">Доступна лише одна камера</string>
+    <string name="hint_camera_switch_failed">Не вдалося переключити камеру</string>
+    <string name="camera_facing_back">Задня камера (%1$s)</string>
+    <string name="camera_facing_front">Фронтальна камера (%1$s)</string>
+    <string name="camera_facing_other">Камера %1$s</string>
+    <string name="dialog_select_camera">Вибір камери</string>
 </resources>

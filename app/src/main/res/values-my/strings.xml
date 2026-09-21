@@ -83,4 +83,14 @@
     <string name="icon_switched_hint">အိုင်ကွန်ကို %s သို့ ပြောင်းပြီးပါပြီ</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
+    <string name="btn_switch_camera">ကင်မရာပြောင်းရန်</string>
+    <string name="hint_camera_switched_back">နောက်ကင်မရာသို့ ပြောင်းပြီးပါပြီ</string>
+    <string name="hint_camera_switched_front">ရှေ့ကင်မရာသို့ ပြောင်းပြီးပါပြီ</string>
+    <string name="hint_camera_switched_other">ကင်မရာ %1$s သို့ ပြောင်းပြီးပါပြီ</string>
+    <string name="hint_camera_switch_single">ကင်မရာတစ်လုံးသာ ရရှိနိုင်ပါသည်</string>
+    <string name="hint_camera_switch_failed">ကင်မရာပြောင်းရန် မအောင်မြင်ပါ</string>
+    <string name="camera_facing_back">နောက်ကင်မရာ (%1$s)</string>
+    <string name="camera_facing_front">ရှေ့ကင်မရာ (%1$s)</string>
+    <string name="camera_facing_other">ကင်မရာ %1$s</string>
+    <string name="dialog_select_camera">ကင်မရာရွေးချယ်ပါ</string>
 </resources>

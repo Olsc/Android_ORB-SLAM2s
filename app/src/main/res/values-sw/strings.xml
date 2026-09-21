@@ -84,4 +84,15 @@
     <string name="icon_in_use">Inatumika</string>
     <string name="icon_switched_hint">Ikoni ya programu imebadilishwa kuwa %s</string>
     <string name="icon_note">Kumbuka: Kwenye baadhi ya vizindua, inaweza kuchukua sekunde chache kusasisha.</string>
+
+    <string name="btn_switch_camera">Badilisha Kamera</string>
+    <string name="hint_camera_switched_back">Imebadilishwa kuwa kamera ya nyuma</string>
+    <string name="hint_camera_switched_front">Imebadilishwa kuwa kamera ya mbele</string>
+    <string name="hint_camera_switched_other">Imebadilishwa kuwa kamera %1$s</string>
+    <string name="hint_camera_switch_single">Kamera moja tu inapatikana</string>
+    <string name="hint_camera_switch_failed">Imeshindwa kubadilisha kamera</string>
+    <string name="camera_facing_back">Kamera ya Nyuma (%1$s)</string>
+    <string name="camera_facing_front">Kamera ya Mbele (%1$s)</string>
+    <string name="camera_facing_other">Kamera %1$s</string>
+    <string name="dialog_select_camera">Chagua Kamera</string>
 </resources>

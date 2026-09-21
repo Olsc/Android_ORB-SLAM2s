@@ -85,4 +85,14 @@
     <string name="icon_switched_hint">"আইকন %s লৈ সলনি কৰা হ'ল"</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
+    <string name="btn_switch_camera">কেমেৰা সলনি কৰক</string>
+    <string name="hint_camera_switched_back">পিছৰ কেমেৰালৈ সলনি কৰা হ’ল</string>
+    <string name="hint_camera_switched_front">আগৰ কেমেৰালৈ সলনি কৰা হ’ল</string>
+    <string name="hint_camera_switched_other">কেমেৰা %1$s লৈ সলনি কৰা হ’ল</string>
+    <string name="hint_camera_switch_single">কেৱল এটা কেমেৰাহে উপলব্ধ</string>
+    <string name="hint_camera_switch_failed">কেমেৰা সলনি কৰিব পৰা নগ’ল</string>
+    <string name="camera_facing_back">পিছৰ কেমেৰা (%1$s)</string>
+    <string name="camera_facing_front">আগৰ কেমেৰা (%1$s)</string>
+    <string name="camera_facing_other">কেমেৰা %1$s</string>
+    <string name="dialog_select_camera">কেমেৰা বাছক</string>
 </resources>

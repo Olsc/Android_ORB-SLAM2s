@@ -84,4 +84,15 @@
     <string name="icon_in_use">Käytössä</string>
     <string name="icon_switched_hint">Sovelluskuvakkeeksi vaihdettu %s</string>
     <string name="icon_note">Huomautus: Joissakin käynnistimissä päivitys aloitusnäytössä voi kestää muutaman sekunnin.</string>
+
+    <string name="btn_switch_camera">Vaihda kamera</string>
+    <string name="hint_camera_switched_back">Vaihdettu takakameraan</string>
+    <string name="hint_camera_switched_front">Vaihdettu etukameraan</string>
+    <string name="hint_camera_switched_other">Vaihdettu kameraan %1$s</string>
+    <string name="hint_camera_switch_single">Vain yksi kamera käytettävissä</string>
+    <string name="hint_camera_switch_failed">Kameran vaihtaminen epäonnistui</string>
+    <string name="camera_facing_back">Takakamera (%1$s)</string>
+    <string name="camera_facing_front">Etukamera (%1$s)</string>
+    <string name="camera_facing_other">Kamera %1$s</string>
+    <string name="dialog_select_camera">Valitse kamera</string>
 </resources>

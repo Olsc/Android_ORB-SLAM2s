@@ -83,4 +83,14 @@
     <string name="icon_switched_hint">បានប្តូររូបតំណាងទៅ %s</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
+    <string name="btn_switch_camera">ប្តូរកាមេរ៉ា</string>
+    <string name="hint_camera_switched_back">បានប្តូរទៅកាមេរ៉ាក្រោយ</string>
+    <string name="hint_camera_switched_front">បានប្តូរទៅកាមេរ៉ាមុខ</string>
+    <string name="hint_camera_switched_other">បានប្តូរទៅកាមេរ៉ា %1$s</string>
+    <string name="hint_camera_switch_single">មានកាមេរ៉ាតែមួយប៉ុណ្ណោះ</string>
+    <string name="hint_camera_switch_failed">បរាជ័យក្នុងការប្តូរកាមេរ៉ា</string>
+    <string name="camera_facing_back">កាមេរ៉ាក្រោយ (%1$s)</string>
+    <string name="camera_facing_front">កាមេរ៉ាមុខ (%1$s)</string>
+    <string name="camera_facing_other">កាមេរ៉ា %1$s</string>
+    <string name="dialog_select_camera">ជ្រើសរើសកាមេរ៉ា</string>
 </resources>

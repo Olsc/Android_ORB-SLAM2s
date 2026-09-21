@@ -88,4 +88,15 @@
     <string name="icon_in_use">W użyciu</string>
     <string name="icon_switched_hint">Zmieniono ikonę aplikacji na %s</string>
     <string name="icon_note">Uwaga: W niektórych programach uruchamiających odświeżenie może potrwać kilka sekund.</string>
+
+    <string name="btn_switch_camera">Przełącz kamerę</string>
+    <string name="hint_camera_switched_back">Przełączono na aparat tylny</string>
+    <string name="hint_camera_switched_front">Przełączono na aparat przedni</string>
+    <string name="hint_camera_switched_other">Przełączono na aparat %1$s</string>
+    <string name="hint_camera_switch_single">Dostępny jest tylko jeden aparat</string>
+    <string name="hint_camera_switch_failed">Nie udało się przełączyć aparatu</string>
+    <string name="camera_facing_back">Aparat tylny (%1$s)</string>
+    <string name="camera_facing_front">Aparat przedni (%1$s)</string>
+    <string name="camera_facing_other">Aparat %1$s</string>
+    <string name="dialog_select_camera">Wybierz aparat</string>
 </resources>

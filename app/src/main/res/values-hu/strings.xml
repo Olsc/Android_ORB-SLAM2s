@@ -84,4 +84,15 @@
     <string name="icon_in_use">Használatban</string>
     <string name="icon_switched_hint">Alkalmazásikon módosítva: %s</string>
     <string name="icon_note">Megjegyzés: Egyes indítóknál a kezdőképernyőn történő frissítés néhány másodpercet igénybe vehet.</string>
+
+    <string name="btn_switch_camera">Kameraváltás</string>
+    <string name="hint_camera_switched_back">Váltás a hátlapi kamerára</string>
+    <string name="hint_camera_switched_front">Váltás az előlapi kamerára</string>
+    <string name="hint_camera_switched_other">Váltás a(z) %1$s kamerára</string>
+    <string name="hint_camera_switch_single">Csak egy kamera érhető el</string>
+    <string name="hint_camera_switch_failed">Sikertelen kameraváltás</string>
+    <string name="camera_facing_back">Hátlapi kamera (%1$s)</string>
+    <string name="camera_facing_front">Előlapi kamera (%1$s)</string>
+    <string name="camera_facing_other">Kamera %1$s</string>
+    <string name="dialog_select_camera">Kamera kiválasztása</string>
 </resources>

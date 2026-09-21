@@ -84,4 +84,15 @@
     <string name="icon_in_use">در حال استفاده</string>
     <string name="icon_switched_hint">آیکون برنامه به %s تغییر یافت</string>
     <string name="icon_note">توجه: در برخی لانچرها ممکن است به‌روزرسانی در صفحه اصلی چند ثانیه طول بکشد.</string>
+
+    <string name="btn_switch_camera">تغییر دوربین</string>
+    <string name="hint_camera_switched_back">به دوربین پشت منتقل شد</string>
+    <string name="hint_camera_switched_front">به دوربین جلو منتقل شد</string>
+    <string name="hint_camera_switched_other">به دوربین %1$s منتقل شد</string>
+    <string name="hint_camera_switch_single">فقط یک دوربین در دسترس است</string>
+    <string name="hint_camera_switch_failed">تغییر دوربین ناموفق بود</string>
+    <string name="camera_facing_back">دوربین پشت (%1$s)</string>
+    <string name="camera_facing_front">دوربین جلو (%1$s)</string>
+    <string name="camera_facing_other">دوربین %1$s</string>
+    <string name="dialog_select_camera">انتخاب دوربین</string>
 </resources>

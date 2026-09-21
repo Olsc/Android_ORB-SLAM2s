@@ -92,4 +92,15 @@
     <string name="icon_in_use">قيد الاستخدام</string>
     <string name="icon_switched_hint">تم تغيير أيقونة التطبيق إلى %s</string>
     <string name="icon_note">ملاحظة: قد تستغرق بعض واجهات النظام بضع ثوانٍ لتحديث الأيقونة على الشاشة الرئيسية.</string>
+
+    <string name="btn_switch_camera">تبديل الكاميرا</string>
+    <string name="hint_camera_switched_back">تم التبديل إلى الكاميرا الخلفية</string>
+    <string name="hint_camera_switched_front">تم التبديل إلى الكاميرا الأمامية</string>
+    <string name="hint_camera_switched_other">تم التبديل إلى الكاميرا %1$s</string>
+    <string name="hint_camera_switch_single">تتوفر كاميرا واحدة فقط</string>
+    <string name="hint_camera_switch_failed">فشل تبديل الكاميرا</string>
+    <string name="camera_facing_back">الكاميرا الخلفية (%1$s)</string>
+    <string name="camera_facing_front">الكاميرا الأمامية (%1$s)</string>
+    <string name="camera_facing_other">الكاميرا %1$s</string>
+    <string name="dialog_select_camera">تحديد الكاميرا</string>
 </resources>

@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR Object</string>
     <string name="btn_save">Save</string>
@@ -85,4 +85,14 @@
     <string name="icon_switched_hint">App icon updated to %s</string>
     <string name="icon_note">Note: Some launchers may take a few seconds to refresh.</string>
 
+    <string name="btn_switch_camera">Switch Cam</string>
+    <string name="hint_camera_switched_back">Switched to rear camera</string>
+    <string name="hint_camera_switched_front">Switched to front camera</string>
+    <string name="hint_camera_switched_other">Switched to camera %1$s</string>
+    <string name="hint_camera_switch_single">Only one camera available</string>
+    <string name="hint_camera_switch_failed">Failed to switch camera</string>
+    <string name="camera_facing_back">Rear Camera (%1$s)</string>
+    <string name="camera_facing_front">Front Camera (%1$s)</string>
+    <string name="camera_facing_other">Camera %1$s</string>
+    <string name="dialog_select_camera">Select Camera</string>
 </resources>

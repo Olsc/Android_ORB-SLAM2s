@@ -86,4 +86,15 @@
     <string name="icon_in_use">"En cours d'utilisation"</string>
     <string name="icon_switched_hint">Icône mise à jour vers %s</string>
     <string name="icon_note">"Remarque : selon le lanceur, l'actualisation peut prendre quelques secondes."</string>
+
+    <string name="btn_switch_camera">Changer caméra</string>
+    <string name="hint_camera_switched_back">Basculé sur la caméra arrière</string>
+    <string name="hint_camera_switched_front">Basculé sur la caméra avant</string>
+    <string name="hint_camera_switched_other">Basculé sur la caméra %1$s</string>
+    <string name="hint_camera_switch_single">Une seule caméra disponible</string>
+    <string name="hint_camera_switch_failed">Échec du changement de caméra</string>
+    <string name="camera_facing_back">Caméra arrière (%1$s)</string>
+    <string name="camera_facing_front">Caméra avant (%1$s)</string>
+    <string name="camera_facing_other">Caméra %1$s</string>
+    <string name="dialog_select_camera">Sélectionner la caméra</string>
 </resources>

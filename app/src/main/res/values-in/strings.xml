@@ -82,4 +82,15 @@
     <string name="icon_in_use">Sedang Digunakan</string>
     <string name="icon_switched_hint">Ikon aplikasi diubah ke %s</string>
     <string name="icon_note">Catatan: Pada beberapa peluncur, pembaruan ikon mungkin memerlukan beberapa detik.</string>
+
+    <string name="btn_switch_camera">Ganti Kamera</string>
+    <string name="hint_camera_switched_back">Beralih ke kamera belakang</string>
+    <string name="hint_camera_switched_front">Beralih ke kamera depan</string>
+    <string name="hint_camera_switched_other">Beralih ke kamera %1$s</string>
+    <string name="hint_camera_switch_single">Hanya ada satu kamera yang tersedia</string>
+    <string name="hint_camera_switch_failed">Gagal mengganti kamera</string>
+    <string name="camera_facing_back">Kamera Belakang (%1$s)</string>
+    <string name="camera_facing_front">Kamera Depan (%1$s)</string>
+    <string name="camera_facing_other">Kamera %1$s</string>
+    <string name="dialog_select_camera">Pilih Kamera</string>
 </resources>

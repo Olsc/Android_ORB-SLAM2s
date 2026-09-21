@@ -85,4 +85,14 @@
     <string name="icon_switched_hint">ଆଇକନ୍ %s କୁ ପରିବର୍ତ୍ତିତ</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
+    <string name="btn_switch_camera">କ୍ୟାମେରା ବଦଳାନ୍ତୁ</string>
+    <string name="hint_camera_switched_back">ପଛ କ୍ୟାମେରାକୁ ବଦଳାଗଲା</string>
+    <string name="hint_camera_switched_front">ଆଗ କ୍ୟାମେରାକୁ ବଦଳାଗଲା</string>
+    <string name="hint_camera_switched_other">କ୍ୟାମେରା %1$s କୁ ବଦଳାଗଲା</string>
+    <string name="hint_camera_switch_single">କେବଳ ଗୋଟିଏ କ୍ୟାମେରା ଉପଲବ୍ଧ</string>
+    <string name="hint_camera_switch_failed">କ୍ୟାମେରା ବଦଳାଇବାରେ ବିଫଳ ହେଲା</string>
+    <string name="camera_facing_back">ପଛ କ୍ୟାମେରା (%1$s)</string>
+    <string name="camera_facing_front">ଆଗ କ୍ୟାମେରା (%1$s)</string>
+    <string name="camera_facing_other">କ୍ୟାମେରା %1$s</string>
+    <string name="dialog_select_camera">କ୍ୟାମେରା ଚୟନ କରନ୍ତୁ</string>
 </resources>

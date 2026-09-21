@@ -84,4 +84,15 @@
     <string name="icon_in_use">I brug</string>
     <string name="icon_switched_hint">App-ikon opdateret til %s</string>
     <string name="icon_note">Bemærk: På visse launchers kan det tage et par sekunder at opdatere på startskærmen.</string>
+
+    <string name="btn_switch_camera">Skift kamera</string>
+    <string name="hint_camera_switched_back">Skiftet til bagkamera</string>
+    <string name="hint_camera_switched_front">Skiftet til frontkamera</string>
+    <string name="hint_camera_switched_other">Skiftet til kamera %1$s</string>
+    <string name="hint_camera_switch_single">Kun ét kamera tilgængeligt</string>
+    <string name="hint_camera_switch_failed">Kunne ikke skifte kamera</string>
+    <string name="camera_facing_back">Bagkamera (%1$s)</string>
+    <string name="camera_facing_front">Frontkamera (%1$s)</string>
+    <string name="camera_facing_other">Kamera %1$s</string>
+    <string name="dialog_select_camera">Vælg kamera</string>
 </resources>

@@ -85,4 +85,14 @@
     <string name="icon_switched_hint">एप आइकन %s मा परिवर्तन गरियो</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
+    <string name="btn_switch_camera">क्यामेरा बदल्नुहोस्</string>
+    <string name="hint_camera_switched_back">पछाडिको क्यामेरामा स्विच गरियो</string>
+    <string name="hint_camera_switched_front">अगाडिको क्यामेरामा स्विच गरियो</string>
+    <string name="hint_camera_switched_other">क्यामेरा %1$s मा स्विच गरियो</string>
+    <string name="hint_camera_switch_single">केवल एक क्यामेरा उपलब्ध छ</string>
+    <string name="hint_camera_switch_failed">क्यामेरा बदल्न असफल भयो</string>
+    <string name="camera_facing_back">पछाडिको क्यामेरा (%1$s)</string>
+    <string name="camera_facing_front">अगाडिको क्यामेरा (%1$s)</string>
+    <string name="camera_facing_other">क्यामेरा %1$s</string>
+    <string name="dialog_select_camera">क्यामेरा चयन गर्नुहोस्</string>
 </resources>

@@ -3,7 +3,7 @@
     <string name="hint_map_saved">Mapa uložená: %1$s</string>
     <string name="hint_map_loaded">Mapa načítaná: %1$s</string>
     <plurals name="hint_maps_loaded">
-        <item quantity="zero">Ielādētas %1$d kartes</item>
+        <item quantity="zero">Ielādēts %1$d karšu</item>
         <item quantity="one">Ielādēta %1$d karte</item>
         <item quantity="other">Ielādētas %1$d kartes</item>
     </plurals>

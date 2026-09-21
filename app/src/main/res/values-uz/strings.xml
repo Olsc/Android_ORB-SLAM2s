@@ -85,4 +85,14 @@
     <string name="icon_switched_hint">"Belgi %s ga o'zgartirildi"</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
+    <string name="btn_switch_camera">Kamerani almashtirish</string>
+    <string name="hint_camera_switched_back">Orqa kameraga o\'tkazildi</string>
+    <string name="hint_camera_switched_front">Old kameraga o\'tkazildi</string>
+    <string name="hint_camera_switched_other">%1$s kamerasiga o\'tkazildi</string>
+    <string name="hint_camera_switch_single">Faqat bitta kamera mavjud</string>
+    <string name="hint_camera_switch_failed">Kamerani almashtirib bo\'lmadi</string>
+    <string name="camera_facing_back">Orqa kamera (%1$s)</string>
+    <string name="camera_facing_front">Old kamera (%1$s)</string>
+    <string name="camera_facing_other">Kamera %1$s</string>
+    <string name="dialog_select_camera">Kamerani tanlash</string>
 </resources>

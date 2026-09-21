@@ -83,4 +83,14 @@
     <string name="icon_switched_hint">桌面圖示已切換為：%s</string>
     <string name="icon_note">提示：部分手機桌面可能需要 1~2 秒刷新圖示顯示</string>
 
+    <string name="btn_switch_camera">切換相機</string>
+    <string name="hint_camera_switched_back">已切換至後置相機</string>
+    <string name="hint_camera_switched_front">已切換至前置相機</string>
+    <string name="hint_camera_switched_other">已切換至相機 %1$s</string>
+    <string name="hint_camera_switch_single">僅有一個可用相機</string>
+    <string name="hint_camera_switch_failed">切換相機失敗</string>
+    <string name="camera_facing_back">後置相機 (%1$s)</string>
+    <string name="camera_facing_front">前置相機 (%1$s)</string>
+    <string name="camera_facing_other">相機 %1$s</string>
+    <string name="dialog_select_camera">選擇相機</string>
 </resources>

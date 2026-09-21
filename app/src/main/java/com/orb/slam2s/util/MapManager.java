@@ -45,6 +45,7 @@ public class MapManager {
         }
     }
 
+
     public boolean deleteMap(String mapName) {
         try {
             File mapFile = new File(mMapDirectory, mapName + ".bin");
@@ -115,6 +116,7 @@ public class MapManager {
                 } else {
                     info.fileSize = file.length();
                 }
+                info.filePath = file.getAbsolutePath();
 
                 maps.add(info);
             }
@@ -172,7 +174,7 @@ public class MapManager {
                 if (read >= 16) {
                     ByteBuffer buf = ByteBuffer.wrap(header).order(ByteOrder.LITTLE_ENDIAN);
                     int magic = buf.getInt();
-                    buf.getInt(); // version（暂未使用，仅跳过）
+                    buf.getInt(); // version (4B, 暂未使用，仅跳过)
                     int nKFs = buf.getInt();
                     int nMPs = buf.getInt();
                     // 兼容标准地图格式 (0x4D415031: MAP1)
@@ -237,5 +239,6 @@ public class MapManager {
         public long fileSize;
         public long createTime;
         public boolean hasPlane;
+        public String filePath;
     }
 }

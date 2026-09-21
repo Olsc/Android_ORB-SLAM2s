@@ -182,7 +182,7 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
         Log.i(TAG, "onSurfaceCreated: 初始化原生 OpenGL ES 环境");
         if (nativeHandle != 0) {
             if (!nativeInitGL(nativeHandle)) {
-                Log.w(TAG, "nativeInitGL 初始化原生 GL 环境失败");
+                Log.e(TAG, "nativeInitGL 初始化原生 GL 环境失败");
             }
         }
     }

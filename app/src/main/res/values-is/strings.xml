@@ -85,4 +85,14 @@
     <string name="icon_switched_hint">Forritstákni breytt í %s</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
+    <string name="btn_switch_camera">Skipta um myndavél</string>
+    <string name="hint_camera_switched_back">Skipt yfir á aftari myndavél</string>
+    <string name="hint_camera_switched_front">Skipt yfir á fremri myndavél</string>
+    <string name="hint_camera_switched_other">Skipt yfir á myndavél %1$s</string>
+    <string name="hint_camera_switch_single">Aðeins ein myndavél tiltæk</string>
+    <string name="hint_camera_switch_failed">Ekki tókst að skipta um myndavél</string>
+    <string name="camera_facing_back">Aftari myndavél (%1$s)</string>
+    <string name="camera_facing_front">Fremri myndavél (%1$s)</string>
+    <string name="camera_facing_other">Myndavél %1$s</string>
+    <string name="dialog_select_camera">Veldu myndavél</string>
 </resources>

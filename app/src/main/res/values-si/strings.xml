@@ -85,4 +85,14 @@
     <string name="icon_switched_hint">අයිකනය %s ලෙස වෙනස් කරන ලදී</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
+    <string name="btn_switch_camera">කැමරාව මාරු කරන්න</string>
+    <string name="hint_camera_switched_back">පසුපස කැමරාවට මාරු විය</string>
+    <string name="hint_camera_switched_front">ඉදිරිපස කැමරාවට මාරු විය</string>
+    <string name="hint_camera_switched_other">කැමරා %1$s වෙත මාරු විය</string>
+    <string name="hint_camera_switch_single">ලබා ගත හැක්කේ එක් කැමරාවක් පමණි</string>
+    <string name="hint_camera_switch_failed">කැමරාව මාරු කිරීම අසාර්ථක විය</string>
+    <string name="camera_facing_back">පසුපස කැමරාව (%1$s)</string>
+    <string name="camera_facing_front">ඉදිරිපස කැමරාව (%1$s)</string>
+    <string name="camera_facing_other">කැමරාව %1$s</string>
+    <string name="dialog_select_camera">කැමරාව තෝරන්න</string>
 </resources>

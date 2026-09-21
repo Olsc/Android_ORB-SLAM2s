@@ -85,4 +85,14 @@
     <string name="icon_switched_hint">Ikooniks määratud %s</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
+    <string name="btn_switch_camera">Vaheta kaamerat</string>
+    <string name="hint_camera_switched_back">Lülitati tagumisele kaamerale</string>
+    <string name="hint_camera_switched_front">Lülitati esikaamerale</string>
+    <string name="hint_camera_switched_other">Lülitati kaamerale %1$s</string>
+    <string name="hint_camera_switch_single">Saadaval on ainult üks kaamera</string>
+    <string name="hint_camera_switch_failed">Kaamera vahetamine ebaõnnestus</string>
+    <string name="camera_facing_back">Tagumine kaamera (%1$s)</string>
+    <string name="camera_facing_front">Esikaamera (%1$s)</string>
+    <string name="camera_facing_other">Kaamera %1$s</string>
+    <string name="dialog_select_camera">Vali kaamera</string>
 </resources>

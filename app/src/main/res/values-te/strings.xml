@@ -84,4 +84,15 @@
     <string name="icon_in_use">ఉపయోగంలో ఉంది</string>
     <string name="icon_switched_hint">యాప్ చిహ్నం %s కు మార్చబడింది</string>
     <string name="icon_note">గమనిక: కొన్ని లాంచర్‌లలో హోమ్ స్క్రీన్‌పై అప్‌డేట్ కావడానికి కొన్ని సెకన్లు పట్టవచ్చు.</string>
+
+    <string name="btn_switch_camera">కెమెరా మార్చు</string>
+    <string name="hint_camera_switched_back">వెనుక కెమెరాకు మార్చబడింది</string>
+    <string name="hint_camera_switched_front">ముందు కెమెరాకు మార్చబడింది</string>
+    <string name="hint_camera_switched_other">కెమెరా %1$s కు మార్చబడింది</string>
+    <string name="hint_camera_switch_single">ఒకే ఒక కెమెరా అందుబాటులో ఉంది</string>
+    <string name="hint_camera_switch_failed">కెమెరా మార్చడం విఫలమైంది</string>
+    <string name="camera_facing_back">వెనుక కెమెరా (%1$s)</string>
+    <string name="camera_facing_front">ముందు కెమెరా (%1$s)</string>
+    <string name="camera_facing_other">కెమెరా %1$s</string>
+    <string name="dialog_select_camera">కెమెరాను ఎంచుకోండి</string>
 </resources>

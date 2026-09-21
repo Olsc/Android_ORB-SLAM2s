@@ -89,4 +89,14 @@
     <string name="icon_switched_hint">Икона промењена у %s</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
+    <string name="btn_switch_camera">Змена камеры</string>
+    <string name="hint_camera_switched_back">Пераключана на заднюю камеру</string>
+    <string name="hint_camera_switched_front">Пераключана на франтальную камеру</string>
+    <string name="hint_camera_switched_other">Пераключана на камеру %1$s</string>
+    <string name="hint_camera_switch_single">Даступная толькі адна камера</string>
+    <string name="hint_camera_switch_failed">Не ўдалося пераключыць камеру</string>
+    <string name="camera_facing_back">Задняя камера (%1$s)</string>
+    <string name="camera_facing_front">Франтальная камера (%1$s)</string>
+    <string name="camera_facing_other">Камера %1$s</string>
+    <string name="dialog_select_camera">Выбар камеры</string>
 </resources>

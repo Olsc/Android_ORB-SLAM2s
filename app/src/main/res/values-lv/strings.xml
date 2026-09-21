@@ -45,7 +45,7 @@
     <string name="hint_map_saved">Mapa uložená: %1$s</string>
     <string name="hint_map_loaded">Mapa načítaná: %1$s</string>
     <plurals name="hint_maps_loaded">
-        <item quantity="zero">Ielādētas %1$d kartes</item>
+        <item quantity="zero">Ielādēts %1$d karšu</item>
         <item quantity="one">Ielādēta %1$d karte</item>
         <item quantity="other">Ielādētas %1$d kartes</item>
     </plurals>
@@ -87,4 +87,14 @@
     <string name="icon_switched_hint">Ikona mainīta uz %s</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
+    <string name="btn_switch_camera">Pārslēgt kameru</string>
+    <string name="hint_camera_switched_back">Pārslēgts uz aizmugurējo kameru</string>
+    <string name="hint_camera_switched_front">Pārslēgts uz priekšējo kameru</string>
+    <string name="hint_camera_switched_other">Pārslēgts uz kameru %1$s</string>
+    <string name="hint_camera_switch_single">Pieejama tikai viena kamera</string>
+    <string name="hint_camera_switch_failed">Neizdevās pārslēgt kameru</string>
+    <string name="camera_facing_back">Aizmugurējā kamera (%1$s)</string>
+    <string name="camera_facing_front">Priekšējā kamera (%1$s)</string>
+    <string name="camera_facing_other">Kamera %1$s</string>
+    <string name="dialog_select_camera">Izvēlieties kameru</string>
 </resources>

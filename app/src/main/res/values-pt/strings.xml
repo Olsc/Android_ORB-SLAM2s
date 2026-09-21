@@ -86,4 +86,15 @@
     <string name="icon_in_use">Em utilização</string>
     <string name="icon_switched_hint">Ícone da aplicação alterado para %s</string>
     <string name="icon_note">Nota: Em alguns inicializadores, a atualização pode demorar alguns segundos.</string>
+
+    <string name="btn_switch_camera">Mudar câmara</string>
+    <string name="hint_camera_switched_back">Alternado para a câmara traseira</string>
+    <string name="hint_camera_switched_front">Alternado para a câmara frontal</string>
+    <string name="hint_camera_switched_other">Alternado para a câmara %1$s</string>
+    <string name="hint_camera_switch_single">Apenas uma câmara disponível</string>
+    <string name="hint_camera_switch_failed">Falha ao mudar de câmara</string>
+    <string name="camera_facing_back">Câmara traseira (%1$s)</string>
+    <string name="camera_facing_front">Câmara frontal (%1$s)</string>
+    <string name="camera_facing_other">Câmara %1$s</string>
+    <string name="dialog_select_camera">Selecionar câmara</string>
 </resources>
