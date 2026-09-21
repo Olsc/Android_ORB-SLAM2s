@@ -67,7 +67,10 @@
     <string name="action_exit">Ukončiť</string>
 
     <string name="shortcut_map_manage">Xəritə idarəetməsi</string>
-    <string name="map_manage_stats">Cəmi %1$d xəritə (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="one">Cəmi %1$d xəritə (%2$s)</item>
+        <item quantity="other">Cəmi %1$d xəritə (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">Mapy uložené počas SLAM sa zobrazia tu.</string>
     <string name="map_details_path">Cesta: %1$s</string>
     <string name="map_action_refresh">Yenilə</string>
@@ -75,8 +78,9 @@
     <string name="shortcut_change_icon">İkonu dəyiş</string>
     <string name="icon_select_title">Tətbiq ikonu</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
-    <string name="icon_default_name">Klassik mavi</string>
-    <string name="icon_custom_name">Alovlu qırmızı</string>
+    <string name="icon_default_name">Texnoloji mavi</string>
+    <string name="icon_red_name">Cazibədar qırmızı</string>
+    <string name="icon_mint_name">Şirin nanə</string>
     <string name="icon_in_use">İstifadə olunur</string>
     <string name="icon_switched_hint">İkon %s olaraq dəyişdirildi</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>

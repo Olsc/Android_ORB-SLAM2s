@@ -46,6 +46,7 @@
     <string name="hint_map_loaded">Mapa načítaná: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="one">Учитана %1$d мапа</item>
+        <item quantity="few">Учитане %1$d мапе</item>
         <item quantity="other">Учитано %1$d мапа</item>
     </plurals>
     <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
@@ -67,7 +68,11 @@
     <string name="action_exit">Ukončiť</string>
 
     <string name="shortcut_map_manage">Управљање мапама</string>
-    <string name="map_manage_stats">Укупно %1$d мапа (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="one">Укупно %1$d мапа (%2$s)</item>
+        <item quantity="few">Укупно %1$d мапа (%2$s)</item>
+        <item quantity="other">Укупно %1$d мапа (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">Mapy uložené počas SLAM sa zobrazia tu.</string>
     <string name="map_details_path">Cesta: %1$s</string>
     <string name="map_action_refresh">Освежи</string>
@@ -75,8 +80,9 @@
     <string name="shortcut_change_icon">Промени икону</string>
     <string name="icon_select_title">Икона апликације</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
-    <string name="icon_default_name">Класична плава</string>
-    <string name="icon_custom_name">Ватрено црвена</string>
+    <string name="icon_default_name">Технолошка плава</string>
+    <string name="icon_red_name">Шармантна црвена</string>
+    <string name="icon_mint_name">Слатка нана</string>
     <string name="icon_in_use">У употреби</string>
     <string name="icon_switched_hint">Икона промењена у %s</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>

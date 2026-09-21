@@ -66,7 +66,9 @@
     <string name="action_exit">종료</string>
 
     <string name="shortcut_map_manage">지도 관리</string>
-    <string name="map_manage_stats">총 %1$d개 지도 (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="other">총 %1$d개 지도 (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">SLAM 실행 중 저장된 지도가 여기에 표시됩니다</string>
     <string name="map_details_path">파일 경로: %1$s</string>
     <string name="map_action_refresh">새로고침</string>
@@ -74,8 +76,9 @@
     <string name="shortcut_change_icon">아이콘 변경</string>
     <string name="icon_select_title">앱 아이콘</string>
     <string name="icon_select_desc">선호하는 앱 아이콘을 선택하세요. 홈 화면에서 길게 눌러 언제든지 변경할 수 있습니다.</string>
-    <string name="icon_default_name">클래식 블루</string>
-    <string name="icon_custom_name">플레임 레드</string>
+    <string name="icon_default_name">테크 블루</string>
+    <string name="icon_red_name">매혹적인 레드</string>
+    <string name="icon_mint_name">귀여운 민트</string>
     <string name="icon_in_use">사용 중</string>
     <string name="icon_switched_hint">앱 아이콘이 %s(으)로 변경되었습니다</string>
     <string name="icon_note">참고: 일부 런처에서는 홈 화면에 반영되는 데 몇 초 정도 걸릴 수 있습니다.</string>

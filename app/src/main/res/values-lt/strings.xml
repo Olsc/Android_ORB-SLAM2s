@@ -46,6 +46,8 @@
     <string name="hint_map_loaded">Mapa načítaná: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="one">Įkeltas %1$d žemėlapis</item>
+        <item quantity="few">Įkelti %1$d žemėlapiai</item>
+        <item quantity="many">Įkelto %1$d žemėlapio</item>
         <item quantity="other">Įkelta %1$d žemėlapių</item>
     </plurals>
     <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
@@ -67,7 +69,12 @@
     <string name="action_exit">Ukončiť</string>
 
     <string name="shortcut_map_manage">Žemėlapių valdymas</string>
-    <string name="map_manage_stats">Iš viso %1$d žemėlapiai (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="one">Iš viso %1$d žemėlapiai (%2$s)</item>
+        <item quantity="few">Iš viso %1$d žemėlapiai (%2$s)</item>
+        <item quantity="many">Iš viso %1$d žemėlapiai (%2$s)</item>
+        <item quantity="other">Iš viso %1$d žemėlapiai (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">Mapy uložené počas SLAM sa zobrazia tu.</string>
     <string name="map_details_path">Cesta: %1$s</string>
     <string name="map_action_refresh">Atnaujinti</string>
@@ -75,8 +82,9 @@
     <string name="shortcut_change_icon">Keisti piktogramą</string>
     <string name="icon_select_title">Programėlės piktograma</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
-    <string name="icon_default_name">Klasikinė mėlyna</string>
-    <string name="icon_custom_name">Liepsnojanti raudona</string>
+    <string name="icon_default_name">Technologiška mėlyna</string>
+    <string name="icon_red_name">Žavinti raudona</string>
+    <string name="icon_mint_name">Miela mėta</string>
     <string name="icon_in_use">Naudojama</string>
     <string name="icon_switched_hint">Piktograma pakeista į %s</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>

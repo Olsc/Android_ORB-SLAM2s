@@ -45,7 +45,6 @@
     <string name="hint_map_saved">Mapa uložená: %1$s</string>
     <string name="hint_map_loaded">Mapa načítaná: %1$s</string>
     <plurals name="hint_maps_loaded">
-        <item quantity="one">မြေပုံ %1$d ခု ဖွင့်ပြီးပါပြီ</item>
         <item quantity="other">မြေပုံ %1$d ခု ဖွင့်ပြီးပါပြီ</item>
     </plurals>
     <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
@@ -67,7 +66,9 @@
     <string name="action_exit">Ukončiť</string>
 
     <string name="shortcut_map_manage">မြေပုံစီမံရန်</string>
-    <string name="map_manage_stats">စုစုပေါင်း %1$d ခု (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="other">စုစုပေါင်း %1$d ခု (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">Mapy uložené počas SLAM sa zobrazia tu.</string>
     <string name="map_details_path">Cesta: %1$s</string>
     <string name="map_action_refresh">ပြန်လည်စတင်ရန်</string>
@@ -75,8 +76,9 @@
     <string name="shortcut_change_icon">အိုင်ကွန်ပြောင်းမည်</string>
     <string name="icon_select_title">အက်ပ်အိုင်ကွန်</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
-    <string name="icon_default_name">ဂန္တဝင်အပြာ</string>
-    <string name="icon_custom_name">မီးတောက်နီ</string>
+    <string name="icon_default_name">နည်းပညာအပြာ</string>
+    <string name="icon_red_name">ဆွဲဆောင်မှုရှိသောအနီ</string>
+    <string name="icon_mint_name">ချစ်စရာပူစီနံ</string>
     <string name="icon_in_use">အသုံးပြုနေသည်</string>
     <string name="icon_switched_hint">အိုင်ကွန်ကို %s သို့ ပြောင်းပြီးပါပြီ</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>

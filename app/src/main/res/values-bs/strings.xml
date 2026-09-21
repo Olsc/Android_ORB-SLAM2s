@@ -46,6 +46,7 @@
     <string name="hint_map_loaded">Mapa načítaná: %1$s</string>
     <plurals name="hint_maps_loaded">
         <item quantity="one">Učitana %1$d karta</item>
+        <item quantity="few">Učitane %1$d karte</item>
         <item quantity="other">Učitano %1$d karata</item>
     </plurals>
     <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
@@ -67,7 +68,11 @@
     <string name="action_exit">Ukončiť</string>
 
     <string name="shortcut_map_manage">Upravljanje kartama</string>
-    <string name="map_manage_stats">Ukupno %1$d karata (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="one">Ukupno %1$d karata (%2$s)</item>
+        <item quantity="few">Ukupno %1$d karata (%2$s)</item>
+        <item quantity="other">Ukupno %1$d karata (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">Mapy uložené počas SLAM sa zobrazia tu.</string>
     <string name="map_details_path">Cesta: %1$s</string>
     <string name="map_action_refresh">Osvježi</string>
@@ -75,8 +80,9 @@
     <string name="shortcut_change_icon">Promijeni ikonu</string>
     <string name="icon_select_title">Ikona aplikacije</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
-    <string name="icon_default_name">Klasična plava</string>
-    <string name="icon_custom_name">Vatreno crvena</string>
+    <string name="icon_default_name">Tehnološka plava</string>
+    <string name="icon_red_name">Šarmantna crvena</string>
+    <string name="icon_mint_name">Slatka menta</string>
     <string name="icon_in_use">U upotrebi</string>
     <string name="icon_switched_hint">Ikona promijenjena u %s</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>

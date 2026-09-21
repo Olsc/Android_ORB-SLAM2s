@@ -207,13 +207,6 @@ public class CameraPreviewView extends AspectGLSurfaceView {
         return 0;
     }
 
-    public int getCameraCount() {
-        if (mCameraCount < 0) {
-            mCameraCount = getDeviceCameraCount(getContext());
-        }
-        return mCameraCount;
-    }
-
     private void connectCamera() {
         mCameraCount = getDeviceCameraCount(getContext());
         Log.i(TAG, "自动检测设备相机数量: " + mCameraCount);

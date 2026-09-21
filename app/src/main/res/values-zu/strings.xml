@@ -67,7 +67,10 @@
     <string name="action_exit">Ukončiť</string>
 
     <string name="shortcut_map_manage">Phatha amamephu</string>
-    <string name="map_manage_stats">Ingqikithi %1$d yamamephu (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="one">Ingqikithi %1$d yamamephu (%2$s)</item>
+        <item quantity="other">Ingqikithi %1$d yamamephu (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">Mapy uložené počas SLAM sa zobrazia tu.</string>
     <string name="map_details_path">Cesta: %1$s</string>
     <string name="map_action_refresh">Vuselela</string>
@@ -75,8 +78,9 @@
     <string name="shortcut_change_icon">Shintsha isithonjana</string>
     <string name="icon_select_title">Isithonjana sohlelo lokusebenza</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
-    <string name="icon_default_name">Okuluhlaza okwesibhakabhaka</string>
-    <string name="icon_custom_name">Okubomvu komlilo</string>
+    <string name="icon_default_name">Okuluhlaza Kwetheknoloji</string>
+    <string name="icon_red_name">Okubomvu Okukhangayo</string>
+    <string name="icon_mint_name">Iminti Enesihle</string>
     <string name="icon_in_use">Kuyasetshenziswa</string>
     <string name="icon_switched_hint">Isithonjana sishintshwe saba ngu-%s</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>

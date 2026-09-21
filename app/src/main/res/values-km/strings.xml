@@ -45,7 +45,6 @@
     <string name="hint_map_saved">Mapa uložená: %1$s</string>
     <string name="hint_map_loaded">Mapa načítaná: %1$s</string>
     <plurals name="hint_maps_loaded">
-        <item quantity="one">បានផ្ទុកផែនទី %1$d</item>
         <item quantity="other">បានផ្ទុកផែនទី %1$d</item>
     </plurals>
     <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
@@ -67,7 +66,9 @@
     <string name="action_exit">Ukončiť</string>
 
     <string name="shortcut_map_manage">គ្រប់គ្រងផែនទី</string>
-    <string name="map_manage_stats">សរុប %1$d ផែនទី (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="other">សរុប %1$d ផែនទី (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">Mapy uložené počas SLAM sa zobrazia tu.</string>
     <string name="map_details_path">Cesta: %1$s</string>
     <string name="map_action_refresh">ផ្ទុកឡើងវិញ</string>
@@ -75,8 +76,9 @@
     <string name="shortcut_change_icon">ប្តូររូបតំណាង</string>
     <string name="icon_select_title">រូបតំណាងកម្មវិធី</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
-    <string name="icon_default_name">ខៀវបុរាណ</string>
-    <string name="icon_custom_name">ក្រហមភ្លើង</string>
+    <string name="icon_default_name">ខៀវបច្ចេកវិទ្យា</string>
+    <string name="icon_red_name">ក្រហមទាក់ទាញ</string>
+    <string name="icon_mint_name">មីនត៍គួរស្រលាញ់</string>
     <string name="icon_in_use">កំពុងប្រើ</string>
     <string name="icon_switched_hint">បានប្តូររូបតំណាងទៅ %s</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>

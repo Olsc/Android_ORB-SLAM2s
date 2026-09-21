@@ -67,7 +67,10 @@
     <string name="action_exit">Ukončiť</string>
 
     <string name="shortcut_map_manage">რუკების მართვა</string>
-    <string name="map_manage_stats">სულ %1$d რუკა (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="one">სულ %1$d რუკა (%2$s)</item>
+        <item quantity="other">სულ %1$d რუკა (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">Mapy uložené počas SLAM sa zobrazia tu.</string>
     <string name="map_details_path">Cesta: %1$s</string>
     <string name="map_action_refresh">განახლება</string>
@@ -75,8 +78,9 @@
     <string name="shortcut_change_icon">ხატულას შეცვლა</string>
     <string name="icon_select_title">აპლიკაციის ხატულა</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
-    <string name="icon_default_name">კლასიკური ლურჯი</string>
-    <string name="icon_custom_name">ცეცხლოვანი წითელი</string>
+    <string name="icon_default_name">ტექნოლოგიური ლურჯი</string>
+    <string name="icon_red_name">მომხიბვლელი წითელი</string>
+    <string name="icon_mint_name">საყვარელი პიტნა</string>
     <string name="icon_in_use">გამოიყენება</string>
     <string name="icon_switched_hint">ხატულა შეიცვალა: %s</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>

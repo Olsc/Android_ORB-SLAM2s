@@ -67,7 +67,10 @@
     <string name="action_exit">Avslutt</string>
 
     <string name="shortcut_map_manage">Kartstyring</string>
-    <string name="map_manage_stats">Totalt %1$d kart (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="one">Totalt %1$d kart (%2$s)</item>
+        <item quantity="other">Totalt %1$d kart (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">Kart lagret under SLAM vil vises her.</string>
     <string name="map_details_path">Filbane: %1$s</string>
     <string name="map_action_refresh">Oppdater</string>
@@ -75,8 +78,9 @@
     <string name="shortcut_change_icon">Endre ikon</string>
     <string name="icon_select_title">Appikon</string>
     <string name="icon_select_desc">Velg ønsket appikon. Trykk lenge på startskjermen for å endre når som helst.</string>
-    <string name="icon_default_name">Klassisk blå</string>
-    <string name="icon_custom_name">Flammerød</string>
+    <string name="icon_default_name">Teknologiblå</string>
+    <string name="icon_red_name">Sjarmerende rød</string>
+    <string name="icon_mint_name">Søt mynte</string>
     <string name="icon_in_use">I bruk</string>
     <string name="icon_switched_hint">Appikon endret til %s</string>
     <string name="icon_note">Merk: På enkelte startere kan det ta noen sekunder å oppdatere på startskjermen.</string>

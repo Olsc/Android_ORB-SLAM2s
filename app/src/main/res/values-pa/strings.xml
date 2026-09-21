@@ -67,7 +67,10 @@
     <string name="action_exit">ਬਾਹਰ ਜਾਓ</string>
 
     <string name="shortcut_map_manage">ਨਕਸ਼ਾ ਪ੍ਰਬੰਧਨ</string>
-    <string name="map_manage_stats">ਕੁੱਲ %1$d ਨਕਸ਼ੇ (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="one">ਕੁੱਲ %1$d ਨਕਸ਼ੇ (%2$s)</item>
+        <item quantity="other">ਕੁੱਲ %1$d ਨਕਸ਼ੇ (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">SLAM ਦੌਰਾਨ ਸੰਭਾਲੇ ਗਏ ਨਕਸ਼ੇ ਇੱਥੇ ਦਿਖਾਈ ਦੇਣਗੇ।</string>
     <string name="map_details_path">ਫ਼ਾਈਲ ਮਾਰਗ: %1$s</string>
     <string name="map_action_refresh">ਤਾਜ਼ਾ ਕਰੋ</string>
@@ -75,8 +78,9 @@
     <string name="shortcut_change_icon">ਆਈਕਨ ਬਦਲੋ</string>
     <string name="icon_select_title">ਐਪ ਆਈਕਨ</string>
     <string name="icon_select_desc">ਆਪਣਾ ਪਸੰਦੀਦਾ ਐਪ ਆਈਕਨ ਚੁਣੋ। ਬਦਲਣ ਲਈ ਹੋਮ ਸਕ੍ਰੀਨ ਤੇ ਲੰਮਾ ਸਮਾਂ ਦਬਾਓ।</string>
-    <string name="icon_default_name">ਕਲਾਸਿਕ ਨੀਲਾ</string>
-    <string name="icon_custom_name">ਲਾਟ ਲਾਲ</string>
+    <string name="icon_default_name">ਟੈਕ ਨੀਲਾ</string>
+    <string name="icon_red_name">ਮੋਹਕ ਲਾਲ</string>
+    <string name="icon_mint_name">ਕਿਊਟ ਮਿੰਟ</string>
     <string name="icon_in_use">ਵਰਤੋਂ ਵਿੱਚ</string>
     <string name="icon_switched_hint">ਐਪ ਆਈਕਨ %s ਵਿੱਚ ਬਦਲਿਆ ਗਿਆ</string>
     <string name="icon_note">ਨੋਟ: ਕੁਝ ਲਾਂਚਰਾਂ ਤੇ ਹੋਮ ਸਕ੍ਰੀਨ ਤੇ ਅੱਪਡੇਟ ਹੋਣ ਵਿੱਚ ਕੁਝ ਸਕਿੰਟ ਲੱਗ ਸਕਦੇ ਹਨ।</string>

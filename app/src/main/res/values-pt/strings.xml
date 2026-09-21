@@ -68,7 +68,11 @@
     <string name="action_exit">Sair</string>
 
     <string name="shortcut_map_manage">Gestão de mapas</string>
-    <string name="map_manage_stats">Total %1$d mapas (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="one">Total %1$d mapas (%2$s)</item>
+        <item quantity="many">Total %1$d mapas (%2$s)</item>
+        <item quantity="other">Total %1$d mapas (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">Os mapas guardados durante o SLAM aparecerão aqui.</string>
     <string name="map_details_path">Caminho do ficheiro: %1$s</string>
     <string name="map_action_refresh">Atualizar</string>
@@ -76,8 +80,9 @@
     <string name="shortcut_change_icon">Mudar ícone</string>
     <string name="icon_select_title">Ícone da aplicação</string>
     <string name="icon_select_desc">Selecione o ícone de aplicação preferido. Prima continuamente no ecrã inicial para alterar a qualquer momento.</string>
-    <string name="icon_default_name">Azul clássico</string>
-    <string name="icon_custom_name">Vermelho chama</string>
+    <string name="icon_default_name">Azul tecnológico</string>
+    <string name="icon_red_name">Vermelho encantador</string>
+    <string name="icon_mint_name">Menta fofa</string>
     <string name="icon_in_use">Em utilização</string>
     <string name="icon_switched_hint">Ícone da aplicação alterado para %s</string>
     <string name="icon_note">Nota: Em alguns inicializadores, a atualização pode demorar alguns segundos.</string>

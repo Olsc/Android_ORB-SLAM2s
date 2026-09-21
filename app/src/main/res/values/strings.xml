@@ -67,7 +67,10 @@
     <string name="action_exit">Exit</string>
 
     <string name="shortcut_map_manage">Map Management</string>
-    <string name="map_manage_stats">Total %1$d maps (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="one">Total %1$d map (%2$s)</item>
+        <item quantity="other">Total %1$d maps (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">Maps saved during SLAM will appear here.</string>
     <string name="map_details_path">File Path: %1$s</string>
     <string name="map_action_refresh">Refresh</string>
@@ -75,8 +78,9 @@
     <string name="shortcut_change_icon">Change Icon</string>
     <string name="icon_select_title">App Icon</string>
     <string name="icon_select_desc">Select your preferred app icon. Long press on home screen to change anytime.</string>
-    <string name="icon_default_name">Classic Blue</string>
-    <string name="icon_custom_name">Flame Red</string>
+    <string name="icon_default_name">Tech Blue</string>
+    <string name="icon_red_name">Charming Red</string>
+    <string name="icon_mint_name">Cute Mint</string>
     <string name="icon_in_use">In Use</string>
     <string name="icon_switched_hint">App icon updated to %s</string>
     <string name="icon_note">Note: Some launchers may take a few seconds to refresh.</string>

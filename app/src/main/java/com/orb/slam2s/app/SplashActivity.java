@@ -38,6 +38,7 @@ import com.orb.slam2s.R;
 import com.orb.slam2s.ui.IconSelectActivity;
 import com.orb.slam2s.ui.MainActivity;
 import com.orb.slam2s.ui.MapManageActivity;
+import com.orb.slam2s.util.IconManager;
 
 // SplashActivity：启动权限检查与主界面分发
 // 该 Activity 承担权限检查与分发逻辑（非纯启动图），不采用 Android 12+ SplashScreen API
@@ -50,6 +51,8 @@ public class SplashActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        // 启动时自检桌面图标组件状态，避免出现“桌面上找不到图标”的情况
+        IconManager.ensureLauncherIcon(this);
         setupDynamicShortcuts();
         if (checkPermission()) {
             launchMainActivity();

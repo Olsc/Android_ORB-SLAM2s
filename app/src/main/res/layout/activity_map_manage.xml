@@ -3,10 +3,8 @@
     android:id="@+id/root_map_manage_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FF0D111A"
     android:orientation="vertical">
 
-    <!-- Top App Bar -->
     <LinearLayout
         android:id="@+id/top_bar"
         android:layout_width="match_parent"
@@ -46,7 +44,6 @@
             android:src="@drawable/ic_refresh" />
     </LinearLayout>
 
-    <!-- Storage Info Card -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -76,7 +73,6 @@
             android:singleLine="false" />
     </LinearLayout>
 
-    <!-- Main List & Empty State Container -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -91,7 +87,6 @@
             android:paddingBottom="16dp"
             android:scrollbars="vertical" />
 
-        <!-- Empty State View -->
         <LinearLayout
             android:id="@+id/layout_empty"
             android:layout_width="match_parent"

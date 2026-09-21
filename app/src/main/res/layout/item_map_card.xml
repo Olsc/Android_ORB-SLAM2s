@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginStart="16dp"
@@ -22,7 +23,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Map_Default"
+            tools:text="Map_Default"
             android:textColor="#FFFFFFFF"
             android:textSize="17sp"
             android:textStyle="bold"
@@ -34,7 +35,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
-            android:text="1.2 MB"
+            tools:text="1.2 MB"
             android:textColor="#FF64B5F6"
             android:textSize="14sp"
             android:textStyle="bold" />
@@ -56,7 +57,7 @@
             android:paddingEnd="8dp"
             android:paddingTop="4dp"
             android:paddingBottom="4dp"
-            android:text="关键帧: 120"
+            tools:text="关键帧: 120"
             android:textColor="#FFB0BEC5"
             android:textSize="12sp" />
 
@@ -70,7 +71,7 @@
             android:paddingEnd="8dp"
             android:paddingTop="4dp"
             android:paddingBottom="4dp"
-            android:text="地图点: 1540"
+            tools:text="地图点: 1540"
             android:textColor="#FFB0BEC5"
             android:textSize="12sp" />
 
@@ -84,7 +85,7 @@
             android:paddingEnd="8dp"
             android:paddingTop="4dp"
             android:paddingBottom="4dp"
-            android:text="平面: 包含"
+            tools:text="平面: 包含"
             android:textColor="#FF81C784"
             android:textSize="12sp" />
     </LinearLayout>
@@ -102,7 +103,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="2026-09-18 16:30:00"
+            tools:text="2026-09-18 16:30:00"
             android:textColor="#FF78909C"
             android:textSize="12sp" />
 

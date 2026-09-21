@@ -45,7 +45,6 @@
     <string name="hint_map_saved">Mapa uložená: %1$s</string>
     <string name="hint_map_loaded">Mapa načítaná: %1$s</string>
     <plurals name="hint_maps_loaded">
-        <item quantity="one">ໂຫຼດແຜນທີ່ %1$d ແລ້ວ</item>
         <item quantity="other">ໂຫຼດແຜນທີ່ %1$d ແລ້ວ</item>
     </plurals>
     <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
@@ -67,7 +66,9 @@
     <string name="action_exit">Ukončiť</string>
 
     <string name="shortcut_map_manage">ຈັດການແຜນທີ່</string>
-    <string name="map_manage_stats">ທັງໝົດ %1$d ແຜນທີ່ (%2$s)</string>
+    <plurals name="map_manage_stats">
+        <item quantity="other">ທັງໝົດ %1$d ແຜນທີ່ (%2$s)</item>
+    </plurals>
     <string name="map_manage_empty_desc">Mapy uložené počas SLAM sa zobrazia tu.</string>
     <string name="map_details_path">Cesta: %1$s</string>
     <string name="map_action_refresh">ໂຫຼດຄືນໃໝ່</string>
@@ -75,8 +76,9 @@
     <string name="shortcut_change_icon">ປ່ຽນໄອຄອນ</string>
     <string name="icon_select_title">ໄອຄອນແອັບ</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
-    <string name="icon_default_name">ສີຟ້າຄລາດສິກ</string>
-    <string name="icon_custom_name">ສີແດງເພີງ</string>
+    <string name="icon_default_name">ສີຟ້າເຕັກໂນໂລຊີ</string>
+    <string name="icon_red_name">ສີແດງເສດສະໜຸ</string>
+    <string name="icon_mint_name">ສະໝຸນໄພໜ້າຮັກ</string>
     <string name="icon_in_use">ກຳລັງໃຊ້ງານ</string>
     <string name="icon_switched_hint">ປ່ຽນໄອຄອນເປັນ %s ແລ້ວ</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>

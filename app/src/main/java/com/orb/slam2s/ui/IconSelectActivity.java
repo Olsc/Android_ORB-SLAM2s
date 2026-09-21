@@ -16,8 +16,11 @@
 package com.orb.slam2s.ui;
 
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -32,15 +35,27 @@ import androidx.core.view.WindowInsetsCompat;
 import com.orb.slam2s.R;
 import com.orb.slam2s.util.IconManager;
 
-// 桌面图标选择 Activity：提供经典蓝与烈焰红两款图标的切换交互
+import java.util.ArrayList;
+import java.util.List;
+
+// 桌面图标选择 Activity：根据 IconManager 中登记的图标选项动态生成切换卡片，
+// 新增图标无需修改本类，只需在 IconManager.OPTIONS 中追加配置即可。
 public class IconSelectActivity extends AppCompatActivity {
 
-    private View mCardDefault;
-    private View mCardCustom;
-    private RadioButton mRbDefault;
-    private RadioButton mRbCustom;
-    private TextView mTvBadgeDefault;
-    private TextView mTvBadgeCustom;
+    // 单个图标选项对应的视图引用
+    private static final class OptionViewHolder {
+        final IconManager.IconOption option;
+        final RadioButton radio;
+        final TextView badge;
+
+        OptionViewHolder(IconManager.IconOption option, RadioButton radio, TextView badge) {
+            this.option = option;
+            this.radio = radio;
+            this.badge = badge;
+        }
+    }
+
+    private final List<OptionViewHolder> mOptionViews = new ArrayList<>();
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -69,17 +84,25 @@ public class IconSelectActivity extends AppCompatActivity {
 
     private void initViews() {
         ImageButton btnBack = findViewById(R.id.btn_back);
-        mCardDefault = findViewById(R.id.card_icon_default);
-        mCardCustom = findViewById(R.id.card_icon_custom);
-        mRbDefault = findViewById(R.id.rb_default);
-        mRbCustom = findViewById(R.id.rb_custom);
-        mTvBadgeDefault = findViewById(R.id.tv_badge_default);
-        mTvBadgeCustom = findViewById(R.id.tv_badge_custom);
-
         btnBack.setOnClickListener(v -> finish());
 
-        mCardDefault.setOnClickListener(v -> applyIcon(IconManager.IconType.DEFAULT));
-        mCardCustom.setOnClickListener(v -> applyIcon(IconManager.IconType.CUSTOM));
+        LinearLayout container = findViewById(R.id.icon_options_container);
+        LayoutInflater inflater = LayoutInflater.from(this);
+        for (IconManager.IconOption option : IconManager.getOptions()) {
+            View card = inflater.inflate(R.layout.item_icon_option, container, false);
+
+            ImageView preview = card.findViewById(R.id.iv_icon_preview);
+            TextView name = card.findViewById(R.id.tv_icon_name);
+            TextView badge = card.findViewById(R.id.tv_icon_badge);
+            RadioButton radio = card.findViewById(R.id.rb_icon);
+
+            preview.setImageResource(option.previewRes);
+            name.setText(option.nameRes);
+            card.setOnClickListener(v -> applyIcon(option.type));
+
+            container.addView(card);
+            mOptionViews.add(new OptionViewHolder(option, radio, badge));
+        }
     }
 
     private void applyIcon(IconManager.IconType targetType) {
@@ -90,20 +113,16 @@ public class IconSelectActivity extends AppCompatActivity {
         boolean success = IconManager.switchIcon(this, targetType);
         if (success) {
             updateSelectionUI(targetType);
-            String name = (targetType == IconManager.IconType.DEFAULT)
-                    ? getString(R.string.icon_default_name)
-                    : getString(R.string.icon_custom_name);
+            String name = getString(IconManager.getOption(targetType).nameRes);
             Toast.makeText(this, getString(R.string.icon_switched_hint, name), Toast.LENGTH_SHORT).show();
         }
     }
 
     private void updateSelectionUI(IconManager.IconType currentType) {
-        boolean isDefault = (currentType == IconManager.IconType.DEFAULT);
-
-        mRbDefault.setChecked(isDefault);
-        mRbCustom.setChecked(!isDefault);
-
-        mTvBadgeDefault.setVisibility(isDefault ? View.VISIBLE : View.GONE);
-        mTvBadgeCustom.setVisibility(!isDefault ? View.VISIBLE : View.GONE);
+        for (OptionViewHolder holder : mOptionViews) {
+            boolean selected = (holder.option.type == currentType);
+            holder.radio.setChecked(selected);
+            holder.badge.setVisibility(selected ? View.VISIBLE : View.GONE);
+        }
     }
 }
