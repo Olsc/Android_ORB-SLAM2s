@@ -23,7 +23,7 @@ public final class DeviceCompat {
 
     private DeviceCompat() {}
 
-    // 当前设备是否为非 Rokid RG-glasses（所有调用方均使用取反语义，故按检查建议反转命名）
+    // 当前设备是否为非 Rokid RG-glasses
     public static boolean isNotRokidGlasses() {
         if (sIsRokidGlasses != null) {
             return !sIsRokidGlasses;

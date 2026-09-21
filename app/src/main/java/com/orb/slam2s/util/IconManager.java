@@ -31,8 +31,7 @@ import java.util.Collections;
 import java.util.List;
 
 // 桌面图标管理工具类：基于 activity-alias 动态切换桌面应用图标。
-// 图标以 IconOption 列表集中登记，新增一款图标只需在 OPTIONS 中追加一项，
-// 并在 AndroidManifest 中声明对应的 activity-alias 即可，无需改动界面逻辑。
+// 图标集中在 OPTIONS 中登记，新增图标只需追加配置并声明对应 alias。
 public class IconManager {
     private static final String TAG = "IconManager";
     private static final String PREFS_NAME = "icon_settings";

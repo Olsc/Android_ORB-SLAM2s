@@ -54,7 +54,7 @@ public class SharedMemoryBuffer {
     public static final int OFF_POINTCLOUD_BYTES = 32;
     public static final int OFF_MVP = 40;   // 48 floats = 192 字节
 
-    // 点云区上限（3000 点 × 7 floats × 4B = 84000，取 96KB 对齐）
+    // 点云区上限（3000 点，每点 7 个 float，每个 4B，共 84000，取 96KB 对齐）
     public static final int POINTCLOUD_MAX_BYTES = 96 * 1024;
 
     private SharedMemory sharedMemory;

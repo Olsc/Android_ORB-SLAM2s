@@ -234,7 +234,7 @@ public class SlamService extends Service {
         super.onDestroy();
         Log.d(TAG, "SlamService onDestroy: 停止处理线程并释放 SLAM 系统");
         stopSlamThread();
-        // 服务进程销毁时依次：停帧处理 → shutdownSLAM（join 工作线程）→ detach 共享内存，
+        // 服务进程销毁时依次执行：停帧处理、shutdownSLAM（join 工作线程）、detach 共享内存，
         // 确保三条常驻线程（LM/LC/GlobalReloc）全部释放，避免内存泄漏与 mmap 残留
         if (nativeHelper != null) {
             nativeHelper.shutdownSLAM();

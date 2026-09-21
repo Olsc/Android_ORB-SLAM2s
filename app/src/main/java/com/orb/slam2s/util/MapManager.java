@@ -45,7 +45,6 @@ public class MapManager {
         }
     }
 
-
     public boolean deleteMap(String mapName) {
         try {
             File mapFile = new File(mMapDirectory, mapName + ".bin");
