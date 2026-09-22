@@ -1,17 +1,6 @@
 # MenthaAR PS Vita
 
-MenthaAR 的 PlayStation Vita 版本。它运行的是**同一套未经修改的 ORB-SLAM2 / MenthaAR
-单目 SLAM 引擎**（`../../src` + `../../include`），前端接入方式与
-`Thirdparty_Platforms/ubuntu/main.cpp` 一致：
-
-```
-Config.h 内参  →  ORB_SLAM2::System("", MONOCULAR)  →  TrackMonocular()
-              →  GetTrackingState() / GetTrackedMapPoints() / GetAllMapPoints()
-              →  SaveMap() / LoadMap()
-```
-
-与原项目的其它平台（Android / Ubuntu / Windows）**共享同一份引擎源码**，构建本目录
-不会修改仓库里的任何原文件。
+MenthaAR 的 PlayStation Vita 版本（实验性）。
 
 ---
 
@@ -97,26 +86,6 @@ VitaSDK 不提供 OpenCV。本移植通过以下方式让**原引擎源码零改
 
 4. **构建脚本** 用 `-Wl,--start-group … --end-group` 解决 OpenCV / g2o 静态库
    之间的循环依赖。
-
----
-
-## 🗂️ 目录结构
-
-```
-psvita/
-├── CMakeLists.txt                 # Vita 构建（编译引擎 + 链接 + 打包 vpk）
-├── Readme.md
-├── src/
-│   ├── main.cpp                   # Vita 前端（对应 ubuntu/main.cpp）
-│   ├── camera.{h,cpp}             # SceCamera 封装（640×360 ABGR）
-│   ├── renderer.{h,cpp}           # 软件叠加层 + 8×8 HUD 文字
-│   ├── pointcloud.{h,cpp}         # 点云容器（renderer 依赖）
-│   ├── math3d.h, config.h         # 轻量 3D 数学 / Vita 端常量
-│   └── font_data.c, font.h        # 8×8 位图字体（取自 VitaSDK samples，BSD）
-├── compat/                        # calib3d + vasprintf 兼容层（见上）
-├── thirdparty/libopencv4/         # 社区 mini OpenCV（git 子模块，构建时注入头文件修复）
-└── sce_sys/                       # LiveArea（icon0/pic0/bg/startup/template）
-```
 
 ---
 
