@@ -79,7 +79,7 @@
     <string name="icon_select_title">Appikon</string>
     <string name="icon_select_desc">Velg ønsket appikon. Trykk lenge på startskjermen for å endre når som helst.</string>
     <string name="icon_default_name">Teknologiblå</string>
-    <string name="icon_red_name">Sjarmerende rød</string>
+    <string name="icon_red_name">Flammende rød</string>
     <string name="icon_mint_name">Søt mynte</string>
     <string name="icon_in_use">I bruk</string>
     <string name="icon_switched_hint">Appikon endret til %s</string>

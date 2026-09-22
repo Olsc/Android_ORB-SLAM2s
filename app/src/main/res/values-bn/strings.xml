@@ -79,7 +79,7 @@
     <string name="icon_select_title">অ্যাপ আইকন</string>
     <string name="icon_select_desc">আপনার পছন্দের অ্যাপ আইকন নির্বাচন করুন। পরিবর্তন করতে হোম স্ক্রিনে দীর্ঘক্ষণ চাপুন।</string>
     <string name="icon_default_name">টেক ব্লু</string>
-    <string name="icon_red_name">কমনীয় লাল</string>
+    <string name="icon_red_name">অগ্নিশিখা লাল</string>
     <string name="icon_mint_name">কিউট মিন্ট</string>
     <string name="icon_in_use">ব্যবহৃত হচ্ছে</string>
     <string name="icon_switched_hint">অ্যাপ আইকন %s এ পরিবর্তন করা হয়েছে</string>

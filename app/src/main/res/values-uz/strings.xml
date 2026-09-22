@@ -79,7 +79,7 @@
     <string name="icon_select_title">Ilova belgisi</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
     <string name="icon_default_name">"Texnologik ko'k"</string>
-    <string name="icon_red_name">Maftunkor qizil</string>
+    <string name="icon_red_name">Olov qizil</string>
     <string name="icon_mint_name">Shirin yalpiz</string>
     <string name="icon_in_use">Ishlatilmoqda</string>
     <string name="icon_switched_hint">"Belgi %s ga o'zgartirildi"</string>

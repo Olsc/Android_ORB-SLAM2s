@@ -83,7 +83,7 @@
     <string name="icon_select_title">Ikona aplikacije</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
     <string name="icon_default_name">Tehnološka modra</string>
-    <string name="icon_red_name">Očarljiva rdeča</string>
+    <string name="icon_red_name">Ognjeno rdeča</string>
     <string name="icon_mint_name">Ljubka meta</string>
     <string name="icon_in_use">V uporabi</string>
     <string name="icon_switched_hint">Ikona spremenjena v %s</string>

@@ -81,7 +81,7 @@
     <string name="icon_select_title">Ícone do aplicativo</string>
     <string name="icon_select_desc">Selecione seu ícone de aplicativo favorito. Pressione e segure na tela inicial para alterar a qualquer momento.</string>
     <string name="icon_default_name">Azul tecnológico</string>
-    <string name="icon_red_name">Vermelho encantador</string>
+    <string name="icon_red_name">Vermelho chama</string>
     <string name="icon_mint_name">Menta fofa</string>
     <string name="icon_in_use">Em uso</string>
     <string name="icon_switched_hint">Ícone do aplicativo alterado para %s</string>

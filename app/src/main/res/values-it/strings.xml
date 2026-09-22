@@ -81,7 +81,7 @@
     <string name="icon_select_title">"Icona dell'app"</string>
     <string name="icon_select_desc">Scegli la tua icona preferita. Tieni premuto sulla schermata iniziale per cambiarla in qualsiasi momento.</string>
     <string name="icon_default_name">Blu tecnologico</string>
-    <string name="icon_red_name">Rosso affascinante</string>
+    <string name="icon_red_name">Rosso fiamma</string>
     <string name="icon_mint_name">Menta carina</string>
     <string name="icon_in_use">In uso</string>
     <string name="icon_switched_hint">"Icona dell'app aggiornata a %s"</string>

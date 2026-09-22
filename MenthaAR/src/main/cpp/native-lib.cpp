@@ -498,12 +498,15 @@ Java_com_orb_slam2s_slamar_NativeHelper_initSLAM(JNIEnv* env, jobject instance, 
 {
     const char* path = env->GetStringUTFChars(path_, nullptr);
 
-    if (slamInitialized) return;
+    if (slamInitialized) {
+        if (path) env->ReleaseStringUTFChars(path_, path);
+        return;
+    }
 
     slamInitialized = true;
-    modelPath = path;
+    modelPath = path ? path : "";
 
-    env->ReleaseStringUTFChars(path_, path);
+    if (path) env->ReleaseStringUTFChars(path_, path);
 
     fx = ORB_SLAM2::CAMERA_FX;
     fy = ORB_SLAM2::CAMERA_FY;
@@ -521,7 +524,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_initSLAM(JNIEnv* env, jobject instance, 
 
     timeStamp = 0.0;
 
-    VT_PROFILE_INITIALIZE(std::string(path) + "/mentha_profile.bin");
+    VT_PROFILE_INITIALIZE(modelPath + "/mentha_profile.bin");
     LOGD("Create SLAM System...");
     // 进程亲和性诊断：SLAM 独立进程（:slam_process）可能被分配受限 cpuset，
     // 启动时打印可用核数便于排查调度受限问题

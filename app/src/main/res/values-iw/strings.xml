@@ -81,7 +81,7 @@
     <string name="icon_select_title">סמל האפליקציה</string>
     <string name="icon_select_desc">בחר את סמל האפליקציה המועדף עליך. לחץ לחיצה ארוכה במסך הבית לשינוי בכל עת.</string>
     <string name="icon_default_name">כחול טכנולוגי</string>
-    <string name="icon_red_name">אדום מקסים</string>
+    <string name="icon_red_name">אדום להבה</string>
     <string name="icon_mint_name">נענע חמודה</string>
     <string name="icon_in_use">בשימוש</string>
     <string name="icon_switched_hint">סמל האפליקציה שונה ל-%s</string>

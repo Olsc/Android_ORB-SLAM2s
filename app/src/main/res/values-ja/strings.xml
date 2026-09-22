@@ -77,7 +77,7 @@
     <string name="icon_select_title">アプリアイコン</string>
     <string name="icon_select_desc">お好みのアプリアイコンを選択してください。ホーム画面で長押ししていつでも変更できます。</string>
     <string name="icon_default_name">テックブルー</string>
-    <string name="icon_red_name">チャーミングレッド</string>
+    <string name="icon_red_name">フレイムレッド</string>
     <string name="icon_mint_name">キュートミント</string>
     <string name="icon_in_use">使用中</string>
     <string name="icon_switched_hint">アプリアイコンを %s に変更しました</string>

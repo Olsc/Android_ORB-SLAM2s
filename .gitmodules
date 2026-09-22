@@ -4,3 +4,6 @@
 [submodule "app/src/main/cpp/Thirdparty/cgltf"]
 	path = app/src/main/cpp/Thirdparty/cgltf
 	url = https://github.com/jkuhlmann/cgltf.git
+[submodule "MenthaAR/src/main/cpp/Thirdparty_Platforms/psvita/thirdparty/libopencv4"]
+	path = MenthaAR/src/main/cpp/Thirdparty_Platforms/psvita/thirdparty/libopencv4
+	url = https://github.com/dejavulife/libopencv4.git

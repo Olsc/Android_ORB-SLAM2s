@@ -95,14 +95,15 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 
 В настоящее время в основном тестируется на процессорах Qualcomm Snapdragon：
 
-| SoC                  | Устройство    | Производительность |
-| -------------------- | ------------- | ------------------ |
-| Snapdragon 8 Elite   | Xiaomi 15     | 30 FPS             |
-| Snapdragon 8+ Gen1   | Redmi K60     | 30 FPS             |
-| Snapdragon 870       | Xiaomi 10S    | 30 FPS             |
-| Snapdragon 7s Gen 2  | Redmi Pad Pro | 30 FPS             |
-| Snapdragon 835       | Xiaomi 6      | 30 FPS          |
-| Snapdragon AR1 Gen 1 | Rokid Glass3  | 20–30 FPS          |
+| SoC                  | Устройство        | Производительность |
+| -------------------- | ----------------- | ------------------ |
+| Snapdragon 8 Elite   | Xiaomi 15         | 30 FPS             |
+| Snapdragon 8+ Gen1   | Redmi K60         | 30 FPS             |
+| Snapdragon 870       | Xiaomi 10S        | 30 FPS             |
+| Snapdragon 7s Gen 2  | Redmi Pad Pro     | 30 FPS             |
+| Snapdragon 6s Gen 2  | Redmi Pad 2 SE 4G | 30 FPS             |
+| Snapdragon 835       | Xiaomi 6          | 30 FPS             |
+| Snapdragon AR1 Gen 1 | Rokid Glass3      | 20–30 FPS          |
 
 ### 🌑 Обнаружение темных кадров
 

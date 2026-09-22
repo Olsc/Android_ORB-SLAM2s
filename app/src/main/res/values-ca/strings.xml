@@ -81,7 +81,7 @@
     <string name="icon_select_title">"Icona de l'aplicació"</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
     <string name="icon_default_name">Blau tecnològic</string>
-    <string name="icon_red_name">Vermell encisador</string>
+    <string name="icon_red_name">Vermell flamejant</string>
     <string name="icon_mint_name">Menta adorable</string>
     <string name="icon_in_use">En ús</string>
     <string name="icon_switched_hint">Icona canviada a %s</string>

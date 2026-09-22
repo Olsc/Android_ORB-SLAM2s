@@ -79,7 +79,7 @@
     <string name="icon_select_title">App-pictogram</string>
     <string name="icon_select_desc">Kies uw gewenste app-pictogram. Druk lang op het startscherm om op elk gewenst moment te wijzigen.</string>
     <string name="icon_default_name">Techblauw</string>
-    <string name="icon_red_name">Charmant rood</string>
+    <string name="icon_red_name">Vlammend rood</string>
     <string name="icon_mint_name">Schattige munt</string>
     <string name="icon_in_use">In gebruik</string>
     <string name="icon_switched_hint">App-pictogram gewijzigd in %s</string>

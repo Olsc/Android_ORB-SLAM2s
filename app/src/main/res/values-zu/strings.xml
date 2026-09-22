@@ -79,7 +79,7 @@
     <string name="icon_select_title">Isithonjana sohlelo lokusebenza</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
     <string name="icon_default_name">Okuluhlaza Kwetheknoloji</string>
-    <string name="icon_red_name">Okubomvu Okukhangayo</string>
+    <string name="icon_red_name">Okubomvu Kwelangabi</string>
     <string name="icon_mint_name">Iminti Enesihle</string>
     <string name="icon_in_use">Kuyasetshenziswa</string>
     <string name="icon_switched_hint">Isithonjana sishintshwe saba ngu-%s</string>

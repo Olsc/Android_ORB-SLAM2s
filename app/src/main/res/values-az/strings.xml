@@ -79,7 +79,7 @@
     <string name="icon_select_title">Tətbiq ikonu</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
     <string name="icon_default_name">Texnoloji mavi</string>
-    <string name="icon_red_name">Cazibədar qırmızı</string>
+    <string name="icon_red_name">Alov qırmızısı</string>
     <string name="icon_mint_name">Şirin nanə</string>
     <string name="icon_in_use">İstifadə olunur</string>
     <string name="icon_switched_hint">İkon %s olaraq dəyişdirildi</string>

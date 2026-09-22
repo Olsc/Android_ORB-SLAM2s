@@ -77,7 +77,7 @@
     <string name="icon_select_title">앱 아이콘</string>
     <string name="icon_select_desc">선호하는 앱 아이콘을 선택하세요. 홈 화면에서 길게 눌러 언제든지 변경할 수 있습니다.</string>
     <string name="icon_default_name">테크 블루</string>
-    <string name="icon_red_name">매혹적인 레드</string>
+    <string name="icon_red_name">불꽃 레드</string>
     <string name="icon_mint_name">귀여운 민트</string>
     <string name="icon_in_use">사용 중</string>
     <string name="icon_switched_hint">앱 아이콘이 %s(으)로 변경되었습니다</string>

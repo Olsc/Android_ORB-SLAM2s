@@ -79,7 +79,7 @@
     <string name="icon_select_title">Апп дүрс</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
     <string name="icon_default_name">Технологийн хөх</string>
-    <string name="icon_red_name">Сэтгэл татам улаан</string>
+    <string name="icon_red_name">Галын улаан</string>
     <string name="icon_mint_name">Хөөрхөн гаа</string>
     <string name="icon_in_use">Ашиглаж байна</string>
     <string name="icon_switched_hint">Дүрс %s болж өөрчлөгдлөө</string>

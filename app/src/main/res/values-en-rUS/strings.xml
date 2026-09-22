@@ -79,7 +79,7 @@
     <string name="icon_select_title">App Icon</string>
     <string name="icon_select_desc">Select your preferred app icon. Long press on home screen to change anytime.</string>
     <string name="icon_default_name">Tech Blue</string>
-    <string name="icon_red_name">Charming Red</string>
+    <string name="icon_red_name">Flame Red</string>
     <string name="icon_mint_name">Cute Mint</string>
     <string name="icon_in_use">In Use</string>
     <string name="icon_switched_hint">App icon updated to %s</string>

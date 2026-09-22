@@ -79,7 +79,7 @@
     <string name="icon_select_title">Alkalmazásikon</string>
     <string name="icon_select_desc">Válassza ki a kívánt alkalmazásikont. A kezdőképernyőn hosszan nyomva bármikor módosíthatja.</string>
     <string name="icon_default_name">Tech kék</string>
-    <string name="icon_red_name">Bájos vörös</string>
+    <string name="icon_red_name">Lángvörös</string>
     <string name="icon_mint_name">Cuki menta</string>
     <string name="icon_in_use">Használatban</string>
     <string name="icon_switched_hint">Alkalmazásikon módosítva: %s</string>

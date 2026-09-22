@@ -26,9 +26,9 @@ set(CMAKE_C_FLAGS_DEBUG "-O2 -g" CACHE STRING "" FORCE)
 set(ARCH_SPECIFIC_OPTIMIZATION_FLAGS "")
 
 if(ANDROID_ABI STREQUAL "arm64-v8a" OR CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64)")
-    # ARM64: 启用 ARMv8.2-A 指令集，开启 FP16 半精度浮点、RCPC 内存屏障与 Dot-Product (dotprod) 算力加速
-    list(APPEND ARCH_SPECIFIC_OPTIMIZATION_FLAGS "-march=armv8.2-a+fp16+rcpc+dotprod")
-    message(STATUS "[MenthaAR] 针对目标架构 ARM64 (arm64-v8a) 启用专属优化: ${ARCH_SPECIFIC_OPTIMIZATION_FLAGS}")
+    # ARM64: 保持 Android 标准 arm64-v8a 基线兼容性 (ARMv8.0-A)，兼容所有大小核架构
+    list(APPEND ARCH_SPECIFIC_OPTIMIZATION_FLAGS "-march=armv8-a")
+    message(STATUS "[MenthaAR] 针对目标架构 ARM64 (arm64-v8a) 启用基础优化: ${ARCH_SPECIFIC_OPTIMIZATION_FLAGS}")
 
 elseif(ANDROID_ABI STREQUAL "armeabi-v7a" OR CMAKE_SYSTEM_PROCESSOR MATCHES "^(armv7|arm)")
     # ARMv7-A: 启用 NEON-VFPv4 浮点向量计算单元与 softfp 浮点调用约定

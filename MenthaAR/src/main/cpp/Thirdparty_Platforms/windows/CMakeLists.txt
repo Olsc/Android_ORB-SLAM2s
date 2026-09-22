@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # ----------------------------------------------------------------------------
 # 1. 动态获取项目仓库的根目录绝对路径
 # ----------------------------------------------------------------------------
-get_filename_component(REPO_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../../.." ABSOLUTE)
+get_filename_component(REPO_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../.." ABSOLUTE)
 message(STATUS "[CMake] 检测到的项目根目录路径: ${REPO_ROOT}")
 
 # ----------------------------------------------------------------------------

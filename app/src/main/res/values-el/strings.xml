@@ -79,7 +79,7 @@
     <string name="icon_select_title">Εικονίδιο εφαρμογής</string>
     <string name="icon_select_desc">Επιλέξτε το εικονίδιο εφαρμογής που προτιμάτε. Πατήστε παρατεταμένα στην αρχική οθόνη για αλλαγή ανά πάσα στιγμή.</string>
     <string name="icon_default_name">Τεχνολογικό μπλε</string>
-    <string name="icon_red_name">Σαγηνευτικό κόκκινο</string>
+    <string name="icon_red_name">Φλογερό κόκκινο</string>
     <string name="icon_mint_name">Χαριτωμένο μέντα</string>
     <string name="icon_in_use">Σε χρήση</string>
     <string name="icon_switched_hint">Το εικονίδιο της εφαρμογής ενημερώθηκε σε %s</string>
