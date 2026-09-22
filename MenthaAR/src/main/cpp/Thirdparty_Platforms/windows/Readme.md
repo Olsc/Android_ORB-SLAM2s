@@ -26,7 +26,7 @@ OpenCV 的相机采集走内置 MSMF/DirectShow 后端，GUI 走内置 Win32 UI 
 在 **Developer Command Prompt for VS 2022**（或已将 VS 的 CMake 加入 PATH 的终端）中执行：
 
 ```bat
-cd MenthaAR/src/main/cpp/windows
+cd MenthaAR/src/main/cpp/Thirdparty_Platforms/windows
 cmake -S . -B build_vs -G "Visual Studio 17 2022" -A x64
 cmake --build build_vs --config Release --parallel %NUMBER_OF_PROCESSORS%
 ```

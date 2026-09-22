@@ -1,0 +1,5 @@
+build/
+build_*/
+*.vpk
+*.self
+*.velf
