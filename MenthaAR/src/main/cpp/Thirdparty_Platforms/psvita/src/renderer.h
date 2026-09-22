@@ -9,12 +9,8 @@
 #include "math3d.h"
 #include "pointcloud.h"
 
-/* Software point-cloud rasterizer.
- *
- * Rendering happens into an off-screen A8B8G8R8 texture with a CPU z-buffer,
- * which is then composited (with alpha) over the live camera preview by
- * vita2d. This keeps the GPU load tiny and lets us draw arbitrarily many
- * points without one draw call per point.                                    */
+// 软件光栅化点云渲染器：在离屏 A8B8G8R8 纹理上用 CPU z-buffer 绘制，
+// 再由 vita2d 以 alpha 合成到相机预览之上。
 class Renderer {
 public:
 	Renderer();
@@ -22,13 +18,13 @@ public:
 	bool init();
 	void shutdown();
 
-	/* Clears the color + depth buffers. clearColor should be transparent. */
+	// 清空颜色与深度缓冲，clearColor 应为透明。
 	void beginFrame(uint32_t clearColor);
 
 	void drawCloud(const PointCloud &cloud, const Mat3 &viewRot,
 	               float camDist, float zoom, int splat);
 
-	/* HUD helpers (drawn straight into the off-screen buffer). */
+	// HUD 绘制接口，直接写入离屏缓冲。
 	void drawText(int x, int y, const char *text, uint32_t color, int scale);
 	void drawTextf(int x, int y, uint32_t color, int scale, const char *fmt, ...);
 	void drawPanel(int x, int y, int w, int h, float alpha);
@@ -42,9 +38,9 @@ private:
 
 	vita2d_texture *m_tex;
 	uint32_t *m_pix;
-	int m_stride; /* in pixels */
+	int m_stride; // 以像素为单位
 	int m_w, m_h;
 	std::vector<float> m_zbuf;
 };
 
-#endif /* MENTHAAR_PSVITA_RENDERER_H */
+#endif // MENTHAAR_PSVITA_RENDERER_H

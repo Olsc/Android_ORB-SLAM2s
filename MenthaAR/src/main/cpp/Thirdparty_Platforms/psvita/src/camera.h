@@ -5,19 +5,18 @@
 
 #include <psp2/types.h>
 
-/* Thin wrapper around the SceCamera device. The frame is requested in ABGR
- * (32bpp) at 640x360, which maps 1:1 onto an A8B8G8R8 texture. */
+// SceCamera 的轻量封装：以 ABGR 32bpp、640x360 取帧，可直接映射到 A8B8G8R8 纹理。
 class VitaCamera {
 public:
 	VitaCamera();
 	~VitaCamera();
 
-	bool open(int device /* 0 = front, 1 = rear */);
+	bool open(int device); // device 0=前置, 1=后置
 	void close();
 	bool isOpen() const { return m_open; }
 	int device() const { return m_dev; }
 
-	/* Blocking read of the next frame. Returns true on success. */
+	// 阻塞读取下一帧，成功返回 true。
 	bool readFrame();
 
 	const uint32_t *frame() const { return (const uint32_t *)m_base; }
@@ -29,4 +28,4 @@ private:
 	void *m_base;
 };
 
-#endif /* MENTHAAR_PSVITA_CAMERA_H */
+#endif // MENTHAAR_PSVITA_CAMERA_H

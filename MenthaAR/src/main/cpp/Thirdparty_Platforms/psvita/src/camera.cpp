@@ -94,7 +94,7 @@ bool VitaCamera::readFrame()
 	SceCameraRead rd;
 	memset(&rd, 0, sizeof(rd));
 	rd.size = sizeof(rd);
-	rd.mode = 0; /* blocking */
+	rd.mode = 0; // 阻塞模式
 
 	return sceCameraRead(m_dev, &rd) >= 0;
 }

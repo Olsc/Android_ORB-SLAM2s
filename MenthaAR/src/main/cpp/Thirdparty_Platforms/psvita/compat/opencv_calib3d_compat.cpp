@@ -1,13 +1,3 @@
-/*
- * PS Vita calib3d compatibility implementation (see header for rationale).
- *
- * Everything here operates on plain double/Matx math so the implementation is
- * independent of the OpenCV build configurability.  The algorithms are the
- * textbook ones used by OpenCV: Rodrigues' formula, iterative undistortion,
- * direct linear transform (DLT) for the initial pose, Levenberg-Marquardt
- * refinement on the reprojection error, and a RANSAC wrapper.
- */
-
 #include "opencv_calib3d_compat.h"
 
 #include <algorithm>
@@ -69,7 +59,7 @@ inline Vec3d rodriguesMatToVec(const Matx33d &R)
 		             k * (R(0, 2) - R(2, 0)),
 		             k * (R(1, 0) - R(0, 1)));
 	}
-	/* theta close to pi: recover axis from the diagonal. */
+	// theta 接近 pi 时由对角线恢复旋转轴。
 	double xx = (R(0, 0) + 1.0) * 0.5;
 	double yy = (R(1, 1) + 1.0) * 0.5;
 	double zz = (R(2, 2) + 1.0) * 0.5;
@@ -105,7 +95,7 @@ inline bool projectNormalized(const Point3d &P, const Matx33d &R, const Vec3d &t
 	return true;
 }
 
-/* Six by six dense solve with partial pivoting. */
+// 6x6 稠密线性方程组，列主元高斯消元。
 bool solve6(double A[6][6], double b[6], double x[6])
 {
 	int idx[6];
@@ -149,7 +139,7 @@ bool solve6(double A[6][6], double b[6], double x[6])
 	return true;
 }
 
-/* Extract strongly typed point vectors from OpenCV InputArrays. */
+// 从 OpenCV InputArray 提取强类型点向量。
 bool extractObj(InputArray _op, std::vector<Point3d> &out)
 {
 	cv::Mat m = _op.getMat();
@@ -192,7 +182,7 @@ bool extractImg(InputArray _ip, std::vector<Point2d> &out)
 	return true;
 }
 
-/* Direct linear transform on normalised image coordinates. */
+// 归一化像坐标上的直接线性变换（DLT）。
 bool dlt(const std::vector<Point3d> &obj, const std::vector<Point2d> &imgN,
          Matx33d &R, Vec3d &t)
 {
@@ -215,7 +205,7 @@ bool dlt(const std::vector<Point3d> &obj, const std::vector<Point2d> &imgN,
 	if (p.empty())
 		return false;
 
-	cv::Mat M = p.reshape(1, 3); /* 3 x 4 */
+	cv::Mat M = p.reshape(1, 3); // 3x4
 	cv::Mat Rm = M.colRange(0, 3).clone();
 	cv::Mat tm = M.col(3).clone();
 
@@ -242,7 +232,7 @@ bool dlt(const std::vector<Point3d> &obj, const std::vector<Point2d> &imgN,
 		for (int j = 0; j < 3; ++j)
 			Rr(i, j) = Rm2.at<double>(i, j);
 	if (det3(Rr) < 0.0) {
-		/* Flip to a proper rotation. */
+		// 修正为合法旋转矩阵。
 		for (int i = 0; i < 3; ++i)
 			Rr(i, 2) = -Rr(i, 2);
 	}
@@ -281,7 +271,7 @@ double residualCost(const std::vector<double> &res)
 	return c;
 }
 
-/* Levenberg-Marquardt refinement on normalised reprojection error. */
+// 归一化重投影误差上的 Levenberg-Marquardt 优化。
 void refine(const std::vector<Point3d> &obj, const std::vector<Point2d> &imgN,
             Matx33d &R, Vec3d &t, int maxIter = 40)
 {
@@ -375,7 +365,7 @@ bool solvePnPImpl(const std::vector<Point3d> &obj, const std::vector<Point2d> &i
 {
 	int n = (int)obj.size();
 	if (n < 6)
-		return false; /* DLT-based path requires >= 6 points */
+		return false; // DLT 路径要求至少 6 个点
 
 	Matx33d R;
 	Vec3d t;
@@ -397,7 +387,7 @@ bool solvePnPImpl(const std::vector<Point3d> &obj, const std::vector<Point2d> &i
 	return true;
 }
 
-} /* namespace */
+} // namespace
 
 namespace cv {
 
@@ -561,7 +551,7 @@ bool solvePnP(InputArray objectPoints, InputArray imagePoints,
 	if (obj.size() != img.size())
 		return false;
 
-	/* Normalise the image points using the intrinsics / distortion. */
+	// 用内参与畸变系数归一化像点。
 	std::vector<Point2d> imgN;
 	{
 		cv::Mat src((int)img.size(), 1, CV_64FC2);
@@ -671,7 +661,7 @@ bool solvePnPRansac(InputArray objectPoints, InputArray imagePoints,
 		return false;
 	}
 
-	/* Refine on all inliers. */
+	// 用全部内点做优化。
 	std::vector<Point3d> ro;
 	std::vector<Point2d> ri;
 	ro.reserve(bestInliers.size());
@@ -682,7 +672,7 @@ bool solvePnPRansac(InputArray objectPoints, InputArray imagePoints,
 	}
 	refine(ro, ri, bestR, bestT);
 
-	/* Recompute the inlier set with the refined pose. */
+	// 用优化后的位姿重新统计内点。
 	std::vector<int> finalInliers;
 	for (int i = 0; i < n; ++i) {
 		if (pixelReprojectionError(obj[i], bestR, bestT, fx, fy, cx, cy, img[i]) < th)
@@ -710,4 +700,4 @@ bool solvePnPRansac(InputArray objectPoints, InputArray imagePoints,
 	return true;
 }
 
-} /* namespace cv */
+} // namespace cv

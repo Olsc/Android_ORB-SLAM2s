@@ -1,16 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
 
-# ============================================================================
-#  MenthaAR PS Vita - builds the *unmodified* MenthaAR / ORB-SLAM2 engine
-#  for PS Vita and packages it as a .vpk.
-#
-#  No file outside this directory is modified.  The engine is compiled from
-#  ../../src and ../../include, using the bundled Eigen/g2o/srrg_hbst and a
-#  community "mini OpenCV 4" for VitaSDK pulled in as a git submodule
-#  (thirdparty/libopencv4 -> github.com/dejavulife/libopencv4) plus a small
-#  calib3d compatibility layer (compat/).
-# ============================================================================
-
 if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
   if(DEFINED ENV{VITASDK})
     set(CMAKE_TOOLCHAIN_FILE "$ENV{VITASDK}/share/vita.toolchain.cmake" CACHE PATH "toolchain file")
@@ -22,23 +11,12 @@ endif()
 project(MenthaAR_PSVita CXX C)
 include("${VITASDK}/share/vita.cmake" REQUIRED)
 
-# ----------------------------------------------------------------------------
-# Paths
-# ----------------------------------------------------------------------------
+# 路径。
 set(CPP_ROOT   "${CMAKE_CURRENT_SOURCE_DIR}/../..")                 # .../src/main/cpp
 set(VITA_OCV   "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libopencv4/vitasdk/arm-vita-eabi")
 set(COMPAT     "${CMAKE_CURRENT_SOURCE_DIR}/compat")
 
-# ----------------------------------------------------------------------------
-# OpenCV header shim (keeps the submodule pristine)
-#
-# `dejavulife/libopencv4` declares saturate_cast() overloads for int32_t /
-# uint32_t in addition to the int / unsigned ones.  On arm-vita-eabi int32_t is
-# int (and uint32_t is unsigned), so those are duplicate definitions and GCC
-# rejects the header.  Instead of patching the submodule we generate a shadow
-# copy of that single header with the redundant overloads removed and put it
-# ahead of the submodule include directory.
-# ----------------------------------------------------------------------------
+# OpenCV 头文件影子副本：保持子模块干净。
 if(NOT EXISTS "${VITA_OCV}/include/opencv2/core/saturate.hpp")
   message(FATAL_ERROR
     "libopencv4 submodule is missing. Run:\n"
@@ -51,9 +29,7 @@ string(REGEX REPLACE "[^\n]*saturate_cast[^\n]*int32_t[^\n]*\n" "" VITA_OCV_SATU
 string(REGEX REPLACE "[^\n]*saturate_cast[^\n]*uint32_t[^\n]*\n" "" VITA_OCV_SATURATE "${VITA_OCV_SATURATE}")
 file(WRITE "${OCV_SHIM_DIR}/opencv2/core/saturate.hpp" "${VITA_OCV_SATURATE}")
 
-# ----------------------------------------------------------------------------
-# LiveArea / bubble metadata
-# ----------------------------------------------------------------------------
+# LiveArea 气泡元数据。
 set(VITA_APP_NAME "MenthaAR PSVita")
 set(VITA_TITLEID  "MENTHA001")
 set(VITA_VERSION  "01.00")
@@ -76,9 +52,7 @@ include_directories(
   ${VITA_OCV}/include
 )
 
-# ----------------------------------------------------------------------------
-# g2o (third party optimisation library, compiled from the bundled sources)
-# ----------------------------------------------------------------------------
+# g2o 优化库（从自带源码编译）。
 add_library(g2o STATIC
   ${CPP_ROOT}/Thirdparty/g2o/g2o/core/batch_stats.cpp
   ${CPP_ROOT}/Thirdparty/g2o/g2o/core/cache.cpp
@@ -110,12 +84,10 @@ add_library(g2o STATIC
   ${CPP_ROOT}/Thirdparty/g2o/g2o/types/types_seven_dof_expmap.cpp
   ${CPP_ROOT}/Thirdparty/g2o/g2o/types/types_six_dof_expmap.cpp
 )
-# newlib lacks vasprintf(), which g2o's string_tools.cpp uses.
+# newlib 缺少 vasprintf，g2o 的 string_tools.cpp 需要它。
 target_compile_options(g2o PRIVATE -include vasprintf_compat.h)
 
-# ----------------------------------------------------------------------------
-# MenthaAR / ORB-SLAM2 engine (compiled unchanged from the shared sources)
-# ----------------------------------------------------------------------------
+# MenthaAR / ORB-SLAM2 引擎（共享源码，原样编译）。
 add_library(MenthaAR_Engine STATIC
   ${CPP_ROOT}/src/Converter.cc
   ${CPP_ROOT}/src/Frame.cc
@@ -135,13 +107,10 @@ add_library(MenthaAR_Engine STATIC
   ${CPP_ROOT}/src/System.cc
   ${CPP_ROOT}/src/Tracking.cc
 )
-# The community Vita OpenCV has no calib3d module; the compatibility header
-# supplies undistortPoints / Rodrigues / solvePnP(PRansac).
+# mini OpenCV 无 calib3d，兼容头文件补充 undistortPoints / Rodrigues / solvePnP(PRansac)。
 target_compile_options(MenthaAR_Engine PRIVATE -include opencv_calib3d_compat.h)
 
-# ----------------------------------------------------------------------------
-# Vita front-end + calib3d/vasprintf compatibility implementations
-# ----------------------------------------------------------------------------
+# Vita 前端与 calib3d / vasprintf 兼容实现。
 add_executable(${PROJECT_NAME}
   src/main.cpp
   src/camera.cpp
@@ -164,7 +133,9 @@ target_link_libraries(${PROJECT_NAME}
   vita2d
   z
   m
+  -Wl,--whole-archive
   pthread
+  -Wl,--no-whole-archive
   stdc++
   SceGxm_stub
   SceDisplay_stub
@@ -178,7 +149,7 @@ target_link_libraries(${PROJECT_NAME}
   SceCommonDialog_stub
 )
 
-# UNSAFE: the app writes its map to ux0:data/MenthaAR.
+# UNSAFE：应用需要写入 ux0:data/MenthaAR。
 vita_create_self(${PROJECT_NAME}.self ${PROJECT_NAME} UNSAFE)
 
 vita_create_vpk(${PROJECT_NAME}.vpk ${VITA_TITLEID} ${PROJECT_NAME}.self

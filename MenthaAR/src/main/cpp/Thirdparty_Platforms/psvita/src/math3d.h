@@ -3,8 +3,8 @@
 
 #include <cmath>
 
-/* Minimal 3D math helpers (vectors, quaternions and 3x3 matrices).
- * Row-major matrices, column-vector convention:  r = M * v              */
+// 极简 3D 数学工具：向量、四元数与 3x3 矩阵。
+// 矩阵行主序，列向量约定：r = M * v。
 
 struct Vec3 {
 	float x, y, z;
@@ -112,7 +112,7 @@ inline Mat3 quatToMat(Quat q)
 	return M;
 }
 
-/* Orbit matrix: yaw around Y, then pitch around X. */
+// 轨道矩阵：先绕 Y 偏航，再绕 X 俯仰。
 inline Mat3 eulerYawPitch(float yaw, float pitch)
 {
 	float cy = std::cos(yaw), sy = std::sin(yaw);
@@ -122,4 +122,4 @@ inline Mat3 eulerYawPitch(float yaw, float pitch)
 	return mat3Mul(Ry, Rx);
 }
 
-#endif /* MENTHAAR_PSVITA_MATH3D_H */
+#endif // MENTHAAR_PSVITA_MATH3D_H

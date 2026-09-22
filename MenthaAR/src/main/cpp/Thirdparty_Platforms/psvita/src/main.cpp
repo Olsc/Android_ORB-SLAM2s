@@ -1,27 +1,3 @@
-/*
- * MenthaAR PSVita - ORB-SLAM2 / MenthaAR engine front-end.
- *
- * This mirrors Thirdparty_Platforms/ubuntu/main.cpp as closely as the Vita
- * allows: it instantiates the very same ORB_SLAM2::System engine (monocular),
- * feeds it the camera as grayscale frames, projects the tracked / mapped
- * points with the calibrated intrinsics from Config.h, and exposes the same
- * map persistence (SaveMap / LoadMap).
- *
- * The engine itself is compiled UNCHANGED from ../../src + ../../include, using
- * the bundled Eigen / g2o / srrg_hbst and a calib3d compatibility layer
- * (compat/) on top of the community Vita OpenCV git submodule
- * (thirdparty/libopencv4).
- *
- * Controls:
- *   O ....... save map   (ux0:data/MenthaAR/mentha_map.bin)
- *   [] ...... load map
- *   /\ ...... reset / clear map
- *   L1 ...... toggle point-cloud overlay
- *   R1 ...... toggle "loaded points only"
- *   SELECT .. switch front / rear camera
- *   START ... exit
- */
-
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -40,14 +16,14 @@
 
 #include "camera.h"
 #include "renderer.h"
-#include "config.h"        /* psvita-side constants (SCR_W, CAM_W, PACK_RGBA) */
+#include "config.h"        // Vita 端常量：SCR_W、CAM_W、PACK_RGBA
 
 #define MAP_PATH "ux0:data/MenthaAR/mentha_map.bin"
 #define MAP_DIR  "ux0:data/MenthaAR"
 
 static vita2d_texture *g_camTex = 0;
 
-/* Display fit: 640x360 camera on a 960x544 screen (uniform scale + centring). */
+// 将 640x360 相机画面等比居中缩放到 960x544 屏幕。
 static float g_dispScale = 1.5f;
 static float g_offX = 0.0f;
 static float g_offY = 0.0f;
@@ -67,7 +43,7 @@ static void copyCameraToTexture(const uint32_t *src)
 	}
 }
 
-/* Camera ABGR (memory order R,G,B,A) -> CV_8UC1. */
+// 相机 ABGR 原始数据转 CV_8UC1 灰度图。
 static void abgrToGray(const uint32_t *src, cv::Mat &gray)
 {
 	uint8_t *out = gray.ptr<uint8_t>();
@@ -81,7 +57,7 @@ static void abgrToGray(const uint32_t *src, cv::Mat &gray)
 	}
 }
 
-/* Project a world point with Tcw and return display pixel coordinates. */
+// 用位姿 Tcw 投影世界点，输出屏幕像素坐标。
 static bool projectPoint(const cv::Point3f &Pw, const cv::Mat &Tcw,
                          float fx, float fy, float cx, float cy,
                          float &outX, float &outY)
@@ -138,7 +114,7 @@ int main(int argc, char **argv)
 	if (!camera.open(1))
 		camera.open(0);
 
-	/* ---- SLAM engine (identical to the Ubuntu/Android front-ends) -------- */
+	// 从 Config.h 读取相机内参并创建单目 SLAM 引擎。
 	const float fx = ORB_SLAM2::CAMERA_FX;
 	const float fy = ORB_SLAM2::CAMERA_FY;
 	const float cx = ORB_SLAM2::CAMERA_CX;
@@ -147,7 +123,7 @@ int main(int argc, char **argv)
 	ORB_SLAM2::System *slamSys =
 		new ORB_SLAM2::System("", ORB_SLAM2::System::MONOCULAR);
 
-	/* Camera calibration can be refreshed from Config.h at any time. */
+	// 校准参数可随时从 Config.h 刷新。
 	slamSys->UpdateCalibration(fx, fy, cx, cy);
 
 	cv::Mat gray(CAM_H, CAM_W, CV_8UC1);
@@ -246,7 +222,7 @@ int main(int argc, char **argv)
 			statusTimer = 4.0f;
 		}
 
-		/* ---- grab + track ------------------------------------------------- */
+		// 取帧并跟踪。
 		bool frameOk = camera.isOpen() && camera.readFrame();
 		if (frameOk) {
 			copyCameraToTexture(camera.frame());
@@ -263,7 +239,7 @@ int main(int argc, char **argv)
 		if (statusTimer > 0.0f)
 			statusTimer -= dt;
 
-		/* ---- draw --------------------------------------------------------- */
+		// 绘制相机画面、点云与 HUD。
 		vita2d_wait_rendering_done();
 		renderer.beginFrame(0x00000000u);
 
@@ -296,7 +272,7 @@ int main(int argc, char **argv)
 			}
 		}
 
-		/* Tracked keypoints (cyan = new, green = loaded). */
+		// 跟踪特征点：青色为新建，绿色为已加载。
 		if (showCloud) {
 			const size_t kn = vKeys.size();
 			for (size_t i = 0; i < kn; ++i) {
@@ -318,7 +294,7 @@ int main(int argc, char **argv)
 			}
 		}
 
-		/* HUD */
+		// HUD。
 		const char *stateStr = "NO IMAGES";
 		uint32_t stateCol = PACK_RGBA(180, 180, 180, 255);
 		if (status == ORB_SLAM2::Tracking::NOT_INITIALIZED) {
@@ -369,7 +345,7 @@ int main(int argc, char **argv)
 		vita2d_swap_buffers();
 	}
 
-	/* ---- shutdown -------------------------------------------------------- */
+	// 退出清理。
 	if (slamSys) {
 		slamSys->Shutdown();
 		delete slamSys;

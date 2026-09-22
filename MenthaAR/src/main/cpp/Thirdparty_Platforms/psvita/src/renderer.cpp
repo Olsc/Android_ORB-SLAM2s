@@ -19,7 +19,7 @@ bool Renderer::init()
 	if (!m_tex)
 		return false;
 
-	/* Point-cloud splats must stay crisp - no bilinear blurring. */
+	// 点云使用最近邻过滤，避免双线性模糊。
 	vita2d_texture_set_filters(m_tex, SCE_GXM_TEXTURE_FILTER_POINT,
 	                           SCE_GXM_TEXTURE_FILTER_POINT);
 
