@@ -9,28 +9,68 @@
 #include "Matrix.h"
 #include "UIUtils.h"
 
-// SO(3)李代数指数映射：用Rodrigues公式将旋转向量转为旋转矩阵
-// exp([w]×) = I + sin(θ)/θ·[w]× + (1-cos(θ))/θ²·[w]×²，θ=||w||
+// 3x3 矩阵直接乘法 C = A * B，避免分配中间临时对象及通用 GEMM 开销
+static cv::Mat Mat33Mul(const cv::Mat& A, const cv::Mat& B)
+{
+    cv::Mat C(3, 3, CV_32F);
+    const float* a = A.ptr<float>();
+    const float* b = B.ptr<float>();
+    float* c = C.ptr<float>();
+
+    for (int i = 0; i < 3; ++i) {
+        const float a0 = a[i * 3 + 0];
+        const float a1 = a[i * 3 + 1];
+        const float a2 = a[i * 3 + 2];
+        c[i * 3 + 0] = a0 * b[0] + a1 * b[3] + a2 * b[6];
+        c[i * 3 + 1] = a0 * b[1] + a1 * b[4] + a2 * b[7];
+        c[i * 3 + 2] = a0 * b[2] + a1 * b[5] + a2 * b[8];
+    }
+    return C;
+}
+
+// SO(3)李代数指数映射：用闭式Rodrigues公式直接填充3x3矩阵，彻底杜绝堆内存临时开辟与动态析构
+// exp([w]×) = I·cos(θ) + (1-cos(θ))·k·k^T + [k]×·sin(θ)，θ=||w||, k=w/θ
 cv::Mat Plane::ExpSO3(const float& x, const float& y, const float& z)
 {
-    cv::Mat I = cv::Mat::eye(3, 3, CV_32F);  // 单位矩阵
-    const float d2 = x * x + y * y + z * z;  // θ²
-    const float d = sqrt(d2);                // θ = ||w||
+    cv::Mat R(3, 3, CV_32F);
+    float* r = R.ptr<float>();
+    const float d2 = x * x + y * y + z * z;
+    const float d = std::sqrt(d2);
 
-    // 反对称矩阵 [w]×
-    cv::Mat W = (cv::Mat_<float>(3, 3) << 0, -z, y,
-                                          z,  0, -x,
-                                         -y,  x,  0);
-
-    // 当旋转角度很小时，使用泰勒展开的前两项
-    if (d < 1e-4)
+    // 当旋转角度很小时，使用泰勒级数前两项解析展开：I + W + 0.5*W*W
+    if (d < 1e-4f)
     {
-        return (I + W + 0.5f * W * W);
+        r[0] = 1.0f - 0.5f * (y * y + z * z);
+        r[1] = -z + 0.5f * x * y;
+        r[2] =  y + 0.5f * x * z;
+
+        r[3] =  z + 0.5f * x * y;
+        r[4] = 1.0f - 0.5f * (x * x + z * z);
+        r[5] = -x + 0.5f * y * z;
+
+        r[6] = -y + 0.5f * x * z;
+        r[7] =  x + 0.5f * y * z;
+        r[8] = 1.0f - 0.5f * (x * x + y * y);
     }
     else
     {
-        return (I + W * sin(d) / d + W * W * (1.0f - cos(d)) / d2);
+        const float inv_d = 1.0f / d;
+        const float kx = x * inv_d, ky = y * inv_d, kz = z * inv_d;
+        const float c = std::cos(d), s = std::sin(d), C = 1.0f - c;
+
+        r[0] = c + kx * kx * C;
+        r[1] = kx * ky * C - kz * s;
+        r[2] = kx * kz * C + ky * s;
+
+        r[3] = ky * kx * C + kz * s;
+        r[4] = c + ky * ky * C;
+        r[5] = ky * kz * C - kx * s;
+
+        r[6] = kz * kx * C - ky * s;
+        r[7] = kz * ky * C + kx * s;
+        r[8] = c + kz * kz * C;
     }
+    return R;
 }
 
 // SO(3)李代数指数映射的向量版本
@@ -62,23 +102,26 @@ Plane::Plane(const float& nx, const float& ny, const float& nz,
     rang = rang_;
 
     // 计算从世界坐标系到平面坐标系的变换矩阵
-    // 使平面的Y轴与世界的Y轴对齐
-    cv::Mat up = (cv::Mat_<float>(3, 1) << 0.0f, 1.0f, 0.0f);
-    cv::Mat v = up.cross(n);  // 旋转轴
-    const float sa = cv::norm(v);   // sin(angle)
-    const float ca = up.dot(n);     // cos(angle)
-    const float ang = atan2(sa, ca); // 旋转角度
+    // 使平面的Y轴与世界的Y轴对齐 (up = [0, 1, 0]^T)
+    // v = up.cross(n) = [nz, 0, -nx]^T
+    const float vx = nz, vy = 0.0f, vz = -nx;
+    const float sa = std::sqrt(vx * vx + vz * vz); // sin(angle)
+    const float ca = ny;                           // cos(angle) = up.dot(n)
+    const float ang = std::atan2(sa, ca);          // 旋转角度
 
     Tpw = cv::Mat::eye(4, 4, CV_32F);
 
-    if (sa > 1e-6)
+    if (sa > 1e-6f)
     {  // 法向量不平行于up向量
         // 组合两个旋转：先旋转到up方向，再绕法向量旋转rang角度
-        Tpw.rowRange(0, 3).colRange(0, 3) = ExpSO3(v * ang / sa) * ExpSO3(up * rang);
+        const float factor = ang / sa;
+        cv::Mat R1 = ExpSO3(vx * factor, vy * factor, vz * factor);
+        cv::Mat R2 = ExpSO3(0.0f, rang, 0.0f);
+        Tpw.rowRange(0, 3).colRange(0, 3) = Mat33Mul(R1, R2);
     }
     else
     {  // 法向量平行于up向量，绕up旋转rang角度
-        Tpw.rowRange(0, 3).colRange(0, 3) = ExpSO3(up * rang);
+        Tpw.rowRange(0, 3).colRange(0, 3) = ExpSO3(0.0f, rang, 0.0f);
     }
 
     o.copyTo(Tpw.col(3).rowRange(0, 3));  // 设置平移部分
@@ -148,11 +191,19 @@ void Plane::Recompute()
     const float f = 1.0f / std::sqrt(a * a + b * b + c * c);
 
     // 首次计算时，计算从相机中心指向平面原点的向量
-    // 用于确定法向量方向
+    // 用于确定法向量方向：Oc = -Rcw^T * tcw
     if (XC.empty())
     {
-        cv::Mat Oc = -mTcw.colRange(0, 3).rowRange(0, 3).t() * mTcw.rowRange(0, 3).col(3);
-        XC = Oc - o;
+        const float* tcw_ptr = mTcw.ptr<float>();
+        const float r00 = tcw_ptr[0], r01 = tcw_ptr[1], r02 = tcw_ptr[2], t0 = tcw_ptr[3];
+        const float r10 = tcw_ptr[4], r11 = tcw_ptr[5], r12 = tcw_ptr[6], t1 = tcw_ptr[7];
+        const float r20 = tcw_ptr[8], r21 = tcw_ptr[9], r22 = tcw_ptr[10], t2 = tcw_ptr[11];
+
+        const float ocX = -(r00 * t0 + r10 * t1 + r20 * t2);
+        const float ocY = -(r01 * t0 + r11 * t1 + r21 * t2);
+        const float ocZ = -(r02 * t0 + r12 * t1 + r22 * t2);
+
+        XC = (cv::Mat_<float>(3, 1) << ocX - meanX, ocY - meanY, ocZ - meanZ);
     }
 
     // 确保法向量指向相机侧（点积>0则反向）
@@ -171,23 +222,26 @@ void Plane::Recompute()
     n = (cv::Mat_<float>(3, 1) << nx, ny, nz);
 
     // 计算从世界坐标系到平面坐标系的变换矩阵
-    cv::Mat up = (cv::Mat_<float>(3, 1) << 0.0f, 1.0f, 0.0f);
-
-    cv::Mat v = up.cross(n);  // 旋转轴
-    const float sa = cv::norm(v);
-    const float ca = up.dot(n);
-    const float ang = atan2(sa, ca);
+    // 使平面的Y轴与世界的Y轴对齐 (up = [0, 1, 0]^T)
+    // v = up.cross(n) = [nz, 0, -nx]^T
+    const float vx = nz, vy = 0.0f, vz = -nx;
+    const float sa = std::sqrt(vx * vx + vz * vz); // sin(angle)
+    const float ca = ny;                           // cos(angle) = up.dot(n)
+    const float ang = std::atan2(sa, ca);          // 旋转角度
 
     Tpw = cv::Mat::eye(4, 4, CV_32F);
 
     // 组合旋转：先将法向量旋转到up方向，再绕法向量旋转
-    if (sa > 1e-6)
+    if (sa > 1e-6f)
     {  // 法向量不平行于up向量
-        Tpw.rowRange(0, 3).colRange(0, 3) = ExpSO3(v * ang / sa) * ExpSO3(up * rang);
+        const float factor = ang / sa;
+        cv::Mat R1 = ExpSO3(vx * factor, vy * factor, vz * factor);
+        cv::Mat R2 = ExpSO3(0.0f, rang, 0.0f);
+        Tpw.rowRange(0, 3).colRange(0, 3) = Mat33Mul(R1, R2);
     }
     else
     {  // 法向量平行于up向量（如水平地面），绕up旋转rang角度
-        Tpw.rowRange(0, 3).colRange(0, 3) = ExpSO3(up * rang);
+        Tpw.rowRange(0, 3).colRange(0, 3) = ExpSO3(0.0f, rang, 0.0f);
     }
     o.copyTo(Tpw.col(3).rowRange(0, 3));  // 设置平移部分
 

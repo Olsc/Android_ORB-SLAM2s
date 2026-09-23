@@ -37,7 +37,6 @@
 
 #include<vector>
 #include<opencv2/core/core.hpp>
-#include<opencv2/features2d/features2d.hpp>
 
 #include"MapPoint.h"
 #include"KeyFrame.h"
@@ -97,7 +96,7 @@ public:
     int SearchBySim3(KeyFrame* pKF1, KeyFrame* pKF2, std::vector<MapPoint *> &vpMatches12, const float &s12, const cv::Mat &R12, const cv::Mat &t12, const float th);
 
     // 将地图点投影到关键帧并搜索重复的地图点
-    int Fuse(KeyFrame* pKF, const vector<MapPoint *> &vpMapPoints, const float th=ORB_MATCHER_DEFAULT_FUSE_TH);
+    int Fuse(KeyFrame* pKF, const vector<MapPoint *> &vpMapPoints, const float th=ORB_MATCHER_DEFAULT_FUSE_TH, std::vector<MapPoint*>* vpModifiedMPs = nullptr);
 
     // 使用给定的Sim3将地图点投影到关键帧并搜索重复的地图点
     int Fuse(KeyFrame* pKF, cv::Mat Scw, const std::vector<MapPoint*> &vpPoints, float th, vector<MapPoint *> &vpReplacePoint);

@@ -46,9 +46,4 @@
 #include <unistd.h>
 #endif
 
-// OpenCV 3/4 桌面向后兼容头文件
-#include <opencv2/core/core_c.h>
-#include <opencv2/core/types_c.h>
-#include <opencv2/imgproc/imgproc_c.h>
-
 #endif //ORB_SLAM2_AR_COMMON_H

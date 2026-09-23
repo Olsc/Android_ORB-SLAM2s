@@ -113,7 +113,7 @@ static void InitArctanLUT() {
     for (int i = 0; i <= 1024; ++i) {
         double r = (double)i / 1024.0;
         double rad = std::atan(r);
-        arctan_table_q10[i] = (uint16_t)std::round(rad * (180.0 / CV_PI) * 10.0);
+        arctan_table_q10[i] = (uint16_t)std::round(rad * (180.0 / 3.14159265358979323846) * 10.0);
     }
     bArctanLUTInit = true;
 }
@@ -986,7 +986,7 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
         const int wCell = ceil(width/nCols);
         const int hCell = ceil(height/nRows);
 
-        // 1. 全图检测所有可能的候选点 (使用 minThFAST)
+        // 1. 全图检测所有可能的候选点 (使用 minThFAST；OpenCV SIMD 版 FAST)
         vector<cv::KeyPoint> vAllKeys;
         FAST(mvImagePyramid[level], vAllKeys, minThFAST, true);
 

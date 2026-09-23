@@ -66,11 +66,44 @@ public:
 
     static std::vector<float> toQuaternion(const cv::Mat &M);
 
-    // 线性三角化：闭式代数 DLT 标量法，基于全标量对称矩阵克莱姆法则求解
+    // 空间射线公垂线中点几何闭式解
+    static inline bool TriangulateMidpoint(const float O1[3], const float d1[3],
+                                           const float O2[3], const float d2[3],
+                                           float out3D[3])
+    {
+        // 相对位移 r = O1 - O2
+        const float rx = O1[0] - O2[0];
+        const float ry = O1[1] - O2[1];
+        const float rz = O1[2] - O2[2];
+
+        // 视线单位向量点乘 b = d1 · d2
+        const float b = d1[0]*d2[0] + d1[1]*d2[1] + d1[2]*d2[2];
+        const float det = 1.0f - b * b;
+        if(det < 1e-6f)
+            return false;
+
+        const float invDet = 1.0f / det;
+        const float d = d1[0]*rx + d1[1]*ry + d1[2]*rz;
+        const float e = d2[0]*rx + d2[1]*ry + d2[2]*rz;
+
+        const float s = (b * e - d) * invDet;
+        const float t = (e - b * d) * invDet;
+
+        // 空间点必须在两相机射线前方 (深度为正)
+        if(s <= 0.0f || t <= 0.0f)
+            return false;
+
+        out3D[0] = 0.5f * ((O1[0] + s * d1[0]) + (O2[0] + t * d2[0]));
+        out3D[1] = 0.5f * ((O1[1] + s * d1[1]) + (O2[1] + t * d2[1]));
+        out3D[2] = 0.5f * ((O1[2] + s * d1[2]) + (O2[2] + t * d2[2]));
+        return true;
+    }
+
+    // 支持栈数组输出的零堆分配 DLT 三角化
     static bool TriangulateWithCenters(const cv::Mat &P1, const cv::Mat &P2,
                                        const float[3], const float[3],
                                        float x1, float y1, float x2, float y2,
-                                       cv::Mat &x3D)
+                                       float out3D[3])
     {
         const float p1_00=P1.at<float>(0,0), p1_01=P1.at<float>(0,1), p1_02=P1.at<float>(0,2), p1_03=P1.at<float>(0,3);
         const float p1_10=P1.at<float>(1,0), p1_11=P1.at<float>(1,1), p1_12=P1.at<float>(1,2), p1_13=P1.at<float>(1,3);
@@ -113,17 +146,28 @@ public:
         const float c12 = m01*m02 - m00*m12;
         const float c22 = m00*m11 - m01*m01;
 
-        const float X = (c00*b0 + c01*b1 + c02*b2) * invDet;
-        const float Y = (c01*b0 + c11*b1 + c12*b2) * invDet;
-        const float Z = (c02*b0 + c12*b1 + c22*b2) * invDet;
-
-        x3D = cv::Mat(3, 1, CV_32F);
-        float* pData = x3D.ptr<float>();
-        pData[0] = X;
-        pData[1] = Y;
-        pData[2] = Z;
+        out3D[0] = (c00*b0 + c01*b1 + c02*b2) * invDet;
+        out3D[1] = (c01*b0 + c11*b1 + c12*b2) * invDet;
+        out3D[2] = (c02*b0 + c12*b1 + c22*b2) * invDet;
         return true;
     }
+
+    static bool TriangulateWithCenters(const cv::Mat &P1, const cv::Mat &P2,
+                                       const float c1[3], const float c2[3],
+                                       float x1, float y1, float x2, float y2,
+                                       cv::Mat &x3D)
+    {
+        float pData[3];
+        if(!TriangulateWithCenters(P1, P2, c1, c2, x1, y1, x2, y2, pData))
+            return false;
+        x3D = cv::Mat(3, 1, CV_32F);
+        float* dst = x3D.ptr<float>();
+        dst[0] = pData[0];
+        dst[1] = pData[1];
+        dst[2] = pData[2];
+        return true;
+    }
+
 
     // 单次解算相机光心，辅助单次调用
     static bool ComputeCameraCenter(const cv::Mat &Pm, float out[3]) {

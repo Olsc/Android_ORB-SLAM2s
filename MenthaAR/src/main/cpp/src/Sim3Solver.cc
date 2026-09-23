@@ -226,12 +226,30 @@ cv::Mat Sim3Solver::find(vector<bool> &vbInliers12, int &nInliers)
 
 void Sim3Solver::ComputeCentroid(cv::Mat &P, cv::Mat &Pr, cv::Mat &C)
 {
-    cv::reduce(P,C,1,CV_REDUCE_SUM);
-    C = C/P.cols;
+    const int cols = P.cols;
+    const float invCols = 1.0f / (float)cols;
 
-    for(int i=0; i<P.cols; i++)
-    {
-        Pr.col(i)=P.col(i)-C;
+    float sumX = 0.0f, sumY = 0.0f, sumZ = 0.0f;
+    for (int i = 0; i < cols; ++i) {
+        sumX += P.at<float>(0, i);
+        sumY += P.at<float>(1, i);
+        sumZ += P.at<float>(2, i);
+    }
+
+    const float cx = sumX * invCols;
+    const float cy = sumY * invCols;
+    const float cz = sumZ * invCols;
+
+    C.create(3, 1, P.type());
+    C.at<float>(0) = cx;
+    C.at<float>(1) = cy;
+    C.at<float>(2) = cz;
+
+    Pr.create(3, cols, P.type());
+    for (int i = 0; i < cols; ++i) {
+        Pr.at<float>(0, i) = P.at<float>(0, i) - cx;
+        Pr.at<float>(1, i) = P.at<float>(1, i) - cy;
+        Pr.at<float>(2, i) = P.at<float>(2, i) - cz;
     }
 }
 

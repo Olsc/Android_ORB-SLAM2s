@@ -445,31 +445,36 @@ void LocalMapping::CreateNewMapPoints()
             const float r2z = rwc2_20*xn2x + rwc2_21*xn2y + rwc2_22;
 
             const float dotProduct = r1x*r2x + r1y*r2y + r1z*r2z;
+            // 视差角判定优化：
+            if(dotProduct <= 0.0f)
+                continue;
+
             const float norm1Sq = r1x*r1x + r1y*r1y + r1z*r1z;
             const float norm2Sq = r2x*r2x + r2y*r2y + r2z*r2z;
-            const float cosParallaxRays = dotProduct / std::sqrt(norm1Sq * norm2Sq);
 
-            float cosParallaxStereo = cosParallaxRays+1;
-            float cosParallaxStereo1 = cosParallaxStereo;
-            float cosParallaxStereo2 = cosParallaxStereo;
+            // cosParallaxRays < TH <=> dotProduct^2 < TH^2 * (norm1Sq * norm2Sq)
+            static const float s_parallaxThSq = LOCAL_MAPPING_TRIANGULATION_PARALLAX_TH * LOCAL_MAPPING_TRIANGULATION_PARALLAX_TH;
+            if(dotProduct * dotProduct >= s_parallaxThSq * (norm1Sq * norm2Sq))
+                continue; // 视差过小，短路跳过
 
-            cosParallaxStereo = min(cosParallaxStereo1,cosParallaxStereo2);
+            // 仅对通过视差判定的有效候选点执行开方归一化与公垂线中点解算
+            const float invNorm1 = 1.0f / std::sqrt(norm1Sq);
+            const float invNorm2 = 1.0f / std::sqrt(norm2Sq);
+            const float d1[3] = {r1x * invNorm1, r1y * invNorm1, r1z * invNorm1};
+            const float d2[3] = {r2x * invNorm2, r2y * invNorm2, r2z * invNorm2};
 
-            cv::Mat x3D;
-            if(cosParallaxRays<cosParallaxStereo && cosParallaxRays>0 && (bStereo1 || bStereo2 || cosParallaxRays<LOCAL_MAPPING_TRIANGULATION_PARALLAX_TH))
+            float x3D_buf[3];
+            if (!Converter::TriangulateMidpoint(c1, d1, c2, d2, x3D_buf))
             {
-                // 外置光心快速三角化
-                if (!Converter::TriangulateWithCenters(Tcw1, Tcw2, c1, c2, xn1x, xn1y, xn2x, xn2y, x3D))
+                // 若中点解由于平行退化，回退至法方程解法
+                if (!Converter::TriangulateWithCenters(Tcw1, Tcw2, c1, c2, xn1x, xn1y, xn2x, xn2y, x3D_buf))
                     continue;
-
             }
-            else
-                continue; // 没有双目信息且视差非常小
 
             // 检查三角化点是否在相机前方（标量；Rcw1f/tcw1f 为栈版位姿）
-            const float x3Dx = x3D.at<float>(0);
-            const float x3Dy = x3D.at<float>(1);
-            const float x3Dz = x3D.at<float>(2);
+            const float x3Dx = x3D_buf[0];
+            const float x3Dy = x3D_buf[1];
+            const float x3Dz = x3D_buf[2];
             float z1 = Rcw1f[6]*x3Dx + Rcw1f[7]*x3Dy + Rcw1f[8]*x3Dz + tcw1f[2];
             if(z1<=0)
                 continue;
@@ -520,7 +525,8 @@ void LocalMapping::CreateNewMapPoints()
             if(ratioDist*ratioFactor<ratioOctave || ratioDist>ratioOctave*ratioFactor)
                 continue;
 
-            // 三角化成功
+            // 三角化成功，构造 MapPoint
+            cv::Mat x3D = (cv::Mat_<float>(3, 1) << x3Dx, x3Dy, x3Dz);
             MapPoint* pMP = new MapPoint(x3D,mpCurrentKeyFrame,mpMap);
 
             pMP->AddObservation(mpCurrentKeyFrame,idx1);
@@ -567,20 +573,110 @@ void LocalMapping::SearchInNeighbors()
         }
     }
 
-    // 通过从当前关键帧投影到目标关键帧来搜索匹配
-    ORBmatcher matcher;
+    // 计算当前关键帧地图点集的重心与空间包围球半径 (用于视锥几何快速相交粗筛)
     vector<MapPoint*> vpMapPointMatches = mpCurrentKeyFrame->GetMapPointMatches();
+    float C_sphere[3] = {0.0f, 0.0f, 0.0f};
+    int nValidMPs = 0;
+    for(size_t i = 0, iend = vpMapPointMatches.size(); i < iend; ++i)
+    {
+        MapPoint* pMP = vpMapPointMatches[i];
+        if(pMP && !pMP->isBad())
+        {
+            cv::Point3f pos;
+            pMP->GetWorldPos(pos);
+            C_sphere[0] += pos.x;
+            C_sphere[1] += pos.y;
+            C_sphere[2] += pos.z;
+            nValidMPs++;
+        }
+    }
+
+    float RsphereSq = 0.0f;
+    if(nValidMPs > 0)
+    {
+        const float invN = 1.0f / nValidMPs;
+        C_sphere[0] *= invN;
+        C_sphere[1] *= invN;
+        C_sphere[2] *= invN;
+
+        for(size_t i = 0, iend = vpMapPointMatches.size(); i < iend; ++i)
+        {
+            MapPoint* pMP = vpMapPointMatches[i];
+            if(pMP && !pMP->isBad())
+            {
+                cv::Point3f pos;
+                pMP->GetWorldPos(pos);
+                const float dx = pos.x - C_sphere[0];
+                const float dy = pos.y - C_sphere[1];
+                const float dz = pos.z - C_sphere[2];
+                const float d2 = dx*dx + dy*dy + dz*dz;
+                if(d2 > RsphereSq)
+                    RsphereSq = d2;
+            }
+        }
+    }
+    const float R_sphere = std::sqrt(RsphereSq);
+
+    auto isFrustumIntersecting = [&](KeyFrame* pTargetKF) -> bool {
+        if(nValidMPs <= 0) return true;
+
+        cv::Point3f targetOw;
+        pTargetKF->GetCameraCenter(targetOw);
+
+        float Rcw_target[9];
+        pTargetKF->GetRotation(Rcw_target);
+        // 相机系 +Z 轴在世界系下的投影方向
+        const float dirX = Rcw_target[6], dirY = Rcw_target[7], dirZ = Rcw_target[8];
+
+        const float vx = C_sphere[0] - targetOw.x;
+        const float vy = C_sphere[1] - targetOw.y;
+        const float vz = C_sphere[2] - targetOw.z;
+
+        // 1. 光轴投影深度判定：包围球在目标相机光轴上的投影深度
+        const float z_proj = vx * dirX + vy * dirY + vz * dirZ;
+        if(z_proj < -R_sphere)
+            return false; // 整个包围球在目标相机绝对后方 (深度必为负)，绝对无交集
+
+        // 2. 视锥外侧分离角判定 (宽安全边界 55 度: cos=0.5735f, sin=0.8191f)
+        const float distSq = vx*vx + vy*vy + vz*vz;
+        if(distSq > RsphereSq && distSq > 1e-4f)
+        {
+            const float dist = std::sqrt(distSq);
+            const float cos_center = z_proj / dist;
+            const float cos_fov = 0.5735f;
+            if(cos_center < cos_fov)
+            {
+                const float sin_center = std::sqrt(std::max(0.0f, 1.0f - cos_center * cos_center));
+                const float sin_sphere = R_sphere / dist;
+                const float sin_fov = 0.8191f;
+                // sin(angle - fov) = sin_center * cos_fov - cos_center * sin_fov
+                const float sin_diff = sin_center * cos_fov - cos_center * sin_fov;
+                if(sin_diff > sin_sphere)
+                    return false; // 包围球完全位于相机视锥安全外侧
+            }
+        }
+        return true;
+    };
+
+    // 收集本轮真正发生融合替换或新增观测的地图点 (增量脏标记更新)
+    std::vector<MapPoint*> vModifiedMPs;
+    vModifiedMPs.reserve(128);
+
+    // 第一阶段：通过从当前关键帧投影到目标关键帧来搜索匹配
+    ORBmatcher matcher;
     for(vector<KeyFrame*>::iterator vit=vpTargetKFs.begin(), vend=vpTargetKFs.end(); vit!=vend; vit++)
     {
         if(mbResetRequested.load()) return;
         KeyFrame* pKFi = *vit;
+        if(!isFrustumIntersecting(pKFi))
+            continue; // 物理视锥无交集，零漏检安全跳过整帧投影
 
-        matcher.Fuse(pKFi,vpMapPointMatches);
+        matcher.Fuse(pKFi, vpMapPointMatches, ORB_MATCHER_DEFAULT_FUSE_TH, &vModifiedMPs);
     }
 
-    // 通过从目标关键帧投影到当前关键帧来搜索匹配
+    // 第二阶段：通过从目标关键帧投影到当前关键帧来搜索匹配
     vector<MapPoint*> vpFuseCandidates;
-    vpFuseCandidates.reserve(vpTargetKFs.size()*vpMapPointMatches.size());
+    vpFuseCandidates.reserve(vpTargetKFs.size()*30);
 
     for(vector<KeyFrame*>::iterator vitKF=vpTargetKFs.begin(), vendKF=vpTargetKFs.end(); vitKF!=vendKF; vitKF++)
     {
@@ -600,16 +696,18 @@ void LocalMapping::SearchInNeighbors()
         }
     }
 
-    matcher.Fuse(mpCurrentKeyFrame,vpFuseCandidates);
+    matcher.Fuse(mpCurrentKeyFrame, vpFuseCandidates, ORB_MATCHER_DEFAULT_FUSE_TH, &vModifiedMPs);
 
-    // 更新点
-    vpMapPointMatches = mpCurrentKeyFrame->GetMapPointMatches();
-    for(size_t i=0, iend=vpMapPointMatches.size(); i<iend; i++)
+    // 增量脏标记更新：仅对本轮发生融合或新观测改变的地图点更新代表性描述子与法向
+    if(!vModifiedMPs.empty())
     {
-        MapPoint* pMP=vpMapPointMatches[i];
-        if(pMP)
+        std::sort(vModifiedMPs.begin(), vModifiedMPs.end());
+        vModifiedMPs.erase(std::unique(vModifiedMPs.begin(), vModifiedMPs.end()), vModifiedMPs.end());
+
+        for(size_t i=0, iend=vModifiedMPs.size(); i<iend; i++)
         {
-            if(!pMP->isBad())
+            MapPoint* pMP = vModifiedMPs[i];
+            if(pMP && !pMP->isBad())
             {
                 pMP->ComputeDistinctiveDescriptors();
                 pMP->UpdateNormalAndDepth();
@@ -623,33 +721,62 @@ void LocalMapping::SearchInNeighbors()
 
 cv::Mat LocalMapping::ComputeF12(KeyFrame *&pKF1, KeyFrame *&pKF2)
 {
-    // 栈版读取位姿
     float R1f[9], R2f[9], t1f[3], t2f[3];
     pKF1->GetRotation(R1f);
     pKF1->GetTranslation(t1f);
     pKF2->GetRotation(R2f);
     pKF2->GetTranslation(t2f);
 
-    cv::Mat R1w(3,3,CV_32F), R2w(3,3,CV_32F);
-    cv::Mat t1w(3,1,CV_32F), t2w(3,1,CV_32F);
-    for(int r=0; r<3; ++r) {
-        for(int c=0; c<3; ++c) {
-            R1w.at<float>(r,c) = R1f[r*3+c];
-            R2w.at<float>(r,c) = R2f[r*3+c];
+    // R12 = R1w * R2w^T
+    float R12[9];
+    for (int r = 0; r < 3; ++r) {
+        for (int c = 0; c < 3; ++c) {
+            R12[r*3 + c] = R1f[r*3 + 0]*R2f[c*3 + 0] +
+                           R1f[r*3 + 1]*R2f[c*3 + 1] +
+                           R1f[r*3 + 2]*R2f[c*3 + 2];
         }
-        t1w.at<float>(r) = t1f[r];
-        t2w.at<float>(r) = t2f[r];
     }
 
-    cv::Mat R12 = R1w*R2w.t();
-    cv::Mat t12 = -R1w*R2w.t()*t2w+t1w;
+    // t12 = -R12 * t2w + t1w
+    float t12[3];
+    for (int r = 0; r < 3; ++r) {
+        t12[r] = -(R12[r*3 + 0]*t2f[0] + R12[r*3 + 1]*t2f[1] + R12[r*3 + 2]*t2f[2]) + t1f[r];
+    }
 
-    cv::Mat t12x = SkewSymmetricMatrix(t12);
+    // E12 = [t12]x * R12
+    float E12[9];
+    for (int c = 0; c < 3; ++c) {
+        E12[0*3 + c] = -t12[2] * R12[1*3 + c] + t12[1] * R12[2*3 + c];
+        E12[1*3 + c] =  t12[2] * R12[0*3 + c] - t12[0] * R12[2*3 + c];
+        E12[2*3 + c] = -t12[1] * R12[0*3 + c] + t12[0] * R12[1*3 + c];
+    }
 
-    const cv::Mat &K1 = pKF1->mK;
-    const cv::Mat &K2 = pKF2->mK;
+    // 利用相机内参闭式逆：K1^-T * E12 * K2^-1
+    const float x_inv1 = pKF1->invfx;
+    const float y_inv1 = pKF1->invfy;
+    const float cx_s1 = -pKF1->cx * x_inv1;
+    const float cy_s1 = -pKF1->cy * y_inv1;
 
-    return K1.t().inv()*t12x*R12*K2.inv();
+    const float x_inv2 = pKF2->invfx;
+    const float y_inv2 = pKF2->invfy;
+    const float cx_s2 = -pKF2->cx * x_inv2;
+    const float cy_s2 = -pKF2->cy * y_inv2;
+
+    float M[9];
+    for (int j = 0; j < 3; ++j) {
+        M[0*3 + j] = x_inv1 * E12[0*3 + j];
+        M[1*3 + j] = y_inv1 * E12[1*3 + j];
+        M[2*3 + j] = cx_s1 * E12[0*3 + j] + cy_s1 * E12[1*3 + j] + E12[2*3 + j];
+    }
+
+    cv::Mat F(3, 3, CV_32F);
+    float* fptr = F.ptr<float>();
+    for (int i = 0; i < 3; ++i) {
+        fptr[i*3 + 0] = M[i*3 + 0] * x_inv2;
+        fptr[i*3 + 1] = M[i*3 + 1] * y_inv2;
+        fptr[i*3 + 2] = M[i*3 + 0] * cx_s2 + M[i*3 + 1] * cy_s2 + M[i*3 + 2];
+    }
+    return F;
 }
 
 void LocalMapping::RequestStop()
