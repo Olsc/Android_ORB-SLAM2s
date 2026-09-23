@@ -2527,10 +2527,11 @@ void Tracking::UpdateLocalKeyFrames()
             }
         }
 
-        const set<KeyFrame*> spChilds = pKF->GetChilds();
-        for(set<KeyFrame*>::const_iterator sit=spChilds.begin(), send=spChilds.end(); sit!=send; sit++)
+        static thread_local std::vector<KeyFrame*> s_vChilds;
+        pKF->GetChilds(s_vChilds);
+        for(size_t ic = 0, icend = s_vChilds.size(); ic < icend; ++ic)
         {
-            KeyFrame* pChildKF = *sit;
+            KeyFrame* pChildKF = s_vChilds[ic];
             if(!pChildKF->isBad())
             {
                 if(pChildKF->mnTrackReferenceForFrame!=mCurrentFrame.mnId)

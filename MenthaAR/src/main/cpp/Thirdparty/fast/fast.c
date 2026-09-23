@@ -30,3 +30,22 @@ xy* fast9_detect_nonmax_with_scores(const byte* im, int xsize, int ysize, int st
 
 	return nonmax;
 }
+
+int fast9_detect_nonmax_with_scores_stream(
+    const byte* im, int xsize, int ysize, int stride, int b,
+    xy* corners_buf, int* scores_buf,
+    xy* nonmax_out, int* nonmax_scores_out,
+    int* row_start_buf, int max_corners, int max_row)
+{
+	int num_corners = fast9_detect_buf(im, xsize, ysize, stride, b, corners_buf, max_corners);
+	if (num_corners <= 0)
+		return 0;
+	if (num_corners > max_corners)
+		return num_corners; // 缓冲不足：返回哨兵，调用方扩容后重试（不截断）
+
+	fast9_score_buf(im, stride, corners_buf, num_corners, b, scores_buf);
+
+	return nonmax_suppression_with_scores_buf(
+		corners_buf, scores_buf, num_corners,
+		nonmax_out, nonmax_scores_out, row_start_buf, max_row);
+}

@@ -91,6 +91,7 @@ public:
     void EraseChild(KeyFrame* pKF);
     void ChangeParent(KeyFrame* pKF);
     std::set<KeyFrame*> GetChilds();
+    void GetChilds(std::vector<KeyFrame*>& vOutChilds);
     KeyFrame* GetParent();
     bool hasChild(KeyFrame* pKF);
 

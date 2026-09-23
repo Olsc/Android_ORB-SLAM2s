@@ -987,32 +987,61 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
         const int wCell = ceil(width/nCols);
         const int hCell = ceil(height/nRows);
 
-        // 1. 全图检测所有可能的候选点
+        // 线程局部平坦缓冲复用检测；小缓冲起步，不足时按需扩容重试（不截断）
+        static thread_local std::vector<xy> s_corners_buf;
+        static thread_local std::vector<int> s_scores_buf;
+        static thread_local std::vector<xy> s_nonmax_buf;
+        static thread_local std::vector<int> s_nonmax_scores_buf;
+        static thread_local std::vector<int> s_row_start_buf;
+
+        const int FAST_CORNERS_INIT_CAP = 32768;
+        if (s_corners_buf.size() < (size_t)FAST_CORNERS_INIT_CAP) {
+            s_corners_buf.resize(FAST_CORNERS_INIT_CAP);
+            s_scores_buf.resize(FAST_CORNERS_INIT_CAP);
+            s_nonmax_buf.resize(FAST_CORNERS_INIT_CAP);
+            s_nonmax_scores_buf.resize(FAST_CORNERS_INIT_CAP);
+        }
+        if (s_row_start_buf.size() < (size_t)(mvImagePyramid[level].rows + 1)) {
+            s_row_start_buf.resize(mvImagePyramid[level].rows + 1);
+        }
+
         vector<cv::KeyPoint> vAllKeys;
         {
             const cv::Mat& imgLevel = mvImagePyramid[level];
             int num_corners = 0;
-            int* scores = nullptr;
-            xy* corners = fast9_detect_nonmax_with_scores(
-                imgLevel.data, imgLevel.cols, imgLevel.rows,
-                (int)imgLevel.step, minThFAST, &num_corners, &scores);
+            for (;;)
+            {
+                const int cap = (int)s_corners_buf.size();
+                num_corners = fast9_detect_nonmax_with_scores_stream(
+                    imgLevel.data, imgLevel.cols, imgLevel.rows,
+                    (int)imgLevel.step, minThFAST,
+                    s_corners_buf.data(), s_scores_buf.data(),
+                    s_nonmax_buf.data(), s_nonmax_scores_buf.data(),
+                    s_row_start_buf.data(), cap, imgLevel.rows);
+                if (num_corners <= cap)
+                    break; // 成功（num_corners <= cap，无角点时为 0）
+                // 缓冲不足
+                const size_t newCap = (size_t)cap * 2;
+                s_corners_buf.resize(newCap);
+                s_scores_buf.resize(newCap);
+                s_nonmax_buf.resize(newCap);
+                s_nonmax_scores_buf.resize(newCap);
+            }
 
-            if (corners && num_corners > 0)
+            if (num_corners > 0)
             {
                 vAllKeys.resize(num_corners);
                 for (int i = 0; i < num_corners; ++i)
                 {
                     vAllKeys[i] = cv::KeyPoint(
-                        (float)corners[i].x,
-                        (float)corners[i].y,
+                        (float)s_nonmax_buf[i].x,
+                        (float)s_nonmax_buf[i].y,
                         7.0f,
                         -1.0f,
-                        scores ? (float)scores[i] : 0.0f,
+                        (float)s_nonmax_scores_buf[i],
                         level);
                 }
             }
-            if (corners) free(corners);
-            if (scores) free(scores);
         }
 
         const float inv_wCell = 1.0f / (float)wCell;

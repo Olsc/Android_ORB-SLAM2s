@@ -52,7 +52,11 @@ float Frame::mfGridElementWidthInv, Frame::mfGridElementHeightInv;
 
 Frame::Frame()
     : mpTree(nullptr)
-{}
+{
+    std::memset(mRcw_arr, 0, sizeof(mRcw_arr));
+    std::memset(mtcw_arr, 0, sizeof(mtcw_arr));
+    std::memset(mOw_arr, 0, sizeof(mOw_arr));
+}
 
 // 复制构造函数
 Frame::Frame(const Frame &frame)
@@ -68,6 +72,12 @@ Frame::Frame(const Frame &frame)
      mvLevelSigma2(frame.mvLevelSigma2), mvInvLevelSigma2(frame.mvInvLevelSigma2),
      mpTree(frame.mpTree)
 {
+    // 拷贝构造的初始化列表不含新增的紧凑缓存数组；若 frame.mTcw 为空则下面
+    // 的 SetPose 不会被调用，因此必须显式初始化，避免 isInFrustum 读取未初始化值
+    std::memset(mRcw_arr, 0, sizeof(mRcw_arr));
+    std::memset(mtcw_arr, 0, sizeof(mtcw_arr));
+    std::memset(mOw_arr, 0, sizeof(mOw_arr));
+
     for(int i=0;i<FRAME_GRID_COLS;i++)
         for(int j=0; j<FRAME_GRID_ROWS; j++)
             mGrid[i][j]=frame.mGrid[i][j];
@@ -190,6 +200,19 @@ void Frame::UpdatePoseMatrices()
     mRwc = mRcw.t();
     mtcw = mTcw.rowRange(0,3).col(3);
     mOw = -mRcw.t()*mtcw;
+
+    // 缓存连续紧凑平坦数组
+    mRcw_arr[0] = mRcw.at<float>(0,0); mRcw_arr[1] = mRcw.at<float>(0,1); mRcw_arr[2] = mRcw.at<float>(0,2);
+    mRcw_arr[3] = mRcw.at<float>(1,0); mRcw_arr[4] = mRcw.at<float>(1,1); mRcw_arr[5] = mRcw.at<float>(1,2);
+    mRcw_arr[6] = mRcw.at<float>(2,0); mRcw_arr[7] = mRcw.at<float>(2,1); mRcw_arr[8] = mRcw.at<float>(2,2);
+
+    mtcw_arr[0] = mtcw.at<float>(0);
+    mtcw_arr[1] = mtcw.at<float>(1);
+    mtcw_arr[2] = mtcw.at<float>(2);
+
+    mOw_arr[0] = mOw.at<float>(0);
+    mOw_arr[1] = mOw.at<float>(1);
+    mOw_arr[2] = mOw.at<float>(2);
 }
 
 bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
@@ -200,20 +223,20 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
     cv::Point3f p3f;
     pMP->GetWorldPos(p3f);
 
-    // 相机坐标系中的3D坐标
-    const float PcX = mRcw.at<float>(0,0)*p3f.x + mRcw.at<float>(0,1)*p3f.y + mRcw.at<float>(0,2)*p3f.z + mtcw.at<float>(0);
-    const float PcY = mRcw.at<float>(1,0)*p3f.x + mRcw.at<float>(1,1)*p3f.y + mRcw.at<float>(1,2)*p3f.z + mtcw.at<float>(1);
-    const float PcZ = mRcw.at<float>(2,0)*p3f.x + mRcw.at<float>(2,1)*p3f.y + mRcw.at<float>(2,2)*p3f.z + mtcw.at<float>(2);
+    // 1. 优先计算相机坐标系中的深度 PcZ
+    const float PcZ = mRcw_arr[6]*p3f.x + mRcw_arr[7]*p3f.y + mRcw_arr[8]*p3f.z + mtcw_arr[2];
 
     // 检查正深度
     if(PcZ <= 0.0f)
         return false;
 
-    // 零除法视锥边界剪裁
+    // 仅在正深度时计算 PcX 与 PcY 并进行零除法视锥边界剪裁
+    const float PcX = mRcw_arr[0]*p3f.x + mRcw_arr[1]*p3f.y + mRcw_arr[2]*p3f.z + mtcw_arr[0];
     const float u_num = fx*PcX + cx*PcZ;
     if(u_num < mnMinX*PcZ || u_num > mnMaxX*PcZ)
         return false;
 
+    const float PcY = mRcw_arr[3]*p3f.x + mRcw_arr[4]*p3f.y + mRcw_arr[5]*p3f.z + mtcw_arr[1];
     const float v_num = fy*PcY + cy*PcZ;
     if(v_num < mnMinY*PcZ || v_num > mnMaxY*PcZ)
         return false;
@@ -224,9 +247,9 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
 
     // 检查常规点的距离不变性和视角。
     // 对于没有描述符的已加载点，放宽约束以允许基于投影的匹配。
-    const float POx = p3f.x - mOw.at<float>(0);
-    const float POy = p3f.y - mOw.at<float>(1);
-    const float POz = p3f.z - mOw.at<float>(2);
+    const float POx = p3f.x - mOw_arr[0];
+    const float POy = p3f.y - mOw_arr[1];
+    const float POz = p3f.z - mOw_arr[2];
     const float distSq = POx*POx + POy*POy + POz*POz;
 
     float viewCos = 1.0f;

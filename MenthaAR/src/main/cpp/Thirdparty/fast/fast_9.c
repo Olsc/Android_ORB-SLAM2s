@@ -75,30 +75,34 @@ static void make_offsets(int pixel[], int row_stride)
 
 
 
-int* fast9_score(const byte* i, int stride, xy* corners, int num_corners, int b)
-{	
-	int* scores = (int*)malloc(sizeof(int)* num_corners);
-	int n;
-
+void fast9_score_buf(const byte* i, int stride, const xy* corners, int num_corners, int b, int* scores_out)
+{
 	int pixel[16];
 	make_offsets(pixel, stride);
+	for(int n=0; n < num_corners; n++)
+		scores_out[n] = fast9_corner_score(i + corners[n].y*stride + corners[n].x, pixel, b);
+}
 
-    for(n=0; n < num_corners; n++)
-        scores[n] = fast9_corner_score(i + corners[n].y*stride + corners[n].x, pixel, b);
-
+int* fast9_score(const byte* i, int stride, xy* corners, int num_corners, int b)
+{	
+	if (num_corners <= 0) return NULL;
+	int* scores = (int*)malloc(sizeof(int)* num_corners);
+	fast9_score_buf(i, stride, corners, num_corners, b, scores);
 	return scores;
 }
 
 
-xy* fast9_detect(const byte* im, int xsize, int ysize, int stride, int b, int* ret_num_corners)
+static xy* fast9_detect_internal(const byte* im, int xsize, int ysize, int stride, int b,
+                                 int* ret_num_corners, xy* corners_buf, int max_corners)
 {
 	int num_corners=0;
-	xy* ret_corners;
+	xy* ret_corners = corners_buf;
 	int rsize=512;
 	int pixel[16];
 	int x, y;
 
-	ret_corners = (xy*)malloc(sizeof(xy)*rsize);
+	if (!ret_corners)
+		ret_corners = (xy*)malloc(sizeof(xy)*rsize);
 	make_offsets(pixel, stride);
 
 	for(y=3; y < ysize - 3; y++)
@@ -108,6 +112,23 @@ xy* fast9_detect(const byte* im, int xsize, int ysize, int stride, int b, int* r
 		
 			int cb = *p + b;
 			int c_b= *p - b;
+
+			const int v0 = p[pixel[0]];
+			const int v4 = p[pixel[4]];
+			const int v8 = p[pixel[8]];
+			const int v12 = p[pixel[12]];
+			const int b0 = (v0 > cb);
+			const int b4 = (v4 > cb);
+			const int b8 = (v8 > cb);
+			const int b12 = (v12 > cb);
+			const int bright_valid = (b0 & b4) | (b4 & b8) | (b8 & b12) | (b12 & b0);
+			const int d0 = (v0 < c_b);
+			const int d4 = (v4 < c_b);
+			const int d8 = (v8 < c_b);
+			const int d12 = (v12 < c_b);
+			const int dark_valid = (d0 & d4) | (d4 & d8) | (d8 & d12) | (d12 & d0);
+			if (!(bright_valid | dark_valid))
+				continue;
         if(p[pixel[0]] > cb)
          if(p[pixel[1]] > cb)
           if(p[pixel[2]] > cb)
@@ -3009,10 +3030,19 @@ xy* fast9_detect(const byte* im, int xsize, int ysize, int stride, int b, int* r
            continue;
          else
           continue;
-			if(num_corners == rsize)
+			if (!corners_buf)
 			{
-				rsize*=2;
-				ret_corners = (xy*)realloc(ret_corners, sizeof(xy)*rsize);
+				if(num_corners == rsize)
+				{
+					rsize*=2;
+					ret_corners = (xy*)realloc(ret_corners, sizeof(xy)*rsize);
+				}
+			}
+			else if (num_corners >= max_corners)
+			{
+				// 缓冲不足：返回哨兵
+				*ret_num_corners = max_corners + 1;
+				return ret_corners;
 			}
 			ret_corners[num_corners].x = x;
 			ret_corners[num_corners].y = y;
@@ -3022,7 +3052,19 @@ xy* fast9_detect(const byte* im, int xsize, int ysize, int stride, int b, int* r
 	
 	*ret_num_corners = num_corners;
 	return ret_corners;
+}
 
+xy* fast9_detect(const byte* im, int xsize, int ysize, int stride, int b, int* ret_num_corners)
+{
+	return fast9_detect_internal(im, xsize, ysize, stride, b, ret_num_corners, NULL, 0);
+}
+
+int fast9_detect_buf(const byte* im, int xsize, int ysize, int stride, int b,
+                     xy* corners_out, int max_corners)
+{
+	int num_corners = 0;
+	fast9_detect_internal(im, xsize, ysize, stride, b, &num_corners, corners_out, max_corners);
+	return num_corners;
 }
 
 

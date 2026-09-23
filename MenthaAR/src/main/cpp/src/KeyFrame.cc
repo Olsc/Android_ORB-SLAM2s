@@ -463,6 +463,12 @@ set<KeyFrame*> KeyFrame::GetChilds()
     return mspChildrens;
 }
 
+void KeyFrame::GetChilds(std::vector<KeyFrame*>& vOutChilds)
+{
+    unique_lock<mutex> lockCon(mMutexConnections);
+    vOutChilds.assign(mspChildrens.begin(), mspChildrens.end());
+}
+
 KeyFrame* KeyFrame::GetParent()
 {
     unique_lock<mutex> lockCon(mMutexConnections);

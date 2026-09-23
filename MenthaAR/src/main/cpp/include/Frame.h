@@ -200,6 +200,11 @@ private:
     cv::Mat mtcw;
     cv::Mat mRwc;
     cv::Mat mOw; //==mtwc
+
+    // 连续紧凑平坦浮点数组缓存
+    float mRcw_arr[9];
+    float mtcw_arr[3];
+    float mOw_arr[3];
 };
 
 }// namespace ORB_SLAM2
