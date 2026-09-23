@@ -623,33 +623,62 @@ void LocalMapping::SearchInNeighbors()
 
 cv::Mat LocalMapping::ComputeF12(KeyFrame *&pKF1, KeyFrame *&pKF2)
 {
-    // 栈版读取位姿
     float R1f[9], R2f[9], t1f[3], t2f[3];
     pKF1->GetRotation(R1f);
     pKF1->GetTranslation(t1f);
     pKF2->GetRotation(R2f);
     pKF2->GetTranslation(t2f);
 
-    cv::Mat R1w(3,3,CV_32F), R2w(3,3,CV_32F);
-    cv::Mat t1w(3,1,CV_32F), t2w(3,1,CV_32F);
-    for(int r=0; r<3; ++r) {
-        for(int c=0; c<3; ++c) {
-            R1w.at<float>(r,c) = R1f[r*3+c];
-            R2w.at<float>(r,c) = R2f[r*3+c];
+    // R12 = R1w * R2w^T
+    float R12[9];
+    for (int r = 0; r < 3; ++r) {
+        for (int c = 0; c < 3; ++c) {
+            R12[r*3 + c] = R1f[r*3 + 0]*R2f[c*3 + 0] +
+                           R1f[r*3 + 1]*R2f[c*3 + 1] +
+                           R1f[r*3 + 2]*R2f[c*3 + 2];
         }
-        t1w.at<float>(r) = t1f[r];
-        t2w.at<float>(r) = t2f[r];
     }
 
-    cv::Mat R12 = R1w*R2w.t();
-    cv::Mat t12 = -R1w*R2w.t()*t2w+t1w;
+    // t12 = -R12 * t2w + t1w
+    float t12[3];
+    for (int r = 0; r < 3; ++r) {
+        t12[r] = -(R12[r*3 + 0]*t2f[0] + R12[r*3 + 1]*t2f[1] + R12[r*3 + 2]*t2f[2]) + t1f[r];
+    }
 
-    cv::Mat t12x = SkewSymmetricMatrix(t12);
+    // E12 = [t12]x * R12
+    float E12[9];
+    for (int c = 0; c < 3; ++c) {
+        E12[0*3 + c] = -t12[2] * R12[1*3 + c] + t12[1] * R12[2*3 + c];
+        E12[1*3 + c] =  t12[2] * R12[0*3 + c] - t12[0] * R12[2*3 + c];
+        E12[2*3 + c] = -t12[1] * R12[0*3 + c] + t12[0] * R12[1*3 + c];
+    }
 
-    const cv::Mat &K1 = pKF1->mK;
-    const cv::Mat &K2 = pKF2->mK;
+    // 利用相机内参闭式逆：K1^-T * E12 * K2^-1
+    const float x_inv1 = pKF1->invfx;
+    const float y_inv1 = pKF1->invfy;
+    const float cx_s1 = -pKF1->cx * x_inv1;
+    const float cy_s1 = -pKF1->cy * y_inv1;
 
-    return K1.t().inv()*t12x*R12*K2.inv();
+    const float x_inv2 = pKF2->invfx;
+    const float y_inv2 = pKF2->invfy;
+    const float cx_s2 = -pKF2->cx * x_inv2;
+    const float cy_s2 = -pKF2->cy * y_inv2;
+
+    float M[9];
+    for (int j = 0; j < 3; ++j) {
+        M[0*3 + j] = x_inv1 * E12[0*3 + j];
+        M[1*3 + j] = y_inv1 * E12[1*3 + j];
+        M[2*3 + j] = cx_s1 * E12[0*3 + j] + cy_s1 * E12[1*3 + j] + E12[2*3 + j];
+    }
+
+    cv::Mat F(3, 3, CV_32F);
+    float* fptr = F.ptr<float>();
+    for (int i = 0; i < 3; ++i) {
+        fptr[i*3 + 0] = M[i*3 + 0] * x_inv2;
+        fptr[i*3 + 1] = M[i*3 + 1] * y_inv2;
+        fptr[i*3 + 2] = M[i*3 + 0] * cx_s2 + M[i*3 + 1] * cy_s2 + M[i*3 + 2];
+    }
+    return F;
 }
 
 void LocalMapping::RequestStop()

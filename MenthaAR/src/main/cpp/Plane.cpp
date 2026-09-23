@@ -191,11 +191,19 @@ void Plane::Recompute()
     const float f = 1.0f / std::sqrt(a * a + b * b + c * c);
 
     // 首次计算时，计算从相机中心指向平面原点的向量
-    // 用于确定法向量方向
+    // 用于确定法向量方向：Oc = -Rcw^T * tcw
     if (XC.empty())
     {
-        cv::Mat Oc = -mTcw.colRange(0, 3).rowRange(0, 3).t() * mTcw.rowRange(0, 3).col(3);
-        XC = Oc - o;
+        const float* tcw_ptr = mTcw.ptr<float>();
+        const float r00 = tcw_ptr[0], r01 = tcw_ptr[1], r02 = tcw_ptr[2], t0 = tcw_ptr[3];
+        const float r10 = tcw_ptr[4], r11 = tcw_ptr[5], r12 = tcw_ptr[6], t1 = tcw_ptr[7];
+        const float r20 = tcw_ptr[8], r21 = tcw_ptr[9], r22 = tcw_ptr[10], t2 = tcw_ptr[11];
+
+        const float ocX = -(r00 * t0 + r10 * t1 + r20 * t2);
+        const float ocY = -(r01 * t0 + r11 * t1 + r21 * t2);
+        const float ocZ = -(r02 * t0 + r12 * t1 + r22 * t2);
+
+        XC = (cv::Mat_<float>(3, 1) << ocX - meanX, ocY - meanY, ocZ - meanZ);
     }
 
     // 确保法向量指向相机侧（点积>0则反向）
