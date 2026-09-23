@@ -848,11 +848,6 @@ const int UBUNTU_CAPTURE_HEIGHT = 720;
 const int UBUNTU_MAX_DISPLAY_W = 1280;
 const int UBUNTU_MAX_DISPLAY_H = 720;
 
-// AR 立方体自适应尺寸系数 / 最小尺寸 / 回退尺寸
-const float AR_CUBE_SCALE_FACTOR = 0.1f;
-const float AR_CUBE_MIN_SIZE = 0.01f;
-const float AR_CUBE_FALLBACK_SIZE = 0.05f;
-
 // benchmark 记录预分配容量 / 进度输出间隔
 const int BENCH_RESERVE_DEFAULT = 10000;
 const int BENCH_PROGRESS_INTERVAL = 100;

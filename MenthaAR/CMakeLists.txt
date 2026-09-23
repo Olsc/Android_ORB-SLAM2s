@@ -191,6 +191,7 @@ include_directories(
         src/main/cpp
         src/main/cpp/include
         src/main/cpp/Thirdparty
+        src/main/cpp/Thirdparty/fast
         src/main/cpp/Thirdparty/g2o
         src/main/cpp/Thirdparty/srrg_hbst
 )
@@ -272,6 +273,12 @@ add_library(MenthaAR_Engine SHARED
         src/main/cpp/UIUtils.cpp
         src/main/cpp/Plane.cpp
         src/main/cpp/Matrix.cpp
+
+        # FAST 角点检测组件 (Edward Rosten C FAST-9)
+        src/main/cpp/Thirdparty/fast/fast.h
+        src/main/cpp/Thirdparty/fast/fast_9.c
+        src/main/cpp/Thirdparty/fast/nonmax.c
+        src/main/cpp/Thirdparty/fast/fast.c
         )
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

@@ -10,6 +10,7 @@
 #include <condition_variable>
 #include <atomic>
 #include <cmath>
+#include <chrono>
 #include <map>
 #include <unordered_set>
 #include <vector>
@@ -373,8 +374,8 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
         LOGE("processImage: 输入图像为空，跳帧处理");
         return 0;
     }
-    const int scaledW = cvRound(static_cast<double>(image.cols) / DOWNSCALE);
-    const int scaledH = cvRound(static_cast<double>(image.rows) / DOWNSCALE);
+    const int scaledW = static_cast<int>(std::lround(static_cast<double>(image.cols) / DOWNSCALE));
+    const int scaledH = static_cast<int>(std::lround(static_cast<double>(image.rows) / DOWNSCALE));
     cv::resize(image, imgSmall, cv::Size(scaledW, scaledH), 0, 0, cv::INTER_LINEAR);
 
     // 确保内参与实际 SLAM 分辨率匹配
@@ -559,8 +560,8 @@ Java_com_orb_slam2s_slamar_NativeHelper_initSLAM(JNIEnv* env, jobject instance, 
 void updateScaledIntrinsics(int cameraWidth, int cameraHeight) {
     if (cameraWidth <= 0 || cameraHeight <= 0) return;
 
-    int slamWidth = cvRound((float)cameraWidth / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR);
-    int slamHeight = cvRound((float)cameraHeight / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR);
+    int slamWidth = static_cast<int>(std::lround((float)cameraWidth / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR));
+    int slamHeight = static_cast<int>(std::lround((float)cameraHeight / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR));
     if (slamWidth < 1) slamWidth = 1;
     if (slamHeight < 1) slamHeight = 1;
 
@@ -583,8 +584,8 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeUpdateResolution(JNIEnv* env, jobj
                                                                jint cameraWidth, jint cameraHeight) {
     updateScaledIntrinsics(cameraWidth, cameraHeight);
 
-    int slamWidth = cvRound((float)cameraWidth / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR);
-    int slamHeight = cvRound((float)cameraHeight / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR);
+    int slamWidth = static_cast<int>(std::lround((float)cameraWidth / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR));
+    int slamHeight = static_cast<int>(std::lround((float)cameraHeight / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR));
     if (slamWidth < 1) slamWidth = 1;
     if (slamHeight < 1) slamHeight = 1;
 
@@ -613,12 +614,13 @@ Java_com_orb_slam2s_slamar_NativeHelper_saveMap(JNIEnv* env, jobject instance, j
 
     if (sys)
     {
-        auto t0 = static_cast<double>(cv::getTickCount());
+        auto t0 = std::chrono::steady_clock::now();
         sys->SaveMap(std::string(path)); // 使用默认 SYSTEM_MAX_MPS_SAVE 上限
         SavePlaneAndArInfo(std::string(path)); // 保存平面和AR信息
 
-        auto t1 = static_cast<double>(cv::getTickCount());
-        double ms = (t1 - t0) * 1000.0 / cv::getTickFrequency();
+        auto t1 = std::chrono::steady_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+        (void)ms;
     }
 
     env->ReleaseStringUTFChars(path_, path);
@@ -634,7 +636,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_loadMapWithId(JNIEnv *env, jobject insta
             return gProcessingFrames.load(std::memory_order_acquire) == 0;
         });
 
-        auto t0 = static_cast<double>(cv::getTickCount());
+        auto t0 = std::chrono::steady_clock::now();
 
         if (!append) {
              std::lock_guard<std::mutex> lock(gMapDataMutex);
@@ -647,8 +649,9 @@ Java_com_orb_slam2s_slamar_NativeHelper_loadMapWithId(JNIEnv *env, jobject insta
         slamSys->LoadMap(std::string(path), mapId, append);
         LoadPlaneAndArInfo(std::string(path), mapId);
 
-        auto t1 = static_cast<double>(cv::getTickCount());
-        double ms = (t1 - t0) * 1000.0 / cv::getTickFrequency();
+        auto t1 = std::chrono::steady_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+        (void)ms;
     }
     env->ReleaseStringUTFChars(path_, path);
 }
@@ -829,8 +832,8 @@ static void writeResultToSharedMemory(int seq, int tracking, bool draw, int w, i
         memcpy(mvp,      gCurrentModelMatrix, 16 * sizeof(float));
         memcpy(mvp + 16, gCurrentViewMatrix,  16 * sizeof(float));
     }
-    const int projW = cvRound((float)w / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR);
-    const int projH = cvRound((float)h / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR);
+    const int projW = static_cast<int>(std::lround((float)w / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR));
+    const int projH = static_cast<int>(std::lround((float)h / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR));
     frustumM_RUB(projW, projH, fx, fy, cx, cy,
                  ORB_SLAM2::PROJECTION_ZNEAR, ORB_SLAM2::PROJECTION_ZFAR, mvp + 32);
 

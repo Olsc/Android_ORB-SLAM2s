@@ -1031,16 +1031,16 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
     if(im.channels()==3)
     {
         if(mbRGB)
-            cvtColor(im, mImGray, CV_RGB2GRAY);
+            cvtColor(im, mImGray, cv::COLOR_RGB2GRAY);
         else
-            cvtColor(im, mImGray, CV_BGR2GRAY);
+            cvtColor(im, mImGray, cv::COLOR_BGR2GRAY);
     }
     else if(im.channels()==4)
     {
         if(mbRGB)
-            cvtColor(im, mImGray, CV_RGBA2GRAY);
+            cvtColor(im, mImGray, cv::COLOR_RGBA2GRAY);
         else
-            cvtColor(im, mImGray, CV_BGRA2GRAY);
+            cvtColor(im, mImGray, cv::COLOR_BGRA2GRAY);
     }
     else
     {
