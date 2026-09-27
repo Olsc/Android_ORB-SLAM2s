@@ -3,7 +3,7 @@
  * 由Olsc于2025/8/25开始进行修改
  */
 
-// UI工具函数模块：提供图像绘制、平面检测、投影矩阵计算等工具函数
+// UI 工具：RANSAC 平面检测与 OpenCV→OpenGL 矩阵转换
 
 #ifndef UTILS_H
 #define UTILS_H

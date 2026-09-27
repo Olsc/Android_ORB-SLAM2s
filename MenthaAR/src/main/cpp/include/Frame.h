@@ -78,7 +78,7 @@ public:
         return mOw.clone();
     }
 
-    // 栈版
+    // 读取相机中心到栈上
     inline void GetCameraCenter(cv::Point3f& out) const {
         out.x = mOw.at<float>(0);
         out.y = mOw.at<float>(1);
@@ -90,7 +90,7 @@ public:
         return mRwc.clone();
     }
 
-    // 栈版零拷贝读取旋转逆矩阵（行优先 3x3）
+    // 读取旋转逆矩阵（行优先 3x3）
     inline void GetRotationInverse(float out[9]) const {
         out[0]=mRwc.at<float>(0,0); out[1]=mRwc.at<float>(0,1); out[2]=mRwc.at<float>(0,2);
         out[3]=mRwc.at<float>(1,0); out[4]=mRwc.at<float>(1,1); out[5]=mRwc.at<float>(1,2);
@@ -106,7 +106,7 @@ public:
 
     std::vector<size_t> GetFeaturesInArea(const float &x, const float  &y, const float  &r, const int minLevel=-1, const int maxLevel=-1) const;
 
-    // 免分配版本：结果写入调用方缓冲区，语义与返回值版一致
+    // 结果写入调用方缓冲区，语义与返回值版一致
     void GetFeaturesInArea(const float &x, const float &y, const float &r,
                            std::vector<size_t> &vIndices,
                            const int minLevel=-1, const int maxLevel=-1) const;
@@ -179,7 +179,7 @@ public:
     std::vector<float> mvLevelSigma2;
     std::vector<float> mvInvLevelSigma2;
 
-    // 去失真图像边界（计算一次）。
+    // 去失真图像边界。
     static float mnMinX;
     static float mnMaxX;
     static float mnMinY;

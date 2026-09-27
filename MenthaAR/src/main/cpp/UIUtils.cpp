@@ -11,7 +11,7 @@
 // 使用RANSAC算法从3D地图点中检测平面，选择中值距离最小的模型
 Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &vMPs, const int iterations)
 {
-    // 提取3D点：仅保留观测次数达到阈值的稳定地图点，用 reserve 预分配容量
+    // 提取3D点：仅保留观测次数达阈值的稳定地图点
     vector<cv::Point3f> vPoints;
     vPoints.reserve(vMPs.size());
     vector<ORB_SLAM2::MapPoint*> vPointMP;
@@ -34,7 +34,7 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
 
     const int N = vPoints.size();
 
-    if(N<ORB_SLAM2::PLANE_MIN_POINTS)  // 点数过少，无法可靠地拟合平面
+    if(N<ORB_SLAM2::PLANE_MIN_POINTS) // 点数过少，无法可靠地拟合平面
         return NULL;
 
     // 准备RANSAC所需的索引数组
@@ -69,8 +69,7 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
             vAvailableIndices.pop_back();
         }
 
-        // 三点定面闭式解：叉积法向归一化后与 SVD 零空间解一致，
-        // 共线退化时范数趋零直接拒绝，语义与原 SVD 路径一致
+        // 三点定面闭式解，共线退化时范数趋零直接拒绝
         const cv::Point3f &p1 = vPoints[idx[0]];
         const cv::Point3f &p2 = vPoints[idx[1]];
         const cv::Point3f &p3 = vPoints[idx[2]];
@@ -81,7 +80,7 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
         float c = ux*vy - uy*vx;
         const float nrm = std::sqrt(a*a + b*b + c*c);
         if(nrm < 1e-8f)
-            continue;   // 三点近共线，无法定义平面
+            continue; // 三点近共线，无法定义平面
         const float invNrm = 1.0f / nrm;
         a *= invNrm; b *= invNrm; c *= invNrm;
         const float d = -(a*p1.x + b*p1.y + c*p1.z);
@@ -107,7 +106,7 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
         }
     }
 
-    // 使用1.4倍最佳距离作为内点阈值
+    // 内点阈值 = 最佳中值距离 × PLANE_INLIER_TH_RATIO
     const float th = ORB_SLAM2::PLANE_INLIER_TH_RATIO*bestDist;
     vector<bool> vbInliers(N,false);
     int nInliers = 0;

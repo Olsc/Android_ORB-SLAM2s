@@ -72,7 +72,7 @@ public:
     void RequestStop();
     void CancelStopRequest();
 
-    // 等待 LM 真正进入 Stopped 状态（精准谓词驱动，零超时盲等）
+    // 等待 LM 真正进入 Stopped 状态
     bool WaitForStopped();
 
     void RequestReset();

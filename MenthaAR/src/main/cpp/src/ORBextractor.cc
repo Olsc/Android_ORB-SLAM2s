@@ -80,7 +80,7 @@
 #include "ORBextractor.h"
 #include "Config.h"
 #include "Common.h"
-#include "MenthaProfiler.h" // 性能分析器
+#include "MenthaProfiler.h"
 
 using namespace cv;
 using namespace std;
@@ -90,16 +90,14 @@ namespace ORB_SLAM2
 
 // 描述子旋转偏移量查找表 (LUT)
 struct DescriptorOffset {
-    int dy;  // y方向偏移 (行偏移)
-    int dx;  // x方向偏移 (列偏移)
+    int dy; // y方向偏移 (行偏移)
+    int dx; // x方向偏移 (列偏移)
 };
 // [360个角度][512个采样点] = 184320 个预计算偏移量
 static DescriptorOffset descriptorOffsetLUT[360][ORB_BRIEF_NUM_POINTS];
 static bool bDescriptorLUTInit = false;
 
-// 描述子偏移按当前层 step 直接计算 dy*step+dx——8 层金字塔 step 各异，
-// 单值 LUT 逐层切换必失效（每帧最多 8 次全表重建），直接计算零重建、零额外内存
-
+// 描述子偏移按当前层 step 直接计算 dy*step+dx
 static uint32_t reciprocal_table_q24[1025];
 static uint16_t arctan_table_q10[1025];
 static bool bArctanLUTInit = false;
@@ -153,9 +151,6 @@ static float IC_Angle(const Mat& image, Point2f pt,  const vector<int> & u_max)
     const int px = (int)(pt.x + 0.5f);
     const uchar* center = &image.at<uchar>(py, px);
 
-    // v=0 中心线：用后缀和消除 u * f(u) 中的乘法
-    // 数学等价：sum_{u=1}^{d} u·f(u) == sum_{u=1}^{d} (sum_{k=u}^{d} f(k))
-    // 实现：从右向左扫描，累加 f(k)，每次 m_10 += 累加器
     {
         int suffix = 0;
         for (int u = ORB_HALF_PATCH_SIZE; u >= 1; --u) {
@@ -166,8 +161,7 @@ static float IC_Angle(const Mat& image, Point2f pt,  const vector<int> & u_max)
 
     int step = (int)image.step1();
 
-    // m_01 后缀和累加器：sum_{v=1}^{h} v * v_sum(v) = sum_{v=1}^{h} suffix_{k=v}^{h} v_sum(k)
-    // 从右向左扫描，累计 v_sum 的后缀和，每次 m_01 += 累加器
+    // m_01 后缀和累加器：从右向左扫描，累计 v_sum 的后缀和
     int suffix_m01 = 0;
 
     for (int v = ORB_HALF_PATCH_SIZE; v >= 1; --v)
@@ -182,7 +176,7 @@ static float IC_Angle(const Mat& image, Point2f pt,  const vector<int> & u_max)
         // 中心列 (u=0)
         v_sum += (ptr_plus[0] - ptr_minus[0]);
 
-        // 后缀和消除 m_10 内层乘法：sum_{u=1}^{d} u·f(u) = 后缀和累加
+        // m_10 同样用后缀和累加求得，避免内层乘法
         int suffix = 0;
         for (int u = d; u >= 1; --u)
         {
@@ -200,7 +194,7 @@ static float IC_Angle(const Mat& image, Point2f pt,  const vector<int> & u_max)
             m_10 += suffix;
         }
 
-        // m_01 后缀和：suffix_m01 = sum_{k=v}^{h} v_sum(k)，逐层累加
+        // m_01 后缀和逐层累加
         suffix_m01 += v_sum;
         m_01 += suffix_m01;
     }
@@ -986,7 +980,7 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
         const int wCell = ceil(width/nCols);
         const int hCell = ceil(height/nRows);
 
-        // 1. 全图检测所有可能的候选点 (使用 minThFAST；OpenCV SIMD 版 FAST)
+        // 1. 全图用 minThFAST 检测候选角点
         vector<cv::KeyPoint> vAllKeys;
         FAST(mvImagePyramid[level], vAllKeys, minThFAST, true);
 
@@ -1050,7 +1044,7 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
             }
         }
 
-        // 3. 逐个网格单次遍历流式过滤（避免双重 Pass 的缓存失效）
+        // 3. 逐个网格遍历过滤，无强角点时回退弱角点
         for(int cellIdx = 0; cellIdx < nCells; ++cellIdx)
         {
             int start = cellOffsets[cellIdx];
@@ -1103,14 +1097,12 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
             keypoints[i].size = scaledPatchSize;
         }
 
-        // 合并方向计算到同一屏障
+        // 同一趟内完成方向计算
         computeOrientation(mvImagePyramid[level], allKeypoints[level], umax);
     }
 }
 
-// 按金字塔层并行执行 fn(level)。各层检测/描述子计算相互独立（层内数据 + thread_local 缓存）。
-// 静态常驻轻量级工作线程池：避免每帧创建/销毁 std::thread 的调度与切换开销；
-// 空闲线程阻塞于条件变量，主线程参与任务窃取，负载均衡且零分配
+// 按金字塔层并行执行 fn(level)。各层检测/描述子计算相互独立
 namespace {
 class LevelThreadPool {
 public:
@@ -1244,7 +1236,7 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
     Mat image = _image.getMat();
     assert(image.type() == CV_8UC1 );
 
-    // 预计算尺度金字塔 (SLAM依赖它进行后续操作，必须保留)
+    // 预计算尺度金字塔
     ComputePyramid(image);
 
     vector < vector<KeyPoint> > allKeypoints;
@@ -1325,7 +1317,7 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
     for (int r = 0; r < rows; ++r) {
         const uchar* srcRow = srcPadded.ptr<uchar>(r);
         uint8_t* tempRow = &tempBuf[r * cols];
-        // 边界内像素 (3 到 cols-4)。对称折叠：mul_h(x[c-h]+x[c+h]) 与逐项加权由整数分配律逐位等价
+        // 边界内像素 (3 到 cols-4)，对称折叠 x[c-h]+x[c+h] 后加权
         for (int c = 3; c < cols - 3; ++c) {
             int val = mul36(srcRow[c-3] + srcRow[c+3]) + mul67(srcRow[c-2] + srcRow[c+2]) +
                       mul98(srcRow[c-1] + srcRow[c+1]) + mul110(srcRow[c]);
@@ -1370,7 +1362,7 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
         const uint8_t* tempRowP3 = &tempBuf[(r + 3) * cols];
 
         for (int c = 0; c < cols; ++c) {
-            // 垂直方向同样对称折叠（与水平趟同一等价变换）
+            // 垂直方向同样对称折叠
             int val = mul36(tempRowM3[c] + tempRowP3[c]) + mul67(tempRowM2[c] + tempRowP2[c]) +
                       mul98(tempRowM1[c] + tempRowP1[c]) + mul110(tempRow0[c]);
             int pix = (val + 256) >> 9;
@@ -1421,8 +1413,7 @@ void ORBextractor::blurAndComputeDescriptors(
 {
     for (int level = range.start; level < range.end; ++level)
     {
-        // 本层无关键点则跳过模糊与 ROI 构造（整图 7×7 定点模糊只为
-        // 描述子计算服务，空纹理层每帧的 ~百万次整型运算是纯浪费）
+        // 本层无关键点则跳过模糊与 ROI 构造
         const int kpStart = levelDescOffset[level];
         const int kpEnd = levelDescOffset[level + 1];
         if (kpStart == kpEnd)
@@ -1440,7 +1431,7 @@ void ORBextractor::blurAndComputeDescriptors(
         mvBlurredPyramid[level] = mvBlurredPyramidPadded[level](
             Rect(ORB_EDGE_THRESHOLD, ORB_EDGE_THRESHOLD, sz.width, sz.height));
 
-        // 本层关键点的描述子计算（步长在运行期稳定，使用 1D 预展开步长表彻底消除内层 512 次乘法）
+        // 本层关键点的描述子计算
         const int step = (int)mvBlurredPyramid[level].step;
         EnsureLayerStepOffsetLUT(level, step);
         const bool bCanUseFast = (level >= 0 && level < MAX_ORB_PYRAMID_LEVELS);

@@ -93,7 +93,7 @@ bool Initializer::Initialize(const Frame &CurrentFrame, const vector<int> &vMatc
         vAllIndices.push_back(i);
     }
 
-    // 为每次 RANSAC 迭代生成 8 个点的集合
+    // 生成每次迭代的最小样本集
     mvSets = vector< vector<size_t> >(mMaxIterations,vector<size_t>(INITIALIZER_RANSAC_MIN_SET,0));
 
     LCG lcg(0);
@@ -130,7 +130,7 @@ bool Initializer::Initialize(const Frame &CurrentFrame, const vector<int> &vMatc
     // 计算得分比率
     float RH = SH/(SH+SF);
 
-    // 根据比率 (0.40-0.45) 尝试从单应性矩阵或基础矩阵重建
+    // 按单应得分占比选择重建模型（H 或 F）
     if(RH>INITIALIZER_H_SCORE_RATIO)
         return ReconstructH(vbMatchesInliersH,H,mK,R21,t21,vP3D,vbTriangulated,INITIALIZER_MIN_PARALLAX,INITIALIZER_MIN_TRIANGULATED);
     else //if(pF_HF>0.6)
@@ -161,8 +161,7 @@ void Initializer::FindHomography(vector<bool> &vbMatchesInliers, float &score, c
     vector<bool> vbCurrentInliers(N,false);
     float currentScore;
 
-    // 自适应提前终止：按 N=log(1-p)/log(1-w^s) 估算所需迭代数，高内点率时减少迭代，
-    // 置信概率 INITIALIZER_RANSAC_PROB 不变
+    // 自适应提前终止：按 N=log(1-p)/log(1-w^s) 估算所需迭代数，高内点率时减少迭代，置信概率 INITIALIZER_RANSAC_PROB 不变
     const double ransacProb = INITIALIZER_RANSAC_PROB;
     const int minSetSize = INITIALIZER_RANSAC_MIN_SET;
     int nInlierBest = 0;
@@ -314,7 +313,7 @@ cv::Mat Initializer::ComputeH21(const vector<cv::Point2f> &vP1, const vector<cv:
     }
 
     cv::Mat u, w, vt;
-    // A 为 16x9 超定阵，vt 本就是完整 9x9；FULL_UV 只会白白把 u 扩成 16x16
+    // vt 已是完整 9x9，无需 FULL_UV
     cv::SVD::compute(A, w, u, vt, cv::SVD::MODIFY_A);
 
     return vt.row(8).reshape(0, 3).clone();
@@ -357,7 +356,7 @@ cv::Mat Initializer::ComputeF21(const vector<cv::Point2f> &vP1,const vector<cv::
 }
 
 float Initializer::CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vector<bool> &vbMatchesInliers, float sigma)
-{   
+{
     const int N = mvMatches12.size();
 
     const float h11 = H21.at<float>(0,0);
@@ -415,7 +414,7 @@ float Initializer::CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vecto
         const float dv1 = v1*w2in1 - v2in1_w;
         const float squareDist1_w2 = du1*du1 + dv1*dv1;
 
-        // 零除法等价判据: dist1^2 > thSigma2 <=> du1^2 + dv1^2 > thSigma2 * w2in1^2
+        // 避免除法的平方判据
         if (squareDist1_w2 > thSigma2 * (w2in1 * w2in1))
         {
             vbMatchesInliers[i] = false;
@@ -501,7 +500,7 @@ float Initializer::CheckFundamental(const cv::Mat &F21, vector<bool> &vbMatchesI
             continue;
         }
 
-        // 零除法判据：num2^2 > thSigma2 * den2 <=> num2^2 / den2 > thSigma2
+        // 避免除法的平方判据
         const float num2_sq = num2 * num2;
         if (num2_sq > thSigma2 * den2)
         {
@@ -556,7 +555,7 @@ bool Initializer::ReconstructF(vector<bool> &vbMatchesInliers, cv::Mat &F21, cv:
     cv::Mat R1, R2, t;
 
     // 恢复4种运动假设
-    DecomposeE(E21,R1,R2,t);  
+    DecomposeE(E21,R1,R2,t);
 
     cv::Mat t1=t;
     cv::Mat t2=-t;
@@ -594,7 +593,7 @@ bool Initializer::ReconstructF(vector<bool> &vbMatchesInliers, cv::Mat &F21, cv:
         return false;
     }
 
-    // 如果最佳重建有足够的视差初始化
+    // 若最佳重建的视差足够则用它初始化
     if(maxGood==nGood1)
     {
         if(parallax1>minParallax)
@@ -675,11 +674,11 @@ bool Initializer::ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv:
         return false;
     }
 
-    // 预计算平方值和公共子表达式，避免重复乘法
+    // 预计算平方值和公共子表达式
     const float d1sq = d1*d1;
     const float d2sq = d2*d2;
     const float d3sq = d3*d3;
-    const float d1sq_m_d3sq = d1sq - d3sq;  // d1²-d3² 在多处使用
+    const float d1sq_m_d3sq = d1sq - d3sq; // d1²-d3² 在多处使用
 
     vector<cv::Mat> vR, vt, vn;
     vR.reserve(8);
@@ -768,7 +767,7 @@ bool Initializer::ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv:
     }
 
     int bestGood = 0;
-    int secondBestGood = 0;    
+    int secondBestGood = 0;
     int bestSolutionIdx = -1;
     float bestParallax = -1;
     vector<cv::Point3f> bestP3D;
@@ -815,7 +814,7 @@ void Initializer::Triangulate(const cv::KeyPoint &kp1, const cv::KeyPoint &kp2, 
     // 线性三角化（公共 DLT 实现，见 Converter::TriangulateDLT）
     if (!Converter::TriangulateDLT(P1, P2, kp1.pt.x, kp1.pt.y, kp2.pt.x, kp2.pt.y, x3D))
     {
-        // w==0 退化：填充 inf，与原「x3D.rowRange(0,3)/w（w→0）」行为等价，
+        // w==0 退化时填充 inf，
         // 由 CheckRT 的 isfinite 检查兜底拒绝该点。
         const float inf = std::numeric_limits<float>::infinity();
         x3D = (cv::Mat_<float>(3,1) << inf, inf, inf);
@@ -851,7 +850,6 @@ void Initializer::Normalize(const vector<cv::KeyPoint> &vKeys, vector<cv::Point2
         vNormalizedPoints[i].x = dx;
         vNormalizedPoints[i].y = dy;
 
-        // 避免函数调用 fabs
         meanDevX += (dx > 0) ? dx : -dx;
         meanDevY += (dy > 0) ? dy : -dy;
     }
@@ -918,7 +916,7 @@ int Initializer::CheckRT(const cv::Mat &R, const cv::Mat &t, const vector<cv::Ke
         const cv::KeyPoint &kp2 = vKeys2[vMatches12[i].second];
         cv::Mat p3dC1;
 
-        // 闭式三角化：直接复用外层预计算好的相机光心，消除每个点重复 Cramer 求解光心
+        // 闭式三角化：复用外层预计算的相机光心
         if (!Converter::TriangulateWithCenters(P1, P2, Q1, Q2, kp1.pt.x, kp1.pt.y, kp2.pt.x, kp2.pt.y, p3dC1))
         {
             vbGood[vMatches12[i].first]=false;
@@ -934,7 +932,7 @@ int Initializer::CheckRT(const cv::Mat &R, const cv::Mat &t, const vector<cv::Ke
         // 检查视差
         cv::Mat normal1 = p3dC1 - O1;
         cv::Mat normal2 = p3dC1 - O2;
-        // 内联计算向量范数和点积，避免多次cv::norm调用
+        // 内联计算向量范数和点积
         const float n1x = normal1.at<float>(0), n1y = normal1.at<float>(1), n1z = normal1.at<float>(2);
         const float n2x = normal2.at<float>(0), n2y = normal2.at<float>(1), n2z = normal2.at<float>(2);
         const float dist1Sq = n1x*n1x + n1y*n1y + n1z*n1z;

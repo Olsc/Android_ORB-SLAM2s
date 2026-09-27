@@ -148,12 +148,11 @@ public:
 private:
     // 多地图容器
     std::vector<Map*> mvpMaps;
-    // 子地图 ID 单调计数器（初始地图 mnId=0，此后递增分配，
-    // 避免逐出旧地图后 mvpMaps.size() 变小导致新地图 ID 与现存地图重复）
+    // 子地图 ID 单调计数器（初始地图 mnId=0，此后递增分配，避免逐出旧地图后 mvpMaps.size() 变小导致新地图 ID 与现存地图重复）
     unsigned long mnNextMapId = 1;
 
     // 传感器配置
-    eSensor mSensor;  // 输入传感器类型
+    eSensor mSensor; // 输入传感器类型
 
     // 用于位置识别的关键帧数据库（重定位和回环检测）。
     KeyFrameDatabase* mpKeyFrameDatabase;
@@ -180,7 +179,7 @@ private:
     // 重置标志
     std::mutex mMutexReset;
     bool mbReset;
-    bool mbResetKeepMap;  // 重置时是否保留地图
+    bool mbResetKeepMap; // 重置时是否保留地图
 
     // 跟踪状态
     int mTrackingState;

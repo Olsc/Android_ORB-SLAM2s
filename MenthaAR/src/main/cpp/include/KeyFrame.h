@@ -69,10 +69,9 @@ public:
     cv::Mat GetRotation();
     cv::Mat GetTranslation();
 
-    // 栈版零拷贝读取
-    void GetPose(float out[16]);          // 4x4 行优先
-    void GetPoseInverse(float out[16]);   // 4x4 行优先
-    void GetRotation(float out[9]);       // 3x3 行优先
+    void GetPose(float out[16]); // 4x4 行优先
+    void GetPoseInverse(float out[16]); // 4x4 行优先
+    void GetRotation(float out[9]); // 3x3 行优先
     void GetTranslation(float out[3]);
 
     // 共视图函数
@@ -111,7 +110,6 @@ public:
 
     // 关键点函数
     std::vector<size_t> GetFeaturesInArea(const float &x, const float  &y, const float  &r) const;
-    // 免分配版本：结果写入调用方缓冲区，语义与返回值版一致
     void GetFeaturesInArea(const float &x, const float  &y, const float  &r,
                            std::vector<size_t> &vIndices) const;
     cv::Mat UnprojectStereo(int i);
@@ -223,7 +221,6 @@ protected:
     // 数据库
     KeyFrameDatabase* mpKeyFrameDB;
 
-    // 图像上的网格用于加速特征匹配
     std::vector< std::vector <std::vector<size_t> > > mGrid;
 
     std::map<KeyFrame*,int> mConnectedKeyFrameWeights;

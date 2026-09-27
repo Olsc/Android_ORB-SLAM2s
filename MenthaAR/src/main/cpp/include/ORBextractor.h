@@ -97,15 +97,15 @@ public:
     }
 
     std::vector<cv::Mat> mvImagePyramid;
-    std::vector<cv::Mat> mvImagePyramidPadded;  // 带边界的临时 Mat，复用避免每帧每层堆分配
-    std::vector<cv::Mat> mvBlurredPyramid;      // 模糊后的临时 Mat，复用避免每帧每层堆分配
-    std::vector<cv::Mat> mvBlurredPyramidPadded;// 模糊后带边界的临时 Mat，复用避免每帧每层堆分配
+    std::vector<cv::Mat> mvImagePyramidPadded;
+    std::vector<cv::Mat> mvBlurredPyramid;
+    std::vector<cv::Mat> mvBlurredPyramidPadded;
 
 protected:
 
     void ComputePyramid(cv::Mat image);
 
-    // 多屏障合并辅助函数
+    // 按层区间执行检测与方向计算（各层数据独立）
     void detectAndOrientLevels(const cv::Range& range,
                                std::vector<std::vector<cv::KeyPoint> >& allKeypoints);
     void blurAndComputeDescriptors(const cv::Range& range,

@@ -15,23 +15,23 @@ namespace Mentha {
 #pragma pack(push, 1)
 // 事件记录结构体
 struct EventRecord {
-    uint32_t nameId;    // 函数名称ID
-    uint32_t threadId;  // 线程ID
+    uint32_t nameId; // 函数名称ID
+    uint32_t threadId; // 线程ID
     uint64_t timestamp; // 纳秒时间戳
-    EventType type;     // 事件类型 (开始/结束)
+    EventType type; // 事件类型 (开始/结束)
 };
 #pragma pack(pop)
 
 struct Profiler::Impl {
     std::ofstream outFile; // 输出文件流
-    std::mutex mutex;      // 互斥锁，保护队列和映射表
+    std::mutex mutex; // 互斥锁，保护队列和映射表
     std::unordered_map<std::string, uint32_t> nameMap; // 函数名与ID的映射
     uint32_t nextNameId = 0;
 
     std::atomic<bool> running{false}; // 运行标志
-    std::thread writerThread;         // 后台写入线程
+    std::thread writerThread; // 后台写入线程
     std::queue<EventRecord> eventQueue; // 事件缓冲区队列
-    std::condition_variable cv;       // 条件变量，用于同步写入线程
+    std::condition_variable cv; // 条件变量，用于同步写入线程
 
     // 后台写入循环
     void WriterLoop() {
@@ -43,7 +43,7 @@ struct Profiler::Impl {
                     return !eventQueue.empty() || !running;
                 });
 
-                // 批量提取事件记录，减少IO调用次数
+                // 批量提取事件记录
                 while (!eventQueue.empty() && batch.size() < ORB_SLAM2::PROFILER_BATCH_MAX) {
                     batch.push_back(eventQueue.front());
                     eventQueue.pop();
@@ -51,8 +51,7 @@ struct Profiler::Impl {
             }
 
             if (!batch.empty()) {
-                // 写盘与 WriteEvent 的"名称映射立即落盘"互斥（ofstream 非线程安全，
-                // 两线程并发 write 会交错损坏文件）
+                // 写盘与 WriteEvent 的"名称映射立即落盘"互斥（ofstream 非线程安全，两线程并发 write 会交错损坏文件）
                 std::lock_guard<std::mutex> writeLock(mutex);
                 for (const auto& event : batch) {
                     uint8_t eventMarker = ORB_SLAM2::PROFILER_EVENT_MARKER; // 事件标记
@@ -75,7 +74,7 @@ void Profiler::Initialize(const std::string& outputFile) {
     pImpl = new Impl();
     pImpl->outFile.open(outputFile, std::ios::binary);
 
-    // 写入文件头：幻数 'VPRO'，版本号 1
+    // 写入文件头：魔数 + 版本号
     uint32_t magic = ORB_SLAM2::PROFILER_MAGIC; // 'VPRO'
     uint32_t version = ORB_SLAM2::PROFILER_VERSION;
     pImpl->outFile.write(reinterpret_cast<const char*>(&magic), 4);
@@ -127,8 +126,7 @@ void Profiler::WriteEvent(const char* name, EventType type) {
         }
 
         pImpl->eventQueue.push({nameId, tid, GetTimestampNS(), type});
-        // 仅当队列积压达到半批时才唤醒写线程（时间戳在入队时已捕获，
-        // 落盘延迟不影响精度），让批量写真正批起来；100ms 超时兜底低流量场景
+        // 仅当队列积压达到半批时才唤醒写线程（时间戳在入队时已捕获，落盘延迟不影响精度）；超时兜底低流量场景
         if (pImpl->eventQueue.size() >= ORB_SLAM2::PROFILER_BATCH_MAX / 2)
             pImpl->cv.notify_one();
     }

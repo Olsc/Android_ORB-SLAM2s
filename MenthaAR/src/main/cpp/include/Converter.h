@@ -99,7 +99,7 @@ public:
         return true;
     }
 
-    // 支持栈数组输出的零堆分配 DLT 三角化
+    // 输出到栈数组的 DLT 三角化重载
     static bool TriangulateWithCenters(const cv::Mat &P1, const cv::Mat &P2,
                                        const float[3], const float[3],
                                        float x1, float y1, float x2, float y2,
@@ -119,7 +119,7 @@ public:
         const float a2_0 = x2*p2_20 - p2_00, a2_1 = x2*p2_21 - p2_01, a2_2 = x2*p2_22 - p2_02, a2_3 = x2*p2_23 - p2_03;
         const float a3_0 = y2*p2_20 - p2_10, a3_1 = y2*p2_21 - p2_11, a3_2 = y2*p2_22 - p2_12, a3_3 = y2*p2_23 - p2_13;
 
-        // 对称半正定法方程系数矩阵 M = A[:, :3]^T * A[:, :3] (利用对称性仅算 6 项)
+        // 对称半正定法方程系数矩阵 M = A[:, :3]^T * A[:, :3]
         const float m00 = a0_0*a0_0 + a1_0*a1_0 + a2_0*a2_0 + a3_0*a3_0;
         const float m01 = a0_0*a0_1 + a1_0*a1_1 + a2_0*a2_1 + a3_0*a3_1;
         const float m02 = a0_0*a0_2 + a1_0*a1_2 + a2_0*a2_2 + a3_0*a3_2;
@@ -132,7 +132,7 @@ public:
         const float b1 = -(a0_1*a0_3 + a1_1*a1_3 + a2_1*a2_3 + a3_1*a3_3);
         const float b2 = -(a0_2*a0_3 + a1_2*a1_3 + a2_2*a2_3 + a3_2*a3_3);
 
-        // 克莱姆法则闭式代数解（零浮点开方开销）
+        // 克莱姆法则闭式代数解
         const float c00 = m11*m22 - m12*m12;
         const float c01 = m02*m12 - m01*m22;
         const float c02 = m01*m12 - m02*m11;
@@ -169,7 +169,7 @@ public:
     }
 
 
-    // 单次解算相机光心，辅助单次调用
+    // 由投影矩阵解算相机光心
     static bool ComputeCameraCenter(const cv::Mat &Pm, float out[3]) {
         const float a11=Pm.at<float>(0,0), a12=Pm.at<float>(0,1), a13=Pm.at<float>(0,2);
         const float a21=Pm.at<float>(1,0), a22=Pm.at<float>(1,1), a23=Pm.at<float>(1,2);

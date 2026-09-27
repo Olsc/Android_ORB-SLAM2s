@@ -125,7 +125,7 @@ protected:
     // RANSAC最大迭代次数
     int mRansacMaxIts;
 
-    // 内点/外点阈值。e = dist(Pi,T_ij*Pj)^2 < 5.991*mSigma2
+    // 内点/外点阈值。e = dist(Pi,T_ij*Pj)^2 < SIM3_CHI2_TH*mSigma2
     float mTh;
     float mSigma2;
 

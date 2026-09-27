@@ -96,19 +96,3 @@ VitaSDK 不提供 OpenCV。本移植通过以下方式让**原引擎源码零改
 3. LiveArea 启动 “MenthaAR PSVita”。
 
 地图文件：`ux0:/data/MenthaAR/mentha_map.bin`。
-
----
-
-## ⚠️ 已知限制
-
-- **性能**：PS Vita 是 4×Cortex-A9 @ ~444MHz，ORB-SLAM2 在此为低帧率运行（通常个位数
-  FPS），这是硬件限制。建议缓慢移动相机。
-- **内存**：`Config.h` 的默认上限（`MAX_KEYFRAMES=2000`、`MAX_MAPPOINTS=10000`）是
-  为手机/桌面设定的。Vita 长时间扫描可能接近内存上限；原项目文件未做改动，
-  如需更保守的预算可在其它平台统一调整 `Config.h`。
-- **PnP 的 4–5 点分支**：兼容层基于 DLT，要求 ≥6 点。引擎在 ≥6 点走 RANSAC 主路径；
-  少数 4–5 点后台重定位分支会返回 `false`（引擎会安全跳过，不影响主跟踪）。
-- **未实机验证**：本次交付完成了完整的交叉编译、链接与 VPK 打包，并核对了 ELF 中
-  包含 `System::TrackMonocular`、`SaveMap`、`LoadMap`、`ORBextractor` 及兼容层符号；
-  但在真实硬件/模拟器上的运行表现（帧率、初始化稳定性、内存）仍需实机确认。
-- `thirdparty/libopencv4` 为社区构建的子模块，仓库未附带许可证；OpenCV 本身为 Apache-2.0。

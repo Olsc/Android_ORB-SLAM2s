@@ -56,7 +56,7 @@ void FrameDrawer::SetMap(Map* pMap)
 
 void FrameDrawer::Update(Tracking *pTracker)
 {
-    // 裁剪后无绘制数据消费者，仅保留跟踪状态记录
+    // 本类已无绘制消费者，仅记录跟踪状态
     unique_lock<mutex> lock(mMutex);
     mState = static_cast<int>(pTracker->mLastProcessedState);
     N = 0;

@@ -127,7 +127,7 @@ void Sim3Solver::SetRansacParameters(double probability, int minInliers, int max
 {
     mRansacProb = probability;
     mRansacMinInliers = minInliers;
-    mRansacMaxIts = maxIterations;    
+    mRansacMaxIts = maxIterations;
 
     N = mvpMapPoints1.size(); // 对应点的数量
 
@@ -299,7 +299,7 @@ void Sim3Solver::ComputeSim3(cv::Mat &P1, cv::Mat &P2)
     cv::Mat eval, evec;
     // 计算最大特征值对应特征向量，OpenCV返回按降序排列
     cv::eigen(N,eval,evec);
-    // 直接用四元数构造旋转矩阵，避免Rodrigues计算与一次atan2、一次norm
+    // 直接用四元数构造旋转矩阵
     const float qw = evec.at<float>(0,0);
     const float qx = evec.at<float>(0,1);
     const float qy = evec.at<float>(0,2);
@@ -327,7 +327,7 @@ void Sim3Solver::ComputeSim3(cv::Mat &P1, cv::Mat &P2)
     // 步骤6：缩放
     {
         double nom = Pr1.dot(P3);
-        double den = P3.dot(P3);  // 等价于sum(P3.^2)
+        double den = P3.dot(P3);
         ms12i = nom/den;
     }
 
@@ -367,7 +367,7 @@ void Sim3Solver::CheckInliers()
 
     for(size_t i=0; i<mvP1im1.size(); i++)
     {
-        // 直接访问 Point2f 坐标，避免访问 Mat 开销
+        // 直接访问 Point2f 坐标
         const float dx1 = mvP1im1[i].x - vP2im1[i].x;
         const float dy1 = mvP1im1[i].y - vP2im1[i].y;
         const float err1 = dx1*dx1 + dy1*dy1;
@@ -403,7 +403,7 @@ float Sim3Solver::GetEstimatedScale()
 
 void Sim3Solver::Project(const vector<cv::Mat> &vP3Dw, vector<cv::Point2f> &vP2D, cv::Mat Tcw, cv::Mat K)
 {
-    // 提取矩阵元素为标量，避免循环内创建临时Mat对象
+    // 提取矩阵元素为标量
     cv::Mat Rcw = Tcw.rowRange(0,3).colRange(0,3);
     cv::Mat tcw = Tcw.rowRange(0,3).col(3);
 

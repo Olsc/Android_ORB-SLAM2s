@@ -103,7 +103,6 @@ PnPsolver::PnPsolver(const Frame &F, const vector<MapPoint*> &vpMapPointMatches)
                 mvP2D.push_back(kp.pt);
                 mvSigma2.push_back(F.mvLevelSigma2[kp.octave]);
 
-                // 栈上免分配读取世界坐标
                 cv::Point3f Pw;
                 pMP->GetWorldPos(Pw);
                 mvP3Dw.push_back(Pw);
@@ -141,7 +140,7 @@ void PnPsolver::SetRansacParameters(double probability, int minInliers, int maxI
     mRansacEpsilon = epsilon;
     mRansacMinSet = minSet;
 
-    N = mvP2D.size(); // 对应点的数量
+    N = mvP2D.size();
 
     mvbInliersi.resize(N);
 
@@ -192,8 +191,7 @@ cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInlie
             return cv::Mat();
         }
 
-        // 采样去重使用 used 位图：免去每次迭代的整表拷贝与 swap-pop 恢复问题；
-        // minSet=4 远小于 N，重采样碰撞概率可忽略
+        // 采样去重使用 used 位图
         vector<bool> vUsed(N, false);
 
         int nCurrentIterations = 0;
@@ -266,14 +264,13 @@ cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInlie
                     float outlierRatio = 1.0f - bestInlierRatio;
                     float prob_no_good = 1.0f;
                     for (int k = 0; k < mRansacMinSet; k++)
-                        prob_no_good *= outlierRatio;  // (1-ε)^s
+                        prob_no_good *= outlierRatio; // (1-ε)^s
                     if (prob_no_good > 0.0f) {
-                        // N = log(1-p) / log(1-(1-ε)^s)
                         float n_needed = log(1.0 - mRansacProb) / log(1.0 - (1.0f - outlierRatio) * (1.0f - outlierRatio) * (1.0f - outlierRatio) * (1.0f - outlierRatio) + 1e-30f);
                         n_needed = max(1.0f, n_needed);
                         // 剩余迭代不足以找到更好的解 → 提前终止
                         if (nCurrentIterations >= n_needed * PNP_ADAPTIVE_SAFETY_FACTOR) {
-                            maxAdaptiveIters = mnIterations;  // 终止 while 循环
+                            maxAdaptiveIters = mnIterations; // 终止 while 循环
                         }
                     }
                 }
@@ -469,7 +466,7 @@ void PnPsolver::compute_barycentric_coordinates(void)
     for(int j = 1; j < 4; j++)
       cc[3 * i + j - 1] = cws[j][i] - cws[0][i];
 
-  // 3x3 矩阵伴随闭式求逆：仅 1 次除法 (1/det) 与少量乘减
+  // 3x3 矩阵伴随闭式求逆
   const double m00 = cc[0], m01 = cc[1], m02 = cc[2];
   const double m10 = cc[3], m11 = cc[4], m12 = cc[5];
   const double m20 = cc[6], m21 = cc[7], m22 = cc[8];
@@ -575,10 +572,8 @@ double PnPsolver::compute_pose(double R[3][3], double t[3])
     for (int j = 0; j < 4; j++) {
       for (int k = j; k < 4; k++) {
         mtm[12 * (3 * j)     + (3 * k)]     += m1_0[j] * m1_0[k];
-        // mtm[12 * (3 * j)     + (3 * k + 1)] += 0;
         mtm[12 * (3 * j)     + (3 * k + 2)] += m1_0[j] * m1_2[k];
 
-        // mtm[12 * (3 * j + 1) + (3 * k)]     += 0;
         mtm[12 * (3 * j + 1) + (3 * k + 1)] += m2_1[j] * m2_1[k];
         mtm[12 * (3 * j + 1) + (3 * k + 2)] += m2_1[j] * m2_2[k];
 
@@ -914,7 +909,7 @@ void PnPsolver::compute_rho(double * rho)
 void PnPsolver::compute_A_and_b_gauss_newton(const double * l_6x10, const double * rho,
 					double betas[4], CvMat * A, CvMat * b)
 {
-  // 预计算10个beta乘积，避免循环中重复计算
+  // 预计算10个beta乘积
   const double b00 = betas[0]*betas[0], b01 = betas[0]*betas[1];
   const double b02 = betas[0]*betas[2], b03 = betas[0]*betas[3];
   const double b11 = betas[1]*betas[1], b12 = betas[1]*betas[2];
@@ -968,9 +963,9 @@ void PnPsolver::gauss_newton(const CvMat * L_6x10, const CvMat * Rho,
 
 void PnPsolver::qr_solve(CvMat * A, CvMat * b, CvMat * X)
 {
-  const int nr = A->rows;  // 最大6
-  const int nc = A->cols;  // 最大4
-  // 使用固定大小栈分配，避免静态变量的线程安全问题和内存泄漏
+  const int nr = A->rows; // 最大6
+  const int nc = A->cols; // 最大4
+  // 使用固定大小栈分配
   double A1[6], A2[6];
 
   double * pA = A->data.db, * ppAkk = pA;
@@ -984,7 +979,6 @@ void PnPsolver::qr_solve(CvMat * A, CvMat * b, CvMat * X)
 
     if (eta == 0) {
       A1[k] = A2[k] = 0.0;
-      // cerr << "God damnit, A is singular, this shouldn't happen." << endl;
       return;
     } else {
       double * ppAik = ppAkk, sum = 0.0, inv_eta = 1. / eta;
@@ -1056,7 +1050,7 @@ void PnPsolver::relative_error(double & rot_err, double & transl_err,
   mat_to_quat(Rtrue, qtrue);
   mat_to_quat(Rest, qest);
 
-  // 预计算分母平方和，从4次sqrt减少到1次
+  // 预计算分母平方和
   double norm_true_sq = qtrue[0]*qtrue[0] + qtrue[1]*qtrue[1] + qtrue[2]*qtrue[2] + qtrue[3]*qtrue[3];
 
   double diff1_sq = (qtrue[0]-qest[0])*(qtrue[0]-qest[0]) +
@@ -1069,7 +1063,6 @@ void PnPsolver::relative_error(double & rot_err, double & transl_err,
                     (qtrue[2]+qest[2])*(qtrue[2]+qest[2]) +
                     (qtrue[3]+qest[3])*(qtrue[3]+qest[3]);
 
-  // 比较平方值后只用一次sqrt
   rot_err = sqrt(min(diff1_sq, diff2_sq) / norm_true_sq);
 
   double norm_t_sq = ttrue[0]*ttrue[0] + ttrue[1]*ttrue[1] + ttrue[2]*ttrue[2];

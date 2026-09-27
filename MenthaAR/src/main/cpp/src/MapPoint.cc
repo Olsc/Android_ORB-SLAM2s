@@ -64,11 +64,11 @@ MapPoint::MapPoint(const cv::Mat &Pos, Map* pMap, Frame* pFrame, const int &idxF
     mnFound(1), mbBad(false), mpReplaced(NULL), mpMap(pMap)
 {
     Pos.copyTo(mWorldPos);
-    // 栈版读取相机中心（Frame 无锁），PC = Pos - Ow 标量化
+    // 读取相机中心（Frame 无锁），PC = Pos - Ow 逐分量计算
     cv::Point3f Ow;
     pFrame->GetCameraCenter(Ow);
 
-    // 内联计算距离和法向量归一化，避免多次cv::norm调用
+    // 内联计算距离和法向量归一化
     const float pcx = Pos.at<float>(0) - Ow.x;
     const float pcy = Pos.at<float>(1) - Ow.y;
     const float pcz = Pos.at<float>(2) - Ow.z;
@@ -321,13 +321,12 @@ void MapPoint::Replace(MapPoint* pMP)
 
 bool MapPoint::isBad()
 {
-    // mbBad 为原子变量，无需加锁，使用 memory_order_relaxed 降低高频调用的开销
+    // mbBad 为原子变量，无需加锁，使用 memory_order_relaxed
     return mbBad.load(std::memory_order_relaxed);
 }
 
 void MapPoint::IncreaseVisible(int n)
 {
-    // 原子计数（热路径每帧数百次调用）
     mnVisible.fetch_add(n, std::memory_order_relaxed);
 }
 
@@ -360,7 +359,7 @@ void MapPoint::ComputeDistinctiveDescriptors()
             if(pKF && !pKF->isBad() && nDescs < MAPPOINT_DESC_MAX_OBS)
             {
                 if(mit.second >= (size_t)pKF->mDescriptors.rows)
-                    continue;   // 观测索引失效（描述子行数不足），跳过
+                    continue; // 观测索引失效（描述子行数不足），跳过
                 std::memcpy(descBuf[nDescs], pKF->mDescriptors.ptr<uint8_t>(mit.second), ORB_DESC_COLS);
                 nDescs++;
             }
@@ -527,13 +526,11 @@ void MapPoint::UpdateNormalAndDepth()
 
 float MapPoint::GetMinDistanceInvariance()
 {
-    // 原子缓存
     return mfMinDistInvariance.load(std::memory_order_relaxed);
 }
 
 float MapPoint::GetMaxDistanceInvariance()
 {
-    // 原子缓存
     return mfMaxDistInvariance.load(std::memory_order_relaxed);
 }
 

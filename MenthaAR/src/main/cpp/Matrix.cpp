@@ -12,8 +12,8 @@
 #include <algorithm>
 #include <include/Common.h>
 
-const float PI= (const float) acos(-1);  // π常量
-#define I(_i, _j) ((_j)+ 4*(_i))  // 列主序矩阵索引宏（OpenGL风格）
+const float PI= (const float) acos(-1);
+#define I(_i, _j) ((_j)+ 4*(_i)) // 列主序矩阵索引宏（当前未使用）
 
 // 4x4矩阵乘法（列主序），r = lhs * rhs
 void multiplyMM(float* r, const float* lhs, const float* rhs) {
@@ -94,7 +94,7 @@ void setRotateM(float rm[], int rmOffset,
     rm[rmOffset + 14]= 0;
     rm[rmOffset + 15]= 1;
 
-    a *= (float) (PI / 180.0f);  // 角度转弧度
+    a *= (float) (PI / 180.0f); // 角度转弧度
     float s = (float) sin(a);
     float c = (float) cos(a);
 
@@ -131,7 +131,7 @@ void setRotateM(float rm[], int rmOffset,
             y *= recipLen;
             z *= recipLen;
         }
-        float nc = 1.0f - c;  // 1 - cos(a)
+        float nc = 1.0f - c;
         float xy = x * y;
         float yz = y * z;
         float zx = z * x;
@@ -204,10 +204,10 @@ void frustumM(float m[], int offset,
 // 从相机内参创建RUB坐标系透视投影矩阵
 void frustumM_RUB(int w, int h, double fu, double fv, double u0, double v0, double zNear, double zFar ,float projectionMatrix[]) {
     // 根据相机内参计算视锥体边界
-    const double L = -(u0) * zNear / fu;        // 左边界
-    const double R = +(w - u0) * zNear / fu;    // 右边界
-    const double T = +(v0) * zNear / fv;        // 上边界
-    const double B = -(h - v0) * zNear / fv;    // 下边界
+    const double L = -(u0) * zNear / fu; // 左边界
+    const double R = +(w - u0) * zNear / fu; // 右边界
+    const double T = +(v0) * zNear / fv; // 上边界
+    const double B = -(h - v0) * zNear / fv; // 下边界
     frustumM(projectionMatrix,0,L,R,B,T,zNear,zFar);
 }
 
@@ -221,15 +221,9 @@ void setIdentityM(float m[])
 }
 
 void getRUBViewMatrixFromRDF(float inM[],float outM[]){
-    // OpenGL 视图矩阵 = Rx(180) * OpenCV 视图矩阵 * Rx(180)：左乘翻转 Y/Z 轴所在两行，右乘翻转两列，
-    // 使 AR 物体(RUB)在 RUB 世界中被 RUB 相机正确观察。重叠索引(5,9,6,10)取反两次不变，
-    // 最终仅需取反：行索引 1,13,2,14 与列索引 4,7,8,11
-
     if(inM != outM) {
         memcpy(outM, inM, 16 * sizeof(float));
     }
-
-    // 需要取反的元素分布：Row 1/2 由左乘取反，Col 1/2 由右乘取反，重叠部分(5,9,6,10)两次取反后不变
 
     outM[1] = -outM[1];
     outM[2] = -outM[2];
@@ -246,7 +240,6 @@ void getRUBModelMatrixFromRDF(float inM[],float outM[]){
         memcpy(outM, inM, 16 * sizeof(float));
     }
 
-    // R_x(180) 左乘：取反第1、2行（索引 1,5,9,13 与 2,6,10,14），第0、3行不变
     outM[1] = -outM[1];
     outM[2] = -outM[2];
     outM[5] = -outM[5];

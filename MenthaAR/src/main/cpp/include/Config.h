@@ -28,7 +28,7 @@ const float CAMERA_K3 = 0.0f;
 // 相机帧率，用于运动模型速度推断
 const float CAMERA_FPS = 30.0f;
 
-// 颜色顺序（0=BGR, 1=RGB），仅影响显示，不影响SLAM核心
+// 颜色顺序（0=BGR, 1=RGB）
 const int CAMERA_RGB = 1;
 
 // ORB特征提取参数
@@ -39,10 +39,10 @@ const int ORB_EXTRACTOR_N_FEATURES = 1000;
 // 图像金字塔相邻层缩放因子，1.2f 为 ORB-SLAM 标准值
 const float ORB_EXTRACTOR_SCALE_FACTOR = 1.2f;
 
-// 金字塔总层数（含底层），nLevels=8 覆盖尺度范围约 1:4.3
+// 金字塔总层数（含底层）
 const int ORB_EXTRACTOR_N_LEVELS = 8;
 
-// FAST角点检测阈值（INI_TH=20, MIN_TH=7），纹理不足时自动降低
+// FAST角点检测阈值，纹理不足时自动降低
 const int ORB_EXTRACTOR_INI_TH_FAST = 20;
 const int ORB_EXTRACTOR_MIN_TH_FAST = 7;
 
@@ -51,7 +51,7 @@ const int ORB_DESC_COLS = 32;
 
 // 性能/内存限制（限定地图规模上限）
 
-// 最大关键帧数。手机推荐500-1000，桌面2000-5000
+// 最大关键帧数
 const int MAX_KEYFRAMES = 2000;
 
 // 最大地图点数。设小则稀疏精度下降，设大则增加内存和优化耗时
@@ -63,10 +63,10 @@ const int MAPPOINT_CULL_BATCH_SIZE = 500;
 
 // 修剪阈值
 
-// 关键帧冗余判定阈值：超过 90% 的地图点被≥3个其他KF观测时视为冗余
+// 关键帧冗余判定阈值：被重复观测的地图点占比超过此值时，判定该关键帧冗余
 const float KEYFRAME_REDUNDANCY_THRESHOLD = 0.93f;
 
-// 地图点冗余判定的最少观测KF数（观测≥此值的点不参与判定）
+// 地图点冗余判定的观测数门槛（观测数大于此值才纳入判定；同尺度被≥此值个其他KF观测即记为冗余）
 const int KEYFRAME_REDUNDANCY_OBS_THRESHOLD = 3;
 
 // 地图点被视为优质所需的最小观测KF数（单目模式）
@@ -77,7 +77,7 @@ const int MAPPOINT_MIN_OBSERVATIONS_MONO = 2;
 // 局部地图点最大数量，超过时截断防止单帧投影匹配耗时过高
 const int TRACKING_MAX_LOCAL_MAP_POINTS = 5000;
 
-// 视锥可见性判定阈值（0~1），越小越严格
+// 视锥可见性判定阈值（视线方向余弦下限，0~1），越大越严格
 const float FRUSTUM_VISIBILITY_TH = 0.5f;
 
 // PnP求解中2D/3D坐标的有效范围上限
@@ -89,7 +89,7 @@ const int PNP_RANSAC_ITERATIONS = 200;
 const float PNP_RANSAC_ERROR = 6.0f;
 const double PNP_RANSAC_CONFIDENCE = 0.999;
 
-// 地图对齐后跟踪搜索半径（像素）：对齐态=12，未对齐态=8
+// 地图对齐后跟踪搜索半径（像素）
 const float TRACKING_SEARCH_RADIUS_ALIGNED = 12.0f;
 const float TRACKING_SEARCH_RADIUS_UNALIGNED = 8.0f;
 
@@ -119,7 +119,7 @@ const int TRACKING_RELOC_PNP_MIN_INLIERS = 10;
 // 后台重定位冷却帧数
 const int TRACKING_RELOC_COOLDOWN_FRAMES = 5;
 
-// 后台重定位 PnP 求解最大采样数，移动端建议200
+// 后台重定位 PnP 求解最大采样数
 const int RELO_BG_PNP_MAX_SAMPLES = 200;
 
 // 后台重定位匹配分数归一化分母，仅用于UI展示
@@ -223,11 +223,11 @@ const int LOOP_RANSAC_MAX_ITERS = 300;
 
 // g2o 图优化参数
 
-// Huber 核函数阈值：2DoF≈2.448, 3DoF≈2.796
-const float OPTIMIZER_HUBER_TH_2D = 2.4476519f;  // Huber核函数delta参数
+// Huber 核函数阈值（2 自由度 / 3 自由度各一个）
+const float OPTIMIZER_HUBER_TH_2D = 2.4476519f; // Huber核函数delta参数
 const float OPTIMIZER_HUBER_TH_3D = 2.79553215f;
 
-// 卡方检验阈值：2DoF=5.991, 1DoF=3.841
+// 卡方检验阈值（2 自由度 / 1 自由度）
 const float OPTIMIZER_CHI2_TH_2D = 5.991f;
 const float OPTIMIZER_CHI2_TH_1D = 3.841f;
 
@@ -261,11 +261,11 @@ const float PNP_RANSAC_EPSILON = 0.5f;
 const float PNP_RANSAC_TH2 = 5.991f;
 
 // 自适应RANSAC提前终止参数
-const int PNP_ADAPTIVE_START_ITER = 30;   // 至少迭代30次后才检查提前终止
-const float PNP_ADAPTIVE_MIN_RATIO = 0.3f;  // 内点率过低时不触发提前终止
-const float PNP_ADAPTIVE_SAFETY_FACTOR = 1.5f;  // 安全系数：理论×1.5后提前终止
+const int PNP_ADAPTIVE_START_ITER = 30; // 起始迭代数，之后才开始检查提前终止
+const float PNP_ADAPTIVE_MIN_RATIO = 0.3f; // 内点率过低时不触发提前终止
+const float PNP_ADAPTIVE_SAFETY_FACTOR = 1.5f; // 提前终止所用的安全裕度系数
 
-// 帧网格划分：48×64，约640×360时每格13.3×7.5像素
+// 帧网格划分（行×列），约 10×7.5 像素/格 @640×360
 const int FRAME_GRID_ROWS = 48;
 const int FRAME_GRID_COLS = 64;
 const float FRAME_GRID_RESERVE_FACTOR = 0.5f;
@@ -320,7 +320,7 @@ const int RESET_COOLDOWN_FRAMES = 30;
 // 连续丢失超过此帧数创建新子地图
 const int TRACKING_LOST_FRAMES_FOR_NEW_MAP = 60;
 
-// 新建子地图后的冷却帧数（30帧≈1秒@30fps）
+// 新建子地图后的冷却帧数
 const int TRACKING_NEW_MAP_COOLDOWN_FRAMES = 30;
 
 // 子地图最大数量
@@ -336,7 +336,7 @@ const float LOCAL_MAPPING_TRIANGULATION_BASELINE_RATIO = 0.01f;
 const float LOCAL_MAPPING_TRIANGULATION_PARALLAX_TH = 0.9998f;
 const float LOCAL_MAPPING_TRIANGULATION_RATIO_FACTOR = 1.5f;
 
-// 一级/二级搜索的关键帧上限（标准单目移动端配置，降低融合开销）
+// 一级/二级搜索的关键帧上限
 const int LOCAL_MAPPING_NEIGHBOR_KFS = 10;
 const int LOCAL_MAPPING_SECOND_NEIGHBOR_KFS = 3;
 
@@ -370,7 +370,7 @@ const float PROJECTION_ZFAR = 1000.0f;
 
 // 丢失自动重置超时（秒）和地图切换确认帧数
 const double LOST_RESET_TIMEOUT = 3.0;
-const int RESET_COMPLETE_TIMEOUT_MS = 500; // 线程重置完成超时等待时间（毫秒），防死锁兜底
+const int RESET_COMPLETE_TIMEOUT_MS = 500; // 线程重置完成超时等待时间（毫秒）
 const int MAP_SWITCH_THRESHOLD = 3;
 
 // AR 模式物体默认缩放
@@ -386,7 +386,7 @@ const int PLANE_DETECT_RANSAC_ITERS = 50;
 // 对齐质量分封顶（inliers 上限）
 const float ALIGN_QUALITY_SCORE_CAP = 100.0f;
 
-// EMA alpha 上下限（质量越高新值权重越大，限制在 0.1-0.5）
+// EMA alpha 上下限（质量越高新值权重越大）
 const float ALIGN_EMA_MAX_ALPHA = 0.5f;
 const float ALIGN_EMA_MIN_ALPHA = 0.1f;
 
@@ -445,7 +445,7 @@ const int INITIALIZER_RANSAC_ITERS = 200;
 // 初始化匹配搜索窗口（像素）
 const int INITIALIZER_SEARCH_WINDOW = 100;
 
-// 初始化提取器特征数倍数（2×正常特征数）
+// 初始化提取器特征数相对正常提取器的倍数
 const int INITIALIZER_FEATURE_MULTIPLIER = 2;
 
 // 初始化器自适应提前终止（与 PnPsolver 同款策略）：
@@ -489,7 +489,7 @@ const float RELOC_STRONG_BIND_CONFIDENCE = 0.9f;
 // 保持对齐的最小当前图加载点内点数
 const int RELOC_KEEP_ALIGN_MIN_CURMAP_INLIERS = 5;
 
-// 新地图（KF≤2）特殊阈值
+// 新地图（关键帧极少）阶段的特殊阈值
 const int NEW_MAP_KF_COUNT = 2;
 
 // 局部建图队列积压接受上限
@@ -497,8 +497,8 @@ const int KEYFRAME_QUEUE_ACCEPT_LIMIT = 3;
 
 // 重定位后短期窗口帧数
 const int RELOC_POST_FRAMES_WINDOW = 10;
-const int RELOC_POST_KF_COOLDOWN = 5;       // 重定位后关键帧插入冷却窗口（帧数）
-const int RELOC_STRICT_CHECK_WINDOW = 5;    // 重定位后严格内点校验窗口（帧数）
+const int RELOC_POST_KF_COOLDOWN = 5; // 重定位后关键帧插入冷却窗口（帧数）
+const int RELOC_STRICT_CHECK_WINDOW = 5; // 重定位后严格内点校验窗口（帧数）
 
 // 加载点近邻匹配数量上限（对齐态 / 普通态）
 const int LOADED_MATCH_MAX_ALIGNED = 500;
@@ -558,7 +558,7 @@ const float MATCH_SCALE_PENALTY = 0.15f;
 // 大尺度差时的比率放宽系数
 const float MATCH_SCALE_RATIO_RELAX = 0.1f;
 
-// 观察角度过滤：cos²<0.25（60°）/ cos<0.5（60°）
+// 观察角度过滤：视线方向余弦平方下限（约 60° 以内）
 const float MATCH_VIEW_COS_SQ_TH = 0.25f;
 const float MATCH_VIEW_COS_TH = 0.5f;
 
@@ -568,28 +568,28 @@ const int TRIANGULATION_EPIPOLE_DIST_SQ = 100;
 // 三角化对极几何搜索参数
 const float TRIANGULATION_DEPTH_MIN_RATIO = 0.4f; // 基于中值深度的最小搜索深度比例
 const float TRIANGULATION_DEPTH_MAX_RATIO = 3.0f; // 基于中值深度的最大搜索深度比例
-const float TRIANGULATION_DEPTH_MIN_ABS = 0.15f;  // 绝对最小深度（米）
-const float TRIANGULATION_DEPTH_MAX_ABS = 15.0f;  // 绝对最大深度（米）
-const float TRIANGULATION_BBOX_PADDING = 8.0f;    // 极线投影包围盒外扩像素
+const float TRIANGULATION_DEPTH_MIN_ABS = 0.15f; // 绝对最小深度（米）
+const float TRIANGULATION_DEPTH_MAX_ABS = 15.0f; // 绝对最大深度（米）
+const float TRIANGULATION_BBOX_PADDING = 8.0f; // 极线投影包围盒外扩像素
 
 // 旋转直方图主峰优势倍数与桶预分配容量
 const int ROT_HIST_DOMINANT_FACTOR = 10;
 const int ROT_HIST_RESERVE = 500;
 
 // 各场景 ORBmatcher 最近邻比率（nnratio）
-const float ORB_MATCHER_NNRATIO_MOTION = 0.9f;          // 运动模型/初始化/重定位二次搜索
-const float ORB_MATCHER_NNRATIO_REFKF = 0.7f;           // TrackReferenceKeyFrame
-const float ORB_MATCHER_NNRATIO_LOCAL = 0.8f;           // SearchLocalPoints
-const float ORB_MATCHER_NNRATIO_RELOC = 0.75f;          // 重定位候选匹配
-const float ORB_MATCHER_NNRATIO_TRIANGULATION = 0.6f;   // 三角化搜索
-const float ORB_MATCHER_NNRATIO_FUSE = 0.8f;            // SearchAndFuse
-const float ORB_MATCHER_NNRATIO_LOOP = 0.75f;           // 闭环 SearchBySim3
+const float ORB_MATCHER_NNRATIO_MOTION = 0.9f; // 运动模型/初始化/重定位二次搜索
+const float ORB_MATCHER_NNRATIO_REFKF = 0.7f; // TrackReferenceKeyFrame
+const float ORB_MATCHER_NNRATIO_LOCAL = 0.8f; // SearchLocalPoints
+const float ORB_MATCHER_NNRATIO_RELOC = 0.75f; // 重定位候选匹配
+const float ORB_MATCHER_NNRATIO_TRIANGULATION = 0.6f; // 三角化搜索
+const float ORB_MATCHER_NNRATIO_FUSE = 0.8f; // SearchAndFuse
+const float ORB_MATCHER_NNRATIO_LOOP = 0.75f; // 闭环 SearchBySim3
 
 // ORBmatcher 构造与成员函数默认参数
-const float ORB_MATCHER_DEFAULT_NN_RATIO = 0.6f;        // 默认最近邻比率
-const int ORB_MATCHER_DEFAULT_PROJ_TH = 3;              // 默认投影搜索半径（像素）
-const float ORB_MATCHER_DEFAULT_FUSE_TH = 3.0f;         // 默认 Fuse 搜索半径（像素）
-const int ORB_MATCHER_INIT_WINDOW = 10;                 // 初始化匹配窗口半宽（像素）
+const float ORB_MATCHER_DEFAULT_NN_RATIO = 0.6f; // 默认最近邻比率
+const int ORB_MATCHER_DEFAULT_PROJ_TH = 3; // 默认投影搜索半径（像素）
+const float ORB_MATCHER_DEFAULT_FUSE_TH = 3.0f; // 默认 Fuse 搜索半径（像素）
+const int ORB_MATCHER_INIT_WINDOW = 10; // 初始化匹配窗口半宽（像素）
 
 // ORB 提取器
 
@@ -603,7 +603,7 @@ const float ORB_FAST_GRID_CELL = 30.0f;
 // FAST 边缘补偿像素数
 const int ORB_FAST_BORDER_MARGIN = 3;
 
-// 候选关键点预分配倍数（性能）
+// 候选关键点预分配倍数
 const int ORB_CANDIDATE_RESERVE_FACTOR = 10;
 
 // 局部建图
@@ -640,7 +640,7 @@ const int OPTIMIZER_DEFAULT_BA_ITERS = 5;
 // 局部 BA 窗口最大共视 KF 数 / 迭代次数
 const int LOCAL_BA_MAX_KFS = 10;
 const int LOCAL_BA_ITERATIONS = 5;
-// 局部 BA 窗口中固定关键帧最大数量上限（防止极端共视下 g2o 规模爆炸导致耗时达到数百毫秒）
+// 局部 BA 窗口中固定关键帧最大数量上限（防止极端共视下 g2o 规模爆炸导致高耗时）
 const int LOCAL_BA_MAX_FIXED_KFS = 25;
 // 局部 BA 相对残差变化早停阈值
 const double LOCAL_BA_EARLY_STOP_REL_CHANGE = 1e-3;
@@ -683,21 +683,21 @@ const int GBA_ITERATIONS = 10;
 
 // 地图加载（System）
 
-// 加载地图点初始化可见性计数（有描述子 +10，无 +5；须远大于 0.25 剔除阈值）
+// 加载地图点初始化可见性计数（有描述子用前者，无描述子用后者；须远大于剔除阈值）
 const int LOADED_MP_INIT_VISIBLE = 10;
 const int LOADED_MP_INIT_VISIBLE_NO_DESC = 5;
 
 // 初始化器（RANSAC 恢复）
 
-// 匹配数分界：<150 用好点比率 0.6，否则 0.9
+// 匹配数分界：少于此值用低档好点比率，否则用高档
 const int INITIALIZER_GOOD_RATIO_SMALL_N = 150;
 const float INITIALIZER_GOOD_RATIO_SMALL = 0.6f;
 const float INITIALIZER_GOOD_RATIO_LARGE = 0.9f;
 
-// 三角化点数硬性下限（max(30, N/2)）
+// 三角化点数硬性下限
 const int INITIALIZER_MIN_TRI_HARD = 30;
 
-// 重投影误差阈值系数（4.0×mSigma2）
+// 重投影误差阈值系数（乘 mSigma2）
 const float INITIALIZER_REPROJ_TH_FACTOR = 4.0f;
 
 // 4 个运动假设相似性判定比率
@@ -721,7 +721,7 @@ const int SIM3_RANSAC_MIN_SET = 3;
 // PnP Gauss-Newton 迭代次数
 const int PNP_GN_ITERS = 5;
 
-// PnP RANSAC 迭代次数公式中 epsilon 的幂指数（沿用原版 Sim3 逻辑）
+// PnP RANSAC 迭代次数公式中 epsilon 的幂指数
 const int PNP_RANSAC_POWER = 3;
 
 // 关键帧数据库
@@ -736,7 +736,7 @@ const int KFD_HBST_MATCH_LIMIT = 50;
 const int KFD_LOOP_MIN_WORD_MATCHES = 15;
 const int KFD_RELOC_MIN_WORD_MATCHES = 15;
 
-// 候选 KF 累积得分保留比例（0.75×最高分）
+// 候选 KF 累积得分保留比例（相对最高分）
 const float KFD_SCORE_RETAIN_RATIO = 0.75f;
 
 // 帧 / 地图点
@@ -747,7 +747,7 @@ const int FRAME_SEARCH_RESERVE = 16;
 // 冗余观测判定的尺度层容差
 const int MAPPOINT_SCALE_LEVEL_TOL = 1;
 
-// 描述子计算观测数上限（栈矩阵 64×64）
+// 描述子计算观测数上限（决定栈上描述子矩阵的行数）
 const int MAPPOINT_DESC_MAX_OBS = 64;
 
 // AR / JNI 层
@@ -789,14 +789,14 @@ const int UI_CLOUD_POINT_RADIUS = 1;
 // 深度过近剔除阈值（米，相机后方/贴脸剔除）
 const float PROJECT_MIN_DEPTH = 0.01f;
 
-// 渲染层对齐滞回状态保持帧数（约0.1s@60fps）
+// 渲染层对齐滞回状态保持帧数
 const int ALIGN_HOLD_FRAMES = 6;
 
 // 共享内存 3D 点云渲染参数
 const float POINTCLOUD_MIN_RENDER_DEPTH = 0.05f; // 过滤相机后方与极近异常点（米）
 const float POINTCLOUD_POINT_SIZE_TRACKED = 8.0f; // 实时跟踪点渲染尺寸
-const float POINTCLOUD_POINT_SIZE_LOADED = 4.0f;  // 已加载参考地图点渲染尺寸
-const int POINTCLOUD_MAX_DRAW_LOADED = 1500;      // 补充渲染已加载参考地图点上限
+const float POINTCLOUD_POINT_SIZE_LOADED = 4.0f; // 已加载参考地图点渲染尺寸
+const int POINTCLOUD_MAX_DRAW_LOADED = 1500; // 补充渲染已加载参考地图点上限
 
 // 实时跟踪青色点 RGB 归一化分量
 const float POINTCLOUD_COLOR_CYAN_R = 31.0f / 255.0f;

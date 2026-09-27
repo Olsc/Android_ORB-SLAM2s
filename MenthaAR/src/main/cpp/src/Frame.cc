@@ -72,8 +72,7 @@ Frame::Frame(const Frame &frame)
      mvLevelSigma2(frame.mvLevelSigma2), mvInvLevelSigma2(frame.mvInvLevelSigma2),
      mpTree(frame.mpTree)
 {
-    // 拷贝构造的初始化列表不含新增的紧凑缓存数组；若 frame.mTcw 为空则下面
-    // 的 SetPose 不会被调用，因此必须显式初始化，避免 isInFrustum 读取未初始化值
+    // 拷贝构造的初始化列表不含紧凑缓存数组；若 frame.mTcw 为空则下面的 SetPose 不会被调用，因此必须显式初始化，避免 isInFrustum 读取未初始化值
     std::memset(mRcw_arr, 0, sizeof(mRcw_arr));
     std::memset(mtcw_arr, 0, sizeof(mtcw_arr));
     std::memset(mOw_arr, 0, sizeof(mOw_arr));
@@ -173,7 +172,7 @@ void Frame::AssignFeaturesToGrid()
         if(PosInGrid(kp,nGridPosX,nGridPosY))
         {
             // 确保网格位置在有效范围内
-            if(nGridPosX >= 0 && nGridPosX < FRAME_GRID_COLS && 
+            if(nGridPosX >= 0 && nGridPosX < FRAME_GRID_COLS &&
                nGridPosY >= 0 && nGridPosY < FRAME_GRID_ROWS)
             {
                 mGrid[nGridPosX][nGridPosY].push_back(i);
@@ -195,7 +194,7 @@ void Frame::SetPose(cv::Mat Tcw)
 }
 
 void Frame::UpdatePoseMatrices()
-{ 
+{
     mRcw = mTcw.rowRange(0,3).colRange(0,3);
     mRwc = mRcw.t();
     mtcw = mTcw.rowRange(0,3).col(3);
@@ -219,18 +218,18 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
 {
     pMP->mbTrackInView = false;
 
-    // 3D绝对坐标 (免分配获取)
+    // 3D 绝对坐标
     cv::Point3f p3f;
     pMP->GetWorldPos(p3f);
 
-    // 1. 优先计算相机坐标系中的深度 PcZ
+    // 优先计算相机坐标系中的深度 PcZ
     const float PcZ = mRcw_arr[6]*p3f.x + mRcw_arr[7]*p3f.y + mRcw_arr[8]*p3f.z + mtcw_arr[2];
 
     // 检查正深度
     if(PcZ <= 0.0f)
         return false;
 
-    // 仅在正深度时计算 PcX 与 PcY 并进行零除法视锥边界剪裁
+    // 仅在正深度时计算 PcX 与 PcY，并以无除法形式裁剪到视锥边界
     const float PcX = mRcw_arr[0]*p3f.x + mRcw_arr[1]*p3f.y + mRcw_arr[2]*p3f.z + mtcw_arr[0];
     const float u_num = fx*PcX + cx*PcZ;
     if(u_num < mnMinX*PcZ || u_num > mnMaxX*PcZ)
@@ -258,11 +257,11 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
     {
         const float maxDistance = pMP->GetMaxDistanceInvariance();
         const float minDistance = pMP->GetMinDistanceInvariance();
-        // 使用距离平方先判定，避免非必要点的 sqrt 开方计算
+        // 先用距离平方判定
         if(distSq < minDistance*minDistance || distSq > maxDistance*maxDistance)
             return false;
 
-        // 检查视角使用平方乘积判定，无超越函数无除法
+        // 视角检查用平方乘积判定
         cv::Point3f normal;
         pMP->GetNormal(normal);
         const float dotVal = POx*normal.x + POy*normal.y + POz*normal.z;
@@ -329,7 +328,7 @@ void Frame::GetFeaturesInArea(const float &x, const float &y, const float &r,
     {
         for(int iy = nMinCellY; iy<=nMaxCellY; iy++)
         {
-            // 使用 const 引用，避免对每个 grid cell 触发 vector 深拷贝
+            // 使用 const 引用，避免逐 cell 深拷贝
             const std::vector<size_t>& vCell = mGrid[ix][iy];
             if(vCell.empty())
                 continue;
