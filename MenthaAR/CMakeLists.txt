@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.10.2)
 
 set(CMAKE_VERBOSE_MAKEFILE on)
 
-# Find OpenMP to enable multi-threading acceleration
 project(MenthaAR C CXX)
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
@@ -12,7 +11,6 @@ else()
 endif()
 
 # OpenCV 构建
-# 使用官方 OpenCV 源码库，作为子库构建，并激活 NEON/OpenMP 硬件加速
 set(OPENCV_SRC_DIR "${CMAKE_SOURCE_DIR}/src/main/cpp/Thirdparty/opencv")
 
 # 强制开启 C++ 编译器全局优化参数 (O3) 和 LTO (Link Time Optimization)
@@ -313,7 +311,7 @@ target_link_libraries(MenthaAR_Engine
         -Wl,--no-whole-archive
         g2o
         ${log-lib}
-        jnigraphics                     # For AndroidBitmap_* APIs (bitmap.h)
+        jnigraphics
         EGL
         GLESv1_CM
         )

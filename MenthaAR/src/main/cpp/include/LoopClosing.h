@@ -84,7 +84,7 @@ public:
     void RequestReset();
     void WaitForResetComplete();
 
-    // 轻量级清空回环关键帧队列，用于 CreateNewMap 流程。
+    // 清空回环关键帧队列，用于 CreateNewMap 流程。
     void ClearQueue();
 
     // 此函数将在单独的线程中运行

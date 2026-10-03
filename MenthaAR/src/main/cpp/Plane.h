@@ -16,7 +16,7 @@
 class Plane
 {
 public:
-    // 从地图点集合构造平面，使用SVD分解自动拟合
+    // 从地图点集合构造平面，用 PCA（协方差矩阵最小特征向量）拟合
     Plane(const std::vector<ORB_SLAM2::MapPoint*> &vMPs, const cv::Mat &Tcw);
 
     // 从法向量和原点构造平面
@@ -30,7 +30,7 @@ public:
     // SO(3)李代数指数映射的向量版本
     cv::Mat ExpSO3(const cv::Mat &v);
 
-    // 根据地图点重新计算平面参数，使用SVD分解更新法向量和原点
+    // 根据地图点重新计算平面参数，用 PCA 更新法向量和原点
     void Recompute();
 
     // 平面法向量（3x1矩阵）

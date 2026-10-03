@@ -60,7 +60,7 @@ public:
     void Update(Tracking *pTracker);
 
 protected:
-    // 要绘制的帧信息
+    // 最近一帧的状态快照（绘制数据已无消费者）
     int N;
     std::vector<cv::KeyPoint> mvCurrentKeys;
     std::vector<bool> mvbMap, mvbVO;

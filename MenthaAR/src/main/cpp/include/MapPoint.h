@@ -79,7 +79,7 @@ public:
             func(mit.first, mit.second);
         }
     }
-    // 零拷贝聚合观测计数（哈希表 O(1) 插入）
+
     void ShareObservations(std::unordered_map<KeyFrame*, int>& counter, unsigned long excludeId = -1);
     int GetRedundantObservationsCount(KeyFrame* pKF, int scaleLevel);
     int Observations() const;
@@ -107,8 +107,7 @@ public:
     void ComputeDistinctiveDescriptors();
 
     cv::Mat GetDescriptor();
-    // 把描述子（恒为 32 字节）拷贝到栈缓冲。
-    // 返回是否有描述子（无则 out 清零）。依赖 std::atomic_load 的原子引用计数。
+    // 把描述子拷贝到调用方缓冲。返回是否有描述子（无则 out 清零）。依赖 std::atomic_load 的原子引用计数。
     inline bool GetDescriptor(uint8_t out[32]) const {
         std::shared_ptr<const cv::Mat> d = std::atomic_load(&mDescriptor);
         if(d && !d->empty()) {
@@ -127,7 +126,7 @@ public:
 
     void UpdateNormalAndDepth();
 
-    // 不变性距离边界：预计算 ×0.8/×1.2 的结果，热路径零锁读取
+    // 不变性距离边界：预计算 ×0.8/×1.2 的结果
     float GetMinDistanceInvariance();
     float GetMaxDistanceInvariance();
     int PredictScale(const float &currentDist, KeyFrame*pKF);

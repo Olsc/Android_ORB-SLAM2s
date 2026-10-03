@@ -54,7 +54,7 @@ using namespace std;
 namespace ORB_SLAM2
 {
 
-// 辅助内联函数：用于在 HBST 树中快速查找对应描述子的叶子节点，以避免代码重复
+// 辅助内联函数：用于在 HBST 树中快速查找对应描述子的叶子节点
 inline const HBSTNode* FindHBSTLeafNode(const HBSTTree* tree, const HBSTMatchable::Descriptor &desc) {
     if (!tree) return nullptr;
     const HBSTNode* node = tree->root();
@@ -64,14 +64,13 @@ inline const HBSTNode* FindHBSTLeafNode(const HBSTTree* tree, const HBSTMatchabl
     return node;
 }
 
-// Fuse 预快照条目：位置/法向/描述子/尺度参数进入目标关键帧循环前
-// 一次性读取，内层遍历零锁零分配
+// Fuse 预快照条目：这些字段在进入目标关键帧循环前一次性读出并固定
 struct FuseItem {
     MapPoint* pMP;
-    cv::Point3f P;          // 世界坐标
-    cv::Point3f N;          // 观测方向法向
-    float minInv, maxInv;   // 深度不变范围（已平方）
-    float maxDistance;      // PredictScale 所需 mfMaxDistance
+    cv::Point3f P; // 世界坐标
+    cv::Point3f N; // 观测方向法向
+    float minInv, maxInv; // 深度不变范围（已平方）
+    float maxDistance; // PredictScale 所需 mfMaxDistance
     uint8_t desc[ORB_DESC_COLS];
 };
 
@@ -106,7 +105,7 @@ int ORBmatcher::SearchByProjection(Frame &F, const vector<MapPoint*> &vpMapPoint
         if(bFactor)
             r*=th;
 
-        // 免分配半径搜索（本函数内单点串行使用，无嵌套）
+        // 半径搜索（本函数内单点串行，无嵌套）
         static thread_local std::vector<size_t> s_vIndices;
         s_vIndices.clear();
         F.GetFeaturesInArea(pMP->mTrackProjX,pMP->mTrackProjY,r*F.mvScaleFactors[nPredictedLevel],s_vIndices,nPredictedLevel-1,nPredictedLevel);
@@ -115,7 +114,7 @@ int ORBmatcher::SearchByProjection(Frame &F, const vector<MapPoint*> &vpMapPoint
         if(vIndices.empty())
             continue;
 
-        // 栈缓冲读取描述子
+        // 读取该点描述子
         uint8_t MPdescriptor[ORB_DESC_COLS];
         pMP->GetDescriptor(MPdescriptor);
 
@@ -143,7 +142,7 @@ int ORBmatcher::SearchByProjection(Frame &F, const vector<MapPoint*> &vpMapPoint
                 bestLevel2 = bestLevel;
                 bestLevel = F.mvKeysUn[idx].octave;
                 bestIdx=idx;
-                if (bestDist == 0) break;  // 零距离无法被超越
+                if (bestDist == 0) break; // 零距离无法被超越
             }
             else if(dist<bestDist2)
             {
@@ -186,8 +185,6 @@ bool ORBmatcher::CheckDistEpipolarLine(const float a,const float b,const float c
     if(den==0)
         return false;
 
-    // 等价变换消除除法：num*num/den < th 等价于 num*num < den*th
-    // 数学等价: a/b < c ⇔ a < b*c (当b>0)
     const float epiTh = ORB_MATCHER_EPILINE_TH * pKF2->mvLevelSigma2[kp2.octave];
     return num*num < den * epiTh;
 }
@@ -202,7 +199,7 @@ int ORBmatcher::SearchByHBST(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoi
 
     int nmatches=0;
 
-    // 旋转直方图缓冲复用（thread_local + clear）
+    // 每线程独立的旋转直方图，用前 clear
     static thread_local vector<int> rotHist[HISTO_LENGTH];
     static thread_local bool rotHistInit = false;
     if(!rotHistInit){
@@ -236,10 +233,10 @@ int ORBmatcher::SearchByHBST(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoi
         if(!pMP || pMP->isBad())
             continue;
 
-        // 直接从关键帧预构建的 HBST 树中获取 bitset 描述子，避免重复进行二进制转换
+        // 直接从关键帧预构建的 HBST 树中获取 bitset 描述子
         const HBSTMatchable::Descriptor &descKF = matchablesKF[iKF]->descriptor;
 
-        // 使用辅助内联函数遍历查找叶子节点，减少重复代码
+        // 使用辅助内联函数遍历查找叶子节点
         const HBSTNode* node_current = FindHBSTLeafNode(treeF.get(), descKF);
         if(!node_current)
             continue;
@@ -256,7 +253,7 @@ int ORBmatcher::SearchByHBST(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoi
             if (vpMapPointMatches[realIdxF])
                 continue;
 
-            // 直接在 bitset 上通过异或和计数来计算汉明距离，实现极致速度且无内存拷贝与函数调用
+            // 直接在 bitset 上通过异或和计数来计算汉明距离
             const int dist = (descKF ^ candidate->descriptor).count();
 
             if (dist < bestDist1) {
@@ -278,7 +275,7 @@ int ORBmatcher::SearchByHBST(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoi
                     // 尺度差异过大，增加等效距离减少其被选中的概率
                     float effectiveDist = bestDist1 * (1.0f + scaleDiff * MATCH_SCALE_PENALTY);
                     if (effectiveDist > TH_LOW) {
-                        continue;  // 等效距离超过阈值，丢弃此匹配
+                        continue; // 等效距离超过阈值，丢弃此匹配
                     }
                     // 仍接受但降低ratio test的实际约束
                     if (static_cast<float>(bestDist1) < mfNNratio * static_cast<float>(bestDist2) * (1.0f + scaleDiff * MATCH_SCALE_RATIO_RELAX)) {
@@ -313,8 +310,7 @@ int ORBmatcher::SearchByHBST(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoi
     }
 
     if (mbCheckOrientation) {
-        // 小样本时跳过旋转直方图过滤：当匹配总数不足时，
-        // 旋转直方图的主方向统计不可靠，过滤会过度剔除有效匹配。
+        // 小样本时跳过旋转直方图过滤：当匹配总数不足时，旋转直方图的主方向统计不可靠，过滤会过度剔除有效匹配。
         if (nmatches >= HISTO_LENGTH) {
             int ind1 = -1;
             int ind2 = -1;
@@ -347,12 +343,12 @@ int ORBmatcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapP
     // 分解 Scw
     cv::Mat sRcw = Scw.rowRange(0,3).colRange(0,3);
     const float scw = sqrt(sRcw.row(0).dot(sRcw.row(0)));
-    // 用乘法等价代替矩阵除法
+
     const float inv_scw = 1.0f/scw;
     cv::Mat Rcw = sRcw * inv_scw;
     cv::Mat tcw = Scw.rowRange(0,3).col(3) * inv_scw;
     cv::Mat Ow = -Rcw.t()*tcw;
-    // 将矩阵数据在循环外部加载至栈上，消除循环内部的 Mat 访问开销
+
     const float R00 = Rcw.at<float>(0,0), R01 = Rcw.at<float>(0,1), R02 = Rcw.at<float>(0,2);
     const float R10 = Rcw.at<float>(1,0), R11 = Rcw.at<float>(1,1), R12 = Rcw.at<float>(1,2);
     const float R20 = Rcw.at<float>(2,0), R21 = Rcw.at<float>(2,1), R22 = Rcw.at<float>(2,2);
@@ -374,7 +370,7 @@ int ORBmatcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapP
         if(pMP->isBad() || spAlreadyFound.count(pMP))
             continue;
 
-        // 获取3D坐标 
+        // 获取3D坐标
         cv::Point3f p3Dw;
         pMP->GetWorldPos(p3Dw);
 
@@ -411,7 +407,7 @@ int ORBmatcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapP
         if(distSq < minDistance*minDistance || distSq > maxDistance*maxDistance)
             continue;
 
-        // 观察角度过滤：使用栈获取法向，先进行平方不等式判定，再决定是否计算 sqrt
+        // 观察角度过滤：先做平方不等式判定，避免开方
         cv::Point3f Pn;
         pMP->GetNormal(Pn);
         const float dotVal = POx*Pn.x + POy*Pn.y + POz*Pn.z;
@@ -422,7 +418,7 @@ int ORBmatcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapP
 
         int nPredictedLevel = pMP->PredictScale(dist,pKF);
 
-        // 在半径内搜索（免分配缓冲）
+        // 在半径内搜索
         const float radius = th*pKF->mvScaleFactors[nPredictedLevel];
 
         static thread_local std::vector<size_t> s_vIndices;
@@ -476,7 +472,7 @@ int ORBmatcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f
     int nmatches=0;
     vnMatches12 = vector<int>(F1.mvKeysUn.size(),-1);
 
-    // 旋转直方图缓冲复用（thread_local + clear）
+    // 每线程独立的旋转直方图，用前 clear
     static thread_local vector<int> rotHist[HISTO_LENGTH];
     static thread_local bool rotHistInit = false;
     if(!rotHistInit){
@@ -496,7 +492,7 @@ int ORBmatcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f
         if(level1>0)
             continue;
 
-        // 免分配半径搜索（本函数内单点串行使用，无嵌套）
+        // 半径搜索（本函数内单点串行，无嵌套）
         static thread_local std::vector<size_t> s_vIndices2;
         s_vIndices2.clear();
         F2.GetFeaturesInArea(vbPrevMatched[i1].x,vbPrevMatched[i1].y, windowSize,s_vIndices2,level1,level1);
@@ -505,7 +501,6 @@ int ORBmatcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f
         if(vIndices2.empty())
             continue;
 
-        // 直接用行首指针，免去每点 2 次 cv::Mat 行头构造（含原子引用计数）
         const uint8_t* d1 = F1.mDescriptors.ptr<uint8_t>(i1);
 
         int bestDist = INT_MAX;
@@ -614,7 +609,7 @@ int ORBmatcher::SearchByHBST(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> 
     vpMatches12 = vector<MapPoint*>(vpMapPoints1.size(), static_cast<MapPoint*>(NULL));
     vector<bool> vbMatched2(vpMapPoints2.size(), false);
 
-    // 旋转直方图缓冲复用（thread_local + clear）
+    // 每线程独立的旋转直方图，用前 clear
     static thread_local vector<int> rotHist[HISTO_LENGTH];
     static thread_local bool rotHistInit = false;
     if(!rotHistInit){
@@ -652,10 +647,10 @@ int ORBmatcher::SearchByHBST(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> 
         if (!pMP1 || pMP1->isBad())
             continue;
 
-        // 直接从关键帧1预构建的 HBST 树中获取 bitset 描述子，避免重复进行二进制转换
+        // 直接从关键帧1预构建的 HBST 树中获取 bitset 描述子
         const HBSTMatchable::Descriptor &desc1 = matchables1[idx1]->descriptor;
 
-        // 使用辅助内联函数遍历查找叶子节点，减少重复代码
+        // 使用辅助内联函数遍历查找叶子节点
         const HBSTNode* node_current = FindHBSTLeafNode(tree2.get(), desc1);
         if (!node_current)
             continue;
@@ -673,7 +668,7 @@ int ORBmatcher::SearchByHBST(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> 
             if (!pMP2 || pMP2->isBad() || vbMatched2[idx2])
                 continue;
 
-            // 直接在 bitset 上通过异或和计数来计算汉明距离，实现极致速度且无内存拷贝与函数调用
+            // 直接在 bitset 上通过异或和计数来计算汉明距离
             const int dist = (desc1 ^ candidate->descriptor).count();
 
             if (dist < bestDist1) {
@@ -782,8 +777,8 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
     float R21[9];
     for(int r = 0; r < 3; ++r) {
         for(int c = 0; c < 3; ++c) {
-            R21[r*3 + c] = R2w[r*3 + 0]*R1w[c*3 + 0] + 
-                           R2w[r*3 + 1]*R1w[c*3 + 1] + 
+            R21[r*3 + c] = R2w[r*3 + 0]*R1w[c*3 + 0] +
+                           R2w[r*3 + 1]*R1w[c*3 + 1] +
                            R2w[r*3 + 2]*R1w[c*3 + 2];
         }
     }
@@ -806,7 +801,7 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
     vector<bool> vbMatched2(pKF2->N,false);
     vector<int> vMatches12(pKF1->N,-1);
 
-    // 旋转直方图缓冲复用（thread_local + clear）
+    // 每线程独立的旋转直方图，用前 clear
     static thread_local vector<int> rotHist[HISTO_LENGTH];
     static thread_local bool rotHistInit = false;
     if(!rotHistInit){
@@ -817,7 +812,7 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
 
     const float factor = 1.0f/HISTO_LENGTH;
 
-    // F12 对整个搜索恒定：九元素一次取出，内层不再经 Mat::at 反复访存
+    // F12 对整个搜索恒定：九元素一次取出
     const float f00=F12.at<float>(0,0), f01=F12.at<float>(0,1), f02=F12.at<float>(0,2);
     const float f10=F12.at<float>(1,0), f11=F12.at<float>(1,1), f12v=F12.at<float>(1,2);
     const float f20=F12.at<float>(2,0), f21=F12.at<float>(2,1), f22=F12.at<float>(2,2);
@@ -978,7 +973,7 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
     if (!pKF || pKF->isBad())
         return 0;
 
-    // 栈版零拷贝读取位姿与相机中心
+    // 读取位姿与相机中心到局部标量
     float Rcw[9], tcw[3];
     pKF->GetRotation(Rcw);
     pKF->GetTranslation(tcw);
@@ -990,7 +985,7 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
     const float &cx = pKF->cx;
     const float &cy = pKF->cy;
 
-    // 预先提取位姿与相机中心的标量值，在循环中以 O(1) 免锁且免分配执行 3D 变换
+    // 位姿与相机中心已提取为标量，循环内直接做 3D 变换
     const float R00 = Rcw[0], R01 = Rcw[1], R02 = Rcw[2];
     const float R10 = Rcw[3], R11 = Rcw[4], R12 = Rcw[5];
     const float R20 = Rcw[6], R21 = Rcw[7], R22 = Rcw[8];
@@ -1001,8 +996,7 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
 
     const int nMPs = vpMapPoints.size();
 
-    // 预快照：每点仅加锁读一次位置/法向/描述子，单次调用期间视为常量；
-    // isBad 仍在主循环内重检（原子读），保持迟绑定行为
+    // 预快照：每点仅加锁读一次位置/法向/描述子，之后视为常量；isBad 仍在主循环内重检（原子读）
     static thread_local std::vector<FuseItem> s_items;
     s_items.clear();
     s_items.reserve(nMPs);
@@ -1021,11 +1015,11 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
         it.maxInv = maxDistance * maxDistance;
         it.maxDistance = maxDistance;
         if(!pMP->GetDescriptor(it.desc))
-            continue;   // 无描述子的点无法参与融合（原实现同样无法有效匹配）
+            continue; // 无描述子的点无法参与融合
         s_items.push_back(it);
     }
 
-    // 免分配半径搜索缓冲（本函数内单点串行使用，无嵌套）
+    // 半径搜索缓冲
     static thread_local std::vector<size_t> s_vIndices;
 
     for(size_t itemIdx=0; itemIdx<s_items.size(); ++itemIdx)
@@ -1033,11 +1027,11 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
         const FuseItem &it = s_items[itemIdx];
         MapPoint* pMP = it.pMP;
 
-        // 迟绑定重检：与原逐次检查语义一致（原子读，开销可忽略）
+        // 快照后重检 isBad
         if(pMP->isBad() || pMP->IsInKeyFrame(pKF))
             continue;
 
-        // 标量级 3D 旋转与平移变换
+        // 3D 旋转与平移变换
         const float p3DcX = R00*it.P.x + R01*it.P.y + R02*it.P.z + tx;
         const float p3DcY = R10*it.P.x + R11*it.P.y + R12*it.P.z + ty;
         const float p3DcZ = R20*it.P.x + R21*it.P.y + R22*it.P.z + tz;
@@ -1057,27 +1051,26 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
         if(!pKF->IsInImage(u,v))
             continue;
 
-        // PO = p3Dw - Ow (使用纯标量减法)
+        // PO = p3Dw - Ow
         const float POx = it.P.x - Ox;
         const float POy = it.P.y - Oy;
         const float POz = it.P.z - Oz;
 
-        // 使用平方距离进行快速范围检查
+        // 用平方距离做范围检查
         const float dist3DSq = POx*POx + POy*POy + POz*POz;
 
         // 深度必须在图像的尺度金字塔内
         if(dist3DSq < it.minInv || dist3DSq > it.maxInv)
             continue;
 
-        // 只在需要时计算实际距离
         const float dist3D = sqrt(dist3DSq);
 
-        // 使用纯标量点乘
+        // 点乘
         const float dotProd = POx*it.N.x + POy*it.N.y + POz*it.N.z;
         if(dotProd < MATCH_VIEW_COS_TH*dist3D)
             continue;
 
-        // PredictScale 内联（快照 maxDistance，免锁）
+        // PredictScale 内联（用快照的 maxDistance）
         int nPredictedLevel = 0;
         {
             const std::vector<float>& scf = pKF->mvScaleFactors;
@@ -1089,7 +1082,7 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
                 nPredictedLevel = nLevels - 1;
         }
 
-        // 在半径内搜索（免分配缓冲）
+        // 在半径内搜索
         const float radius = th*pKF->mvScaleFactors[nPredictedLevel];
 
         pKF->GetFeaturesInArea(u,v,radius,s_vIndices);
@@ -1183,7 +1176,6 @@ int ORBmatcher::Fuse(KeyFrame *pKF, cv::Mat Scw, const vector<MapPoint *> &vpPoi
     cv::Mat tcw = Scw.rowRange(0,3).col(3)/scw;
     cv::Mat Ow = -Rcw.t()*tcw;
 
-    // 将矩阵数据在循环外部加载至栈上，消除循环内部的 Mat 访问开销
     const float R00 = Rcw.at<float>(0,0), R01 = Rcw.at<float>(0,1), R02 = Rcw.at<float>(0,2);
     const float R10 = Rcw.at<float>(1,0), R11 = Rcw.at<float>(1,1), R12 = Rcw.at<float>(1,2);
     const float R20 = Rcw.at<float>(2,0), R21 = Rcw.at<float>(2,1), R22 = Rcw.at<float>(2,2);
@@ -1243,10 +1235,11 @@ int ORBmatcher::Fuse(KeyFrame *pKF, cv::Mat Scw, const vector<MapPoint *> &vpPoi
         if(dist3DSq < minDistance*minDistance || dist3DSq > maxDistance*maxDistance)
             continue;
 
-        // 观察角度过滤：使用栈获取法向，先进行平方不等式判定，再决定是否计算 sqrt
+        // 观察角度过滤：先做平方不等式判定，避免开方
         cv::Point3f Pn;
         pMP->GetNormal(Pn);
         const float dotVal = POx*Pn.x + POy*Pn.y + POz*Pn.z;
+        // 此处写死 0.25，与 MATCH_VIEW_COS_SQ_TH 同值但未用常量，待统一
         if(dotVal < 0.0f || dotVal*dotVal < 0.25f*dist3DSq)
             continue;
 
@@ -1255,7 +1248,7 @@ int ORBmatcher::Fuse(KeyFrame *pKF, cv::Mat Scw, const vector<MapPoint *> &vpPoi
         // 计算预测的尺度层级
         const int nPredictedLevel = pMP->PredictScale(dist3D,pKF);
 
-        // 在半径内搜索（免分配缓冲）
+        // 在半径内搜索
         const float radius = th*pKF->mvScaleFactors[nPredictedLevel];
 
         static thread_local std::vector<size_t> s_vIdxFuse2;
@@ -1321,7 +1314,7 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
     const float &cx = pKF1->cx;
     const float &cy = pKF1->cy;
 
-    // 世界坐标系到相机1（栈版零拷贝读取）
+    // 世界坐标系到相机1
     float R1w[9], t1w[3];
     pKF1->GetRotation(R1w);
     pKF1->GetTranslation(t1w);
@@ -1360,7 +1353,6 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
     vector<int> vnMatch1(N1,-1);
     vector<int> vnMatch2(N2,-1);
 
-    // 预将矩阵数据在循环外部加载至栈上，消除循环内部的 Mat 访问开销
     const float R1w00 = R1w[0], R1w01 = R1w[1], R1w02 = R1w[2];
     const float R1w10 = R1w[3], R1w11 = R1w[4], R1w12 = R1w[5];
     const float R1w20 = R1w[6], R1w21 = R1w[7], R1w22 = R1w[8];
@@ -1413,7 +1405,7 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
         const float maxDistance = pMP->GetMaxDistanceInvariance();
         const float minDistance = pMP->GetMinDistanceInvariance();
 
-        // 使用平方距离进行快速范围检查
+        // 用平方距离做范围检查
         const float dist3DSq = p3Dc2X*p3Dc2X + p3Dc2Y*p3Dc2Y + p3Dc2Z*p3Dc2Z;
         const float maxDistSq = maxDistance * maxDistance;
         const float minDistSq = minDistance * minDistance;
@@ -1422,13 +1414,12 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
         if(dist3DSq < minDistSq || dist3DSq > maxDistSq)
             continue;
 
-        // 只在需要时计算实际距离
         const float dist3D = sqrt(dist3DSq);
 
         // 计算预测的八度
         const int nPredictedLevel = pMP->PredictScale(dist3D,pKF2);
 
-        // 在半径内搜索（免分配缓冲）
+        // 在半径内搜索
         const float radius = th*pKF2->mvScaleFactors[nPredictedLevel];
 
         static thread_local std::vector<size_t> s_vIdx1;
@@ -1469,7 +1460,6 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
         }
     }
 
-    // 预将矩阵数据在循环外部加载至栈上，消除循环内部的 Mat 访问开销
     const float R2w00 = R2w[0], R2w01 = R2w[1], R2w02 = R2w[2];
     const float R2w10 = R2w[3], R2w11 = R2w[4], R2w12 = R2w[5];
     const float R2w20 = R2w[6], R2w21 = R2w[7], R2w22 = R2w[8];
@@ -1522,7 +1512,7 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
         const float maxDistance = pMP->GetMaxDistanceInvariance();
         const float minDistance = pMP->GetMinDistanceInvariance();
 
-        // 使用平方距离进行快速范围检查
+        // 用平方距离做范围检查
         const float dist3DSq = p3Dc1X*p3Dc1X + p3Dc1Y*p3Dc1Y + p3Dc1Z*p3Dc1Z;
         const float maxDistSq = maxDistance * maxDistance;
         const float minDistSq = minDistance * minDistance;
@@ -1531,13 +1521,12 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
         if(dist3DSq < minDistSq || dist3DSq > maxDistSq)
             continue;
 
-        // 只在需要时计算实际距离
         const float dist3D = sqrt(dist3DSq);
 
         // 计算预测的八度
         const int nPredictedLevel = pMP->PredictScale(dist3D,pKF1);
 
-        // 在 2.5*sigma(尺度层级) 半径内搜索（免分配缓冲）
+        // 在 2.5*sigma(尺度层级) 半径内搜索
         const float radius = th*pKF1->mvScaleFactors[nPredictedLevel];
 
         static thread_local std::vector<size_t> s_vIdx2;
@@ -1603,7 +1592,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
 {
     int nmatches = 0;
 
-    // 旋转直方图缓冲复用（thread_local + clear）
+    // 每线程独立的旋转直方图，用前 clear
     static thread_local vector<int> rotHist[HISTO_LENGTH];
     static thread_local bool rotHistInit = false;
     if(!rotHistInit){
@@ -1616,7 +1605,6 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
     const cv::Mat Rcw = CurrentFrame.mTcw.rowRange(0,3).colRange(0,3);
     const cv::Mat tcw = CurrentFrame.mTcw.rowRange(0,3).col(3);
 
-    // 将矩阵数据在循环外部加载至栈上，消除循环内部 of Mat 访问开销
     const float R00 = Rcw.at<float>(0,0), R01 = Rcw.at<float>(0,1), R02 = Rcw.at<float>(0,2);
     const float R10 = Rcw.at<float>(1,0), R11 = Rcw.at<float>(1,1), R12 = Rcw.at<float>(1,2);
     const float R20 = Rcw.at<float>(2,0), R21 = Rcw.at<float>(2,1), R22 = Rcw.at<float>(2,2);
@@ -1662,7 +1650,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
 
                 int nLastOctave = LastFrame.mvKeys[i].octave;
 
-                // 在窗口中搜索。尺寸取决于尺度（免分配缓冲）
+                // 在窗口中搜索。尺寸取决于尺度
                 float radius = th*CurrentFrame.mvScaleFactors[nLastOctave];
 
                 static thread_local std::vector<size_t> s_vIndices2;
@@ -1679,7 +1667,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
                 if(vIndices2.empty())
                     continue;
 
-                // 栈缓冲描述子
+                // 读取该点描述子
                 uint8_t dMP[ORB_DESC_COLS];
                 pMP->GetDescriptor(dMP);
 
@@ -1753,14 +1741,13 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const set
     const cv::Mat tcw = CurrentFrame.mTcw.rowRange(0,3).col(3);
     const cv::Mat Ow = -Rcw.t()*tcw;
 
-    // 将矩阵数据在循环外部加载至栈上，消除循环内部 of Mat 访问开销
     const float R00 = Rcw.at<float>(0,0), R01 = Rcw.at<float>(0,1), R02 = Rcw.at<float>(0,2);
     const float R10 = Rcw.at<float>(1,0), R11 = Rcw.at<float>(1,1), R12 = Rcw.at<float>(1,2);
     const float R20 = Rcw.at<float>(2,0), R21 = Rcw.at<float>(2,1), R22 = Rcw.at<float>(2,2);
     const float tx = tcw.at<float>(0), ty = tcw.at<float>(1), tz = tcw.at<float>(2);
     const float Ox = Ow.at<float>(0), Oy = Ow.at<float>(1), Oz = Ow.at<float>(2);
 
-    // 旋转直方图缓冲复用（thread_local + clear）
+    // 每线程独立的旋转直方图，用前 clear
     static thread_local vector<int> rotHist[HISTO_LENGTH];
     static thread_local bool rotHistInit = false;
     if(!rotHistInit){
@@ -1799,7 +1786,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const set
                 if(v<CurrentFrame.mnMinY || v>CurrentFrame.mnMaxY)
                     continue;
 
-                // 计算预测的尺度层级 (标量减法与乘加)
+                // 计算预测的尺度层级
                 const float POx = x3Dw.x - Ox;
                 const float POy = x3Dw.y - Oy;
                 const float POz = x3Dw.z - Oz;
@@ -1819,7 +1806,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const set
 
                 int nPredictedLevel = pMP->PredictScale(dist3D,&CurrentFrame);
 
-                // 在窗口中搜索（免分配缓冲）
+                // 在窗口中搜索
                 const float radius = th*CurrentFrame.mvScaleFactors[nPredictedLevel];
 
                 static thread_local std::vector<size_t> s_vIdx3;
@@ -1830,7 +1817,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const set
                 if(vIndices2.empty())
                     continue;
 
-                // 栈缓冲描述子
+                // 读取该点描述子
                 uint8_t dMP[ORB_DESC_COLS];
                 pMP->GetDescriptor(dMP);
 
@@ -1930,7 +1917,6 @@ void ORBmatcher::ComputeThreeMaxima(vector<int>* histo, const int L, int &ind1, 
         }
     }
 
-    // 使用整数乘法代替浮点乘法
     if(max2*ROT_HIST_DOMINANT_FACTOR < max1)
     {
         ind2=-1;

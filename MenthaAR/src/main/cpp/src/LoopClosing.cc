@@ -134,7 +134,7 @@ void LoopClosing::Run()
             if(DetectLoop())
             {
                // 计算相似变换 [sR|t]
-               // 在双目/RGBD情况下 s=1
+               // 单目下 s 由 RANSAC 估计
                if(ComputeSim3())
                {
                    // 执行闭环融合和位姿图优化
@@ -187,7 +187,7 @@ bool LoopClosing::DetectLoop()
         mpCurrentKF->SetNotErase();
     }
 
-    // 如果地图包含少于 10 个关键帧，或者距离上次闭环检测少于 10 个关键帧
+    // 距上次闭环检测的关键帧数不足 LOOP_MIN_FRAMES_SINCE_LAST 时，仅入库不做闭环检测
     if(mpCurrentKF->mnId<mLastLoopKFid+LOOP_MIN_FRAMES_SINCE_LAST)
     {
         mpKeyFrameDB->add(mpCurrentKF);
@@ -257,7 +257,7 @@ bool LoopClosing::DetectLoop()
             }
         }
 
-        // 如果该组与任何先前的组不一致，则插入一致性计数器设置为零
+        // 与先前任何组都不一致时，插入一个一致性计数为 0 的新组
         if(!bConsistentForSomeGroup)
         {
             ConsistentGroup cg = make_pair(spCandidateGroup,0);
@@ -282,12 +282,12 @@ bool LoopClosing::DetectLoop()
 
 bool LoopClosing::ComputeSim3()
 {
-    // 对于每个一致的闭环候选，我们尝试计算 Sim3
+    // 对每个一致的闭环候选尝试计算 Sim3
 
     const int nInitialCandidates = mvpEnoughConsistentCandidates.size();
 
-    // 我们首先为每个候选计算 ORB 匹配
-    // 如果找到足够的匹配，我们将设置 Sim3Solver
+    // 先为每个候选计算 ORB 匹配
+    // 匹配足够时设置 Sim3Solver
     ORBmatcher matcher(ORB_MATCHER_NNRATIO_LOOP,true);
 
     vector<Sim3Solver*> vpSim3Solvers;
@@ -466,7 +466,7 @@ void LoopClosing::CorrectLoop()
     // 如果正在运行全局 Bundle Adjustment，则中止它（join 等待线程真正退出）
     RequestStopGBA();
 
-    // RAII 保护：确保无论任何分支或异常退出
+    // RAII 保护：确保任何分支或异常退出都能释放局部建图线程
     LocalMappingStopScope stopScope(mpLocalMapper);
     if(!stopScope.isStopped())
     {
@@ -483,7 +483,7 @@ void LoopClosing::CorrectLoop()
 
     KeyFrameAndPose CorrectedSim3, NonCorrectedSim3;
     CorrectedSim3[mpCurrentKF]=mg2oScw;
-    // 栈版读取位姿
+    // 读取位姿
     float TwcF[16];
     mpCurrentKF->GetPoseInverse(TwcF);
     cv::Mat Twc(4,4,CV_32F);
@@ -514,7 +514,7 @@ void LoopClosing::CorrectLoop()
         NonCorrectedSim3[pKFi]=g2oSiw;
     }
 
-    // 2. 锁外预计算 SE3 矩阵以极大地减少持锁时间
+    // 2. 锁外预计算 SE3 矩阵
     std::map<KeyFrame*, cv::Mat> mapCorrectedPoses;
     for(vector<KeyFrame*>::iterator vit=mvpCurrentConnectedKFs.begin(), vend=mvpCurrentConnectedKFs.end(); vit!=vend; vit++)
     {
@@ -528,7 +528,6 @@ void LoopClosing::CorrectLoop()
     }
 
     {
-        // 获取地图互斥锁
         unique_lock<mutex> lock(mpMap->mMutexMapUpdate);
 
         // 校正当前关键帧及其邻居观测到的所有地图点，使它们与闭环的另一侧对齐
@@ -539,8 +538,7 @@ void LoopClosing::CorrectLoop()
             g2o::Sim3 g2oCorrectedSwi = g2oCorrectedSiw.inverse();
             g2o::Sim3 g2oSiw = NonCorrectedSim3[pKFi];
 
-            // 结合律预合成：T = S_cwi·S_iw 对该 KF 全部地图点恒定，
-            // 提前合成后每点只需一次 Sim3::map
+            // 结合律预合成：T = S_cwi·S_iw 对该 KF 全部地图点恒定，提前合成后每点只需一次 Sim3::map
             const g2o::Sim3 g2oTsc = g2oCorrectedSwi * g2oSiw;
 
             vector<MapPoint*> vpMPsi = pKFi->GetMapPointMatches();
@@ -561,10 +559,8 @@ void LoopClosing::CorrectLoop()
                 pMPi->UpdateNormalAndDepth();
             }
 
-            // 更新关键帧位姿，使用我们已经在锁外预计算好的矩阵
+            // 更新关键帧位姿，使用锁外预计算好的矩阵
             pKFi->SetPose(mapCorrectedPoses[pKFi]);
-
-            // 注意：UpdateConnections() 已被移至锁外，以极大地减少持锁时间并避免死锁
         }
 
         // 开始闭环融合
@@ -647,7 +643,6 @@ void LoopClosing::SearchAndFuse(const KeyFrameAndPose &CorrectedPosesMap)
         vector<MapPoint*> vpReplacePoints(mvpLoopMapPoints.size(),static_cast<MapPoint*>(NULL));
         matcher.Fuse(pKF,cvScw,mvpLoopMapPoints,LOOP_FUSE_SEARCH_TH,vpReplacePoints);
 
-        // 获取地图互斥锁
         unique_lock<mutex> lock(mpMap->mMutexMapUpdate);
         const int nLP = mvpLoopMapPoints.size();
         for(int i=0; i<nLP;i++)
@@ -712,9 +707,9 @@ void LoopClosing::RequestStopGBA()
         if(mpThreadGBA)
         {
             mbStopGBA = true;
-            mnFullBAIdx++;          // 使 GBA 线程末尾的 idx 校验判定"已被中止"
+            mnFullBAIdx++; // 使 GBA 线程末尾的 idx 校验判定"已被中止"
             pToJoin = mpThreadGBA;
-            mpThreadGBA = nullptr;  // GBA 线程自身收尾时看到空指针会跳过 detach/delete
+            mpThreadGBA = nullptr; // GBA 线程自身收尾时看到空指针会跳过 detach/delete
         }
         else if(mbRunningGBA)
         {
@@ -735,7 +730,6 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
 {
     try
     {
-        // cout << "开始全局 Bundle Adjustment" << endl;
 
         int idx =  mnFullBAIdx;
         Optimizer::GlobalBundleAdjustemnt(mpMap,GBA_ITERATIONS,&mbStopGBA,nLoopKF,false);
@@ -762,7 +756,6 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
                     return;
                 }
 
-                // 获取地图互斥锁
                 unique_lock<mutex> mapLock(mpMap->mMutexMapUpdate);
 
                 // 从地图的原点关键帧开始校正关键帧
@@ -845,8 +838,7 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
                         pKF->SetPose(pKF->mTcwGBA);
                 }
 
-                // 校正地图点（锁内仅写坐标，法向/深度更新移出 mMutexMapUpdate，
-                // 避免大地图时 Tracking 的 UpdateLastFrame/初始化在全局锁上排队数秒）
+                // 校正地图点（锁内仅写坐标，法向/深度更新移出 mMutexMapUpdate，避免大地图时 Tracking 的 UpdateLastFrame/初始化在全局锁上排队数秒）
                 const vector<MapPoint*> vpMPs = mpMap->GetAllMapPoints();
                 vector<MapPoint*> vpToUpdateNormal;
                 vpToUpdateNormal.reserve(vpMPs.size());
@@ -889,7 +881,7 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
                 }
 
                 mpMap->InformNewBigChange();
-                mapLock.unlock();   // 提前释放 mMutexMapUpdate
+                mapLock.unlock(); // 提前释放 mMutexMapUpdate
 
                 for(MapPoint* pMP : vpToUpdateNormal)
                 {

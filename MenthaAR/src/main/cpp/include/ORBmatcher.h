@@ -70,19 +70,19 @@ public:
     static HBSTTree::MatchableVector getMatchables(const cv::Mat &descriptors, const std::vector<size_t>& objects);
 
     // 在帧关键点和投影地图点之间搜索匹配，返回匹配数量
-    // 用于跟踪局部地图(跟踪)
+    // 用于跟踪局部地图
     int SearchByProjection(Frame &F, const std::vector<MapPoint*> &vpMapPoints, const float th=ORB_MATCHER_DEFAULT_PROJ_TH);
 
     // 将上一帧中跟踪的地图点投影到当前帧并搜索匹配
-    // 用于从前一帧跟踪(跟踪)
+    // 用于从前一帧跟踪
     int SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, const float th, const bool bMono);
 
     // 将关键帧中看到的地图点投影到帧中并搜索匹配
-    // 用于重定位(跟踪)
+    // 用于重定位
     int SearchByProjection(Frame &CurrentFrame, KeyFrame* pKF, const std::set<MapPoint*> &sAlreadyFound, const float th, const int ORBdist);
 
     // 使用相似变换投影地图点并搜索匹配
-    // 用于回环检测(闭环)
+    // 用于回环检测
     int SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const std::vector<MapPoint*> &vpPoints, std::vector<MapPoint*> &vpMatched, int th);
 
     // 地图初始化的匹配(仅用于单目情况)

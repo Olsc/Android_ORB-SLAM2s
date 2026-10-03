@@ -117,11 +117,11 @@ class PnPsolver {
   double uc, vc, fu, fv;
 
   double * pws, * us, * alphas, * pcs;
-  int maximum_number_of_correspondences;  // 最大对应点数量
-  int number_of_correspondences;  // 对应点数量
+  int maximum_number_of_correspondences; // 最大对应点数量
+  int number_of_correspondences; // 对应点数量
 
   double cws[4][3], ccs[4][3];
-  double cws_determinant;  // cws行列式
+  double cws_determinant; // cws行列式
 
   vector<MapPoint*> mvpMapPointMatches;
 
@@ -171,7 +171,7 @@ class PnPsolver {
   // RANSAC期望的内点/总数比率
   float mRansacEpsilon;
 
-  // RANSAC内点/外点阈值。最大误差 e = dist(P1,T_12*P2)^2
+  // 未使用：阈值实际由 mvMaxError 承担（该字段无读写）
   float mRansacTh;
 
   // 每次迭代使用的RANSAC最小集合
@@ -180,11 +180,11 @@ class PnPsolver {
   // 与尺度级别相关的最大平方误差。最大误差 = th*th*sigma(level)*sigma(level)
   vector<float> mvMaxError;
 
-  // RANSAC 内部循环防止动态内存分配的缓冲区
-  std::vector<double> m_M_buffer;
-  std::vector<double> m_PW0_buffer;
+  // RANSAC 内部循环复用的暂存缓冲
+  std::vector<double> m_M_buffer;   // 当前无使用
+  std::vector<double> m_PW0_buffer; // choose_control_points 复用
 
-  // 独立随机数生成器（LCG），避免全局 rand() 共享导致非确定性
+  // 独立随机数生成器（LCG）
   LCG mLcg;
 };
 

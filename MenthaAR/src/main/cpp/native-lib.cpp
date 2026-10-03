@@ -38,8 +38,8 @@ std::string modelPath;
 ORB_SLAM2::System* slamSys;
 
 float fx, fy, cx, cy;
-float gBaseFx, gBaseFy, gBaseCx, gBaseCy;  // 基准内参 (640x360校准值)
-float gScaledFx, gScaledFy, gScaledCx, gScaledCy;  // 缩放后的内参
+float gBaseFx, gBaseFy, gBaseCx, gBaseCy; // 基准内参 (640x360校准值)
+float gScaledFx, gScaledFy, gScaledCx, gScaledCy; // 缩放后的内参
 double timeStamp;
 bool slamInitialized = false;
 
@@ -50,37 +50,37 @@ std::vector<cv::KeyPoint> vKeys;
 std::mutex gMapPointsMutex;
 
 // 点云显示开关（同时控制绿色和蓝色点云）：由 binder/UI 线程写、SLAM 线程读，保持原子量
-std::atomic<bool> gEnablePointCloudDisplay{true};  // 默认启用点云显示
+std::atomic<bool> gEnablePointCloudDisplay{true}; // 默认启用点云显示
 
 // SLAM丢失自动重置相关变量
 const double LOST_RESET_TIMEOUT = ORB_SLAM2::LOST_RESET_TIMEOUT; // 名义超时（秒），仅用于换算帧数
-int gLostFrameCount = 0;             // 连续丢失帧计数
+int gLostFrameCount = 0; // 连续丢失帧计数
 
 // AR 锚点
 AR::ArAnchor gAnchor;
 std::map<int, AR::ArAnchor> gMapAnchors;
 // 渲染层对齐滞回状态（与 SLAM 核心 mbHaveMapAlign 解耦，由 AR_RenderFrame 维护）
 AR::AlignHoldState gAlignHold;
-const int ALIGN_HOLD_FRAMES = ORB_SLAM2::ALIGN_HOLD_FRAMES;   // raw 对齐丢失后仍按"对齐帧"渲染的保持帧数（约0.1s@60fps）
+const int ALIGN_HOLD_FRAMES = ORB_SLAM2::ALIGN_HOLD_FRAMES; // raw 对齐丢失后仍按"对齐帧"渲染的保持帧数
 
 // 多地图支持
 std::mutex gMapDataMutex;
 
 // SLAM 系统访问的读写锁
-static std::mutex gSlamPtrLock;                    // 仅保护 slamSys 指针（极短临界区）
-static std::atomic<int> gProcessingFrames{0};      // 正在处理的帧数（用于写操作协调）
+static std::mutex gSlamPtrLock; // 仅保护 slamSys 指针（极短临界区）
+static std::atomic<int> gProcessingFrames{0}; // 正在处理的帧数（用于写操作协调）
 static std::condition_variable gCvProcessingFrames; // gProcessingFrames 归零时通知写操作
-static std::mutex gTcwLock;                        // 保护 Tcw 缓存
-static cv::Mat gCachedTcw;                         // 线程安全的 Tcw 缓存
+static std::mutex gTcwLock; // 保护 Tcw 缓存
+static cv::Mat gCachedTcw; // 线程安全的 Tcw 缓存
 // 跟踪状态快照原子量：GL/Web 线程读、SLAM 线程写
-static std::atomic<int> gCachedTrackingState{0};   // 最近跟踪状态快照（0=NO_IMAGES_YET）
+static std::atomic<int> gCachedTrackingState{0}; // 最近跟踪状态快照（0=NO_IMAGES_YET）
 int gActiveMapId = 0;
 int gMapSwitchCounter = 0;
 const int MAP_SWITCH_THRESHOLD = ORB_SLAM2::MAP_SWITCH_THRESHOLD; // 至少连续3帧识别到新地图才切换
 
 // AR对象渲染状态（跨线程读写：SLAM 线程产、binder/GL 线程读——保持原子）
 static std::atomic<bool> gShouldDrawArObject{false};
-static std::atomic<float> gArObjectScale{ORB_SLAM2::AR_OBJECT_SCALE_DEFAULT};  // 默认缩放
+static std::atomic<float> gArObjectScale{ORB_SLAM2::AR_OBJECT_SCALE_DEFAULT}; // 默认缩放
 float gCurrentModelMatrix[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
 float gCurrentViewMatrix[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
 
@@ -93,11 +93,11 @@ static void AR_ResetAlignHold() {
 static void AR_OnArPlaced(Plane* detected, bool whileAligned) {
     std::lock_guard<std::mutex> lk(gMapDataMutex);
     gAnchor.Reset();
-    gAnchor.plane.reset(detected);   // 接管所有权；旧锚点自动释放
+    gAnchor.plane.reset(detected); // 接管所有权；旧锚点自动释放
     gAnchor.frame = whileAligned ? AR::AnchorFrame::kMap : AR::AnchorFrame::kSlam;
     gAnchor.isFromLoadedMap = false;
     gAnchor.valid = true;
-    AR_ResetAlignHold();             // 新锚点必须重新按当前帧渲染，避免冻结旧锚点的 lastGood
+    AR_ResetAlignHold(); // 新锚点必须重新按当前帧渲染，避免冻结旧锚点的 lastGood
     if (gAnchor.plane) {
         getRUBModelMatrixFromRDF(gAnchor.plane->glTpw, gCurrentModelMatrix);
         AR::ArObject obj;
@@ -112,7 +112,7 @@ static void AR_OnArPlaced(Plane* detected, bool whileAligned) {
 // 事件：加载地图的 AR 数据
 static void AR_OnMapDataLoaded(int mapId, AR::ArAnchor loaded) {
     std::lock_guard<std::mutex> lk(gMapDataMutex);
-    gMapAnchors[mapId] = std::move(loaded);   // 替换缓存，旧 Plane 由 unique_ptr 自动释放
+    gMapAnchors[mapId] = std::move(loaded);
 
     if (mapId == gActiveMapId) {
         if (gMapAnchors[mapId].valid || gMapAnchors[mapId].plane != nullptr || !gMapAnchors[mapId].objects.empty()) {
@@ -120,7 +120,7 @@ static void AR_OnMapDataLoaded(int mapId, AR::ArAnchor loaded) {
             gAnchor.isFromLoadedMap = (gAnchor.plane != nullptr);
             gAnchor.frame = (gAnchor.plane != nullptr) ? AR::AnchorFrame::kMap : AR::AnchorFrame::kSlam;
             gAnchor.valid = (gAnchor.plane != nullptr || !gAnchor.objects.empty());
-            AR_ResetAlignHold();   // 地图锚点必须重新对齐后才显示
+            AR_ResetAlignHold(); // 地图锚点必须重新对齐后才显示
             if (gAnchor.plane) {
                 getRUBModelMatrixFromRDF(gAnchor.plane->glTpw, gCurrentModelMatrix);
             }
@@ -135,7 +135,7 @@ static void AR_OnMapDataLoaded(int mapId, AR::ArAnchor loaded) {
 // 保存当前锚点到旧地图缓存；目标地图自带 AR 物体则接管，否则保留本地锚点
 static void AR_OnMapSwitched(int oldId, int newId) {
     std::lock_guard<std::mutex> lk(gMapDataMutex);
-    gMapAnchors[oldId] = gAnchor.Clone();      // 保存当前锚点（含平面+物体+标志）到旧地图
+    gMapAnchors[oldId] = gAnchor.Clone(); // 保存当前锚点（含平面+物体+标志）到旧地图
 
     gActiveMapId = newId;
 
@@ -144,7 +144,7 @@ static void AR_OnMapSwitched(int oldId, int newId) {
         gAnchor.isFromLoadedMap = (gAnchor.plane != nullptr);
         gAnchor.frame = (gAnchor.plane != nullptr) ? AR::AnchorFrame::kMap : AR::AnchorFrame::kSlam;
         gAnchor.valid = (gAnchor.plane != nullptr || !gAnchor.objects.empty());
-        AR_ResetAlignHold();                   // 目标为地图锚点时须重新对齐
+        AR_ResetAlignHold(); // 目标为地图锚点时须重新对齐
         if (gAnchor.plane) {
             getRUBModelMatrixFromRDF(gAnchor.plane->glTpw, gCurrentModelMatrix);
         }
@@ -163,7 +163,7 @@ static bool AR_RenderFrame(const cv::Mat& localTcw, bool trackingOk) {
         gAlignHold.effAligned = true;
         gAlignHold.dropHold = 0;
     } else if (gAlignHold.effAligned && gAlignHold.dropHold < ALIGN_HOLD_FRAMES) {
-        gAlignHold.dropHold++;   // 保持"对齐帧"，冻结 lastGood
+        gAlignHold.dropHold++; // 保持"对齐帧"，冻结 lastGood
     } else {
         gAlignHold.effAligned = false;
     }
@@ -172,7 +172,7 @@ static bool AR_RenderFrame(const cv::Mat& localTcw, bool trackingOk) {
     // 2) View：与 Model 严格同帧
     float view[16];
     if (usingHold) {
-        memcpy(view, gAlignHold.lastView, sizeof(view));   // 冻结最后对齐视图
+        memcpy(view, gAlignHold.lastView, sizeof(view)); // 冻结最后对齐视图
     } else {
         cv::Mat TcwForAR = (gAlignHold.effAligned && rawAligned)
                                ? slamSys->GetMapAlignedPose(localTcw)
@@ -188,12 +188,12 @@ static bool AR_RenderFrame(const cv::Mat& localTcw, bool trackingOk) {
     bool draw = trackingOk && gAnchor.valid && gAnchor.plane;
     if (draw) {
         if (usingHold) {
-            memcpy(model, gAlignHold.lastModel, sizeof(model));   // 冻结最后对齐模型
+            memcpy(model, gAlignHold.lastModel, sizeof(model)); // 冻结最后对齐模型
         } else if (gAnchor.frame == AR::AnchorFrame::kMap) {
             if (gAlignHold.effAligned && rawAligned) {
-                getRUBModelMatrixFromRDF(gAnchor.plane->glTpw, model);   // 地图锚点原始即地图帧
+                getRUBModelMatrixFromRDF(gAnchor.plane->glTpw, model); // 地图锚点原始即地图帧
             } else {
-                draw = false;   // 地图锚点无对齐时不可调和 → 隐藏而非画错位置
+                draw = false; // 地图锚点无对齐时不可调和 → 隐藏而非画错位置
             }
         } else { // kSlam 本地锚点：两种帧都可画（view/model 同帧 → 数学上不变量成立）
             if (gAlignHold.effAligned && rawAligned) {
@@ -330,7 +330,7 @@ void LoadPlaneAndArInfo(const std::string& filename, int mapId)
 
         if(dataValid) {
             loaded.plane = std::unique_ptr<Plane>(new Plane(n3[0], n3[1], n3[2], o3[0], o3[1], o3[2], rang));
-            loaded.frame = AR::AnchorFrame::kMap;   // 加载平面的坐标位于目标/地图坐标系
+            loaded.frame = AR::AnchorFrame::kMap; // 加载平面的坐标位于目标/地图坐标系
             LOGD("加载平面和AR信息：为地图%d加载平面", mapId);
         }
     }
@@ -490,7 +490,6 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
             LOGD("SLAM重置完成");
         }
     }
-
     return status;
 }
 
@@ -923,12 +922,12 @@ static void writePointCloudToSharedMemory() {
         if (pMP->mbFromLoadedMap) {
             dst[n*7+3] = ORB_SLAM2::POINTCLOUD_COLOR_GREEN_R;
             dst[n*7+4] = ORB_SLAM2::POINTCLOUD_COLOR_GREEN_G;
-            dst[n*7+5] = ORB_SLAM2::POINTCLOUD_COLOR_GREEN_B; // 绿色
+            dst[n*7+5] = ORB_SLAM2::POINTCLOUD_COLOR_GREEN_B;
             dst[n*7+6] = ORB_SLAM2::POINTCLOUD_POINT_SIZE_LOADED;
         } else {
             dst[n*7+3] = ORB_SLAM2::POINTCLOUD_COLOR_CYAN_R;
             dst[n*7+4] = ORB_SLAM2::POINTCLOUD_COLOR_CYAN_G;
-            dst[n*7+5] = ORB_SLAM2::POINTCLOUD_COLOR_CYAN_B;  // 青色
+            dst[n*7+5] = ORB_SLAM2::POINTCLOUD_COLOR_CYAN_B;
             dst[n*7+6] = ORB_SLAM2::POINTCLOUD_POINT_SIZE_TRACKED;
         }
         renderedMPs.insert(pMP);
@@ -960,7 +959,7 @@ static void writePointCloudToSharedMemory() {
             dst[n*7+2] = PcZ;
             dst[n*7+3] = ORB_SLAM2::POINTCLOUD_COLOR_GREEN_R;
             dst[n*7+4] = ORB_SLAM2::POINTCLOUD_COLOR_GREEN_G;
-            dst[n*7+5] = ORB_SLAM2::POINTCLOUD_COLOR_GREEN_B; // 绿色
+            dst[n*7+5] = ORB_SLAM2::POINTCLOUD_COLOR_GREEN_B;
             dst[n*7+6] = ORB_SLAM2::POINTCLOUD_POINT_SIZE_LOADED;
             n++;
 
@@ -1055,7 +1054,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeShutdown(JNIEnv* env, jobject inst
         if(slamSys){
             // Shutdown 内部：StopGlobalRelocThread → RequestStopGBA(join) → join LM/LC
             slamSys->Shutdown();
-            delete slamSys;   // ~System 释放各子模块与全部子地图
+            delete slamSys; // ~System 释放各子模块与全部子地图
             slamSys = nullptr;
         }
         VT_PROFILE_SHUTDOWN();
@@ -1085,5 +1084,4 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeShutdown(JNIEnv* env, jobject inst
     }
     LOGD("nativeShutdown: SLAM 系统已完全释放");
 }
-
 }

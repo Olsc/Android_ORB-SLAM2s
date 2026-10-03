@@ -114,7 +114,7 @@ int main(int argc, char **argv)
 	if (!camera.open(1))
 		camera.open(0);
 
-	// 从 Config.h 读取相机内参并创建单目 SLAM 引擎。
+	// 读取相机内参并创建单目 SLAM 引擎。
 	const float fx = ORB_SLAM2::CAMERA_FX;
 	const float fy = ORB_SLAM2::CAMERA_FY;
 	const float cx = ORB_SLAM2::CAMERA_CX;
@@ -123,7 +123,6 @@ int main(int argc, char **argv)
 	ORB_SLAM2::System *slamSys =
 		new ORB_SLAM2::System("", ORB_SLAM2::System::MONOCULAR);
 
-	// 校准参数可随时从 Config.h 刷新。
 	slamSys->UpdateCalibration(fx, fy, cx, cy);
 
 	cv::Mat gray(CAM_H, CAM_W, CV_8UC1);

@@ -143,7 +143,6 @@ cv::Mat KeyFrame::GetTranslation()
     return Tcw.rowRange(0,3).col(3).clone();
 }
 
-// 栈版零拷贝读取
 void KeyFrame::GetPose(float out[16])
 {
     std::unique_lock<std::mutex> lock(mMutexPose);
@@ -276,8 +275,7 @@ void KeyFrame::EraseMapPointMatch(const size_t &idx)
 
 void KeyFrame::EraseMapPointMatch(MapPoint* pMP)
 {
-    // 必须持 mMutexFeatures：此函数被 MapPoint::SetBadFlag/Replace 在回环/融合
-    // 线程调用，与 LocalMapping/LoopClosing 持锁读取 mvpMapPoints 并发
+    // 必须持 mMutexFeatures：此函数被 MapPoint::SetBadFlag/Replace 在回环/融合线程调用，与 LocalMapping/LoopClosing 持锁读取 mvpMapPoints 并发
     int idx = pMP->GetIndexInKeyFrame(this);
     unique_lock<mutex> lock(mMutexFeatures);
     if(idx>=0 && static_cast<size_t>(idx)<mvpMapPoints.size())
@@ -350,7 +348,7 @@ MapPoint* KeyFrame::GetMapPoint(const size_t &idx)
 
 void KeyFrame::UpdateConnections()
 {
-    // 哈希计数（O(1) 插入）；有序表在下方统一重建
+    // 哈希计数；有序表在下方统一重建
     unordered_map<KeyFrame*,int> KFcounter;
     KFcounter.reserve(256);
 
@@ -518,8 +516,7 @@ void KeyFrame::SetErase()
 
 void KeyFrame::SetBadFlag()
 {
-    // 避免在持有锁的情况下修改被迭代的容器
-    // 1. 拷贝连接关系
+    // 拷贝连接关系
     map<KeyFrame*,int> connectedWeightsCopy;
     vector<MapPoint*> mapPointsCopy;
 
@@ -542,7 +539,7 @@ void KeyFrame::SetBadFlag()
         mvpMapPoints.assign(N, static_cast<MapPoint*>(NULL));
     }
 
-    // 2. 在锁外进行所有的 Erase 操作，避免死锁和迭代器失效
+    // 在锁外进行所有的 Erase 操作，避免死锁和迭代器失效
     for(map<KeyFrame*,int>::iterator mit = connectedWeightsCopy.begin(), mend=connectedWeightsCopy.end(); mit!=mend; mit++)
     {
         mit->first->EraseConnection(this);
@@ -702,7 +699,6 @@ void KeyFrame::GetFeaturesInArea(const float &x, const float &y, const float &r,
     if(nMaxCellY<0)
         return;
 
-    // 半径平方在循环外预计算
     const float rSq = r*r;
 
     for(int ix = nMinCellX; ix<=nMaxCellX; ix++)
@@ -763,7 +759,6 @@ float KeyFrame::ComputeSceneMedianDepth(const int q)
         if(vpMapPoints[i])
         {
             MapPoint* pMP = vpMapPoints[i];
-            // 栈版读取
             cv::Point3f x3Dw;
             pMP->GetWorldPos(x3Dw);
             const float z = r20*x3Dw.x + r21*x3Dw.y + r22*x3Dw.z + zcw;
@@ -771,7 +766,7 @@ float KeyFrame::ComputeSceneMedianDepth(const int q)
         }
     }
 
-    // 只需第 q 分位一个值：nth_element O(N) 
+    // 只需 1/q 分位一个值
     const size_t idx = (vDepths.size()-1)/q;
     std::nth_element(vDepths.begin(), vDepths.begin()+idx, vDepths.end());
 

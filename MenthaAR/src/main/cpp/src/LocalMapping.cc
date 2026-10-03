@@ -85,8 +85,7 @@ bool LocalMapping::HasPendingEvent()
         unique_lock<mutex> lk(mMutexNewKFs);
         if(!mlNewKeyFrames.empty()) return true;
     }
-    // 各标志为原子量；Release/RequestFinish/RequestReset 均在写后 NotifyEvent，
-    // 谓词在此 cv 的锁内读取不会丢失唤醒
+    // 各标志为原子量；Release/RequestFinish/RequestReset 均在写后 NotifyEvent，谓词在此 cv 的锁内读取不会丢失唤醒
     return mbFinishRequested.load(std::memory_order_acquire) ||
            mbResetRequested.load(std::memory_order_acquire) ||
            mbStopRequested.load(std::memory_order_acquire) ||
@@ -95,8 +94,7 @@ bool LocalMapping::HasPendingEvent()
 
 void LocalMapping::NotifyEvent()
 {
-    // 必须在 mMutexEvent 下 notify：与 wait 的谓词检查互斥，
-    // 消除"谓词判定为假之后、真正阻塞之前"的丢失唤醒窗口
+    // 必须在 mMutexEvent 下 notify：与 wait 的谓词检查互斥，消除"谓词判定为假之后、真正阻塞之前"的丢失唤醒窗口
     std::unique_lock<std::mutex> evLock(mMutexEvent);
     mCvEvent.notify_all();
 }
@@ -259,7 +257,7 @@ void LocalMapping::ProcessNewKeyFrame()
                     pMP->UpdateNormalAndDepth();
                     pMP->ComputeDistinctiveDescriptors();
                 }
-                else // 这种情况只发生于跟踪线程插入的新双目点
+                else // 该点已由跟踪线程建立观测，直接记入近期新增列表
                 {
                     mlpRecentAddedMapPoints.push_back(pMP);
                 }
@@ -320,14 +318,14 @@ void LocalMapping::CreateNewMapPoints()
 
     ORBmatcher matcher(ORB_MATCHER_NNRATIO_TRIANGULATION,false);
 
-    // 栈版读取位姿
+    // 读取位姿
     float Rcw1f[9], tcw1f[3];
     mpCurrentKeyFrame->GetRotation(Rcw1f);
     mpCurrentKeyFrame->GetTranslation(tcw1f);
     cv::Point3f Ow1;
     mpCurrentKeyFrame->GetCameraCenter(Ow1);
 
-    cv::Mat Rwc1(3,3,CV_32F);  // Rwc1 = Rcw1^T
+    cv::Mat Rwc1(3,3,CV_32F); // Rwc1 = Rcw1^T
     cv::Mat Tcw1(3,4,CV_32F);
     for(int r=0; r<3; ++r) {
         for(int c=0; c<3; ++c) {
@@ -356,7 +354,7 @@ void LocalMapping::CreateNewMapPoints()
 
         KeyFrame* pKF2 = vpNeighKFs[i];
 
-        // 首先检查基线是否太短（栈版相机中心，标量基线）
+        // 首先检查基线是否太短
         cv::Point3f Ow2;
         pKF2->GetCameraCenter(Ow2);
         const float bx = Ow2.x - Ow1.x;
@@ -383,7 +381,7 @@ void LocalMapping::CreateNewMapPoints()
         pKF2->GetRotation(Rcw2f);
         pKF2->GetTranslation(tcw2f);
 
-        cv::Mat Rwc2(3,3,CV_32F);  // Rwc2 = Rcw2^T
+        cv::Mat Rwc2(3,3,CV_32F); // Rwc2 = Rcw2^T
         cv::Mat Tcw2(3,4,CV_32F);
         for(int r=0; r<3; ++r) {
             for(int c=0; c<3; ++c) {
@@ -452,7 +450,6 @@ void LocalMapping::CreateNewMapPoints()
             const float norm1Sq = r1x*r1x + r1y*r1y + r1z*r1z;
             const float norm2Sq = r2x*r2x + r2y*r2y + r2z*r2z;
 
-            // cosParallaxRays < TH <=> dotProduct^2 < TH^2 * (norm1Sq * norm2Sq)
             static const float s_parallaxThSq = LOCAL_MAPPING_TRIANGULATION_PARALLAX_TH * LOCAL_MAPPING_TRIANGULATION_PARALLAX_TH;
             if(dotProduct * dotProduct >= s_parallaxThSq * (norm1Sq * norm2Sq))
                 continue; // 视差过小，短路跳过
@@ -471,7 +468,7 @@ void LocalMapping::CreateNewMapPoints()
                     continue;
             }
 
-            // 检查三角化点是否在相机前方（标量；Rcw1f/tcw1f 为栈版位姿）
+            // 检查三角化点是否在相机前方
             const float x3Dx = x3D_buf[0];
             const float x3Dy = x3D_buf[1];
             const float x3Dz = x3D_buf[2];
@@ -843,8 +840,7 @@ bool LocalMapping::stopRequested()
 
 void LocalMapping::Release()
 {
-    // 锁顺序 mMutexStop → mMutexFinish: 与 Stopped 循环的
-    // isStopped(mMutexStop) → CheckFinish(mMutexFinish) 保持一致
+    // 锁顺序 mMutexStop → mMutexFinish: 与 Stopped 循环的 isStopped(mMutexStop) → CheckFinish(mMutexFinish) 保持一致
     {
         unique_lock<mutex> lock(mMutexStop);
         unique_lock<mutex> lock2(mMutexFinish);
@@ -862,7 +858,7 @@ bool LocalMapping::AcceptKeyFrames()
     if(mbAcceptKeyFrames.load())
         return true;
 
-    // 即使建图线程正忙，若队列积压的关键帧较少（少于3帧），也允许继续插入，以保证跟踪稳定性
+    // 即使建图线程正忙，若队列积压的关键帧较少（少于 LOCAL_MAPPING_MAX_QUEUED_KFS），也允许继续插入
     unique_lock<mutex> lockQueue(mMutexNewKFs);
     return mlNewKeyFrames.size() < LOCAL_MAPPING_MAX_QUEUED_KFS;
 }
@@ -891,7 +887,7 @@ void LocalMapping::InterruptBA()
 
 void LocalMapping::KeyFrameCulling()
 {
-    // 检查冗余关键帧：超过 REDUNDANCY_THRESHOLD 的地图点被≥3个其他KF观测则视为冗余
+    // 检查冗余关键帧：被重复观测的地图点占比超过 KEYFRAME_REDUNDANCY_THRESHOLD 时判定为冗余
     vector<KeyFrame*> vpLocalKeyFrames = mpCurrentKeyFrame->GetVectorCovisibleKeyFrames();
 
     // 每次最多处理 KEYFRAME_CULLING_MAX_KFS 个关键帧，防止单次耗时过久阻塞跟踪线程
@@ -955,7 +951,7 @@ void LocalMapping::KeyFrameCulling()
                 if(!bRedundant)
                 {
                     nNonRedundantObservations++;
-                    // 如果非冗余点数已超限，则可断定该关键帧非冗余，提前剪枝，避免后续大量锁开销
+                    // 非冗余点数已超限即可断定该关键帧非冗余，提前剪枝
                     if(nNonRedundantObservations > maxNonRedundant)
                     {
                         break;
@@ -977,7 +973,7 @@ void LocalMapping::KeyFrameCulling()
         if(pKF && !pKF->isBad())
         {
             pKF->SetBadFlag();
-            break;  // 每轮只删 1 个冗余 KF，摊薄 SetBadFlag 级联开销
+            break; // 每轮只删 1 个冗余 KF，摊薄 SetBadFlag 级联开销
         }
     }
 }
@@ -1120,7 +1116,7 @@ void LocalMapping::CheckLimits()
         {
              MapPoint* pMP = vpMPs[i];
              if(!pMP || pMP->isBad()) continue;
-             if(pMP->mbFromLoadedMap) continue; // 保护加载的地图点（绿点）
+             if(pMP->mbFromLoadedMap) continue; // 保护加载的地图点
 
              // 保护当前关键帧看到的点
              if(spLocalMPs.count(pMP)) continue;

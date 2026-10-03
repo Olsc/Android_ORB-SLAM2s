@@ -93,7 +93,7 @@ void KeyFrameDatabase::clear()
     mpTree->clear();
     mhmKeyFrames.clear();
     mnErasedCount = 0;
-    mbRebuildPending.store(false, std::memory_order_release);  // 清空后无需重建
+    mbRebuildPending.store(false, std::memory_order_release); // 清空后无需重建
 }
 
 vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float minScore)
@@ -120,7 +120,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float mi
             long unsigned int id = match_pair.first;
             if (id == pKF->mnId) continue;
 
-            if (mhmKeyFrames.count(id) == 0) continue; 
+            if (mhmKeyFrames.count(id) == 0) continue;
 
             KeyFrame* pKFi = mhmKeyFrames[id];
             if (spConnectedKeyFrames.count(pKFi)) continue;
@@ -310,7 +310,7 @@ void KeyFrameDatabase::rebuild()
         pNewTree->add(matchables);
     }
 
-    // 3. 仅在替换树指针的瞬间持锁 (< 1us)，旧树在锁外安全释放。
+    // 3. 仅在替换树指针的瞬间持锁，旧树在锁外释放
     HBSTTree* pOldTree = nullptr;
     {
         unique_lock<mutex> lock(mMutex);

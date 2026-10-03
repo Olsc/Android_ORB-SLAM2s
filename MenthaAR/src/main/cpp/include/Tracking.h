@@ -95,7 +95,7 @@ public:
     void ClearMapAlignment();
     void ClearRelocCache();
     cv::Mat GetMapAlignedPose(const cv::Mat &TcwSlam);
-    bool HasLoadedMapData() const;  // 检查是否已加载地图数据
+    bool HasLoadedMapData() const;
     // 读取对齐置信度（供UI显示）
     float GetAlignConfidence() const {
         std::unique_lock<std::mutex> lk(mMutexReloc);
@@ -150,8 +150,7 @@ public:
     std::vector<cv::Point3f> mvIniP3D;
     Frame mInitialFrame;
 
-    // 用于在执行结束时恢复完整相机轨迹的列表。
-    // 基本上我们存储每帧的参考关键帧及其相对变换
+    // 保存每帧的参考关键帧与相对变换，用于结束时恢复完整相机轨迹
     list<cv::Mat> mlRelativeFramePoses;
     list<KeyFrame*> mlpReferences;
     list<double> mlFrameTimes;
@@ -166,7 +165,7 @@ public:
     // 仅清除跟踪状态而不清除地图
     void ClearTrackingState();
 
-    // 创建新子地图前仅清除跟踪线程内部运行时状态，避免高频触发CreateNewMap时阻塞跟踪线程。
+    // 创建新子地图前仅清除跟踪线程内部运行时状态
     void PrepareForNewMap();
 
     // 切换地图前清空旧地图的重定位/对齐缓存，需在StopGlobalRelocThread之后、SwitchToMap之前调用。
@@ -206,11 +205,11 @@ protected:
     // 在仅执行定位且无地图匹配时做视觉里程计，系统尝试重定位恢复零漂移定位。
     bool mbVO;
 
-    //其他线程指针
+    // 其他线程指针
     LocalMapping* mpLocalMapper;
     LoopClosing* mpLoopClosing;
 
-    //ORB
+    // ORB
     ORBextractor* mpORBextractorLeft;
     ORBextractor* mpIniORBextractor;
 
@@ -220,7 +219,7 @@ protected:
     Initializer* mpInitializer;
     double mLastInitAttemptTime; // 上次尝试初始化的时间戳，用于限频
 
-    //局部地图
+    // 局部地图
     KeyFrame* mpReferenceKF;
     std::vector<KeyFrame*> mvpLocalKeyFrames;
     std::vector<MapPoint*> mvpLocalMapPoints;
@@ -228,36 +227,36 @@ protected:
     // 系统
     System* mpSystem;
 
-    //绘制器
+    // 绘制器
     FrameDrawer* mpFrameDrawer;
 
-    //地图
+    // 地图
     Map* mpMap;
 
-    //校准矩阵
+    // 校准矩阵
     cv::Mat mK;
     cv::Mat mDistCoef;
     float mbf;
 
-    //新关键帧规则（根据fps）
+    // 新关键帧规则（根据fps）
     int mMinFrames;
     int mMaxFrames;
 
     // 当前帧中的匹配数
     int mnMatchesInliers;
-    int mnLocalMatchesInliers;   // 本地实时扫描建立的内点数
-    int mnLoadedMapInliers;      // 来自已加载地图的内点数
+    int mnLocalMatchesInliers; // 本地实时扫描建立的内点数
+    int mnLoadedMapInliers; // 来自已加载地图的内点数
 
-    //上一帧、关键帧和重定位信息
+    // 上一帧、关键帧和重定位信息
     KeyFrame* mpLastKeyFrame;
     Frame mLastFrame;
     unsigned int mnLastKeyFrameId;
     unsigned int mnLastRelocFrameId;
 
-    //运动模型
+    // 运动模型
     cv::Mat mVelocity;
 
-    //颜色顺序（true RGB，false BGR，如果是灰度图则忽略）
+    // 颜色顺序（true RGB，false BGR，如果是灰度图则忽略）
     bool mbRGB;
 
     list<MapPoint*> mlpTemporalPoints;
@@ -273,7 +272,7 @@ protected:
     int mLastN = 0;
     double mLastTimestamp = 0.0;
     cv::Mat mLastTcwSlam; // 当前SLAM位姿快照
-    // 快照版本号（生产-消费），用于无延时唤醒
+    // 快照版本号（生产-消费）
     std::atomic<unsigned long long> mSnapSeqProduced{0ULL};
     std::atomic<unsigned long long> mSnapSeqConsumed{0ULL};
 
@@ -285,14 +284,14 @@ protected:
     double mLastAlignTs = 0.0;
     std::atomic<float> mRelocMatchScore{0.0f};
 
-    // 平滑对齐更新机制：使用EMA（指数移动平均）减少抖动
-    cv::Mat mSmoothedT_map_from_slam;  // 平滑后的对齐变换
-    int mAlignUpdateCount = 0;  // 对齐更新计数
-    int mAlignSkipCounter = 0;  // 跳帧计数器，用于降低更新频率
+    // 平滑对齐更新机制：使用EMA（指数移动平均）
+    cv::Mat mSmoothedT_map_from_slam; // 平滑后的对齐变换
+    int mAlignUpdateCount = 0; // 对齐更新计数
+    int mAlignSkipCounter = 0; // 跳帧计数器，用于降低更新频率
 
     // 为加载的地图点缓存的参考描述符（用于后台匹配）
     cv::Mat mRefDesc; // 描述符行
-    // 缓存主体为不可变快照的 shared_ptr，读端仅在锁内拷贝指针（O(1)）
+    // 缓存主体为不可变快照的 shared_ptr，读端仅在锁内拷贝指针
     std::shared_ptr<const std::vector<MapPoint*>> mpRefIdxToMP;
     size_t mRefCachedMPCount = 0;
     double mRefLastBuildTs = 0.0;
@@ -313,17 +312,17 @@ protected:
     };
     std::shared_ptr<const std::vector<RefMPSnapshot>> mpRefSnapshots;
 
-    // 简单的3D网格索引，用于加速空间查询
+    // 简单的3D网格索引
     struct LoadedMapGrid {
         float minX=0, maxX=0, minY=0, maxY=0, minZ=0, maxZ=0;
-        float cellSize = LOADED_MAP_GRID_CELL_SIZE; // 默认10米
+        float cellSize = LOADED_MAP_GRID_CELL_SIZE;
         int nCols=0, nRows=0, nSlices=0;
         std::vector<std::vector<int>> cells;
 
         void Clear() { cells.clear(); }
         // 构建网格
         void Build(const std::vector<RefMPSnapshot>& snaps, float size = LOADED_MAP_GRID_CELL_SIZE);
-        // 获取包围盒内的候选点 (原始版本,返回矩形区域)
+        // 获取包围盒内的候选点，不做球形过滤，返回整个矩形区域
         void GetCandidatesInBBox(const cv::Point3f& center, float radius, std::vector<int>& outIndices) const;
         // 获取包围盒内的候选点（精确圆形过滤）
         void GetCandidatesInSphere(const cv::Point3f& center, float radius,
@@ -346,7 +345,7 @@ protected:
         int mapId = 0;
     };
     mutable std::mutex mMutexRelocBuf;
-    RelocAlignResult mRelocBuf; // 由BG线程产生
+    RelocAlignResult mRelocBuf; // 由后台重定位线程产生
     unsigned long long mRelocSeqProduced = 0ULL;
     unsigned long long mRelocSeqConsumed = 0ULL;
 
@@ -376,14 +375,13 @@ protected:
     // 后台线程上次运行时间戳
     std::chrono::steady_clock::time_point mLastBgRunTime;
 
-    // 重试计数器，防止GlobalRelocLoop死循环
+    // 重试计数器
     int mRefCacheRetryCount = 0;
-    // 重试上限见 Config.h 的 TRACKING_MAX_REF_CACHE_RETRIES
 
     // 最近一次成功触发 CreateNewMap 时的当前帧 id，用于做冷却限频。
     unsigned int mLastNewMapFrameId = 0;
 
-    // 动态搜索半径，根据跟踪状态自适应调整（正常:TH=4, 丢失:TH=8, 重定位后:TH=6）。
+    // 动态搜索半径，按跟踪状态在三档常量间切换
     float mDynamicSearchTh = TRACKING_LOCAL_SEARCH_TH;
 };
 

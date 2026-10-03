@@ -77,7 +77,7 @@ int main(int argc, char** argv) {
         std::cout << "[Ubuntu GUI] Using default system camera (device index: 0)" << std::endl;
     }
 
-    // 从项目内置的 Config.h 加载相机内参
+    // 加载相机内参
     fx = ORB_SLAM2::CAMERA_FX;
     fy = ORB_SLAM2::CAMERA_FY;
     cx = ORB_SLAM2::CAMERA_CX;

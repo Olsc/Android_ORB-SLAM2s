@@ -9,7 +9,7 @@
 #include "Matrix.h"
 #include "UIUtils.h"
 
-// 3x3 矩阵直接乘法 C = A * B，避免分配中间临时对象及通用 GEMM 开销
+// 3x3 矩阵乘法 C = A * B
 static cv::Mat Mat33Mul(const cv::Mat& A, const cv::Mat& B)
 {
     cv::Mat C(3, 3, CV_32F);
@@ -88,7 +88,7 @@ Plane::Plane(const std::vector<ORB_SLAM2::MapPoint*>& vMPs, const cv::Mat& Tcw) 
            static_cast<float>(static_cast<double>(rand()) / static_cast<double>(RAND_MAX)) *
            3.14159265358979323846f;
 
-    Recompute();  // 计算平面参数
+    Recompute(); // 计算平面参数
 }
 
 // 从法向量和原点直接构造平面，无需重新计算
@@ -106,8 +106,8 @@ Plane::Plane(const float& nx, const float& ny, const float& nz,
     // v = up.cross(n) = [nz, 0, -nx]^T
     const float vx = nz, vy = 0.0f, vz = -nx;
     const float sa = std::sqrt(vx * vx + vz * vz); // sin(angle)
-    const float ca = ny;                           // cos(angle) = up.dot(n)
-    const float ang = std::atan2(sa, ca);          // 旋转角度
+    const float ca = ny; // cos(angle) = up.dot(n)
+    const float ang = std::atan2(sa, ca); // 旋转角度
 
     Tpw = cv::Mat::eye(4, 4, CV_32F);
 
@@ -124,14 +124,14 @@ Plane::Plane(const float& nx, const float& ny, const float& nz,
         Tpw.rowRange(0, 3).colRange(0, 3) = ExpSO3(0.0f, rang, 0.0f);
     }
 
-    o.copyTo(Tpw.col(3).rowRange(0, 3));  // 设置平移部分
+    o.copyTo(Tpw.col(3).rowRange(0, 3)); // 设置平移部分
 
     // 转换为OpenGL格式的列主序矩阵
     setIdentityM(glTpw);
     getColMajorMatrixFromMat(glTpw, Tpw);
 }
 
-// 根据地图点用SVD分解重新计算平面参数：拟合法向量、计算质心原点并确保法向量朝向相机
+// 根据地图点用 PCA 重新计算平面参数：拟合法向量、计算质心原点并确保法向量朝向相机
 void Plane::Recompute()
 {
     const int N = static_cast<int>(mvMPs.size());
@@ -226,8 +226,8 @@ void Plane::Recompute()
     // v = up.cross(n) = [nz, 0, -nx]^T
     const float vx = nz, vy = 0.0f, vz = -nx;
     const float sa = std::sqrt(vx * vx + vz * vz); // sin(angle)
-    const float ca = ny;                           // cos(angle) = up.dot(n)
-    const float ang = std::atan2(sa, ca);          // 旋转角度
+    const float ca = ny; // cos(angle) = up.dot(n)
+    const float ang = std::atan2(sa, ca); // 旋转角度
 
     Tpw = cv::Mat::eye(4, 4, CV_32F);
 
@@ -243,7 +243,7 @@ void Plane::Recompute()
     {  // 法向量平行于up向量（如水平地面），绕up旋转rang角度
         Tpw.rowRange(0, 3).colRange(0, 3) = ExpSO3(0.0f, rang, 0.0f);
     }
-    o.copyTo(Tpw.col(3).rowRange(0, 3));  // 设置平移部分
+    o.copyTo(Tpw.col(3).rowRange(0, 3)); // 设置平移部分
 
     // 转换为OpenGL格式
     setIdentityM(glTpw);

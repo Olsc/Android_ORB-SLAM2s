@@ -71,7 +71,7 @@ public:
 
     void clear();
 
-    long unsigned int mnId = 0;  // 地图ID，用于多地图管理
+    long unsigned int mnId = 0; // 地图ID，用于多地图管理
 
     // 获取已加载地图点的数量（供GlobalRelocLoop节流使用）
     long unsigned int GetLoadedMapMPCount();

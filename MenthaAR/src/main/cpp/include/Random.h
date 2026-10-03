@@ -5,7 +5,7 @@
 
 namespace ORB_SLAM2 {
 
-// 独立的随机数生成器（LCG），避免全局 rand() 共享及并发 race condition
+// 独立的随机数生成器（LCG）
 class LCG {
 public:
     explicit LCG(unsigned int seed = 0) : mRandState(seed) {}
