@@ -9,7 +9,10 @@ LOONGARCH_MARCH="${LOONGARCH_MARCH:-loongarch64}"   # loongarch64|la464|la664|la
 BUILD_TYPE="${BUILD_TYPE:-Release}"
 JOBS="${JOBS:-$(nproc)}"
 STATIC="${STATIC:-0}"
-BUILD_DIR="${BUILD_DIR:-$HOME/mentha-loong-build-${LOONGARCH_MARCH}${STATIC:+-static}}"
+# 后缀只反映真实的静态链接开关（注意 "0" 也是非空字符串，不能用 ${STATIC:+-static}）
+if [ "$STATIC" = "1" ]; then STATIC_SUFFIX="-static"; else STATIC_SUFFIX=""; fi
+# 构建目录默认落在本脚本同级目录
+BUILD_DIR="${BUILD_DIR:-${SCRIPT_DIR}/build-loongarch64-${LOONGARCH_MARCH}${STATIC_SUFFIX}}"
 
 # ---- 工具链自检 -------------------------------------------------------------
 TRIPLE=loongarch64-unknown-linux-gnu
