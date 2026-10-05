@@ -15,6 +15,7 @@ out/
 .gradle-home/
 build/
 build_vs/
+build-loongarch64*/
 
 # Local configuration file (sdk path, etc)
 local.properties

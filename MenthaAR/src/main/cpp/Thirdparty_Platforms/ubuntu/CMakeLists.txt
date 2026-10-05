@@ -6,6 +6,11 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # ----------------------------------------------------------------------------
+# 0. 产物输出位置：可执行文件固定输出到 <构建目录>/bin
+# ----------------------------------------------------------------------------
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+
+# ----------------------------------------------------------------------------
 # 1. 动态获取项目仓库的根目录绝对路径
 # ----------------------------------------------------------------------------
 get_filename_component(REPO_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../.." ABSOLUTE)
@@ -56,8 +61,26 @@ add_subdirectory(${OPENCV_SRC_DIR} opencv_build)
 # ----------------------------------------------------------------------------
 # 3. 编译器优化选项与编译定义
 # ----------------------------------------------------------------------------
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native -flto -Wall -pthread")
+# 架构相关优化标志：
+#  - 本机编译：使用 -march=native 获取最大性能
+#  - 交叉编译（龙芯 LoongArch64）：-march=native 会直接报错，改用目标 ISA
+if(CMAKE_CROSSCOMPILING)
+    if(NOT DEFINED LOONGARCH_MARCH OR LOONGARCH_MARCH STREQUAL "")
+        set(LOONGARCH_MARCH "loongarch64")
+    endif()
+    set(_MENTHA_ARCH_FLAGS "-march=${LOONGARCH_MARCH} -mabi=lp64d")
+    message(STATUS "[CMake] 交叉编译到 ${CMAKE_SYSTEM_PROCESSOR}，优化标志: ${_MENTHA_ARCH_FLAGS}")
+else()
+    set(_MENTHA_ARCH_FLAGS "-march=native")
+endif()
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 ${_MENTHA_ARCH_FLAGS} -flto -Wall -pthread")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 ${_MENTHA_ARCH_FLAGS} -pthread")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto -s")
+
+# 可选的完全静态链接：生成不依赖目标机 glibc/libstdc++ 版本的独立可执行文件
+# 用法: cmake .. -DMENTHA_STATIC_LINK=ON
+option(MENTHA_STATIC_LINK "Link final executables fully static (max portability)" OFF)
 add_compile_definitions(EIGEN_DONT_ALIGN_STATICALLY EIGEN_DISABLE_UNALIGNED_ARRAY_ASSERT EIGEN_MAX_ALIGN_BYTES=16)
 
 # 头文件包含路径列表 (全部使用根目录绝对路径定位，确保无缝解析)
@@ -264,3 +287,9 @@ target_link_libraries(MenthaAR_Benchmark
 )
 
 message(STATUS "[CMake] 构建文件生成完毕。您现在可以在编译目录运行 'make' 命令来构建 MenthaAR_Ubuntu 或 MenthaAR_Benchmark。")
+
+if(MENTHA_STATIC_LINK)
+    set_target_properties(MenthaAR_Ubuntu    PROPERTIES LINK_FLAGS "-static")
+    set_target_properties(MenthaAR_Benchmark PROPERTIES LINK_FLAGS "-static")
+    message(STATUS "[CMake] MENTHA_STATIC_LINK=ON：最终可执行文件将完全静态链接。")
+endif()

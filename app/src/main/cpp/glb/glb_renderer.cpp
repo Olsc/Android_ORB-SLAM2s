@@ -211,11 +211,9 @@ bool GlbRenderer::compileShaders() {
         "uniform int u_HasTexture;\n"
         "uniform vec4 u_BaseColor;\n"
         "\n"
-        "uniform vec3 u_LightDir1;\n"
-        "uniform vec3 u_LightColor1;\n"
-        "uniform vec3 u_LightDir2;\n"
-        "uniform vec3 u_LightColor2;\n"
-        "uniform vec3 u_AmbientColor;\n"
+        "uniform vec3 u_LightDir;\n"
+        "uniform vec3 u_ShadowTint;\n"
+        "uniform vec3 u_RimColor;\n"
         "uniform vec3 u_CameraPos;\n"
         "\n"
         "void main() {\n"
@@ -228,18 +226,19 @@ bool GlbRenderer::compileShaders() {
         "    }\n"
         "\n"
         "    vec3 N = normalize(v_Normal);\n"
-        "    vec3 L1 = normalize(-u_LightDir1);\n"
-        "    vec3 L2 = normalize(-u_LightDir2);\n"
-        "\n"
-        "    float diff1 = max(dot(N, L1), 0.0);\n"
-        "    float diff2 = max(dot(N, L2), 0.0);\n"
-        "\n"
+        "    vec3 L = normalize(u_LightDir);\n"
         "    vec3 V = normalize(u_CameraPos - v_WorldPos);\n"
-        "    vec3 H1 = normalize(L1 + V);\n"
-        "    float spec1 = pow(max(dot(N, H1), 0.0), 32.0) * 0.25;\n"
         "\n"
-        "    vec3 lighting = u_AmbientColor + (diff1 + spec1) * u_LightColor1 + diff2 * u_LightColor2;\n"
-        "    gl_FragColor = vec4(base.rgb * lighting, base.a);\n"
+        "    // 赛璐璐硬边二段明暗：只留极窄过渡带抗锯齿，不做任何物理光照计算\n"
+        "    float lit = smoothstep(-0.02, 0.06, dot(N, L));\n"
+        "    vec3 color = base.rgb * mix(u_ShadowTint, vec3(1.0), lit);\n"
+        "\n"
+        "    // 轮廓光：让模型从相机画面里跳出来，是动漫质感的关键一笔\n"
+        "    float rim = 1.0 - max(dot(N, V), 0.0);\n"
+        "    rim = smoothstep(0.60, 0.95, rim);\n"
+        "    color += u_RimColor * rim;\n"
+        "\n"
+        "    gl_FragColor = vec4(color, base.a);\n"
         "}\n";
 
     GLuint vs = compileShader(GL_VERTEX_SHADER, vShaderSource);
@@ -285,11 +284,9 @@ bool GlbRenderer::compileShaders() {
     mLocHasTexture = glGetUniformLocation(mProgram, "u_HasTexture");
     mLocBaseColor = glGetUniformLocation(mProgram, "u_BaseColor");
 
-    mLocLightDir1 = glGetUniformLocation(mProgram, "u_LightDir1");
-    mLocLightColor1 = glGetUniformLocation(mProgram, "u_LightColor1");
-    mLocLightDir2 = glGetUniformLocation(mProgram, "u_LightDir2");
-    mLocLightColor2 = glGetUniformLocation(mProgram, "u_LightColor2");
-    mLocAmbientColor = glGetUniformLocation(mProgram, "u_AmbientColor");
+    mLocLightDir = glGetUniformLocation(mProgram, "u_LightDir");
+    mLocShadowTint = glGetUniformLocation(mProgram, "u_ShadowTint");
+    mLocRimColor = glGetUniformLocation(mProgram, "u_RimColor");
     mLocCameraPos = glGetUniformLocation(mProgram, "u_CameraPos");
 
     return true;
@@ -335,14 +332,10 @@ void GlbRenderer::render(const float* slamModelMatrix,
 
     glUseProgram(mProgram);
 
-    // 设置双定向光与环境光照参数
-    glUniform3f(mLocLightDir1, -0.5f, -1.0f, -0.5f);
-    glUniform3f(mLocLightColor1, 0.85f, 0.85f, 0.85f);
-
-    glUniform3f(mLocLightDir2, 0.5f, 1.0f, 0.5f);
-    glUniform3f(mLocLightColor2, 0.35f, 0.35f, 0.35f);
-
-    glUniform3f(mLocAmbientColor, 0.45f, 0.45f, 0.45f);
+    // 赛璐璐（动漫）着色参数：单主光 + 冷调暗部 + 轮廓光，无物理光照
+    glUniform3f(mLocLightDir, 0.5f, 1.0f, 0.5f);        // 由物体指向光源（与原双光源的主光同向）
+    glUniform3f(mLocShadowTint, 0.66f, 0.70f, 0.86f);   // 暗部乘算色：压暗并偏蓝紫
+    glUniform3f(mLocRimColor, 0.30f, 0.45f, 0.70f);     // 轮廓光强度/色调
 
     // 从视图矩阵逆矩阵提取相机世界位置
     float invView[16];
