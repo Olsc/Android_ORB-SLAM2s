@@ -274,6 +274,8 @@ void GlbModel::computeNormalsIfMissing(GlbPrimitive& prim) {
 void GlbModel::uploadGL(std::function<int(const uint8_t*, size_t)> textureLoader) {
     if (mIsGPUUploaded) return;
 
+    if (mPrimitives.empty()) return;
+
     for (auto& prim : mPrimitives) {
         // 创建并填充 VBO
         glGenBuffers(1, &prim.vbo);
@@ -313,6 +315,7 @@ void GlbModel::uploadGL(std::function<int(const uint8_t*, size_t)> textureLoader
     }
 
     mIsGPUUploaded = true;
+    LOGI("GPU 上传完成: 图元数=%zu", mPrimitives.size());
 }
 
 void GlbModel::destroyGL() {
