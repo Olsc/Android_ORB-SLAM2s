@@ -66,11 +66,10 @@ private:
     GLint mLocHasTexture = -1;
     GLint mLocBaseColor = -1;
 
-    GLint mLocLightDir1 = -1;
-    GLint mLocLightColor1 = -1;
-    GLint mLocLightDir2 = -1;
-    GLint mLocLightColor2 = -1;
-    GLint mLocAmbientColor = -1;
+    // 赛璐璐（动漫）着色参数
+    GLint mLocLightDir = -1;
+    GLint mLocShadowTint = -1;
+    GLint mLocRimColor = -1;
     GLint mLocCameraPos = -1;
 };
 
