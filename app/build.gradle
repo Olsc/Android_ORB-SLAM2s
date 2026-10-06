@@ -4,7 +4,7 @@ plugins {
 
 android {
     compileSdk 37
-    ndkVersion "27.0.12077973"
+    ndkVersion '27.3.13750724'
 
     defaultConfig {
         applicationId "com.orb.slam2s"
@@ -31,7 +31,7 @@ android {
 
     packaging {
         jniLibs {
-            useLegacyPackaging true
+            useLegacyPackaging false
             pickFirsts += ['lib/**/libc++_shared.so']
         }
         resources {
@@ -118,7 +118,7 @@ android {
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation 'androidx.appcompat:appcompat:1.8.0'
+    implementation 'androidx.activity:activity:1.8.0'
 
     implementation project(':MenthaAR')
 

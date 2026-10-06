@@ -5,7 +5,7 @@ plugins {
 android {
     namespace 'com.olsc.menthar'
     compileSdk 37
-    ndkVersion "27.0.12077973"
+    ndkVersion '27.3.13750724'
 
     defaultConfig {
         minSdk 21
@@ -48,7 +48,7 @@ android {
 
     packaging {
         jniLibs {
-            useLegacyPackaging true
+            useLegacyPackaging false
             excludes += []
             pickFirsts += ['lib/**/libc++_shared.so']
         }

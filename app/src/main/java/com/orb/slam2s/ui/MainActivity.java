@@ -15,6 +15,7 @@
  */
 package com.orb.slam2s.ui;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.graphics.Point;
@@ -40,10 +41,9 @@ import android.widget.Toast;
 
 import android.view.ViewGroup;
 
+import androidx.activity.ComponentActivity;
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.OptIn;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.camera2.interop.ExperimentalCamera2Interop;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -74,7 +74,7 @@ import java.util.List;
 import java.util.Locale;
 
 // SLAM AR 主控制 Activity（调度相机、3D 模型渲染、3DOF 追踪、地图管理与交互控制）
-public class MainActivity extends AppCompatActivity implements CameraPreviewView.FrameListener {
+public class MainActivity extends ComponentActivity implements CameraPreviewView.FrameListener {
 
     private static final String TAG = "MainActivity";
 

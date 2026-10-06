@@ -25,8 +25,8 @@ import android.widget.RadioButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.ComponentActivity;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
@@ -40,7 +40,7 @@ import java.util.List;
 
 // 桌面图标选择 Activity：根据 IconManager 中登记的图标选项动态生成切换卡片，
 // 新增图标无需修改本类，只需在 IconManager.OPTIONS 中追加配置即可。
-public class IconSelectActivity extends AppCompatActivity {
+public class IconSelectActivity extends ComponentActivity {
 
     // 单个图标选项对应的视图引用
     private static final class OptionViewHolder {
