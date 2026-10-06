@@ -15,6 +15,9 @@
 cmake_minimum_required(VERSION 3.22.1)
 project("glb_renderer")
 
+# 16 KB page size 支持
+add_link_options("-Wl,-z,max-page-size=16384")
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 

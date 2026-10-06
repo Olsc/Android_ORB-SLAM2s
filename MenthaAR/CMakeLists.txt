@@ -3,6 +3,10 @@ cmake_minimum_required(VERSION 3.10.2)
 set(CMAKE_VERBOSE_MAKEFILE on)
 
 project(MenthaAR C CXX)
+
+# 16 KB page size 支持
+add_link_options("-Wl,-z,max-page-size=16384")
+
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
     message(STATUS "OpenMP CXX found!")

@@ -5,10 +5,10 @@ plugins {
 android {
     namespace 'com.olsc.menthar'
     compileSdk 37
-    ndkVersion '25.2.9519653'
+    ndkVersion '27.3.13750724'
 
     defaultConfig {
-        minSdk 19
+        minSdk 21
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
@@ -48,7 +48,7 @@ android {
 
     packaging {
         jniLibs {
-            useLegacyPackaging true
+            useLegacyPackaging false
             excludes += []
             pickFirsts += ['lib/**/libc++_shared.so']
         }
