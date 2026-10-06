@@ -16,6 +16,7 @@
 package com.orb.slam2s.ui;
 
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.os.Bundle;
 import android.text.format.Formatter;
 import android.view.LayoutInflater;
@@ -26,10 +27,9 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.ComponentActivity;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
@@ -49,7 +49,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class MapManageActivity extends AppCompatActivity {
+public class MapManageActivity extends ComponentActivity {
 
     private MapManager mMapManager;
     private RecyclerView mRecyclerView;
