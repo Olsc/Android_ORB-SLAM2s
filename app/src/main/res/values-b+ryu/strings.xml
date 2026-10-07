@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">ARぶつ</string>
@@ -47,7 +47,11 @@
     <plurals name="hint_maps_loaded">
         <item quantity="other">%1$d 枚マップふぃちだちたびたる</item>
     </plurals>
-    <string name="permission_camera_storage_required">カメラとストレージの権限がいりびーん。設定から権限くぃみそーれー。</string>
+
+    <string name="permission_camera_title">カメラぬ許ちくぃみそーれー</string>
+    <string name="permission_camera_rationale">AR/SLAMぬ空間追跡んかいカメラぬアクセスが大事やいびーん。続きーねー、カメラぬ許可たぼーり。</string>
+    <string name="permission_camera_denied">カメラぬ許可ん断られーたびたん。設定 → 許可んかい有効んかい違てぃ、アプリぬまた開ちくぃみそーれー。</string>
+    <string name="action_open_settings">設定開じゅん</string>
 
     <string name="category_ar">AR操作</string>
     <string name="category_map">マップ</string>

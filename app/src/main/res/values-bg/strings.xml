@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR обект</string>
@@ -48,7 +48,11 @@
         <item quantity="other">%1$d карти заредени</item>
         <item quantity="one">%1$d карти заредени</item>
     </plurals>
-    <string name="permission_camera_storage_required">Необходими са разрешения за камера и съхранение. Моля, дайте разрешения в настройките.</string>
+
+    <string name="permission_camera_title">Изисква се разрешение за камера</string>
+    <string name="permission_camera_rationale">Достъпът до камерата е от съществено значение за пространственото проследяване AR/SLAM. Моля, предоставете разрешение за камерата, за да продължите.</string>
+    <string name="permission_camera_denied">Разрешението за камерата бе отказано. Моля, разрешете го в Настройки → Разрешения и отворете приложението отново.</string>
+    <string name="action_open_settings">Отваряне на настройките</string>
 
     <string name="category_ar">AR контроли</string>
     <string name="category_map">Карта</string>

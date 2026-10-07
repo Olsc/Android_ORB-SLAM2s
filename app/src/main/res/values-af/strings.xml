@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR-voorwerp</string>
@@ -48,7 +48,11 @@
         <item quantity="one">%1$d kaart gelaai</item>
         <item quantity="other">%1$d kaarte gelaai</item>
     </plurals>
-    <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
+
+    <string name="permission_camera_title">Kamera-toestemming vereis</string>
+    <string name="permission_camera_rationale">Kamertoegang is noodsaaklik vir AR/SLAM-ruimtelike naspeuring. Gee asseblief die kamera-toestemming om voort te gaan.</string>
+    <string name="permission_camera_denied">Kamera-toestemming is geweier. Aktiveer dit asseblief in Instellings → Toestemmings en heropen dan die program.</string>
+    <string name="action_open_settings">Maak Instellings oop</string>
 
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>

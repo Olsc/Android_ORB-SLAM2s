@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">Đối tượng AR</string>
@@ -47,7 +47,11 @@
     <plurals name="hint_maps_loaded">
         <item quantity="other">Đã tải %1$d bản đồ</item>
     </plurals>
-    <string name="permission_camera_storage_required">Cần quyền camera và bộ nhớ. Vui lòng cấp quyền trong cài đặt.</string>
+
+    <string name="permission_camera_title">Cần quyền truy cập camera</string>
+    <string name="permission_camera_rationale">Quyền truy cập camera là cần thiết cho theo dõi không gian AR/SLAM. Vui lòng cấp quyền camera để tiếp tục.</string>
+    <string name="permission_camera_denied">Quyền truy cập camera đã bị từ chối. Vui lòng bật trong Cài đặt → Quyền, sau đó mở lại ứng dụng.</string>
+    <string name="action_open_settings">Mở cài đặt</string>
 
     <string name="category_ar">Điều khiển AR</string>
     <string name="category_map">Bản đồ</string>

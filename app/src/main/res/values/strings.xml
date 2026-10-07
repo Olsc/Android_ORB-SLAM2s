@@ -48,7 +48,10 @@
         <item quantity="one">Loaded %1$d map</item>
         <item quantity="other">Loaded %1$d maps</item>
     </plurals>
-    <string name="permission_camera_storage_required">Camera and storage permissions are required. Please grant permissions in settings.</string>
+    <string name="permission_camera_title">Camera permission required</string>
+    <string name="permission_camera_rationale">Camera access is essential for AR/SLAM spatial tracking. Please grant the camera permission to continue.</string>
+    <string name="permission_camera_denied">Camera permission was denied. Please enable it in Settings → Permissions, then reopen the app.</string>
+    <string name="action_open_settings">Open Settings</string>
 
     <string name="category_ar">AR Controls</string>
     <string name="category_map">Map</string>

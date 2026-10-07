@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">ວັດຖຸ AR</string>
@@ -47,7 +47,11 @@
     <plurals name="hint_maps_loaded">
         <item quantity="other">ໂຫຼດແຜນທີ່ %1$d ແລ້ວ</item>
     </plurals>
-    <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
+
+    <string name="permission_camera_title">ຕ້ອງການການອະນຸຍາດກ້ອງ</string>
+    <string name="permission_camera_rationale">ການເຂົ້າເຖິງກ້ອງແມ່ນຈຳເປັນສຳລັບການຕິດຕາມພື້ນທີ່ AR/SLAM. ກະລຸນາໃຫ້ການອະນຸຍາດກ້ອງເພື່ອສືບຕໍ່.</string>
+    <string name="permission_camera_denied">ການອະນຸຍາດກ້ອງຖືກປະຕິເສດ. ກະລຸນາເປີດໃຊ້ງານມັນໃນການຕັ້ງຄ່າ → ການອະນຸຍາດ, ແລ້ວເປີດແອັບຄືນໃໝ່.</string>
+    <string name="action_open_settings">ເປີດການຕັ້ງຄ່າ</string>
 
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>

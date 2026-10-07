@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR objekt</string>
@@ -48,7 +48,11 @@
         <item quantity="one">Laaditud %1$d kaart</item>
         <item quantity="other">Laaditud %1$d kaarti</item>
     </plurals>
-    <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
+
+    <string name="permission_camera_title">Vaja on kaamera luba</string>
+    <string name="permission_camera_rationale">Kaamera juurdepääs on AR/SLAM ruumilise jälgimise jaoks hädavajalik. Jätkamiseks andke palun kaamera luba.</string>
+    <string name="permission_camera_denied">Kaamera luba keelati. Lubage see jaotises Seaded → Load ja avage rakendus uuesti.</string>
+    <string name="action_open_settings">Ava seaded</string>
 
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>

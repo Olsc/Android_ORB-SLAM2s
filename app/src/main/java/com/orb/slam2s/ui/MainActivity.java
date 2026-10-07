@@ -16,6 +16,7 @@
 package com.orb.slam2s.ui;
 
 import android.app.AlertDialog;
+import android.content.ComponentCallbacks2;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.graphics.Point;
@@ -100,6 +101,25 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
     private final Handler mUiHandler = new Handler(Looper.getMainLooper());
     private AlertDialog mLoadingDialog;
 
+    // 地图统计轮询（1Hz）：仅在 onResume~onPause 之间运行，避免后台无谓唤醒与 IPC 占用
+    private final Runnable mMapStatsUpdater = new Runnable() {
+        @Override
+        public void run() {
+            if (mSlamIPCClient != null && mTextMapStats != null) {
+                int[] stats = mSlamIPCClient.getMapStats();
+                if (stats != null && stats.length == 3) {
+                    final String statsText = getString(R.string.map_stats_format,
+                            stats[0], stats[1], stats[2] > 0 ? getString(R.string.map_stats_plane_yes)
+                                    : getString(R.string.map_stats_plane_no));
+                    runOnUiThread(() -> mTextMapStats.setText(statsText));
+                }
+            }
+            mUiHandler.postDelayed(this, 1000);
+        }
+    };
+
+    private static final String KEY_3DOF_MODE = "is_3dof_mode";
+
     // 虚拟摇杆
     private VirtualJoystickView mJoystickView;
 
@@ -119,6 +139,11 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
 
         setContentView(R.layout.ar_ui_content);
         initViewsAndServices();
+
+        // 恢复进程被回收前的用户状态（如 3DOF 模式）
+        if (savedInstanceState != null && savedInstanceState.getBoolean(KEY_3DOF_MODE, false)) {
+            toggle3DofMode();
+        }
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
@@ -511,6 +536,7 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
     protected void onPause() {
         Log.d(TAG, "onPause: 暂停摄像头视图");
         super.onPause();
+        stopMapStatsUpdater();
         if (mCameraPreviewView != null) {
             mCameraPreviewView.disableView();
         }
@@ -556,6 +582,25 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
             if (mThreeDofGLView != null) {
                 mThreeDofGLView.onResume();
             }
+        }
+
+        startMapStatsUpdater();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putBoolean(KEY_3DOF_MODE, mIs3DofMode);
+    }
+
+    @Override
+    public void onTrimMemory(int level) {
+        super.onTrimMemory(level);
+        Log.d(TAG, "onTrimMemory: level=" + level);
+        // UI 不可见或系统内存偏低时，停止 1Hz 地图统计轮询，释放相关占用
+        if (level >= ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) {
+            stopMapStatsUpdater();
+            mUiHandler.removeCallbacksAndMessages(null);
         }
     }
 
@@ -691,22 +736,12 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
     }
 
     private void startMapStatsUpdater() {
-        final Runnable updater = new Runnable() {
-            @Override
-            public void run() {
-                if (mSlamIPCClient != null && mTextMapStats != null) {
-                    int[] stats = mSlamIPCClient.getMapStats();
-                    if (stats != null && stats.length == 3) {
-                        final String statsText = getString(R.string.map_stats_format,
-                                stats[0], stats[1], stats[2] > 0 ? getString(R.string.map_stats_plane_yes)
-                                        : getString(R.string.map_stats_plane_no));
-                        runOnUiThread(() -> mTextMapStats.setText(statsText));
-                    }
-                }
-                mUiHandler.postDelayed(this, 1000);
-            }
-        };
-        mUiHandler.postDelayed(updater, 1000);
+        mUiHandler.removeCallbacks(mMapStatsUpdater);
+        mUiHandler.postDelayed(mMapStatsUpdater, 1000);
+    }
+
+    private void stopMapStatsUpdater() {
+        mUiHandler.removeCallbacks(mMapStatsUpdater);
     }
 
     private void initJoystick() {

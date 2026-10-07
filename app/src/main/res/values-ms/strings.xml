@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">Objek AR</string>
@@ -47,7 +47,11 @@
     <plurals name="hint_maps_loaded">
         <item quantity="other">%1$d peta dimuatkan</item>
     </plurals>
-    <string name="permission_camera_storage_required">Kebenaran kamera dan storan diperlukan. Sila berikan kebenaran dalam tetapan.</string>
+
+    <string name="permission_camera_title">Kebenaran kamera diperlukan</string>
+    <string name="permission_camera_rationale">Akses kamera penting untuk penjejakan spatial AR/SLAM. Sila berikan kebenaran kamera untuk meneruskan.</string>
+    <string name="permission_camera_denied">Kebenaran kamera ditolak. Sila dayakannya dalam Tetapan → Kebenaran, kemudian buka semula apl.</string>
+    <string name="action_open_settings">Buka tetapan</string>
 
     <string name="category_ar">Kawalan AR</string>
     <string name="category_map">Peta</string>

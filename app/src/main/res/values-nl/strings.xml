@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR-object</string>
@@ -48,7 +48,11 @@
         <item quantity="other">%1$d kaarten geladen</item>
         <item quantity="one">%1$d kaarten geladen</item>
     </plurals>
-    <string name="permission_camera_storage_required">Camera- en opslagmachtigingen zijn vereist. Verleen machtigingen in instellingen.</string>
+
+    <string name="permission_camera_title">Cameratoestemming vereist</string>
+    <string name="permission_camera_rationale">Cameratoegang is essentieel voor AR/SLAM ruimtelijke tracking. Verleen cameratoestemming om door te gaan.</string>
+    <string name="permission_camera_denied">Cameratoestemming is geweigerd. Schakel deze in via Instellingen → Machtigingen en open de app opnieuw.</string>
+    <string name="action_open_settings">Instellingen openen</string>
 
     <string name="category_ar">AR-bediening</string>
     <string name="category_map">Kaart</string>

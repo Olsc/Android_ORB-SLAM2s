@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR-Objekt</string>
@@ -48,7 +48,11 @@
         <item quantity="other">%1$d Karten geladen</item>
         <item quantity="one">%1$d Karten geladen</item>
     </plurals>
-    <string name="permission_camera_storage_required">Kamera- und Speicherberechtigung erforderlich. Bitte Berechtigungen in den Einstellungen erteilen.</string>
+
+    <string name="permission_camera_title">Kameraberechtigung erforderlich</string>
+    <string name="permission_camera_rationale">Der Kamerazugriff ist für die AR/SLAM-Raumverfolgung unerlässlich. Bitte erteilen Sie die Kameraberechtigung, um fortzufahren.</string>
+    <string name="permission_camera_denied">Die Kameraberechtigung wurde verweigert. Bitte aktivieren Sie sie unter Einstellungen → Berechtigungen und öffnen Sie die App dann erneut.</string>
+    <string name="action_open_settings">Einstellungen öffnen</string>
 
     <string name="category_ar">AR-Steuerung</string>
     <string name="category_map">Karte</string>

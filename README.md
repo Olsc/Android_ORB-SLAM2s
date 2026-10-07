@@ -189,7 +189,7 @@ This project adopts a modular license architecture based on Android IPC process 
 - **`MenthaAR/` Engine Module**: Derived from ORB-SLAM2 and released under the **[GNU General Public License v3.0](MenthaAR/LICENSE)** (GPLv3). Contains native C++ SLAM algorithms and processing.
 - **Inter-Process Communication (IPC)**: The `app` module and `MenthaAR` engine run in separate Android OS processes and communicate strictly via Binder IPC and SharedMemory (Ashmem/memfd), preserving license boundaries between modules.
 
-See [LICENSE.txt](LICENSE.txt), [app/LICENSE](app/LICENSE), and [MenthaAR/LICENSE](MenthaAR/LICENSE) for details.
+See [LICENSE](LICENSE), [app/LICENSE](app/LICENSE), and [MenthaAR/LICENSE](MenthaAR/LICENSE) for details.
 
 For project collaboration or other field cooperation inquiries, please contact: **OlscStudio@outlook.com**
 

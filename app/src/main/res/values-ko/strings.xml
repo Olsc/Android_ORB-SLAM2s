@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR 객체</string>
@@ -47,7 +47,11 @@
     <plurals name="hint_maps_loaded">
         <item quantity="other">%1$d개 지도 불러옴</item>
     </plurals>
-    <string name="permission_camera_storage_required">카메라 및 저장소 권한이 필요합니다. 설정에서 권한을 허용해 주세요.</string>
+
+    <string name="permission_camera_title">카메라 권한이 필요합니다</string>
+    <string name="permission_camera_rationale">AR/SLAM 공간 추적에는 카메라 접근이 필수적입니다. 계속하려면 카메라 권한을 허용해 주세요.</string>
+    <string name="permission_camera_denied">카메라 권한이 거부되었습니다. 설정 → 권한에서 활성화한 후 앱을 다시 열어 주세요.</string>
+    <string name="action_open_settings">설정 열기</string>
 
     <string name="category_ar">AR 컨트롤</string>
     <string name="category_map">지도</string>

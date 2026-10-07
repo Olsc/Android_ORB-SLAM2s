@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">វត្ថុ AR</string>
@@ -47,7 +47,11 @@
     <plurals name="hint_maps_loaded">
         <item quantity="other">បានផ្ទុកផែនទី %1$d</item>
     </plurals>
-    <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
+
+    <string name="permission_camera_title">ត្រូវការការអនុញ្ញាតកាមេរ៉ា</string>
+    <string name="permission_camera_rationale">ការចូលប្រើកាមេរ៉ាគឺចាំបាច់សម្រាប់ការតាមដានលំហ AR/SLAM។ សូមផ្តល់ការអនុញ្ញាតកាមេរ៉ាដើម្បីបន្ត។</string>
+    <string name="permission_camera_denied">ការអនុញ្ញាតកាមេរ៉ាត្រូវបានបដិសេធ។ សូមបើកវានៅក្នុងការកំណត់ → ការអនុញ្ញាត បន្ទាប់មកបើកកម្មវិធីឡើងវិញ។</string>
+    <string name="action_open_settings">បើកការកំណត់</string>
 
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>

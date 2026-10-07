@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">Objecte AR</string>
@@ -48,7 +48,11 @@
         <item quantity="one">Cargouse %1$d mapa</item>
         <item quantity="other">Cargáronse %1$d mapas</item>
     </plurals>
-    <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
+
+    <string name="permission_camera_title">Requírese permiso de cámara</string>
+    <string name="permission_camera_rationale">O acceso á cámara é esencial para o seguimento espacial AR/SLAM. Concede o permiso de cámara para continuar.</string>
+    <string name="permission_camera_denied">Denegouse o permiso de cámara. Actívao en Axustes → Permisos e volve abrir a aplicación.</string>
+    <string name="action_open_settings">Abrir axustes</string>
 
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>

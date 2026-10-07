@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR-objekti</string>
@@ -48,7 +48,11 @@
         <item quantity="other">%1$d karttaa ladattu</item>
         <item quantity="one">%1$d karttaa ladattu</item>
     </plurals>
-    <string name="permission_camera_storage_required">Kamera- ja tallennusluvat vaaditaan. Anna luvat asetuksissa.</string>
+
+    <string name="permission_camera_title">Kameran käyttöoikeus vaaditaan</string>
+    <string name="permission_camera_rationale">Kameran käyttö on välttämätöntä AR/SLAM-tilaseurannalle. Myönnä kameran käyttöoikeus jatkaaksesi.</string>
+    <string name="permission_camera_denied">Kameran käyttöoikeus evättiin. Ota se käyttöön kohdassa Asetukset → Käyttöoikeudet ja avaa sovellus uudelleen.</string>
+    <string name="action_open_settings">Avaa asetukset</string>
 
     <string name="category_ar">AR-ohjaimet</string>
     <string name="category_map">Kartta</string>

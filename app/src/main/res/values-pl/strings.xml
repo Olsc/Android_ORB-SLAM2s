@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">Obiekt AR</string>
@@ -50,7 +50,11 @@
         <item quantity="few">Wczytano map: %1$d</item>
         <item quantity="many">Wczytano map: %1$d</item>
     </plurals>
-    <string name="permission_camera_storage_required">Wymagane uprawnienia kamery i pamięci. Przyznaj uprawnienia w ustawieniach.</string>
+
+    <string name="permission_camera_title">Wymagane uprawnienie do aparatu</string>
+    <string name="permission_camera_rationale">Dostęp do aparatu jest niezbędny do śledzenia przestrzennego AR/SLAM. Aby kontynuować, przyznaj uprawnienie do aparatu.</string>
+    <string name="permission_camera_denied">Odmówiono uprawnienia do aparatu. Włącz je w Ustawienia → Uprawnienia, a następnie ponownie otwórz aplikację.</string>
+    <string name="action_open_settings">Otwórz ustawienia</string>
 
     <string name="category_ar">Sterowanie AR</string>
     <string name="category_map">Mapa</string>

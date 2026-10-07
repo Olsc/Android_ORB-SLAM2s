@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR वस्तु</string>
@@ -48,7 +48,11 @@
         <item quantity="one">%1$d नक्सा लोड भयो</item>
         <item quantity="other">%1$d नक्सा लोड भए</item>
     </plurals>
-    <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
+
+    <string name="permission_camera_title">क्यामेरा अनुमति आवश्यक छ</string>
+    <string name="permission_camera_rationale">AR/SLAM स्थानिक ट्र्याकिङका लागि क्यामेरा पहुँच आवश्यक छ। जारी राख्न कृपया क्यामेरा अनुमति दिनुहोस्।</string>
+    <string name="permission_camera_denied">क्यामेरा अनुमति अस्वीकार गरियो। कृपया यसलाई सेटिङ → अनुमतिहरूमा सक्षम गर्नुहोस्, त्यसपछि एप पुन: खोल्नुहोस्।</string>
+    <string name="action_open_settings">सेटिङ खोल्नुहोस्</string>
 
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>

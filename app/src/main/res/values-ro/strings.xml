@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">Obiect AR</string>
@@ -49,7 +49,11 @@
         <item quantity="one">%1$d hărți încărcate</item>
         <item quantity="few">%1$d hărți încărcate</item>
     </plurals>
-    <string name="permission_camera_storage_required">Sunt necesare permisiuni pentru cameră și stocare. Acordați permisiunile în setări.</string>
+
+    <string name="permission_camera_title">Este necesară permisiunea pentru cameră</string>
+    <string name="permission_camera_rationale">Accesul la cameră este esențial pentru urmărirea spațială AR/SLAM. Acordă permisiunea pentru cameră pentru a continua.</string>
+    <string name="permission_camera_denied">Permisiunea pentru cameră a fost refuzată. Activeaz-o în Setări → Permisiuni, apoi redeschide aplicația.</string>
+    <string name="action_open_settings">Deschide setările</string>
 
     <string name="category_ar">Controale AR</string>
     <string name="category_map">Hartă</string>

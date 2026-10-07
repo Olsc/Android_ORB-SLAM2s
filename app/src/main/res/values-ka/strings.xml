@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR ობიექტი</string>
@@ -48,7 +48,11 @@
         <item quantity="one">ჩაიტვირთა %1$d რუკა</item>
         <item quantity="other">ჩაიტვირთა %1$d რუკა</item>
     </plurals>
-    <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
+
+    <string name="permission_camera_title">საჭიროა კამერის ნებართვა</string>
+    <string name="permission_camera_rationale">კამერაზე წვდომა აუცილებელია AR/SLAM სივრცითი თვალთვალისთვის. გასაგრძელებლად გთხოვთ, მიანიჭოთ კამერის ნებართვა.</string>
+    <string name="permission_camera_denied">კამერის ნებართვა უარყოფილია. გთხოვთ, ჩართოთ ის პარამეტრები → ნებართვები განყოფილებაში და ხელახლა გახსნათ აპი.</string>
+    <string name="action_open_settings">პარამეტრების გახსნა</string>
 
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>

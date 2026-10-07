@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR objekts</string>
@@ -49,7 +49,11 @@
         <item quantity="one">Ielādēta %1$d karte</item>
         <item quantity="other">Ielādētas %1$d kartes</item>
     </plurals>
-    <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
+
+    <string name="permission_camera_title">Nepieciešama kameras atļauja</string>
+    <string name="permission_camera_rationale">Kameras piekļuve ir būtiska AR/SLAM telpiskajai izsekošanai. Lai turpinātu, lūdzu, piešķiriet kameras atļauju.</string>
+    <string name="permission_camera_denied">Kameras atļauja tika liegta. Lūdzu, iespējojiet to sadaļā Iestatījumi → Atļaujas un pēc tam atkārtoti atveriet lietotni.</string>
+    <string name="action_open_settings">Atvērt iestatījumus</string>
 
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>

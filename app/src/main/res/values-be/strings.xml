@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">АР објекат</string>
@@ -50,7 +50,11 @@
         <item quantity="many">Загружана %1$d карт</item>
         <item quantity="other">Загружана %1$d карт</item>
     </plurals>
-    <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
+
+    <string name="permission_camera_title">Патрабуецца дазвол на камеру</string>
+    <string name="permission_camera_rationale">Доступ да камеры неабходны для прасторавага адсочвання AR/SLAM. Каб працягнуць, дайце дазвол на камеру.</string>
+    <string name="permission_camera_denied">У дазволе на камеру адмоўлена. Уключыце яго ў Налады → Дазволы і зноў адкрыйце праграму.</string>
+    <string name="action_open_settings">Адкрыць налады</string>
 
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>

@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR objektua</string>
@@ -48,7 +48,11 @@
         <item quantity="one">Mapa %1$d kargatu da</item>
         <item quantity="other">%1$d mapa kargatu dira</item>
     </plurals>
-    <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
+
+    <string name="permission_camera_title">Kameraren baimena behar da</string>
+    <string name="permission_camera_rationale">Kamerarako sarbidea ezinbestekoa da AR/SLAM espazio-jarraipenerako. Jarraitzeko, eman kameraren baimena.</string>
+    <string name="permission_camera_denied">Kameraren baimena ukatu da. Gaitu Ezarpenak → Baimenak atalean, eta ireki berriro aplikazioa.</string>
+    <string name="action_open_settings">Ireki ezarpenak</string>
 
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>

@@ -18,13 +18,16 @@ package com.orb.slam2s.app;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.camera2.CameraManager;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.StrictMode;
+import android.provider.Settings;
 import android.util.Log;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
@@ -34,6 +37,7 @@ import androidx.core.content.pm.ShortcutManagerCompat;
 import androidx.core.graphics.drawable.IconCompat;
 import androidx.core.view.WindowCompat;
 
+import com.orb.slam2s.BuildConfig;
 import com.orb.slam2s.R;
 import com.orb.slam2s.ui.IconSelectActivity;
 import com.orb.slam2s.ui.MainActivity;
@@ -50,6 +54,7 @@ public class SplashActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        enableStrictModeForDebug();
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         // 启动时自检桌面图标组件状态，避免出现“桌面上找不到图标”的情况
         IconManager.ensureLauncherIcon(this);
@@ -57,6 +62,19 @@ public class SplashActivity extends Activity {
         if (checkPermission()) {
             launchMainActivity();
         }
+    }
+
+    // 仅 Debug 构建启用 StrictMode
+    private void enableStrictModeForDebug() {
+        if (!BuildConfig.DEBUG) return;
+        StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()
+                .detectAll()
+                .penaltyLog()
+                .build());
+        StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder()
+                .detectAll()
+                .penaltyLog()
+                .build());
     }
 
     private void setupDynamicShortcuts() {
@@ -106,37 +124,68 @@ public class SplashActivity extends Activity {
         }
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-                != PackageManager.PERMISSION_GRANTED) {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)) {
-                showHint(getString(R.string.permission_camera_storage_required));
-                finish();
-            } else {
-                ActivityCompat.requestPermissions(this,
-                        new String[]{ Manifest.permission.CAMERA },
-                        REQUEST_PERMISSION);
-            }
-            return false;
+                == PackageManager.PERMISSION_GRANTED) {
+            return true;
         }
-        return true;
+
+        if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)) {
+            // 用户此前拒绝过：先说明用途，再重新请求，避免直接退出导致无法再次授权
+            showPermissionRationaleDialog();
+        } else {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{ Manifest.permission.CAMERA },
+                    REQUEST_PERMISSION);
+        }
+        return false;
+    }
+
+    private void showPermissionRationaleDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.permission_camera_title)
+                .setMessage(R.string.permission_camera_rationale)
+                .setCancelable(false)
+                .setPositiveButton(R.string.button_ok, (d, w) -> ActivityCompat.requestPermissions(
+                        SplashActivity.this,
+                        new String[]{ Manifest.permission.CAMERA },
+                        REQUEST_PERMISSION))
+                .setNegativeButton(R.string.action_exit, (d, w) -> finish())
+                .show();
+    }
+
+    // 权限被“拒绝且不再询问”时，引导到系统设置开启，而不是直接阻断用户
+    private void showPermissionDeniedDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.permission_camera_title)
+                .setMessage(R.string.permission_camera_denied)
+                .setCancelable(false)
+                .setPositiveButton(R.string.action_open_settings, (d, w) -> {
+                    try {
+                        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.fromParts("package", getPackageName(), null));
+                        startActivity(intent);
+                    } catch (Exception e) {
+                        Log.e(TAG, "打开应用设置失败: " + e.getMessage());
+                    }
+                    finish();
+                })
+                .setNegativeButton(R.string.action_exit, (d, w) -> finish())
+                .show();
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQUEST_PERMISSION) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                launchMainActivity();
-            } else {
-                showHint(getString(R.string.permission_camera_storage_required));
-                finish();
-            }
-        } else {
+        if (requestCode != REQUEST_PERMISSION) {
             finish();
+            return;
         }
-    }
-
-    private void showHint(String hint) {
-        Toast.makeText(this, hint, Toast.LENGTH_LONG).show();
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            launchMainActivity();
+        } else if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)) {
+            showPermissionRationaleDialog();
+        } else {
+            showPermissionDeniedDialog();
+        }
     }
 
     private void launchMainActivity() {

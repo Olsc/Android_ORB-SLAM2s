@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">Objet AR</string>
@@ -49,7 +49,11 @@
         <item quantity="one">%1$d cartes chargées</item>
         <item quantity="many">%1$d cartes chargées</item>
     </plurals>
-    <string name="permission_camera_storage_required">Les autorisations caméra et stockage sont requises. Veuillez les accorder dans les paramètres.</string>
+
+    <string name="permission_camera_title">Autorisation d\'accès à la caméra requise</string>
+    <string name="permission_camera_rationale">L\'accès à la caméra est indispensable au suivi spatial AR/SLAM. Veuillez accorder l\'autorisation de caméra pour continuer.</string>
+    <string name="permission_camera_denied">L\'autorisation de caméra a été refusée. Activez-la dans Paramètres → Autorisations, puis rouvrez l\'application.</string>
+    <string name="action_open_settings">Ouvrir les paramètres</string>
 
     <string name="category_ar">Contrôles AR</string>
     <string name="category_map">Carte</string>

@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR වස්තුව</string>
@@ -48,7 +48,11 @@
         <item quantity="one">සිතියම් %1$d ක් පූරණය විය</item>
         <item quantity="other">සිතියම් %1$d ක් පූරණය විය</item>
     </plurals>
-    <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
+
+    <string name="permission_camera_title">කැමරා අවසරය අවශ්‍යයි</string>
+    <string name="permission_camera_rationale">AR/SLAM අවකාශීය ලුහුබැඳීම සඳහා කැමරා ප්‍රවේශය අත්‍යවශ්‍යයි. ඉදිරියට යාමට කරුණාකර කැමරා අවසරය ලබා දෙන්න.</string>
+    <string name="permission_camera_denied">කැමරා අවසරය ප්‍රතික්ෂේප විය. කරුණාකර සැකසීම් → අවසර තුළ එය සක්‍රීය කර යෙදුම නැවත විවෘත කරන්න.</string>
+    <string name="action_open_settings">සැකසීම් විවෘත කරන්න</string>
 
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>

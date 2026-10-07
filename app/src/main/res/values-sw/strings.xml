@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">Kitu cha AR</string>
@@ -48,7 +48,11 @@
         <item quantity="other">Ramani %1$d zimepakiwa</item>
         <item quantity="one">Ramani %1$d zimepakiwa</item>
     </plurals>
-    <string name="permission_camera_storage_required">Ruhusa za kamera na hifadhi zinahitajika. Tafadhali toa ruhusa katika mipangilio.</string>
+
+    <string name="permission_camera_title">Ruhusa ya kamera inahitajika</string>
+    <string name="permission_camera_rationale">Ufikiaji wa kamera ni muhimu kwa ufuatiliaji wa anga wa AR/SLAM. Tafadhali toa ruhusa ya kamera ili kuendelea.</string>
+    <string name="permission_camera_denied">Ruhusa ya kamera ilikataliwa. Tafadhali iwashe katika Mipangilio → Ruhusa, kisha fungua programu tena.</string>
+    <string name="action_open_settings">Fungua mipangilio</string>
 
     <string name="category_ar">Udhibiti wa AR</string>
     <string name="category_map">Ramani</string>

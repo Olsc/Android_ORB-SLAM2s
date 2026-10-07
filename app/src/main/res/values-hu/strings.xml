@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR objektum</string>
@@ -48,7 +48,11 @@
         <item quantity="other">%1$d térkép betöltve</item>
         <item quantity="one">%1$d térkép betöltve</item>
     </plurals>
-    <string name="permission_camera_storage_required">Kamera és tárolási engedélyek szükségesek. Kérjük, adjon engedélyeket a beállításokban.</string>
+
+    <string name="permission_camera_title">Kameraengedély szükséges</string>
+    <string name="permission_camera_rationale">A kamerahozzáférés elengedhetetlen az AR/SLAM térbeli követéshez. A folytatáshoz adjon kameraengedélyt.</string>
+    <string name="permission_camera_denied">A kameraengedélyt megtagadták. Engedélyezze a Beállítások → Engedélyek menüben, majd nyissa meg újra az alkalmazást.</string>
+    <string name="action_open_settings">Beállítások megnyitása</string>
 
     <string name="category_ar">AR vezérlők</string>
     <string name="category_map">Térkép</string>

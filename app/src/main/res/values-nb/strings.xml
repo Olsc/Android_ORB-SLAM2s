@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR-objekt</string>
@@ -48,7 +48,11 @@
         <item quantity="other">%1$d kart lastet inn</item>
         <item quantity="one">%1$d kart lastet inn</item>
     </plurals>
-    <string name="permission_camera_storage_required">Tillatelser til kamera og lagring kreves. Gi tillatelser i innstillinger.</string>
+
+    <string name="permission_camera_title">Kameratillatelse kreves</string>
+    <string name="permission_camera_rationale">Kameratilgang er avgjørende for AR/SLAM romlig sporing. Gi kameratillatelse for å fortsette.</string>
+    <string name="permission_camera_denied">Kameratillatelsen ble avslått. Aktiver den i Innstillinger → Tillatelser, og åpne appen på nytt.</string>
+    <string name="action_open_settings">Åpne innstillinger</string>
 
     <string name="category_ar">AR-kontroller</string>
     <string name="category_map">Kart</string>

@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">วัตถุ AR</string>
@@ -47,7 +47,11 @@
     <plurals name="hint_maps_loaded">
         <item quantity="other">โหลด %1$d แผนที่แล้ว</item>
     </plurals>
-    <string name="permission_camera_storage_required">ต้องการสิทธิ์กล้องและที่เก็บข้อมูล กรุณาอนุญาตในการตั้งค่า</string>
+
+    <string name="permission_camera_title">ต้องได้รับอนุญาตให้ใช้กล้อง</string>
+    <string name="permission_camera_rationale">การเข้าถึงกล้องจำเป็นสำหรับการติดตามเชิงพื้นที่ AR/SLAM โปรดอนุญาตให้ใช้กล้องเพื่อดำเนินการต่อ</string>
+    <string name="permission_camera_denied">การอนุญาตให้ใช้กล้องถูกปฏิเสธ โปรดเปิดใช้งานในการตั้งค่า → สิทธิ์ จากนั้นเปิดแอปอีกครั้ง</string>
+    <string name="action_open_settings">เปิดการตั้งค่า</string>
 
     <string name="category_ar">ควบคุม AR</string>
     <string name="category_map">แผนที่</string>

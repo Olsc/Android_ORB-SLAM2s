@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR వస్తువు</string>
@@ -48,7 +48,11 @@
         <item quantity="other">%1$d మ్యాప్‌లు లోడ్ చేయబడ్డాయి</item>
         <item quantity="one">%1$d మ్యాప్‌లు లోడ్ చేయబడ్డాయి</item>
     </plurals>
-    <string name="permission_camera_storage_required">కెమెరా మరియు నిల్వ అనుమతులు అవసరం. దయచేసి సెట్టింగ్‌లలో అనుమతించండి.</string>
+
+    <string name="permission_camera_title">కెమెరా అనుమతి అవసరం</string>
+    <string name="permission_camera_rationale">AR/SLAM ప్రాదేశిక ట్రాకింగ్‌కు కెమెరా యాక్సెస్ అవసరం. కొనసాగించడానికి దయచేసి కెమెరా అనుమతి ఇవ్వండి.</string>
+    <string name="permission_camera_denied">కెమెరా అనుమతి తిరస్కరించబడింది. దయచేసి సెట్టింగ్‌లు → అనుమతులు లో దాన్ని ప్రారంభించి, యాప్‌ను మళ్లీ తెరవండి.</string>
+    <string name="action_open_settings">సెట్టింగ్‌లు తెరవండి</string>
 
     <string name="category_ar">AR నియంత్రణలు</string>
     <string name="category_map">మ్యాప్</string>

@@ -27,21 +27,24 @@ package com.orb.slam2s.ipc;
 import android.annotation.SuppressLint;
 import android.os.Build;
 import android.os.MemoryFile;
+import android.os.Parcel;
 import android.os.ParcelFileDescriptor;
 import android.os.SharedMemory;
 import android.util.Log;
 
+import java.io.File;
 import java.io.FileDescriptor;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-// SLAM 跨进程共享内存管理类：负责 Y 双缓冲、点云区及 Header 元数据的绝对偏移读写
-// 基于双缓冲与序号同步实现低延迟无锁跨进程交互，避免频繁 IPC 拷贝开销
+/**
+ * SLAM 跨进程共享内存：Header + Y 双缓冲 + 点云区。
+ * 布局常量需与 native-lib.cpp 中的 SH_* 保持一致。
+ */
 public class SharedMemoryBuffer {
     private static final String TAG = "SharedMemoryBuffer";
 
-    // 布局常量（与 native-lib.cpp 中 SH_* 保持一致，勿单独修改）
     public static final int HEADER_MAGIC = 0x4D4E5448; // "MNTH"
     public static final int HEADER_VERSION = 2;
     public static final int HEADER_SIZE = 256;
@@ -52,17 +55,17 @@ public class SharedMemoryBuffer {
     public static final int OFF_SLAM_DONE_SEQ = 20;
     public static final int OFF_DRAW_FLAG = 28;
     public static final int OFF_POINTCLOUD_BYTES = 32;
-    public static final int OFF_MVP = 40;   // 48 floats = 192 字节
+    public static final int OFF_MVP = 40; // 48 floats = 192 bytes
 
-    // 点云区上限（3000 点，每点 7 个 float，每个 4B，共 84000，取 96KB 对齐）
+    // 点云上限：3000 点 × 7 floats × 4B，取 96KB 对齐
     public static final int POINTCLOUD_MAX_BYTES = 96 * 1024;
 
-    private SharedMemory sharedMemory;
-    private MemoryFile memoryFile;
-    private ByteBuffer mappedBuffer;
-    private ParcelFileDescriptor pfd;
-    private ParcelFileDescriptor mFdOwner;
     private final int bufferSize;
+
+    private SharedMemory sharedMemory; // API 27+ 共享内存
+    private MemoryFile memoryFile;     // API < 27 匿名内存文件 (ashmem)
+    private ByteBuffer mappedBuffer;   // API 27+ 本进程映射直接内存
+    private ParcelFileDescriptor pfd;  // 跨进程传递给 SLAM 服务端的 fd
 
     private int frameW;
     private int frameH;
@@ -70,44 +73,47 @@ public class SharedMemoryBuffer {
     public SharedMemoryBuffer(String name, int size) {
         this.bufferSize = size;
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) { // API 27+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
                 sharedMemory = SharedMemory.create(name, size);
                 mappedBuffer = sharedMemory.mapReadWrite();
-                mappedBuffer.order(ByteOrder.LITTLE_ENDIAN); // 与 native 字节序一致
-                mFdOwner = ParcelFileDescriptor.fromFd(getRawFd(sharedMemory));
-                pfd = ParcelFileDescriptor.dup(mFdOwner.getFileDescriptor());
+                mappedBuffer.order(ByteOrder.LITTLE_ENDIAN);
+
+                // 借 Parcelable 序列化在底层 dup fd，避免调用非公开隐藏接口 SharedMemory#getFd()
+                Parcel parcel = Parcel.obtain();
+                try {
+                    sharedMemory.writeToParcel(parcel, 0);
+                    parcel.setDataPosition(0);
+                    pfd = parcel.readFileDescriptor();
+                } finally {
+                    parcel.recycle();
+                }
+                if (pfd == null) {
+                    throw new IllegalStateException("无法从 SharedMemory 获取 ParcelFileDescriptor");
+                }
             } else {
+                // API 23~26: 使用系统 MemoryFile (ashmem 纯内存)
                 memoryFile = new MemoryFile(name, size);
-                @SuppressLint("DiscouragedPrivateApi") Method getFdMethod = MemoryFile.class.getDeclaredMethod("getFileDescriptor");
+                @SuppressLint("DiscouragedPrivateApi")
+                Method getFdMethod = MemoryFile.class.getDeclaredMethod("getFileDescriptor");
+                getFdMethod.setAccessible(true);
                 FileDescriptor fd = (FileDescriptor) getFdMethod.invoke(memoryFile);
-                pfd = ParcelFileDescriptor.dup(fd);
+                if (fd != null && fd.valid()) {
+                    pfd = ParcelFileDescriptor.dup(fd);
+                } else {
+                    throw new IllegalStateException("无法从 MemoryFile 获取有效 FileDescriptor");
+                }
             }
         } catch (Exception e) {
-            Log.e(TAG, "创建共享内存失败: " + e.getMessage(), e);
+            Log.e(TAG, "创建跨进程共享内存失败: " + e.getMessage(), e);
+            close();
         }
     }
 
-    // 通过反射获取 SharedMemory 底层 fd（getFd 在高版本系统上仍被允许访问）
-    @SuppressLint("DiscouragedPrivateApi")
-    private int getRawFd(SharedMemory sharedMemory) {
-        try {
-            Method getFdMethod = null;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-                getFdMethod = SharedMemory.class.getDeclaredMethod("getFd");
-            }
-            if (getFdMethod == null) {
-                return -1;
-            }
-            getFdMethod.setAccessible(true);
-            Object fdObj = getFdMethod.invoke(sharedMemory);
-            return (fdObj != null) ? (int) fdObj : -1;
-        } catch (Exception e) {
-            Log.w(TAG, "获取 SharedMemory fd 异常: " + e.getMessage());
-            return -1;
-        }
+    @Deprecated
+    public SharedMemoryBuffer(String name, int size, @SuppressWarnings("unused") File cacheDir) {
+        this(name, size);
     }
 
-    // 设置当前帧尺寸（影响 Y 双缓冲与点云区偏移），必须在写帧前调用
     public void setFrameSize(int w, int h) {
         this.frameW = w;
         this.frameH = h;
@@ -116,25 +122,21 @@ public class SharedMemoryBuffer {
     public int getFrameW() { return frameW; }
     public int getFrameH() { return frameH; }
 
-    // Y 缓冲区起始偏移
     private int yOffset(int bufIndex) {
         return HEADER_SIZE + (bufIndex & 1) * (frameW * frameH);
     }
 
-    // 点云区起始偏移
     private int pointCloudOffset() {
         return HEADER_SIZE + 2 * (frameW * frameH);
     }
 
-    // 按当前帧尺寸计算完整共享内存所需大小（供创建/重建判断）
     public static int requiredSize(int w, int h) {
         return HEADER_SIZE + 2 * w * h + POINTCLOUD_MAX_BYTES;
     }
 
-    // 初始化 header（首次写帧前调用一次），返回 false 表示缓冲区不可用
     public boolean initHeader(int w, int h) {
-        setFrameSize(w, h);
         if (mappedBuffer == null && memoryFile == null) return false;
+        setFrameSize(w, h);
         writeInt(0, HEADER_MAGIC);
         writeInt(4, HEADER_VERSION);
         writeInt(OFF_FRAME_W, w);
@@ -149,8 +151,10 @@ public class SharedMemoryBuffer {
             mappedBuffer.putInt(offset, value);
         } else if (memoryFile != null) {
             byte[] b = new byte[]{
-                    (byte) (value & 0xFF), (byte) ((value >> 8) & 0xFF),
-                    (byte) ((value >> 16) & 0xFF), (byte) ((value >> 24) & 0xFF)};
+                    (byte) (value & 0xFF),
+                    (byte) ((value >> 8) & 0xFF),
+                    (byte) ((value >> 16) & 0xFF),
+                    (byte) ((value >> 24) & 0xFF)};
             try {
                 memoryFile.writeBytes(b, 0, offset, 4);
             } catch (Exception e) {
@@ -166,24 +170,20 @@ public class SharedMemoryBuffer {
             byte[] b = new byte[4];
             try {
                 memoryFile.readBytes(b, offset, 0, 4);
+                return (b[0] & 0xFF) | ((b[1] & 0xFF) << 8) | ((b[2] & 0xFF) << 16) | ((b[3] & 0xFF) << 24);
             } catch (Exception e) {
                 Log.e(TAG, "readInt 失败: " + e.getMessage());
-                return 0;
             }
-            return (b[0] & 0xFF) | ((b[1] & 0xFF) << 8) | ((b[2] & 0xFF) << 16) | ((b[3] & 0xFF) << 24);
         }
         return 0;
     }
 
     public void writeUiWriteSeq(int seq) { writeInt(OFF_UI_WRITE_SEQ, seq); }
 
-    // SLAM 已处理完成的帧序号（UI 读取，用于背压判断与渲染版本检测）
     public int readSlamDoneSeq() { return readInt(OFF_SLAM_DONE_SEQ); }
 
-    // 是否应绘制 AR 物体（SLAM 进程写入）
     public int readDrawFlag() { return readInt(OFF_DRAW_FLAG); }
 
-    // 读取最新 MVP（48 floats：M[16]+V[16]+P[16]），返回 false 表示无有效数据
     public boolean readMvp(float[] out48) {
         if (out48 == null || out48.length < 48) return false;
         if (mappedBuffer != null) {
@@ -195,63 +195,67 @@ public class SharedMemoryBuffer {
             byte[] b = new byte[48 * 4];
             try {
                 memoryFile.readBytes(b, OFF_MVP, 0, b.length);
+                ByteBuffer bb = ByteBuffer.wrap(b).order(ByteOrder.LITTLE_ENDIAN);
+                for (int i = 0; i < 48; i++) {
+                    out48[i] = bb.getFloat(i * 4);
+                }
+                return true;
             } catch (Exception e) {
                 Log.e(TAG, "readMvp 失败: " + e.getMessage());
-                return false;
             }
-            ByteBuffer bb = ByteBuffer.wrap(b).order(ByteOrder.LITTLE_ENDIAN);
-            for (int i = 0; i < 48; i++) out48[i] = bb.getFloat(i * 4);
-            return true;
         }
         return false;
     }
 
-    // 读取点云区（每点 7 floats：[x,y,z,r,g,b,size]），返回点数，0 表示无数据
+    // 每点 7 floats: [x, y, z, r, g, b, size]，返回点数
     public int readPointCloud(float[] out, int maxFloats) {
         int bytes = readInt(OFF_POINTCLOUD_BYTES);
         if (bytes <= 0 || bytes > POINTCLOUD_MAX_BYTES || out == null) return 0;
         int floats = Math.min(bytes / 4, Math.min(maxFloats, out.length));
         if (floats <= 0) return 0;
+
         if (mappedBuffer != null) {
             int base = pointCloudOffset();
             for (int i = 0; i < floats; i++) {
                 out[i] = mappedBuffer.getFloat(base + i * 4);
             }
+            return floats;
         } else if (memoryFile != null) {
             byte[] b = new byte[floats * 4];
             try {
                 memoryFile.readBytes(b, pointCloudOffset(), 0, b.length);
+                ByteBuffer bb = ByteBuffer.wrap(b).order(ByteOrder.LITTLE_ENDIAN);
+                for (int i = 0; i < floats; i++) {
+                    out[i] = bb.getFloat(i * 4);
+                }
+                return floats;
             } catch (Exception e) {
                 Log.e(TAG, "readPointCloud 失败: " + e.getMessage());
-                return 0;
             }
-            ByteBuffer bb = ByteBuffer.wrap(b).order(ByteOrder.LITTLE_ENDIAN);
-            for (int i = 0; i < floats; i++) out[i] = bb.getFloat(i * 4);
         }
-        return floats;
+        return 0;
     }
 
-    // 将一帧灰度 Y 数据写入指定缓冲（bufIndex 0/1），调用方必须已确认该缓冲可写（slamDoneSeq >= seq-2）
+    // 调用方需先确认目标缓冲空闲（readSlamDoneSeq() >= seq - 2）
     public boolean writeFrame(byte[] yData, int bufIndex, int w, int h) {
+        if (mappedBuffer == null && memoryFile == null) return false;
         if (frameW != w || frameH != h) {
             setFrameSize(w, h);
         }
         int count = Math.min(w * h, yData.length);
         if (mappedBuffer != null) {
-            int base = yOffset(bufIndex);
-            mappedBuffer.position(base);
+            mappedBuffer.position(yOffset(bufIndex));
             mappedBuffer.put(yData, 0, count);
+            return true;
         } else if (memoryFile != null) {
             try {
                 memoryFile.writeBytes(yData, 0, yOffset(bufIndex), count);
+                return true;
             } catch (Exception e) {
                 Log.e(TAG, "writeFrame 失败: " + e.getMessage());
-                return false;
             }
-        } else {
-            return false;
         }
-        return true;
+        return false;
     }
 
     public ParcelFileDescriptor getParcelFileDescriptor() {
@@ -266,8 +270,8 @@ public class SharedMemoryBuffer {
         try {
             if (mappedBuffer != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
                 SharedMemory.unmap(mappedBuffer);
-                mappedBuffer = null;
             }
+            mappedBuffer = null;
             if (sharedMemory != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
                 sharedMemory.close();
                 sharedMemory = null;
@@ -275,12 +279,6 @@ public class SharedMemoryBuffer {
             if (memoryFile != null) {
                 memoryFile.close();
                 memoryFile = null;
-            }
-            if (mFdOwner != null) {
-                try {
-                    mFdOwner.close();
-                } catch (Exception ignored) {}
-                mFdOwner = null;
             }
             if (pfd != null) {
                 pfd.close();

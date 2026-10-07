@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR বস্তু</string>
@@ -48,7 +48,11 @@
         <item quantity="one">"%1$d মানচিত্ৰ লোড কৰা হ'ল"</item>
         <item quantity="other">"%1$d মানচিত্ৰ লোড কৰা হ'ল"</item>
     </plurals>
-    <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
+
+    <string name="permission_camera_title">কেমেৰা অনুমতি প্ৰয়োজন</string>
+    <string name="permission_camera_rationale">AR/SLAM স্থানিক ট্ৰেকিঙৰ বাবে কেমেৰা প্ৰৱেশ অত্যাৱশ্যক। আগবাঢ়িবলৈ অনুগ্ৰহ কৰি কেমেৰা অনুমতি প্ৰদান কৰক।</string>
+    <string name="permission_camera_denied">কেমেৰা অনুমতি অস্বীকাৰ কৰা হৈছে। অনুগ্ৰহ কৰি ছেটিংছ → অনুমতি-ত ইয়াক সক্ৰিয় কৰি এপটো পুনৰ খোলক।</string>
+    <string name="action_open_settings">ছেটিংছ খোলক</string>
 
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>

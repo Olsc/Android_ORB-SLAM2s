@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR obyekti</string>
@@ -48,7 +48,11 @@
         <item quantity="one">%1$d ta xarita yuklandi</item>
         <item quantity="other">%1$d ta xarita yuklandi</item>
     </plurals>
-    <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
+
+    <string name="permission_camera_title">Kameraga ruxsat kerak</string>
+    <string name="permission_camera_rationale">AR/SLAM fazoviy kuzatuvi uchun kameraga kirish zarur. Davom etish uchun kameraga ruxsat bering.</string>
+    <string name="permission_camera_denied">Kameraga ruxsat rad etildi. Uni Sozlamalar → Ruxsatlar bo\'limida yoqing va ilovani qayta oching.</string>
+    <string name="action_open_settings">Sozlamalarni ochish</string>
 
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>

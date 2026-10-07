@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">Αντικείμενο AR</string>
@@ -48,7 +48,11 @@
         <item quantity="other">Φορτώθηκαν %1$d χάρτες</item>
         <item quantity="one">Φορτώθηκαν %1$d χάρτες</item>
     </plurals>
-    <string name="permission_camera_storage_required">Απαιτούνται άδειες κάμερας και αποθηκευτικού χώρου. Παρακαλώ χορηγήστε άδειες στις ρυθμίσεις.</string>
+
+    <string name="permission_camera_title">Απαιτείται άδεια κάμερας</string>
+    <string name="permission_camera_rationale">Η πρόσβαση στην κάμερα είναι απαραίτητη για την χωρική παρακολούθηση AR/SLAM. Παραχωρήστε την άδεια κάμερας για να συνεχίσετε.</string>
+    <string name="permission_camera_denied">Η άδεια κάμερας απορρίφθηκε. Ενεργοποιήστε την στις Ρυθμίσεις → Άδειες και ανοίξτε ξανά την εφαρμογή.</string>
+    <string name="action_open_settings">Άνοιγμα ρυθμίσεων</string>
 
     <string name="category_ar">Έλεγχοι AR</string>
     <string name="category_map">Χάρτης</string>

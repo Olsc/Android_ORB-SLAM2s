@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR hlutur</string>
@@ -48,7 +48,11 @@
         <item quantity="one">Hlóð %1$d korti</item>
         <item quantity="other">Hlóð %1$d kortum</item>
     </plurals>
-    <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
+
+    <string name="permission_camera_title">Kameraaðgangur nauðsynlegur</string>
+    <string name="permission_camera_rationale">Aðgangur að myndavél er nauðsynlegur fyrir AR/SLAM rýmisrakningu. Veittu myndavélarheimild til að halda áfram.</string>
+    <string name="permission_camera_denied">Myndavélarheimild var hafnað. Virkjaðu hana í Stillingar → Heimildir og opnaðu forritið aftur.</string>
+    <string name="action_open_settings">Opna stillingar</string>
 
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>

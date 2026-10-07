@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR Nesnesi</string>
@@ -48,7 +48,11 @@
         <item quantity="other">%1$d harita yüklendi</item>
         <item quantity="one">%1$d harita yüklendi</item>
     </plurals>
-    <string name="permission_camera_storage_required">Kamera ve depolama izinleri gereklidir. Lütfen ayarlardan izin verin.</string>
+
+    <string name="permission_camera_title">Kamera izni gerekli</string>
+    <string name="permission_camera_rationale">Kamera erişimi AR/SLAM uzamsal izleme için gereklidir. Devam etmek için lütfen kamera iznini verin.</string>
+    <string name="permission_camera_denied">Kamera izni reddedildi. Lütfen Ayarlar → İzinler bölümünden etkinleştirin ve uygulamayı yeniden açın.</string>
+    <string name="action_open_settings">Ayarları aç</string>
 
     <string name="category_ar">AR Kontrolleri</string>
     <string name="category_map">Harita</string>

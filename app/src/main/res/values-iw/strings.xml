@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">אובייקט AR</string>
@@ -49,7 +49,11 @@
         <item quantity="one">%1$d מפות נטענו</item>
         <item quantity="two">%1$d מפות נטענו</item>
     </plurals>
-    <string name="permission_camera_storage_required">נדרשות הרשאות מצלמה ואחסון. אנא אשר הרשאות בהגדרות.</string>
+
+    <string name="permission_camera_title">נדרשת הרשאת מצלמה</string>
+    <string name="permission_camera_rationale">גישה למצלמה חיונית למעקב מרחבי AR/SLAM. אנא הענק הרשאת מצלמה כדי להמשיך.</string>
+    <string name="permission_camera_denied">הרשאת המצלמה נדחתה. אנא הפעל אותה בהגדרות → הרשאות, ולאחר מכן פתח מחדש את האפליקציה.</string>
+    <string name="action_open_settings">פתח הגדרות</string>
 
     <string name="category_ar">פקדי AR</string>
     <string name="category_map">מפה</string>

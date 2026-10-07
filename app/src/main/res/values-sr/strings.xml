@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">АР објекат</string>
@@ -49,7 +49,11 @@
         <item quantity="few">Учитане %1$d мапе</item>
         <item quantity="other">Учитано %1$d мапа</item>
     </plurals>
-    <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
+
+    <string name="permission_camera_title">Потребна је дозвола за камеру</string>
+    <string name="permission_camera_rationale">Приступ камери је неопходан за AR/SLAM просторно праћење. Да бисте наставили, дозволите приступ камери.</string>
+    <string name="permission_camera_denied">Дозвола за камеру је одбијена. Омогућите је у Поставке → Дозволе, затим поново отворите апликацију.</string>
+    <string name="action_open_settings">Отвори поставке</string>
 
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>

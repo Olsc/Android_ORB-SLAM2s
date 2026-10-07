@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR օբյեկտ</string>
@@ -48,7 +48,11 @@
         <item quantity="one">Բեռնվել է %1$d քարտեզ</item>
         <item quantity="other">Բեռնվել է %1$d քարտեզ</item>
     </plurals>
-    <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
+
+    <string name="permission_camera_title">Անհրաժեշտ է տեսախցիկի թույլտվություն</string>
+    <string name="permission_camera_rationale">Տեսախցիկի հասանելիությունը անհրաժեշտ է AR/SLAM տարածական հետևման համար: Շարունակելու համար տրամադրեք տեսախցիկի թույլտվությունը:</string>
+    <string name="permission_camera_denied">Տեսախցիկի թույլտվությունը մերժվել է: Խնդրում ենք միացնել այն Կարգավորումներ → Թույլտվություններ բաժնում, ապա կրկին բացել հավելվածը:</string>
+    <string name="action_open_settings">Բացել կարգավորումները</string>
 
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>

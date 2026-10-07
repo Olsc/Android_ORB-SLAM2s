@@ -60,11 +60,10 @@ android {
     }
     buildToolsVersion '37.0.0'
     compileSdkMinor 1
-}
 
-tasks.configureEach { task ->
-    if (task.name.toLowerCase().contains("lint")) {
-        task.enabled = false
-        task.onlyIf { false }
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+        disable 'InferredThreadDetector'
     }
 }
