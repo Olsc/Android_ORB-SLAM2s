@@ -1,19 +1,35 @@
-# Add project specific ProGuard rules here.
-# By default, the flags in this file are appended to flags specified
-# in E:\AndroidStudioSDK\sdk/tools/proguard/proguard-android.txt
-# You can edit the include path and order by changing the proguardFiles
-# directive in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
-
-# Add any project specific keep options here:
-
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
 
 -keep class cn.pedant.SweetAlert.** { *;}
+
+-keepclasseswithmembernames,includedescriptorclasses class * {
+    native <methods>;
+}
+
+-keepclassmembers class com.orb.slam2s.graphics.GlbModelRenderer {
+    public int onLoadTextureFromBytes(byte[]);
+}
+-keep class com.orb.slam2s.graphics.GlbModelRenderer { *; }
+
+-keep class com.orb.slam2s.slamar.NativeHelper { *; }
+
+-keep interface com.orb.slam2s.ipc.ISlamService { *; }
+-keep class com.orb.slam2s.ipc.ISlamService { *; }
+-keep class com.orb.slam2s.ipc.ISlamService$Stub { *; }
+
+-keep class com.orb.slam2s.app.SplashActivity { *; }
+-keep class com.orb.slam2s.ui.MainActivity { *; }
+-keep class com.orb.slam2s.ui.MapManageActivity { *; }
+-keep class com.orb.slam2s.ui.IconSelectActivity { *; }
+-keep class com.orb.slam2s.ipc.SlamService { *; }
+
+-keepclasseswithmembers class * {
+    public <init>(android.content.Context, android.util.AttributeSet);
+}
+-keepclasseswithmembers class * {
+    public <init>(android.content.Context, android.util.AttributeSet, int);
+}
+
+-keepattributes Signature,*Annotation*,InnerClasses,EnclosingMethod
+
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
