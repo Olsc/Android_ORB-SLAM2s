@@ -89,18 +89,28 @@
             tools:ignore="Instantiatable,DiscouragedApi" />
         <activity
             android:name="com.orb.slam2s.ui.MapManageActivity"
-            android:exported="false"
+            android:exported="true"
             android:theme="@style/DarkNoActionBarTheme"
             android:screenOrientation="fullSensor"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
-            tools:ignore="DiscouragedApi" />
+            tools:ignore="DiscouragedApi">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
         <activity
             android:name="com.orb.slam2s.ui.IconSelectActivity"
-            android:exported="false"
+            android:exported="true"
             android:theme="@style/DarkNoActionBarTheme"
             android:screenOrientation="fullSensor"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
-            tools:ignore="DiscouragedApi" />
+            tools:ignore="DiscouragedApi">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>

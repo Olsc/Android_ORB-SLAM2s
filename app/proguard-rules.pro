@@ -21,6 +21,8 @@
 -keep class com.orb.slam2s.ui.MapManageActivity { *; }
 -keep class com.orb.slam2s.ui.IconSelectActivity { *; }
 -keep class com.orb.slam2s.ipc.SlamService { *; }
+-keep class com.orb.slam2s.ipc.SharedMemoryBuffer { *; }
+-keep class com.orb.slam2s.util.MapManager** { *; }
 
 -keepclasseswithmembers class * {
     public <init>(android.content.Context, android.util.AttributeSet);
