@@ -47,7 +47,6 @@
     <plurals name="hint_maps_loaded">
         <item quantity="other">已載入 %1$d 個地圖</item>
     </plurals>
-    <string name="permission_camera_storage_required">需要相機與儲存空間權限，請在設定中授權。</string>
     <string name="permission_camera_title">需要相機權限</string>
     <string name="permission_camera_rationale">AR/SLAM 空間定位需要存取相機，請授予相機權限以繼續。</string>
     <string name="permission_camera_denied">相機權限已被拒絕，請在「設定 → 權限」中開啟後重新開啟應用程式。</string>

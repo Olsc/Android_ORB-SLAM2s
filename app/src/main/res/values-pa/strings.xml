@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR ਵਸਤੂ</string>
@@ -48,7 +48,11 @@
         <item quantity="other">%1$d ਨਕਸ਼ੇ ਲੋਡ ਹੋ ਗਏ</item>
         <item quantity="one">%1$d ਨਕਸ਼ੇ ਲੋਡ ਹੋ ਗਏ</item>
     </plurals>
-    <string name="permission_camera_storage_required">ਕੈਮਰਾ ਅਤੇ ਸਟੋਰੇਜ ਇਜਾਜ਼ਤਾਂ ਦੀ ਲੋੜ ਹੈ। ਕਿਰਪਾ ਕਰਕੇ ਸੈਟਿੰਗਾਂ ਵਿੱਚ ਇਜਾਜ਼ਤ ਦਿਓ।</string>
+
+    <string name="permission_camera_title">ਕੈਮਰਾ ਇਜਾਜ਼ਤ ਲੋੜੀਂਦੀ ਹੈ</string>
+    <string name="permission_camera_rationale">AR/SLAM ਸਥਾਨਿਕ ਟਰੈਕਿੰਗ ਲਈ ਕੈਮਰਾ ਪਹੁੰਚ ਜ਼ਰੂਰੀ ਹੈ। ਜਾਰੀ ਰੱਖਣ ਲਈ ਕਿਰਪਾ ਕਰਕੇ ਕੈਮਰਾ ਇਜਾਜ਼ਤ ਦਿਓ।</string>
+    <string name="permission_camera_denied">ਕੈਮਰਾ ਇਜਾਜ਼ਤ ਅਸਵੀਕਾਰ ਕੀਤੀ ਗਈ। ਕਿਰਪਾ ਕਰਕੇ ਇਸਨੂੰ ਸੈਟਿੰਗਾਂ → ਇਜਾਜ਼ਤਾਂ ਵਿੱਚ ਸਮਰੱਥ ਕਰੋ, ਫਿਰ ਐਪ ਦੁਬਾਰਾ ਖੋਲ੍ਹੋ।</string>
+    <string name="action_open_settings">ਸੈਟਿੰਗਾਂ ਖੋਲ੍ਹੋ</string>
 
     <string name="category_ar">AR ਕੰਟਰੋਲ</string>
     <string name="category_map">ਨਕਸ਼ਾ</string>

@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR အရာဝတ္ထု</string>
@@ -47,7 +47,11 @@
     <plurals name="hint_maps_loaded">
         <item quantity="other">မြေပုံ %1$d ခု ဖွင့်ပြီးပါပြီ</item>
     </plurals>
-    <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
+
+    <string name="permission_camera_title">ကင်မရာ ခွင့်ပြုချက် လိုအပ်သည်</string>
+    <string name="permission_camera_rationale">AR/SLAM အာကာသ ခြေရာခံခြင်းအတွက် ကင်မရာ အသုံးပြုခွင့် မရှိမဖြစ် လိုအပ်သည်။ ဆက်လက်ဆောင်ရွက်ရန် ကင်မရာ ခွင့်ပြုချက် ပေးပါ။</string>
+    <string name="permission_camera_denied">ကင်မရာ ခွင့်ပြုချက် ငြင်းပယ်ခံရသည်။ ဆက်တင် → ခွင့်ပြုချက်များတွင် ဖွင့်ပြီး အက်ပ်ကို ပြန်ဖွင့်ပါ။</string>
+    <string name="action_open_settings">ဆက်တင် ဖွင့်ရန်</string>
 
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>

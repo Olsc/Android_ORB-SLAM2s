@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR বস্তু</string>
@@ -48,7 +48,11 @@
         <item quantity="other">%1$d মানচিত্র লোড হয়েছে</item>
         <item quantity="one">%1$d মানচিত্র লোড হয়েছে</item>
     </plurals>
-    <string name="permission_camera_storage_required">ক্যামেরা ও স্টোরেজ অনুমতি প্রয়োজন। সেটিংসে অনুমতি দিন।</string>
+
+    <string name="permission_camera_title">ক্যামেরা অনুমতি প্রয়োজন</string>
+    <string name="permission_camera_rationale">AR/SLAM স্থানিক ট্র্যাকিংয়ের জন্য ক্যামেরা অ্যাক্সেস অপরিহার্য। চালিয়ে যেতে অনুগ্রহ করে ক্যামেরার অনুমতি দিন।</string>
+    <string name="permission_camera_denied">ক্যামেরার অনুমতি প্রত্যাখ্যান করা হয়েছে। অনুগ্রহ করে সেটিংস → অনুমতিতে এটি সক্রিয় করুন, তারপর অ্যাপটি আবার খুলুন।</string>
+    <string name="action_open_settings">সেটিংস খুলুন</string>
 
     <string name="category_ar">AR নিয়ন্ত্রণ</string>
     <string name="category_map">মানচিত্র</string>

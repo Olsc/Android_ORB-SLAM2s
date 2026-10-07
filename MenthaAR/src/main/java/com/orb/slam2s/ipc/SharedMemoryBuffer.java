@@ -71,10 +71,6 @@ public class SharedMemoryBuffer {
     private int frameH;
 
     public SharedMemoryBuffer(String name, int size) {
-        this(name, size, null);
-    }
-
-    public SharedMemoryBuffer(String name, int size, File cacheDir) {
         this.bufferSize = size;
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
@@ -111,6 +107,11 @@ public class SharedMemoryBuffer {
             Log.e(TAG, "创建跨进程共享内存失败: " + e.getMessage(), e);
             close();
         }
+    }
+
+    @Deprecated
+    public SharedMemoryBuffer(String name, int size, @SuppressWarnings("unused") File cacheDir) {
+        this(name, size);
     }
 
     public void setFrameSize(int w, int h) {

@@ -129,7 +129,7 @@ public class SlamIPCClient {
                     sharedMemoryBuffer.close();
                 }
                 sharedMemoryBuffer = new SharedMemoryBuffer(
-                        "MenthaSlamFrameBuffer", requiredSize, context.getCacheDir());
+                        "MenthaSlamFrameBuffer", requiredSize);
                 if (!sharedMemoryBuffer.initHeader(width, height)) {
                     sharedMemoryBuffer = null;
                     return;

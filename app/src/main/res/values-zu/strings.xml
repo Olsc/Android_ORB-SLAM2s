@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">Into ye-AR</string>
@@ -48,7 +48,11 @@
         <item quantity="one">Kulayishwe imephu engu-%1$d</item>
         <item quantity="other">Kulayishwe amamephu angu-%1$d</item>
     </plurals>
-    <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
+
+    <string name="permission_camera_title">Imvume yekhamera iyadingeka</string>
+    <string name="permission_camera_rationale">Ukufinyelela ikhamera kubalulekile ekulandeleni kwendawo kwe-AR/SLAM. Sicela unikeze imvume yekhamera ukuze uqhubeke.</string>
+    <string name="permission_camera_denied">Imvume yekhamera inqatshiwe. Sicela uyivule ku-Amasethingi → Izimvume, bese uvula kabusha uhlelo lokusebenza.</string>
+    <string name="action_open_settings">Vula amasethingi</string>
 
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>

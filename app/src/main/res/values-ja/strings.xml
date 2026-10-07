@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">ARオブジェクト</string>
@@ -47,7 +47,11 @@
     <plurals name="hint_maps_loaded">
         <item quantity="other">%1$d 件のマップを読み込みました</item>
     </plurals>
-    <string name="permission_camera_storage_required">カメラとストレージの権限が必要です。設定から権限を付与してください。</string>
+
+    <string name="permission_camera_title">カメラの権限が必要です</string>
+    <string name="permission_camera_rationale">AR/SLAM の空間トラッキングにはカメラへのアクセスが不可欠です。続行するにはカメラの権限を許可してください。</string>
+    <string name="permission_camera_denied">カメラの権限が拒否されました。「設定 → 権限」で有効にしてから、アプリを再度開いてください。</string>
+    <string name="action_open_settings">設定を開く</string>
 
     <string name="category_ar">AR操作</string>
     <string name="category_map">マップ</string>

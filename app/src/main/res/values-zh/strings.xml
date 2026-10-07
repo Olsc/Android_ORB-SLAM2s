@@ -47,7 +47,6 @@
     <plurals name="hint_maps_loaded">
         <item quantity="other">已加载 %1$d 个地图</item>
     </plurals>
-    <string name="permission_camera_storage_required">需要摄像头和SD卡权限，请在设置中授权。</string>
     <string name="permission_camera_title">需要相机权限</string>
     <string name="permission_camera_rationale">AR/SLAM 空间定位需要访问相机，请授予相机权限以继续。</string>
     <string name="permission_camera_denied">相机权限已被拒绝，请在“设置 → 权限”中开启后重新打开应用。</string>

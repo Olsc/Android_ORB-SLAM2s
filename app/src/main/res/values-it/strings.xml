@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">Oggetto AR</string>
@@ -49,7 +49,11 @@
         <item quantity="one">%1$d mappe caricate</item>
         <item quantity="many">%1$d mappe caricate</item>
     </plurals>
-    <string name="permission_camera_storage_required">Sono necessari i permessi fotocamera e archiviazione. Concedili nelle impostazioni.</string>
+
+    <string name="permission_camera_title">Autorizzazione della fotocamera richiesta</string>
+    <string name="permission_camera_rationale">L\'accesso alla fotocamera è essenziale per il tracciamento spaziale AR/SLAM. Concedi l\'autorizzazione alla fotocamera per continuare.</string>
+    <string name="permission_camera_denied">L\'autorizzazione alla fotocamera è stata negata. Abilitala in Impostazioni → Autorizzazioni, quindi riapri l\'app.</string>
+    <string name="action_open_settings">Apri impostazioni</string>
 
     <string name="category_ar">Controlli AR</string>
     <string name="category_map">Mappa</string>

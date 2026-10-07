@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR-objekt</string>
@@ -48,7 +48,11 @@
         <item quantity="other">%1$d kartor laddade</item>
         <item quantity="one">%1$d kartor laddade</item>
     </plurals>
-    <string name="permission_camera_storage_required">Kamera- och lagringsbehörigheter krävs. Bevilja behörigheter i inställningarna.</string>
+
+    <string name="permission_camera_title">Kamerabehörighet krävs</string>
+    <string name="permission_camera_rationale">Kameraåtkomst är avgörande för AR/SLAM rumslig spårning. Bevilja kamerabehörighet för att fortsätta.</string>
+    <string name="permission_camera_denied">Kamerabehörigheten nekades. Aktivera den i Inställningar → Behörigheter och öppna sedan appen igen.</string>
+    <string name="action_open_settings">Öppna inställningar</string>
 
     <string name="category_ar">AR-styrning</string>
     <string name="category_map">Karta</string>

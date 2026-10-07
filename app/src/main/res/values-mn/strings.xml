@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR объект</string>
@@ -48,7 +48,11 @@
         <item quantity="one">%1$d зураг ачаалагдлаа</item>
         <item quantity="other">%1$d зураг ачаалагдлаа</item>
     </plurals>
-    <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
+
+    <string name="permission_camera_title">Камерын зөвшөөрөл шаардлагатай</string>
+    <string name="permission_camera_rationale">AR/SLAM орон зайн хяналтад камерын хандалт зайлшгүй шаардлагатай. Үргэлжлүүлэхийн тулд камерын зөвшөөрөл өгнө үү.</string>
+    <string name="permission_camera_denied">Камерын зөвшөөрөл татгалзсан. Тохиргоо → Зөвшөөрөл хэсэгт үүнийг идэвхжүүлээд аппыг дахин нээгээрэй.</string>
+    <string name="action_open_settings">Тохиргоо нээх</string>
 
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>

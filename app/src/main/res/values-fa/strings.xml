@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">شیء AR</string>
@@ -48,7 +48,11 @@
         <item quantity="other">%1$d نقشه بارگذاری شد</item>
         <item quantity="one">%1$d نقشه بارگذاری شد</item>
     </plurals>
-    <string name="permission_camera_storage_required">مجوز دوربین و حافظه لازم است. لطفاً در تنظیمات مجوز دهید.</string>
+
+    <string name="permission_camera_title">مجوز دوربین لازم است</string>
+    <string name="permission_camera_rationale">دسترسی به دوربین برای ردیابی فضایی AR/SLAM ضروری است. لطفاً برای ادامه مجوز دوربین را بدهید.</string>
+    <string name="permission_camera_denied">مجوز دوربین رد شد. لطفاً آن را در تنظیمات → مجوزها فعال کنید و سپس برنامه را دوباره باز کنید.</string>
+    <string name="action_open_settings">باز کردن تنظیمات</string>
 
     <string name="category_ar">کنترل AR</string>
     <string name="category_map">نقشه</string>

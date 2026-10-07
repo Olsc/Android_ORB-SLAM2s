@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR பொருள்</string>
@@ -48,7 +48,11 @@
         <item quantity="other">%1$d வரைபடங்கள் ஏற்றப்பட்டன</item>
         <item quantity="one">%1$d வரைபடங்கள் ஏற்றப்பட்டன</item>
     </plurals>
-    <string name="permission_camera_storage_required">கேமரா மற்றும் சேமிப்பக அனுமதிகள் தேவை. அமைப்புகளில் அனுமதி வழங்கவும்.</string>
+
+    <string name="permission_camera_title">கேமரா அனுமதி தேவை</string>
+    <string name="permission_camera_rationale">AR/SLAM இடஞ்சார்ந்த கண்காணிப்புக்கு கேமரா அணுகல் அவசியம். தொடர கேமரா அனுமதியை வழங்கவும்.</string>
+    <string name="permission_camera_denied">கேமரா அனுமதி மறுக்கப்பட்டது. அமைப்புகள் → அனுமதிகள் இல் அதை இயக்கி, பின்னர் பயன்பாட்டை மீண்டும் திறக்கவும்.</string>
+    <string name="action_open_settings">அமைப்புகளைத் திற</string>
 
     <string name="category_ar">AR கட்டுப்பாடுகள்</string>
     <string name="category_map">வரைபடம்</string>

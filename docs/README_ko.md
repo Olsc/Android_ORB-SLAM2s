@@ -188,7 +188,7 @@ ORB-SLAM2 코어 라이브러리는 [GPLv3 라이선스](https://github.com/raul
 - **`MenthaAR/` 엔진 모듈**: ORB-SLAM2에서 파생되었으며 **[GNU General Public License v3.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/MenthaAR/LICENSE)** (GPLv3)에 따라 라이선스가 부여됩니다. C++ SLAM 핵심 알고리즘 및 네이티브 처리가 포함되어 있습니다.
 - **IPC 프로세스 격리 통신**: `app` 모듈과 `MenthaAR` 엔진은 독립된 Android OS 프로세스에서 실행되며 Binder IPC 및 공유 메모리(Ashmem/memfd)를 통해서만 통신하여 각 모듈의 라이선스 경계를 유지합니다.
 
-자세한 내용은 [LICENSE.txt](../LICENSE.txt), [app/LICENSE](../app/LICENSE) 및 [MenthaAR/LICENSE](../MenthaAR/LICENSE) 파일을 참조하십시오.
+자세한 내용은 [LICENSE](../LICENSE), [app/LICENSE](../app/LICENSE) 및 [MenthaAR/LICENSE](../MenthaAR/LICENSE) 파일을 참조하십시오.
 
 프로젝트 협업 또는 기타 분야 협력 문의는 **OlscStudio@outlook.com**으로 연락 주십시오.
 

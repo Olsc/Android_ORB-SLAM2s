@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR объектиси</string>
@@ -48,7 +48,11 @@
         <item quantity="one">%1$d карта жүктөлдү</item>
         <item quantity="other">%1$d карта жүктөлдү</item>
     </plurals>
-    <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
+
+    <string name="permission_camera_title">Камера уруксаты талап кылынат</string>
+    <string name="permission_camera_rationale">AR/SLAM мейкиндик көзөмөлү үчүн камерага кирүү зарыл. Улантуу үчүн камерага уруксат бериңиз.</string>
+    <string name="permission_camera_denied">Камера уруксаты четке кагылды. Аны Жөндөөлөр → Уруксаттар бөлүмүнөн күйгүзүп, колдонмону кайра ачыңыз.</string>
+    <string name="action_open_settings">Жөндөөлөрдү ачуу</string>
 
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>

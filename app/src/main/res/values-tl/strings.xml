@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR Bagay</string>
@@ -48,7 +48,11 @@
         <item quantity="other">Na-load ang %1$d na mapa</item>
         <item quantity="one">Na-load ang %1$d na mapa</item>
     </plurals>
-    <string name="permission_camera_storage_required">Kailangan ang mga pahintulot sa camera at storage. Mangyaring ibigay ang pahintulot sa mga setting.</string>
+
+    <string name="permission_camera_title">Kinakailangan ang pahintulot sa camera</string>
+    <string name="permission_camera_rationale">Mahalaga ang access sa camera para sa AR/SLAM spatial tracking. Pakibigay ang pahintulot sa camera upang magpatuloy.</string>
+    <string name="permission_camera_denied">Tinanggihan ang pahintulot sa camera. Paki-enable ito sa Settings → Mga Pahintulot, pagkatapos ay buksan muli ang app.</string>
+    <string name="action_open_settings">Buksan ang settings</string>
 
     <string name="category_ar">Mga Kontrol ng AR</string>
     <string name="category_map">Mapa</string>

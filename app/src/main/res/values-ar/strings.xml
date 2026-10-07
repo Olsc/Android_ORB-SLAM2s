@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">كائن AR</string>
@@ -52,7 +52,11 @@
         <item quantity="few">تم تحميل %1$d خريطة</item>
         <item quantity="many">تم تحميل %1$d خريطة</item>
     </plurals>
-    <string name="permission_camera_storage_required">أذونات الكاميرا والتخزين مطلوبة. يرجى منح الأذونات في الإعدادات.</string>
+
+    <string name="permission_camera_title">مطلوب إذن الكاميرا</string>
+    <string name="permission_camera_rationale">الوصول إلى الكاميرا ضروري للتتبع المكاني AR/SLAM. يُرجى منح إذن الكاميرا للمتابعة.</string>
+    <string name="permission_camera_denied">تم رفض إذن الكاميرا. يُرجى تمكينه من الإعدادات → الأذونات، ثم إعادة فتح التطبيق.</string>
+    <string name="action_open_settings">فتح الإعدادات</string>
 
     <string name="category_ar">أدوات AR</string>
     <string name="category_map">الخريطة</string>

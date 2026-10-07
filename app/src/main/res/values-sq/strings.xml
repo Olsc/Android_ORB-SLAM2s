@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">Objekt AR</string>
@@ -48,7 +48,11 @@
         <item quantity="one">U ngarkua %1$d hartë</item>
         <item quantity="other">U ngarkuan %1$d harta</item>
     </plurals>
-    <string name="permission_camera_storage_required">Vyžaduje sa oprávnenie pre fotoaparát a úložisko.</string>
+
+    <string name="permission_camera_title">Kërkohet leje për kamerën</string>
+    <string name="permission_camera_rationale">Qasja në kamerë është thelbësore për gjurmimin hapësinor AR/SLAM. Për të vazhduar, jepni lejen për kamerën.</string>
+    <string name="permission_camera_denied">Leja për kamerën u refuzua. Aktivizoje në Cilësimet → Lejet dhe më pas rihap aplikacionin.</string>
+    <string name="action_open_settings">Hap cilësimet</string>
 
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>
