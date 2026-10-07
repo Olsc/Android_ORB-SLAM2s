@@ -108,6 +108,10 @@ android {
     buildToolsVersion '37.0.0'
     compileSdkMinor 1
 
+    lint {
+        abortOnError false
+    }
+
     externalNativeBuild {
         cmake {
             path "CMakeLists.txt"
@@ -134,12 +138,5 @@ configurations.all {
     resolutionStrategy {
         force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.4.20"
         force "org.jetbrains.kotlin:kotlin-stdlib:2.4.20"
-    }
-}
-
-tasks.configureEach { task ->
-    if (task.name.toLowerCase().contains("lint")) {
-        task.enabled = false
-        task.onlyIf { false }
     }
 }
