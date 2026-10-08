@@ -86,6 +86,9 @@ int main(int argc, char** argv) {
     // 采用与 Android 相同的嵌入式资源模式加载 SLAM 系统
     std::cout << "[Ubuntu GUI] Loading vocabulary from embedded resources..." << std::endl;
     slamSys = new ORB_SLAM2::System("", ORB_SLAM2::System::MONOCULAR);
+    // 共享引擎将 OpenCV 并行线程限制为 2，此处按逻辑核心数覆盖，仅作用于本可执行文件。
+    cv::setNumThreads(cv::getNumberOfCPUs());
+    std::cout << "[Ubuntu GUI] OpenCV parallel threads = " << cv::getNumThreads() << std::endl;
     std::cout << "[Ubuntu GUI] SLAM engine initialized successfully!" << std::endl;
 
     // 初始化 OpenCV 视频捕获组件
@@ -172,9 +175,8 @@ int main(int argc, char** argv) {
             double videoElapsed = curMsec - playBaseMsec;
             double wallElapsed = nowWallMs() - playBaseWallMs;
             if (videoElapsed > wallElapsed + 3.0) {
-                // 视频超前：补等至对齐点。用 sleep_for 高精度分段等待
-                // （cv::waitKey 在 Linux 下精度差，会拖慢 29.97fps 等高帧率视频），
-                // 每 5ms 段内 waitKey(1) 检查键盘，保证 ESC/q 仍可响应。
+                // 视频超前时用 sleep_for 分段补等至对齐点，避免 waitKey 精度不足拖慢高帧率视频；
+                // 每段内 waitKey(1) 检查键盘，保证 ESC/q 可响应。
                 double need = videoElapsed - wallElapsed;
                 double waited = 0.0;
                 while (waited < need) {
@@ -214,9 +216,8 @@ int main(int argc, char** argv) {
             imgRgba = frame.clone();
         }
 
-        // ORB/SLAM 跟踪：固定 TARGET_FPS 时间节流
-        // 无论视频/相机源帧率多少，每 processInterval 秒只处理最新一帧，
-        // 其余帧仅显示不处理，保证视频正常速度播放而 SLAM 固定 30fps
+        // ORB/SLAM 跟踪按 TARGET_FPS 节流：每 processInterval 秒只处理最新一帧，
+        // 其余帧仅显示，使视频按正常速度播放而 SLAM 保持固定帧率。
         {
             auto now = std::chrono::steady_clock::now();
             double procDt = std::chrono::duration_cast<std::chrono::duration<double>>(

@@ -237,15 +237,12 @@ add_library(MenthaAR_Engine STATIC
     ${REPO_ROOT}/MenthaAR/src/main/cpp/src/KeyFrameDatabase.cc
     ${REPO_ROOT}/MenthaAR/src/main/cpp/src/Sim3Solver.cc
     ${REPO_ROOT}/MenthaAR/src/main/cpp/src/Initializer.cc
-    
-    # DBoW2 组件已移除，改用 HBST
-    
+
     # 底层通用实用组件
     ${REPO_ROOT}/MenthaAR/src/main/cpp/UIUtils.cpp
     ${REPO_ROOT}/MenthaAR/src/main/cpp/Plane.cpp
     ${REPO_ROOT}/MenthaAR/src/main/cpp/Matrix.cpp
     ${REPO_ROOT}/MenthaAR/src/main/cpp/profiler/MenthaProfiler.cpp
-    
 )
 
 # ----------------------------------------------------------------------------

@@ -16,6 +16,7 @@
 #include <csignal>
 #include <cstdio>   // popen, pclose, fgets
 #include <cstdlib>  // std::system
+#include <cstring>  // std::strstr
 #include <unistd.h> // sysconf, getpagesize
 #include <opencv2/opencv.hpp>
 
@@ -162,6 +163,101 @@ static std::string tryStripAudioStream(const std::string& path) {
         return fixed;
     }
     return "";
+}
+
+// ffmpeg 快速解码：检测到 ffmpeg 时按视频原始分辨率逐帧流式读取，避免 OpenCV 的解码瓶颈。
+static bool probeFfmpeg() {
+    FILE* which = popen("which ffmpeg 2>/dev/null", "r");
+    if (!which) return false;
+    char buf[16] = {};
+    bool ok = (fgets(buf, sizeof(buf), which) != nullptr);
+    pclose(which);
+    return ok;
+}
+
+// ffmpeg 视频流读取器：按视频显示分辨率解码 BGR，经管道逐帧读取，不缓存整段视频。
+struct FFmpegVideoReader {
+    FILE* pipe = nullptr;
+    int width = 0;
+    int height = 0;
+    std::vector<uchar> buf;
+
+    ~FFmpegVideoReader() { close(); }
+
+    bool open(const std::string& path, int w, int h) {
+        close();
+        if (w <= 0 || h <= 0) return false;
+        width = w;
+        height = h;
+        buf.resize((size_t)w * (size_t)h * 3u);
+        std::string cmd = "ffmpeg -v error -i \"" + path +
+                          "\" -pix_fmt bgr24 -f rawvideo - 2>/dev/null";
+        pipe = popen(cmd.c_str(), "r");   // Linux: glibc 的 popen 只接受 "r"/"w"
+        return pipe != nullptr;
+    }
+
+    // 读取下一帧，返回 false 表示结束；out 引用内部缓冲，下次 read 前有效。
+    bool read(cv::Mat& out) {
+        if (!pipe) return false;
+        const size_t frameBytes = buf.size();
+        size_t off = 0;
+        while (off < frameBytes) {
+            size_t got = fread(buf.data() + off, 1, frameBytes - off, pipe);
+            if (got == 0) break;
+            off += got;
+        }
+        if (off < frameBytes) {
+            out.release();
+            return false;
+        }
+        out = cv::Mat(height, width, CV_8UC3, buf.data());
+        return true;
+    }
+
+    void close() {
+        if (pipe) {
+            pclose(pipe);
+            pipe = nullptr;
+        }
+    }
+};
+
+// 运行 ffprobe 并返回全部标准输出
+static bool runFfprobe(const std::string& args, std::string& out) {
+    std::string cmd = "ffprobe -v error " + args + " 2>/dev/null";
+    FILE* p = popen(cmd.c_str(), "r");
+    if (!p) return false;
+    char line[256] = {};
+    out.clear();
+    while (fgets(line, sizeof(line), p)) out += line;
+    pclose(p);
+    return !out.empty();
+}
+
+// 查询视频显示分辨率（含 rotation 元数据）；兼容旧版 stream_tags 与新版 stream_side_data。
+static bool probeVideoSize(const std::string& path, int& w, int& h) {
+    const std::string q = "\"" + path + "\"";
+    std::string out;
+    if (!runFfprobe("-select_streams v:0 -show_entries stream=width,height "
+                    "-of default=noprint_wrappers=1 " + q, out))
+        return false;
+    int pw = 0, ph = 0;
+    if (sscanf(out.c_str(), "width=%d", &pw) != 1) return false;
+    const char* hp = std::strstr(out.c_str(), "height=");
+    if (!hp || sscanf(hp, "height=%d", &ph) != 1) return false;
+    if (pw <= 0 || ph <= 0) return false;
+    int rot = 0;
+    if (runFfprobe("-select_streams v:0 -show_entries stream_tags=rotate "
+                   "-of default=noprint_wrappers=1:nokey=1 " + q, out))
+        sscanf(out.c_str(), "%d", &rot);
+    if (rot == 0 && runFfprobe("-select_streams v:0 -show_entries stream_side_data=rotation "
+                               "-of default=noprint_wrappers=1:nokey=1 " + q, out))
+        sscanf(out.c_str(), "%d", &rot);
+    if (rot == 90 || rot == -90 || rot == 270 || rot == -270)
+        std::swap(pw, ph);
+    w = pw;
+    h = ph;
+    return true;
 }
 
 // Linux 进程内存读取与估计函数
@@ -428,6 +524,9 @@ int main(int argc, char** argv) {
 
     std::cout << "[Benchmark] Loading vocabulary & initializing SLAM..." << std::endl;
     slamSys = new ORB_SLAM2::System("", ORB_SLAM2::System::MONOCULAR);
+    // 共享引擎将 OpenCV 并行线程限制为 2，此处按逻辑核心数覆盖，仅作用于本可执行文件。
+    cv::setNumThreads(cv::getNumberOfCPUs());
+    std::cout << "[Benchmark] OpenCV parallel threads = " << cv::getNumThreads() << std::endl;
     std::cout << "[Benchmark] SLAM engine initialized!" << std::endl;
 
     cv::VideoCapture cap(gVideoPath);
@@ -467,7 +566,9 @@ int main(int argc, char** argv) {
     int globalFrameId = 0;
 
     auto lastProcessTime = std::chrono::steady_clock::now();
-    const double processInterval = 1.0 / TARGET_FPS;
+    // 输入帧率高于目标时才跳帧，否则逐帧处理，避免快解码时漏送 SLAM。
+    const bool needFrameSkip = (inputFps > TARGET_FPS + 0.5);
+    const double processInterval = needFrameSkip ? (1.0 / TARGET_FPS) : 0.0;
 
     double playBaseMsec = -1.0;
     double playBaseWallMs = 0.0;
@@ -479,14 +580,50 @@ int main(int argc, char** argv) {
 
     gRecords.reserve(totalInputFrames > 0 ? totalInputFrames * gTargetLoops : ORB_SLAM2::BENCH_RESERVE_DEFAULT);
 
+    // ffmpeg 以视频原始分辨率快速解码；逐帧流式读取，显示端与 SLAM 端各自缩放。
+    FFmpegVideoReader ffmpegReader;
+    bool useFfmpegFrames = false;
+    int ffmpegNativeW = 0;
+    int ffmpegNativeH = 0;
+    if (probeFfmpeg()) {
+        int pw = 0, ph = 0;
+        if (probeVideoSize(gVideoPath, pw, ph)) {
+            ffmpegNativeW = pw;
+            ffmpegNativeH = ph;
+        } else {
+            ffmpegNativeW = (int)cap.get(cv::CAP_PROP_FRAME_WIDTH);
+            ffmpegNativeH = (int)cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+        }
+        if (ffmpegNativeW > 0 && ffmpegNativeH > 0 &&
+            ffmpegReader.open(gVideoPath, ffmpegNativeW, ffmpegNativeH)) {
+            useFfmpegFrames = true;
+            std::cout << "[Benchmark] ffmpeg fast decoder @ native " << ffmpegNativeW
+                      << "x" << ffmpegNativeH << " (streaming, low memory)" << std::endl;
+        } else {
+            std::cout << "[WARN] ffmpeg fast path failed, falling back to OpenCV VideoCapture (slower decode)" << std::endl;
+        }
+    } else {
+        std::cout << "[WARN] 未检测到 ffmpeg 环境，将使用 OpenCV VideoCapture 解码（速度较慢；建议安装 ffmpeg）" << std::endl;
+    }
+
+    // 帧读取：优先 ffmpeg 流式原始分辨率，否则回退 OpenCV VideoCapture。
+    auto readFrame = [&](cv::Mat& out) -> bool {
+        if (useFfmpegFrames) return ffmpegReader.read(out);
+        cap >> out;
+        return !out.empty();
+    };
+    auto rewindVideo = [&]() {
+        if (useFfmpegFrames) ffmpegReader.open(gVideoPath, ffmpegNativeW, ffmpegNativeH);
+        else cap.set(cv::CAP_PROP_POS_FRAMES, 0);
+    };
+
     while (!gStopRequested) {
         if (!gBenchmarkCompleted && !gBenchmarkPaused) {
-            cap >> frame;
-            if (frame.empty()) {
+            if (!readFrame(frame)) {
                 if (gCurrentLoop < gTargetLoops) {
                     gCurrentLoop++;
-                    cap.set(cv::CAP_PROP_POS_FRAMES, 0);
-                    cap >> frame;
+                    rewindVideo();
+                    readFrame(frame);
                     frameIdx = 0;
                     playBaseMsec = -1.0;
                     std::cout << "\n[Benchmark] Advanced to Loop " << gCurrentLoop << " / " << gTargetLoops << std::endl;
@@ -503,7 +640,8 @@ int main(int argc, char** argv) {
         char key = -1;
         if (!frame.empty() && !gBenchmarkCompleted && !gBenchmarkPaused) {
             frameIdx++;
-            double curMsec = cap.get(cv::CAP_PROP_POS_MSEC);
+            double curMsec = useFfmpegFrames ? ((frameIdx - 1) * 1000.0 / inputFps)
+                                             : cap.get(cv::CAP_PROP_POS_MSEC);
             if (curMsec < 0) curMsec = (frameIdx - 1) * 1000.0 / inputFps;
             if (playBaseMsec < 0 || curMsec < playBaseMsec - 500.0) {
                 playBaseMsec = curMsec;
@@ -558,7 +696,7 @@ int main(int argc, char** argv) {
             double procDt = std::chrono::duration_cast<std::chrono::duration<double>>(now - lastProcessTime).count();
             if (procDt >= processInterval) {
                 lastProcessTime = now;
-                timeStamp += processInterval;
+                timeStamp += 1.0 / TARGET_FPS;  // 每个被处理的帧代表 1/30s 视频时间
 
                 cv::cvtColor(frame, imgGr, cv::COLOR_BGR2GRAY);
                 cv::Mat imgSmall;

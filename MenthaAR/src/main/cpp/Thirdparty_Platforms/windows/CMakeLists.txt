@@ -245,15 +245,54 @@ add_library(MenthaAR_Engine STATIC
     ${REPO_ROOT}/MenthaAR/src/main/cpp/src/KeyFrameDatabase.cc
     ${REPO_ROOT}/MenthaAR/src/main/cpp/src/Sim3Solver.cc
     ${REPO_ROOT}/MenthaAR/src/main/cpp/src/Initializer.cc
-    
-    # DBoW2 组件已移除，改用 HBST
-    
+
     # 底层通用实用组件
     ${REPO_ROOT}/MenthaAR/src/main/cpp/UIUtils.cpp
     ${REPO_ROOT}/MenthaAR/src/main/cpp/Plane.cpp
     ${REPO_ROOT}/MenthaAR/src/main/cpp/Matrix.cpp
     ${REPO_ROOT}/MenthaAR/src/main/cpp/profiler/MenthaProfiler.cpp
 )
+
+# ----------------------------------------------------------------------------
+# CPU 指令集自动探测与优化配置 (兼顾极致性能与老旧 CPU / 虚拟机兼容性)
+# ----------------------------------------------------------------------------
+set(CPU_ARCH_OPT "AUTO" CACHE STRING "Target CPU instruction set: AUTO, AVX2, AVX, COMPATIBLE")
+
+set(_CPU_FLAGS "")
+if(MSVC)
+    # cmake_host_system_information 不支持 AVX/AVX2 查询
+    # 采用方案 A：编译并试运行真实 AVX/AVX2 指令（编译器+CPU硬件+OS上下文均支持才成功）
+    include(CheckCSourceRuns)
+    set(CMAKE_REQUIRED_FLAGS "/arch:AVX2")
+    check_c_source_runs("
+        #include <immintrin.h>
+        int main(void) {
+            __m256i v = _mm256_setzero_si256();
+            return (int)_mm256_extract_epi32(v, 0);
+        }" _HOST_HAS_AVX2)
+
+    set(CMAKE_REQUIRED_FLAGS "/arch:AVX")
+    check_c_source_runs("
+        #include <immintrin.h>
+        int main(void) {
+            __m256 v = _mm256_setzero_ps();
+            return (int)_mm256_cvtss_f32(v);
+        }" _HOST_HAS_AVX)
+    unset(CMAKE_REQUIRED_FLAGS)
+
+    if(CPU_ARCH_OPT STREQUAL "AVX2" OR (CPU_ARCH_OPT STREQUAL "AUTO" AND _HOST_HAS_AVX2))
+        set(_CPU_FLAGS "/arch:AVX2")
+        message(STATUS "[CPU Arch] 检测到本机 CPU 支持 AVX2，启用优化: /arch:AVX2 (最高性能)")
+    elseif(CPU_ARCH_OPT STREQUAL "AVX" OR (CPU_ARCH_OPT STREQUAL "AUTO" AND _HOST_HAS_AVX))
+        set(_CPU_FLAGS "/arch:AVX")
+        message(STATUS "[CPU Arch] 检测到本机 CPU 支持 AVX，启用优化: /arch:AVX")
+    else()
+        # 默认 x64 MSVC 为 SSE2，不加参数即可保证最大向下兼容性（老 CPU、虚拟机安全）
+        message(STATUS "[CPU Arch] 未启用 AVX/AVX2，使用默认标准 x86-64 指令集 (最大兼容性)")
+    endif()
+
+    target_compile_options(MenthaAR_Engine PRIVATE ${_CPU_FLAGS} /Ob3)
+endif()
 
 # ----------------------------------------------------------------------------
 # 6. 构建桌面可执行文件 (MenthaAR_Ubuntu)
@@ -274,6 +313,10 @@ target_link_libraries(MenthaAR_Windows
     Threads::Threads
 )
 
+if(MSVC)
+    target_compile_options(MenthaAR_Windows PRIVATE ${_CPU_FLAGS} /Ob3)
+endif()
+
 # ----------------------------------------------------------------------------
 # 7. 构建 Benchmark 工具 (MenthaAR_Benchmark)
 # ----------------------------------------------------------------------------
@@ -292,5 +335,9 @@ target_link_libraries(MenthaAR_Benchmark
     opencv_highgui
     Threads::Threads
 )
+
+if(MSVC)
+    target_compile_options(MenthaAR_Benchmark PRIVATE ${_CPU_FLAGS} /Ob3)
+endif()
 
 message(STATUS "[CMake] 构建文件生成完毕。使用 'cmake --build . --config Release' 构建 MenthaAR_Windows 或 MenthaAR_Benchmark。")
