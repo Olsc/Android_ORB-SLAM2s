@@ -68,7 +68,6 @@ TEMP
 # Wiki
 Android_ORB-SLAM2s.wiki/
 
-
 reasonix.toml
 .reasonix/
 .claude/
@@ -92,5 +91,8 @@ docs/workload_benchmark_tools/__pycache__/run_workload_benchmark.cpython-312.pyc
 
 MenthaAR/src/main/cpp/Thirdparty_Platforms/windows/benchmark.mp4
 MenthaAR/src/main/cpp/Thirdparty_Platforms/ubuntu/benchmark.mp4
+MenthaAR/src/main/cpp/Thirdparty_Platforms/windows/dist/
+MenthaAR/src/main/cpp/Thirdparty_Platforms/ubuntu/dist/
+MenthaAR/src/main/cpp/Thirdparty_Platforms/ubuntu/packaging/
 
 /XML/

@@ -43,6 +43,10 @@
 
 //#include<stdint-gcc.h>
 #include <stdint.h>
+
+#if defined(_MSC_VER)
+#  include <intrin.h>   // __popcnt64 (MSVC 映射为单条 POPCNT 指令)
+#endif
 #include <cstring>
 
 #if defined(__ARM_NEON) || defined(__ARM_NEON__)
@@ -1928,15 +1932,25 @@ void ORBmatcher::ComputeThreeMaxima(vector<int>* histo, const int L, int &ind1, 
     }
 }
 
-// ORB 描述子汉明距离 (32 字节)，__builtin_popcountll 在 arm64 映射为单条 popcnt
+// 64 位 popcount：GCC/Clang 用 __builtin_popcountll，MSVC 用 __popcnt64。
+static inline int PopCount64(uint64_t x)
+{
+#if defined(_MSC_VER)
+    return static_cast<int>(__popcnt64(x));
+#else
+    return __builtin_popcountll(x);
+#endif
+}
+
+// ORB 描述子汉明距离 (32 字节)
 int ORBmatcher::DescriptorDistance(const uint8_t* pa, const uint8_t* pb)
 {
     const uint64_t* a64 = reinterpret_cast<const uint64_t*>(pa);
     const uint64_t* b64 = reinterpret_cast<const uint64_t*>(pb);
-    return __builtin_popcountll(a64[0] ^ b64[0]) +
-           __builtin_popcountll(a64[1] ^ b64[1]) +
-           __builtin_popcountll(a64[2] ^ b64[2]) +
-           __builtin_popcountll(a64[3] ^ b64[3]);
+    return PopCount64(a64[0] ^ b64[0]) +
+           PopCount64(a64[1] ^ b64[1]) +
+           PopCount64(a64[2] ^ b64[2]) +
+           PopCount64(a64[3] ^ b64[3]);
 }
 
 } //namespace ORB_SLAM2

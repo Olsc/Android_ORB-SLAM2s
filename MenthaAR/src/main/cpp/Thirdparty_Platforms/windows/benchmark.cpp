@@ -16,6 +16,7 @@
 #include <csignal>
 #include <cstdio>   // popen, pclose, fgets
 #include <cstdlib>  // std::system
+#include <cstring>  // std::memcpy
 #ifdef _WIN32
 #include <windows.h>
 #include <psapi.h>
@@ -53,6 +54,10 @@ bool gBenchmarkCompleted = false;
 bool gBenchmarkPaused = false;
 std::string gVideoPath = "";
 std::string gOutputPrefix = "benchmark_report";
+// 性能与显示模式由程序自动判定，不暴露命令行开关。
+// gMaxSpeed 控制 30FPS 节流，gNoGui 控制是否显示窗口，当前均关闭。
+constexpr bool gMaxSpeed = false;
+constexpr bool gNoGui    = false;
 
 // 信号处理：Ctrl+C 提前结束并输出报告
 volatile bool gStopRequested = false;
@@ -182,6 +187,123 @@ static std::string tryStripAudioStream(const std::string& path) {
         return fixed;
     }
     return "";
+}
+
+// ffmpeg 快速解码：检测到 ffmpeg 时按视频原始分辨率逐帧流式读取，避免 OpenCV 的解码瓶颈。
+#ifdef _WIN32
+#  define BENCH_POPEN  _popen
+#  define BENCH_PCLOSE _pclose
+#else
+#  define BENCH_POPEN  popen
+#  define BENCH_PCLOSE pclose
+#endif
+
+static bool probeFfmpeg() {
+#ifdef _WIN32
+    FILE* which = BENCH_POPEN("where ffmpeg 2>NUL", "r");
+#else
+    FILE* which = BENCH_POPEN("which ffmpeg 2>/dev/null", "r");
+#endif
+    if (!which) return false;
+    char buf[16] = {};
+    bool ok = (fgets(buf, sizeof(buf), which) != nullptr);
+    BENCH_PCLOSE(which);
+    return ok;
+}
+
+// ffmpeg 视频流读取器：按视频原始分辨率解码 BGR，经管道逐帧读取，不缓存整段视频。
+struct FFmpegVideoReader {
+    FILE* pipe = nullptr;
+    int width = 0;
+    int height = 0;
+    std::vector<uchar> buf;
+
+    ~FFmpegVideoReader() { close(); }
+
+    bool open(const std::string& path, int w, int h) {
+        close();
+        if (w <= 0 || h <= 0) return false;
+        width = w;
+        height = h;
+        buf.resize((size_t)w * (size_t)h * 3u);
+        std::string cmd = "ffmpeg -v error -i \"" + path +
+                          "\" -pix_fmt bgr24 -f rawvideo -";
+#ifdef _WIN32
+        cmd += " 2>NUL";
+#else
+        cmd += " 2>/dev/null";
+#endif
+        pipe = BENCH_POPEN(cmd.c_str(), "rb");
+        return pipe != nullptr;
+    }
+
+    // 读取下一帧，返回 false 表示结束；out 引用内部缓冲，下次 read 前有效。
+    bool read(cv::Mat& out) {
+        if (!pipe) return false;
+        const size_t frameBytes = buf.size();
+        size_t off = 0;
+        while (off < frameBytes) {
+            size_t got = fread(buf.data() + off, 1, frameBytes - off, pipe);
+            if (got == 0) break;
+            off += got;
+        }
+        if (off < frameBytes) {
+            out.release();
+            return false;
+        }
+        out = cv::Mat(height, width, CV_8UC3, buf.data());
+        return true;
+    }
+
+    void close() {
+        if (pipe) {
+            BENCH_PCLOSE(pipe);
+            pipe = nullptr;
+        }
+    }
+};
+
+// 运行 ffprobe 并返回全部标准输出
+static bool runFfprobe(const std::string& args, std::string& out) {
+    std::string cmd = "ffprobe -v error " + args;
+#ifdef _WIN32
+    cmd += " 2>NUL";
+#else
+    cmd += " 2>/dev/null";
+#endif
+    FILE* p = BENCH_POPEN(cmd.c_str(), "r");
+    if (!p) return false;
+    char line[256] = {};
+    out.clear();
+    while (fgets(line, sizeof(line), p)) out += line;
+    BENCH_PCLOSE(p);
+    return !out.empty();
+}
+
+// 查询视频显示分辨率（含 rotation 元数据）；兼容旧版 stream_tags 与新版 stream_side_data。
+static bool probeVideoSize(const std::string& path, int& w, int& h) {
+    const std::string q = "\"" + path + "\"";
+    std::string out;
+    if (!runFfprobe("-select_streams v:0 -show_entries stream=width,height "
+                    "-of default=noprint_wrappers=1 " + q, out))
+        return false;
+    int pw = 0, ph = 0;
+    if (sscanf(out.c_str(), "width=%d", &pw) != 1) return false;
+    const char* hp = std::strstr(out.c_str(), "height=");
+    if (!hp || sscanf(hp, "height=%d", &ph) != 1) return false;
+    if (pw <= 0 || ph <= 0) return false;
+    int rot = 0;
+    if (runFfprobe("-select_streams v:0 -show_entries stream_tags=rotate "
+                   "-of default=noprint_wrappers=1:nokey=1 " + q, out))
+        sscanf(out.c_str(), "%d", &rot);
+    if (rot == 0 && runFfprobe("-select_streams v:0 -show_entries stream_side_data=rotation "
+                               "-of default=noprint_wrappers=1:nokey=1 " + q, out))
+        sscanf(out.c_str(), "%d", &rot);
+    if (rot == 90 || rot == -90 || rot == 270 || rot == -270)
+        std::swap(pw, ph);
+    w = pw;
+    h = ph;
+    return true;
 }
 
 // 跨平台进程内存读取与估计函数
@@ -460,6 +582,9 @@ int main(int argc, char** argv) {
 
     std::cout << "[Benchmark] Loading vocabulary & initializing SLAM..." << std::endl;
     slamSys = new ORB_SLAM2::System("", ORB_SLAM2::System::MONOCULAR);
+    // 共享引擎将 OpenCV 并行线程限制为 2，此处按逻辑核心数覆盖，仅作用于本可执行文件。
+    cv::setNumThreads(cv::getNumberOfCPUs());
+    std::cout << "[Benchmark] OpenCV parallel threads = " << cv::getNumThreads() << std::endl;
     std::cout << "[Benchmark] SLAM engine initialized!" << std::endl;
 
     cv::VideoCapture cap(gVideoPath);
@@ -482,14 +607,16 @@ int main(int argc, char** argv) {
     int totalInputFrames = (int)cap.get(cv::CAP_PROP_FRAME_COUNT);
 
     std::cout << "[Benchmark] Video: " << gVideoPath << " (" << totalInputFrames << " frames @ " << inputFps << " FPS)\n";
-    std::cout << "[Benchmark] Processing Target: Fixed 30 FPS, Loops: " << gTargetLoops << "\n";
+    std::cout << "[Benchmark] Processing Target: " << (gMaxSpeed ? std::string("MAX SPEED (no throttle)") : (std::string("Fixed ") + std::to_string((int)TARGET_FPS) + " FPS")) << ", Loops: " << gTargetLoops << "\n";
 
     cap.set(cv::CAP_PROP_FRAME_WIDTH, ORB_SLAM2::UBUNTU_CAPTURE_WIDTH);
     cap.set(cv::CAP_PROP_FRAME_HEIGHT, ORB_SLAM2::UBUNTU_CAPTURE_HEIGHT);
 
-    cv::namedWindow("MenthaAR SLAM Benchmark Engine", cv::WINDOW_AUTOSIZE);
-    initMenu();
-    cv::setMouseCallback("MenthaAR SLAM Benchmark Engine", onMouse, nullptr);
+    if (!gNoGui) {
+        cv::namedWindow("MenthaAR SLAM Benchmark Engine", cv::WINDOW_AUTOSIZE);
+        initMenu();
+        cv::setMouseCallback("MenthaAR SLAM Benchmark Engine", onMouse, nullptr);
+    }
 
     cv::Mat frame, imgGr, imgRgba;
     int fps = 0;
@@ -499,7 +626,9 @@ int main(int argc, char** argv) {
     int globalFrameId = 0;
 
     auto lastProcessTime = std::chrono::steady_clock::now();
-    const double processInterval = 1.0 / TARGET_FPS;
+    // 输入帧率高于目标时才跳帧，否则逐帧处理，避免快解码时漏送 SLAM。
+    const bool needFrameSkip = (inputFps > TARGET_FPS + 0.5);
+    const double processInterval = (gMaxSpeed || !needFrameSkip) ? 0.0 : 1.0 / TARGET_FPS;
 
     double playBaseMsec = -1.0;
     double playBaseWallMs = 0.0;
@@ -509,16 +638,52 @@ int main(int argc, char** argv) {
             std::chrono::steady_clock::now().time_since_epoch()).count();
     };
 
+    // ffmpeg 以视频原始分辨率快速解码；逐帧流式读取，显示端与 SLAM 端各自缩放。
+    FFmpegVideoReader ffmpegReader;
+    bool useFfmpegFrames = false;
+    int ffmpegNativeW = 0;
+    int ffmpegNativeH = 0;
+    if (probeFfmpeg()) {
+        int pw = 0, ph = 0;
+        if (probeVideoSize(gVideoPath, pw, ph)) {
+            ffmpegNativeW = pw;
+            ffmpegNativeH = ph;
+        } else {
+            ffmpegNativeW = (int)cap.get(cv::CAP_PROP_FRAME_WIDTH);
+            ffmpegNativeH = (int)cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+        }
+        if (ffmpegNativeW > 0 && ffmpegNativeH > 0 &&
+            ffmpegReader.open(gVideoPath, ffmpegNativeW, ffmpegNativeH)) {
+            useFfmpegFrames = true;
+            std::cout << "[Benchmark] ffmpeg fast decoder @ native " << ffmpegNativeW
+                      << "x" << ffmpegNativeH << " (streaming, low memory)" << std::endl;
+        } else {
+            std::cout << "[WARN] ffmpeg fast path failed, falling back to OpenCV VideoCapture (slower decode)" << std::endl;
+        }
+    } else {
+        std::cout << "[WARN] 未检测到 ffmpeg 环境，将使用 OpenCV VideoCapture 解码（速度较慢；建议安装 ffmpeg 并加入 PATH）" << std::endl;
+    }
+
     gRecords.reserve(totalInputFrames > 0 ? totalInputFrames * gTargetLoops : ORB_SLAM2::BENCH_RESERVE_DEFAULT);
+
+    // 帧读取：优先 ffmpeg 流式原始分辨率，否则回退 OpenCV VideoCapture。
+    auto readFrame = [&](cv::Mat& out) -> bool {
+        if (useFfmpegFrames) return ffmpegReader.read(out);
+        cap >> out;
+        return !out.empty();
+    };
+    auto rewindVideo = [&]() {
+        if (useFfmpegFrames) ffmpegReader.open(gVideoPath, ffmpegNativeW, ffmpegNativeH);
+        else cap.set(cv::CAP_PROP_POS_FRAMES, 0);
+    };
 
     while (!gStopRequested) {
         if (!gBenchmarkCompleted && !gBenchmarkPaused) {
-            cap >> frame;
-            if (frame.empty()) {
+            if (!readFrame(frame)) {
                 if (gCurrentLoop < gTargetLoops) {
                     gCurrentLoop++;
-                    cap.set(cv::CAP_PROP_POS_FRAMES, 0);
-                    cap >> frame;
+                    rewindVideo();
+                    readFrame(frame);
                     frameIdx = 0;
                     playBaseMsec = -1.0;
                     std::cout << "\n[Benchmark] Advanced to Loop " << gCurrentLoop << " / " << gTargetLoops << std::endl;
@@ -527,35 +692,41 @@ int main(int argc, char** argv) {
                     gScoreCard = calculateScoreCard(gRecords, globalFrameId);
                     printTerminalReport(gScoreCard);
                     exportReports(gOutputPrefix, gScoreCard, gRecords);
+                    if (gNoGui) gStopRequested = true;  // 无头模式：报告输出后直接结束
                 }
             }
         }
 
-        // 墙钟播放同步
+        // 墙钟播放同步（按视频时间戳实时节奏播放）
         char key = -1;
         if (!frame.empty() && !gBenchmarkCompleted && !gBenchmarkPaused) {
             frameIdx++;
-            double curMsec = cap.get(cv::CAP_PROP_POS_MSEC);
-            if (curMsec < 0) curMsec = (frameIdx - 1) * 1000.0 / inputFps;
-            if (playBaseMsec < 0 || curMsec < playBaseMsec - 500.0) {
-                playBaseMsec = curMsec;
-                playBaseWallMs = nowWallMs();
-            }
-            double videoElapsed = curMsec - playBaseMsec;
-            double wallElapsed = nowWallMs() - playBaseWallMs;
-            if (videoElapsed > wallElapsed + 3.0) {
-                double need = videoElapsed - wallElapsed;
-                double waited = 0.0;
-                while (waited < need) {
-                    double step = std::min(need - waited, 5.0);
-                    std::this_thread::sleep_for(std::chrono::duration<double, std::milli>(step));
-                    waited += step;
-                    char k = (char)cv::waitKey(1);
-                    if (k == 27 || k == 'q') { key = k; break; }
+            if (!gMaxSpeed) {
+                double curMsec = useFfmpegFrames ? ((frameIdx - 1) * 1000.0 / inputFps)
+                                                 : cap.get(cv::CAP_PROP_POS_MSEC);
+                if (curMsec < 0) curMsec = (frameIdx - 1) * 1000.0 / inputFps;
+                if (playBaseMsec < 0 || curMsec < playBaseMsec - 500.0) {
+                    playBaseMsec = curMsec;
+                    playBaseWallMs = nowWallMs();
                 }
-            } else if (wallElapsed - videoElapsed > 250.0) {
-                playBaseMsec = curMsec;
-                playBaseWallMs = nowWallMs();
+                double videoElapsed = curMsec - playBaseMsec;
+                double wallElapsed = nowWallMs() - playBaseWallMs;
+                if (videoElapsed > wallElapsed + 3.0) {
+                    double need = videoElapsed - wallElapsed;
+                    double waited = 0.0;
+                    while (waited < need) {
+                        double step = std::min(need - waited, 5.0);
+                        std::this_thread::sleep_for(std::chrono::duration<double, std::milli>(step));
+                        waited += step;
+                        if (!gNoGui) {
+                            char k = (char)cv::waitKey(1);
+                            if (k == 27 || k == 'q') { key = k; break; }
+                        }
+                    }
+                } else if (wallElapsed - videoElapsed > 250.0) {
+                    playBaseMsec = curMsec;
+                    playBaseWallMs = nowWallMs();
+                }
             }
         }
         if (key == 27 || key == 'q') break;
@@ -570,18 +741,20 @@ int main(int argc, char** argv) {
             lastTime = currentTime;
         }
 
-        if (!frame.empty()) {
-            const int MAX_DISPLAY_W = ORB_SLAM2::UBUNTU_MAX_DISPLAY_W;
-            const int MAX_DISPLAY_H = ORB_SLAM2::UBUNTU_MAX_DISPLAY_H;
-            if (frame.cols > MAX_DISPLAY_W || frame.rows > MAX_DISPLAY_H) {
-                float scale = std::min((float)MAX_DISPLAY_W / frame.cols,
-                                       (float)MAX_DISPLAY_H / frame.rows);
-                cv::resize(frame, imgRgba, cv::Size(), scale, scale, cv::INTER_AREA);
-            } else {
-                imgRgba = frame.clone();
+        if (!gNoGui) {
+            if (!frame.empty()) {
+                const int MAX_DISPLAY_W = ORB_SLAM2::UBUNTU_MAX_DISPLAY_W;
+                const int MAX_DISPLAY_H = ORB_SLAM2::UBUNTU_MAX_DISPLAY_H;
+                if (frame.cols > MAX_DISPLAY_W || frame.rows > MAX_DISPLAY_H) {
+                    float scale = std::min((float)MAX_DISPLAY_W / frame.cols,
+                                           (float)MAX_DISPLAY_H / frame.rows);
+                    cv::resize(frame, imgRgba, cv::Size(), scale, scale, cv::INTER_AREA);
+                } else {
+                    imgRgba = frame.clone();
+                }
+            } else if (imgRgba.empty()) {
+                imgRgba = cv::Mat::zeros(720, 1280, CV_8UC3);
             }
-        } else if (imgRgba.empty()) {
-            imgRgba = cv::Mat::zeros(720, 1280, CV_8UC3);
         }
 
         // ORB / SLAM 处理节流
@@ -590,7 +763,7 @@ int main(int argc, char** argv) {
             double procDt = std::chrono::duration_cast<std::chrono::duration<double>>(now - lastProcessTime).count();
             if (procDt >= processInterval) {
                 lastProcessTime = now;
-                timeStamp += processInterval;
+                timeStamp += 1.0 / TARGET_FPS;  // 每个被处理的帧代表 1/30s 视频时间
 
                 cv::cvtColor(frame, imgGr, cv::COLOR_BGR2GRAY);
                 cv::Mat imgSmall;
@@ -641,7 +814,7 @@ int main(int argc, char** argv) {
         }
 
         // 可视化点云渲染 (加锁保护 vMPs 与地图数据)
-        if (gEnablePointCloudDisplay) {
+        if (!gNoGui && gEnablePointCloudDisplay) {
             std::lock_guard<std::mutex> lockPoints(gMapDataMutex);
             if (status == ORB_SLAM2::Tracking::OK && slamSys->HasMapAlignment()) {
                 cv::Mat TcwAligned = slamSys->GetMapAlignedPose(Tcw);
@@ -658,24 +831,26 @@ int main(int argc, char** argv) {
         int numKFs = slamSys ? slamSys->GetNumKeyFrames() : 0;
         MemoryInfo memInfo = getMemoryInfo(numMPs, numKFs);
 
-        // 绘制桌面交互式 UI 面板
-        drawGUI(imgRgba, status, fps, memInfo, gCurrentLoop, gTargetLoops);
+        // 绘制桌面交互式 UI 面板与内存仪表盘（无头模式跳过）
+        if (!gNoGui) {
+            drawGUI(imgRgba, status, fps, memInfo, gCurrentLoop, gTargetLoops);
 
-        // 绘制可视化内存分布仪表盘
-        if (gShowMemoryPanel) {
-            drawMemoryDashboard(imgRgba, memInfo, gRssHistory);
-        }
+            // 绘制可视化内存分布仪表盘
+            if (gShowMemoryPanel) {
+                drawMemoryDashboard(imgRgba, memInfo, gRssHistory);
+            }
 
-        // 评测完成时绘制综合性能评分卡模态框
-        if (gBenchmarkCompleted) {
-            drawScoreCardModal(imgRgba, gScoreCard);
-        }
+            // 评测完成时绘制综合性能评分卡模态框
+            if (gBenchmarkCompleted) {
+                drawScoreCardModal(imgRgba, gScoreCard);
+            }
 
-        cv::imshow("MenthaAR SLAM Benchmark Engine", imgRgba);
+            cv::imshow("MenthaAR SLAM Benchmark Engine", imgRgba);
 
-        if (key == -1) {
-            char k2 = (char)cv::waitKey(1);
-            if (k2 == 27 || k2 == 'q') break;
+            if (key == -1) {
+                char k2 = (char)cv::waitKey(1);
+                if (k2 == 27 || k2 == 'q') break;
+            }
         }
     }
 
