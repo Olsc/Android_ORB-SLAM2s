@@ -104,7 +104,7 @@ Currently tested primarily on Qualcomm Snapdragon platform CPUs:
 | Snapdragon 7s Gen 2     | Redmi Pad Pro         | 30 FPS      |
 | Snapdragon 6s Gen 2     | Redmi Pad 2 SE 4G     | 30 FPS      |
 | Snapdragon 835          | Xiaomi 6              | 20-30 FPS   |
-| Snapdragon AR1 Gen 1    | Rokid Glass3          | 20-30 FPS   |
+| Snapdragon AR1 Gen 1    | Rokid Glass3          | 30 FPS      |
 | MediaTek Dimensity 6300 | Lenovo Xiaoxin Pad 11 | 20-30 FPS   |
 
 ### 🌑 Dark Frame Detection
