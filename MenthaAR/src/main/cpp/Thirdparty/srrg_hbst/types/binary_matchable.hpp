@@ -55,8 +55,11 @@ namespace srrg_hbst {
       number_of_objects(1),
       _image_identifier(image_identifier_),
       _object(std::move(object_)) {
+      // 未启用描述子合并时，单对象直接内联存于 _object
+#ifdef SRRG_MERGE_DESCRIPTORS
       objects.insert(std::make_pair(_image_identifier, _object));
       assert(number_of_objects == objects.size());
+#endif
     }
 
     //! @brief 从对象映射构造
@@ -98,6 +101,10 @@ namespace srrg_hbst {
     distance(const BinaryMatchable<ObjectType_, descriptor_size_bits_>* matchable_query_) const {
       return (matchable_query_->descriptor ^ this->descriptor).count();
     }
+
+    // 单对象访问，仅在未启用描述子合并（number_of_objects==1）时有效
+    inline const ObjectType& singleObject() const { return _object; }
+    inline const uint64_t& singleImageIdentifier() const { return _image_identifier; }
 
   #ifdef SRRG_MERGE_DESCRIPTORS
     //! @brief 将另一个 matchable 合并到当前对象（用于存储相同描述子时去重）

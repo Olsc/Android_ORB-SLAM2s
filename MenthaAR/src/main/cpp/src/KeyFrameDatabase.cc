@@ -106,6 +106,8 @@ vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float mi
 
         if (pKF->mDescriptors.empty()) return vector<KeyFrame*>();
 
+        // 使用瞬时 query matchables，而非 pKF->GetHBSTTree()，避免为全图关键帧常驻 HBST 树；
+        // 本函数对每个关键帧都会调用一次。
         std::vector<size_t> objects(pKF->N);
         for(int i=0; i<pKF->N; i++) objects[i] = i;
 

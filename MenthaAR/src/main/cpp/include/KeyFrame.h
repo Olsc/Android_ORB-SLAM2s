@@ -105,6 +105,8 @@ public:
     void ReplaceMapPointMatch(const size_t &idx, MapPoint* pMP);
     std::set<MapPoint*> GetMapPoints();
     std::vector<MapPoint*> GetMapPointMatches();
+    // 将本关键帧的观测点追加到调用方缓冲
+    void AppendMapPointMatches(std::vector<MapPoint*>& out);
     int TrackedMapPoints(const int &minObs);
     MapPoint* GetMapPoint(const size_t &idx);
 

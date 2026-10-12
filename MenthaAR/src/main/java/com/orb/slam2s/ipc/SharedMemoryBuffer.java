@@ -37,6 +37,7 @@ import java.io.FileDescriptor;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
 
 /**
  * SLAM 跨进程共享内存：Header + Y 双缓冲 + 点云区。
@@ -65,6 +66,7 @@ public class SharedMemoryBuffer {
     private SharedMemory sharedMemory; // API 27+ 共享内存
     private MemoryFile memoryFile;     // API < 27 匿名内存文件 (ashmem)
     private ByteBuffer mappedBuffer;   // API 27+ 本进程映射直接内存
+    private FloatBuffer mappedFloatView; // mappedBuffer 的 float 视图
     private ParcelFileDescriptor pfd;  // 跨进程传递给 SLAM 服务端的 fd
 
     private int frameW;
@@ -77,6 +79,7 @@ public class SharedMemoryBuffer {
                 sharedMemory = SharedMemory.create(name, size);
                 mappedBuffer = sharedMemory.mapReadWrite();
                 mappedBuffer.order(ByteOrder.LITTLE_ENDIAN);
+                mappedFloatView = mappedBuffer.asFloatBuffer();
 
                 // 借 Parcelable 序列化在底层 dup fd，避免调用非公开隐藏接口 SharedMemory#getFd()
                 Parcel parcel = Parcel.obtain();
@@ -186,10 +189,10 @@ public class SharedMemoryBuffer {
 
     public boolean readMvp(float[] out48) {
         if (out48 == null || out48.length < 48) return false;
-        if (mappedBuffer != null) {
-            for (int i = 0; i < 48; i++) {
-                out48[i] = mappedBuffer.getFloat(OFF_MVP + i * 4);
-            }
+        if (mappedFloatView != null) {
+            // 批量读取 48 个 float（M/V/P 各 16）
+            mappedFloatView.position(OFF_MVP / 4);
+            mappedFloatView.get(out48, 0, 48);
             return true;
         } else if (memoryFile != null) {
             byte[] b = new byte[48 * 4];
@@ -214,11 +217,10 @@ public class SharedMemoryBuffer {
         int floats = Math.min(bytes / 4, Math.min(maxFloats, out.length));
         if (floats <= 0) return 0;
 
-        if (mappedBuffer != null) {
-            int base = pointCloudOffset();
-            for (int i = 0; i < floats; i++) {
-                out[i] = mappedBuffer.getFloat(base + i * 4);
-            }
+        if (mappedFloatView != null) {
+            // 批量读取点云 float 缓冲
+            mappedFloatView.position(pointCloudOffset() / 4);
+            mappedFloatView.get(out, 0, floats);
             return floats;
         } else if (memoryFile != null) {
             byte[] b = new byte[floats * 4];
@@ -272,6 +274,7 @@ public class SharedMemoryBuffer {
                 SharedMemory.unmap(mappedBuffer);
             }
             mappedBuffer = null;
+            mappedFloatView = null;
             if (sharedMemory != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
                 sharedMemory.close();
                 sharedMemory = null;
