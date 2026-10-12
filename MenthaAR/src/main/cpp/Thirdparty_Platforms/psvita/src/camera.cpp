@@ -1,5 +1,5 @@
 #include "camera.h"
-#include "config.h"
+#include "vita_config.h"
 
 #include <string.h>
 

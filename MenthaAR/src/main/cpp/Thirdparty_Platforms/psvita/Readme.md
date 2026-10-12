@@ -42,6 +42,9 @@ MenthaAR 的 PlayStation Vita 版本（实验性）。
 export VITASDK=/usr/local/vitasdk
 export PATH=$VITASDK/bin:$PATH
 
+# 安装图形库 vita2d（VitaSDK 默认不包含，由 vdpm 提供）
+vdpm install vita/libvita2d
+
 cd MenthaAR/src/main/cpp/Thirdparty_Platforms/psvita
 # 首次拉取：初始化 mini OpenCV 子模块
 git submodule update --init --recursive
@@ -49,6 +52,11 @@ mkdir -p build && cd build
 cmake ..
 make -j$(nproc)
 ```
+
+> `vdpm` 随 VitaSDK 一起安装于 `$VITASDK/bin/vdpm`。若提示
+> `vita2d.h: No such file or directory`，说明 `vita/libvita2d` 尚未安装，
+> 重新执行上面的 `vdpm install` 即可（会自动装好 freetype/zlib/libpng
+> 等依赖）。
 
 产物：
 

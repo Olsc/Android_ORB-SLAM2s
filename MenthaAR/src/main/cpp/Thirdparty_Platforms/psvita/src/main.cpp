@@ -16,7 +16,7 @@
 
 #include "camera.h"
 #include "renderer.h"
-#include "config.h"        // Vita 端常量：SCR_W、CAM_W、PACK_RGBA
+#include "vita_config.h"        // Vita 端常量：SCR_W、CAM_W、PACK_RGBA
 
 #define MAP_PATH "ux0:data/MenthaAR/mentha_map.bin"
 #define MAP_DIR  "ux0:data/MenthaAR"
