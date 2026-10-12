@@ -469,8 +469,8 @@ namespace srrg_hbst {
               if (distance < maximum_distance_) {
                 matches_.push_back(Match(matchable_query,
                                          matchable_reference,
-                                         matchable_query->objects.begin()->second,
-                                         matchable_reference->objects.begin()->second,
+                                         matchable_query->singleObject(),
+                                         matchable_reference->singleObject(),
                                          distance));
                 break;
               }
@@ -520,8 +520,8 @@ namespace srrg_hbst {
             if (matchable_reference_best) {
               matches_.push_back(Match(matchable_query,
                                        matchable_reference_best,
-                                       matchable_query->objects.begin()->second,
-                                       matchable_reference_best->objects.begin()->second,
+                                       matchable_query->singleObject(),
+                                       matchable_reference_best->singleObject(),
                                        distance_best));
             }
             break;
@@ -553,10 +553,6 @@ namespace srrg_hbst {
 
       // ds 為樹中所有標識符準備匹配向量映射
       matches_.clear();
-      // 不按查询规模预留：单帧匹配中每个关键帧通常仅命中个位数匹配
-      for (const uint64_t identifier_tree : _added_identifiers_train) {
-        matches_.insert(std::make_pair(identifier_tree, MatchVector()));
-      }
 
       // 在循环外部定义并预分配 MatchMap 内存，实现单帧查找的零堆内存分配
       MatchMap best_matches;
@@ -583,7 +579,7 @@ namespace srrg_hbst {
 
             // ds 在輸出結構中註冊所有匹配
             for (const auto& best_match : best_matches) {
-              matches_.at(best_match.first).push_back(best_match.second);
+              matches_[best_match.first].push_back(best_match.second);
             }
             break;
           }
@@ -1032,6 +1028,24 @@ namespace srrg_hbst {
                      reinterpret_cast<const char*>(&matchable->number_of_objects),
                      sizeof(uint64_t),
                      "BinaryTree::write|ERROR: unable to write number of objects");
+          assert(matchable->number_of_objects >= 1);
+#ifndef SRRG_MERGE_DESCRIPTORS
+          // 未合并模式下单对象由内联字段写出
+          {
+            const uint64_t key = matchable->_image_identifier;
+            const ObjectType obj = matchable->_object;
+            GUARDED_IO(outfile,
+                       write,
+                       reinterpret_cast<const char*>(&key),
+                       sizeof(uint64_t),
+                       "BinaryTree::write|ERROR: unable to write object key");
+            GUARDED_IO(outfile,
+                       write,
+                       reinterpret_cast<const char*>(&obj),
+                       sizeof(ObjectType),
+                       "BinaryTree::write|ERROR: unable to write object data");
+          }
+#else
           assert(matchable->number_of_objects == matchable->objects.size());
           for (const ObjectMapElement& element : matchable->objects) {
             GUARDED_IO(outfile,
@@ -1045,6 +1059,7 @@ namespace srrg_hbst {
                        sizeof(ObjectType),
                        "BinaryTree::write|ERROR: unable to write object data");
           }
+#endif
         }
       }
       outfile.close();
@@ -1351,14 +1366,15 @@ namespace srrg_hbst {
                           const MatchableVector& matchables_reference_,
                           const uint32_t& maximum_distance_matching_,
                           MatchMap& best_matches_) const {
-      ObjectType object_query = matchable_query_->objects.at(matchable_query_->_image_identifier);
+      // 未启用描述子合并时单对象内联于 _object
+      ObjectType object_query = matchable_query_->_object;
 
       for (const Matchable* matchable_reference : matchables_reference_) {
         const uint32_t distance = matchable_query_->distance(matchable_reference);
 
         if (distance < maximum_distance_matching_) {
           const uint64_t& identifer_tree_reference = matchable_reference->_image_identifier;
-          ObjectType object_reference = matchable_reference->objects.at(identifer_tree_reference);
+          ObjectType object_reference = matchable_reference->_object;
 
           auto it = best_matches_.end();
           for (auto i = best_matches_.begin(); i != best_matches_.end(); ++i) {

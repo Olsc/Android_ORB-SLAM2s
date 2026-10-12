@@ -146,7 +146,10 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
     std::unique_lock<std::mutex> lock2(mMutexState);
     mTrackingState = mpTracker->mState;
     mTrackedMapPoints = mpTracker->mCurrentFrame.mvpMapPoints;
+#ifndef __ANDROID__
+    // 关键点快照仅供桌面/psvita 平台的可视化叠加使用
     mTrackedKeyPointsUn = mpTracker->mCurrentFrame.mvKeysUn;
+#endif
     return Tcw;
 }
 
@@ -513,9 +516,16 @@ int System::GetNumMapPoints()
 
 std::vector<MapPoint*> System::GetAllMapPoints()
 {
+    // 单子地图为常态，直接返回
+    if (mvpMaps.size() <= 1) {
+        Map* pOnly = mpMap ? mpMap : (mvpMaps.empty() ? nullptr : mvpMaps[0]);
+        return pOnly ? pOnly->GetAllMapPoints() : std::vector<MapPoint*>();
+    }
+
     // 聚合当前所有有效子地图中的地图点，确保切图后历史三维点云持续稳定呈现
     std::vector<MapPoint*> allPoints;
     std::unordered_set<MapPoint*> seen;
+    seen.reserve(1024);
     for (Map* pMap : mvpMaps) {
         if (!pMap) continue;
         std::vector<MapPoint*> pts = pMap->GetAllMapPoints();
@@ -539,13 +549,11 @@ void System::SaveMap(const std::string &filename, int maxMapPoints)
     std::vector<MapPoint*> vpMPs = mpMap->GetAllMapPoints();
 
     // 1. 过滤无效(null/bad)的关键帧与地图点
-    std::vector<KeyFrame*> vpValidKFs;
-    vpValidKFs.reserve(vpKFs.size());
+    uint32_t nKFs = 0;
     for(KeyFrame* pKF : vpKFs) {
         if(pKF && !pKF->isBad())
-            vpValidKFs.push_back(pKF);
+            ++nKFs;
     }
-    std::sort(vpValidKFs.begin(), vpValidKFs.end(), KeyFrame::lId);
 
     std::vector<MapPoint*> vpValidMPs;
     vpValidMPs.reserve(vpMPs.size());
@@ -581,51 +589,10 @@ void System::SaveMap(const std::string &filename, int maxMapPoints)
     ofs.write(reinterpret_cast<const char*>(&version), sizeof(version));
 
     // 写入实际保存的关键帧与地图点数量（保证二进制序列化头准确）
-    uint32_t nKFs = static_cast<uint32_t>(vpValidKFs.size());
     uint32_t nMPs = static_cast<uint32_t>(vpValidMPs.size());
     ofs.write(reinterpret_cast<const char*>(&nKFs), sizeof(nKFs));
     ofs.write(reinterpret_cast<const char*>(&nMPs), sizeof(nMPs));
     LOGD("保存地图: 实际写入 关键帧=%u 地图点=%u", nKFs, nMPs);
-
-    // 关键帧：[id][时间戳][位姿 16个浮点数][关键点数量][关键点及描述子]
-    for(KeyFrame* pKF : vpValidKFs)
-    {
-        uint32_t id = static_cast<uint32_t>(pKF->mnId);
-        ofs.write(reinterpret_cast<const char*>(&id), sizeof(id));
-        double ts = pKF->mTimeStamp;
-        ofs.write(reinterpret_cast<const char*>(&ts), sizeof(ts));
-        cv::Mat Tcw = pKF->GetPose();
-        float data[16] = {0};
-        cv::Mat Tcwm = Tcw;
-        // 行优先 4x4矩阵
-        for(int r=0;r<4;r++) for(int c=0;c<4;c++) data[r*4+c] = Tcwm.at<float>(r,c);
-        ofs.write(reinterpret_cast<const char*>(data), sizeof(data));
-
-        // 保存关键点和描述子（用于更好的重定位）
-        const std::vector<cv::KeyPoint>& vKeys = pKF->mvKeysUn;
-        const cv::Mat& descriptors = pKF->mDescriptors;
-        uint32_t numKeys = static_cast<uint32_t>(vKeys.size());
-        ofs.write(reinterpret_cast<const char*>(&numKeys), sizeof(numKeys));
-
-        if(numKeys > 0) {
-            // 保存关键点（仅保存位置、尺度、角度）
-            for(const auto& kp : vKeys) {
-                float kpData[4] = {kp.pt.x, kp.pt.y, kp.size, kp.angle};
-                ofs.write(reinterpret_cast<const char*>(kpData), sizeof(kpData));
-            }
-
-            // 保存描述子
-            if(!descriptors.empty() && descriptors.rows == numKeys) {
-                uint32_t descCols = descriptors.cols;
-                ofs.write(reinterpret_cast<const char*>(&descCols), sizeof(descCols));
-                ofs.write(reinterpret_cast<const char*>(descriptors.data),
-                         descriptors.rows * descriptors.cols * sizeof(uchar));
-            } else {
-                uint32_t descCols = 0;
-                ofs.write(reinterpret_cast<const char*>(&descCols), sizeof(descCols));
-            }
-        }
-    }
 
     // 地图点格式: [id][坐标 3浮点][描述符长度+数据][法向量 3浮点][最小距离][最大距离]
     for(MapPoint* pMP : vpValidMPs)
@@ -733,48 +700,6 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
 
     // 调整重定位配置以提高加载地图后的跟踪稳定性
     mpTracker->SetRelocConfig(SYSTEM_RELOC_CONFIG_TOP_K, SYSTEM_RELOC_CONFIG_MAX_CANDIDATES, SYSTEM_RELOC_CONFIG_MATCH_CHUNK, SYSTEM_RELOC_CONFIG_BG_SLEEP_US, SYSTEM_RELOC_CONFIG_MAX_BIND_INLIERS, SYSTEM_RELOC_CONFIG_MAX_PROJ_BINDS);
-
-    // 加载关键帧（MAP1格式包含完整特征点和描述子）
-    uint32_t readKFs = 0;
-    for(uint32_t i=0;i<nKFs;i++)
-    {
-        uint32_t id; double ts; float data[16];
-        ifs.read(reinterpret_cast<char*>(&id),4);
-        ifs.read(reinterpret_cast<char*>(&ts),sizeof(ts));
-        ifs.read(reinterpret_cast<char*>(data),sizeof(data));
-
-        // 读取关键点和描述子
-        uint32_t numKeys = 0;
-        ifs.read(reinterpret_cast<char*>(&numKeys), sizeof(numKeys));
-
-        if(numKeys > 0) {
-            // 读取关键点
-            std::vector<cv::KeyPoint> vKeys;
-            vKeys.reserve(numKeys);
-            for(uint32_t j=0; j<numKeys; j++) {
-                float kpData[4];
-                ifs.read(reinterpret_cast<char*>(kpData), sizeof(kpData));
-                cv::KeyPoint kp;
-                kp.pt.x = kpData[0];
-                kp.pt.y = kpData[1];
-                kp.size = kpData[2];
-                kp.angle = kpData[3];
-                vKeys.push_back(kp);
-            }
-
-            // 读取描述子
-            uint32_t descCols = 0;
-            ifs.read(reinterpret_cast<char*>(&descCols), sizeof(descCols));
-            if(descCols > 0) {
-                cv::Mat descriptors(numKeys, descCols, CV_8U);
-                ifs.read(reinterpret_cast<char*>(descriptors.data),
-                        numKeys * descCols * sizeof(uchar));
-            }
-        }
-
-        readKFs++;
-    }
-    LOGD("加载地图: 已读关键帧=%u", readKFs);
 
     // 加载地图点：创建点并恢复完整的描述子和几何信息用于匹配
     uint32_t createdMPs = 0;

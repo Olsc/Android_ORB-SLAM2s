@@ -112,17 +112,23 @@ public class SlamService extends Service {
         }
 
         @Override
-        public void saveMap(String mapPath) {
-            if (nativeHelper != null) {
-                nativeHelper.saveMap(mapPath);
-            }
+        public void saveMap(final String mapPath) {
+            // 与帧处理同一处理线程串行执行：避免保存过程中与帧/建图线程并发遍历并改写地图（native 侧 SaveMap 会读取全部 KF/MP，并可能补齐描述子）
+            postTask(() -> {
+                if (nativeHelper != null) {
+                    nativeHelper.saveMap(mapPath);
+                }
+            });
         }
 
         @Override
-        public void loadMapWithId(String mapPath, int mapId, boolean append) {
-            if (nativeHelper != null) {
-                nativeHelper.loadMapWithId(mapPath, mapId, append);
-            }
+        public void loadMapWithId(final String mapPath, final int mapId, final boolean append) {
+            // 与帧处理同一处理线程串行执行：加载会重建当前地图内容，必须与帧处理互斥（native 侧另有 gProcessingFrames 等待作为双重保障）
+            postTask(() -> {
+                if (nativeHelper != null) {
+                    nativeHelper.loadMapWithId(mapPath, mapId, append);
+                }
+            });
         }
 
         @Override

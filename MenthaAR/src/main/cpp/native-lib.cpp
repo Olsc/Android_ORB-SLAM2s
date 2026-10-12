@@ -44,9 +44,8 @@ double timeStamp;
 bool slamInitialized = false;
 
 std::vector<ORB_SLAM2::MapPoint*> vMPs;
-std::vector<cv::KeyPoint> vKeys;
 
-// 用于vMPs和vKeys线程安全访问的互斥锁
+// 用于 vMPs 线程安全访问的互斥锁
 std::mutex gMapPointsMutex;
 
 // 点云显示开关（同时控制绿色和蓝色点云）：由 binder/UI 线程写、SLAM 线程读，保持原子量
@@ -432,7 +431,6 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
         {
             std::lock_guard<std::mutex> _mpLock(gMapPointsMutex);
             vMPs = currentSlamSys->GetTrackedMapPoints();
-            vKeys = currentSlamSys->GetTrackedKeyPointsUn();
         }
 
         status = localStatus;
@@ -1067,7 +1065,6 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeShutdown(JNIEnv* env, jobject inst
     {
         std::lock_guard<std::mutex> lock(gMapPointsMutex);
         vMPs.clear();
-        vKeys.clear();
     }
     {
         std::lock_guard<std::mutex> lock(gTcwLock);

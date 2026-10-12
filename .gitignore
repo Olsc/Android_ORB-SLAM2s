@@ -96,3 +96,16 @@ MenthaAR/src/main/cpp/Thirdparty_Platforms/ubuntu/dist/
 MenthaAR/src/main/cpp/Thirdparty_Platforms/ubuntu/packaging/
 
 /XML/
+知识.md
+
+
+.DS_Store
+MenthaAR/.DS_Store
+MenthaAR/src/.DS_Store
+MenthaAR/src/main/.DS_Store
+MenthaAR/src/main/cpp/.DS_Store
+MenthaAR/src/main/cpp/Thirdparty_Platforms/.DS_Store
+
+
+
+MenthaAR/src/main/cpp/Thirdparty_Platforms/test.mp4

@@ -708,7 +708,8 @@ void Tracking::GlobalRelocLoop(int sessionId)
             }
 
             // 提取当前帧快照
-            if(!mLastDesc.empty()) desc = mLastDesc.clone();
+            // 描述子浅拷贝，数据缓冲不可变
+            if(!mLastDesc.empty()) desc = mLastDesc;
             keys = mLastKeysUn;
             N = mLastN;
             ts = mLastTimestamp;
@@ -1320,7 +1321,8 @@ void Tracking::Track()
         mLastTrackingInliers.store(mnMatchesInliers);
 
         cv::Mat tempTcw = mCurrentFrame.mTcw.clone();
-        cv::Mat tempDesc = mCurrentFrame.mDescriptors.clone();
+        // 描述子缓冲只读，换帧时整体替换
+        cv::Mat tempDesc = mCurrentFrame.mDescriptors;
         std::vector<cv::KeyPoint> tempKeysUn = mCurrentFrame.mvKeysUn;
 
         {
@@ -2379,14 +2381,17 @@ void Tracking::UpdateLocalPoints()
 {
     mvpLocalMapPoints.clear();
 
+    // 线程局部复用缓冲，减少重复分配
+    static thread_local std::vector<MapPoint*> s_vpKFMatches;
     for(vector<KeyFrame*>::const_iterator itKF=mvpLocalKeyFrames.begin(), itEndKF=mvpLocalKeyFrames.end(); itKF!=itEndKF; itKF++)
     {
         KeyFrame* pKF = *itKF;
-        const vector<MapPoint*> vpMPs = pKF->GetMapPointMatches();
+        s_vpKFMatches.clear();
+        pKF->AppendMapPointMatches(s_vpKFMatches);
 
-        for(vector<MapPoint*>::const_iterator itMP=vpMPs.begin(), itEndMP=vpMPs.end(); itMP!=itEndMP; itMP++)
+        for(size_t i=0, n=s_vpKFMatches.size(); i<n; ++i)
         {
-            MapPoint* pMP = *itMP;
+            MapPoint* pMP = s_vpKFMatches[i];
             if(!pMP)
                 continue;
             if(pMP->mnTrackReferenceForFrame==mCurrentFrame.mnId)

@@ -338,6 +338,13 @@ vector<MapPoint*> KeyFrame::GetMapPointMatches()
     return mvpMapPoints;
 }
 
+void KeyFrame::AppendMapPointMatches(std::vector<MapPoint*>& out)
+{
+    // 锁内直接追加到调用方缓冲
+    unique_lock<mutex> lock(mMutexFeatures);
+    out.insert(out.end(), mvpMapPoints.begin(), mvpMapPoints.end());
+}
+
 MapPoint* KeyFrame::GetMapPoint(const size_t &idx)
 {
     unique_lock<mutex> lock(mMutexFeatures);

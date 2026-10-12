@@ -252,7 +252,7 @@ int ORBmatcher::SearchByHBST(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoi
         int bestDist2 = ORB_MAX_DISTANCE;
 
         for (const auto* candidate : candidates) {
-            size_t realIdxF = candidate->objects.begin()->second;
+            size_t realIdxF = candidate->singleObject();
 
             if (vpMapPointMatches[realIdxF])
                 continue;
@@ -666,7 +666,7 @@ int ORBmatcher::SearchByHBST(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> 
         int bestDist2 = ORB_MAX_DISTANCE;
 
         for (const auto* candidate : candidates) {
-            size_t idx2 = candidate->objects.begin()->second;
+            size_t idx2 = candidate->singleObject();
 
             MapPoint* pMP2 = vpMapPoints2[idx2];
             if (!pMP2 || pMP2->isBad() || vbMatched2[idx2])
