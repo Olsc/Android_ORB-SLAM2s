@@ -6,6 +6,26 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # ----------------------------------------------------------------------------
+# 可移植性配置：
+#  1) 最低部署版本设为 macOS 11.0 (Big Sur)，让产物可在所有 Apple Silicon Mac
+#     及更老系统上运行（而非仅限编译机当前的 macOS 版本）。
+#     macOS 11 是首个支持 Apple Silicon 的系统，设为 11.0 即覆盖全部 M 系列机型。
+#     如需更低可改为 10.15，但 OpenCV AVFoundation/Cocoa 后端建议不低于 11.0。
+#  2) 可选通用二进制：cmake .. -DMENTHA_UNIVERSAL=ON
+#     同时产出 arm64 + x86_64 双架构，兼顾 Apple Silicon 与 Intel Mac。
+# ----------------------------------------------------------------------------
+if(NOT DEFINED CMAKE_OSX_DEPLOYMENT_TARGET OR CMAKE_OSX_DEPLOYMENT_TARGET STREQUAL "")
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum macOS deployment target" FORCE)
+endif()
+message(STATUS "[CMake] macOS 最低部署版本: ${CMAKE_OSX_DEPLOYMENT_TARGET}")
+
+option(MENTHA_UNIVERSAL "Build universal binary (arm64 + x86_64)" OFF)
+if(MENTHA_UNIVERSAL)
+    set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "Target architectures" FORCE)
+    message(STATUS "[CMake] 启用通用二进制构建: arm64 + x86_64")
+endif()
+
+# ----------------------------------------------------------------------------
 # 0. 产物输出位置：可执行文件固定输出到 <构建目录>/bin
 # ----------------------------------------------------------------------------
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
