@@ -137,20 +137,39 @@ for path in "${ALL_PATHS[@]}"; do
     before_sha="$(git -C "$path" rev-parse HEAD 2>/dev/null \
         || git rev-parse "HEAD:$path" 2>/dev/null || echo '')"
 
+    # 要拉取的引用：配置了 branch 就用它，否则用远端默认分支(HEAD)
+    fetch_ref="$branch"
+    if [[ "$branch" == "(remote HEAD)" ]]; then
+        fetch_ref="HEAD"
+    fi
+
+    fetch_opts=(--quiet)
+    if [[ -n "$DEPTH" && "$DEPTH" != "0" ]]; then
+        fetch_opts+=(--depth="$DEPTH")
+    fi
+
     if [[ "$DRY_RUN" == "true" ]]; then
-        fetch_args=(fetch --quiet origin)
-        if [[ -n "$branch" && "$branch" != "(remote HEAD)" ]]; then
-            fetch_args+=("$branch")
+        if [[ ! -e "$path/.git" ]]; then
+            echo "跳过  $path（未初始化，--dry-run 不进行克隆）"
+            continue
         fi
-        git -C "$path" "${fetch_args[@]}" >/dev/null 2>&1 || true
+        git -C "$path" fetch "${fetch_opts[@]}" origin "$fetch_ref" >/dev/null 2>&1 || true
         after_sha="$(git -C "$path" rev-parse FETCH_HEAD 2>/dev/null || echo "$before_sha")"
     else
         echo "更新  $path -> origin/$branch"
-        sub_args=(update --init --remote --checkout)
+        # 1) 先把子模块初始化到父仓库记录的提交（浅克隆行为与 actions/checkout 一致）
+        sub_args=(update --init --checkout)
         if [[ -n "$DEPTH" && "$DEPTH" != "0" ]]; then
             sub_args+=(--depth="$DEPTH")
         fi
         git submodule "${sub_args[@]}" -- "$path"
+        # 2) 再显式 fetch 跟踪分支并检出。
+        #    不使用 `git submodule update --remote`：当子模块默认分支与配置的
+        #    branch 不同时，--depth 生成的是“单分支”浅克隆，里面没有
+        #    refs/remotes/origin/<branch>，--remote 会报
+        #    "Unable to find refs/remotes/origin/<branch> revision" 并以 128 退出。
+        git -C "$path" fetch "${fetch_opts[@]}" origin "$fetch_ref"
+        git -C "$path" checkout --quiet --detach FETCH_HEAD
         after_sha="$(git -C "$path" rev-parse HEAD 2>/dev/null || echo '')"
     fi
 
