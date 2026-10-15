@@ -133,9 +133,17 @@ for path in "${ALL_PATHS[@]}"; do
     fi
     remote_url="$(git config -f .gitmodules --get "submodule.${name}.url" || true)"
 
-    # 更新前：优先取子模块工作区的 HEAD，否则回退到父仓库记录的 gitlink
-    before_sha="$(git -C "$path" rev-parse HEAD 2>/dev/null \
-        || git rev-parse "HEAD:$path" 2>/dev/null || echo '')"
+    # 更新前的基准提交：默认取父仓库索引里记录的 gitlink。
+    # 注意：子模块未初始化时目录是个空目录，`git -C "$path" rev-parse HEAD`
+    # 会向上找到父仓库并返回父仓库的 HEAD（错误值），所以必须先判断
+    # `$path/.git` 是否存在，只有真正初始化了才用工作区 HEAD。
+    before_sha="$(git rev-parse "HEAD:$path" 2>/dev/null || echo '')"
+    if [[ -e "$path/.git" ]]; then
+        worktree_sha="$(git -C "$path" rev-parse HEAD 2>/dev/null || echo '')"
+        if [[ -n "$worktree_sha" ]]; then
+            before_sha="$worktree_sha"
+        fi
+    fi
 
     # 要拉取的引用：配置了 branch 就用它，否则用远端默认分支(HEAD)
     fetch_ref="$branch"
