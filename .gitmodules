@@ -1,9 +1,12 @@
 [submodule "VtonaxAR/src/main/cpp/Thirdparty/opencv"]
 	path = MenthaAR/src/main/cpp/Thirdparty/opencv
 	url = https://github.com/opencv/opencv.git
+	branch = 4.x
 [submodule "app/src/main/cpp/Thirdparty/cgltf"]
 	path = app/src/main/cpp/Thirdparty/cgltf
 	url = https://github.com/jkuhlmann/cgltf.git
+	branch = master
 [submodule "MenthaAR/src/main/cpp/Thirdparty_Platforms/psvita/thirdparty/libopencv4"]
 	path = MenthaAR/src/main/cpp/Thirdparty_Platforms/psvita/thirdparty/libopencv4
 	url = https://github.com/dejavulife/libopencv4.git
+	branch = master

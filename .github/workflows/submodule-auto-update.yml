@@ -1,0 +1,198 @@
+name: Submodule Auto Update
+
+# 定期检查所有 git 子模块（submodule）是否有上游更新：
+#   1. 有更新时自动拉取到各子模块所跟踪分支的最新提交；
+#   2. 编译（./gradlew assembleDebug）验证更新不会破坏构建；
+#   3. 创建 / 更新一个 Pull Request，等待人工审查合并。
+#
+# 说明
+# ----
+# * 子模块跟踪的分支由 `.gitmodules` 中的 `submodule.<name>.branch` 决定；
+#   未配置时使用子模块远程仓库的默认分支（remote HEAD）。
+#   ⚠️ 注意：opencv 上游默认分支已是 5.x，本仓库使用 4.x，
+#      因此 `.gitmodules` 中显式固定了 `branch = 4.x`，请勿随意删除。
+# * 使用默认 GITHUB_TOKEN 创建的 PR 不会再次触发其它 workflow 的
+#   pull_request 事件（GitHub 防止递归），所以本工作流会在创建 PR 之前
+#   先在当前 job 内完成编译验证。
+#   如果希望 PR 能触发常规 CI，请创建一个 PAT（含 repo / workflow 权限），
+#   保存为 secret `SUBMODULE_PR_TOKEN`，本工作流会自动优先使用它。
+# * 编译失败时会创建一个 **草稿（draft）PR** 并让 workflow 变红，便于排查；
+#   编译通过则创建可正常审查的非草稿 PR。
+
+on:
+  schedule:
+    # 每周一 03:17 UTC 检查一次（错开整点，降低 GitHub 高峰延迟）
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+    inputs:
+      submodules:
+        description: "只检查这些子模块（逗号/空格分隔；留空 = 全部）"
+        required: false
+        default: ""
+      base_branch:
+        description: "PR 的目标分支（留空 = 仓库默认分支）"
+        required: false
+        default: ""
+      build:
+        description: "更新后是否编译验证（关闭可跳过耗时的原生编译）"
+        type: boolean
+        required: false
+        default: true
+
+# 需要写权限：推送自动更新分支、创建 PR、写入标签
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+# 同一时间只允许一个更新任务，避免并发创建冲突的 PR
+concurrency:
+  group: submodule-auto-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: Check, build & open PR
+    runs-on: ubuntu-latest
+    # 完整编译 OpenCV + 应用可能耗时较久，给足超时时间（上限 6 小时）
+    timeout-minutes: 360
+
+    env:
+      BASE_BRANCH: ${{ github.event.inputs.base_branch || github.event.repository.default_branch || 'main' }}
+      SUBMODULE_FILTER: ${{ github.event.inputs.submodules || '' }}
+      # schedule 触发时默认编译；手动触发时使用输入值
+      DO_BUILD: ${{ github.event_name != 'workflow_dispatch' || inputs.build }}
+      # 可选 PAT：用于让自动创建的 PR 能触发其它 workflow
+      PR_TOKEN: ${{ secrets.SUBMODULE_PR_TOKEN || secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout base branch
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.BASE_BRANCH }}
+          fetch-depth: 0
+          # 子模块交由 update_submodules.sh 以浅克隆方式拉取，节省磁盘/时间
+          submodules: false
+          token: ${{ env.PR_TOKEN }}
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Update submodules to upstream tips
+        id: update
+        run: |
+          chmod +x docs/update_submodules.sh
+          docs/update_submodules.sh \
+            --filter "${SUBMODULE_FILTER}" \
+            --depth 1 \
+            --summary-file "${RUNNER_TEMP}/submodule-pr-body.md" \
+            --paths-file "${RUNNER_TEMP}/submodule-paths.txt" \
+            --github-output "${GITHUB_OUTPUT}"
+
+      - name: Show staged changes
+        if: steps.update.outputs.changed == 'true'
+        run: git --no-pager diff --cached --submodule=log
+
+      - name: Free disk space
+        if: steps.update.outputs.changed == 'true' && env.DO_BUILD != 'false'
+        run: |
+          sudo rm -rf \
+            /usr/share/dotnet \
+            /opt/ghc \
+            /opt/hostedtoolcache/CodeQL \
+            /usr/local/share/boost \
+            /usr/local/lib/android/sdk/emulator \
+            /usr/local/lib/android/sdk/system-images \
+            /usr/local/lib/android/sdk/ndk \
+            /usr/local/lib/android/sdk/sources \
+            /usr/share/swift || true
+          df -h
+
+      - name: Set up JDK 17
+        if: steps.update.outputs.changed == 'true' && env.DO_BUILD != 'false'
+        uses: actions/setup-java@v6
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Set up Android SDK
+        if: steps.update.outputs.changed == 'true' && env.DO_BUILD != 'false'
+        uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+
+      - name: Accept Android SDK licenses
+        if: steps.update.outputs.changed == 'true' && env.DO_BUILD != 'false'
+        run: yes | sdkmanager --licenses
+
+      - name: Build Debug APK (validation)
+        id: build
+        # 编译失败不立即中断，以便仍能创建草稿 PR 并记录结果
+        continue-on-error: true
+        if: steps.update.outputs.changed == 'true' && env.DO_BUILD != 'false'
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Append build result to PR body
+        if: steps.update.outputs.changed == 'true'
+        env:
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          BODY="${RUNNER_TEMP}/submodule-pr-body.md"
+          {
+            echo ""
+            echo "### 🧪 构建验证 / Build validation"
+            echo ""
+          } >> "$BODY"
+          case "${BUILD_OUTCOME}" in
+            success) echo "- ✅ \`./gradlew assembleDebug\` 编译通过。" >> "$BODY" ;;
+            failure) echo "- ❌ \`./gradlew assembleDebug\` 编译失败，请查看 [构建日志](${RUN_URL})。本 PR 已标记为草稿。" >> "$BODY" ;;
+            skipped) echo "- ⏭️ 已跳过编译验证（\`build\` 输入为 false）。" >> "$BODY" ;;
+            *)       echo "- ⚠️ 编译状态未知（${BUILD_OUTCOME}）。" >> "$BODY" ;;
+          esac
+          {
+            echo ""
+            echo "---"
+            echo "*此描述由 GitHub Actions 自动生成 · [运行记录](${RUN_URL})*"
+          } >> "$BODY"
+
+      - name: Ensure PR labels exist
+        if: steps.update.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ env.PR_TOKEN }}
+        run: |
+          gh label create dependencies --color 0366d6 --description "Dependency updates" 2>/dev/null || true
+          gh label create submodules   --color 5319e7 --description "Git submodule updates" 2>/dev/null || true
+
+      - name: Create or update Pull Request
+        if: steps.update.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ env.PR_TOKEN }}
+          base: ${{ env.BASE_BRANCH }}
+          branch: chore/submodule-auto-update
+          delete-branch: true
+          # 只提交发生变化的子模块 gitlink，避免把编译产物带入提交
+          add-paths: ${{ steps.update.outputs.paths }}
+          commit-message: |
+            chore(submodules): update to latest upstream commits
+
+            Automated by .github/workflows/submodule-auto-update.yml
+          title: "chore(submodules): 自动更新子模块到最新提交"
+          body-path: ${{ runner.temp }}/submodule-pr-body.md
+          labels: |
+            dependencies
+            submodules
+          # 编译失败时创建草稿 PR，通过后创建正常 PR
+          draft: ${{ steps.build.outcome == 'failure' }}
+
+      - name: Fail if validation build failed
+        if: steps.update.outputs.changed == 'true' && steps.build.outcome == 'failure'
+        run: |
+          echo "::error::子模块更新后编译失败，已创建草稿 PR 供排查，请查看上方构建日志。"
+          exit 1
