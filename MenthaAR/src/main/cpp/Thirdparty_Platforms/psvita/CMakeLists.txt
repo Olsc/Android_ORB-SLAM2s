@@ -45,7 +45,6 @@ include_directories(
   ${CPP_ROOT}
   ${CPP_ROOT}/include
   ${CPP_ROOT}/Thirdparty
-  ${CPP_ROOT}/Thirdparty/Eigen
   ${CPP_ROOT}/Thirdparty/g2o
   ${CPP_ROOT}/Thirdparty/srrg_hbst
   ${CPP_ROOT}/profiler

@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <vector>
 
-#include "config.h"
+#include "vita_config.h"
 
 // 带颜色的三维点，保持 POD 以便按内存直接读写。
 struct CloudPoint {
