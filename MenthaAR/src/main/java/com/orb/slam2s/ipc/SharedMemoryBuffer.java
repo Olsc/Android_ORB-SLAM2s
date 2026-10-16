@@ -68,6 +68,9 @@ public class SharedMemoryBuffer {
     private FloatBuffer mappedFloatView; // mappedBuffer 的 float 视图
     private ParcelFileDescriptor pfd;  // 跨进程传递给 SLAM 服务端的 fd
 
+    // mappedFloatView 为共享视图且 position 非线程安全，用此锁串行化多线程读取
+    private final Object mReadLock = new Object();
+
     private int frameW;
     private int frameH;
 
@@ -189,7 +192,10 @@ public class SharedMemoryBuffer {
         if (out48 == null || out48.length < 48) return false;
         if (mappedFloatView != null) {
             // 批量读取 48 个 float（M/V/P 各 16）
-            mappedFloatView.get(OFF_MVP / 4, out48, 0, 48);
+            synchronized (mReadLock) {
+                mappedFloatView.position(OFF_MVP / 4);
+                mappedFloatView.get(out48, 0, 48);
+            }
             return true;
         } else if (memoryFile != null) {
             byte[] b = new byte[48 * 4];
@@ -215,8 +221,11 @@ public class SharedMemoryBuffer {
         if (floats <= 0) return 0;
 
         if (mappedFloatView != null) {
-            // 批量读取点云 float 缓冲：使用绝对下标，避免与 AR 线程的 readMvp 竞争共享 position
-            mappedFloatView.get(pointCloudOffset() / 4, out, 0, floats);
+            // 与 readMvp 共用 mReadLock，串行访问共享 position
+            synchronized (mReadLock) {
+                mappedFloatView.position(pointCloudOffset() / 4);
+                mappedFloatView.get(out, 0, floats);
+            }
             return floats;
         } else if (memoryFile != null) {
             byte[] b = new byte[floats * 4];

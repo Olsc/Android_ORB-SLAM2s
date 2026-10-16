@@ -98,13 +98,13 @@
     <string name="camera_facing_other">카메라 %1$s</string>
     <string name="dialog_select_camera">카메라 선택</string>
 
-    <string name="sensor_mode_active">Sensor mode: %1$s</string>
-    <string name="sensor_mode_rotation_vector">Rotation vector (absolute)</string>
-    <string name="sensor_mode_game_rotation_vector">Game rotation vector (relative)</string>
-    <string name="sensor_mode_accel_mag">Accelerometer + magnetometer</string>
-    <string name="sensor_mode_gyroscope">Gyroscope integration</string>
-    <string name="sensor_mode_none">No orientation sensor</string>
-    <string name="sensor_mode_notice_fallback">Limited sensors: using a fallback orientation source; heading may drift over time.</string>
-    <string name="sensor_mode_notice_none">No orientation sensor available; 3DOF stays still.</string>
+    <string name="sensor_mode_active">센서 모드: %1$s</string>
+    <string name="sensor_mode_rotation_vector">회전 벡터(절대)</string>
+    <string name="sensor_mode_game_rotation_vector">게임 회전 벡터(상대)</string>
+    <string name="sensor_mode_accel_mag">가속도계 + 자력계</string>
+    <string name="sensor_mode_gyroscope">자이로스코프 적분</string>
+    <string name="sensor_mode_none">방향 센서 없음</string>
+    <string name="sensor_mode_notice_fallback">센서 제한: 대체 자세 소스를 사용 중이며 방위가 시간이 지나면 드리프트될 수 있습니다.</string>
+    <string name="sensor_mode_notice_none">사용 가능한 방향 센서가 없습니다. 3DOF는 정지 상태로 유지됩니다.</string>
 
 </resources>

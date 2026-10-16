@@ -98,13 +98,13 @@
     <string name="camera_facing_other">カメラ %1$s</string>
     <string name="dialog_select_camera">カメラを選択</string>
 
-    <string name="sensor_mode_active">Sensor mode: %1$s</string>
-    <string name="sensor_mode_rotation_vector">Rotation vector (absolute)</string>
-    <string name="sensor_mode_game_rotation_vector">Game rotation vector (relative)</string>
-    <string name="sensor_mode_accel_mag">Accelerometer + magnetometer</string>
-    <string name="sensor_mode_gyroscope">Gyroscope integration</string>
-    <string name="sensor_mode_none">No orientation sensor</string>
-    <string name="sensor_mode_notice_fallback">Limited sensors: using a fallback orientation source; heading may drift over time.</string>
-    <string name="sensor_mode_notice_none">No orientation sensor available; 3DOF stays still.</string>
+    <string name="sensor_mode_active">センサーモード：%1$s</string>
+    <string name="sensor_mode_rotation_vector">回転ベクトル（絶対）</string>
+    <string name="sensor_mode_game_rotation_vector">ゲーム回転ベクトル（相対）</string>
+    <string name="sensor_mode_accel_mag">加速度計 + 磁力計</string>
+    <string name="sensor_mode_gyroscope">ジャイロ積分</string>
+    <string name="sensor_mode_none">方向センサーなし</string>
+    <string name="sensor_mode_notice_fallback">センサーが限定的です：代替の姿勢ソースを使用中。方位は時間とともにドリフトする可能性があります。</string>
+    <string name="sensor_mode_notice_none">利用可能な方向センサーがありません。3DOF は静止します。</string>
 
 </resources>

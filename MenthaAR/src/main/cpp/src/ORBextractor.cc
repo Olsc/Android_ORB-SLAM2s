@@ -76,6 +76,12 @@
 #include <atomic>
 #include <mutex>
 #include <condition_variable>
+#include <queue>
+#include <functional>
+#include <memory>
+#if defined(_OPENMP)
+#include <omp.h>
+#endif
 
 #include "ORBextractor.h"
 #include "Config.h"
@@ -1104,6 +1110,25 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
 
 // 按金字塔层并行执行 fn(level)。各层检测/描述子计算相互独立
 namespace {
+
+#if defined(_OPENMP)
+
+template <typename Fn>
+void parallelForLevels(int nlevels, Fn&& fn) {
+    if (nlevels <= 1) {
+        for (int i = 0; i < nlevels; ++i) fn(i);
+        return;
+    }
+    const int hwThreads = (int)std::thread::hardware_concurrency();
+    const int nThreads = std::min(nlevels, std::max(2, hwThreads / 2));
+    #pragma omp parallel for num_threads(nThreads) schedule(dynamic)
+    for (int level = 0; level < nlevels; ++level) {
+        fn(level);
+    }
+}
+
+#else
+
 class LevelThreadPool {
 public:
     static LevelThreadPool& instance() {
@@ -1113,44 +1138,61 @@ public:
 
     template <typename Fn>
     void run(int nlevels, Fn&& fn) {
-        const int hwThreads = (int)std::thread::hardware_concurrency();
-        const int nThreads = std::min(nlevels, std::max(2, hwThreads / 2));
-        if (nThreads <= 1 || hwThreads <= 2 || nlevels < 4) {
+        if (nlevels <= 1) {
             for (int i = 0; i < nlevels; ++i) fn(i);
             return;
         }
 
-        const int helperCount = nThreads - 1; // 主线程直接参与，辅助线程只需 nThreads - 1
-        ensureWorkers(helperCount);
+        struct TaskContext {
+            std::atomic<int> nextIdx{0};
+            std::atomic<int> completed{0};
+            std::mutex doneMutex;
+            std::condition_variable cvDone;
+            int totalLevels;
+            std::function<void(int)> func;
+        };
 
-        nextIdx_.store(0, std::memory_order_relaxed);
-        totalLevels_.store(nlevels, std::memory_order_relaxed);
-        remainingWorkers_.store(helperCount, std::memory_order_release);
+        auto ctx = std::make_shared<TaskContext>();
+        ctx->totalLevels = nlevels;
+        ctx->func = fn;
 
-        std::function<void(int)> task = fn;
-        currentTask_ = &task;
-
+        const int helperCount = numWorkers_;
         {
-            std::unique_lock<std::mutex> lk(mutex_);
-            taskGeneration_++;
+            std::lock_guard<std::mutex> lk(queueMutex_);
+            for (int i = 0; i < helperCount; ++i) {
+                tasks_.emplace([ctx]() {
+                    for (;;) {
+                        int idx = ctx->nextIdx.fetch_add(1, std::memory_order_relaxed);
+                        if (idx >= ctx->totalLevels) break;
+                        ctx->func(idx);
+                        if (ctx->completed.fetch_add(1, std::memory_order_acq_rel) + 1 == ctx->totalLevels) {
+                            std::lock_guard<std::mutex> lk(ctx->doneMutex);
+                            ctx->cvDone.notify_one();
+                        }
+                    }
+                });
+            }
         }
-        cvWork_.notify_all();
+        cvTasks_.notify_all();
 
-        // 主线程参与任务处理
+        // 主线程直接参与任务处理
         for (;;) {
-            int i = nextIdx_.fetch_add(1, std::memory_order_relaxed);
-            if (i >= nlevels) break;
-            fn(i);
+            int idx = ctx->nextIdx.fetch_add(1, std::memory_order_relaxed);
+            if (idx >= ctx->totalLevels) break;
+            ctx->func(idx);
+            if (ctx->completed.fetch_add(1, std::memory_order_acq_rel) + 1 == ctx->totalLevels) {
+                std::lock_guard<std::mutex> lk(ctx->doneMutex);
+                ctx->cvDone.notify_one();
+            }
         }
 
-        // 等待所有辅助工作线程完成
+        // 等待所有层级计算完成
         {
-            std::unique_lock<std::mutex> lk(mutex_);
-            cvDone_.wait(lk, [this] {
-                return remainingWorkers_.load(std::memory_order_acquire) == 0;
+            std::unique_lock<std::mutex> lk(ctx->doneMutex);
+            ctx->cvDone.wait(lk, [&]() {
+                return ctx->completed.load(std::memory_order_acquire) == nlevels;
             });
         }
-        currentTask_ = nullptr;
     }
 
     ~LevelThreadPool() {
@@ -1158,22 +1200,20 @@ public:
     }
 
 private:
-    LevelThreadPool() = default;
-
-    void ensureWorkers(int needed) {
-        std::unique_lock<std::mutex> lk(mutex_);
-        while ((int)workers_.size() < needed) {
+    LevelThreadPool() {
+        const unsigned int hw = std::thread::hardware_concurrency();
+        numWorkers_ = std::max(1, std::min(3, (int)(hw > 2 ? hw / 2 : 1)));
+        for (int i = 0; i < numWorkers_; ++i) {
             workers_.emplace_back(&LevelThreadPool::workerLoop, this);
         }
     }
 
     void shutdown() {
         {
-            std::unique_lock<std::mutex> lk(mutex_);
+            std::lock_guard<std::mutex> lk(queueMutex_);
             stop_ = true;
-            taskGeneration_++;
         }
-        cvWork_.notify_all();
+        cvTasks_.notify_all();
         for (auto& w : workers_) {
             if (w.joinable()) w.join();
         }
@@ -1181,42 +1221,26 @@ private:
     }
 
     void workerLoop() {
-        uint64_t lastGen = 0;
         for (;;) {
-            std::unique_lock<std::mutex> lk(mutex_);
-            cvWork_.wait(lk, [this, lastGen] {
-                return stop_ || taskGeneration_ != lastGen;
-            });
-            if (stop_) break;
-            lastGen = taskGeneration_;
-            lk.unlock();
-
-            auto* task = currentTask_;
-            if (task) {
-                const int nlevels = totalLevels_.load(std::memory_order_relaxed);
-                for (;;) {
-                    int i = nextIdx_.fetch_add(1, std::memory_order_relaxed);
-                    if (i >= nlevels) break;
-                    (*task)(i);
-                }
+            std::function<void()> task;
+            {
+                std::unique_lock<std::mutex> lk(queueMutex_);
+                cvTasks_.wait(lk, [this]() {
+                    return stop_ || !tasks_.empty();
+                });
+                if (stop_ && tasks_.empty()) break;
+                task = std::move(tasks_.front());
+                tasks_.pop();
             }
-
-            if (remainingWorkers_.fetch_sub(1, std::memory_order_acq_rel) == 1) {
-                std::unique_lock<std::mutex> lkDone(mutex_);
-                cvDone_.notify_one();
-            }
+            task();
         }
     }
 
-    std::mutex mutex_;
-    std::condition_variable cvWork_;
-    std::condition_variable cvDone_;
+    int numWorkers_ = 2;
     std::vector<std::thread> workers_;
-    std::atomic<int> nextIdx_{0};
-    std::atomic<int> totalLevels_{0};
-    std::atomic<int> remainingWorkers_{0};
-    const std::function<void(int)>* currentTask_ = nullptr;
-    uint64_t taskGeneration_ = 0;
+    std::queue<std::function<void()>> tasks_;
+    std::mutex queueMutex_;
+    std::condition_variable cvTasks_;
     bool stop_ = false;
 };
 
@@ -1224,6 +1248,9 @@ template <typename Fn>
 void parallelForLevels(int nlevels, Fn&& fn) {
     LevelThreadPool::instance().run(nlevels, std::forward<Fn>(fn));
 }
+
+#endif
+
 } // namespace
 
 void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPoint>& _keypoints,

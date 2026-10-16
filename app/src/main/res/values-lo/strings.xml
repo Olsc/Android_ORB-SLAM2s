@@ -56,12 +56,12 @@
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>
     <string name="category_display">Zobrazenie</string>
-    <string name="btn_3dof">Sensor: OFF</string>
-    <string name="btn_3dof_off">Sensor: OFF</string>
-    <string name="btn_3dof_on">Sensor: ON</string>
-    <string name="hint_3dof_unavailable">Sensor unavailable</string>
-    <string name="hint_3dof_assisted_on">Sensor assist enabled (Orientation fusion + Lost hold)</string>
-    <string name="hint_3dof_assisted_off">Pure vision tracking restored (sensor assist disabled)</string>
+    <string name="btn_3dof">ເຊັນເຊີ: ປິດ</string>
+    <string name="btn_3dof_off">ເຊັນເຊີ: ປິດ</string>
+    <string name="btn_3dof_on">ເຊັນເຊີ: ເປີດ</string>
+    <string name="hint_3dof_unavailable">ເຊັນເຊີບໍ່ສາມາດໃຊ້ໄດ້</string>
+    <string name="hint_3dof_assisted_on">ການຊ່ວຍເຫຼືອເຊັນເຊີເປີດແລ້ວ (ຄວາມໝັ້ນຄົງຂອງການໝູນວຽນ + ຖືໄວ້ເມື່ອສູນ)</string>
+    <string name="hint_3dof_assisted_off">ການຊ່ວຍເຫຼືອເຊັນເຊີປິດແລ້ວ, ການຕິດຕາມດ້ວຍສາຍຕາລ້ວນໆຖືກຟື້ນຟູ</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 
@@ -98,13 +98,13 @@
     <string name="camera_facing_other">ກ້ອງ %1$s</string>
     <string name="dialog_select_camera">ເລືອກກ້ອງ</string>
 
-    <string name="sensor_mode_active">Sensor mode: %1$s</string>
-    <string name="sensor_mode_rotation_vector">Rotation vector (absolute)</string>
-    <string name="sensor_mode_game_rotation_vector">Game rotation vector (relative)</string>
-    <string name="sensor_mode_accel_mag">Accelerometer + magnetometer</string>
-    <string name="sensor_mode_gyroscope">Gyroscope integration</string>
-    <string name="sensor_mode_none">No orientation sensor</string>
-    <string name="sensor_mode_notice_fallback">Limited sensors: using a fallback orientation source; heading may drift over time.</string>
-    <string name="sensor_mode_notice_none">No orientation sensor available; 3DOF stays still.</string>
+    <string name="sensor_mode_active">ໂໝດເຊັນເຊີ: %1$s</string>
+    <string name="sensor_mode_rotation_vector">ເວັກເຕີການໝູນວຽນ (ສົມບູນ)</string>
+    <string name="sensor_mode_game_rotation_vector">ເວັກເຕີການໝູນວຽນເກມ (ສຳພັນ)</string>
+    <string name="sensor_mode_accel_mag">ເຄື່ອງວັດຄວາມເລັ່ງ + ເຄື່ອງວັດແມ່ເຫຼັກ</string>
+    <string name="sensor_mode_gyroscope">ການລວມ gyroscope</string>
+    <string name="sensor_mode_none">ບໍ່ມີເຊັນເຊີທິດທາງ</string>
+    <string name="sensor_mode_notice_fallback">ເຊັນເຊີຈຳກັດ: ກຳລັງໃຊ້ແຫຼ່ງທິດທາງສຳຮອງ; ທິດທາງອາດຈະຄ່ອຍໆເລື່ອນ.</string>
+    <string name="sensor_mode_notice_none">ບໍ່ມີເຊັນເຊີທິດທາງ; 3DOF ຈະຢູ່ນິ້ງ.</string>
 
 </resources>

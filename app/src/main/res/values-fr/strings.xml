@@ -102,13 +102,13 @@
     <string name="camera_facing_other">Caméra %1$s</string>
     <string name="dialog_select_camera">Sélectionner la caméra</string>
 
-    <string name="sensor_mode_active">Sensor mode: %1$s</string>
-    <string name="sensor_mode_rotation_vector">Rotation vector (absolute)</string>
-    <string name="sensor_mode_game_rotation_vector">Game rotation vector (relative)</string>
-    <string name="sensor_mode_accel_mag">Accelerometer + magnetometer</string>
-    <string name="sensor_mode_gyroscope">Gyroscope integration</string>
-    <string name="sensor_mode_none">No orientation sensor</string>
-    <string name="sensor_mode_notice_fallback">Limited sensors: using a fallback orientation source; heading may drift over time.</string>
-    <string name="sensor_mode_notice_none">No orientation sensor available; 3DOF stays still.</string>
+    <string name="sensor_mode_active">Mode capteur : %1$s</string>
+    <string name="sensor_mode_rotation_vector">Vecteur de rotation (absolu)</string>
+    <string name="sensor_mode_game_rotation_vector">Vecteur de rotation de jeu (relatif)</string>
+    <string name="sensor_mode_accel_mag">Accéléromètre + magnétomètre</string>
+    <string name="sensor_mode_gyroscope">Intégration gyroscopique</string>
+    <string name="sensor_mode_none">Aucun capteur d\'orientation</string>
+    <string name="sensor_mode_notice_fallback">Capteurs limités : source d\'orientation de secours utilisée ; le cap peut dériver avec le temps.</string>
+    <string name="sensor_mode_notice_none">Aucun capteur d\'orientation disponible ; le 3DOF reste immobile.</string>
 
 </resources>

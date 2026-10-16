@@ -57,12 +57,12 @@
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>
     <string name="category_display">Zobrazenie</string>
-    <string name="btn_3dof">Sensor: OFF</string>
-    <string name="btn_3dof_off">Sensor: OFF</string>
-    <string name="btn_3dof_on">Sensor: ON</string>
-    <string name="hint_3dof_unavailable">Sensor unavailable</string>
-    <string name="hint_3dof_assisted_on">Sensor assist enabled (Orientation fusion + Lost hold)</string>
-    <string name="hint_3dof_assisted_off">Pure vision tracking restored (sensor assist disabled)</string>
+    <string name="btn_3dof">Andur: VÄLJAS</string>
+    <string name="btn_3dof_off">Andur: VÄLJAS</string>
+    <string name="btn_3dof_on">Andur: SEES</string>
+    <string name="hint_3dof_unavailable">Andur pole saadaval</string>
+    <string name="hint_3dof_assisted_on">Anduri abi lubatud (pöörlemise stabiliseerimine + kinnihoidmine kadumisel)</string>
+    <string name="hint_3dof_assisted_off">Anduri abi keelatud, taastatud puhas visuaalne jälgimine</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 
@@ -100,13 +100,13 @@
     <string name="camera_facing_other">Kaamera %1$s</string>
     <string name="dialog_select_camera">Vali kaamera</string>
 
-    <string name="sensor_mode_active">Sensor mode: %1$s</string>
-    <string name="sensor_mode_rotation_vector">Rotation vector (absolute)</string>
-    <string name="sensor_mode_game_rotation_vector">Game rotation vector (relative)</string>
-    <string name="sensor_mode_accel_mag">Accelerometer + magnetometer</string>
-    <string name="sensor_mode_gyroscope">Gyroscope integration</string>
-    <string name="sensor_mode_none">No orientation sensor</string>
-    <string name="sensor_mode_notice_fallback">Limited sensors: using a fallback orientation source; heading may drift over time.</string>
-    <string name="sensor_mode_notice_none">No orientation sensor available; 3DOF stays still.</string>
+    <string name="sensor_mode_active">Anduri režiim: %1$s</string>
+    <string name="sensor_mode_rotation_vector">Pöördvektor (absoluutne)</string>
+    <string name="sensor_mode_game_rotation_vector">Mängu pöördvektor (suhteline)</string>
+    <string name="sensor_mode_accel_mag">Kiirendusmõõtur + magnetomeeter</string>
+    <string name="sensor_mode_gyroscope">Güroskoobi integreerimine</string>
+    <string name="sensor_mode_none">Puudub orientatsiooniandur</string>
+    <string name="sensor_mode_notice_fallback">Piiratud andurid: kasutusel varu-orientatsiooniallikas; kurss võib aja jooksul triivima hakata.</string>
+    <string name="sensor_mode_notice_none">Orientatsiooniandur pole saadaval; 3DOF jääb paigale.</string>
 
 </resources>

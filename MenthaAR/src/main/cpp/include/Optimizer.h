@@ -35,6 +35,7 @@
 #ifndef OPTIMIZER_H
 #define OPTIMIZER_H
 
+#include <atomic>
 #include "Map.h"
 #include "MapPoint.h"
 #include "KeyFrame.h"
@@ -58,6 +59,7 @@ public:
     void static GlobalBundleAdjustemnt(Map* pMap, int nIterations=OPTIMIZER_DEFAULT_BA_ITERS, bool *pbStopFlag=NULL,
                                        const unsigned long nLoopKF=0, const bool bRobust = true);
     void static LocalBundleAdjustment(KeyFrame* pKF, bool *pbStopFlag, Map *pMap);
+    void static LocalBundleAdjustment(KeyFrame* pKF, const std::atomic<bool> *pbStopFlag, Map *pMap);
     int static PoseOptimization(Frame* pFrame);
     int static PoseOptimizationAnalytic(Frame* pFrame);
 

@@ -57,12 +57,12 @@
     <string name="category_ar">AR नियंत्रण</string>
     <string name="category_map">नकाशा</string>
     <string name="category_display">प्रदर्शन</string>
-    <string name="btn_3dof">Sensor: OFF</string>
-    <string name="btn_3dof_off">Sensor: OFF</string>
-    <string name="btn_3dof_on">Sensor: ON</string>
-    <string name="hint_3dof_unavailable">Sensor unavailable</string>
-    <string name="hint_3dof_assisted_on">Sensor assist enabled (Orientation fusion + Lost hold)</string>
-    <string name="hint_3dof_assisted_off">Pure vision tracking restored (sensor assist disabled)</string>
+    <string name="btn_3dof">सेन्सर: बंद</string>
+    <string name="btn_3dof_off">सेन्सर: बंद</string>
+    <string name="btn_3dof_on">सेन्सर: चालू</string>
+    <string name="hint_3dof_unavailable">सेन्सर उपलब्ध नाही</string>
+    <string name="hint_3dof_assisted_on">सेन्सर सहाय्य सक्षम (फिरणे स्थिरीकरण + हरवल्यास टिकवणे)</string>
+    <string name="hint_3dof_assisted_off">सेन्सर सहाय्य अक्षम, शुद्ध दृश्य ट्रॅकिंग पुनर्संचयित</string>
 
     <string name="hint_no_camera">कोणताही कॅमेरा आढळला नाही (काळा स्क्रीन मोड)</string>
 
@@ -100,13 +100,13 @@
     <string name="camera_facing_other">कॅमेरा %1$s</string>
     <string name="dialog_select_camera">कॅमेरा निवडा</string>
 
-    <string name="sensor_mode_active">Sensor mode: %1$s</string>
-    <string name="sensor_mode_rotation_vector">Rotation vector (absolute)</string>
-    <string name="sensor_mode_game_rotation_vector">Game rotation vector (relative)</string>
-    <string name="sensor_mode_accel_mag">Accelerometer + magnetometer</string>
-    <string name="sensor_mode_gyroscope">Gyroscope integration</string>
-    <string name="sensor_mode_none">No orientation sensor</string>
-    <string name="sensor_mode_notice_fallback">Limited sensors: using a fallback orientation source; heading may drift over time.</string>
-    <string name="sensor_mode_notice_none">No orientation sensor available; 3DOF stays still.</string>
+    <string name="sensor_mode_active">सेन्सर मोड: %1$s</string>
+    <string name="sensor_mode_rotation_vector">रोटेशन वेक्टर (निरपेक्ष)</string>
+    <string name="sensor_mode_game_rotation_vector">गेम रोटेशन वेक्टर (सापेक्ष)</string>
+    <string name="sensor_mode_accel_mag">प्रवेगमापक + चुंबकमापक</string>
+    <string name="sensor_mode_gyroscope">जायरोस्कोप एकत्रीकरण</string>
+    <string name="sensor_mode_none">दिशा सेन्सर नाही</string>
+    <string name="sensor_mode_notice_fallback">मर्यादित सेन्सर: पर्यायी दिशा स्रोत वापरात; दिशा कालांतराने सरकू शकते.</string>
+    <string name="sensor_mode_notice_none">दिशा सेन्सर उपलब्ध नाही; 3DOF स्थिर राहील.</string>
 
 </resources>

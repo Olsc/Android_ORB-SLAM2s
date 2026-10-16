@@ -57,12 +57,12 @@
     <string name="category_ar">AR-bediening</string>
     <string name="category_map">Kaart</string>
     <string name="category_display">Weergave</string>
-    <string name="btn_3dof">Sensor: OFF</string>
-    <string name="btn_3dof_off">Sensor: OFF</string>
-    <string name="btn_3dof_on">Sensor: ON</string>
-    <string name="hint_3dof_unavailable">Sensor unavailable</string>
-    <string name="hint_3dof_assisted_on">Sensor assist enabled (Orientation fusion + Lost hold)</string>
-    <string name="hint_3dof_assisted_off">Pure vision tracking restored (sensor assist disabled)</string>
+    <string name="btn_3dof">Sensor: UIT</string>
+    <string name="btn_3dof_off">Sensor: UIT</string>
+    <string name="btn_3dof_on">Sensor: AAN</string>
+    <string name="hint_3dof_unavailable">Sensor niet beschikbaar</string>
+    <string name="hint_3dof_assisted_on">Sensorondersteuning ingeschakeld (rotatiestabilisatie + vasthouden bij verlies)</string>
+    <string name="hint_3dof_assisted_off">Sensorondersteuning uitgeschakeld, puur visuele tracking hersteld</string>
 
     <string name="hint_no_camera">Geen camera gedetecteerd (zwart scherm-modus)</string>
 
@@ -100,13 +100,13 @@
     <string name="camera_facing_other">Camera %1$s</string>
     <string name="dialog_select_camera">Camera selecteren</string>
 
-    <string name="sensor_mode_active">Sensor mode: %1$s</string>
-    <string name="sensor_mode_rotation_vector">Rotation vector (absolute)</string>
-    <string name="sensor_mode_game_rotation_vector">Game rotation vector (relative)</string>
-    <string name="sensor_mode_accel_mag">Accelerometer + magnetometer</string>
-    <string name="sensor_mode_gyroscope">Gyroscope integration</string>
-    <string name="sensor_mode_none">No orientation sensor</string>
-    <string name="sensor_mode_notice_fallback">Limited sensors: using a fallback orientation source; heading may drift over time.</string>
-    <string name="sensor_mode_notice_none">No orientation sensor available; 3DOF stays still.</string>
+    <string name="sensor_mode_active">Sensormodus: %1$s</string>
+    <string name="sensor_mode_rotation_vector">Rotatievector (absoluut)</string>
+    <string name="sensor_mode_game_rotation_vector">Spelrotatievector (relatief)</string>
+    <string name="sensor_mode_accel_mag">Versnellingsmeter + magnetometer</string>
+    <string name="sensor_mode_gyroscope">Gyroscoop-integratie</string>
+    <string name="sensor_mode_none">Geen oriëntatiesensor</string>
+    <string name="sensor_mode_notice_fallback">Beperkte sensoren: fallback-oriëntatiebron in gebruik; koers kan na verloop van tijd afwijken.</string>
+    <string name="sensor_mode_notice_none">Geen oriëntatiesensor beschikbaar; 3DOF blijft stil.</string>
 
 </resources>

@@ -61,12 +61,12 @@
     <string name="category_ar">أدوات AR</string>
     <string name="category_map">الخريطة</string>
     <string name="category_display">العرض</string>
-    <string name="btn_3dof">Sensor: OFF</string>
-    <string name="btn_3dof_off">Sensor: OFF</string>
-    <string name="btn_3dof_on">Sensor: ON</string>
-    <string name="hint_3dof_unavailable">Sensor unavailable</string>
-    <string name="hint_3dof_assisted_on">Sensor assist enabled (Orientation fusion + Lost hold)</string>
-    <string name="hint_3dof_assisted_off">Pure vision tracking restored (sensor assist disabled)</string>
+    <string name="btn_3dof">المستشعر: إيقاف</string>
+    <string name="btn_3dof_off">المستشعر: إيقاف</string>
+    <string name="btn_3dof_on">المستشعر: تشغيل</string>
+    <string name="hint_3dof_unavailable">المستشعر غير متوفر</string>
+    <string name="hint_3dof_assisted_on">تم تمكين مساعدة المستشعر (تثبيت الدوران + الاحتفاظ عند الفقد)</string>
+    <string name="hint_3dof_assisted_off">تم تعطيل مساعدة المستشعر، وتمت استعادة التتبع البصري</string>
 
     <string name="hint_no_camera">لم يتم اكتشاف كاميرا (وضع الشاشة السوداء)</string>
 
@@ -108,13 +108,13 @@
     <string name="camera_facing_other">الكاميرا %1$s</string>
     <string name="dialog_select_camera">تحديد الكاميرا</string>
 
-    <string name="sensor_mode_active">Sensor mode: %1$s</string>
-    <string name="sensor_mode_rotation_vector">Rotation vector (absolute)</string>
-    <string name="sensor_mode_game_rotation_vector">Game rotation vector (relative)</string>
-    <string name="sensor_mode_accel_mag">Accelerometer + magnetometer</string>
-    <string name="sensor_mode_gyroscope">Gyroscope integration</string>
-    <string name="sensor_mode_none">No orientation sensor</string>
-    <string name="sensor_mode_notice_fallback">Limited sensors: using a fallback orientation source; heading may drift over time.</string>
-    <string name="sensor_mode_notice_none">No orientation sensor available; 3DOF stays still.</string>
+    <string name="sensor_mode_active">وضع المستشعر: %1$s</string>
+    <string name="sensor_mode_rotation_vector">متجه الدوران (مطلق)</string>
+    <string name="sensor_mode_game_rotation_vector">متجه دوران اللعبة (نسبي)</string>
+    <string name="sensor_mode_accel_mag">مقياس التسارع + مقياس المغناطيسية</string>
+    <string name="sensor_mode_gyroscope">تكامل الجيروسكوب</string>
+    <string name="sensor_mode_none">لا يوجد مستشعر اتجاه</string>
+    <string name="sensor_mode_notice_fallback">مستشعرات محدودة: يتم استخدام مصدر اتجاه احتياطي؛ قد ينحرف الاتجاه بمرور الوقت.</string>
+    <string name="sensor_mode_notice_none">لا يتوفر مستشعر اتجاه؛ سيبقى 3DOF ثابتًا.</string>
 
 </resources>

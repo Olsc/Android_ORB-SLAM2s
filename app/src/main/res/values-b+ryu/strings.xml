@@ -56,12 +56,12 @@
     <string name="category_ar">AR操作</string>
     <string name="category_map">マップ</string>
     <string name="category_display">表示</string>
-    <string name="btn_3dof">Sensor: OFF</string>
-    <string name="btn_3dof_off">Sensor: OFF</string>
-    <string name="btn_3dof_on">Sensor: ON</string>
-    <string name="hint_3dof_unavailable">Sensor unavailable</string>
-    <string name="hint_3dof_assisted_on">Sensor assist enabled (Orientation fusion + Lost hold)</string>
-    <string name="hint_3dof_assisted_off">Pure vision tracking restored (sensor assist disabled)</string>
+    <string name="btn_3dof">センサー: オフ</string>
+    <string name="btn_3dof_off">センサー: オフ</string>
+    <string name="btn_3dof_on">センサー: オン</string>
+    <string name="hint_3dof_unavailable">センサーを利用できません</string>
+    <string name="hint_3dof_assisted_on">センサー補助を有効化しました（回転ブレ防止・喪失時保持）</string>
+    <string name="hint_3dof_assisted_off">センサー補助を無効化し、ビジュアル追跡に復帰しました</string>
 
     <string name="hint_no_camera">カメラ見つからびらん（暗黒画面モード）</string>
 
@@ -98,13 +98,13 @@
     <string name="camera_facing_other">カメラ %1$s</string>
     <string name="dialog_select_camera">カメラを選択</string>
 
-    <string name="sensor_mode_active">Sensor mode: %1$s</string>
-    <string name="sensor_mode_rotation_vector">Rotation vector (absolute)</string>
-    <string name="sensor_mode_game_rotation_vector">Game rotation vector (relative)</string>
-    <string name="sensor_mode_accel_mag">Accelerometer + magnetometer</string>
-    <string name="sensor_mode_gyroscope">Gyroscope integration</string>
-    <string name="sensor_mode_none">No orientation sensor</string>
-    <string name="sensor_mode_notice_fallback">Limited sensors: using a fallback orientation source; heading may drift over time.</string>
-    <string name="sensor_mode_notice_none">No orientation sensor available; 3DOF stays still.</string>
+    <string name="sensor_mode_active">センサーモード：%1$s</string>
+    <string name="sensor_mode_rotation_vector">回転ベクトル（絶対）</string>
+    <string name="sensor_mode_game_rotation_vector">ゲーム回転ベクトル（相対）</string>
+    <string name="sensor_mode_accel_mag">加速度計 + 磁力計</string>
+    <string name="sensor_mode_gyroscope">ジャイロ積分</string>
+    <string name="sensor_mode_none">方向センサーなし</string>
+    <string name="sensor_mode_notice_fallback">センサーが限定的：代替の姿勢ソースを使用中。方位は時間とともにドリフトする可能性があります。</string>
+    <string name="sensor_mode_notice_none">利用可能な方向センサーがありません。3DOF は静止します。</string>
 
 </resources>

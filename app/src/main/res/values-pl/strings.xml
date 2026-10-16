@@ -59,12 +59,12 @@
     <string name="category_ar">Sterowanie AR</string>
     <string name="category_map">Mapa</string>
     <string name="category_display">Wyświetlacz</string>
-    <string name="btn_3dof">Sensor: OFF</string>
-    <string name="btn_3dof_off">Sensor: OFF</string>
-    <string name="btn_3dof_on">Sensor: ON</string>
-    <string name="hint_3dof_unavailable">Sensor unavailable</string>
-    <string name="hint_3dof_assisted_on">Sensor assist enabled (Orientation fusion + Lost hold)</string>
-    <string name="hint_3dof_assisted_off">Pure vision tracking restored (sensor assist disabled)</string>
+    <string name="btn_3dof">Czujnik: WYŁ</string>
+    <string name="btn_3dof_off">Czujnik: WYŁ</string>
+    <string name="btn_3dof_on">Czujnik: WŁ</string>
+    <string name="hint_3dof_unavailable">Czujnik niedostępny</string>
+    <string name="hint_3dof_assisted_on">Wspomaganie czujnika włączone (stabilizacja obrotu + podtrzymanie przy utracie)</string>
+    <string name="hint_3dof_assisted_off">Wspomaganie czujnika wyłączone, przywrócono czyste śledzenie wizualne</string>
 
     <string name="hint_no_camera">Nie wykryto kamery (tryb czarnego ekranu)</string>
 
@@ -104,13 +104,13 @@
     <string name="camera_facing_other">Aparat %1$s</string>
     <string name="dialog_select_camera">Wybierz aparat</string>
 
-    <string name="sensor_mode_active">Sensor mode: %1$s</string>
-    <string name="sensor_mode_rotation_vector">Rotation vector (absolute)</string>
-    <string name="sensor_mode_game_rotation_vector">Game rotation vector (relative)</string>
-    <string name="sensor_mode_accel_mag">Accelerometer + magnetometer</string>
-    <string name="sensor_mode_gyroscope">Gyroscope integration</string>
-    <string name="sensor_mode_none">No orientation sensor</string>
-    <string name="sensor_mode_notice_fallback">Limited sensors: using a fallback orientation source; heading may drift over time.</string>
-    <string name="sensor_mode_notice_none">No orientation sensor available; 3DOF stays still.</string>
+    <string name="sensor_mode_active">Tryb czujnika: %1$s</string>
+    <string name="sensor_mode_rotation_vector">Wektor obrotu (absolutny)</string>
+    <string name="sensor_mode_game_rotation_vector">Wektor obrotu w grze (względny)</string>
+    <string name="sensor_mode_accel_mag">Akcelerometr + magnetometr</string>
+    <string name="sensor_mode_gyroscope">Integracja żyroskopu</string>
+    <string name="sensor_mode_none">Brak czujnika orientacji</string>
+    <string name="sensor_mode_notice_fallback">Ograniczone czujniki: używane zapasowe źródło orientacji; kurs może z czasem dryfować.</string>
+    <string name="sensor_mode_notice_none">Brak dostępnego czujnika orientacji; 3DOF pozostaje nieruchome.</string>
 
 </resources>

@@ -58,12 +58,12 @@
     <string name="category_ar">Controale AR</string>
     <string name="category_map">Hartă</string>
     <string name="category_display">Afișaj</string>
-    <string name="btn_3dof">Sensor: OFF</string>
-    <string name="btn_3dof_off">Sensor: OFF</string>
-    <string name="btn_3dof_on">Sensor: ON</string>
-    <string name="hint_3dof_unavailable">Sensor unavailable</string>
-    <string name="hint_3dof_assisted_on">Sensor assist enabled (Orientation fusion + Lost hold)</string>
-    <string name="hint_3dof_assisted_off">Pure vision tracking restored (sensor assist disabled)</string>
+    <string name="btn_3dof">Senzor: OPRIT</string>
+    <string name="btn_3dof_off">Senzor: OPRIT</string>
+    <string name="btn_3dof_on">Senzor: PORNIT</string>
+    <string name="hint_3dof_unavailable">Senzorul nu este disponibil</string>
+    <string name="hint_3dof_assisted_on">Asistență senzor activată (stabilizare rotație + menținere la pierdere)</string>
+    <string name="hint_3dof_assisted_off">Asistență senzor dezactivată, urmărire vizuală pură restabilită</string>
 
     <string name="hint_no_camera">Nicio cameră detectată (mod ecran negru)</string>
 
@@ -102,13 +102,13 @@
     <string name="camera_facing_other">Cameră %1$s</string>
     <string name="dialog_select_camera">Selectează camera</string>
 
-    <string name="sensor_mode_active">Sensor mode: %1$s</string>
-    <string name="sensor_mode_rotation_vector">Rotation vector (absolute)</string>
-    <string name="sensor_mode_game_rotation_vector">Game rotation vector (relative)</string>
-    <string name="sensor_mode_accel_mag">Accelerometer + magnetometer</string>
-    <string name="sensor_mode_gyroscope">Gyroscope integration</string>
-    <string name="sensor_mode_none">No orientation sensor</string>
-    <string name="sensor_mode_notice_fallback">Limited sensors: using a fallback orientation source; heading may drift over time.</string>
-    <string name="sensor_mode_notice_none">No orientation sensor available; 3DOF stays still.</string>
+    <string name="sensor_mode_active">Mod senzor: %1$s</string>
+    <string name="sensor_mode_rotation_vector">Vector de rotație (absolut)</string>
+    <string name="sensor_mode_game_rotation_vector">Vector de rotație pentru joc (relativ)</string>
+    <string name="sensor_mode_accel_mag">Accelerometru + magnetometru</string>
+    <string name="sensor_mode_gyroscope">Integrare giroscop</string>
+    <string name="sensor_mode_none">Fără senzor de orientare</string>
+    <string name="sensor_mode_notice_fallback">Senzori limitați: se folosește o sursă de orientare de rezervă; direcția se poate deplasa în timp.</string>
+    <string name="sensor_mode_notice_none">Nu există senzor de orientare disponibil; 3DOF rămâne nemișcat.</string>
 
 </resources>

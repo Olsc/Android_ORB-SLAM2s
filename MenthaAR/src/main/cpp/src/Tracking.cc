@@ -1063,11 +1063,7 @@ void Tracking::Track()
     {
         VT_PROFILE_SCOPE("Tracking::MonocularInitialization");
         // 仅支持单目初始化
-        // 初始化过程会创建KF和MapPoint并写入地图，需短暂持锁
-        {
-            std::unique_lock<std::mutex> lock(mpMap->mMutexMapUpdate);
-            MonocularInitialization();
-        }
+        MonocularInitialization();
 
         mpFrameDrawer->Update(this);
 
@@ -1530,36 +1526,39 @@ void Tracking::CreateInitialMapMonocular()
     // pKFini->ComputeBoW();
     // pKFcur->ComputeBoW();
 
-    // 插入关键帧到地图中
-    mpMap->AddKeyFrame(pKFini);
-    mpMap->AddKeyFrame(pKFcur);
-
-    // 创建地图点并与关键帧关联
-    for(size_t i=0; i<mvIniMatches.size();i++)
+    // 插入关键帧与地图点到地图中
     {
-        if(mvIniMatches[i]<0)
-            continue;
+        std::unique_lock<std::mutex> lock(mpMap->mMutexMapUpdate);
+        mpMap->AddKeyFrame(pKFini);
+        mpMap->AddKeyFrame(pKFcur);
 
-        //创建地图点。
-        cv::Mat worldPos(mvIniP3D[i]);
+        // 创建地图点并与关键帧关联
+        for(size_t i=0; i<mvIniMatches.size();i++)
+        {
+            if(mvIniMatches[i]<0)
+                continue;
 
-        MapPoint* pMP = new MapPoint(worldPos,pKFcur,mpMap);
+            //创建地图点。
+            cv::Mat worldPos(mvIniP3D[i]);
 
-        pKFini->AddMapPoint(pMP,i);
-        pKFcur->AddMapPoint(pMP,mvIniMatches[i]);
+            MapPoint* pMP = new MapPoint(worldPos,pKFcur,mpMap);
 
-        pMP->AddObservation(pKFini,i);
-        pMP->AddObservation(pKFcur,mvIniMatches[i]);
+            pKFini->AddMapPoint(pMP,i);
+            pKFcur->AddMapPoint(pMP,mvIniMatches[i]);
 
-        pMP->ComputeDistinctiveDescriptors();
-        pMP->UpdateNormalAndDepth();
+            pMP->AddObservation(pKFini,i);
+            pMP->AddObservation(pKFcur,mvIniMatches[i]);
 
-        //填充当前帧结构
-        mCurrentFrame.mvpMapPoints[mvIniMatches[i]] = pMP;
-        mCurrentFrame.mvbOutlier[mvIniMatches[i]] = false;
+            pMP->ComputeDistinctiveDescriptors();
+            pMP->UpdateNormalAndDepth();
 
-        //添加到地图
-        mpMap->AddMapPoint(pMP);
+            //填充当前帧结构
+            mCurrentFrame.mvpMapPoints[mvIniMatches[i]] = pMP;
+            mCurrentFrame.mvbOutlier[mvIniMatches[i]] = false;
+
+            //添加到地图
+            mpMap->AddMapPoint(pMP);
+        }
     }
 
     // 更新连接关系

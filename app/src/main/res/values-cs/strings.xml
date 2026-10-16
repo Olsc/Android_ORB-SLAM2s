@@ -59,12 +59,12 @@
     <string name="category_ar">Ovládání AR</string>
     <string name="category_map">Mapa</string>
     <string name="category_display">Zobrazení</string>
-    <string name="btn_3dof">Sensor: OFF</string>
-    <string name="btn_3dof_off">Sensor: OFF</string>
-    <string name="btn_3dof_on">Sensor: ON</string>
-    <string name="hint_3dof_unavailable">Sensor unavailable</string>
-    <string name="hint_3dof_assisted_on">Sensor assist enabled (Orientation fusion + Lost hold)</string>
-    <string name="hint_3dof_assisted_off">Pure vision tracking restored (sensor assist disabled)</string>
+    <string name="btn_3dof">Senzor: VYP</string>
+    <string name="btn_3dof_off">Senzor: VYP</string>
+    <string name="btn_3dof_on">Senzor: ZAP</string>
+    <string name="hint_3dof_unavailable">Senzor není k dispozici</string>
+    <string name="hint_3dof_assisted_on">Podpora senzoru zapnuta (stabilizace rotace + podržení při ztrátě)</string>
+    <string name="hint_3dof_assisted_off">Podpora senzoru vypnuta, obnoveno čistě vizuální sledování</string>
 
     <string name="hint_no_camera">Nebyla detekována žádná kamera (režim černé obrazovky)</string>
 
@@ -104,13 +104,13 @@
     <string name="camera_facing_other">Kamera %1$s</string>
     <string name="dialog_select_camera">Vyberte kameru</string>
 
-    <string name="sensor_mode_active">Sensor mode: %1$s</string>
-    <string name="sensor_mode_rotation_vector">Rotation vector (absolute)</string>
-    <string name="sensor_mode_game_rotation_vector">Game rotation vector (relative)</string>
-    <string name="sensor_mode_accel_mag">Accelerometer + magnetometer</string>
-    <string name="sensor_mode_gyroscope">Gyroscope integration</string>
-    <string name="sensor_mode_none">No orientation sensor</string>
-    <string name="sensor_mode_notice_fallback">Limited sensors: using a fallback orientation source; heading may drift over time.</string>
-    <string name="sensor_mode_notice_none">No orientation sensor available; 3DOF stays still.</string>
+    <string name="sensor_mode_active">Režim senzoru: %1$s</string>
+    <string name="sensor_mode_rotation_vector">Rotační vektor (absolutní)</string>
+    <string name="sensor_mode_game_rotation_vector">Herní rotační vektor (relativní)</string>
+    <string name="sensor_mode_accel_mag">Akcelerometr + magnetometr</string>
+    <string name="sensor_mode_gyroscope">Integrace gyroskopu</string>
+    <string name="sensor_mode_none">Žádný senzor orientace</string>
+    <string name="sensor_mode_notice_fallback">Omezené senzory: používá se záložní zdroj orientace; kurz se může časem posouvat.</string>
+    <string name="sensor_mode_notice_none">Není k dispozici žádný senzor orientace; 3DOF zůstane nehybné.</string>
 
 </resources>

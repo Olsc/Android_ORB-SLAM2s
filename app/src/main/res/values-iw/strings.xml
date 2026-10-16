@@ -58,12 +58,12 @@
     <string name="category_ar">פקדי AR</string>
     <string name="category_map">מפה</string>
     <string name="category_display">תצוגה</string>
-    <string name="btn_3dof">Sensor: OFF</string>
-    <string name="btn_3dof_off">Sensor: OFF</string>
-    <string name="btn_3dof_on">Sensor: ON</string>
-    <string name="hint_3dof_unavailable">Sensor unavailable</string>
-    <string name="hint_3dof_assisted_on">Sensor assist enabled (Orientation fusion + Lost hold)</string>
-    <string name="hint_3dof_assisted_off">Pure vision tracking restored (sensor assist disabled)</string>
+    <string name="btn_3dof">חיישן: כבוי</string>
+    <string name="btn_3dof_off">חיישן: כבוי</string>
+    <string name="btn_3dof_on">חיישן: פועל</string>
+    <string name="hint_3dof_unavailable">החיישן אינו זמין</string>
+    <string name="hint_3dof_assisted_on">תמיכת חיישן הופעלה (ייצוב סיבוב + החזקה בעת אובדן)</string>
+    <string name="hint_3dof_assisted_off">תמיכת חיישן הושבתה, מעקב חזותי טהור שוחזר</string>
 
     <string name="hint_no_camera">לא זוהתה מצלמה (מצב מסך שחור)</string>
 
@@ -102,13 +102,13 @@
     <string name="camera_facing_other">מצלמה %1$s</string>
     <string name="dialog_select_camera">בחר מצלמה</string>
 
-    <string name="sensor_mode_active">Sensor mode: %1$s</string>
-    <string name="sensor_mode_rotation_vector">Rotation vector (absolute)</string>
-    <string name="sensor_mode_game_rotation_vector">Game rotation vector (relative)</string>
-    <string name="sensor_mode_accel_mag">Accelerometer + magnetometer</string>
-    <string name="sensor_mode_gyroscope">Gyroscope integration</string>
-    <string name="sensor_mode_none">No orientation sensor</string>
-    <string name="sensor_mode_notice_fallback">Limited sensors: using a fallback orientation source; heading may drift over time.</string>
-    <string name="sensor_mode_notice_none">No orientation sensor available; 3DOF stays still.</string>
+    <string name="sensor_mode_active">מצב חיישן: %1$s</string>
+    <string name="sensor_mode_rotation_vector">וקטור סיבוב (מוחלט)</string>
+    <string name="sensor_mode_game_rotation_vector">וקטור סיבוב משחק (יחסי)</string>
+    <string name="sensor_mode_accel_mag">מדי תאוצה + מגנטומטר</string>
+    <string name="sensor_mode_gyroscope">שילוב גירוסקופ</string>
+    <string name="sensor_mode_none">אין חיישן כיוון</string>
+    <string name="sensor_mode_notice_fallback">חיישנים מוגבלים: נעשה שימוש במקור כיוון חלופי; הכיוון עשוי לסטות עם הזמן.</string>
+    <string name="sensor_mode_notice_none">אין חיישן כיוון זמין; 3DOF יישאר ללא תנועה.</string>
 
 </resources>

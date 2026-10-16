@@ -57,12 +57,12 @@
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>
     <string name="category_display">Zobrazenie</string>
-    <string name="btn_3dof">Sensor: OFF</string>
-    <string name="btn_3dof_off">Sensor: OFF</string>
-    <string name="btn_3dof_on">Sensor: ON</string>
-    <string name="hint_3dof_unavailable">Sensor unavailable</string>
-    <string name="hint_3dof_assisted_on">Sensor assist enabled (Orientation fusion + Lost hold)</string>
-    <string name="hint_3dof_assisted_off">Pure vision tracking restored (sensor assist disabled)</string>
+    <string name="btn_3dof">සංවේදකය: ක්‍රියාවිරහිත</string>
+    <string name="btn_3dof_off">සංවේදකය: ක්‍රියාවිරහිත</string>
+    <string name="btn_3dof_on">සංවේදකය: ක්‍රියාත්මක</string>
+    <string name="hint_3dof_unavailable">සංවේදකය නොමැත</string>
+    <string name="hint_3dof_assisted_on">සංවේදක සහාය සක්‍රීයයි (භ්‍රමණ ස්ථාවරත්වය + නැති වූ විට රඳවා තබා ගැනීම)</string>
+    <string name="hint_3dof_assisted_off">සංවේදක සහාය අක්‍රීයයි, පිරිසිදු දෘශ්‍ය ට්‍රැක් කිරීම නැවත පිහිටුවන ලදී</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 
@@ -100,13 +100,13 @@
     <string name="camera_facing_other">කැමරාව %1$s</string>
     <string name="dialog_select_camera">කැමරාව තෝරන්න</string>
 
-    <string name="sensor_mode_active">Sensor mode: %1$s</string>
-    <string name="sensor_mode_rotation_vector">Rotation vector (absolute)</string>
-    <string name="sensor_mode_game_rotation_vector">Game rotation vector (relative)</string>
-    <string name="sensor_mode_accel_mag">Accelerometer + magnetometer</string>
-    <string name="sensor_mode_gyroscope">Gyroscope integration</string>
-    <string name="sensor_mode_none">No orientation sensor</string>
-    <string name="sensor_mode_notice_fallback">Limited sensors: using a fallback orientation source; heading may drift over time.</string>
-    <string name="sensor_mode_notice_none">No orientation sensor available; 3DOF stays still.</string>
+    <string name="sensor_mode_active">සංවේදක මාදිලිය: %1$s</string>
+    <string name="sensor_mode_rotation_vector">භ්‍රමණ දෛශිකය (නිරපේක්ෂ)</string>
+    <string name="sensor_mode_game_rotation_vector">ක්‍රීඩා භ්‍රමණ දෛශිකය (සාපේක්ෂ)</string>
+    <string name="sensor_mode_accel_mag">ත්වරණමානය + චුම්බකමානය</string>
+    <string name="sensor_mode_gyroscope">ජයිරෝස්කෝප් ඒකාබද්ධ කිරීම</string>
+    <string name="sensor_mode_none">දිශා සංවේදකයක් නැත</string>
+    <string name="sensor_mode_notice_fallback">සීමිත සංවේදක: විකල්ප දිශා මූලාශ්‍රයක් භාවිතයේ; දිශාව කාලයත් සමඟ ලිස්සා යා හැක.</string>
+    <string name="sensor_mode_notice_none">දිශා සංවේදකයක් නොමැත; 3DOF නිශ්චලව පවතී.</string>
 
 </resources>

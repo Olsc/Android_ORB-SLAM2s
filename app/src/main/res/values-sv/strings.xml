@@ -57,12 +57,12 @@
     <string name="category_ar">AR-styrning</string>
     <string name="category_map">Karta</string>
     <string name="category_display">Visning</string>
-    <string name="btn_3dof">Sensor: OFF</string>
-    <string name="btn_3dof_off">Sensor: OFF</string>
-    <string name="btn_3dof_on">Sensor: ON</string>
-    <string name="hint_3dof_unavailable">Sensor unavailable</string>
-    <string name="hint_3dof_assisted_on">Sensor assist enabled (Orientation fusion + Lost hold)</string>
-    <string name="hint_3dof_assisted_off">Pure vision tracking restored (sensor assist disabled)</string>
+    <string name="btn_3dof">Sensor: AV</string>
+    <string name="btn_3dof_off">Sensor: AV</string>
+    <string name="btn_3dof_on">Sensor: PÅ</string>
+    <string name="hint_3dof_unavailable">Sensorn är inte tillgänglig</string>
+    <string name="hint_3dof_assisted_on">Sensorstöd aktiverat (rotationsstabilisering + håll vid förlust)</string>
+    <string name="hint_3dof_assisted_off">Sensorstöd inaktiverat, ren visuell spårning återställd</string>
 
     <string name="hint_no_camera">Ingen kamera upptäcktes (svart skärm-läge)</string>
 
@@ -100,13 +100,13 @@
     <string name="camera_facing_other">Kamera %1$s</string>
     <string name="dialog_select_camera">Välj kamera</string>
 
-    <string name="sensor_mode_active">Sensor mode: %1$s</string>
-    <string name="sensor_mode_rotation_vector">Rotation vector (absolute)</string>
-    <string name="sensor_mode_game_rotation_vector">Game rotation vector (relative)</string>
+    <string name="sensor_mode_active">Sensorläge: %1$s</string>
+    <string name="sensor_mode_rotation_vector">Rotationsvektor (absolut)</string>
+    <string name="sensor_mode_game_rotation_vector">Spelrotationsvektor (relativ)</string>
     <string name="sensor_mode_accel_mag">Accelerometer + magnetometer</string>
-    <string name="sensor_mode_gyroscope">Gyroscope integration</string>
-    <string name="sensor_mode_none">No orientation sensor</string>
-    <string name="sensor_mode_notice_fallback">Limited sensors: using a fallback orientation source; heading may drift over time.</string>
-    <string name="sensor_mode_notice_none">No orientation sensor available; 3DOF stays still.</string>
+    <string name="sensor_mode_gyroscope">Gyroskopintegrering</string>
+    <string name="sensor_mode_none">Ingen riktningssensor</string>
+    <string name="sensor_mode_notice_fallback">Begränsade sensorer: reservriktningskälla används; kursen kan driva med tiden.</string>
+    <string name="sensor_mode_notice_none">Ingen riktningssensor tillgänglig; 3DOF förblir stilla.</string>
 
 </resources>

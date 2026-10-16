@@ -57,12 +57,12 @@
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>
     <string name="category_display">Zobrazenie</string>
-    <string name="btn_3dof">Sensor: OFF</string>
-    <string name="btn_3dof_off">Sensor: OFF</string>
-    <string name="btn_3dof_on">Sensor: ON</string>
-    <string name="hint_3dof_unavailable">Sensor unavailable</string>
-    <string name="hint_3dof_assisted_on">Sensor assist enabled (Orientation fusion + Lost hold)</string>
-    <string name="hint_3dof_assisted_off">Pure vision tracking restored (sensor assist disabled)</string>
+    <string name="btn_3dof">Inzwa: CISHIWE</string>
+    <string name="btn_3dof_off">Inzwa: CISHIWE</string>
+    <string name="btn_3dof_on">Inzwa: CULISIWE</string>
+    <string name="hint_3dof_unavailable">Inzwa ayitholakali</string>
+    <string name="hint_3dof_assisted_on">Usizo lwenzwa luvuliwe (ukuzinza kokuzungeza + ukubamba lapho kulahleka)</string>
+    <string name="hint_3dof_assisted_off">Usizo lwenzwa luvaliwe, ukulandelela okubonakalayo okumsulwa kubuyiselwe</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 
@@ -100,13 +100,13 @@
     <string name="camera_facing_other">Ikhamera %1$s</string>
     <string name="dialog_select_camera">Khetha Ikhamera</string>
 
-    <string name="sensor_mode_active">Sensor mode: %1$s</string>
-    <string name="sensor_mode_rotation_vector">Rotation vector (absolute)</string>
-    <string name="sensor_mode_game_rotation_vector">Game rotation vector (relative)</string>
-    <string name="sensor_mode_accel_mag">Accelerometer + magnetometer</string>
-    <string name="sensor_mode_gyroscope">Gyroscope integration</string>
-    <string name="sensor_mode_none">No orientation sensor</string>
-    <string name="sensor_mode_notice_fallback">Limited sensors: using a fallback orientation source; heading may drift over time.</string>
-    <string name="sensor_mode_notice_none">No orientation sensor available; 3DOF stays still.</string>
+    <string name="sensor_mode_active">Imodi yenzwa: %1$s</string>
+    <string name="sensor_mode_rotation_vector">Ivekhtha yokuzungeza (ngokuphelele)</string>
+    <string name="sensor_mode_game_rotation_vector">Ivekhtha yokuzungeza yomdlalo (ngokulinganiselwe)</string>
+    <string name="sensor_mode_accel_mag">Isilinganisi sokushesha + isilinganisi sikazibuthe</string>
+    <string name="sensor_mode_gyroscope">Ukuhlanganiswa kwe-gyroscope</string>
+    <string name="sensor_mode_none">Asikho inzwa yomumo</string>
+    <string name="sensor_mode_notice_fallback">Izinzwa ezinomkhawulo: kusetshenziswa umthombo womumo oyisipele; isiqondiso singase sidembe ngokuhamba kwesikhathi.</string>
+    <string name="sensor_mode_notice_none">Ayikho inzwa yomumo etholakalayo; i-3DOF ihlala inyamanzi.</string>
 
 </resources>
