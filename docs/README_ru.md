@@ -27,6 +27,7 @@
 <img alt="Android" src="https://img.shields.io/badge/Android-3DDC84?style=flat-square&logo=android&logoColor=white"/>
 <img alt="OpenCV" src="https://img.shields.io/badge/OpenCV-5C3EE8?style=flat-square&logo=opencv&logoColor=white"/>
 <img alt="NDK" src="https://img.shields.io/badge/NDK-0C1E33?style=flat-square&logo=android&logoColor=white"/>
+<img alt="App License: Apache-2.0" src="https://img.shields.io/badge/App_License-Apache--2.0-green?style=flat-square"/>
 <img alt="GPL-3.0" src="https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square"/>
 </p>
 
@@ -44,7 +45,7 @@ https://github.com/Martin20150405/SLAM_AR_Android.git
 
 ---
 
-# 🎯 ORB-SLAM2s: Android Spatial Computing & Lightweight AR Demo
+# 🎯 ORB-SLAM2s: Android пространственные вычисления и облегчённая AR-демонстрация
 
 _Маленькая буква 's' в ORB-SLAM2s означает **Smart · Swift · Small**（Умный · Быстрый · Маленький）, подчеркивая усиленный интеллект, более высокую производительность и меньший вес по сравнению с оригинальным ORB-SLAM2._
 
@@ -86,7 +87,7 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 - **🎨 Нативный AR-рендеринг** —— Быстрый нативный 3D-рендеринг GLB/glTF на основе **cgltf** и OpenGL ES
 - **🌑 Обнаружение темных кадров** —— Автоматически пропускает темные или низкокачественные кадры
 - **🖱️ Управление AR-объектами** —— Размещение, масштабирование и взаимодействие с 3D-объектами
-- **🧭 3DOF отслеживание ориентации** —— Отслеживание с использованием встроенных датчиков устройства
+- **🧭 3DOF отслеживание ориентации** —— Трёхстепенное отслеживание ориентации по встроенным датчикам устройства с многоуровневым резервным выбором источника (вектор вращения / игровой вектор вращения / акселерометр + магнитометр / интегрирование гироскопа), работает даже без магнитометра
 - **📑 Поддержка нескольких карт** —— Одновременная загрузка и управление несколькими файлами карт
 
 ---
@@ -174,7 +175,7 @@ ORB-SLAM2 — это библиотека SLAM в реальном времен�
 
 # 📜 Лицензия
 
-## ORB-SLAM2 Core Library
+## Основная библиотека ORB-SLAM2
 
 ORB-SLAM2 основная библиотека выпущена под [GPLv3 лицензией](https://github.com/raulmur/ORB_SLAM2/blob/master/LICENSE.txt). Для списка всех зависимостей кода/библиотек (и связанных лицензий) см. [Dependencies.md](https://github.com/raulmur/ORB_SLAM2/blob/master/Dependencies.md).
 

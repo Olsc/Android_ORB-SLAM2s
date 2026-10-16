@@ -58,15 +58,15 @@
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>
     <string name="category_display">Zobrazenie</string>
-    <string name="btn_3dof">3DOF: OFF</string>
-    <string name="btn_3dof_off">3DOF: OFF</string>
-    <string name="btn_3dof_on">3DOF: ON</string>
-    <string name="btn_3dof_close">3DOF: OFF</string>
-    <string name="hint_3dof_unavailable">3DOF sensor unavailable</string>
-    <string name="hint_3dof_spawned">3DOF assist enabled (Orientation fusion + Lost hold)</string>
-    <string name="hint_3dof_closed">Pure vision tracking restored (3DOF assist disabled)</string>
-    <string name="hint_3dof_assisted_on">3DOF assist enabled (Orientation fusion + Lost hold)</string>
-    <string name="hint_3dof_assisted_off">Pure vision tracking restored (3DOF assist disabled)</string>
+    <string name="btn_3dof">Sensor: OFF</string>
+    <string name="btn_3dof_off">Sensor: OFF</string>
+    <string name="btn_3dof_on">Sensor: ON</string>
+    <string name="btn_3dof_close">Sensor: OFF</string>
+    <string name="hint_3dof_unavailable">Sensor unavailable</string>
+    <string name="hint_3dof_spawned">Sensor assist enabled (Orientation fusion + Lost hold)</string>
+    <string name="hint_3dof_closed">Pure vision tracking restored (sensor assist disabled)</string>
+    <string name="hint_3dof_assisted_on">Sensor assist enabled (Orientation fusion + Lost hold)</string>
+    <string name="hint_3dof_assisted_off">Pure vision tracking restored (sensor assist disabled)</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 
@@ -104,4 +104,14 @@
     <string name="camera_facing_front">Priekšējā kamera (%1$s)</string>
     <string name="camera_facing_other">Kamera %1$s</string>
     <string name="dialog_select_camera">Izvēlieties kameru</string>
+
+    <string name="sensor_mode_active">Sensor mode: %1$s</string>
+    <string name="sensor_mode_rotation_vector">Rotation vector (absolute)</string>
+    <string name="sensor_mode_game_rotation_vector">Game rotation vector (relative)</string>
+    <string name="sensor_mode_accel_mag">Accelerometer + magnetometer</string>
+    <string name="sensor_mode_gyroscope">Gyroscope integration</string>
+    <string name="sensor_mode_none">No orientation sensor</string>
+    <string name="sensor_mode_notice_fallback">Limited sensors: using a fallback orientation source; heading may drift over time.</string>
+    <string name="sensor_mode_notice_none">No orientation sensor available; 3DOF stays still.</string>
+
 </resources>

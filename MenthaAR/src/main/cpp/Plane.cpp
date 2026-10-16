@@ -28,8 +28,8 @@ static cv::Mat Mat33Mul(const cv::Mat& A, const cv::Mat& B)
     return C;
 }
 
-// SO(3)李代数指数映射：用闭式Rodrigues公式直接填充3x3矩阵，彻底杜绝堆内存临时开辟与动态析构
-// exp([w]×) = I·cos(θ) + (1-cos(θ))·k·k^T + [k]×·sin(θ)，θ=||w||, k=w/θ
+// SO(3) 李代数指数映射：用闭式 Rodrigues 公式直接填充 3x3 矩阵，避免开辟堆内存临时对象
+// exp(skew(w)) = I*cos(theta) + (1-cos(theta))*k*k^T + skew(k)*sin(theta)，其中 theta=||w||、k=w/theta
 cv::Mat Plane::ExpSO3(const float& x, const float& y, const float& z)
 {
     cv::Mat R(3, 3, CV_32F);
@@ -83,7 +83,7 @@ cv::Mat Plane::ExpSO3(const cv::Mat& v)
 Plane::Plane(const std::vector<ORB_SLAM2::MapPoint*>& vMPs, const cv::Mat& Tcw) :
     mvMPs(vMPs), mTcw(Tcw.clone())
 {
-    // 随机初始化平面绕法向量的旋转角度（-π/2 到 π/2）
+    // 随机初始化平面绕法向量的旋转角度（-pi/2 到 pi/2）
     rang = -3.14159265358979323846f / 2 +
            static_cast<float>(static_cast<double>(rand()) / static_cast<double>(RAND_MAX)) *
            3.14159265358979323846f;
@@ -101,8 +101,7 @@ Plane::Plane(const float& nx, const float& ny, const float& nz,
     o = (cv::Mat_<float>(3, 1) << ox, oy, oz);
     rang = rang_;
 
-    // 计算从世界坐标系到平面坐标系的变换矩阵
-    // 使平面的Y轴与世界的Y轴对齐 (up = [0, 1, 0]^T)
+    // 计算从世界坐标系到平面坐标系的变换矩阵，使平面 Y 轴与 up=[0,1,0]^T 对齐
     // v = up.cross(n) = [nz, 0, -nx]^T
     const float vx = nz, vy = 0.0f, vz = -nx;
     const float sa = std::sqrt(vx * vx + vz * vz); // sin(angle)
@@ -221,8 +220,7 @@ void Plane::Recompute()
 
     n = (cv::Mat_<float>(3, 1) << nx, ny, nz);
 
-    // 计算从世界坐标系到平面坐标系的变换矩阵
-    // 使平面的Y轴与世界的Y轴对齐 (up = [0, 1, 0]^T)
+    // 计算从世界坐标系到平面坐标系的变换矩阵，使平面 Y 轴与 up=[0,1,0]^T 对齐
     // v = up.cross(n) = [nz, 0, -nx]^T
     const float vx = nz, vy = 0.0f, vz = -nx;
     const float sa = std::sqrt(vx * vx + vz * vz); // sin(angle)

@@ -27,6 +27,7 @@
 <img alt="Android" src="https://img.shields.io/badge/Android-3DDC84?style=flat-square&logo=android&logoColor=white"/>
 <img alt="OpenCV" src="https://img.shields.io/badge/OpenCV-5C3EE8?style=flat-square&logo=opencv&logoColor=white"/>
 <img alt="NDK" src="https://img.shields.io/badge/NDK-0C1E33?style=flat-square&logo=android&logoColor=white"/>
+<img alt="App License: Apache-2.0" src="https://img.shields.io/badge/App_License-Apache--2.0-green?style=flat-square"/>
 <img alt="GPL-3.0" src="https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square"/>
 </p>
 
@@ -44,7 +45,7 @@ https://github.com/Martin20150405/SLAM_AR_Android.git
 
 ---
 
-# 🎯 ORB-SLAM2s: Android Spatial Computing & Lightweight AR Demo
+# 🎯 ORB-SLAM2s: Android 空間コンピューティングと軽量 AR デモ
 
 _ORB-SLAM2s の小文字の 's' は **Smart · Swift · Small**（スマート・迅速・小型）を意味し、元の ORB-SLAM2 と比較して強化された知能性、より高速なパフォーマンス、より軽量なサイズを強調しています。_
 
@@ -86,7 +87,7 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 - **🎨 ネイティブ AR レンダリング** —— **cgltf** と OpenGL ES を使用した高性能 3D レンダリング、GLB/glTF モデルの高速読み込みに対応
 - **🌑 暗所フレーム検出** —— 暗いまたは低品質のフレームを自動的にスキップ
 - **🖱️ AR オブジェクト管理** —— 3D オブジェクトの配置、ピンチジェスチャーによる拡大縮小
-- **🧭 3DOF 方向追跡** —— デバイス内蔵センサーによる 3 自由度の方向追跡
+- **🧭 3DOF 方向追跡** —— デバイス内蔵センサーによる 3 自由度の方向追跡。多段フォールバック対応（回転ベクトル / ゲーム回転ベクトル / 加速度計 + 磁力計 / ジャイロ積分）により、磁力計がなくても動作
 - **📑 複数マップのサポート** —— 複数のマップファイルの同時読み込みと管理
 
 ---

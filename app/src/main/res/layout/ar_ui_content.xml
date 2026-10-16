@@ -78,8 +78,10 @@
 
         <Button
             android:id="@+id/btn_group_ar"
-            android:layout_width="76dp"
-            android:layout_height="32dp"
+            android:layout_width="wrap_content"
+            android:minWidth="76dp"
+            android:layout_height="wrap_content"
+            android:minHeight="32dp"
             android:layout_marginBottom="4dp"
             android:text="@string/category_ar"
             android:textSize="11sp"
@@ -93,11 +95,14 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical"
+            android:gravity="end"
             android:visibility="gone">
             <Button
                 android:id="@+id/btn_create_ar_object"
-                android:layout_width="76dp"
-                android:layout_height="32dp"
+                android:layout_width="wrap_content"
+                android:minWidth="76dp"
+                android:layout_height="wrap_content"
+                android:minHeight="32dp"
                 android:layout_marginBottom="4dp"
                 android:text="@string/btn_ar_object"
                 android:textSize="11sp"
@@ -107,8 +112,10 @@
                 android:paddingEnd="8dp"/>
             <Button
                 android:id="@+id/btn_3dof_cube"
-                android:layout_width="76dp"
-                android:layout_height="32dp"
+                android:layout_width="wrap_content"
+                android:minWidth="76dp"
+                android:layout_height="wrap_content"
+                android:minHeight="32dp"
                 android:layout_marginBottom="4dp"
                 android:text="@string/btn_3dof"
                 android:textSize="11sp"
@@ -122,8 +129,10 @@
 
         <Button
             android:id="@+id/btn_group_map"
-            android:layout_width="76dp"
-            android:layout_height="32dp"
+            android:layout_width="wrap_content"
+            android:minWidth="76dp"
+            android:layout_height="wrap_content"
+            android:minHeight="32dp"
             android:layout_marginBottom="4dp"
             android:text="@string/category_map"
             android:textSize="11sp"
@@ -137,11 +146,14 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical"
+            android:gravity="end"
             android:visibility="gone">
             <Button
                 android:id="@+id/btn_save_map"
-                android:layout_width="76dp"
-                android:layout_height="32dp"
+                android:layout_width="wrap_content"
+                android:minWidth="76dp"
+                android:layout_height="wrap_content"
+                android:minHeight="32dp"
                 android:layout_marginBottom="4dp"
                 android:text="@string/btn_save"
                 android:textSize="11sp"
@@ -151,8 +163,10 @@
                 android:paddingEnd="8dp"/>
             <Button
                 android:id="@+id/btn_load_map"
-                android:layout_width="76dp"
-                android:layout_height="32dp"
+                android:layout_width="wrap_content"
+                android:minWidth="76dp"
+                android:layout_height="wrap_content"
+                android:minHeight="32dp"
                 android:layout_marginBottom="4dp"
                 android:text="@string/btn_load"
                 android:textSize="11sp"
@@ -162,8 +176,10 @@
                 android:paddingEnd="8dp"/>
             <Button
                 android:id="@+id/btn_map_list"
-                android:layout_width="76dp"
-                android:layout_height="32dp"
+                android:layout_width="wrap_content"
+                android:minWidth="76dp"
+                android:layout_height="wrap_content"
+                android:minHeight="32dp"
                 android:layout_marginBottom="4dp"
                 android:text="@string/btn_map"
                 android:textSize="11sp"
@@ -175,8 +191,10 @@
 
         <Button
             android:id="@+id/btn_group_display"
-            android:layout_width="76dp"
-            android:layout_height="32dp"
+            android:layout_width="wrap_content"
+            android:minWidth="76dp"
+            android:layout_height="wrap_content"
+            android:minHeight="32dp"
             android:layout_marginBottom="4dp"
             android:text="@string/category_display"
             android:textSize="11sp"
@@ -190,11 +208,14 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical"
+            android:gravity="end"
             android:visibility="gone">
             <Button
                 android:id="@+id/btn_toggle_pointcloud"
-                android:layout_width="76dp"
-                android:layout_height="32dp"
+                android:layout_width="wrap_content"
+                android:minWidth="76dp"
+                android:layout_height="wrap_content"
+                android:minHeight="32dp"
                 android:layout_marginBottom="4dp"
                 android:text="@string/btn_point_cloud"
                 android:textSize="11sp"
@@ -204,8 +225,10 @@
                 android:paddingEnd="8dp"/>
             <Button
                 android:id="@+id/btn_switch_camera"
-                android:layout_width="76dp"
-                android:layout_height="32dp"
+                android:layout_width="wrap_content"
+                android:minWidth="76dp"
+                android:layout_height="wrap_content"
+                android:minHeight="32dp"
                 android:layout_marginBottom="4dp"
                 android:text="@string/btn_switch_camera"
                 android:textSize="11sp"

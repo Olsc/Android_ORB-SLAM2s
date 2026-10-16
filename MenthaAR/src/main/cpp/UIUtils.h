@@ -3,7 +3,7 @@
  * 由Olsc于2025/8/25开始进行修改
  */
 
-// UI 工具：RANSAC 平面检测与 OpenCV→OpenGL 矩阵转换
+// UI 工具：RANSAC 平面检测与 OpenCV->OpenGL 矩阵转换
 
 #ifndef UTILS_H
 #define UTILS_H

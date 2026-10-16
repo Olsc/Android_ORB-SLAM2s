@@ -39,10 +39,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
-/**
- * SLAM 跨进程共享内存：Header + Y 双缓冲 + 点云区。
- * 布局常量需与 native-lib.cpp 中的 SH_* 保持一致。
- */
+// SLAM 跨进程共享内存：Header + Y 双缓冲 + 点云区。
+// 布局常量需与 native-lib.cpp 中的 SH_* 保持一致。
 public class SharedMemoryBuffer {
     private static final String TAG = "SharedMemoryBuffer";
 
@@ -60,7 +58,7 @@ public class SharedMemoryBuffer {
     public static final int OFF_ACTIVE_MAP_ID = 36;
     public static final int OFF_MVP = 40; // 48 floats = 192 bytes
 
-    // 点云上限：3000 点 × 7 floats × 4B，取 96KB 对齐
+    // 点云上限：3000 点 * 7 floats * 4B，取 96KB 对齐
     public static final int POINTCLOUD_MAX_BYTES = 96 * 1024;
 
     private final int bufferSize;
@@ -197,8 +195,7 @@ public class SharedMemoryBuffer {
         if (out48 == null || out48.length < 48) return false;
         if (mappedFloatView != null) {
             // 批量读取 48 个 float（M/V/P 各 16）
-            mappedFloatView.position(OFF_MVP / 4);
-            mappedFloatView.get(out48, 0, 48);
+            mappedFloatView.get(OFF_MVP / 4, out48, 0, 48);
             return true;
         } else if (memoryFile != null) {
             byte[] b = new byte[48 * 4];
@@ -224,9 +221,8 @@ public class SharedMemoryBuffer {
         if (floats <= 0) return 0;
 
         if (mappedFloatView != null) {
-            // 批量读取点云 float 缓冲
-            mappedFloatView.position(pointCloudOffset() / 4);
-            mappedFloatView.get(out, 0, floats);
+            // 批量读取点云 float 缓冲：使用绝对下标，避免与 AR 线程的 readMvp 竞争共享 position
+            mappedFloatView.get(pointCloudOffset() / 4, out, 0, floats);
             return floats;
         } else if (memoryFile != null) {
             byte[] b = new byte[floats * 4];

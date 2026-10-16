@@ -856,8 +856,12 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
         mSensorFusionTracker = new SensorFusionTracker();
         mSensorFusionTracker.set3DofAssistEnabled(false); // 默认关闭
 
-        if (!mOrientationSensor.hasRequiredSensors(this)) {
-            Log.w(TAG, "设备缺少 3DOF 所需的传感器");
+        // 多级回退检测：具备任意一种姿态来源即可开启，不再强制要求磁力计/旋转矢量
+        OrientationSensor.Mode mode = mOrientationSensor.detectMode(this);
+        Log.d(TAG, "3DOF 姿态来源检测结果: " + mode);
+
+        if (mode == OrientationSensor.Mode.NONE) {
+            Log.w(TAG, "设备没有任何可用于 3DOF 的姿态传感器");
             if (mBtn3DofCube != null) {
                 mBtn3DofCube.setEnabled(false);
                 mBtn3DofCube.setAlpha(0.5f);
@@ -879,6 +883,11 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
         }
 
         if (!mIs3DofMode) {
+            // 开启前重新确认姿态来源，避免无传感器时按钮状态与实际能力不符
+            if (mOrientationSensor.detectMode(this) == OrientationSensor.Mode.NONE) {
+                showToast(getString(R.string.hint_3dof_unavailable));
+                return;
+            }
             mIs3DofMode = true;
             mOrientationSensor.start(this);
             mSensorFusionTracker.set3DofAssistEnabled(true);
@@ -886,7 +895,7 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
             if (mBtn3DofCube != null) {
                 mBtn3DofCube.setText(getString(R.string.btn_3dof_on));
             }
-            showToast(getString(R.string.hint_3dof_assisted_on));
+            showSensorModeToast();
             Log.d(TAG, "3DOF 传感器辅助定位已开启 (旋转防抖 + 丢失空间保活)");
         } else {
             mIs3DofMode = false;
@@ -898,6 +907,47 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
             }
             showToast(getString(R.string.hint_3dof_assisted_off));
             Log.d(TAG, "3DOF 辅助定位已关闭，恢复纯视觉 SLAM");
+        }
+    }
+
+    // 提示当前实际使用的姿态来源，并对回退模式的局限性给出说明
+    private void showSensorModeToast() {
+        OrientationSensor.Mode mode = mOrientationSensor.getMode();
+        StringBuilder sb = new StringBuilder(getString(R.string.hint_3dof_assisted_on));
+        sb.append('\n').append(getString(R.string.sensor_mode_active, getString(getSensorModeNameRes(mode))));
+        int noticeRes = getSensorModeNoticeRes(mode);
+        if (noticeRes != 0) {
+            sb.append('\n').append(getString(noticeRes));
+        }
+        showToast(sb.toString());
+    }
+
+    private int getSensorModeNameRes(OrientationSensor.Mode mode) {
+        if (mode == null) return R.string.sensor_mode_none;
+        switch (mode) {
+            case ROTATION_VECTOR:
+                return R.string.sensor_mode_rotation_vector;
+            case GAME_ROTATION_VECTOR:
+                return R.string.sensor_mode_game_rotation_vector;
+            case ACCEL_MAG:
+                return R.string.sensor_mode_accel_mag;
+            case GYROSCOPE:
+                return R.string.sensor_mode_gyroscope;
+            default:
+                return R.string.sensor_mode_none;
+        }
+    }
+
+    private int getSensorModeNoticeRes(OrientationSensor.Mode mode) {
+        if (mode == null) return R.string.sensor_mode_notice_none;
+        switch (mode) {
+            case GAME_ROTATION_VECTOR:
+            case GYROSCOPE:
+                return R.string.sensor_mode_notice_fallback;
+            case NONE:
+                return R.string.sensor_mode_notice_none;
+            default:
+                return 0;
         }
     }
 }

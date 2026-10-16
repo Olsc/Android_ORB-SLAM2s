@@ -18,17 +18,8 @@ package com.orb.slam2s.util;
 import android.opengl.Matrix;
 import android.util.Log;
 
-/**
- * 姿态传感器融合跟踪器 (SensorFusionTracker)
- * 核心目标：
- * 1. 3DOF 辅助关闭时：完全透传视觉 SLAM 的原始 6DOF 位姿；
- * 2. 3DOF 辅助开启时：
- *    - 正常跟踪期：利用低通在线校准的传感器旋转矩阵消除纯视觉转头带来的高频抖动与无视差退化，
- *      前后纵深与平移严格由视觉 SLAM 提供；
- *    - 突然丢失期（Lost-Hold）：视觉跟踪突发中断时不隐藏 AR 物体，而是平滑切入纯 3DOF 空间保持兜底模式，
- *      将 AR 物体稳定锚定在原有物理空间方位中；
- *    - 多地图模式：检测到成功重定位并切换到其他新地图时，自动更新旧地图上下文并切换到新地图对应的 AR 物体。
- */
+// 姿态传感器融合跟踪器：3DOF 辅助关闭时透传视觉 SLAM 位姿；
+// 开启时正常跟踪透传视觉，跟踪丢失则平滑切换到传感器保持，并按地图切换重建兜底状态。
 public class SensorFusionTracker {
     private static final String TAG = "SensorFusionTracker";
 
@@ -70,9 +61,7 @@ public class SensorFusionTracker {
         Matrix.setIdentityM(mLastValidProj, 0);
     }
 
-    /**
-     * 开启或关闭 3DOF 传感器辅助功能 (默认关闭)
-     */
+    // 开启或关闭 3DOF 传感器辅助功能，默认关闭
     public synchronized void set3DofAssistEnabled(boolean enabled) {
         if (this.m3DofAssistEnabled != enabled) {
             this.m3DofAssistEnabled = enabled;
@@ -94,20 +83,8 @@ public class SensorFusionTracker {
         return mCurrentMode;
     }
 
-    /**
-     * 每帧核心融合与解耦计算更新
-     *
-     * @param rawDrawFlag 视觉 SLAM 原始绘制标志
-     * @param trackingState SLAM 当前跟踪状态 (2 为 Tracking::OK)
-     * @param activeMapId 当前底层活跃地图 ID
-     * @param rawMvp48 共享内存原始 48 个 float (Model[16] + View[16] + Proj[16])
-     * @param sensorRot 传感器旋转矩阵 (4x4 列主序)
-     * @param isSensorReady 传感器是否已就绪
-     * @param outModel 输出给渲染器的 Model 矩阵 (16 floats)
-     * @param outView 输出给渲染器的 View 矩阵 (16 floats)
-     * @param outProj 输出给渲染器的 Proj 矩阵 (16 floats)
-     * @return 最终是否应绘制 AR 物体
-     */
+    // 每帧融合与解耦计算：透传视觉位姿或在丢失时切换 3DOF 保持，返回是否绘制 AR 物体。
+    // 入参为绘制标志、跟踪状态、地图 ID、原始 MVP、传感器旋转矩阵与就绪标志，输出 Model/View/Proj 矩阵。
     public synchronized boolean update(boolean rawDrawFlag, int trackingState, int activeMapId,
                                       float[] rawMvp48, float[] sensorRot, boolean isSensorReady,
                                       float[] outModel, float[] outView, float[] outProj) {
@@ -181,7 +158,7 @@ public class SensorFusionTracker {
                 }
             }
 
-            // 【核心优化】：视觉稳定跟踪时，严格使用视觉 SLAM 的位姿数据，彻底消除传感器时延相位差与微颤抖动
+            // 视觉稳定跟踪时严格使用视觉 SLAM 位姿，避免传感器时延与微抖
             System.arraycopy(vModel, 0, outModel, 0, 16);
             System.arraycopy(rawMvp48, vViewOffset, outView, 0, 16);
             System.arraycopy(rawMvp48, vProjOffset, outProj, 0, 16);
@@ -215,9 +192,7 @@ public class SensorFusionTracker {
         return false;
     }
 
-    /**
-     * 对旋转矩阵进行一阶低通平滑并进行 Gram-Schmidt 正交规范化
-     */
+    // 对旋转矩阵进行一阶低通平滑并做 Gram-Schmidt 正交规范化
     private void smoothMatrix(float[] target, float[] source, float alpha) {
         for (int i = 0; i < 16; i++) {
             target[i] = (1.0f - alpha) * target[i] + alpha * source[i];
@@ -233,7 +208,7 @@ public class SensorFusionTracker {
         target[6] -= dotXY * target[2];
         normalizeVector(target, 4); // Y 列单位化
 
-        // Z 列 = X 列 × Y 列 (叉乘保证右手正交系)
+        // Z 列 = X 列 * Y 列 (叉乘保证右手正交系)
         target[8]  = target[1] * target[6] - target[2] * target[5];
         target[9]  = target[2] * target[4] - target[0] * target[6];
         target[10] = target[0] * target[5] - target[1] * target[4];

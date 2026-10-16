@@ -87,7 +87,7 @@ It shares similar performance optimization concepts with this project, though it
 - **🎨 Native AR Rendering** —— High-performance 3D rendering via **cgltf** and OpenGL ES, supporting fast loading of GLB/glTF 3D models and interactive placement on detected planes
 - **🌑 Dark Frame Detection** —— Automatically skips dark or low-quality frames to prevent SLAM thread blocking
 - **🖱️ AR Object Management** —— Place, scale (pinch gesture), and interact with 3D objects
-- **🧭 3DOF Orientation Tracking** —— Three-degrees-of-freedom orientation tracking using onboard device sensors (Rotation Vector / Accelerometer + Magnetometer)
+- **🧭 3DOF Orientation Tracking** —— Three-degrees-of-freedom orientation tracking using onboard device sensors, with multi-tier fallback (Rotation Vector / Game Rotation Vector / Accelerometer + Magnetometer / Gyroscope integration), so it works even without a magnetometer
 - **📑 Multi-Map Support** —— Simultaneous loading and matching of multiple map files
 
 ---

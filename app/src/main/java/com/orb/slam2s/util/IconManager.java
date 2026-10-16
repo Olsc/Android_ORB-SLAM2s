@@ -133,7 +133,7 @@ public class IconManager {
     }
 
     // 校验桌面图标组件状态：确保始终至少有一个 activity-alias 处于启用状态。
-    // 用于修复因 alias 重命名、系统状态残留等导致“桌面上找不到应用图标”的问题。
+    // 用于修复因 alias 重命名、系统状态残留等导致"桌面上找不到应用图标"的问题。
     public static void ensureLauncherIcon(Context context) {
         try {
             PackageManager pm = context.getPackageManager();

@@ -59,10 +59,8 @@ public class GlobalConstant {
 
     // 更新显示旋转角度，rotation 为 Android Surface 旋转角度
     public static void setDisplayRotation(int rotation) {
-        // 传感器坐标系重映射在OrientationSensor中已处理
-        // 这里记录屏幕旋转，用于相机帧旋转补偿
-        // 左横屏(Surface.ROTATION_90) = 0度旋转
-        // 右横屏(Surface.ROTATION_270) = 180度旋转
+        // 记录屏幕旋转角度：左横屏 ROTATION_90 记 0 度，右横屏 ROTATION_270 记 180 度，
+        // 传感器坐标系重映射已在 OrientationSensor 中处理
         DISPLAY_ROTATION = rotation;
     }
 }
