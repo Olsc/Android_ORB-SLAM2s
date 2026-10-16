@@ -58,12 +58,15 @@
     <string name="category_ar">Controles AR</string>
     <string name="category_map">Mapa</string>
     <string name="category_display">Pantalla</string>
-
-    <string name="btn_3dof">3DOF</string>
-    <string name="btn_3dof_close">Cerrar 3DOF</string>
-    <string name="hint_3dof_unavailable">Función 3DOF no disponible</string>
-    <string name="hint_3dof_spawned">Cubo 3DOF generado a 5 metros adelante</string>
-    <string name="hint_3dof_closed">Modo 3DOF cerrado</string>
+    <string name="btn_3dof">Asistencia 3DOF: DES</string>
+    <string name="btn_3dof_off">Asistencia 3DOF: DES</string>
+    <string name="btn_3dof_on">Asistencia 3DOF: ACT</string>
+    <string name="btn_3dof_close">Asistencia 3DOF: DES</string>
+    <string name="hint_3dof_unavailable">Sensor 3DOF no disponible</string>
+    <string name="hint_3dof_spawned">Asistencia de sensor 3DOF activada</string>
+    <string name="hint_3dof_closed">Seguimiento puramente visual restaurado</string>
+    <string name="hint_3dof_assisted_on">Asistencia 3DOF activada (antitemblor + retención tras pérdida)</string>
+    <string name="hint_3dof_assisted_off">Asistencia 3DOF desactivada, seguimiento visual restaurado</string>
 
     <string name="hint_no_camera">No se detectó ninguna cámara (modo pantalla negra)</string>
 

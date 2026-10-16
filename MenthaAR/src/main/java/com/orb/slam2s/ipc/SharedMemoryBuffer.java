@@ -54,8 +54,10 @@ public class SharedMemoryBuffer {
     public static final int OFF_FRAME_H = 12;
     public static final int OFF_UI_WRITE_SEQ = 16;
     public static final int OFF_SLAM_DONE_SEQ = 20;
+    public static final int OFF_TRACKING_STATE = 24;
     public static final int OFF_DRAW_FLAG = 28;
     public static final int OFF_POINTCLOUD_BYTES = 32;
+    public static final int OFF_ACTIVE_MAP_ID = 36;
     public static final int OFF_MVP = 40; // 48 floats = 192 bytes
 
     // 点云上限：3000 点 × 7 floats × 4B，取 96KB 对齐
@@ -185,7 +187,11 @@ public class SharedMemoryBuffer {
 
     public int readSlamDoneSeq() { return readInt(OFF_SLAM_DONE_SEQ); }
 
+    public int readTrackingState() { return readInt(OFF_TRACKING_STATE); }
+
     public int readDrawFlag() { return readInt(OFF_DRAW_FLAG); }
+
+    public int readActiveMapId() { return readInt(OFF_ACTIVE_MAP_ID); }
 
     public boolean readMvp(float[] out48) {
         if (out48 == null || out48.length < 48) return false;

@@ -1,24 +1,5 @@
 name: Submodule Auto Update
 
-# 定期检查所有 git 子模块（submodule）是否有上游更新；
-# 若有更新则自动拉取并创建 / 更新一个 Pull Request。
-#
-# 本工作流只负责 “检查 + 更新 + 提交 PR”，不做任何编译。
-# 编译 / 打包测试由已有的 Android CI（.github/workflows/android.yml）负责。
-#
-# ⚠️ 重要：使用默认 GITHUB_TOKEN 创建的 PR 不会触发其它 workflow 的
-#    pull_request 事件（GitHub 防止递归），所以本工作流自动开的 PR
-#    **不会**自动跑 Android CI。
-#    如需让自动 PR 触发 Android CI（从而自动完成编译测试），请创建
-#    一个 PAT（classic：勾选 repo + workflow；或 fine-grained：给本仓库
-#    Contents=Read/Write、Pull requests=Read/Write、Workflows=Write），
-#    保存为 secret `SUBMODULE_PR_TOKEN`。本工作流会自动优先使用它。
-#
-# 子模块跟踪的分支由 `.gitmodules` 里的 `submodule.<name>.branch` 决定；
-# 未配置时使用子模块远程仓库的默认分支（remote HEAD）。
-# ⚠️ opencv 上游默认分支已是 5.x，本仓库使用 4.x，
-#    因此 .gitmodules 中显式固定了 `branch = 4.x`，请勿随意删除。
-
 on:
   schedule:
     # 每周一 03:17 UTC 检查一次（错开整点，降低 GitHub 高峰延迟）
@@ -97,9 +78,6 @@ jobs:
             echo ""
             echo "---"
             echo "*此描述由 GitHub Actions 自动生成 · [运行记录](${RUN_URL})*"
-            echo ""
-            echo "> 依赖 PR 的编译 / 打包测试由 Android CI 处理；"
-            echo "> 若本 PR 未自动触发 CI，请确认已配置 \`SUBMODULE_PR_TOKEN\`。"
           } >> "$BODY"
 
       - name: Ensure PR labels exist

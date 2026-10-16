@@ -56,12 +56,15 @@
     <string name="category_ar">AR操作</string>
     <string name="category_map">マップ</string>
     <string name="category_display">表示</string>
-
-    <string name="btn_3dof">3DOF</string>
-    <string name="btn_3dof_close">3DOFを閉じる</string>
-    <string name="hint_3dof_unavailable">3DOF機能は利用できません</string>
-    <string name="hint_3dof_spawned">3DOFキューブが5メートル先に生成されました</string>
-    <string name="hint_3dof_closed">3DOFモードを終了しました</string>
+    <string name="btn_3dof">3DOF補助: オフ</string>
+    <string name="btn_3dof_off">3DOF補助: オフ</string>
+    <string name="btn_3dof_on">3DOF補助: オン</string>
+    <string name="btn_3dof_close">3DOF補助: オフ</string>
+    <string name="hint_3dof_unavailable">3DOFセンサーを利用できません</string>
+    <string name="hint_3dof_spawned">3DOFセンサー補助追跡を有効化しました</string>
+    <string name="hint_3dof_closed">純粋ビジュアルSLAM追跡に復帰しました</string>
+    <string name="hint_3dof_assisted_on">3DOF補助を有効化しました（回転ブレ防止・喪失時保持）</string>
+    <string name="hint_3dof_assisted_off">3DOF補助を無効化し、ビジュアル追跡に復帰しました</string>
 
     <string name="hint_no_camera">利用可能なカメラが検出されませんでした（黒画面モード）</string>
 

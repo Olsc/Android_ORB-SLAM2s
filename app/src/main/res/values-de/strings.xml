@@ -57,12 +57,15 @@
     <string name="category_ar">AR-Steuerung</string>
     <string name="category_map">Karte</string>
     <string name="category_display">Anzeige</string>
-
-    <string name="btn_3dof">3DOF</string>
-    <string name="btn_3dof_close">3DOF schließen</string>
-    <string name="hint_3dof_unavailable">3DOF-Funktion nicht verfügbar</string>
-    <string name="hint_3dof_spawned">3DOF-Würfel 5 Meter voraus erzeugt</string>
-    <string name="hint_3dof_closed">3DOF-Modus geschlossen</string>
+    <string name="btn_3dof">3DOF-Hilfe: AUS</string>
+    <string name="btn_3dof_off">3DOF-Hilfe: AUS</string>
+    <string name="btn_3dof_on">3DOF-Hilfe: AN</string>
+    <string name="btn_3dof_close">3DOF-Hilfe: AUS</string>
+    <string name="hint_3dof_unavailable">3DOF-Sensor nicht verfügbar</string>
+    <string name="hint_3dof_spawned">3DOF-Sensorunterstützung aktiviert</string>
+    <string name="hint_3dof_closed">Reine visuelle Verfolgung wiederhergestellt</string>
+    <string name="hint_3dof_assisted_on">3DOF-Hilfe aktiviert (Drehstabilisierung + Halten bei Verlust)</string>
+    <string name="hint_3dof_assisted_off">3DOF-Hilfe deaktiviert, rein visuelles Tracking wiederhergestellt</string>
 
     <string name="hint_no_camera">Keine Kamera erkannt (Schwarzbild-Modus)</string>
 

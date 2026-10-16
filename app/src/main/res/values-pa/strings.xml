@@ -57,12 +57,15 @@
     <string name="category_ar">AR ਕੰਟਰੋਲ</string>
     <string name="category_map">ਨਕਸ਼ਾ</string>
     <string name="category_display">ਡਿਸਪਲੇ</string>
-
-    <string name="btn_3dof">3DOF</string>
-    <string name="btn_3dof_close">3DOF ਬੰਦ ਕਰੋ</string>
-    <string name="hint_3dof_unavailable">3DOF ਵਿਸ਼ੇਸ਼ਤਾ ਉਪਲਬਧ ਨਹੀਂ ਹੈ</string>
-    <string name="hint_3dof_spawned">3DOF ਕਿਊਬ 5 ਮੀਟਰ ਅੱਗੇ ਬਣਾਇਆ ਗਿਆ</string>
-    <string name="hint_3dof_closed">3DOF ਮੋਡ ਬੰਦ ਹੈ</string>
+    <string name="btn_3dof">3DOF: OFF</string>
+    <string name="btn_3dof_off">3DOF: OFF</string>
+    <string name="btn_3dof_on">3DOF: ON</string>
+    <string name="btn_3dof_close">3DOF: OFF</string>
+    <string name="hint_3dof_unavailable">3DOF sensor unavailable</string>
+    <string name="hint_3dof_spawned">3DOF assist enabled (Orientation fusion + Lost hold)</string>
+    <string name="hint_3dof_closed">Pure vision tracking restored (3DOF assist disabled)</string>
+    <string name="hint_3dof_assisted_on">3DOF assist enabled (Orientation fusion + Lost hold)</string>
+    <string name="hint_3dof_assisted_off">Pure vision tracking restored (3DOF assist disabled)</string>
 
     <string name="hint_no_camera">ਕੋਈ ਕੈਮਰਾ ਨਹੀਂ ਮਿਲਿਆ (ਬਲੈਕ ਸਕ੍ਰੀਨ ਮੋਡ)</string>
 

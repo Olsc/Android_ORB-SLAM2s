@@ -755,6 +755,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_isPointCloudDisplayEnabled(JNIEnv *env, 
 #define SH_OFF_TRACKING_STATE 24
 #define SH_OFF_DRAW_FLAG 28
 #define SH_OFF_POINTCLOUD_BYTES 32
+#define SH_OFF_ACTIVE_MAP_ID 36
 #define SH_OFF_MVP 40
 #define SH_POINTCLOUD_MAX_BYTES (96 * 1024)
 
@@ -822,6 +823,7 @@ static void writeResultToSharedMemory(int seq, int tracking, bool draw, int w, i
     if (!gSharedFramePtr) return;
     *shIntPtr(SH_OFF_TRACKING_STATE) = tracking;
     *shIntPtr(SH_OFF_DRAW_FLAG) = draw ? 1 : 0;
+    *shIntPtr(SH_OFF_ACTIVE_MAP_ID) = gActiveMapId;
 
     float* mvp = shFloatPtr(SH_OFF_MVP);
     {

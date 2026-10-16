@@ -59,12 +59,15 @@
     <string name="category_ar">Sterowanie AR</string>
     <string name="category_map">Mapa</string>
     <string name="category_display">Wyświetlacz</string>
-
-    <string name="btn_3dof">3DOF</string>
-    <string name="btn_3dof_close">Zamknij 3DOF</string>
-    <string name="hint_3dof_unavailable">Funkcja 3DOF niedostępna</string>
-    <string name="hint_3dof_spawned">Sześcian 3DOF wygenerowany 5 metrów przed Tobą</string>
-    <string name="hint_3dof_closed">Tryb 3DOF zamknięty</string>
+    <string name="btn_3dof">3DOF: OFF</string>
+    <string name="btn_3dof_off">3DOF: OFF</string>
+    <string name="btn_3dof_on">3DOF: ON</string>
+    <string name="btn_3dof_close">3DOF: OFF</string>
+    <string name="hint_3dof_unavailable">3DOF sensor unavailable</string>
+    <string name="hint_3dof_spawned">3DOF assist enabled (Orientation fusion + Lost hold)</string>
+    <string name="hint_3dof_closed">Pure vision tracking restored (3DOF assist disabled)</string>
+    <string name="hint_3dof_assisted_on">3DOF assist enabled (Orientation fusion + Lost hold)</string>
+    <string name="hint_3dof_assisted_off">Pure vision tracking restored (3DOF assist disabled)</string>
 
     <string name="hint_no_camera">Nie wykryto kamery (tryb czarnego ekranu)</string>
 

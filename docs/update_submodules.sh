@@ -214,7 +214,7 @@ if [[ -n "$SUMMARY_FILE" && ${#CHANGED[@]} -gt 0 ]]; then
     workflow_link="${server}/${repo}/blob/${ref}/.github/workflows/submodule-auto-update.yml"
 
     {
-        echo "## 🤖 子模块自动更新 / Automated submodule update"
+        echo "## 子模块自动更新"
         echo
         echo "> 本 PR 由 [\`submodule-auto-update\`](${workflow_link}) 工作流定期自动生成。"
         echo

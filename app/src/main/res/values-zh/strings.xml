@@ -56,11 +56,15 @@
     <string name="category_map">地图管理</string>
     <string name="category_display">显示控制</string>
 
-    <string name="btn_3dof">3DOF</string>
-    <string name="btn_3dof_close">关闭3DOF</string>
-    <string name="hint_3dof_unavailable">3DOF功能不可用</string>
-    <string name="hint_3dof_spawned">3DOF立方体已在前方5米处生成</string>
-    <string name="hint_3dof_closed">3DOF模式已关闭</string>
+    <string name="btn_3dof">3DOF辅助: 关</string>
+    <string name="btn_3dof_off">3DOF辅助: 关</string>
+    <string name="btn_3dof_on">3DOF辅助: 开</string>
+    <string name="btn_3dof_close">3DOF辅助: 关</string>
+    <string name="hint_3dof_unavailable">设备缺少3DOF方向传感器</string>
+    <string name="hint_3dof_spawned">3DOF传感器辅助定位已开启</string>
+    <string name="hint_3dof_closed">已恢复纯视觉定位模式</string>
+    <string name="hint_3dof_assisted_on">已开启3DOF传感器辅助定位（旋转防抖+丢失保活）</string>
+    <string name="hint_3dof_assisted_off">已关闭3DOF辅助，恢复纯视觉SLAM定位</string>
 
     <string name="hint_no_camera">未检测到可用相机（黑屏模式）</string>
 

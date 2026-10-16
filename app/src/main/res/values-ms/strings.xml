@@ -56,12 +56,15 @@
     <string name="category_ar">Kawalan AR</string>
     <string name="category_map">Peta</string>
     <string name="category_display">Paparan</string>
-
-    <string name="btn_3dof">3DOF</string>
-    <string name="btn_3dof_close">Tutup 3DOF</string>
-    <string name="hint_3dof_unavailable">Ciri 3DOF tidak tersedia</string>
-    <string name="hint_3dof_spawned">Kiub 3DOF dijana 5 meter di hadapan</string>
-    <string name="hint_3dof_closed">Mod 3DOF ditutup</string>
+    <string name="btn_3dof">3DOF: OFF</string>
+    <string name="btn_3dof_off">3DOF: OFF</string>
+    <string name="btn_3dof_on">3DOF: ON</string>
+    <string name="btn_3dof_close">3DOF: OFF</string>
+    <string name="hint_3dof_unavailable">3DOF sensor unavailable</string>
+    <string name="hint_3dof_spawned">3DOF assist enabled (Orientation fusion + Lost hold)</string>
+    <string name="hint_3dof_closed">Pure vision tracking restored (3DOF assist disabled)</string>
+    <string name="hint_3dof_assisted_on">3DOF assist enabled (Orientation fusion + Lost hold)</string>
+    <string name="hint_3dof_assisted_off">Pure vision tracking restored (3DOF assist disabled)</string>
 
     <string name="hint_no_camera">Tiada kamera dikesan (mod skrin hitam)</string>
 

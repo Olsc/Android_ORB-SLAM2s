@@ -59,12 +59,15 @@
     <string name="category_ar">Управление AR</string>
     <string name="category_map">Карта</string>
     <string name="category_display">Отображение</string>
-
-    <string name="btn_3dof">3DOF</string>
-    <string name="btn_3dof_close">Закрыть 3DOF</string>
-    <string name="hint_3dof_unavailable">Функция 3DOF недоступна</string>
-    <string name="hint_3dof_spawned">Куб 3DOF создан в 5 метрах впереди</string>
-    <string name="hint_3dof_closed">Режим 3DOF закрыт</string>
+    <string name="btn_3dof">3DOF-помощь: ВЫКЛ</string>
+    <string name="btn_3dof_off">3DOF-помощь: ВЫКЛ</string>
+    <string name="btn_3dof_on">3DOF-помощь: ВКЛ</string>
+    <string name="btn_3dof_close">3DOF-помощь: ВЫКЛ</string>
+    <string name="hint_3dof_unavailable">Датчик 3DOF недоступен</string>
+    <string name="hint_3dof_spawned">3DOF-помощь датчиков включена</string>
+    <string name="hint_3dof_closed">Восстановлено чисто визуальное отслеживание</string>
+    <string name="hint_3dof_assisted_on">3DOF-помощь включена (стабилизация вращения + удержание при потере)</string>
+    <string name="hint_3dof_assisted_off">3DOF-помощь отключена, восстановлен визуальный SLAM</string>
 
     <string name="hint_no_camera">Камера не обнаружена (режим черного экрана)</string>
 

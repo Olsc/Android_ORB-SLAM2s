@@ -56,12 +56,15 @@
     <string name="category_ar">AR 컨트롤</string>
     <string name="category_map">지도</string>
     <string name="category_display">디스플레이</string>
-
-    <string name="btn_3dof">3DOF</string>
-    <string name="btn_3dof_close">3DOF 닫기</string>
-    <string name="hint_3dof_unavailable">3DOF 기능을 사용할 수 없습니다</string>
-    <string name="hint_3dof_spawned">3DOF 큐브가 5미터 앞에 생성됨</string>
-    <string name="hint_3dof_closed">3DOF 모드 종료됨</string>
+    <string name="btn_3dof">3DOF 보조: 꺼짐</string>
+    <string name="btn_3dof_off">3DOF 보조: 꺼짐</string>
+    <string name="btn_3dof_on">3DOF 보조: 켜짐</string>
+    <string name="btn_3dof_close">3DOF 보조: 꺼짐</string>
+    <string name="hint_3dof_unavailable">3DOF 센서를 사용할 수 없습니다</string>
+    <string name="hint_3dof_spawned">3DOF 센서 보조 추적이 켜졌습니다</string>
+    <string name="hint_3dof_closed">순수 비전 추적 모드로 복원되었습니다</string>
+    <string name="hint_3dof_assisted_on">3DOF 보조 추적 활성화 (회전 흔들림 방지 + 분실 유지)</string>
+    <string name="hint_3dof_assisted_off">3DOF 보조 끄기, 순수 비전 추적으로 복원</string>
 
     <string name="hint_no_camera">사용 가능한 카메라가 감지되지 않았습니다 (검은 화면 모드)</string>
 

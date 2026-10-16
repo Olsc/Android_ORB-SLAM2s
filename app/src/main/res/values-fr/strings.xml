@@ -58,12 +58,15 @@
     <string name="category_ar">Contrôles AR</string>
     <string name="category_map">Carte</string>
     <string name="category_display">Affichage</string>
-
-    <string name="btn_3dof">3DOF</string>
-    <string name="btn_3dof_close">Fermer 3DOF</string>
-    <string name="hint_3dof_unavailable">Fonctionnalité 3DOF indisponible</string>
-    <string name="hint_3dof_spawned">Cube 3DOF créé à 5 mètres devant</string>
-    <string name="hint_3dof_closed">Mode 3DOF fermé</string>
+    <string name="btn_3dof">Aide 3DOF: DÉSACTIVÉE</string>
+    <string name="btn_3dof_off">Aide 3DOF: DÉSACTIVÉE</string>
+    <string name="btn_3dof_on">Aide 3DOF: ACTIVÉE</string>
+    <string name="btn_3dof_close">Aide 3DOF: DÉSACTIVÉE</string>
+    <string name="hint_3dof_unavailable">Capteur 3DOF non disponible</string>
+    <string name="hint_3dof_spawned">Assistance capteur 3DOF activée</string>
+    <string name="hint_3dof_closed">Suivi purement visuel restauré</string>
+    <string name="hint_3dof_assisted_on">Assistance 3DOF activée (anti-tremblement + maintien en cas de perte)</string>
+    <string name="hint_3dof_assisted_off">Assistance 3DOF désactivée, suivi visuel restauré</string>
 
     <string name="hint_no_camera">Aucune caméra détectée (mode écran noir)</string>
 
