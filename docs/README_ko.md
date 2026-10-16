@@ -27,6 +27,7 @@
 <img alt="Android" src="https://img.shields.io/badge/Android-3DDC84?style=flat-square&logo=android&logoColor=white"/>
 <img alt="OpenCV" src="https://img.shields.io/badge/OpenCV-5C3EE8?style=flat-square&logo=opencv&logoColor=white"/>
 <img alt="NDK" src="https://img.shields.io/badge/NDK-0C1E33?style=flat-square&logo=android&logoColor=white"/>
+<img alt="App License: Apache-2.0" src="https://img.shields.io/badge/App_License-Apache--2.0-green?style=flat-square"/>
 <img alt="GPL-3.0" src="https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square"/>
 </p>
 
@@ -44,7 +45,7 @@ https://github.com/Martin20150405/SLAM_AR_Android.git
 
 ---
 
-# 🎯 ORB-SLAM2s: Android Spatial Computing & Lightweight AR Demo
+# 🎯 ORB-SLAM2s: Android 공간 컴퓨팅 및 경량 AR 데모
 
 _ORB-SLAM2s의 소문자 's'는 **Smart · Swift · Small**（스마트 · 스위프트 · 스몰）을 의미하며, 기존 ORB-SLAM2에 비해 향상된 지능성, 더 빠른 성능, 더 가벼운 무게를 강조합니다._
 
@@ -86,7 +87,7 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 - **🎨 네이티브 AR 렌더링** —— **cgltf** 및 OpenGL ES 기반 고성능 3D 렌더링, GLB/glTF 모델의 초고속 로드 지원
 - **🌑 어두운 프레임 감지** —— SLAM 스레드 블로킹 방지를 위해 어두운 프레임 자동 건너뛰기
 - **🖱️ AR 오브젝트 관리** —— 3D 객체 배치, 핀치 제스처로 확대/축소
-- **🧭 3DOF 방향 추적** —— 내장 기기 센서를 사용한 3자유도 방향 추적
+- **🧭 3DOF 방향 추적** —— 내장 기기 센서를 이용한 3자유도 방향 추적, 다단계 대체 소스 지원(회전 벡터 / 게임 회전 벡터 / 가속도계 + 자력계 / 자이로스코프 적분)으로 자력계가 없어도 동작
 - **📑 다중 지도 지원** —— 여러 지도 파일의 동시 로드, 매칭 및 관리
 
 ---

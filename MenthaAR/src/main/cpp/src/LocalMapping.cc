@@ -154,7 +154,7 @@ void LocalMapping::Run()
                 if(bQueueEmpty && mpMap->KeyFramesInMap()>=LOCAL_BA_MIN_KEYFRAMES)
                 {
                     VT_PROFILE_SCOPE("LocalMapping::LocalBundleAdjustment");
-                    Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame, reinterpret_cast<bool*>(&mbAbortBA), mpMap);
+                    Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame, &mbAbortBA, mpMap);
                 }
 
                 {

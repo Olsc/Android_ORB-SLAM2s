@@ -59,12 +59,12 @@
     <string name="category_ar">Управління AR</string>
     <string name="category_map">Карта</string>
     <string name="category_display">Відображення</string>
-
-    <string name="btn_3dof">3DOF</string>
-    <string name="btn_3dof_close">Закрити 3DOF</string>
-    <string name="hint_3dof_unavailable">Функція 3DOF недоступна</string>
-    <string name="hint_3dof_spawned">Куб 3DOF створено за 5 метрів попереду</string>
-    <string name="hint_3dof_closed">Режим 3DOF закрито</string>
+    <string name="btn_3dof">Датчик: ВИКЛ</string>
+    <string name="btn_3dof_off">Датчик: ВИКЛ</string>
+    <string name="btn_3dof_on">Датчик: УВІМК</string>
+    <string name="hint_3dof_unavailable">Датчик недоступний</string>
+    <string name="hint_3dof_assisted_on">Допомога датчика увімкнена (стабілізація обертання + утримання при втраті)</string>
+    <string name="hint_3dof_assisted_off">Допомога датчика вимкнена, відновлено чисте візуальне відстеження</string>
 
     <string name="hint_no_camera">Камеру не виявлено (режим чорного екрана)</string>
 
@@ -103,4 +103,14 @@
     <string name="camera_facing_front">Фронтальна камера (%1$s)</string>
     <string name="camera_facing_other">Камера %1$s</string>
     <string name="dialog_select_camera">Вибір камери</string>
+
+    <string name="sensor_mode_active">Режим датчика: %1$s</string>
+    <string name="sensor_mode_rotation_vector">Вектор обертання (абсолютний)</string>
+    <string name="sensor_mode_game_rotation_vector">Ігровий вектор обертання (відносний)</string>
+    <string name="sensor_mode_accel_mag">Акселерометр + магнітометр</string>
+    <string name="sensor_mode_gyroscope">Інтегрування гіроскопа</string>
+    <string name="sensor_mode_none">Немає датчика орієнтації</string>
+    <string name="sensor_mode_notice_fallback">Обмежені датчики: використовується резервне джерело орієнтації; курс може з часом дрейфувати.</string>
+    <string name="sensor_mode_notice_none">Доступний датчик орієнтації відсутній; 3DOF залишається нерухомим.</string>
+
 </resources>

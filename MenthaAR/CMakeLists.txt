@@ -322,6 +322,7 @@ target_link_libraries(MenthaAR_Engine
 
 if(OpenMP_CXX_FOUND)
     target_link_libraries(MenthaAR_Engine OpenMP::OpenMP_CXX -static-openmp)
+    target_compile_options(MenthaAR_Engine PRIVATE ${OpenMP_CXX_FLAGS})
 endif()
 
 # Mentha 性能分析器

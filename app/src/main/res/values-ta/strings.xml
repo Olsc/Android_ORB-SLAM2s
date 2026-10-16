@@ -57,12 +57,12 @@
     <string name="category_ar">AR கட்டுப்பாடுகள்</string>
     <string name="category_map">வரைபடம்</string>
     <string name="category_display">காட்சி</string>
-
-    <string name="btn_3dof">3DOF</string>
-    <string name="btn_3dof_close">3DOF மூடவும்</string>
-    <string name="hint_3dof_unavailable">3DOF அம்சம் கிடைக்கவில்லை</string>
-    <string name="hint_3dof_spawned">3DOF கனசதுரம் 5 மீட்டர் முன்னால் உருவாக்கப்பட்டது</string>
-    <string name="hint_3dof_closed">3DOF பயன்முறை மூடப்பட்டது</string>
+    <string name="btn_3dof">சென்சார்: ஆஃப்</string>
+    <string name="btn_3dof_off">சென்சார்: ஆஃப்</string>
+    <string name="btn_3dof_on">சென்சார்: ஆன்</string>
+    <string name="hint_3dof_unavailable">சென்சார் கிடைக்கவில்லை</string>
+    <string name="hint_3dof_assisted_on">சென்சார் உதவி இயக்கப்பட்டது (சுழற்சி நிலைப்படுத்தல் + இழக்கும்போது தக்கவைத்தல்)</string>
+    <string name="hint_3dof_assisted_off">சென்சார் உதவி முடக்கப்பட்டது, தூய காட்சி கண்காணிப்பு மீட்டமைக்கப்பட்டது</string>
 
     <string name="hint_no_camera">கேமரா எதுவும் கண்டறியப்படவில்லை (கருப்புத் திரை பயன்முறை)</string>
 
@@ -99,4 +99,14 @@
     <string name="camera_facing_front">முன் கேமரா (%1$s)</string>
     <string name="camera_facing_other">கேமரா %1$s</string>
     <string name="dialog_select_camera">கேமராவைத் தேர்ந்தெடுக்கவும்</string>
+
+    <string name="sensor_mode_active">சென்சார் பயன்முறை: %1$s</string>
+    <string name="sensor_mode_rotation_vector">சுழற்சி திசையன் (முழுமையான)</string>
+    <string name="sensor_mode_game_rotation_vector">விளையாட்டு சுழற்சி திசையன் (சார்பு)</string>
+    <string name="sensor_mode_accel_mag">முடுக்கமானி + காந்தமானி</string>
+    <string name="sensor_mode_gyroscope">ஜைரோஸ்கோப் ஒருங்கிணைப்பு</string>
+    <string name="sensor_mode_none">திசை சென்சார் இல்லை</string>
+    <string name="sensor_mode_notice_fallback">வரம்புக்குட்பட்ட சென்சார்கள்: மாற்று திசை மூலம் பயன்படுத்தப்படுகிறது; திசை காலப்போக்கில் நகரலாம்.</string>
+    <string name="sensor_mode_notice_none">திசை சென்சார் கிடைக்கவில்லை; 3DOF அசையாமல் இருக்கும்.</string>
+
 </resources>

@@ -57,12 +57,12 @@
     <string name="category_ar">AR Kontrolleri</string>
     <string name="category_map">Harita</string>
     <string name="category_display">Görüntü</string>
-
-    <string name="btn_3dof">3DOF</string>
-    <string name="btn_3dof_close">3DOF\'u Kapat</string>
-    <string name="hint_3dof_unavailable">3DOF özelliği kullanılamıyor</string>
-    <string name="hint_3dof_spawned">3DOF küpü 5 metre ileride oluşturuldu</string>
-    <string name="hint_3dof_closed">3DOF modu kapatıldı</string>
+    <string name="btn_3dof">Sensör: KAPALI</string>
+    <string name="btn_3dof_off">Sensör: KAPALI</string>
+    <string name="btn_3dof_on">Sensör: AÇIK</string>
+    <string name="hint_3dof_unavailable">Sensör kullanılamıyor</string>
+    <string name="hint_3dof_assisted_on">Sensör desteği etkin (dönüş stabilizasyonu + kayıpta tutma)</string>
+    <string name="hint_3dof_assisted_off">Sensör desteği devre dışı, saf görsel izleme geri yüklendi</string>
 
     <string name="hint_no_camera">Kamera algılanmadı (Siyah ekran modu)</string>
 
@@ -99,4 +99,14 @@
     <string name="camera_facing_front">Ön Kamera (%1$s)</string>
     <string name="camera_facing_other">Kamera %1$s</string>
     <string name="dialog_select_camera">Kamera Seç</string>
+
+    <string name="sensor_mode_active">Sensör modu: %1$s</string>
+    <string name="sensor_mode_rotation_vector">Dönüş vektörü (mutlak)</string>
+    <string name="sensor_mode_game_rotation_vector">Oyun dönüş vektörü (göreli)</string>
+    <string name="sensor_mode_accel_mag">İvmeölçer + manyetometre</string>
+    <string name="sensor_mode_gyroscope">Jiroskop entegrasyonu</string>
+    <string name="sensor_mode_none">Yön sensörü yok</string>
+    <string name="sensor_mode_notice_fallback">Sınırlı sensörler: yedek yön kaynağı kullanılıyor; yön zamanla kayabilir.</string>
+    <string name="sensor_mode_notice_none">Kullanılabilir yön sensörü yok; 3DOF hareketsiz kalır.</string>
+
 </resources>

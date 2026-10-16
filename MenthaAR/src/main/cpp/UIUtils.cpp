@@ -106,7 +106,7 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
         }
     }
 
-    // 内点阈值 = 最佳中值距离 × PLANE_INLIER_TH_RATIO
+    // 内点阈值 = 最佳中值距离 * PLANE_INLIER_TH_RATIO
     const float th = ORB_SLAM2::PLANE_INLIER_TH_RATIO*bestDist;
     vector<bool> vbInliers(N,false);
     int nInliers = 0;

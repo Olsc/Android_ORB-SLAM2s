@@ -57,12 +57,12 @@
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>
     <string name="category_display">Zobrazenie</string>
-
-    <string name="btn_3dof">3DOF</string>
-    <string name="btn_3dof_close">Zavrieť 3DOF</string>
-    <string name="hint_3dof_unavailable">Funkcia 3DOF nie je dostupná</string>
-    <string name="hint_3dof_spawned">Kocka 3DOF vytvorená 5 metrov vpred</string>
-    <string name="hint_3dof_closed">Režim 3DOF zatvorený</string>
+    <string name="btn_3dof">Sensor: SÖNÜLÜ</string>
+    <string name="btn_3dof_off">Sensor: SÖNÜLÜ</string>
+    <string name="btn_3dof_on">Sensor: AKTİV</string>
+    <string name="hint_3dof_unavailable">Sensor əlçatan deyil</string>
+    <string name="hint_3dof_assisted_on">Sensor dəstəyi aktivdir (fırlanma sabitləşdirmə + itkidə saxlama)</string>
+    <string name="hint_3dof_assisted_off">Sensor dəstəyi deaktivdir, təmiz vizual izləmə bərpa edildi</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 
@@ -99,4 +99,14 @@
     <string name="camera_facing_front">Ön kamera (%1$s)</string>
     <string name="camera_facing_other">Kamera %1$s</string>
     <string name="dialog_select_camera">Kamera seçin</string>
+
+    <string name="sensor_mode_active">Sensor rejimi: %1$s</string>
+    <string name="sensor_mode_rotation_vector">Fırlanma vektoru (mütləq)</string>
+    <string name="sensor_mode_game_rotation_vector">Oyun fırlanma vektoru (nisbi)</string>
+    <string name="sensor_mode_accel_mag">Akselerometr + maqnitometr</string>
+    <string name="sensor_mode_gyroscope">Ciroskop inteqrasiyası</string>
+    <string name="sensor_mode_none">İstiqamət sensoru yoxdur</string>
+    <string name="sensor_mode_notice_fallback">Məhdud sensorlar: ehtiyat istiqamət mənbəyi istifadə olunur; kurs zamanla sürüşə bilər.</string>
+    <string name="sensor_mode_notice_none">İstiqamət sensoru mövcud deyil; 3DOF hərəkətsiz qalır.</string>
+
 </resources>

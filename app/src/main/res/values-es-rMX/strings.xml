@@ -58,12 +58,12 @@
     <string name="category_ar">Controles AR</string>
     <string name="category_map">Mapa</string>
     <string name="category_display">Pantalla</string>
-
-    <string name="btn_3dof">3DOF</string>
-    <string name="btn_3dof_close">Cerrar 3DOF</string>
-    <string name="hint_3dof_unavailable">Función 3DOF no disponible</string>
-    <string name="hint_3dof_spawned">Cubo 3DOF generado a 5 metros adelante</string>
-    <string name="hint_3dof_closed">Modo 3DOF cerrado</string>
+    <string name="btn_3dof">Sensor: DES</string>
+    <string name="btn_3dof_off">Sensor: DES</string>
+    <string name="btn_3dof_on">Sensor: ACT</string>
+    <string name="hint_3dof_unavailable">Sensor no disponible</string>
+    <string name="hint_3dof_assisted_on">Asistencia de sensor activada (antitemblor + retención tras pérdida)</string>
+    <string name="hint_3dof_assisted_off">Asistencia de sensor desactivada, seguimiento visual restaurado</string>
 
     <string name="hint_no_camera">No se detectó ninguna cámara (modo pantalla negra)</string>
 
@@ -101,4 +101,14 @@
     <string name="camera_facing_front">Cámara frontal (%1$s)</string>
     <string name="camera_facing_other">Cámara %1$s</string>
     <string name="dialog_select_camera">Seleccionar cámara</string>
+
+    <string name="sensor_mode_active">Modo de sensor: %1$s</string>
+    <string name="sensor_mode_rotation_vector">Vector de rotación (absoluto)</string>
+    <string name="sensor_mode_game_rotation_vector">Vector de rotación de juego (relativo)</string>
+    <string name="sensor_mode_accel_mag">Acelerómetro + magnetómetro</string>
+    <string name="sensor_mode_gyroscope">Integración del giroscopio</string>
+    <string name="sensor_mode_none">Sin sensor de orientación</string>
+    <string name="sensor_mode_notice_fallback">Sensores limitados: se usa una fuente de orientación alternativa; el rumbo puede derivar con el tiempo.</string>
+    <string name="sensor_mode_notice_none">No hay sensor de orientación disponible; el 3DOF permanece inmóvil.</string>
+
 </resources>

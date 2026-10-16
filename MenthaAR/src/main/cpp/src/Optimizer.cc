@@ -32,6 +32,7 @@
  * version 3, together with ORB-SLAM2.
  */
 
+#include <type_traits>
 #include "Optimizer.h"
 
 #include "Thirdparty/g2o/g2o/core/block_solver.h"
@@ -447,8 +448,18 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     return nInitialCorrespondences-nBad;
 }
 
-void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap)
+template <typename StopFlagT>
+static void LocalBundleAdjustmentImpl(KeyFrame *pKF, const StopFlagT* pbStopFlag, Map* pMap)
 {
+    auto isStopRequested = [&]() -> bool {
+        if (!pbStopFlag) return false;
+        if constexpr (std::is_same<StopFlagT, std::atomic<bool>>::value) {
+            return pbStopFlag->load(std::memory_order_relaxed);
+        } else {
+            return *pbStopFlag;
+        }
+    };
+
     // 局部关键帧：从当前关键帧开始的广度优先搜索
     list<KeyFrame*> lLocalKeyFrames;
 
@@ -542,8 +553,10 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
     g2o::SparseOptimizer& optimizer = cache.optimizer;
     optimizer.clear();
 
-    if(pbStopFlag)
-        optimizer.setForceStopFlag(pbStopFlag);
+    if constexpr (std::is_same<StopFlagT, bool>::value) {
+        if(pbStopFlag)
+            optimizer.setForceStopFlag(const_cast<bool*>(pbStopFlag));
+    }
 
     unsigned long maxKFid = 0;
 
@@ -671,9 +684,8 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
         });
     }
 
-    if(pbStopFlag)
-        if(*pbStopFlag)
-            return;
+    if(isStopRequested())
+        return;
 
     // 空优化保护：无有效顶点时跳过，避免 g2o 空跑浪费
     if(optimizer.vertices().empty())
@@ -686,7 +698,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
     // 带相对残差收敛早停准则（Early-Stopping）
     double prevChi2 = 0.0;
     for(int it = 0; it < LOCAL_BA_ITERATIONS; ++it) {
-        if(pbStopFlag && *pbStopFlag) break;
+        if(isStopRequested()) break;
         optimizer.optimize(1);
         double curChi2 = optimizer.activeChi2();
         if(it > 0 && prevChi2 > 0.0) {
@@ -700,9 +712,8 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
 
     bool bDoMore= true;
 
-    if(pbStopFlag)
-        if(*pbStopFlag)
-            bDoMore = false;
+    if(isStopRequested())
+        bDoMore = false;
 
     if(bDoMore)
     {
@@ -731,7 +742,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
 
     prevChi2 = 0.0;
     for(int it = 0; it < LOCAL_BA_ITERATIONS; ++it) {
-        if(pbStopFlag && *pbStopFlag) break;
+        if(isStopRequested()) break;
         optimizer.optimize(1);
         double curChi2 = optimizer.activeChi2();
         if(it > 0 && prevChi2 > 0.0) {
@@ -816,6 +827,16 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
         if(pMP && !pMP->isBad())
             pMP->UpdateNormalAndDepth();
     }
+}
+
+void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap)
+{
+    LocalBundleAdjustmentImpl(pKF, pbStopFlag, pMap);
+}
+
+void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, const std::atomic<bool>* pbStopFlag, Map* pMap)
+{
+    LocalBundleAdjustmentImpl(pKF, pbStopFlag, pMap);
 }
 
 void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* pCurKF,

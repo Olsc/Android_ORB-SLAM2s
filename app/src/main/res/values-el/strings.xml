@@ -57,12 +57,12 @@
     <string name="category_ar">Έλεγχοι AR</string>
     <string name="category_map">Χάρτης</string>
     <string name="category_display">Οθόνη</string>
-
-    <string name="btn_3dof">3DOF</string>
-    <string name="btn_3dof_close">Κλείσιμο 3DOF</string>
-    <string name="hint_3dof_unavailable">Η λειτουργία 3DOF δεν είναι διαθέσιμη</string>
-    <string name="hint_3dof_spawned">Κύβος 3DOF δημιουργήθηκε 5 μέτρα μπροστά</string>
-    <string name="hint_3dof_closed">Η λειτουργία 3DOF έκλεισε</string>
+    <string name="btn_3dof">Αισθητήρας: ΑΝΕΝΕΡΓΟ</string>
+    <string name="btn_3dof_off">Αισθητήρας: ΑΝΕΝΕΡΓΟ</string>
+    <string name="btn_3dof_on">Αισθητήρας: ΕΝΕΡΓΟ</string>
+    <string name="hint_3dof_unavailable">Ο αισθητήρας δεν είναι διαθέσιμος</string>
+    <string name="hint_3dof_assisted_on">Η υποβοήθηση αισθητήρα ενεργοποιήθηκε (σταθεροποίηση περιστροφής + συγκράτηση σε απώλεια)</string>
+    <string name="hint_3dof_assisted_off">Η υποβοήθηση αισθητήρα απενεργοποιήθηκε, αποκαταστάθηκε η αμιγώς οπτική παρακολούθηση</string>
 
     <string name="hint_no_camera">Δεν εντοπίστηκε κάμερα (λειτουργία μαύρης οθόνης)</string>
 
@@ -99,4 +99,14 @@
     <string name="camera_facing_front">Μπροστινή κάμερα (%1$s)</string>
     <string name="camera_facing_other">Κάμερα %1$s</string>
     <string name="dialog_select_camera">Επιλογή κάμερας</string>
+
+    <string name="sensor_mode_active">Λειτουργία αισθητήρα: %1$s</string>
+    <string name="sensor_mode_rotation_vector">Διάνυσμα περιστροφής (απόλυτο)</string>
+    <string name="sensor_mode_game_rotation_vector">Διάνυσμα περιστροφής παιχνιδιού (σχετικό)</string>
+    <string name="sensor_mode_accel_mag">Επιταχυνσιόμετρο + μαγνητόμετρο</string>
+    <string name="sensor_mode_gyroscope">Ολοκλήρωση γυροσκοπίου</string>
+    <string name="sensor_mode_none">Δεν υπάρχει αισθητήρας προσανατολισμού</string>
+    <string name="sensor_mode_notice_fallback">Περιορισμένοι αισθητήρες: χρήση εφεδρικής πηγής προσανατολισμού· η πορεία μπορεί να αποκλίνει με τον χρόνο.</string>
+    <string name="sensor_mode_notice_none">Δεν υπάρχει διαθέσιμος αισθητήρας προσανατολισμού· το 3DOF παραμένει ακίνητο.</string>
+
 </resources>

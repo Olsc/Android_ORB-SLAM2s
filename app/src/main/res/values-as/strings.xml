@@ -57,12 +57,12 @@
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>
     <string name="category_display">Zobrazenie</string>
-
-    <string name="btn_3dof">3DOF</string>
-    <string name="btn_3dof_close">Zavrieť 3DOF</string>
-    <string name="hint_3dof_unavailable">Funkcia 3DOF nie je dostupná</string>
-    <string name="hint_3dof_spawned">Kocka 3DOF vytvorená 5 metrov vpred</string>
-    <string name="hint_3dof_closed">Režim 3DOF zatvorený</string>
+    <string name="btn_3dof">চেন্সৰ: বন্ধ</string>
+    <string name="btn_3dof_off">চেন্সৰ: বন্ধ</string>
+    <string name="btn_3dof_on">চেন্সৰ: অন</string>
+    <string name="hint_3dof_unavailable">চেন্সৰ উপলব্ধ নহয়</string>
+    <string name="hint_3dof_assisted_on">চেন্সৰ সহায় সক্ৰিয় (ঘূৰ্ণন স্থিৰতা + হেৰালে ধৰি ৰখা)</string>
+    <string name="hint_3dof_assisted_off">চেন্সৰ সহায় নিষ্ক্ৰিয়, বিশুদ্ধ দৃশ্য ট্ৰেকিং পুনৰুদ্ধাৰ</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 
@@ -99,4 +99,14 @@
     <string name="camera_facing_front">আগৰ কেমেৰা (%1$s)</string>
     <string name="camera_facing_other">কেমেৰা %1$s</string>
     <string name="dialog_select_camera">কেমেৰা বাছক</string>
+
+    <string name="sensor_mode_active">চেন্সৰ ম\'ড: %1$s</string>
+    <string name="sensor_mode_rotation_vector">ঘূৰ্ণন ভেক্টৰ (নিৰপেক্ষ)</string>
+    <string name="sensor_mode_game_rotation_vector">খেলৰ ঘূৰ্ণন ভেক্টৰ (সাপেক্ষ)</string>
+    <string name="sensor_mode_accel_mag">এক্সিলেৰ\'মিটাৰ + মেগনেট\'মিটাৰ</string>
+    <string name="sensor_mode_gyroscope">জাইৰ\'স্কপ সংহতি</string>
+    <string name="sensor_mode_none">কোনো দিশ চেন্সৰ নাই</string>
+    <string name="sensor_mode_notice_fallback">সীমিত চেন্সৰ: বিকল্প দিশ উৎস ব্যৱহাৰ কৰা হৈছে; দিশ সময়ৰ লগে লগে স্থানান্তৰ হ\'ব পাৰে।</string>
+    <string name="sensor_mode_notice_none">কোনো দিশ চেন্সৰ উপলব্ধ নাই; 3DOF স্থিৰ থাকিব।</string>
+
 </resources>

@@ -77,7 +77,7 @@ int gActiveMapId = 0;
 int gMapSwitchCounter = 0;
 const int MAP_SWITCH_THRESHOLD = ORB_SLAM2::MAP_SWITCH_THRESHOLD; // 至少连续3帧识别到新地图才切换
 
-// AR对象渲染状态（跨线程读写：SLAM 线程产、binder/GL 线程读——保持原子）
+// AR对象渲染状态（跨线程读写：SLAM 线程产、binder/GL 线程读--保持原子）
 static std::atomic<bool> gShouldDrawArObject{false};
 static std::atomic<float> gArObjectScale{ORB_SLAM2::AR_OBJECT_SCALE_DEFAULT}; // 默认缩放
 float gCurrentModelMatrix[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
@@ -192,9 +192,9 @@ static bool AR_RenderFrame(const cv::Mat& localTcw, bool trackingOk) {
             if (gAlignHold.effAligned && rawAligned) {
                 getRUBModelMatrixFromRDF(gAnchor.plane->glTpw, model); // 地图锚点原始即地图帧
             } else {
-                draw = false; // 地图锚点无对齐时不可调和 → 隐藏而非画错位置
+                draw = false; // 地图锚点无对齐时不可调和 -> 隐藏而非画错位置
             }
-        } else { // kSlam 本地锚点：两种帧都可画（view/model 同帧 → 数学上不变量成立）
+        } else { // kSlam 本地锚点：两种帧都可画（view/model 同帧 -> 数学上不变量成立）
             if (gAlignHold.effAligned && rawAligned) {
                 cv::Mat alignedTpw = slamSys->GetMapAlignedPose(gAnchor.plane->Tpw);
                 float tmp[16];
@@ -661,7 +661,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_detect(JNIEnv *env, jobject instance,
     jint *statusBuf = env->GetIntArrayElements(statusBuf_, nullptr);
 
     // 锁内快照 System*：本函数与 nativeShutdown 同为 UI 线程，不并发，
-    // 快照消除对全局指针的未同步读；锁序 gSlamPtrLock → gMapDataMutex
+    // 快照消除对全局指针的未同步读；锁序 gSlamPtrLock -> gMapDataMutex
     ORB_SLAM2::System* sys = nullptr;
     {
         std::lock_guard<std::mutex> ptrLock(gSlamPtrLock);
@@ -683,7 +683,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_detect(JNIEnv *env, jobject instance,
     }
     if(!currentTcw.empty()){
         // vMPs 写入侧由 gMapPointsMutex 保护，先持锁拷贝快照再做无锁使用，
-        // 锁序与全局一致（gMapDataMutex → gMapPointsMutex）
+        // 锁序与全局一致（gMapDataMutex -> gMapPointsMutex）
         std::vector<ORB_SLAM2::MapPoint*> localMPs;
         {
             std::lock_guard<std::mutex> _mpLock(gMapPointsMutex);
@@ -711,7 +711,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_detect(JNIEnv *env, jobject instance,
 
 JNIEXPORT jintArray JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_getMapStats(JNIEnv *env, jobject instance) {
-    // 锁内快照（锁序 gSlamPtrLock → gMapDataMutex，不得反向嵌套）
+    // 锁内快照（锁序 gSlamPtrLock -> gMapDataMutex，不得反向嵌套）
     ORB_SLAM2::System* sys = nullptr;
     {
         std::lock_guard<std::mutex> ptrLock(gSlamPtrLock);
@@ -755,6 +755,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_isPointCloudDisplayEnabled(JNIEnv *env, 
 #define SH_OFF_TRACKING_STATE 24
 #define SH_OFF_DRAW_FLAG 28
 #define SH_OFF_POINTCLOUD_BYTES 32
+#define SH_OFF_ACTIVE_MAP_ID 36
 #define SH_OFF_MVP 40
 #define SH_POINTCLOUD_MAX_BYTES (96 * 1024)
 
@@ -822,6 +823,7 @@ static void writeResultToSharedMemory(int seq, int tracking, bool draw, int w, i
     if (!gSharedFramePtr) return;
     *shIntPtr(SH_OFF_TRACKING_STATE) = tracking;
     *shIntPtr(SH_OFF_DRAW_FLAG) = draw ? 1 : 0;
+    *shIntPtr(SH_OFF_ACTIVE_MAP_ID) = gActiveMapId;
 
     float* mvp = shFloatPtr(SH_OFF_MVP);
     {
@@ -1050,7 +1052,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeShutdown(JNIEnv* env, jobject inst
         });
 
         if(slamSys){
-            // Shutdown 内部：StopGlobalRelocThread → RequestStopGBA(join) → join LM/LC
+            // Shutdown 内部：StopGlobalRelocThread -> RequestStopGBA(join) -> join LM/LC
             slamSys->Shutdown();
             delete slamSys; // ~System 释放各子模块与全部子地图
             slamSys = nullptr;

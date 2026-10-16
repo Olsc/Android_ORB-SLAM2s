@@ -28,6 +28,8 @@ import android.util.Log;
 import androidx.annotation.Keep;
 
 import com.orb.slam2s.ipc.SlamIPCClient;
+import com.orb.slam2s.sensors.OrientationSensor;
+import com.orb.slam2s.util.SensorFusionTracker;
 import com.orb.slam2s.util.TouchGestureHelper;
 
 import java.io.ByteArrayOutputStream;
@@ -47,6 +49,8 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
     private AspectGLSurfaceView arObjectView;
     private Context context;
     private SlamIPCClient slamIPCClient;
+    private OrientationSensor orientationSensor;
+    private SensorFusionTracker sensorFusionTracker;
 
     private String modelPath;
     private float initSize = 1.0f;
@@ -97,6 +101,16 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
 
     public GlbModelRenderer setSlamIPCClient(SlamIPCClient client) {
         this.slamIPCClient = client;
+        return this;
+    }
+
+    public GlbModelRenderer setOrientationSensor(OrientationSensor sensor) {
+        this.orientationSensor = sensor;
+        return this;
+    }
+
+    public GlbModelRenderer setSensorFusionTracker(SensorFusionTracker tracker) {
+        this.sensorFusionTracker = tracker;
         return this;
     }
 
@@ -201,21 +215,36 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
 
         if (slamIPCClient != null && slamIPCClient.isConnected()) {
-            boolean drawFlag = slamIPCClient.readDrawFlag();
-            if (drawFlag != shouldDraw) {
-                shouldDraw = drawFlag;
+            boolean rawDrawFlag = slamIPCClient.readDrawFlag();
+            int trackingState = slamIPCClient.readTrackingState();
+            int activeMapId = slamIPCClient.readActiveMapId();
+            boolean hasMvp = slamIPCClient.readMvp(tempMvp);
+
+            boolean effectiveDraw = false;
+            if (hasMvp) {
+                if (sensorFusionTracker != null) {
+                    float[] sensorRot = orientationSensor != null ? orientationSensor.getRotationMatrix() : null;
+                    boolean isSensorReady = orientationSensor != null && orientationSensor.isReady();
+                    effectiveDraw = sensorFusionTracker.update(rawDrawFlag, trackingState, activeMapId,
+                            tempMvp, sensorRot, isSensorReady,
+                            modelMatrix, viewMatrix, projectionMatrix);
+                } else {
+                    effectiveDraw = rawDrawFlag;
+                    if (effectiveDraw) {
+                        System.arraycopy(tempMvp, 0, modelMatrix, 0, 16);
+                        System.arraycopy(tempMvp, 16, viewMatrix, 0, 16);
+                        System.arraycopy(tempMvp, 32, projectionMatrix, 0, 16);
+                    }
+                }
+            }
+
+            if (effectiveDraw != shouldDraw) {
+                shouldDraw = effectiveDraw;
                 if (drawStateListener != null) {
                     drawStateListener.onDrawStateChanged(shouldDraw);
                 }
             }
-            if (shouldDraw && slamIPCClient.readMvp(tempMvp)) {
-                System.arraycopy(tempMvp, 0, modelMatrix, 0, 16);
-                System.arraycopy(tempMvp, 16, viewMatrix, 0, 16);
-                System.arraycopy(tempMvp, 32, projectionMatrix, 0, 16);
-                matricesReady = true;
-            } else {
-                matricesReady = false;
-            }
+            matricesReady = effectiveDraw;
         }
 
         if (shouldDraw && matricesReady && isModelLoaded && nativeHandle != 0) {

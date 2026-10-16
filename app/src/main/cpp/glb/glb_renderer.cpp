@@ -49,15 +49,6 @@ void matrixScale(float* m, float sx, float sy, float sz) {
     matrixMultiply(m, m, s);
 }
 
-void matrixTranslate(float* m, float tx, float ty, float tz) {
-    float t[16];
-    matrixIdentity(t);
-    t[12] = tx;
-    t[13] = ty;
-    t[14] = tz;
-    matrixMultiply(m, m, t);
-}
-
 void matrixRotate(float* m, float angleDeg, float x, float y, float z) {
     float rad = angleDeg * 3.14159265358979323846f / 180.0f;
     float c = std::cos(rad);

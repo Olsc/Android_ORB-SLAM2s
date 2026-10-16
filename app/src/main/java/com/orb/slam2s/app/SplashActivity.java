@@ -56,7 +56,7 @@ public class SplashActivity extends Activity {
         super.onCreate(savedInstanceState);
         enableStrictModeForDebug();
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
-        // 启动时自检桌面图标组件状态，避免出现“桌面上找不到图标”的情况
+        // 启动时自检桌面图标组件状态，避免出现"桌面上找不到图标"的情况
         IconManager.ensureLauncherIcon(this);
         setupDynamicShortcuts();
         if (checkPermission()) {
@@ -152,7 +152,7 @@ public class SplashActivity extends Activity {
                 .show();
     }
 
-    // 权限被“拒绝且不再询问”时，引导到系统设置开启，而不是直接阻断用户
+    // 权限被"拒绝且不再询问"时，引导到系统设置开启，而不是直接阻断用户
     private void showPermissionDeniedDialog() {
         new AlertDialog.Builder(this)
                 .setTitle(R.string.permission_camera_title)

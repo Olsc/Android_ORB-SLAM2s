@@ -57,12 +57,12 @@
     <string name="category_ar">Udhibiti wa AR</string>
     <string name="category_map">Ramani</string>
     <string name="category_display">Onyesho</string>
-
-    <string name="btn_3dof">3DOF</string>
-    <string name="btn_3dof_close">Funga 3DOF</string>
-    <string name="hint_3dof_unavailable">Kipengele cha 3DOF hakipatikani</string>
-    <string name="hint_3dof_spawned">Mchemraba wa 3DOF uliundwa mita 5 mbele</string>
-    <string name="hint_3dof_closed">Hali ya 3DOF imefungwa</string>
+    <string name="btn_3dof">Kihisi: IMEZIMWA</string>
+    <string name="btn_3dof_off">Kihisi: IMEZIMWA</string>
+    <string name="btn_3dof_on">Kihisi: IMEWASHWA</string>
+    <string name="hint_3dof_unavailable">Kihisi hakipatikani</string>
+    <string name="hint_3dof_assisted_on">Usaidizi wa kihisi umewashwa (uimarishaji wa mzunguko + kushikilia unapopotea)</string>
+    <string name="hint_3dof_assisted_off">Usaidizi wa kihisi umezimwa, ufuatiliaji wa kuona pekee umerejeshwa</string>
 
     <string name="hint_no_camera">Hakuna kamera iliyotambuliwa (hali ya skrini nyeusi)</string>
 
@@ -99,4 +99,14 @@
     <string name="camera_facing_front">Kamera ya Mbele (%1$s)</string>
     <string name="camera_facing_other">Kamera %1$s</string>
     <string name="dialog_select_camera">Chagua Kamera</string>
+
+    <string name="sensor_mode_active">Hali ya kihisi: %1$s</string>
+    <string name="sensor_mode_rotation_vector">Kivekta cha mzunguko (kamili)</string>
+    <string name="sensor_mode_game_rotation_vector">Kivekta cha mzunguko wa mchezo (linganifu)</string>
+    <string name="sensor_mode_accel_mag">Kipima kasi + kipima sumaku</string>
+    <string name="sensor_mode_gyroscope">Muunganisho wa jiroskopu</string>
+    <string name="sensor_mode_none">Hakuna kihisi cha mwelekeo</string>
+    <string name="sensor_mode_notice_fallback">Vihisi vichache: kutumia chanzo mbadala cha mwelekeo; mwelekeo unaweza kuteleza kwa muda.</string>
+    <string name="sensor_mode_notice_none">Hakuna kihisi cha mwelekeo kinachopatikana; 3DOF itabaki tuli.</string>
+
 </resources>

@@ -107,7 +107,8 @@
         <Button
             android:id="@+id/btn_details"
             android:layout_width="wrap_content"
-            android:layout_height="36dp"
+            android:layout_height="wrap_content"
+            android:minHeight="36dp"
             android:background="@drawable/bg_btn_secondary"
             android:text="@string/action_view_details"
             android:textColor="#FFE0E0E0"
@@ -118,7 +119,8 @@
         <Button
             android:id="@+id/btn_delete"
             android:layout_width="wrap_content"
-            android:layout_height="36dp"
+            android:layout_height="wrap_content"
+            android:minHeight="36dp"
             android:layout_marginStart="8dp"
             android:background="@drawable/bg_btn_danger"
             android:text="@string/action_delete"

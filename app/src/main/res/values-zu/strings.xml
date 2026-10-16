@@ -57,12 +57,12 @@
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>
     <string name="category_display">Zobrazenie</string>
-
-    <string name="btn_3dof">3DOF</string>
-    <string name="btn_3dof_close">Zavrieť 3DOF</string>
-    <string name="hint_3dof_unavailable">Funkcia 3DOF nie je dostupná</string>
-    <string name="hint_3dof_spawned">Kocka 3DOF vytvorená 5 metrov vpred</string>
-    <string name="hint_3dof_closed">Režim 3DOF zatvorený</string>
+    <string name="btn_3dof">Inzwa: CISHIWE</string>
+    <string name="btn_3dof_off">Inzwa: CISHIWE</string>
+    <string name="btn_3dof_on">Inzwa: CULISIWE</string>
+    <string name="hint_3dof_unavailable">Inzwa ayitholakali</string>
+    <string name="hint_3dof_assisted_on">Usizo lwenzwa luvuliwe (ukuzinza kokuzungeza + ukubamba lapho kulahleka)</string>
+    <string name="hint_3dof_assisted_off">Usizo lwenzwa luvaliwe, ukulandelela okubonakalayo okumsulwa kubuyiselwe</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 
@@ -99,4 +99,14 @@
     <string name="camera_facing_front">Ikhamera Yangaphambili (%1$s)</string>
     <string name="camera_facing_other">Ikhamera %1$s</string>
     <string name="dialog_select_camera">Khetha Ikhamera</string>
+
+    <string name="sensor_mode_active">Imodi yenzwa: %1$s</string>
+    <string name="sensor_mode_rotation_vector">Ivekhtha yokuzungeza (ngokuphelele)</string>
+    <string name="sensor_mode_game_rotation_vector">Ivekhtha yokuzungeza yomdlalo (ngokulinganiselwe)</string>
+    <string name="sensor_mode_accel_mag">Isilinganisi sokushesha + isilinganisi sikazibuthe</string>
+    <string name="sensor_mode_gyroscope">Ukuhlanganiswa kwe-gyroscope</string>
+    <string name="sensor_mode_none">Asikho inzwa yomumo</string>
+    <string name="sensor_mode_notice_fallback">Izinzwa ezinomkhawulo: kusetshenziswa umthombo womumo oyisipele; isiqondiso singase sidembe ngokuhamba kwesikhathi.</string>
+    <string name="sensor_mode_notice_none">Ayikho inzwa yomumo etholakalayo; i-3DOF ihlala inyamanzi.</string>
+
 </resources>

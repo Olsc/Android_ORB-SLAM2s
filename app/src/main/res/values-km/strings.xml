@@ -56,12 +56,12 @@
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>
     <string name="category_display">Zobrazenie</string>
-
-    <string name="btn_3dof">3DOF</string>
-    <string name="btn_3dof_close">Zavrieť 3DOF</string>
-    <string name="hint_3dof_unavailable">Funkcia 3DOF nie je dostupná</string>
-    <string name="hint_3dof_spawned">Kocka 3DOF vytvorená 5 metrov vpred</string>
-    <string name="hint_3dof_closed">Režim 3DOF zatvorený</string>
+    <string name="btn_3dof">ឧបករណ៍ចាប់សញ្ញា៖ បិទ</string>
+    <string name="btn_3dof_off">ឧបករណ៍ចាប់សញ្ញា៖ បិទ</string>
+    <string name="btn_3dof_on">ឧបករណ៍ចាប់សញ្ញា៖ បើក</string>
+    <string name="hint_3dof_unavailable">ឧបករណ៍ចាប់សញ្ញាមិនអាចប្រើបានទេ</string>
+    <string name="hint_3dof_assisted_on">ជំនួយឧបករណ៍ចាប់សញ្ញាត្រូវបានបើក (ស្ថេរភាពការបង្វិល + រក្សាទុកពេលបាត់)</string>
+    <string name="hint_3dof_assisted_off">ជំនួយឧបករណ៍ចាប់សញ្ញាត្រូវបានបិទ ការតាមដានដោយមើលឃើញសុទ្ធត្រូវបានស្ដារឡើងវិញ</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 
@@ -97,4 +97,14 @@
     <string name="camera_facing_front">កាមេរ៉ាមុខ (%1$s)</string>
     <string name="camera_facing_other">កាមេរ៉ា %1$s</string>
     <string name="dialog_select_camera">ជ្រើសរើសកាមេរ៉ា</string>
+
+    <string name="sensor_mode_active">របៀបឧបករណ៍ចាប់សញ្ញា៖ %1$s</string>
+    <string name="sensor_mode_rotation_vector">វ៉ិចទ័របង្វិល (ដាច់ខាត)</string>
+    <string name="sensor_mode_game_rotation_vector">វ៉ិចទ័របង្វិលហ្គេម (ទាក់ទង)</string>
+    <string name="sensor_mode_accel_mag">ឧបករណ៍វាស់សំទុះ + ឧបករណ៍វាស់ម៉ាញេទិច</string>
+    <string name="sensor_mode_gyroscope">ការរួមបញ្ចូល gyroscope</string>
+    <string name="sensor_mode_none">គ្មានឧបករណ៍ចាប់ទិសដៅ</string>
+    <string name="sensor_mode_notice_fallback">ឧបករណ៍ចាប់សញ្ញាមានកំណត់៖ កំពុងប្រើប្រភពទិសដៅបម្រុង; ទិសដៅអាចរសាត់តាមពេលវេលា។</string>
+    <string name="sensor_mode_notice_none">មិនមានឧបករណ៍ចាប់ទិសដៅទេ; 3DOF នឹងនៅស្ងៀម។</string>
+
 </resources>

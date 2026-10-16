@@ -57,12 +57,12 @@
     <string name="category_ar">AR నియంత్రణలు</string>
     <string name="category_map">మ్యాప్</string>
     <string name="category_display">ప్రదర్శన</string>
-
-    <string name="btn_3dof">3DOF</string>
-    <string name="btn_3dof_close">3DOF మూసివేయండి</string>
-    <string name="hint_3dof_unavailable">3DOF ఫీచర్ అందుబాటులో లేదు</string>
-    <string name="hint_3dof_spawned">3DOF క్యూబ్ 5 మీటర్ల ముందు సృష్టించబడింది</string>
-    <string name="hint_3dof_closed">3DOF మోడ్ మూసివేయబడింది</string>
+    <string name="btn_3dof">సెన్సార్: ఆఫ్</string>
+    <string name="btn_3dof_off">సెన్సార్: ఆఫ్</string>
+    <string name="btn_3dof_on">సెన్సార్: ఆన్</string>
+    <string name="hint_3dof_unavailable">సెన్సార్ అందుబాటులో లేదు</string>
+    <string name="hint_3dof_assisted_on">సెన్సార్ సహాయం ప్రారంభమైంది (భ్రమణ స్థిరత్వం + పోయినప్పుడు నిలుపుకోవడం)</string>
+    <string name="hint_3dof_assisted_off">సెన్సార్ సహాయం నిలిపివేయబడింది, స్వచ్ఛమైన దృశ్య ట్రాకింగ్ పునరుద్ధరించబడింది</string>
 
     <string name="hint_no_camera">కెమెరా ఏదీ కనుగొనబడలేదు (బ్లాక్ స్క్రీన్ మోడ్)</string>
 
@@ -99,4 +99,14 @@
     <string name="camera_facing_front">ముందు కెమెరా (%1$s)</string>
     <string name="camera_facing_other">కెమెరా %1$s</string>
     <string name="dialog_select_camera">కెమెరాను ఎంచుకోండి</string>
+
+    <string name="sensor_mode_active">సెన్సార్ మోడ్: %1$s</string>
+    <string name="sensor_mode_rotation_vector">భ్రమణ వెక్టర్ (సంపూర్ణ)</string>
+    <string name="sensor_mode_game_rotation_vector">గేమ్ భ్రమణ వెక్టర్ (సాపేక్ష)</string>
+    <string name="sensor_mode_accel_mag">త్వరణమాపకం + అయస్కాంతమాపకం</string>
+    <string name="sensor_mode_gyroscope">జైరోస్కోప్ ఏకీకరణ</string>
+    <string name="sensor_mode_none">దిశ సెన్సార్ లేదు</string>
+    <string name="sensor_mode_notice_fallback">పరిమిత సెన్సార్లు: ప్రత్యామ్నాయ దిశ మూలం వాడుతోంది; దిశ కాలక్రమేణా జారవచ్చు.</string>
+    <string name="sensor_mode_notice_none">దిశ సెన్సార్ అందుబాటులో లేదు; 3DOF స్థిరంగా ఉంటుంది.</string>
+
 </resources>
