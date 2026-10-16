@@ -60,10 +60,7 @@
     <string name="btn_3dof">Sensor: AUS</string>
     <string name="btn_3dof_off">Sensor: AUS</string>
     <string name="btn_3dof_on">Sensor: AN</string>
-    <string name="btn_3dof_close">Sensor: AUS</string>
     <string name="hint_3dof_unavailable">Sensor nicht verfügbar</string>
-    <string name="hint_3dof_spawned">Sensorunterstützung aktiviert</string>
-    <string name="hint_3dof_closed">Reine visuelle Verfolgung wiederhergestellt</string>
     <string name="hint_3dof_assisted_on">Sensorunterstützung aktiviert (Drehstabilisierung + Halten bei Verlust)</string>
     <string name="hint_3dof_assisted_off">Sensorunterstützung deaktiviert, rein visuelles Tracking wiederhergestellt</string>
 

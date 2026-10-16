@@ -61,10 +61,7 @@
     <string name="btn_3dof">Sensor: DESL</string>
     <string name="btn_3dof_off">Sensor: DESL</string>
     <string name="btn_3dof_on">Sensor: LIG</string>
-    <string name="btn_3dof_close">Sensor: DESL</string>
     <string name="hint_3dof_unavailable">Sensor indisponível</string>
-    <string name="hint_3dof_spawned">Assistência de sensor ativada</string>
-    <string name="hint_3dof_closed">Rastreamento puramente visual restaurado</string>
     <string name="hint_3dof_assisted_on">Assistência de sensor ativada (antivibração + retenção ao perder)</string>
     <string name="hint_3dof_assisted_off">Assistência de sensor desativada, rastreamento visual restaurado</string>
 

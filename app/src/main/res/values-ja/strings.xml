@@ -59,10 +59,7 @@
     <string name="btn_3dof">センサー: オフ</string>
     <string name="btn_3dof_off">センサー: オフ</string>
     <string name="btn_3dof_on">センサー: オン</string>
-    <string name="btn_3dof_close">センサー: オフ</string>
     <string name="hint_3dof_unavailable">センサーを利用できません</string>
-    <string name="hint_3dof_spawned">センサー補助追跡を有効化しました</string>
-    <string name="hint_3dof_closed">純粋ビジュアルSLAM追跡に復帰しました</string>
     <string name="hint_3dof_assisted_on">センサー補助を有効化しました（回転ブレ防止・喪失時保持）</string>
     <string name="hint_3dof_assisted_off">センサー補助を無効化し、ビジュアル追跡に復帰しました</string>
 

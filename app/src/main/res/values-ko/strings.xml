@@ -59,10 +59,7 @@
     <string name="btn_3dof">센서: 꺼짐</string>
     <string name="btn_3dof_off">센서: 꺼짐</string>
     <string name="btn_3dof_on">센서: 켜짐</string>
-    <string name="btn_3dof_close">센서: 꺼짐</string>
     <string name="hint_3dof_unavailable">센서를 사용할 수 없습니다</string>
-    <string name="hint_3dof_spawned">센서 보조 추적이 켜졌습니다</string>
-    <string name="hint_3dof_closed">순수 비전 추적 모드로 복원되었습니다</string>
     <string name="hint_3dof_assisted_on">센서 보조 추적 활성화 (회전 흔들림 방지 + 분실 유지)</string>
     <string name="hint_3dof_assisted_off">센서 보조 끄기, 순수 비전 추적으로 복원</string>
 

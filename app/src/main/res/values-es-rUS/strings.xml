@@ -61,10 +61,7 @@
     <string name="btn_3dof">Sensor: DES</string>
     <string name="btn_3dof_off">Sensor: DES</string>
     <string name="btn_3dof_on">Sensor: ACT</string>
-    <string name="btn_3dof_close">Sensor: DES</string>
     <string name="hint_3dof_unavailable">Sensor no disponible</string>
-    <string name="hint_3dof_spawned">Asistencia de sensor activada</string>
-    <string name="hint_3dof_closed">Seguimiento puramente visual restaurado</string>
     <string name="hint_3dof_assisted_on">Asistencia de sensor activada (antitemblor + retención tras pérdida)</string>
     <string name="hint_3dof_assisted_off">Asistencia de sensor desactivada, seguimiento visual restaurado</string>
 

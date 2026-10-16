@@ -59,10 +59,7 @@
     <string name="btn_3dof">传感器: 关</string>
     <string name="btn_3dof_off">传感器: 关</string>
     <string name="btn_3dof_on">传感器: 开</string>
-    <string name="btn_3dof_close">传感器: 关</string>
     <string name="hint_3dof_unavailable">设备缺少方向传感器</string>
-    <string name="hint_3dof_spawned">传感器辅助定位已开启</string>
-    <string name="hint_3dof_closed">已恢复纯视觉定位模式</string>
     <string name="hint_3dof_assisted_on">已开启传感器辅助定位（旋转防抖+丢失保活）</string>
     <string name="hint_3dof_assisted_off">已关闭传感器辅助，恢复纯视觉SLAM定位</string>
 

@@ -32,7 +32,6 @@ import android.os.ParcelFileDescriptor;
 import android.os.SharedMemory;
 import android.util.Log;
 
-import java.io.File;
 import java.io.FileDescriptor;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
@@ -110,11 +109,6 @@ public class SharedMemoryBuffer {
             Log.e(TAG, "创建跨进程共享内存失败: " + e.getMessage(), e);
             close();
         }
-    }
-
-    @Deprecated
-    public SharedMemoryBuffer(String name, int size, @SuppressWarnings("unused") File cacheDir) {
-        this(name, size);
     }
 
     public void setFrameSize(int w, int h) {

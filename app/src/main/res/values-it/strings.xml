@@ -61,10 +61,7 @@
     <string name="btn_3dof">Sensore: DIS</string>
     <string name="btn_3dof_off">Sensore: DIS</string>
     <string name="btn_3dof_on">Sensore: ATT</string>
-    <string name="btn_3dof_close">Sensore: DIS</string>
     <string name="hint_3dof_unavailable">Sensore non disponibile</string>
-    <string name="hint_3dof_spawned">Assistenza sensore abilitata</string>
-    <string name="hint_3dof_closed">Tracciamento puramente visivo ripristinato</string>
     <string name="hint_3dof_assisted_on">Assistenza sensore abilitata (anti-vibrazione + mantenimento in perdita)</string>
     <string name="hint_3dof_assisted_off">Assistenza sensore disabilitata, ripristinato SLAM visivo</string>
 

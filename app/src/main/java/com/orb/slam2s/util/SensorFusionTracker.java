@@ -23,13 +23,6 @@ import android.util.Log;
 public class SensorFusionTracker {
     private static final String TAG = "SensorFusionTracker";
 
-    // 追踪融合模式状态
-    public enum TrackingMode {
-        VISION_ONLY,       // 纯视觉模式 (3DOF 辅助关闭)
-        FUSED_TRACKING,    // 视觉纵深 + 传感器旋转融合 (正常跟踪)
-        LOST_HOLD_3DOF     // 视觉丢失时的纯 3DOF 空间保持兜底
-    }
-
     private boolean m3DofAssistEnabled = false; // 默认关闭
 
     // 传感器校准对齐偏置矩阵 R_offset: R_view = R_sensor * R_offset
@@ -52,9 +45,6 @@ public class SensorFusionTracker {
     // 在线自适应平滑系数 (alpha 越小越平滑，主要依靠传感器防抖，低频向视觉收敛)
     private static final float ALIGN_SMOOTH_FACTOR = 0.06f;
 
-    // 当前跟踪状态
-    private TrackingMode mCurrentMode = TrackingMode.VISION_ONLY;
-
     public SensorFusionTracker() {
         Matrix.setIdentityM(mAlignmentOffset, 0);
         Matrix.setIdentityM(mLastValidModel, 0);
@@ -70,17 +60,8 @@ public class SensorFusionTracker {
                 // 关闭时重置对齐与保活状态
                 mHasAlignment = false;
                 mHasValidState = false;
-                mCurrentMode = TrackingMode.VISION_ONLY;
             }
         }
-    }
-
-    public synchronized boolean is3DofAssistEnabled() {
-        return m3DofAssistEnabled;
-    }
-
-    public synchronized TrackingMode getCurrentMode() {
-        return mCurrentMode;
     }
 
     // 每帧融合与解耦计算：透传视觉位姿或在丢失时切换 3DOF 保持，返回是否绘制 AR 物体。
@@ -102,7 +83,6 @@ public class SensorFusionTracker {
 
         // 如果未启用 3DOF 辅助：完全透传纯视觉 SLAM
         if (!m3DofAssistEnabled) {
-            mCurrentMode = TrackingMode.VISION_ONLY;
             if (rawDrawFlag) {
                 System.arraycopy(vModel, 0, outModel, 0, 16);
                 System.arraycopy(rawMvp48, vViewOffset, outView, 0, 16);
@@ -123,7 +103,6 @@ public class SensorFusionTracker {
 
         // 2. 情况 A：视觉 SLAM 正在正常跟踪 (isVisionTrackingOk == true)
         if (isVisionTrackingOk) {
-            mCurrentMode = TrackingMode.FUSED_TRACKING;
             mLastValidMapId = activeMapId;
 
             // 缓存最后一次有效的 Model 和 Proj 矩阵
@@ -169,8 +148,6 @@ public class SensorFusionTracker {
         // 3. 情况 B：视觉 SLAM 突然丢失跟踪 (isVisionTrackingOk == false)
         // 触发纯 3DOF 空间保活兜底机制 (Lost-Hold)
         if (mHasValidState && mHasAlignment && isSensorReady && sensorRot != null) {
-            mCurrentMode = TrackingMode.LOST_HOLD_3DOF;
-
             // 保持最后的模型矩阵与投影矩阵
             System.arraycopy(mLastValidModel, 0, outModel, 0, 16);
             System.arraycopy(mLastValidProj, 0, outProj, 0, 16);
@@ -188,7 +165,6 @@ public class SensorFusionTracker {
         }
 
         // 既无当前视觉也无历史对齐基准时，无法绘制
-        mCurrentMode = TrackingMode.VISION_ONLY;
         return false;
     }
 
