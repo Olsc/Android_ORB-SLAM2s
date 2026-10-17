@@ -326,7 +326,7 @@ void System::RetireSubmap(Map* pOldMap)
                     vObsToErase.push_back(it->first);
             }
 
-            // EraseObservation 在 nObs≤阈值时触发 SetBadFlag：全程只摘引用并移入外点所属 Map 的 Trash，绝不下场 delete 外点对象（外点内存由外点自己的 Map 声明周期管控，在此 delete 会引发 Destroyed Mutex/UAF 崩溃）
+            // EraseObservation 在 nObs<=阈值时触发 SetBadFlag：全程只摘引用并移入外点所属 Map 的 Trash，绝不下场 delete 外点对象（外点内存由外点自己的 Map 声明周期管控，在此 delete 会引发 Destroyed Mutex/UAF 崩溃）
             for (size_t k = 0; k < vObsToErase.size(); ++k)
                 pForeign->EraseObservation(vObsToErase[k]);
         }

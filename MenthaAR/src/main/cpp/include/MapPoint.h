@@ -126,7 +126,7 @@ public:
 
     void UpdateNormalAndDepth();
 
-    // 不变性距离边界：预计算 ×0.8/×1.2 的结果
+    // 不变性距离边界：预计算 *0.8/*1.2 的结果
     float GetMinDistanceInvariance();
     float GetMaxDistanceInvariance();
     int PredictScale(const float &currentDist, KeyFrame*pKF);
@@ -155,7 +155,7 @@ public:
     Map* GetMap() const { return mpMap; }
     // 标记从持久化地图加载的点用于可视化
     bool mbFromLoadedMap = false;
-    // 标记在当前帧中匹配的点（临时）
+    // 标记在当前帧中的匹配点状态
     bool mbMatchedInCurrentFrame = false;
 
     // 跟踪使用的变量

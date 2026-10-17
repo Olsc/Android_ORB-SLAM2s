@@ -1119,9 +1119,17 @@ void parallelForLevels(int nlevels, Fn&& fn) {
         for (int i = 0; i < nlevels; ++i) fn(i);
         return;
     }
+    // 限制OpenMP并行线程数为2，避免低能效小核导致同步屏障耗时剧增
+    // 确保金字塔各层特征提取在移动端异构核心间保持高能效比与确定性时延
     const int hwThreads = (int)std::thread::hardware_concurrency();
-    const int nThreads = std::min(nlevels, std::max(2, hwThreads / 2));
-    #pragma omp parallel for num_threads(nThreads) schedule(dynamic)
+    const int nThreads = (hwThreads <= 2) ? 1 : 2;
+
+    if (nThreads <= 1) {
+        for (int i = 0; i < nlevels; ++i) fn(i);
+        return;
+    }
+
+    #pragma omp parallel for num_threads(nThreads) schedule(guided)
     for (int level = 0; level < nlevels; ++level) {
         fn(level);
     }

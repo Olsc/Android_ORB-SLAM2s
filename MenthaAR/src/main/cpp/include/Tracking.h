@@ -209,7 +209,7 @@ protected:
     LocalMapping* mpLocalMapper;
     LoopClosing* mpLoopClosing;
 
-    // ORB
+    // ORB特征提取与词袋模型相关成员
     ORBextractor* mpORBextractorLeft;
     ORBextractor* mpIniORBextractor;
 

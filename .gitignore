@@ -61,10 +61,6 @@ docs/profiler_tools/profile_trace.json
 benchmarks
 docs/key
 
-TEMP
-日志.txt
-目标.txt
-
 # Wiki
 Android_ORB-SLAM2s.wiki/
 
@@ -96,8 +92,6 @@ MenthaAR/src/main/cpp/Thirdparty_Platforms/ubuntu/dist/
 MenthaAR/src/main/cpp/Thirdparty_Platforms/ubuntu/packaging/
 
 /XML/
-知识.md
-
 
 .DS_Store
 MenthaAR/.DS_Store
@@ -109,3 +103,6 @@ MenthaAR/src/main/cpp/Thirdparty_Platforms/.DS_Store
 
 
 MenthaAR/src/main/cpp/Thirdparty_Platforms/test.mp4
+
+
+应用质量指南.md

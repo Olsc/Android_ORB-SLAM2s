@@ -142,7 +142,7 @@ public class SlamIPCClient {
             int seq = lastSeq + 1;
             int bufIndex = seq & 1;
 
-            // 背压：目标缓冲（seq%2）必须空闲，即 SLAM 已完成 seq-2
+            // 背压：目标缓冲（seq模2）必须空闲，即 SLAM 已完成 seq-2
             if (sharedMemoryBuffer.readSlamDoneSeq() < seq - 2) {
                 // SLAM 处理落后于发送，丢帧（不覆盖正在处理的缓冲）
                 return;
