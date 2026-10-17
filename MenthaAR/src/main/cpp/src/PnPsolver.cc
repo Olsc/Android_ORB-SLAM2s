@@ -255,9 +255,8 @@ cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInlie
 
             }
 
-            // 自适应提前终止：基于当前最佳内点率估算所需迭代次数
-            // N = log(1-p) / log(1-(1-ε)^s)
-            // p=0.99, s=4, ε=外点率
+            // 基于当前内点率自适应更新RANSAC最大迭代次数：N = log(1-p)/log(1-(1-e)^s)
+            // 置信度p=0.99，最小样本集s=4，e为当前外点率
             if (mnBestInliers > mRansacMinSet && nCurrentIterations > PNP_ADAPTIVE_START_ITER) {
                 float bestInlierRatio = (float)mnBestInliers / (float)N;
                 if (bestInlierRatio > PNP_ADAPTIVE_MIN_RATIO) {

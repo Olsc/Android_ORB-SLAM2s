@@ -571,7 +571,7 @@ void ORB_SLAM2::Tracking::UpdateAlignmentSmooth(const cv::Mat &T_new, int inlier
         float n1 = sqrtf(r1[0]*r1[0] + r1[1]*r1[1] + r1[2]*r1[2]);
         if(n1 <= 1e-12f && n0 > 1e-12f)
         {
-            // 取 r0 绝对值最小的分量对应的坐标轴 e：|r0×e| ≥ sqrt(2/3)，必非退化
+            // 取 r0 绝对值最小的分量对应的坐标轴 e：|r0*e| >= sqrt(2/3)，必非退化
             float e[3] = {0.f, 0.f, 0.f};
             const float a0 = fabsf(r0[0]), a1 = fabsf(r0[1]), a2 = fabsf(r0[2]);
             if(a0 <= a1 && a0 <= a2)      e[0] = 1.f;
@@ -584,7 +584,7 @@ void ORB_SLAM2::Tracking::UpdateAlignmentSmooth(const cv::Mat &T_new, int inlier
         }
         if(n1 > 1e-12f) { float inv = 1.0f/n1; r1[0]*=inv; r1[1]*=inv; r1[2]*=inv; }
 
-        // 行 2 = 行 0 × 行 1（右手系）
+        // 行 2 = 行 0 * 行 1（右手系）
         r2[0] = r0[1]*r1[2] - r0[2]*r1[1];
         r2[1] = r0[2]*r1[0] - r0[0]*r1[2];
         r2[2] = r0[0]*r1[1] - r0[1]*r1[0];
@@ -2173,11 +2173,8 @@ bool Tracking::NeedNewKeyFrame()
     // 条件2: 跟踪特征点衰减维护（需要插入新关键帧以维持跟踪连续性）
     const bool c2_decay = ((inliersForDecision < nRefMatches*thRefRatio || bNeedToInsertClose) && mnMatchesInliers >= TRACKING_SUCCESS_LOADED);
 
-    // 关键帧插入准则：
-    // 1. 初始化初期（帧数少<=NEW_MAP_KF_COUNT），放宽闲置要求，允许频繁插入迅速成图（c1_init）
-    // 2. 超过最大时间跨度（mMaxFrames），强制插帧防止累积漂移（c1a）
-    // 3. 正常建图阶段：必须同时满足帧间隔（bFrameGapOK）、充分空间几何运动视差（bEnoughMotion）、以及特征点出现有效衰减（c2_decay）
-    // 彻底解决单纯因为移动就每3帧必插一帧、导致中端SoC（如骁龙870等）建图队列爆满与频繁打断BA引发严重掉帧的问题
+    // 综合初期快速成图(c1_init)、最大间隔保底(c1a)与视差衰减约束(c2_decay)判断是否插入关键帧
+    // 平衡局部建图队列负荷与位姿估计精度，避免冗余关键帧导致BA频繁中断
     const bool bNeedKeyFrame = c1_init || c1a || (bFrameGapOK && bEnoughMotion && c2_decay);
 
     if (bNeedKeyFrame)
@@ -2199,9 +2196,8 @@ bool Tracking::NeedNewKeyFrame()
             }
             else
             {
-                // 单目模式且建图繁忙：
-                // 只有当特征点严重衰减（有即将丢失跟踪风险，如内点降至参考帧0.5倍以下）且队列为空时，才值得中断BA紧急插帧；
-                // 否则耐心等待后台 BA 充分收敛，生成高质量三维点云并保障全系统帧率平稳，不争抢CPU核心
+                // 建图线程繁忙时仅在内点严重衰减且队列为空时中断BA紧急插帧
+                // 其余情况等待后台局部BA充分收敛以保证点云重建质量
                 const bool bUrgentTrackingRisk = (inliersForDecision < nRefMatches * 0.5f);
                 if (mpLocalMapper->KeyframesInQueue() == 0 && bUrgentTrackingRisk)
                 {

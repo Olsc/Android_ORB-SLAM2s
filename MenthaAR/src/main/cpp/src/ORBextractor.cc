@@ -1119,12 +1119,8 @@ void parallelForLevels(int nlevels, Fn&& fn) {
         for (int i = 0; i < nlevels; ++i) fn(i);
         return;
     }
-    // 异构芯片调度优化（如骁龙870：1超大+3大+4小核）：
-    // 若线程数过多（>=3），OpenMP 线程会被系统调度分配到 IPC 极低的小核（Cortex-A55）。
-    // 并行循环尾部存在隐式 barrier 同步，主线程会被小核拖累数倍（由 7ms 暴涨至 100~300ms）。
-    // 将 OpenMP 辅助工作线程数严格控制为 2（主线程自身 + 1个辅助线程），
-    // 搭配 LocalMapping 线程，全系统正好完美收敛在 3 个大核上，杜绝小核拖累与发热降频。
-    // 在全大核（骁龙8E）或四核（AR1）上，2线程同样具备出色的吞吐并大幅节省能耗。
+    // 限制OpenMP并行线程数为2，避免低能效小核导致同步屏障耗时剧增
+    // 确保金字塔各层特征提取在移动端异构核心间保持高能效比与确定性时延
     const int hwThreads = (int)std::thread::hardware_concurrency();
     const int nThreads = (hwThreads <= 2) ? 1 : 2;
 

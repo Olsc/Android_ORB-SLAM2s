@@ -66,7 +66,7 @@ const int MAPPOINT_CULL_BATCH_SIZE = 500;
 // 关键帧冗余判定阈值：被重复观测的地图点占比超过此值时，判定该关键帧冗余
 const float KEYFRAME_REDUNDANCY_THRESHOLD = 0.93f;
 
-// 地图点冗余判定的观测数门槛（观测数大于此值才纳入判定；同尺度被≥此值个其他KF观测即记为冗余）
+// 地图点冗余判定的观测数门槛（观测数大于此值才纳入判定；同尺度被>=此值个其他KF观测即记为冗余）
 const int KEYFRAME_REDUNDANCY_OBS_THRESHOLD = 3;
 
 // 地图点被视为优质所需的最小观测KF数（单目模式）
@@ -197,7 +197,7 @@ const int INITIALIZER_MIN_TRACKED_POINTS = 100;
 
 // ORB底层参数
 
-// 描述子计算 Patch 大小（31×31）
+// 描述子计算 Patch 大小（31*31）
 const int ORB_PATCH_SIZE = 31;
 const int ORB_HALF_PATCH_SIZE = 15;
 
@@ -231,7 +231,7 @@ const float OPTIMIZER_HUBER_TH_3D = 2.79553215f;
 const float OPTIMIZER_CHI2_TH_2D = 5.991f;
 const float OPTIMIZER_CHI2_TH_1D = 3.841f;
 
-// Sim3 求解器卡方阈值（2DoF 99%置信）
+// Sim3 求解器卡方检验阈值（2自由度，置信度0.99）
 const float SIM3_CHI2_TH = 9.210f;
 
 // Sim3 RANSAC 求解参数
@@ -265,7 +265,7 @@ const int PNP_ADAPTIVE_START_ITER = 30; // 起始迭代数，之后才开始检�
 const float PNP_ADAPTIVE_MIN_RATIO = 0.3f; // 内点率过低时不触发提前终止
 const float PNP_ADAPTIVE_SAFETY_FACTOR = 1.5f; // 提前终止所用的安全裕度系数
 
-// 帧网格划分（行×列），约 10×7.5 像素/格 @640×360
+// 帧网格划分（行*列），约 10*7.5 像素/格 @640*360
 const int FRAME_GRID_ROWS = 48;
 const int FRAME_GRID_COLS = 64;
 const float FRAME_GRID_RESERVE_FACTOR = 0.5f;
@@ -344,7 +344,7 @@ const int LOCAL_MAPPING_SECOND_NEIGHBOR_KFS = 3;
 const int LOCAL_MAPPING_CULL_PROTECT_FRAMES = 5;
 const int LOCAL_MAPPING_MAX_QUEUED_KFS = 5;
 
-// Essential Graph BA
+// 本质图BA优化参数
 
 // 构建 Essential Graph 时两KF间最少共视图点数
 const int OPTIMIZER_ESSENTIAL_GRAPH_MIN_FEAT = 100;
@@ -392,7 +392,7 @@ const float ALIGN_EMA_MIN_ALPHA = 0.1f;
 
 // 安全 PnP 求解
 
-// ≥6 点走 RANSAC（避免 OpenCV 内部 DLT 断言）
+// >=6 点走 RANSAC（避免 OpenCV 内部 DLT 断言）
 const int PNP_MIN_SAMPLES_RANSAC = 6;
 
 // 4-5 点走 P3P/EPNP 并做重投影验证
@@ -449,7 +449,7 @@ const int INITIALIZER_SEARCH_WINDOW = 100;
 const int INITIALIZER_FEATURE_MULTIPLIER = 2;
 
 // 初始化器自适应提前终止（与 PnPsolver 同款策略）：
-// 置信概率 p、至少迭代次数、安全系数（理论需求 × 系数后提前终止）
+// 置信概率 p、至少迭代次数、安全系数（理论需求 * 系数后提前终止）
 const double INITIALIZER_RANSAC_PROB = 0.99;
 const int INITIALIZER_ADAPTIVE_START_ITER = 30;
 const float INITIALIZER_ADAPTIVE_SAFETY_FACTOR = 1.5f;
@@ -542,7 +542,7 @@ const int HBST_RELOC_MIN_MATCHES = 12;
 
 // ORB 匹配器
 
-// 256 位 BRIEF 描述子最大汉明距离（32 字节 × 8）
+// 256 位 BRIEF 描述子最大汉明距离（32 字节 * 8）
 const int ORB_MAX_DISTANCE = 256;
 
 // 视角方向决定的搜索半径（近视角 / 远视角，像素）
@@ -558,7 +558,7 @@ const float MATCH_SCALE_PENALTY = 0.15f;
 // 大尺度差时的比率放宽系数
 const float MATCH_SCALE_RATIO_RELAX = 0.1f;
 
-// 观察角度过滤：视线方向余弦平方下限（约 60° 以内）
+// 观察角度过滤：视线方向余弦平方下限（约 60度 以内）
 const float MATCH_VIEW_COS_SQ_TH = 0.25f;
 const float MATCH_VIEW_COS_TH = 0.5f;
 
@@ -593,7 +593,7 @@ const int ORB_MATCHER_INIT_WINDOW = 10; // 初始化匹配窗口半宽（像素�
 
 // ORB 提取器
 
-// BRIEF 采样点数（256 位 × 2 采样点/位）与采样点对数
+// BRIEF 采样点数（256 位 * 2 采样点/位）与采样点对数
 const int ORB_BRIEF_NUM_POINTS = 512;
 const int ORB_BRIEF_NUM_PAIRS = 256;
 
@@ -617,7 +617,7 @@ const int LOCAL_BA_MIN_KEYFRAMES = 3;
 // 中位深度统计排序索引（ComputeSceneMedianDepth 参数）
 const int TRIANGULATION_DEPTH_PERCENTILE = 2;
 
-// MapPointCulling 的 KF 间隔时间窗：≥2 帧观测不足判死；≥3 帧移出候选列表
+// MapPointCulling 的 KF 间隔时间窗：>=2 帧观测不足判死；>=3 帧移出候选列表
 const int MAPPOINT_CULL_KF_GAP_CHECK = 2;
 const int MAPPOINT_CULL_KF_GAP_REMOVE = 3;
 
@@ -648,7 +648,7 @@ const double LOCAL_BA_EARLY_STOP_REL_CHANGE = 1e-3;
 // LocalMapping 强制修剪与限制检查的关键帧间隔（即使队列仍有关键帧，每处理此数量关键帧也强制执行修剪）
 const int LOCAL_MAPPING_FORCE_CULL_INTERVAL = 4;
 
-// Essential Graph BA 迭代次数
+// 本质图BA优化参数 迭代次数
 const int ESSENTIAL_GRAPH_BA_ITERS = 20;
 
 // OptimizeSim3 迭代次数：首轮 / 存在外点时追加 / 最少内点数 / 卡方阈值
@@ -703,13 +703,13 @@ const float INITIALIZER_REPROJ_TH_FACTOR = 4.0f;
 // 4 个运动假设相似性判定比率
 const float INITIALIZER_NGOOD_SIMILAR_RATIO = 0.7f;
 
-// 平面场景奇异判定阈值（d1/d2≈1）
+// 平面场景奇异判定阈值（d1/d2约等于1）
 const float INITIALIZER_SINGULAR_RATIO = 1.00001f;
 
 // 最优/次优内点比判定
 const float INITIALIZER_BEST_RATIO = 0.75f;
 
-// 负深度视差判定 cos 阈值（≈0.36°）与视差分位
+// 负深度视差判定 cos 阈值（约0.36度）与视差分位
 const float INITIALIZER_PARALLAX_COS_TH = 0.99998f;
 const int INITIALIZER_PARALLAX_PERCENTILE = 50;
 
@@ -764,8 +764,8 @@ const float AR_SCALE_MIN = 0.03f;
 const float AR_OBJECT_SPIN_Y_DEG = 45.0f;
 const float AR_OBJECT_TILT_X_DEG = 30.0f;
 
-// 3DOF 模式投影裁剪面：此模式下 frustumM 边界为 ±ratio/±1（不乘 near），
-// near 直接参与透视缩放（ndc ∝ near/d）。near=1.0 为原设计值
+// 3DOF 模式投影裁剪面：此模式下 frustumM 边界为 +/-ratio/+/-1（不乘 near），
+// near 直接参与透视缩放（ndc 正比于 near/d）。near=1.0 为原设计值
 const float AR_3DOF_ZNEAR = 1.0f;
 const float AR_3DOF_ZFAR = 100.0f;
 
@@ -818,7 +818,7 @@ const int PLANE_MIN_POINTS = 50;
 const float PLANE_MEDIAN_TAIL_RATIO = 0.2f;
 const int PLANE_MEDIAN_MIN_SAMPLES = 20;
 
-// 内点判定阈值比例（1.4×最佳中值距离）
+// 内点判定阈值比例（1.4*最佳中值距离）
 const float PLANE_INLIER_TH_RATIO = 1.4f;
 
 // 性能分析器（profiler）

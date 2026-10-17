@@ -443,7 +443,7 @@ void LocalMapping::CreateNewMapPoints()
             const float r2z = rwc2_20*xn2x + rwc2_21*xn2y + rwc2_22;
 
             const float dotProduct = r1x*r2x + r1y*r2y + r1z*r2z;
-            // 视差角判定优化：
+            // 视差角判定：
             if(dotProduct <= 0.0f)
                 continue;
 
@@ -840,7 +840,7 @@ bool LocalMapping::stopRequested()
 
 void LocalMapping::Release()
 {
-    // 锁顺序 mMutexStop → mMutexFinish: 与 Stopped 循环的 isStopped(mMutexStop) → CheckFinish(mMutexFinish) 保持一致
+    // 锁顺序 mMutexStop -> mMutexFinish: 与 Stopped 循环的 isStopped(mMutexStop) → CheckFinish(mMutexFinish) 保持一致
     {
         unique_lock<mutex> lock(mMutexStop);
         unique_lock<mutex> lock2(mMutexFinish);
@@ -1039,7 +1039,7 @@ bool LocalMapping::CheckFinish()
 
 void LocalMapping::SetFinish()
 {
-    // 锁顺序 mMutexStop → mMutexFinish：与 Release() 一致
+    // 锁顺序 mMutexStop -> mMutexFinish：与 Release() 一致
     unique_lock<mutex> lock(mMutexStop);
     unique_lock<mutex> lock2(mMutexFinish);
     mbStopped = true;

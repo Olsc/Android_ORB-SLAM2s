@@ -36,7 +36,7 @@ public class SensorFusionTracker {
     private int mLastValidMapId = -1;
     private boolean mHasValidState = false;
 
-    // 临时矩阵计算缓存，避免高频渲染循环中反复 GC
+    // 矩阵计算复用缓存，避免高频渲染循环中GC开销
     private final float[] mTempSensorTrans = new float[16];
     private final float[] mTempOffsetInst = new float[16];
     private final float[] mTempFusedRot = new float[16];
