@@ -59,6 +59,8 @@ class KeyFrame
 public:
     KeyFrame(Frame &F, Map* pMap, KeyFrameDatabase* pKFDB);
 
+    Map* GetMap() const { return mpMap; }
+
     // 姿态函数
     void SetPose(const cv::Mat &Tcw);
     cv::Mat GetPose();

@@ -94,11 +94,14 @@ public class SensorFusionTracker {
 
         // 开启了 3DOF 传感器辅助时的逻辑：
 
-        // 1. 多地图识别与切换检测：如果检测到地图 ID 发生变化且新地图开始正常跟踪，重置旧地图的兜底状态
-        if (mHasValidState && activeMapId != mLastValidMapId && isVisionTrackingOk) {
-            Log.i(TAG, "多地图切换确认: 退出旧地图 " + mLastValidMapId + " 的保持状态，接管新地图 " + activeMapId);
-            mHasAlignment = false;
-            mHasValidState = false;
+        // 1. 多地图识别与切换检测：如果检测到地图 ID 发生变化，重置旧地图的兜底状态（绝不跨地图保活）
+        if (activeMapId != mLastValidMapId) {
+            if (mHasValidState) {
+                Log.i(TAG, "多地图切换确认: 退出旧地图 " + mLastValidMapId + " 的保持状态 (当前地图 " + activeMapId + ")");
+                mHasAlignment = false;
+                mHasValidState = false;
+            }
+            mLastValidMapId = activeMapId;
         }
 
         // 2. 情况 A：视觉 SLAM 正在正常跟踪 (isVisionTrackingOk == true)

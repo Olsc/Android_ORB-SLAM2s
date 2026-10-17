@@ -461,7 +461,7 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
         mRefLastBuildKFCount = mpMap->KeyFramesInMap();
         mRefGrid = std::move(newGrid); // 一并原子更新网格
     }
-    LOGD("BuildLoadedRefCache: 树中已缓存 %d 个点，总地图点数 = %d", mRefCachedMPCount, (int)allMPs.size());
+    LOGD("BuildLoadedRefCache: 树中已缓存 %d 个点，总地图点数 = %d", (int)mRefCachedMPCount, (int)allMPs.size());
 
     // 通知后台线程参考缓存已就绪
     mSnapSeqProduced++;
@@ -1208,8 +1208,8 @@ void Tracking::Track()
         // 如果跟踪良好，检查是否插入关键帧
         if(bOK)
         {
-            // 更新运动模型
-            if(!mLastFrame.mTcw.empty())
+            // 更新运动模型（重定位帧刚找回位姿，不存在连续帧间相对速度，清空以防下一帧跳变）
+            if(!mLastFrame.mTcw.empty() && mCurrentFrame.mnId != mnLastRelocFrameId)
             {
                 cv::Mat LastTwc = cv::Mat::eye(4,4,CV_32F);
                 float Rwc[9];
@@ -1223,7 +1223,9 @@ void Tracking::Track()
                 mVelocity = mCurrentFrame.mTcw*LastTwc;
             }
             else
+            {
                 mVelocity = cv::Mat();
+            }
 
             //mpMapDrawer->SetCurrentCameraPose(mCurrentFrame.mTcw);
 
@@ -1274,33 +1276,25 @@ void Tracking::Track()
         // 如果相机丢失，进行自动打断与快速恢复
         if(mState==LOST)
         {
-            // 初始化后的前20帧内，即使丢失也不立即阻塞重置
-            if(mpMap->KeyFramesInMap()<=RESET_PROTECT_MAX_KFS && mCurrentFrame.mnId > mnLastKeyFrameId + RESET_PROTECT_AFTER_KF_FRAMES)
-            {
-                PrepareForNewMap();
-                return;
-            }
-
             // 多地图模式：如果丢失时间过长，创建新地图（子地图）或重置跟踪状态，确保无缝继续扫描
             if (mConsecutiveLostFrames > TRACKING_LOST_FRAMES_FOR_NEW_MAP)
             {
-                if (mLastNewMapFrameId > 0 &&
-                    mCurrentFrame.mnId < mLastNewMapFrameId + TRACKING_NEW_MAP_COOLDOWN_FRAMES)
+                if (mpMap->KeyFramesInMap() >= 2)
                 {
-                    // 冷却期内切入轻量重初始化
-                    PrepareForNewMap();
-                    return;
-                }
-                else if (mpMap->KeyFramesInMap() > TRACKING_NEW_MAP_MIN_KFS)
-                {
-                    mpSystem->CreateNewMap();
-                    mLastNewMapFrameId = mCurrentFrame.mnId;
-                    mConsecutiveLostFrames = 0;
+                    if (mLastNewMapFrameId == 0 ||
+                        mCurrentFrame.mnId >= mLastNewMapFrameId + TRACKING_NEW_MAP_COOLDOWN_FRAMES)
+                    {
+                        mpSystem->CreateNewMap();
+                        mLastNewMapFrameId = mCurrentFrame.mnId;
+                        mConsecutiveLostFrames = 0;
+                        return;
+                    }
+                    // 冷却期内等待重定位，避免向已初始化地图中混入不同坐标系的新初始化点
                     return;
                 }
                 else
                 {
-                    // 地图较小或未达子地图创建条件时，重置跟踪状态以切入 MonocularInitialization
+                    // 地图未初始化完成（< 2个关键帧），重置跟踪状态以切入 MonocularInitialization
                     PrepareForNewMap();
                     return;
                 }
@@ -2178,23 +2172,26 @@ bool Tracking::NeedNewKeyFrame()
     const int inliersForDecision = (mnLoadedMapInliers > 0 && mnLocalMatchesInliers > 0) ? mnLocalMatchesInliers : mnMatchesInliers;
     // 条件2: 跟踪特征点衰减维护（需要插入新关键帧以维持跟踪连续性）
     const bool c2_decay = ((inliersForDecision < nRefMatches*thRefRatio || bNeedToInsertClose) && mnMatchesInliers >= TRACKING_SUCCESS_LOADED);
-    // 条件3: 运动几何视差触发（独立充要触发源，产生充沛物理基线时立即插帧进行立体三角化建图）
-    const bool c_motion = (bEnoughMotion && bFrameGapOK && mnMatchesInliers >= TRACKING_SUCCESS_LOADED);
 
-    const bool bNeedKeyFrame = c1_init || c1a || c_motion || (bFrameGapOK && c2_decay);
+    // 关键帧插入准则：
+    // 1. 初始化初期（帧数少<=NEW_MAP_KF_COUNT），放宽闲置要求，允许频繁插入迅速成图（c1_init）
+    // 2. 超过最大时间跨度（mMaxFrames），强制插帧防止累积漂移（c1a）
+    // 3. 正常建图阶段：必须同时满足帧间隔（bFrameGapOK）、充分空间几何运动视差（bEnoughMotion）、以及特征点出现有效衰减（c2_decay）
+    // 彻底解决单纯因为移动就每3帧必插一帧、导致中端SoC（如骁龙870等）建图队列爆满与频繁打断BA引发严重掉帧的问题
+    const bool bNeedKeyFrame = c1_init || c1a || (bFrameGapOK && bEnoughMotion && c2_decay);
 
     if (bNeedKeyFrame)
     {
-        // 如果建图接受关键帧，则插入关键帧。否则发送信号中断BA
+        // 如果建图接受关键帧（空闲），则直接插入关键帧
         if (bLocalMappingIdle)
         {
             return true;
         }
         else
         {
-            mpLocalMapper->InterruptBA();
             if (mSensor != System::MONOCULAR || nKFs <= NEW_MAP_KF_COUNT)
             {
+                mpLocalMapper->InterruptBA();
                 if (mpLocalMapper->KeyframesInQueue() < KEYFRAME_QUEUE_ACCEPT_LIMIT)
                     return true;
                 else
@@ -2202,11 +2199,19 @@ bool Tracking::NeedNewKeyFrame()
             }
             else
             {
-                // 单目模式：当建图队列堆积较小且具备有效运动视差或点数衰减时，允许插入并中断正在进行的 BA
-                if (mpLocalMapper->KeyframesInQueue() < TRACKING_QUEUE_LIMIT_MONO && (bEnoughMotion || c2_decay))
+                // 单目模式且建图繁忙：
+                // 只有当特征点严重衰减（有即将丢失跟踪风险，如内点降至参考帧0.5倍以下）且队列为空时，才值得中断BA紧急插帧；
+                // 否则耐心等待后台 BA 充分收敛，生成高质量三维点云并保障全系统帧率平稳，不争抢CPU核心
+                const bool bUrgentTrackingRisk = (inliersForDecision < nRefMatches * 0.5f);
+                if (mpLocalMapper->KeyframesInQueue() == 0 && bUrgentTrackingRisk)
+                {
+                    mpLocalMapper->InterruptBA();
                     return true;
+                }
                 else
+                {
                     return false;
+                }
             }
         }
     }
@@ -2544,6 +2549,7 @@ bool Tracking::Relocalization()
     }
 
     bool bMatch = false;
+    KeyFrame* pMatchedKF = nullptr;
 
     if(!vpCandidateKFs.empty())
     {
@@ -2712,6 +2718,7 @@ bool Tracking::Relocalization()
                 if(nGood>=RELOC_SUCCESS_INLIERS)
                 {
                     bMatch = true;
+                    pMatchedKF = vpCandidateKFs[i];
                     break;
                 }
             }
@@ -2744,8 +2751,8 @@ bool Tracking::Relocalization()
             refSnaps = mpRefSnapshots;
         }
 
-        // 连续丢失多帧时隔帧执行重度 HBST Fallback
-        const bool bRunFallback = (mConsecutiveLostFrames <= 3) || ((mCurrentFrame.mnId % 2) == 0);
+        // 连续丢失多帧时降频执行重度 HBST Fallback，避免主线程在丢帧时被 20ms+ 的暴力匹配彻底拖垮
+        const bool bRunFallback = (mConsecutiveLostFrames <= 2) || ((mCurrentFrame.mnId % 4) == 0);
         if (bRunFallback && pTree && !mCurrentFrame.mDescriptors.empty() && refDesc.rows > 0 && refSnaps && refDesc.rows == (int)refSnaps->size()) {
             VT_PROFILE_SCOPE("Reloc_Fallback");
             // 复用本帧缓存的 HBST 树（DetectRelocalizationCandidates 已构建）；
@@ -2855,6 +2862,31 @@ bool Tracking::Relocalization()
     {
         mnLastRelocFrameId = mCurrentFrame.mnId;
         ClearMapAlignment();
+        if(pMatchedKF)
+        {
+            mpReferenceKF = pMatchedKF;
+            mCurrentFrame.mpReferenceKF = pMatchedKF;
+            Map* pTargetMap = pMatchedKF->GetMap();
+            if(pTargetMap && pTargetMap != mpMap)
+            {
+                LOGD("重定位成功并切换子地图: ID %lu -> %lu", mpMap ? mpMap->mnId : 0, pTargetMap->mnId);
+                mLastFrame = Frame();
+                mVelocity = cv::Mat();
+                if(mpSystem)
+                {
+                    mpSystem->SwitchToMap(pTargetMap);
+                }
+                else
+                {
+                    SetMap(pTargetMap);
+                    mnCurrentMapId = (int)pTargetMap->mnId;
+                }
+            }
+            else if(pTargetMap)
+            {
+                mnCurrentMapId = (int)pTargetMap->mnId;
+            }
+        }
         return true;
     }
 

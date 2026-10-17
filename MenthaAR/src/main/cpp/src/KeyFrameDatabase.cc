@@ -126,6 +126,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float mi
 
             KeyFrame* pKFi = mhmKeyFrames[id];
             if (spConnectedKeyFrames.count(pKFi)) continue;
+            if (pKFi->GetMap() != pKF->GetMap()) continue;
 
             int num_matches = match_pair.second.size();
             float score = (float)num_matches / (float)pKF->N;

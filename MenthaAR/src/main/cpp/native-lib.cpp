@@ -106,6 +106,8 @@ static void AR_OnArPlaced(Plane* detected, bool whileAligned) {
         obj.objectId = "default";
         gAnchor.objects.push_back(obj);
     }
+    // 同步更新到当前活跃地图，确保点位仅归属于当前地图
+    gMapAnchors[gActiveMapId] = gAnchor.Clone();
 }
 
 // 事件：加载地图的 AR 数据
@@ -125,31 +127,40 @@ static void AR_OnMapDataLoaded(int mapId, AR::ArAnchor loaded) {
             }
             LOGD("加载平面和AR信息：更新地图%d的当前显示状态", mapId);
         } else {
-            LOGD("加载平面和AR信息：地图%d无AR物体，保留本地AR物体", mapId);
+            gAnchor.Reset();
+            AR_ResetAlignHold();
+            LOGD("加载平面和AR信息：地图%d无AR物体，清空显示", mapId);
         }
     }
 }
 
 // 事件：确认切换到另一地图（processImage 切换阈值确认后调用）
-// 保存当前锚点到旧地图缓存；目标地图自带 AR 物体则接管，否则保留本地锚点
+// 保存当前锚点到旧地图缓存；目标地图若有绑定 AR 物体则恢复，否则清空当前显示
 static void AR_OnMapSwitched(int oldId, int newId) {
     std::lock_guard<std::mutex> lk(gMapDataMutex);
-    gMapAnchors[oldId] = gAnchor.Clone(); // 保存当前锚点（含平面+物体+标志）到旧地图
+    if (gAnchor.valid && (gAnchor.plane != nullptr || !gAnchor.objects.empty())) {
+        gMapAnchors[oldId] = gAnchor.Clone(); // 仅当旧地图锚点有效时保存
+    } else {
+        gMapAnchors.erase(oldId);
+    }
 
     gActiveMapId = newId;
 
     if (gMapAnchors.count(newId) && (gMapAnchors[newId].valid || gMapAnchors[newId].plane != nullptr || !gMapAnchors[newId].objects.empty())) {
         gAnchor = gMapAnchors[newId].Clone();
-        gAnchor.isFromLoadedMap = (gAnchor.plane != nullptr);
-        gAnchor.frame = (gAnchor.plane != nullptr) ? AR::AnchorFrame::kMap : AR::AnchorFrame::kSlam;
-        gAnchor.valid = (gAnchor.plane != nullptr || !gAnchor.objects.empty());
-        AR_ResetAlignHold(); // 目标为地图锚点时须重新对齐
+        // 保留克隆出来的原始 frame 与 isFromLoadedMap（在线扫描放置为 kSlam，离线加载为 kMap）
+        // 绝不可强行重写为 kMap，否则在线放置的 AR 物体会因无离线对齐而被永久隐藏
+        AR_ResetAlignHold();
         if (gAnchor.plane) {
             getRUBModelMatrixFromRDF(gAnchor.plane->glTpw, gCurrentModelMatrix);
         }
-        LOGD("恢复地图%d的AR上下文", newId);
+        LOGD("恢复地图%d的AR上下文 (frame=%d, isLoaded=%d)", newId, (int)gAnchor.frame, (int)gAnchor.isFromLoadedMap);
+    } else {
+        // 目标地图无 AR 物体：清空当前显示，严禁继承旧地图的锚点
+        gAnchor.Reset();
+        AR_ResetAlignHold();
+        LOGD("切换到地图%d：无AR物体，清空显示", newId);
     }
-    // 目标地图无 AR 物体：保留当前本地锚点
 }
 
 // 每帧渲染管线：由 processImage 在 status==2 时调用，返回是否应绘制 AR 物体
@@ -458,7 +469,9 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
             lastTargetMapId = currentMapId;
         }
 
-        if (gMapSwitchCounter >= MAP_SWITCH_THRESHOLD) {
+        // 跟踪成功(status==2)时立即确认切换，退化态时需连续满足阈值
+        const int needThreshold = (status == 2) ? 1 : MAP_SWITCH_THRESHOLD;
+        if (gMapSwitchCounter >= needThreshold) {
             LOGD("检测到并确认地图切换：%d -> %d", gActiveMapId, currentMapId);
             AR_OnMapSwitched(gActiveMapId, currentMapId);
             gMapSwitchCounter = 0;
