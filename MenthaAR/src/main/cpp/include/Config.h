@@ -814,7 +814,7 @@ const uint8_t PROFILER_MAP_MARKER = 0xFF;
 const int PROFILER_WAIT_TIMEOUT_MS = 100;
 const int PROFILER_BATCH_MAX = 1000;
 
-// Ubuntu 桌面端与 benchmark 参数
+// 其他平台
 
 // 采集分辨率 / 显示分辨率上限
 const int UBUNTU_CAPTURE_WIDTH = 1280;
