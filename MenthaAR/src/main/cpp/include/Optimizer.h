@@ -54,14 +54,13 @@ class Optimizer
 {
 public:
     void static BundleAdjustment(const std::vector<KeyFrame*> &vpKF, const std::vector<MapPoint*> &vpMP,
-                                 int nIterations = OPTIMIZER_DEFAULT_BA_ITERS, bool *pbStopFlag=NULL, const unsigned long nLoopKF=0,
+                                 int nIterations = OPTIMIZER_DEFAULT_BA_ITERS, bool *pbStopFlag=nullptr, const unsigned long nLoopKF=0,
                                  const bool bRobust = true);
-    void static GlobalBundleAdjustemnt(Map* pMap, int nIterations=OPTIMIZER_DEFAULT_BA_ITERS, bool *pbStopFlag=NULL,
+    void static GlobalBundleAdjustemnt(Map* pMap, int nIterations=OPTIMIZER_DEFAULT_BA_ITERS, bool *pbStopFlag=nullptr,
                                        const unsigned long nLoopKF=0, const bool bRobust = true);
     void static LocalBundleAdjustment(KeyFrame* pKF, bool *pbStopFlag, Map *pMap);
     void static LocalBundleAdjustment(KeyFrame* pKF, const std::atomic<bool> *pbStopFlag, Map *pMap);
     int static PoseOptimization(Frame* pFrame);
-    int static PoseOptimizationAnalytic(Frame* pFrame);
 
     // 优化Sim3（单目）
     void static OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* pCurKF,

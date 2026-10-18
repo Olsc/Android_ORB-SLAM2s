@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# Copyright (C) 2026 The Android ORB-SLAM2s Authors
+# SPDX-License-Identifier: Apache-2.0
+
 """
 Visual SLAM Theoretical Workload Benchmark & Stress Testing Engine for Git Commits
 测算每次 Git Commit 代码在不同场景/视频规格下的理论计算量（FLOPs / Ops），支持多线程并行分析与交互式数据看板生成。

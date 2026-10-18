@@ -84,11 +84,12 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 - **🎯 重定位与匹配** —— 加载现有地图时的姿态估计和特征匹配
 - **📊 置信度可视化** —— 可视化跟踪关键点以及当前帧与加载地图之间的匹配统计信息
 - **📐 平面检测** —— 基于当前姿态和点云数据的智能地板/表面检测
-- **🎨 原生 AR 渲染** —— 基于 **cgltf** 与 OpenGL ES 的高性能 3D 渲染，支持极速加载 GLB/glTF 模型并在检测平面上放置与交互
+- **🎨 原生 AR 渲染** —— 基于 **cgltf** 与 OpenGL ES 的高性能 3D 渲染，支持极速加载大体积 GLB/glTF 模型并在检测平面上放置交互
 - **🌑 暗帧检测** —— 自动跳过暗色或低质量帧以防止 SLAM 线程阻塞
-- **🖱️ AR 对象管理** —— 支持 3D 物体的放置、双指缩放等交互操作
-- **🧭 3DOF 姿态跟踪** —— 利用设备内置传感器实现三自由度方向跟踪，支持多级回退（旋转矢量 / 游戏旋转矢量 / 加速度计 + 磁力计 / 陀螺仪积分），即使没有磁力计也能正常使用
+- **🖱️ AR 对象管理** —— 支持 3D 物体的放置、双指缩放等交互操作，维护多地图锚点生命周期
+- **🧭 3DOF 姿态跟踪** —— 利用设备内置传感器实现三自由度方向跟踪，支持多级回退（旋转矢量 / 游戏旋转矢量 / 加速度计 + 磁力计 / 陀螺仪积分），在单目短暂丢失或快速转向时平滑补偿
 - **📑 多地图支持** —— 支持多个地图文件的同时加载和匹配
+- **🖥️ 跨平台支持** —— 提供 Windows、macOS、Linux（含龙芯 LoongArch64）以及 PlayStation Vita 等平台的独立桌面/嵌入式运行与离线评测能力
 
 ---
 
@@ -96,16 +97,18 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 
 目前主要在高通骁龙平台 CPU 上测试：
 
-| SoC                     | 设备              | 性能      |
-| ----------------------- | ----------------- | --------- |
-| Snapdragon 8 Elite      | 小米 15           | 30 FPS    |
-| Snapdragon 8+ Gen1      | 红米 K60          | 30 FPS    |
-| Snapdragon 870          | 小米 10S          | 30 FPS    |
-| Snapdragon 7s Gen 2     | Redmi Pad Pro     | 30 FPS    |
-| Snapdragon 6s Gen 2     | Redmi Pad 2 SE 4G | 30 FPS    |
-| Snapdragon 835          | 小米 6            | 20-30 FPS |
-| Snapdragon AR1 Gen 1    | Rokid Glass3      | 30 FPS    |
-| MediaTek Dimensity 6300 | 联想小新平板11    | 20-30 FPS |
+| SoC                     | 设备                | 性能      |
+| ----------------------- | ------------------- | --------- |
+| Snapdragon 8 Elite      | 小米 15             | 30 FPS    |
+| Snapdragon 8 Gen 3      | 红米 K80            | 30 FPS    |
+| Snapdragon 8+ Gen1      | 红米 K60            | 30 FPS    |
+| Snapdragon 870          | 小米 10S            | 30 FPS    |
+| Snapdragon 7s Gen 2     | Redmi Pad Pro       | 30 FPS    |
+| Snapdragon 6s Gen 2     | Redmi Pad 2 SE 4G   | 30 FPS    |
+| Snapdragon 765G 5G      | vivo iQOO Z1x       | 30 FPS    |
+| Snapdragon 835          | 小米 6              | 20-30 FPS |
+| Snapdragon AR1 Gen 1    | Rokid Glass3        | 30 FPS    |
+| MediaTek Dimensity 6300 | 联想小新平板11      | 20-30 FPS |
 
 ### 🌑 暗帧检测
 
@@ -118,10 +121,12 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 - [x] 稀疏点云 SLAM 映射
 - [x] 地图保存 / 加载功能
 - [x] 重定位匹配
-- [x] 基础 AR 渲染引擎
+- [x] 原生 AR 渲染引擎
 - [x] 暗帧跳过逻辑
-- [x] 3D AR 对象管理
+- [x] 3D AR 对象管理与多地图点位生命周期维护
 - [x] 多个地图文件的同时加载和匹配
+- [x] 3DoF 融合传感器辅助跟踪
+- [x] 跨平台独立运行与评测（Windows / macOS / Linux / 龙芯 / PS Vita 等）
 
 ## 🗺️ 未来路线图
 
@@ -263,11 +268,27 @@ g2o 所需（见下文）。下载和安装说明可在以下网址找到：http
 
 ---
 
-# 🧭 关于惯性导航（IMU）
+# 💻 跨平台支持 (Desktop & Embedded)
 
-参考：https://github.com/Olsc/Android_3dof
+除 Android 端外，本项目在 `MenthaAR/src/main/cpp/Thirdparty_Platforms/` 提供了桌面与掌机平台的独立 SLAM 演示与基准测试实现，共用同一套核心 SLAM 算法：
 
-_本项目尚未研究整合完成。_
+| 平台 | 目录 | 说明 |
+| :--- | :--- | :--- |
+| **Windows** | [`windows/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/windows/Readme.md) | 支持 MSVC/MinGW，启用 AVX2 指令集加速，支持摄像头实时 SLAM 与离线视频评测 |
+| **Ubuntu / Linux** | [`ubuntu/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/ubuntu/Readme.md) | 支持 x86_64、aarch64 以及国产龙芯 **LoongArch64** 架构 |
+| **macOS** | [`mac/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/mac/Readme.md) | 原生适配 Apple Silicon (arm64, NEON) 与 Intel (x86_64, AVX2)，集成 AVFoundation 与 Cocoa GUI |
+| **PlayStation Vita** | [`psvita/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/psvita/Readme.md) | 基于 VitaSDK 的掌机实验版单目 SLAM，支持前后置摄像头实时跟踪、点云绘制与二进制地图存取 |
+
+---
+
+# 🧭 关于惯性导航（IMU）与传感器融合
+
+参考研究项目：https://github.com/Olsc/Android_3dof
+
+基于上述研究，本项目已初步集成内置传感器 3DoF 姿态解算与传感器辅助跟踪：
+- **多级传感器回退策略**：优先采用 `TYPE_ROTATION_VECTOR`，无地磁传感器时自动回退至 `TYPE_GAME_ROTATION_VECTOR`，缺少复合传感器时依次通过加速度计+磁力计或陀螺仪时间积分进行互补滤波解算，确保在各类移动设备上均可工作。
+- **SLAM 姿态补偿**：在单目视觉因快速旋转或遮挡短暂丢失时，利用传感器方向变化提供位姿推算与连续性平滑，提高 AR 体验稳定性。
+- **未来演进**：紧耦合视觉惯性里程计（VIO）及时间戳硬件级同步仍在持续演进中。
 
 ---
 

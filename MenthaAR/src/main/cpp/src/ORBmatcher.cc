@@ -34,7 +34,7 @@
 
 #include "ORBmatcher.h"
 
-#include<limits.h>
+#include <climits>
 
 #include<opencv2/core/core.hpp>
 #include<opencv2/features2d/features2d.hpp>
@@ -42,7 +42,7 @@
 #include "Config.h"
 
 //#include<stdint-gcc.h>
-#include <stdint.h>
+#include <cstdint>
 
 #if defined(_MSC_VER)
 #  include <intrin.h>   // __popcnt64 (MSVC 映射为单条 POPCNT 指令)
@@ -199,7 +199,7 @@ int ORBmatcher::SearchByHBST(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoi
         return 0;
 
     const vector<MapPoint*> vpMapPointsKF = pKF->GetMapPointMatches();
-    vpMapPointMatches = vector<MapPoint*>(F.N,static_cast<MapPoint*>(NULL));
+    vpMapPointMatches = vector<MapPoint*>(F.N,nullptr);
 
     int nmatches=0;
 
@@ -326,7 +326,7 @@ int ORBmatcher::SearchByHBST(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoi
                 if (i == ind1 || i == ind2 || i == ind3)
                     continue;
                 for (size_t j = 0, jend = rotHist[i].size(); j < jend; j++) {
-                    vpMapPointMatches[rotHist[i][j]] = static_cast<MapPoint*>(NULL);
+                    vpMapPointMatches[rotHist[i][j]] = nullptr;
                     nmatches--;
                 }
             }
@@ -361,7 +361,7 @@ int ORBmatcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapP
 
     // 关键帧中已找到的地图点集合
     set<MapPoint*> spAlreadyFound(vpMatched.begin(), vpMatched.end());
-    spAlreadyFound.erase(static_cast<MapPoint*>(NULL));
+    spAlreadyFound.erase(nullptr);
 
     int nmatches=0;
 
@@ -610,7 +610,7 @@ int ORBmatcher::SearchByHBST(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> 
     const vector<MapPoint*> vpMapPoints2 = pKF2->GetMapPointMatches();
     const cv::Mat &Descriptors2 = pKF2->mDescriptors;
 
-    vpMatches12 = vector<MapPoint*>(vpMapPoints1.size(), static_cast<MapPoint*>(NULL));
+    vpMatches12 = vector<MapPoint*>(vpMapPoints1.size(), nullptr);
     vector<bool> vbMatched2(vpMapPoints2.size(), false);
 
     // 每线程独立的旋转直方图，用前 clear
@@ -742,7 +742,7 @@ int ORBmatcher::SearchByHBST(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> 
                 if (i == ind1 || i == ind2 || i == ind3)
                     continue;
                 for (size_t j = 0, jend = rotHist[i].size(); j < jend; j++) {
-                    vpMatches12[rotHist[i][j]] = static_cast<MapPoint*>(NULL);
+                    vpMatches12[rotHist[i][j]] = nullptr;
                     nmatches--;
                 }
             }
@@ -1727,7 +1727,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
             {
                 for(size_t j=0, jend=rotHist[i].size(); j<jend; j++)
                 {
-                    CurrentFrame.mvpMapPoints[rotHist[i][j]]=static_cast<MapPoint*>(NULL);
+                    CurrentFrame.mvpMapPoints[rotHist[i][j]]=nullptr;
                     nmatches--;
                 }
             }
@@ -1879,7 +1879,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const set
             {
                 for(size_t j=0, jend=rotHist[i].size(); j<jend; j++)
                 {
-                    CurrentFrame.mvpMapPoints[rotHist[i][j]]=NULL;
+                    CurrentFrame.mvpMapPoints[rotHist[i][j]]=nullptr;
                     nmatches--;
                 }
             }

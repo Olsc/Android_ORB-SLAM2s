@@ -38,10 +38,12 @@ public class MapManager {
     private final File mMapDirectory;
 
     public MapManager(Context context) {
-        this.mMapDirectory = new File(context.getExternalFilesDir(null), MAP_DIR_NAME);
+        File externalDir = context.getExternalFilesDir(null);
+        File baseDir = externalDir != null ? externalDir : context.getFilesDir();
+        this.mMapDirectory = new File(baseDir, MAP_DIR_NAME);
 
-        if (!mMapDirectory.exists()) {
-            mMapDirectory.mkdirs();
+        if (!mMapDirectory.exists() && !mMapDirectory.mkdirs()) {
+            Log.w(TAG, "无法创建地图目录: " + mMapDirectory.getAbsolutePath());
         }
     }
 
@@ -56,10 +58,10 @@ public class MapManager {
                 success = mapFile.delete();
             }
             if (arInfoFile.exists()) {
-                arInfoFile.delete();
+                success &= arInfoFile.delete();
             }
             if (metaFile.exists()) {
-                metaFile.delete();
+                success &= metaFile.delete();
             }
 
             if (success) {
@@ -94,27 +96,15 @@ public class MapManager {
                     MapInfo binInfo = readBinHeader(file);
                     if (info == null) {
                         info = binInfo;
-                    } else if (binInfo != null && (binInfo.keyFrames > 0 || binInfo.mapPoints > 0)) {
+                    } else if (binInfo.keyFrames > 0 || binInfo.mapPoints > 0) {
                         info.keyFrames = binInfo.keyFrames;
                         info.mapPoints = binInfo.mapPoints;
                         info.hasPlane = binInfo.hasPlane;
                     }
-                    if (info != null) {
-                        saveMetadata(info);
-                    }
+                    saveMetadata(info);
                 }
 
-                if (info == null) {
-                    info = new MapInfo();
-                    info.name = mapName;
-                    info.fileSize = file.length();
-                    info.createTime = file.lastModified();
-                    info.keyFrames = 0;
-                    info.mapPoints = 0;
-                    info.hasPlane = false;
-                } else {
-                    info.fileSize = file.length();
-                }
+                info.fileSize = file.length();
                 info.filePath = file.getAbsolutePath();
 
                 maps.add(info);

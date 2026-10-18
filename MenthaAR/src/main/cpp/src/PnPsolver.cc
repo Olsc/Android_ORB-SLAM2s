@@ -393,10 +393,10 @@ void PnPsolver::CheckInliers()
 void PnPsolver::set_maximum_number_of_correspondences(int n)
 {
   if (maximum_number_of_correspondences < n) {
-    if (pws != 0) delete [] pws;
-    if (us != 0) delete [] us;
-    if (alphas != 0) delete [] alphas;
-    if (pcs != 0) delete [] pcs;
+    delete [] pws;
+    delete [] us;
+    delete [] alphas;
+    delete [] pcs;
 
     maximum_number_of_correspondences = n;
     pws = new double[3 * maximum_number_of_correspondences];

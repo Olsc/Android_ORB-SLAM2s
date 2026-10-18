@@ -1,3 +1,6 @@
+# Copyright (C) 2026 The Android ORB-SLAM2s Authors
+# SPDX-License-Identifier: Apache-2.0
+
 import struct
 import json
 import sys

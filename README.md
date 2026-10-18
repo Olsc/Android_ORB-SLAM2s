@@ -84,11 +84,12 @@ It shares similar performance optimization concepts with this project, though it
 - **🎯 Relocalization & Matching** —— Pose estimation and feature matching upon loading existing maps
 - **📊 Confidence Visualization** —— Visual tracking of keypoints and matching statistics between current frames and the loaded map
 - **📐 Plane Detection** —— Intelligent floor/surface detection based on current pose and point cloud data
-- **🎨 Native AR Rendering** —— High-performance 3D rendering via **cgltf** and OpenGL ES, supporting fast loading of GLB/glTF 3D models and interactive placement on detected planes
+- **🎨 Native AR Rendering** —— High-performance 3D rendering via **cgltf** and OpenGL ES, supporting fast loading of large GLB/glTF 3D models and interactive placement on detected planes
 - **🌑 Dark Frame Detection** —— Automatically skips dark or low-quality frames to prevent SLAM thread blocking
-- **🖱️ AR Object Management** —— Place, scale (pinch gesture), and interact with 3D objects
-- **🧭 3DOF Orientation Tracking** —— Three-degrees-of-freedom orientation tracking using onboard device sensors, with multi-tier fallback (Rotation Vector / Game Rotation Vector / Accelerometer + Magnetometer / Gyroscope integration), so it works even without a magnetometer
+- **🖱️ AR Object Management** —— Place, scale (pinch gesture), and interact with 3D objects, with persistent multi-map anchor lifecycle management
+- **🧭 3DOF Orientation Tracking** —— Three-degrees-of-freedom orientation tracking using onboard device sensors, with multi-tier fallback (Rotation Vector / Game Rotation Vector / Accelerometer + Magnetometer / Gyroscope integration), providing smooth attitude compensation during visual tracking loss or quick panning
 - **📑 Multi-Map Support** —— Simultaneous loading and matching of multiple map files
+- **🖥️ Cross-Platform Support** —— Standalone desktop and embedded platform implementations for Windows, macOS, Linux (including LoongArch64), PlayStation Vita, and more, featuring offline benchmarking tools
 
 ---
 
@@ -99,10 +100,12 @@ Currently tested primarily on Qualcomm Snapdragon platform CPUs:
 | SoC                     | Device                | Performance |
 | ----------------------- | --------------------- | ----------- |
 | Snapdragon 8 Elite      | Xiaomi 15             | 30 FPS      |
+| Snapdragon 8 Gen 3      | Redmi K80             | 30 FPS      |
 | Snapdragon 8+ Gen1      | Redmi K60             | 30 FPS      |
 | Snapdragon 870          | Xiaomi 10S            | 30 FPS      |
 | Snapdragon 7s Gen 2     | Redmi Pad Pro         | 30 FPS      |
 | Snapdragon 6s Gen 2     | Redmi Pad 2 SE 4G     | 30 FPS      |
+| Snapdragon 765G 5G      | vivo iQOO Z1x         | 30 FPS      |
 | Snapdragon 835          | Xiaomi 6              | 20-30 FPS   |
 | Snapdragon AR1 Gen 1    | Rokid Glass3          | 30 FPS      |
 | MediaTek Dimensity 6300 | Lenovo Xiaoxin Pad 11 | 20-30 FPS   |
@@ -118,10 +121,12 @@ To ensure a smooth user experience, the system monitors exposure levels. When th
 - [x] Sparse Point Cloud SLAM Mapping
 - [x] Map Save / Load functionality
 - [x] Relocalization Matching
-- [x] Basic AR Rendering Engine
+- [x] Native AR Rendering Engine
 - [x] Dark Frame Skip Logic
-- [x] 3D AR Object Management
+- [x] 3D AR Object Management & Multi-map Anchor Persistence
 - [x] Simultaneous loading and matching of multiple map files
+- [x] 3DoF Sensor fusion & auxiliary tracking
+- [x] Cross-platform standalone support (Windows / macOS / Linux / LoongArch64 / PS Vita, etc.)
 
 ## 🗺️ Future Roadmap
 
@@ -263,11 +268,27 @@ We use modified versions of the [DBoW2](https://github.com/dorian3d/DBoW2) libra
 
 ---
 
-# 🧭 About Inertial Navigation (IMU)
+# 💻 Cross-Platform Support (Desktop & Embedded)
 
-Reference: https://github.com/Olsc/Android_3dof
+Beyond Android, this project provides standalone SLAM implementations and offline benchmark tools for desktop and handheld platforms under `MenthaAR/src/main/cpp/Thirdparty_Platforms/`, sharing the identical core SLAM algorithm:
 
-_This project has not yet completed research and integration._
+| Platform | Directory | Description |
+| :--- | :--- | :--- |
+| **Windows** | [`windows/`](MenthaAR/src/main/cpp/Thirdparty_Platforms/windows/Readme.md) | Supports MSVC/MinGW, AVX2 SIMD acceleration, live camera SLAM, and offline video benchmarks |
+| **Ubuntu / Linux** | [`ubuntu/`](MenthaAR/src/main/cpp/Thirdparty_Platforms/ubuntu/Readme.md) | Supports x86_64, aarch64, and Chinese domestic **LoongArch64** architectures |
+| **macOS** | [`mac/`](MenthaAR/src/main/cpp/Thirdparty_Platforms/mac/Readme.md) | Native support for Apple Silicon (arm64, NEON) and Intel (x86_64, AVX2), with AVFoundation and Cocoa GUI |
+| **PlayStation Vita** | [`psvita/`](MenthaAR/src/main/cpp/Thirdparty_Platforms/psvita/Readme.md) | Experimental homebrew monocular SLAM using VitaSDK, supporting front/rear cameras, point cloud rendering, and binary map persistence |
+
+---
+
+# 🧭 About Inertial Navigation (IMU) & Sensor Fusion
+
+Reference Research: https://github.com/Olsc/Android_3dof
+
+Based on the research above, this project has integrated onboard sensor 3DoF orientation tracking and sensor-assisted pose estimation:
+- **Multi-Tier Sensor Fallback Strategy**: Prioritizes `TYPE_ROTATION_VECTOR`, automatically falls back to `TYPE_GAME_ROTATION_VECTOR` when a magnetometer is absent, and utilizes accelerometer + magnetometer or gyroscope numerical integration with complementary filtering as secondary fallbacks to ensure compatibility across all Android devices.
+- **SLAM Motion Compensation**: When visual tracking degrades or momentarily loses lock during rapid camera movements or occlusion, sensor orientation changes provide pose dead reckoning and continuity smoothing, stabilizing the AR experience.
+- **Future Direction**: Tightly-coupled Visual-Inertial Odometry (VIO) with hardware timestamp synchronization remains under ongoing development.
 
 ---
 

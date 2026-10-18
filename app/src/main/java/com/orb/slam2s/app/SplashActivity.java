@@ -109,7 +109,7 @@ public class SplashActivity extends Activity {
             CameraManager cm = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
             if (cm != null) {
                 String[] list = cm.getCameraIdList();
-                return list != null ? list.length : 0;
+                return list.length;
             }
         } catch (Exception e) {
             Log.e(TAG, "检测相机列表异常: " + e.getMessage());

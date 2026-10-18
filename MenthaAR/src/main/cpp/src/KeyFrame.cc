@@ -59,7 +59,7 @@ KeyFrame::KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB):
     mfLogScaleFactor(F.mfLogScaleFactor), mvScaleFactors(F.mvScaleFactors), mvLevelSigma2(F.mvLevelSigma2),
     mvInvLevelSigma2(F.mvInvLevelSigma2), mnMinX(F.mnMinX), mnMinY(F.mnMinY), mnMaxX(F.mnMaxX),
     mnMaxY(F.mnMaxY), mK(F.mK.clone()), mvpMapPoints(F.mvpMapPoints), mpKeyFrameDB(pKFDB),
-    mbFirstConnection(true), mpParent(NULL), mbNotErase(false),
+    mbFirstConnection(true), mpParent(nullptr), mbNotErase(false),
     mbToBeErased(false), mbBad(false), mbIsOrigin(false), mHalfBaseline(F.mb/2), mpMap(pMap), mpTree(F.mpTree)
 {
     mnId=nNextId++;
@@ -179,12 +179,11 @@ void KeyFrame::AddConnection(KeyFrame *pKF, const int &weight)
 {
     {
         std::unique_lock<std::mutex> lock(mMutexConnections);
-        if(!mConnectedKeyFrameWeights.count(pKF))
-            mConnectedKeyFrameWeights[pKF]=weight;
-        else if(mConnectedKeyFrameWeights[pKF]!=weight)
-            mConnectedKeyFrameWeights[pKF]=weight;
-        else
+        auto it = mConnectedKeyFrameWeights.find(pKF);
+        if (it != mConnectedKeyFrameWeights.end() && it->second == weight)
             return;
+
+        mConnectedKeyFrameWeights[pKF] = weight;
     }
 
     UpdateBestCovisibles();
@@ -270,7 +269,7 @@ void KeyFrame::EraseMapPointMatch(const size_t &idx)
 {
     unique_lock<mutex> lock(mMutexFeatures);
     if(idx < mvpMapPoints.size())
-        mvpMapPoints[idx]=static_cast<MapPoint*>(NULL);
+        mvpMapPoints[idx]=nullptr;
 }
 
 void KeyFrame::EraseMapPointMatch(MapPoint* pMP)
@@ -279,7 +278,7 @@ void KeyFrame::EraseMapPointMatch(MapPoint* pMP)
     int idx = pMP->GetIndexInKeyFrame(this);
     unique_lock<mutex> lock(mMutexFeatures);
     if(idx>=0 && static_cast<size_t>(idx)<mvpMapPoints.size())
-        mvpMapPoints[idx]=static_cast<MapPoint*>(NULL);
+        mvpMapPoints[idx]=nullptr;
 }
 
 void KeyFrame::ReplaceMapPointMatch(const size_t &idx, MapPoint* pMP)
@@ -388,7 +387,7 @@ void KeyFrame::UpdateConnections()
     // 如果计数器大于阈值，则添加连接
     // 如果没有关键帧计数器超过阈值，则添加计数器最大的那个
     int nmax=0;
-    KeyFrame* pKFmax=NULL;
+    KeyFrame* pKFmax=nullptr;
     int th = KEYFRAME_CONNECTION_TH;
 
     vector<pair<int,KeyFrame*> > vPairs;
@@ -543,7 +542,7 @@ void KeyFrame::SetBadFlag()
     {
         unique_lock<mutex> lockFeatures(mMutexFeatures);
         mapPointsCopy = mvpMapPoints;
-        mvpMapPoints.assign(N, static_cast<MapPoint*>(NULL));
+        mvpMapPoints.assign(N, nullptr);
     }
 
     // 在锁外进行所有的 Erase 操作，避免死锁和迭代器失效

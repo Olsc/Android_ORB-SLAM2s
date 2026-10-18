@@ -284,14 +284,10 @@ void LocalMapping::MapPointCulling()
     while(lit!=mlpRecentAddedMapPoints.end())
     {
         MapPoint* pMP = *lit;
-        if(pMP->isBad())
+        // 失效点直接移除；已加载地图点仅移出"最近添加"列表，不标记为 bad
+        if(pMP->isBad() || pMP->mbFromLoadedMap)
         {
             lit = mlpRecentAddedMapPoints.erase(lit);
-        }
-        // 跳过加载的地图点，不要删除它们
-        else if(pMP->mbFromLoadedMap)
-        {
-            lit = mlpRecentAddedMapPoints.erase(lit); // 从"最近添加"列表移除，但不标记为bad
         }
         else if(pMP->GetFoundRatio()<MAPPOINT_MIN_FOUND_RATIO )
         {

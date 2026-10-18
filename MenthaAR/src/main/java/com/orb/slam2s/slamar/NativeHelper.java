@@ -1,8 +1,27 @@
+/**
+ * Copyright (C) 2025-2026 Olsc <OlscStudio@outlook.com>
+ *
+ * This file is part of the Android ORB-SLAM2s project (a fork of ORB-SLAM2).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.orb.slam2s.slamar;
 
 import android.util.Log;
 
-// NativeHelper类：与JNI层交互，处理摄像头帧、平面检测、SLAM初始化等功能
+// NativeHelper：JNI 接口封装，负责摄像头帧处理、平面检测与 SLAM 初始化。
 public class NativeHelper {
     private static final String TAG = "NativeHelper";
 
@@ -21,18 +40,17 @@ public class NativeHelper {
     public NativeHelper() {
     }
 
-    // 检测平面（在 SLAM 处理线程内调用）
-    // MVP 结果由 native 写回共享内存，UI 渲染线程直接读取
+    // 在 SLAM 处理线程内检测平面，MVP 结果由 native 写回共享内存
     public void detectPlane() {
         detect(statusBuf);
     }
 
-    // 本地方法：持久映射共享内存帧缓冲（仅在缓冲创建/尺寸变化时调用一次）
+    // 持久映射共享内存帧缓冲（仅在创建或尺寸变化时调用）
     public native boolean nativeAttachFrameBuffer(int fd, int size);
     public native void nativeDetachFrameBuffer();
 
-    // 本地方法：处理持久映射缓冲中的帧（双缓冲 bufIndex 0/1；每帧只传序号+宽高，无 fd 开销）
-    // native 处理完成后会把 tracking/draw/MVP/点云/slamDoneSeq 直接写回共享内存 header
+    // 处理持久映射缓冲中的帧（双缓冲 bufIndex 0/1，每帧只传序号与宽高）
+    // native 处理完成后将 tracking/draw/MVP/点云/slamDoneSeq 写回共享内存 header
     public native void nativeProcessFrameSharedMem(int bufIndex, int seq, int width, int height, int[] statusBuf);
 
     public boolean attachFrameBuffer(int fd, int size) {
@@ -47,10 +65,10 @@ public class NativeHelper {
         nativeProcessFrameSharedMem(bufIndex, seq, width, height, statusBuf);
     }
 
-    // 本地方法：进行平面检测
+    // 执行平面检测
     public native void detect(int[] statusBuf);
 
-    // 本地方法：初始化SLAM
+    // 初始化 SLAM
     public native void initSLAM(String path);
 
     // 关停并释放 SLAM 系统（join 全部工作线程后 delete）
@@ -64,7 +82,7 @@ public class NativeHelper {
         }
     }
 
-    // 本地方法：更新相机分辨率并重新计算内参
+    // 更新相机分辨率并重新计算内参
     public native void nativeUpdateResolution(int cameraWidth, int cameraHeight);
 
     public void updateResolution(int width, int height) {
@@ -73,7 +91,7 @@ public class NativeHelper {
         }
     }
 
-    // 本地方法：保存/加载地图
+    // 保存与加载地图
     public native void saveMap(String path);
     public native void loadMapWithId(String path, int mapId, boolean append);
     public native int[] getMapStats();

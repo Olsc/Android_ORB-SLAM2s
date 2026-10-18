@@ -1,19 +1,33 @@
+/*
+ * Portions Copyright (C) 2007 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Copyright (C) 2025-2026 Olsc <OlscStudio@outlook.com>
+ * This file is part of the Android ORB-SLAM2s project (a fork of ORB-SLAM2)
+ * and is distributed under the GNU General Public License v3.0.
+ * See MenthaAR/LICENSE for details.
+ */
+
 /**
  * Created by Ads on 2017/3/5.
  * 由Olsc于2025/8/25开始进行修改
  */
 
-// 矩阵运算模块实现：提供3D图形学常用矩阵与四元数运算
+// 矩阵运算模块实现：提供 3D 图形学常用的矩阵与四元数运算
 
 #include "Matrix.h"
-#include <cmath>
 #include <cstring>
-#include <string>
-#include <algorithm>
-#include <include/Common.h>
-
-const float PI= (const float) acos(-1);
-#define I(_i, _j) ((_j)+ 4*(_i)) // 列主序矩阵索引宏（当前未使用）
 
 // 4x4矩阵乘法（列主序），r = lhs * rhs
 void multiplyMM(float* r, const float* lhs, const float* rhs) {
@@ -47,125 +61,6 @@ void multiplyMM(float* r, const float* lhs, const float* rhs) {
     tmp[15] = lhs[3] * rhs_30 + lhs[7] * rhs_31 + lhs[11] * rhs_32 + lhs[15] * rhs_33;
 
     memcpy(r, tmp, 16 * sizeof(float));
-}
-
-void multiplyMV(float* resultVec, int resultVecOffset, const float* lhsMat, int lhsMatOffset,
-                const float* rhsVec, int rhsVecOffset) {
-    float x = rhsVec[rhsVecOffset + 0];
-    float y = rhsVec[rhsVecOffset + 1];
-    float z = rhsVec[rhsVecOffset + 2];
-    float w = rhsVec[rhsVecOffset + 3];
-
-    resultVec[resultVecOffset + 0] = lhsMat[lhsMatOffset + 0]*x + lhsMat[lhsMatOffset + 4]*y + lhsMat[lhsMatOffset + 8]*z + lhsMat[lhsMatOffset + 12]*w;
-    resultVec[resultVecOffset + 1] = lhsMat[lhsMatOffset + 1]*x + lhsMat[lhsMatOffset + 5]*y + lhsMat[lhsMatOffset + 9]*z + lhsMat[lhsMatOffset + 13]*w;
-    resultVec[resultVecOffset + 2] = lhsMat[lhsMatOffset + 2]*x + lhsMat[lhsMatOffset + 6]*y + lhsMat[lhsMatOffset + 10]*z + lhsMat[lhsMatOffset + 14]*w;
-    resultVec[resultVecOffset + 3] = lhsMat[lhsMatOffset + 3]*x + lhsMat[lhsMatOffset + 7]*y + lhsMat[lhsMatOffset + 11]*z + lhsMat[lhsMatOffset + 15]*w;
-}
-
-void transposeM(float* mTrans, int mTransOffset, const float* m, int mOffset) {
-    for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 4; j++) {
-            mTrans[mTransOffset + i * 4 + j] = m[mOffset + j * 4 + i];
-        }
-    }
-}
-
-void translateM(float* m, int mOffset, float x, float y, float z) {
-    for (int i=0 ; i<4 ; i++) {
-        int mi = mOffset + i;
-        m[12 + mi] += m[mi] * x + m[4 + mi] * y + m[8 + mi] * z;
-    }
-}
-
-// 计算3D向量的长度
-float length(float x, float y, float z) {
-    return (float) sqrt(x * x + y * y + z * z);
-}
-
-// 创建绕任意轴的旋转矩阵（Rodrigues公式），对X/Y/Z轴旋转做特殊处理
-void setRotateM(float rm[], int rmOffset,
-                float a, float x, float y, float z) {
-    // 设置齐次坐标的固定值
-    rm[rmOffset + 3] = 0;
-    rm[rmOffset + 7] = 0;
-    rm[rmOffset + 11]= 0;
-    rm[rmOffset + 12]= 0;
-    rm[rmOffset + 13]= 0;
-    rm[rmOffset + 14]= 0;
-    rm[rmOffset + 15]= 1;
-
-    a *= (float) (PI / 180.0f); // 角度转弧度
-    float s = (float) sin(a);
-    float c = (float) cos(a);
-
-    // 特殊情况：绕X轴旋转
-    if (1.0f == x && 0.0f == y && 0.0f == z) {
-        rm[rmOffset + 5] = c;   rm[rmOffset + 10]= c;
-        rm[rmOffset + 6] = s;   rm[rmOffset + 9] = -s;
-        rm[rmOffset + 1] = 0;   rm[rmOffset + 2] = 0;
-        rm[rmOffset + 4] = 0;   rm[rmOffset + 8] = 0;
-        rm[rmOffset + 0] = 1;
-    }
-    // 特殊情况：绕Y轴旋转
-    else if (0.0f == x && 1.0f == y && 0.0f == z) {
-        rm[rmOffset + 0] = c;   rm[rmOffset + 10]= c;
-        rm[rmOffset + 8] = s;   rm[rmOffset + 2] = -s;
-        rm[rmOffset + 1] = 0;   rm[rmOffset + 4] = 0;
-        rm[rmOffset + 6] = 0;   rm[rmOffset + 9] = 0;
-        rm[rmOffset + 5] = 1;
-    }
-    // 特殊情况：绕Z轴旋转
-    else if (0.0f == x && 0.0f == y && 1.0f == z) {
-        rm[rmOffset + 0] = c;   rm[rmOffset + 5] = c;
-        rm[rmOffset + 1] = s;   rm[rmOffset + 4] = -s;
-        rm[rmOffset + 2] = 0;   rm[rmOffset + 6] = 0;
-        rm[rmOffset + 8] = 0;   rm[rmOffset + 9] = 0;
-        rm[rmOffset + 10]= 1;
-    }
-    // 一般情况：绕任意轴旋转（使用Rodrigues公式）
-    else {
-        float len = length(x, y, z);
-        if (1.0f != len) {  // 归一化旋转轴
-            float recipLen = 1.0f / len;
-            x *= recipLen;
-            y *= recipLen;
-            z *= recipLen;
-        }
-        float nc = 1.0f - c;
-        float xy = x * y;
-        float yz = y * z;
-        float zx = z * x;
-        float xs = x * s;
-        float ys = y * s;
-        float zs = z * s;
-        // 填充旋转矩阵（Rodrigues公式）
-        rm[rmOffset +  0] = x*x*nc +  c;
-        rm[rmOffset +  4] =  xy*nc - zs;
-        rm[rmOffset +  8] =  zx*nc + ys;
-        rm[rmOffset +  1] =  xy*nc + zs;
-        rm[rmOffset +  5] = y*y*nc +  c;
-        rm[rmOffset +  9] =  yz*nc - xs;
-        rm[rmOffset +  2] =  zx*nc - ys;
-        rm[rmOffset +  6] =  yz*nc + xs;
-        rm[rmOffset + 10] = z*z*nc +  c;
-    }
-}
-
-// 对矩阵应用旋转变换，先创建旋转矩阵再与原矩阵相乘
-void rotateM(float rm[], float m[],
-                           float a, float x, float y, float z) {
-    // 使用局部变量确保线程安全（避免多线程竞争）
-    float sTemp[16];
-    setRotateM(sTemp, 0, a, x, y, z);
-
-    // 检查原地操作
-    if (rm == m) {
-        float tmpResult[16];
-        multiplyMM(tmpResult, m, sTemp);
-        memcpy(rm, tmpResult, 16 * sizeof(float));
-    } else {
-        multiplyMM(rm, m, sTemp);
-    }
 }
 
 // 创建OpenGL风格透视投影矩阵，定义视锥体用于3D透视投影

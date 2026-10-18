@@ -1,3 +1,22 @@
+/**
+ * Copyright (C) 2025-2026 Olsc <OlscStudio@outlook.com>
+ *
+ * This file is part of the Android ORB-SLAM2s project (a fork of ORB-SLAM2).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.orb.slam2s.sensors;
 
 import android.content.Context;
@@ -7,11 +26,11 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.opengl.Matrix;
 import android.util.Log;
+import android.view.Surface;
 
 import com.orb.slam2s.constant.GlobalConstant;
 
-// 3DOF 方向传感器管理：按优先级多级回退选择姿态来源（旋转矢量 / 游戏旋转矢量 / 加速度计+磁力计 / 陀螺仪积分），
-// 并将姿态重映射到固定横屏坐标系，兼容缺少磁力计或旋转矢量的设备。
+// 3DOF 方向传感器管理：按优先级多级回退选择姿态来源（旋转矢量 / 游戏旋转矢量 / 加速度计+磁力计 / 陀螺仪积分）
 public class OrientationSensor implements SensorEventListener {
     private static final String TAG = "OrientationSensor";
 
@@ -33,6 +52,7 @@ public class OrientationSensor implements SensorEventListener {
 
     private Mode mode = Mode.NONE;
 
+    // 预分配矩阵缓存
     private final float[] rawRotationMatrix = new float[16]; // 原始旋转矩阵
     private final float[] rotationMatrix = new float[16];    // 重映射后的旋转矩阵
 
@@ -41,17 +61,17 @@ public class OrientationSensor implements SensorEventListener {
     private boolean hasGravity = false;
     private boolean hasGeomagnetic = false;
 
-    // 陀螺仪积分相关（成员复用，避免高频回调反复分配）
+    // 陀螺仪积分复用缓存
     private long lastGyroTimestamp = 0L;
     private final float[] gyroDeltaVector = new float[3];
     private final float[] gyroDeltaMatrix = new float[16];
     private final float[] gyroTempMatrix = new float[16];
 
-    // 加速度计 + 磁力计姿态解算的复用矩阵，避免传感器事件高频路径上的重复内存分配
+    // 加速度计 + 磁力计姿态解算复用缓存
     private final float[] accelMagR = new float[16];
     private final float[] accelMagI = new float[16];
 
-    // 传感器是否已产生第一个有效读数（跨线程读取，保持可见性）
+    // 传感器是否已产生第一个有效读数（跨线程读取保持可见性）
     private volatile boolean ready = false;
 
     public OrientationSensor() {
@@ -59,8 +79,13 @@ public class OrientationSensor implements SensorEventListener {
         Matrix.setIdentityM(rotationMatrix, 0);
     }
 
-    // 检测设备可用的姿态来源并按优先级选择模式（不注册监听器），供 UI 提前判断
+    // 检测设备可用的姿态来源并按优先级选择模式（不注册监听器）
     public Mode detectMode(Context context) {
+        if (context == null) {
+            mode = Mode.NONE;
+            return mode;
+        }
+
         SensorManager sm = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
         if (sm == null) {
             mode = Mode.NONE;
@@ -94,6 +119,7 @@ public class OrientationSensor implements SensorEventListener {
 
     // 注册传感器监听器并开始获取数据
     public void start(Context context) {
+        if (context == null) return;
         sensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
         if (sensorManager == null) {
             mode = Mode.NONE;
@@ -154,10 +180,13 @@ public class OrientationSensor implements SensorEventListener {
 
     @Override
     public void onSensorChanged(SensorEvent event) {
+        if (event == null || event.values == null) {
+            return;
+        }
+
         switch (event.sensor.getType()) {
             case Sensor.TYPE_ROTATION_VECTOR:
             case Sensor.TYPE_GAME_ROTATION_VECTOR:
-                // 两者都直接映射为旋转矩阵
                 SensorManager.getRotationMatrixFromVector(rawRotationMatrix, event.values);
                 remapForLandscape();
                 markReady();
@@ -191,7 +220,7 @@ public class OrientationSensor implements SensorEventListener {
         }
     }
 
-    // 当同时拥有重力和地磁数据时，手动计算旋转矩阵
+    // 当同时拥有重力和地磁数据时，解算旋转矩阵
     private void updateRotationMatrixFromAccelMag() {
         if (hasGravity && hasGeomagnetic) {
             if (SensorManager.getRotationMatrix(accelMagR, accelMagI, gravity, geomagnetic)) {
@@ -202,7 +231,7 @@ public class OrientationSensor implements SensorEventListener {
         }
     }
 
-    // 陀螺仪积分：以机体坐标系下的角速度增量为单位旋转矩阵，右乘到当前姿态上
+    // 陀螺仪角速度增量积分
     private void integrateGyroscope(SensorEvent event) {
         long now = event.timestamp;
         if (lastGyroTimestamp == 0L) {
@@ -216,47 +245,45 @@ public class OrientationSensor implements SensorEventListener {
             return;
         }
 
-        // 小角度近似：旋转矢量约等于角速度乘以 dt
+        // 小角度近似：角增量矢量 = 角速度 * dt
         gyroDeltaVector[0] = event.values[0] * dt;
         gyroDeltaVector[1] = event.values[1] * dt;
         gyroDeltaVector[2] = event.values[2] * dt;
         SensorManager.getRotationMatrixFromVector(gyroDeltaMatrix, gyroDeltaVector);
 
-        // R = R * deltaR（机体坐标系增量）
+        // R = R * deltaR (机体系右乘)
         Matrix.multiplyMM(gyroTempMatrix, 0, rawRotationMatrix, 0, gyroDeltaMatrix, 0);
         System.arraycopy(gyroTempMatrix, 0, rawRotationMatrix, 0, 16);
 
-        // 定期正交化，抑制数值漂移导致的形变
+        // 定期 Gram-Schmidt 正交规范化，抑制数值漂移
         orthonormalize(rawRotationMatrix);
         remapForLandscape();
 
         markReady();
     }
 
-    // 对旋转矩阵的 3x3 部分做 Gram-Schmidt 正交化，避免积分误差累积导致形变
+    // 对 4x4 列主序旋转矩阵的 3x3 部分做 Gram-Schmidt 正交规范化
     private void orthonormalize(float[] m) {
         float c0x = m[0], c0y = m[1], c0z = m[2];
         float c1x = m[4], c1y = m[5], c1z = m[6];
 
-        // 归一化第一列
+        // 归一化第 0 列 (X 轴)
         float len0 = (float) Math.sqrt(c0x * c0x + c0y * c0y + c0z * c0z);
-        if (len0 < 1.0e-6f) {
-            return;
-        }
-        c0x /= len0; c0y /= len0; c0z /= len0;
+        if (len0 < 1.0e-6f) return;
+        float invLen0 = 1.0f / len0;
+        c0x *= invLen0; c0y *= invLen0; c0z *= invLen0;
 
-        // 第二列减去在第一列上的投影并归一化
+        // 第 1 列 (Y 轴) 减去在第 0 列上的投影并归一化
         float d = c1x * c0x + c1y * c0y + c1z * c0z;
         c1x -= d * c0x;
         c1y -= d * c0y;
         c1z -= d * c0z;
         float len1 = (float) Math.sqrt(c1x * c1x + c1y * c1y + c1z * c1z);
-        if (len1 < 1.0e-6f) {
-            return;
-        }
-        c1x /= len1; c1y /= len1; c1z /= len1;
+        if (len1 < 1.0e-6f) return;
+        float invLen1 = 1.0f / len1;
+        c1x *= invLen1; c1y *= invLen1; c1z *= invLen1;
 
-        // 第三列 = 第一列 * 第二列
+        // 第 2 列 (Z 轴) = 第 0 列 x 第 1 列 (叉乘保证右手正交系)
         float c2x = c0y * c1z - c0z * c1y;
         float c2y = c0z * c1x - c0x * c1z;
         float c2z = c0x * c1y - c0y * c1x;
@@ -271,44 +298,49 @@ public class OrientationSensor implements SensorEventListener {
         // 无需处理精度变化
     }
 
-    // 获取已针对横屏重映射的旋转矩阵
+    // 获取横屏重映射后的旋转矩阵
     public float[] getRotationMatrix() {
         return rotationMatrix;
     }
 
-    // 检查设备是否具备运行 3DOF 所需的传感器
-    // 只要满足以下任意一种即可：旋转矢量 / 游戏旋转矢量 / (加速度计 + 磁力计) / 陀螺仪
-    public boolean hasRequiredSensors(Context context) {
-        return detectMode(context) != Mode.NONE;
-    }
-
-    // 将传感器坐标系重映射为横屏坐标系，左横屏(ROTATION_90)与右横屏(ROTATION_270)使用不同轴映射
+    // 将传感器坐标系重映射为当前屏幕坐标系
     private void remapForLandscape() {
-        // 获取当前显示旋转
-        int displayRotation = android.view.Surface.ROTATION_90; // 默认左横屏
-        try {
-            // 通过静态方式获取当前旋转
-            displayRotation = GlobalConstant.DISPLAY_ROTATION;
-        } catch (Exception e) {
-            // 默认左横屏
-        }
-
-        if (displayRotation == android.view.Surface.ROTATION_270) {
-            // 右横屏 (reverse landscape)
-            SensorManager.remapCoordinateSystem(
-                rawRotationMatrix,
-                SensorManager.AXIS_MINUS_Y,  // 新X轴 = 旧-Y轴
-                SensorManager.AXIS_X,        // 新Y轴 = 旧X轴
-                rotationMatrix
-            );
-        } else {
-            // 左横屏 (landscape, 默认)
-            SensorManager.remapCoordinateSystem(
-                rawRotationMatrix,
-                SensorManager.AXIS_Y,        // 新X轴 = 旧Y轴
-                SensorManager.AXIS_MINUS_X,  // 新Y轴 = 旧-X轴
-                rotationMatrix
-            );
+        int displayRotation = GlobalConstant.DISPLAY_ROTATION;
+        switch (displayRotation) {
+            case Surface.ROTATION_90:
+            case 90:
+                // 左横屏：新 X 轴 = 旧 Y 轴，新 Y 轴 = 旧 -X 轴
+                SensorManager.remapCoordinateSystem(
+                    rawRotationMatrix,
+                    SensorManager.AXIS_Y,
+                    SensorManager.AXIS_MINUS_X,
+                    rotationMatrix
+                );
+                break;
+            case Surface.ROTATION_180:
+            case 180:
+                // 反向竖屏：新 X 轴 = 旧 -X 轴，新 Y 轴 = 旧 -Y 轴
+                SensorManager.remapCoordinateSystem(
+                    rawRotationMatrix,
+                    SensorManager.AXIS_MINUS_X,
+                    SensorManager.AXIS_MINUS_Y,
+                    rotationMatrix
+                );
+                break;
+            case Surface.ROTATION_270:
+            case 270:
+                // 右横屏：新 X 轴 = 旧 -Y 轴，新 Y 轴 = 旧 X 轴
+                SensorManager.remapCoordinateSystem(
+                    rawRotationMatrix,
+                    SensorManager.AXIS_MINUS_Y,
+                    SensorManager.AXIS_X,
+                    rotationMatrix
+                );
+                break;
+            default:
+                // ROTATION_0：保持传感器原始坐标系
+                System.arraycopy(rawRotationMatrix, 0, rotationMatrix, 0, 16);
+                break;
         }
     }
 }

@@ -20,6 +20,7 @@ import android.content.ComponentCallbacks2;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.opengl.GLSurfaceView;
 import android.os.Build;
 import android.os.Bundle;
@@ -44,6 +45,7 @@ import android.view.ViewGroup;
 
 import androidx.activity.ComponentActivity;
 import androidx.activity.OnBackPressedCallback;
+import androidx.annotation.NonNull;
 import androidx.annotation.OptIn;
 import androidx.camera.camera2.interop.ExperimentalCamera2Interop;
 import androidx.core.graphics.Insets;
@@ -69,6 +71,7 @@ import androidx.camera.core.CameraInfo;
 import androidx.camera.core.CameraSelector;
 
 import java.text.SimpleDateFormat;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -165,31 +168,34 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
                 .show();
     }
 
+    @SuppressWarnings("deprecation")
     private void computeScreenResolution() {
         WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
-        if (wm != null) {
-            Point size = new Point();
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                Display display = getDisplay();
-                if (display != null) {
-                    Point realSize = new Point();
-                    display.getRealSize(realSize);
-                    size.x = realSize.x;
-                    size.y = realSize.y;
-                }
-            } else {
-                wm.getDefaultDisplay().getRealSize(size);
-            }
+        if (wm == null) return;
 
-            int screenWidth = size.x;
-            int screenHeight = size.y;
-            Log.d(TAG, "屏幕分辨率: " + screenWidth + "x" + screenHeight);
-
-            GlobalConstant.computeOptimalResolution(screenWidth, screenHeight);
-            Log.d(TAG, "选择相机分辨率: " + GlobalConstant.RESOLUTION_WIDTH + "x" + GlobalConstant.RESOLUTION_HEIGHT);
+        Point size = new Point();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Rect bounds = wm.getCurrentWindowMetrics().getBounds();
+            size.x = bounds.width();
+            size.y = bounds.height();
+        } else {
+            wm.getDefaultDisplay().getRealSize(size);
         }
+
+        int screenWidth = size.x;
+        int screenHeight = size.y;
+        Log.d(TAG, "屏幕分辨率: " + screenWidth + "x" + screenHeight);
+
+        GlobalConstant.computeOptimalResolution(screenWidth, screenHeight);
+        Log.d(TAG, "选择相机分辨率: " + GlobalConstant.RESOLUTION_WIDTH + "x" + GlobalConstant.RESOLUTION_HEIGHT);
     }
 
+    private File getSlamDir() {
+        File dir = getExternalFilesDir("SLAM");
+        return dir != null ? dir : new File(getFilesDir(), "SLAM");
+    }
+
+    @SuppressWarnings("deprecation")
     private void lockCurrentOrientation() {
         try {
             WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
@@ -222,10 +228,8 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
-        if (controller != null) {
-            controller.setAppearanceLightNavigationBars(false);
-            controller.setAppearanceLightStatusBars(false);
-        }
+        controller.setAppearanceLightNavigationBars(false);
+        controller.setAppearanceLightStatusBars(false);
 
         setupWindowInsets();
 
@@ -397,7 +401,7 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
                     String mapName = input.getText().toString().trim();
                     if (mapName.isEmpty()) mapName = defaultName;
 
-                    final String resDir = getExternalFilesDir("SLAM").getAbsolutePath() + "/maps/" + mapName + ".bin";
+                    final String resDir = getSlamDir().getAbsolutePath() + "/maps/" + mapName + ".bin";
                     if (mSlamIPCClient != null) {
                         mSlamIPCClient.saveMap(resDir);
                     }
@@ -431,7 +435,7 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
                         for (int i = 0; i < maps.size(); i++) {
                             if (checkedItems[i]) {
                                 boolean append = (loadedCount > 0);
-                                final String resDir = getExternalFilesDir("SLAM").getAbsolutePath() + "/maps/" + maps.get(i).name + ".bin";
+                                final String resDir = getSlamDir().getAbsolutePath() + "/maps/" + maps.get(i).name + ".bin";
                                 if (mSlamIPCClient != null) {
                                     mSlamIPCClient.loadMapWithId(resDir, loadedCount, append);
                                 }
@@ -464,7 +468,7 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
                 .setItems(options, (dialog, which) -> {
                     switch (which) {
                         case 0:
-                            final String resDir = getExternalFilesDir("SLAM").getAbsolutePath() + "/maps/" + mapInfo.name + ".bin";
+                            final String resDir = getSlamDir().getAbsolutePath() + "/maps/" + mapInfo.name + ".bin";
                             if (mSlamIPCClient != null) {
                                 mSlamIPCClient.loadMapWithId(resDir, 0, false);
                             }
@@ -583,7 +587,7 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
     }
 
     @Override
-    protected void onSaveInstanceState(Bundle outState) {
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putBoolean(KEY_3DOF_MODE, mIs3DofMode);
     }
@@ -604,7 +608,7 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
 
         new Thread(() -> {
             try {
-                final String resDir = getExternalFilesDir("SLAM").getAbsolutePath() + "/";
+                final String resDir = getSlamDir().getAbsolutePath() + "/";
 
                 if (mSlamIPCClient != null) {
                     mSlamIPCClient.bindService();
@@ -800,7 +804,7 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
             showToast(getString(R.string.hint_no_camera));
             return;
         }
-        if (cameraList.size() <= 1) {
+        if (cameraList.size() == 1) {
             showToast(getString(R.string.hint_camera_switch_single));
             return;
         }

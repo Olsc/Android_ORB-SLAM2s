@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright (C) 2026 Olsc <OlscStudio@outlook.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # ============================================================================
 # MenthaAR macOS 打包脚本
 # 将编译好的两个可执行文件打包成 zip，方便拷贝到其他 Apple Silicon (arm64) Mac 运行。

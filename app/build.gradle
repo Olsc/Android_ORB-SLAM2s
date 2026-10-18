@@ -11,7 +11,7 @@ android {
         minSdk 23
         targetSdk 37
         versionCode 1
-        versionName "0.0.10"
+        versionName "0.0.11"
 
         multiDexEnabled true
 
@@ -134,7 +134,7 @@ dependencies {
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
 }
 
-configurations.all {
+configurations.configureEach {
     resolutionStrategy {
         force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.4.21"
         force "org.jetbrains.kotlin:kotlin-stdlib:2.4.21"

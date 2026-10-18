@@ -1,17 +1,36 @@
 /**
+ * Copyright (C) 2025-2026 Olsc <OlscStudio@outlook.com>
+ *
+ * This file is part of the Android ORB-SLAM2s project (a fork of ORB-SLAM2).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/**
  * Created by Ads on 2017/1/15.
  * 由Olsc于2025/8/25开始进行修改
  */
 
-// UI工具函数模块实现
+// UI 工具函数模块实现
 #include "UIUtils.h"
 #include "Matrix.h"
 #include "include/Config.h"
 
-// 使用RANSAC算法从3D地图点中检测平面，选择中值距离最小的模型
+// 使用 RANSAC 从 3D 地图点中检测平面，选择中值距离最小的模型
 Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &vMPs, const int iterations)
 {
-    // 提取3D点：仅保留观测次数达阈值的稳定地图点
+    // 提取 3D 点：仅保留观测次数达阈值的稳定地图点
     vector<cv::Point3f> vPoints;
     vPoints.reserve(vMPs.size());
     vector<ORB_SLAM2::MapPoint*> vPointMP;
@@ -35,9 +54,9 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
     const int N = vPoints.size();
 
     if(N<ORB_SLAM2::PLANE_MIN_POINTS) // 点数过少，无法可靠地拟合平面
-        return NULL;
+        return nullptr;
 
-    // 准备RANSAC所需的索引数组
+    // 准备 RANSAC 所需的索引数组
     vector<size_t> vAllIndices;
     vAllIndices.reserve(N);
     vector<size_t> vAvailableIndices;
@@ -52,12 +71,12 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
     vector<float> vDistances(N);
     vector<float> vSorted(N);
 
-    // RANSAC迭代: 寻找最佳平面模型
+    // RANSAC 迭代：寻找最佳平面模型
     for(int n=0; n<iterations; n++)
     {
         vAvailableIndices = vAllIndices;
 
-        // 随机选择3个点作为最小集合来拟合平面
+        // 随机选择 3 个点拟合平面
         int idx[3];
         for(short i = 0; i < 3; ++i)
         {
@@ -120,7 +139,7 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
     }
 
     // 提取内点，用于构建最终的平面
-    vector<ORB_SLAM2::MapPoint*> vInlierMPs(nInliers,NULL);
+    vector<ORB_SLAM2::MapPoint*> vInlierMPs(nInliers,nullptr);
     int nin = 0;
     for(int i=0; i<N; i++)
     {
@@ -134,7 +153,7 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
     return new Plane(vInlierMPs,Tcw);
 }
 
-// 将OpenCV的4x4 Mat矩阵转为OpenGL列主序矩阵，OpenCV行主序与OpenGL列主序需转置
+// 将 OpenCV 的 4x4 Mat 转为 OpenGL 列主序矩阵（需转置）
 void getColMajorMatrixFromMat(float M[],cv::Mat &Tcw){
     M[0] = Tcw.at<float>(0,0);
     M[1] = Tcw.at<float>(1,0);

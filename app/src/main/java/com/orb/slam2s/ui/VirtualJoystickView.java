@@ -24,6 +24,8 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 
+import androidx.annotation.NonNull;
+
 // 虚拟摇杆控件：控制 AR 物体旋转角度与力度
 public class VirtualJoystickView extends View {
 
@@ -118,7 +120,7 @@ public class VirtualJoystickView extends View {
     }
 
     @Override
-    protected void onDraw(Canvas canvas) {
+    protected void onDraw(@NonNull Canvas canvas) {
         super.onDraw(canvas);
         if (mRadius <= 0) return;
 
