@@ -603,7 +603,7 @@ namespace ORB_SLAM2
 
 Tracking::Tracking(System *pSys, FrameDrawer *pFrameDrawer,  Map *pMap, KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor):
     mState(NO_IMAGES_YET), mSensor(sensor), mbOnlyTracking(false), mbVO(false),
-    mpKeyFrameDB(pKFDB), mpInitializer(static_cast<Initializer*>(NULL)), mLastInitAttemptTime(0.0), mpSystem(pSys),
+    mpKeyFrameDB(pKFDB), mpInitializer(nullptr), mLastInitAttemptTime(0.0), mpSystem(pSys),
     mpFrameDrawer(pFrameDrawer),  mpMap(pMap), mnLastRelocFrameId(0), mnCurrentMapId(0),
     mCfgTopKWords(SYSTEM_RELOC_CONFIG_TOP_K), mCfgMaxCandidates(SYSTEM_RELOC_CONFIG_MAX_CANDIDATES), mCfgMatchChunk(SYSTEM_RELOC_CONFIG_MATCH_CHUNK),
     mCfgMaxBindInliers(SYSTEM_RELOC_CONFIG_MAX_BIND_INLIERS), mCfgMaxProjBinds(SYSTEM_RELOC_CONFIG_MAX_PROJ_BINDS), mConsecutiveLostFrames(0)
@@ -1238,7 +1238,7 @@ void Tracking::Track()
                 if(pMP->Observations()<1)
                 {
                     mCurrentFrame.mvbOutlier[i] = false;
-                    mCurrentFrame.mvpMapPoints[i]=static_cast<MapPoint*>(NULL);
+                    mCurrentFrame.mvpMapPoints[i]=nullptr;
                 }
             }
 
@@ -1260,7 +1260,7 @@ void Tracking::Track()
             for(int i=0; i<mCurrentFrame.N;i++)
             {
                 if(mCurrentFrame.mvpMapPoints[i] && mCurrentFrame.mvbOutlier[i])
-                    mCurrentFrame.mvpMapPoints[i]=static_cast<MapPoint*>(NULL);
+                    mCurrentFrame.mvpMapPoints[i]=nullptr;
             }
         }
 
@@ -1413,8 +1413,7 @@ void Tracking::MonocularInitialization()
             for(size_t i=0; i<mCurrentFrame.mvKeysUn.size(); i++)
                 mvbPrevMatched[i]=mCurrentFrame.mvKeysUn[i].pt;
 
-            if(mpInitializer)
-                delete mpInitializer;
+            delete mpInitializer;
 
             mpInitializer =  new Initializer(mCurrentFrame, INITIALIZER_SIGMA, INITIALIZER_RANSAC_ITERS);
 
@@ -1429,7 +1428,7 @@ void Tracking::MonocularInitialization()
         if((int)mCurrentFrame.mvKeys.size()<=INITIALIZER_MIN_TRACKED_POINTS)
         {
             delete mpInitializer;
-            mpInitializer = static_cast<Initializer*>(NULL);
+            mpInitializer = nullptr;
             fill(mvIniMatches.begin(),mvIniMatches.end(),-1);
             return;
         }
@@ -1442,7 +1441,7 @@ void Tracking::MonocularInitialization()
         if(nmatches<TRACKING_INIT_MIN_MATCHES)
         {
             delete mpInitializer;
-            mpInitializer = static_cast<Initializer*>(NULL);
+            mpInitializer = nullptr;
             return;
         }
 
@@ -1670,7 +1669,7 @@ bool Tracking::TrackReferenceKeyFrame()
             {
                 MapPoint* pMP = mCurrentFrame.mvpMapPoints[i];
 
-                mCurrentFrame.mvpMapPoints[i]=static_cast<MapPoint*>(NULL);
+                mCurrentFrame.mvpMapPoints[i]=nullptr;
                 mCurrentFrame.mvbOutlier[i]=false;
                 pMP->mbTrackInView = false;
                 pMP->mnLastFrameSeen = mCurrentFrame.mnId;
@@ -1739,7 +1738,7 @@ bool Tracking::TrackWithMotionModel()
     else
         mCurrentFrame.SetPose(mVelocity*mLastFrame.mTcw);
 
-    fill(mCurrentFrame.mvpMapPoints.begin(),mCurrentFrame.mvpMapPoints.end(),static_cast<MapPoint*>(NULL));
+    fill(mCurrentFrame.mvpMapPoints.begin(),mCurrentFrame.mvpMapPoints.end(),nullptr);
 
     // 投影上一帧中看到的点
     int th = TRACKING_MOTION_SEARCH_TH; // 单目模式使用15像素阈值
@@ -1748,7 +1747,7 @@ bool Tracking::TrackWithMotionModel()
     // 如果匹配点较少，使用更宽的窗口搜索
     if(nmatches<TRACKING_MOTION_MIN_MATCHES)
     {
-        fill(mCurrentFrame.mvpMapPoints.begin(),mCurrentFrame.mvpMapPoints.end(),static_cast<MapPoint*>(NULL));
+        fill(mCurrentFrame.mvpMapPoints.begin(),mCurrentFrame.mvpMapPoints.end(),nullptr);
         nmatches = matcher.SearchByProjection(mCurrentFrame,mLastFrame,2*th,mSensor==System::MONOCULAR);
     }
 
@@ -1768,7 +1767,7 @@ bool Tracking::TrackWithMotionModel()
             {
                 MapPoint* pMP = mCurrentFrame.mvpMapPoints[i];
 
-                mCurrentFrame.mvpMapPoints[i]=static_cast<MapPoint*>(NULL);
+                mCurrentFrame.mvpMapPoints[i]=nullptr;
                 mCurrentFrame.mvbOutlier[i]=false;
                 pMP->mbTrackInView = false;
                 pMP->mnLastFrameSeen = mCurrentFrame.mnId;
@@ -2255,7 +2254,7 @@ void Tracking::SearchLocalPoints()
         {
             if(pMP->isBad())
             {
-                *vit = static_cast<MapPoint*>(NULL);
+                *vit = nullptr;
             }
             else
             {
@@ -2442,7 +2441,7 @@ void Tracking::UpdateLocalKeyFrames()
             }
             else
             {
-                mCurrentFrame.mvpMapPoints[i]=NULL;
+                mCurrentFrame.mvpMapPoints[i]=nullptr;
             }
         }
     }
@@ -2451,7 +2450,7 @@ void Tracking::UpdateLocalKeyFrames()
         return;
 
     int max=0;
-    KeyFrame* pKFmax= static_cast<KeyFrame*>(NULL);
+    KeyFrame* pKFmax= nullptr;
 
     mvpLocalKeyFrames.clear();
     mvpLocalKeyFrames.reserve(3*keyframeCounter.size());
@@ -2664,7 +2663,7 @@ bool Tracking::Relocalization()
                         sFound.insert(vvpMapPointMatches[i][j]);
                     }
                     else
-                        mCurrentFrame.mvpMapPoints[j]=NULL;
+                        mCurrentFrame.mvpMapPoints[j]=nullptr;
                 }
 
                 int nGood;
@@ -2678,7 +2677,7 @@ bool Tracking::Relocalization()
 
                 for(int io =0; io<mCurrentFrame.N; io++)
                     if(mCurrentFrame.mvbOutlier[io])
-                        mCurrentFrame.mvpMapPoints[io]=static_cast<MapPoint*>(NULL);
+                        mCurrentFrame.mvpMapPoints[io]=nullptr;
 
                 // 如果内点较少，在粗窗口中通过投影搜索并再次优化
                 if(nGood<RELOC_SUCCESS_INLIERS)
@@ -2704,7 +2703,7 @@ bool Tracking::Relocalization()
 
                                 for(int io =0; io<mCurrentFrame.N; io++)
                                     if(mCurrentFrame.mvbOutlier[io])
-                                        mCurrentFrame.mvpMapPoints[io]=NULL;
+                                        mCurrentFrame.mvpMapPoints[io]=nullptr;
                             }
                         }
                     }
@@ -2747,7 +2746,7 @@ bool Tracking::Relocalization()
             refSnaps = mpRefSnapshots;
         }
 
-        // 连续丢失多帧时降频执行重度 HBST Fallback，避免主线程在丢帧时被 20ms+ 的暴力匹配彻底拖垮
+        // 连续丢失多帧时降频执行重度 HBST Fallback，避免主线程在丢帧时被暴力匹配长时间阻塞
         const bool bRunFallback = (mConsecutiveLostFrames <= 2) || ((mCurrentFrame.mnId % 4) == 0);
         if (bRunFallback && pTree && !mCurrentFrame.mDescriptors.empty() && refDesc.rows > 0 && refSnaps && refDesc.rows == (int)refSnaps->size()) {
             VT_PROFILE_SCOPE("Reloc_Fallback");
@@ -2804,7 +2803,7 @@ bool Tracking::Relocalization()
                             Tcw.copyTo(mCurrentFrame.mTcw);
 
                             // 初始化匹配为NULL
-                            mCurrentFrame.mvpMapPoints = std::vector<MapPoint*>(mCurrentFrame.N, static_cast<MapPoint*>(NULL));
+                            mCurrentFrame.mvpMapPoints = std::vector<MapPoint*>(mCurrentFrame.N, nullptr);
 
                             // 为内点设置匹配
                             for(int idx : inliers) {
@@ -2829,7 +2828,7 @@ bool Tracking::Relocalization()
                             if(nGood >= TRACKING_POSE_OPT_MIN_INLIERS) {
                                 for(int io=0; io<mCurrentFrame.N; io++) {
                                     if(mCurrentFrame.mvbOutlier[io]) {
-                                        mCurrentFrame.mvpMapPoints[io] = static_cast<MapPoint*>(NULL);
+                                        mCurrentFrame.mvpMapPoints[io] = nullptr;
                                     }
                                 }
 
@@ -2988,14 +2987,14 @@ void Tracking::Reset()
     //KeyFrame::nNextId = 0;
     //Frame::nNextId = 0;
     mState = NO_IMAGES_YET;
-    mpReferenceKF = static_cast<KeyFrame*>(NULL);
+    mpReferenceKF = nullptr;
     mLastFrame = Frame();
     mCurrentFrame = Frame();
 
     if(mpInitializer)
     {
         delete mpInitializer;
-        mpInitializer = static_cast<Initializer*>(NULL);
+        mpInitializer = nullptr;
     }
     mLastInitAttemptTime = 0.0;
 
@@ -3035,14 +3034,14 @@ void Tracking::ClearTrackingState()
     mlpReferences.clear();
     mlFrameTimes.clear();
     mlbLost.clear();
-    mpReferenceKF = static_cast<KeyFrame*>(NULL);
+    mpReferenceKF = nullptr;
     mLastFrame = Frame();
     mCurrentFrame = Frame();
 
     if (mpInitializer)
     {
         delete mpInitializer;
-        mpInitializer = static_cast<Initializer*>(NULL);
+        mpInitializer = nullptr;
     }
 
     // 清除关键帧引用以防止访问已删除的对象
@@ -3147,7 +3146,7 @@ void Tracking::PrepareForNewMap()
     if (mpInitializer)
     {
         delete mpInitializer;
-        mpInitializer = static_cast<Initializer*>(NULL);
+        mpInitializer = nullptr;
     }
 
     mTrackingOK.store(false);

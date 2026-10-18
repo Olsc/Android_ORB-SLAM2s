@@ -163,7 +163,7 @@ public class SlamService extends Service {
             // 高优先级：SLAM 跟踪对实时性敏感，避免独立进程被调度器降频/降优先
             android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_URGENT_AUDIO);
             while (running) {
-                Runnable r = null;
+                Runnable r;
                 synchronized (queueLock) {
                     while (taskQueue.isEmpty() && running) {
                         try {

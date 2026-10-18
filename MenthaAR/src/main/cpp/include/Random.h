@@ -29,10 +29,6 @@ class LCG {
 public:
     explicit LCG(unsigned int seed = 0) : mRandState(seed) {}
 
-    inline void setSeed(unsigned int seed) {
-        mRandState = seed;
-    }
-
     inline int randomInt(int min, int max) {
         mRandState = mRandState * 1664525u + 1013904223u;
         return min + (int)((((uint64_t)mRandState * (uint64_t)(max - min + 1)) >> 32));

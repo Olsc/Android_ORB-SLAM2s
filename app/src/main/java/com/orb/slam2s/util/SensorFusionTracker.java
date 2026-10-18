@@ -74,7 +74,6 @@ public class SensorFusionTracker {
         }
 
         // 提取视觉 SLAM 原始矩阵
-        final float[] vModel = rawMvp48;
         final int vViewOffset = 16;
         final int vProjOffset = 32;
 
@@ -84,7 +83,7 @@ public class SensorFusionTracker {
         // 如果未启用 3DOF 辅助：完全透传纯视觉 SLAM
         if (!m3DofAssistEnabled) {
             if (rawDrawFlag) {
-                System.arraycopy(vModel, 0, outModel, 0, 16);
+                System.arraycopy(rawMvp48, 0, outModel, 0, 16);
                 System.arraycopy(rawMvp48, vViewOffset, outView, 0, 16);
                 System.arraycopy(rawMvp48, vProjOffset, outProj, 0, 16);
                 return true;
@@ -109,7 +108,7 @@ public class SensorFusionTracker {
             mLastValidMapId = activeMapId;
 
             // 缓存最后一次有效的 Model 和 Proj 矩阵
-            System.arraycopy(vModel, 0, mLastValidModel, 0, 16);
+            System.arraycopy(rawMvp48, 0, mLastValidModel, 0, 16);
             System.arraycopy(rawMvp48, vProjOffset, mLastValidProj, 0, 16);
 
             // 提取视觉 View 矩阵的平移 [tx, ty, tz]
@@ -136,12 +135,12 @@ public class SensorFusionTracker {
                     Log.d(TAG, "视觉与传感器完成初次基准对齐 (MapId=" + activeMapId + ")");
                 } else {
                     // 在线平滑滤波更新 R_offset (低通消除传感器慢漂移，为丢失时兜底做准备)
-                    smoothMatrix(mAlignmentOffset, mTempOffsetInst, ALIGN_SMOOTH_FACTOR);
+                    smoothMatrix(mAlignmentOffset, mTempOffsetInst);
                 }
             }
 
             // 视觉稳定跟踪时严格使用视觉 SLAM 位姿，避免传感器时延与微抖
-            System.arraycopy(vModel, 0, outModel, 0, 16);
+            System.arraycopy(rawMvp48, 0, outModel, 0, 16);
             System.arraycopy(rawMvp48, vViewOffset, outView, 0, 16);
             System.arraycopy(rawMvp48, vProjOffset, outProj, 0, 16);
             mHasValidState = true;
@@ -172,9 +171,9 @@ public class SensorFusionTracker {
     }
 
     // 对旋转矩阵进行一阶低通平滑并做 Gram-Schmidt 正交规范化
-    private void smoothMatrix(float[] target, float[] source, float alpha) {
+    private void smoothMatrix(float[] target, float[] source) {
         for (int i = 0; i < 16; i++) {
-            target[i] = (1.0f - alpha) * target[i] + alpha * source[i];
+            target[i] = (1.0f - ALIGN_SMOOTH_FACTOR) * target[i] + ALIGN_SMOOTH_FACTOR * source[i];
         }
 
         // 正交规范化前三列 (X, Y, Z 轴)

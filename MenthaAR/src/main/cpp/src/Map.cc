@@ -166,10 +166,10 @@ void Map::clear()
     }
 
     // 在锁外逐个释放内存
-    for(auto p : spMP) if(p) delete p;
-    for(auto p : spKF) if(p) delete p;
-    for(auto p : spMPTrash) if(p) delete p;
-    for(auto p : spKFTrash) if(p) delete p;
+    for(auto p : spMP) delete p;
+    for(auto p : spKF) delete p;
+    for(auto p : spMPTrash) delete p;
+    for(auto p : spKFTrash) delete p;
 }
 
 } //namespace ORB_SLAM2

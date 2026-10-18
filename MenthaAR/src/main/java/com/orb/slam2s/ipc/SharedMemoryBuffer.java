@@ -74,6 +74,7 @@ public class SharedMemoryBuffer {
     private int frameW;
     private int frameH;
 
+    @SuppressWarnings("JavaReflectionMemberAccess")
     public SharedMemoryBuffer(String name, int size) {
         this.bufferSize = size;
         try {

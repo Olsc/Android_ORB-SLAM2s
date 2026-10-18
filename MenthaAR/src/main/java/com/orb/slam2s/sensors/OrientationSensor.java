@@ -173,12 +173,6 @@ public class OrientationSensor implements SensorEventListener {
         ready = false;
     }
 
-    // 销毁与资源清理
-    public void destroy() {
-        stop();
-        sensorManager = null;
-    }
-
     // 检查传感器是否已产生第一个有效读数
     public boolean isReady() {
         return ready;
@@ -307,11 +301,6 @@ public class OrientationSensor implements SensorEventListener {
     // 获取横屏重映射后的旋转矩阵
     public float[] getRotationMatrix() {
         return rotationMatrix;
-    }
-
-    // 检查设备是否具备运行 3DOF 所需的传感器
-    public boolean hasRequiredSensors(Context context) {
-        return detectMode(context) != Mode.NONE;
     }
 
     // 将传感器坐标系重映射为当前屏幕坐标系

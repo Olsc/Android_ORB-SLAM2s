@@ -321,9 +321,7 @@ void KeyFrameDatabase::rebuild()
         mpTree = pNewTree;
     }
 
-    if (pOldTree) {
-        delete pOldTree;
-    }
+    delete pOldTree;
 }
 
 } //namespace ORB_SLAM2

@@ -283,7 +283,7 @@ float System::GetRelocMatchScore()
 
 bool System::HasMapAlignment()
 {
-    return mpTracker ? mpTracker->HasMapAlignment() : false;
+    return mpTracker && mpTracker->HasMapAlignment();
 }
 
 bool System::HasLoadedMap()

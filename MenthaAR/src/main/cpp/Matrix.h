@@ -29,28 +29,8 @@
 #ifndef ORB_SLAM2_AR_MATRIX_H
 #define ORB_SLAM2_AR_MATRIX_H
 
-#include <cmath>
-
 // 4x4矩阵乘法，r = lhs * rhs
 void multiplyMM(float* r, const float* lhs, const float* rhs);
-
-// 矩阵向量乘法，result = lhs * rhs
-void multiplyMV(float* resultVec, int resultVecOffset, const float* lhsMat, int lhsMatOffset,
-                const float* rhsVec, int rhsVecOffset);
-
-// 矩阵转置
-void transposeM(float* mTrans, int mTransOffset, const float* m, int mOffset);
-
-// 矩阵平移，m = m * T
-void translateM(float* m, int mOffset, float x, float y, float z);
-
-// 创建绕任意轴的旋转矩阵
-void setRotateM(float rm[], int rmOffset,
-                float a, float x, float y, float z);
-
-// 对已有矩阵应用旋转，rm = m * R
-void rotateM(float rm[], float m[],
-             float a, float x, float y, float z);
 
 // 创建透视投影矩阵（OpenGL风格）
 void frustumM(float m[], int offset,
@@ -68,17 +48,5 @@ void getRUBViewMatrixFromRDF(float inM[],float outM[]);
 
 // 将RDF坐标系矩阵转换为RUB坐标系模型矩阵
 void getRUBModelMatrixFromRDF(float inM[],float outM[]);
-
-// 对4x4列主序矩阵的3x3旋转部分做Gram-Schmidt正交规范化
-void orthonormalize(float* m);
-
-// 从旋转矢量/四元数计算4x4列主序旋转矩阵 (兼容3元素与4元素矢量)
-void getRotationMatrixFromVector(float* outR, const float* rotationVector, int length);
-
-// 从加速度计(重力)和磁力计(地磁)计算4x4列主序旋转矩阵
-bool getRotationMatrixFromAccelMag(float* outR, const float* gravity, const float* geomagnetic);
-
-// 重映射坐标系 (支持标准与反转横屏及通用轴重映射，对应Android SensorManager坐标轴常量)
-bool remapCoordinateSystem(const float* inR, int X, int Y, float* outR);
 
 #endif // ORB_SLAM2_AR_MATRIX_H

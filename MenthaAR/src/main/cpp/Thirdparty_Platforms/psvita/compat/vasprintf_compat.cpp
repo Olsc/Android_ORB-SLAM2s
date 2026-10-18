@@ -29,7 +29,7 @@ extern "C" int vasprintf(char **strp, const char *fmt, va_list ap)
 
 	va_list ap2;
 	va_copy(ap2, ap);
-	int needed = vsnprintf(NULL, 0, fmt, ap2);
+	int needed = vsnprintf(nullptr, 0, fmt, ap2);
 	va_end(ap2);
 
 	if (needed < 0)

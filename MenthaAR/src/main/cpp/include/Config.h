@@ -170,9 +170,6 @@ const float TRACKING_KF_MIN_TRANS_RATIO = 0.015f;
 const float TRACKING_KF_MIN_ROT_RAD = 0.0436f;
 // 单目场景中位深度保护底限（米）
 const float TRACKING_MIN_SCENE_DEPTH = 0.1f;
-// 单目模式下局部建图允许的最大堆积关键帧数（超过则不强行插入）
-const int TRACKING_QUEUE_LIMIT_MONO = 2;
-
 // SearchLocalPoints 投影搜索半径（像素）。建议快速运动时增大
 const int TRACKING_LOCAL_SEARCH_TH = 4;
 
@@ -442,17 +439,6 @@ const long long GRID_CELLS_HARD_CAP = 1000000LL;
 // 网格每维度最大格数（超限时按此缩小单元尺寸）
 const int GRID_MAX_DIM_CELLS = 100;
 
-// Reset / 新地图保护
-
-// 初始化后 Reset 保护：地图 KF 数上限
-const int RESET_PROTECT_MAX_KFS = 5;
-
-// 初始化后距上一关键帧的最少帧数
-const int RESET_PROTECT_AFTER_KF_FRAMES = 20;
-
-// 触发新建子地图的最小 KF 数
-const int TRACKING_NEW_MAP_MIN_KFS = 10;
-
 // 初始化（Tracking 侧）
 
 // 初始化 RANSAC 噪声标准差
@@ -627,9 +613,6 @@ const int ORB_CANDIDATE_RESERVE_FACTOR = 10;
 
 // 局部建图
 
-// 事件循环轮询间隔（毫秒）
-const int LOCAL_MAPPING_EVENT_WAIT_MS = 3;
-
 // 局部 BA 前提：地图最少 KF 数
 const int LOCAL_BA_MIN_KEYFRAMES = 3;
 
@@ -641,9 +624,6 @@ const int MAPPOINT_CULL_KF_GAP_CHECK = 2;
 const int MAPPOINT_CULL_KF_GAP_REMOVE = 3;
 
 // 位姿优化 / BA
-
-// PoseOptimization 单次优化总超时（毫秒）
-const int POSE_OPT_TIMEOUT_MS = 200;
 
 // PoseOptimization 每轮 g2o 迭代次数与优化轮数
 const int POSE_OPT_PASS_ITERS = 5;
@@ -678,12 +658,6 @@ const float SIM3_OPT_CHI2_TH = 10.0f;
 
 // 闭环检测
 
-// 线程事件轮询等待（毫秒，LoopClosing/System 共用）
-const int THREAD_POLL_WAIT_MS = 5;
-
-// SearchByHBST 匹配率阈值
-const float LOOP_MATCHER_RATIO = 0.75f;
-
 // Sim3 RANSAC 每轮批量迭代次数
 const int SIM3_RANSAC_ITER_PER_PASS = 5;
 
@@ -693,8 +667,7 @@ const float LOOP_SEARCH_RADIUS_SIM3 = 7.5f;
 // 闭环投影搜索半径（像素）
 const int LOOP_PROJ_SEARCH_TH = 10;
 
-// SearchAndFuse 匹配率阈值 / Fuse 融合搜索半径（像素）
-const float LOOP_FUSE_MATCHER_RATIO = 0.8f;
+// Fuse 融合搜索半径（像素）
 const int LOOP_FUSE_SEARCH_TH = 4;
 
 // 全局 BA 迭代次数
@@ -775,19 +748,6 @@ const int MAPPOINT_DESC_MAX_OBS = 64;
 const uint32_t AR_INFO_FILE_MAGIC = 0x4152494E;
 const uint32_t AR_INFO_FILE_VERSION = 1;
 
-// 捏合缩放灵敏度分母 / AR 物体最小缩放
-const float AR_SCALE_ZOOM_DIVISOR = 5.0f;
-const float AR_SCALE_MIN = 0.03f;
-
-// 3DOF 物体绕 Y 轴自转 / 绕 X 轴倾斜角度
-const float AR_OBJECT_SPIN_Y_DEG = 45.0f;
-const float AR_OBJECT_TILT_X_DEG = 30.0f;
-
-// 3DOF 模式投影裁剪面：此模式下 frustumM 边界为 +/-ratio/+/-1（不乘 near），
-// near 直接参与透视缩放（ndc 正比于 near/d）。near=1.0 为原设计值
-const float AR_3DOF_ZNEAR = 1.0f;
-const float AR_3DOF_ZFAR = 100.0f;
-
 // UI 绘制
 
 // 最大绘制点数（性能保护）
@@ -854,12 +814,7 @@ const uint8_t PROFILER_MAP_MARKER = 0xFF;
 const int PROFILER_WAIT_TIMEOUT_MS = 100;
 const int PROFILER_BATCH_MAX = 1000;
 
-// OpenCV 桥接
-
-// RGBA 不透明 alpha
-const int RGBA_ALPHA_OPAQUE = 255;
-
-// Ubuntu 桌面程序
+// Ubuntu 桌面端与 benchmark 参数
 
 // 采集分辨率 / 显示分辨率上限
 const int UBUNTU_CAPTURE_WIDTH = 1280;

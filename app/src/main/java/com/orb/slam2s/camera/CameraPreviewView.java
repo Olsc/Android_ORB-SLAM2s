@@ -223,7 +223,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
             CameraManager cm = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
             if (cm != null) {
                 String[] list = cm.getCameraIdList();
-                return list != null ? list.length : 0;
+                return list.length;
             }
         } catch (Exception e) {
             Log.e(TAG, "获取设备相机数量异常: " + e.getMessage());
@@ -288,17 +288,13 @@ public class CameraPreviewView extends AspectGLSurfaceView {
                                 int w = image.getWidth();
                                 int h = image.getHeight();
                                 ImageProxy.PlaneProxy[] planes = image.getPlanes();
-                                if (planes == null || planes.length == 0) {
+                                if (planes.length == 0) {
                                     image.close();
                                     return;
                                 }
 
                                 ImageProxy.PlaneProxy rgbaPlane = planes[0];
                                 ByteBuffer buf = rgbaPlane.getBuffer();
-                                if (buf == null) {
-                                    image.close();
-                                    return;
-                                }
 
                                 int rowStride = rgbaPlane.getRowStride();
                                 int requiredSize = w * h;

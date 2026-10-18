@@ -84,8 +84,8 @@ namespace ORB_SLAM2
 
 LoopClosing::LoopClosing(Map *pMap, KeyFrameDatabase *pDB):
     mbResetRequested(false), mbFinishRequested(false), mbFinished(true), mpMap(pMap),
-    mpKeyFrameDB(pDB), mpMatchedKF(NULL), mLastLoopKFid(0), mbRunningGBA(false), mbFinishedGBA(true),
-    mbStopGBA(false), mpThreadGBA(NULL), mnFullBAIdx(0)
+    mpKeyFrameDB(pDB), mpMatchedKF(nullptr), mLastLoopKFid(0), mbRunningGBA(false), mbFinishedGBA(true),
+    mbStopGBA(false), mpThreadGBA(nullptr), mnFullBAIdx(0)
 {
     mnCovisibilityConsistencyTh = LOOP_COVISIBILITY_CONSISTENCY_TH;
 }
@@ -373,7 +373,7 @@ bool LoopClosing::ComputeSim3()
             // 如果 RANSAC 返回 Sim3，则执行引导匹配并使用所有对应关系进行优化
             if(!Scm.empty())
             {
-                vector<MapPoint*> vpMapPointMatches(vvpMapPointMatches[i].size(), static_cast<MapPoint*>(NULL));
+                vector<MapPoint*> vpMapPointMatches(vvpMapPointMatches[i].size(), nullptr);
                 for(size_t j=0, jend=vbInliers.size(); j<jend; j++)
                 {
                     if(vbInliers[j])
@@ -640,7 +640,7 @@ void LoopClosing::SearchAndFuse(const KeyFrameAndPose &CorrectedPosesMap)
         g2o::Sim3 g2oScw = mit->second;
         cv::Mat cvScw = Converter::toCvMat(g2oScw);
 
-        vector<MapPoint*> vpReplacePoints(mvpLoopMapPoints.size(),static_cast<MapPoint*>(NULL));
+        vector<MapPoint*> vpReplacePoints(mvpLoopMapPoints.size(),nullptr);
         matcher.Fuse(pKF,cvScw,mvpLoopMapPoints,LOOP_FUSE_SEARCH_TH,vpReplacePoints);
 
         unique_lock<mutex> lock(mpMap->mMutexMapUpdate);

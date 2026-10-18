@@ -54,7 +54,7 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
     const int N = vPoints.size();
 
     if(N<ORB_SLAM2::PLANE_MIN_POINTS) // 点数过少，无法可靠地拟合平面
-        return NULL;
+        return nullptr;
 
     // 准备 RANSAC 所需的索引数组
     vector<size_t> vAllIndices;
@@ -139,7 +139,7 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
     }
 
     // 提取内点，用于构建最终的平面
-    vector<ORB_SLAM2::MapPoint*> vInlierMPs(nInliers,NULL);
+    vector<ORB_SLAM2::MapPoint*> vInlierMPs(nInliers,nullptr);
     int nin = 0;
     for(int i=0; i<N; i++)
     {

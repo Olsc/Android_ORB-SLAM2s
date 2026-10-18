@@ -113,7 +113,7 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
     // 单目模式下，mvKeysUn与mvKeys相同（不需要去失真处理）
     mvKeysUn = mvKeys;
 
-    mvpMapPoints = std::vector<MapPoint*>(N,static_cast<MapPoint*>(NULL));
+    mvpMapPoints = std::vector<MapPoint*>(N,nullptr);
     mvbOutlier = std::vector<bool>(N,false);
 
     // 仅对第一帧（或校准更改后）执行此操作
