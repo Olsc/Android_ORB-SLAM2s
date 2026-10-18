@@ -28,7 +28,7 @@
 <img alt="OpenCV" src="https://img.shields.io/badge/OpenCV-5C3EE8?style=flat-square&logo=opencv&logoColor=white"/>
 <img alt="NDK" src="https://img.shields.io/badge/NDK-0C1E33?style=flat-square&logo=android&logoColor=white"/>
 <img alt="App License: Apache-2.0" src="https://img.shields.io/badge/App_License-Apache--2.0-green?style=flat-square"/>
-<img alt="GPL-3.0" src="https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square"/>
+<img alt="Engine License: GPL-3.0" src="https://img.shields.io/badge/Engine_License-GPL--3.0-blue?style=flat-square"/>
 </p>
 
 ---
@@ -64,14 +64,14 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 
 ## 📋 プロジェクト概要
 
-**ORB-SLAM2s** は、Android 向けに ORB-SLAM2 をベースにした強化型空間計算ツールです。リアルタイムのスパースポイントクラウドマッピング、マップの保存/読み込み、および再配置マッチングをサポートしています。コンピュータビジョン、慣性航法（IMU）、および拡張現実（AR）技術を組み合わせることで、このプロジェクトはモバイルデバイス向けに安定した **6DoF**（6自由度）空間ポジショニングを提供します。
+**ORB-SLAM2s** は、ORB-SLAM2 をベースにした Android 向けの拡張空間コンピューティングツールです。リアルタイムのスパースポイントクラウドマッピング、マップの保存/読み込み、および再ローカライゼーションとマッチングをサポートしています。コンピュータビジョン、慣性航法（IMU）、拡張現実（AR）技術を組み合わせることで、モバイルデバイスに安定した **6DoF**（6自由度）の空間ポジショニングを提供します。
 
 ### 🤔 なぜ ORB-SLAM3 ではなく ORB-SLAM2 なのか？
 
-- **軽量設計**：依存関係が少なく、コードが簡素化されているため、モバイルプラットフォームでのコンパイルと展開が容易です。
+- **軽量設計**：依存関係が少なくコードが簡素化されているため、モバイルプラットフォームでのコンパイルと展開が容易です。
 - **IMU と VIO のサポートについて**：
-  - **ORB-SLAM3 の高いハードル**：公式実装の VIO は**密結合**であり、高品質な IMU と厳密な**カメラ-IMU 間のタイムスタンプ同期**が必要です。これはロボット工学では一般的ですが、Android 携帯電話の標準 API では「すぐに使える」状態にするのは困難です。
-  - **Android の現状**：ほとんどの既存の Android デバイスはカメラと IMU の取得が非同期であり、統一されたハードウェア同期フレームワークが不足しており、民生グレードの IMU はノイズやドリフトが大きいです。厳密なキャリブレーションと同期がない場合、VIO は純粋な Visual SLAM よりも発散しやすくなります。Android 11 以降のバージョンでのみ SENSOR_TIMESTAMP メソッドが利用可能です。
+  - **ORB-SLAM3 の高いハードル**：公式実装の VIO は**密結合（tightly coupled）**であり、高品質な IMU と厳密な**カメラ-IMU 間のタイムスタンプ同期**が必要です。これはロボット工学では一般的ですが、Android スマートフォンの標準 API では「すぐに使える」状態にするのは困難です。
+  - **Android の現状**：既存の Android デバイスの多くはカメラと IMU の取得が非同期であり、統一されたハードウェア同期フレームワークに欠け、民生グレードの IMU はノイズやドリフトが大きくなります。厳密なキャリブレーションと同期がない場合、VIO は純粋な Visual SLAM よりも発散しやすくなります。SENSOR_TIMESTAMP メソッドは Android 11 以降のバージョンでのみ利用可能です。
 - **低リソース消費**：ORB-SLAM3 と比較して CPU および RAM の要求が低いです。
 - **実用的な効率**：単眼カメラのみのシナリオでは、標準的なモバイル用途において ORB-SLAM3 と同等のパフォーマンスを発揮します。
 
@@ -79,16 +79,17 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 
 ## ✨ 主要機能
 
-- **🗺️ ポイントクラウド SLAM マッピング** —— 単眼カメラ入力に基づくリアルタイムスパースマッピング
-- **💾 マップ永続化** —— マップをローカルストレージに保存し、将来のセッションで再読み込み
-- **🎯 再ローカライゼーションとマッチング** —— 既存マップ読み込み時のポーズ推定と特徴マッチング
-- **📊 信頼度の可視化** —— キーポイントの視覚的追跡とフレーム間のマッチング統計
-- **📐 平面検出** —— 現在のポーズとポイントクラウドデータに基づく床/表面検出
-- **🎨 ネイティブ AR レンダリング** —— **cgltf** と OpenGL ES を使用した高性能 3D レンダリング、GLB/glTF モデルの高速読み込みに対応
-- **🌑 暗所フレーム検出** —— 暗いまたは低品質のフレームを自動的にスキップ
-- **🖱️ AR オブジェクト管理** —— 3D オブジェクトの配置、ピンチジェスチャーによる拡大縮小
-- **🧭 3DOF 方向追跡** —— デバイス内蔵センサーによる 3 自由度の方向追跡。多段フォールバック対応（回転ベクトル / ゲーム回転ベクトル / 加速度計 + 磁力計 / ジャイロ積分）により、磁力計がなくても動作
-- **📑 複数マップのサポート** —— 複数のマップファイルの同時読み込みと管理
+- **🗺️ ポイントクラウド SLAM マッピング** —— 単眼カメラ入力に基づくリアルタイムのスパースマッピング
+- **💾 マップの永続化** —— マップをローカルストレージに保存し、将来のセッションで再読み込み可能
+- **🎯 再ローカライゼーションとマッチング** —— 既存マップの読み込み時の姿勢推定と特徴マッチング
+- **📊 信頼度の可視化** —— キーポイントの追跡と、現在のフレームと読み込み済みマップ間のマッチング統計を可視化
+- **📐 平面検出** —— 現在の姿勢とポイントクラウドデータに基づくインテリジェントな床/表面検出
+- **🎨 ネイティブ AR レンダリング** —— **cgltf** と OpenGL ES による高性能 3D レンダリング。大容量の GLB/glTF モデルを高速に読み込み、検出した平面への配置とインタラクションをサポート
+- **🌑 暗所フレーム検出** —— 暗いまたは低品質のフレームを自動的にスキップし、SLAM スレッドのブロッキングを防止
+- **🖱️ AR オブジェクト管理** —— 3D オブジェクトの配置、ピンチジェスチャーによる拡大縮小などのインタラクションをサポートし、マルチマップのアンカーライフサイクルを維持
+- **🧭 3DOF 姿勢追跡** —— デバイス内蔵センサーによる 3 自由度の方向追跡。多段フォールバック（回転ベクトル / ゲーム回転ベクトル / 加速度計 + 磁力計 / ジャイロ積分）に対応し、単眼トラッキングの一時的な喪失や急な旋回時にスムーズに姿勢を補正
+- **📑 マルチマップ対応** —— 複数のマップファイルの同時読み込みとマッチングをサポート
+- **🖥️ クロスプラットフォーム対応** —— Windows、macOS、Linux（龍芯 LoongArch64 を含む）、PlayStation Vita などのプラットフォーム向けに、独立したデスクトップ/組み込み実行とオフライン評価機能を提供
 
 ---
 
@@ -96,16 +97,18 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 
 現在主に Qualcomm Snapdragon プラットフォーム CPU でテストしています：
 
-| SoC                     | デバイス              | パフォーマンス |
-| ----------------------- | --------------------- | -------------- |
-| Snapdragon 8 Elite      | Xiaomi 15             | 30 FPS         |
-| Snapdragon 8+ Gen1      | Redmi K60             | 30 FPS         |
-| Snapdragon 870          | Xiaomi 10S            | 30 FPS         |
-| Snapdragon 7s Gen 2     | Redmi Pad Pro         | 30 FPS         |
-| Snapdragon 6s Gen 2     | Redmi Pad 2 SE 4G     | 30 FPS         |
-| Snapdragon 835          | Xiaomi 6              | 20-30 FPS      |
-| Snapdragon AR1 Gen 1    | Rokid Glass3          | 30 FPS         |
-| MediaTek Dimensity 6300 | Lenovo Xiaoxin Pad 11 | 20-30 FPS      |
+| SoC                     | デバイス                | パフォーマンス |
+| ----------------------- | ----------------------- | -------------- |
+| Snapdragon 8 Elite      | Xiaomi 15               | 30 FPS         |
+| Snapdragon 8 Gen 3      | Redmi K80               | 30 FPS         |
+| Snapdragon 8+ Gen1      | Redmi K60               | 30 FPS         |
+| Snapdragon 870          | Xiaomi 10S              | 30 FPS         |
+| Snapdragon 7s Gen 2     | Redmi Pad Pro           | 30 FPS         |
+| Snapdragon 6s Gen 2     | Redmi Pad 2 SE 4G       | 30 FPS         |
+| Snapdragon 765G 5G      | vivo iQOO Z1x           | 30 FPS         |
+| Snapdragon 835          | Xiaomi 6                | 20-30 FPS      |
+| Snapdragon AR1 Gen 1    | Rokid Glass3            | 30 FPS         |
+| MediaTek Dimensity 6300 | Lenovo Xiaoxin Pad 11   | 20-30 FPS      |
 
 ### 🌑 暗所フレーム検出
 
@@ -118,10 +121,12 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 - [x] スパースポイントクラウド SLAM マッピング
 - [x] マップ保存 / 読み込み機能
 - [x] 再ローカライゼーションマッチング
-- [x] 基本 AR レンダリングエンジン
+- [x] ネイティブ AR レンダリングエンジン
 - [x] 暗所フレームスキップロジック
-- [x] 3D AR オブジェクト管理
+- [x] 3D AR オブジェクト管理とマルチマップアンカーのライフサイクル維持
 - [x] 複数マップファイルの同時読み込みとマッチング
+- [x] 3DoF 融合センサー補助追跡
+- [x] クロスプラットフォームスタンドアロン実行とベンチマーク（Windows / macOS / Linux / 龍芯 / PS Vita 等）
 
 ## 🗺️ 今後のロードマップ
 
@@ -263,11 +268,27 @@ g2o に必要です（下記参照）。ダウンロードおよびインスト�
 
 ---
 
-# 🧭 慣性航法（IMU）について
+# 💻 クロスプラットフォーム対応 (Desktop & Embedded)
 
-参考：https://github.com/Olsc/Android_3dof
+Android 端末に加え、本プロジェクトでは `MenthaAR/src/main/cpp/Thirdparty_Platforms/` にデスクトップおよび携帯ゲーム機向けプラットフォームのスタンドアロン SLAM 実装とオフラインベンチマークツールを提供しており、同一のコア SLAM アルゴリズムを共有しています：
 
-_本プロジェクトはまだ研究統合が完了していません。_
+| プラットフォーム | ディレクトリ | 説明 |
+| :--- | :--- | :--- |
+| **Windows** | [`windows/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/windows/Readme.md) | MSVC/MinGW をサポートし、AVX2 SIMD 命令セットを有効化。リアルタイムカメラ SLAM およびオフライン動画ベンチマークに対応 |
+| **Ubuntu / Linux** | [`ubuntu/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/ubuntu/Readme.md) | x86_64、aarch64 および中国産 **LoongArch64**（龍芯）アーキテクチャをサポート |
+| **macOS** | [`mac/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/mac/Readme.md) | Apple Silicon (arm64, NEON) と Intel (x86_64, AVX2) にネイティブ対応し、AVFoundation と Cocoa GUI を統合 |
+| **PlayStation Vita** | [`psvita/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/psvita/Readme.md) | VitaSDK による携帯ゲーム機向け実験的単眼 SLAM。前後カメラのリアルタイム追跡、ポイントクラウド描画、バイナリマップ保存に対応 |
+
+---
+
+# 🧭 慣性航法（IMU）とセンサーフュージョンについて
+
+参考研究プロジェクト：https://github.com/Olsc/Android_3dof
+
+上記研究に基づき、本プロジェクトでは内蔵センサーによる 3DoF 姿勢推定およびセンサー補助トラッキングを統合しました：
+- **多段階センサーフォールバック戦略**：`TYPE_ROTATION_VECTOR` を優先し、地磁気センサー非搭載端末では `TYPE_GAME_ROTATION_VECTOR` へ自動フォールバック。複合センサーが不足している場合でも加速度計＋磁気計またはジャイロスコープの時間積分と相補フィルターにより姿勢演算を行い、あらゆる Android 端末での動作を担保します。
+- **SLAM 姿勢補償**：急激なカメラ回転や遮蔽によって単眼ビジュアルトラッキングが一時的にロストした際、センサーの方向変化を利用して姿勢をデッドレコニング（推測航法）で補完・平滑化し、AR 表示の安定性を高めます。
+- **今後の展望**：ハードウェアタイムスタンプ同期を伴う密結合ビジュアル慣性オドメトリ（VIO）は引き続き研究開発を進めています。
 
 ---
 

@@ -28,7 +28,7 @@
 <img alt="OpenCV" src="https://img.shields.io/badge/OpenCV-5C3EE8?style=flat-square&logo=opencv&logoColor=white"/>
 <img alt="NDK" src="https://img.shields.io/badge/NDK-0C1E33?style=flat-square&logo=android&logoColor=white"/>
 <img alt="App License: Apache-2.0" src="https://img.shields.io/badge/App_License-Apache--2.0-green?style=flat-square"/>
-<img alt="GPL-3.0" src="https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square"/>
+<img alt="Engine License: GPL-3.0" src="https://img.shields.io/badge/Engine_License-GPL--3.0-blue?style=flat-square"/>
 </p>
 
 ---
@@ -64,7 +64,7 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 
 ## 📋 프로젝트 개요
 
-**ORB-SLAM2s**는 Android용으로 기반한 ORB-SLAM2의 향상된 공간 컴퓨팅 도구입니다. 실시간 희소 포인트 클라우드 매핑, 지도 저장/로드 및 재배치 매칭을 지원합니다. 컴퓨터 비전, 관성 항법(IMU), 증강 현실(AR) 기술을 결합함으로써 이 프로젝트는 모바일 기기용으로 안정적인 **6DoF**(6자유도) 공간 포지셔닝을 제공합니다.
+**ORB-SLAM2s**는 ORB-SLAM2를 기반으로 한 Android용 확장 공간 컴퓨팅 도구입니다. 실시간 희소 포인트 클라우드 매핑, 지도 저장/로드 및 재로컬라이제이션 매칭을 지원합니다. 컴퓨터 비전, 관성 항법(IMU), 증강 현실(AR) 기술을 결합함으로써 이 프로젝트는 모바일 기기용으로 안정적인 **6DoF**(6자유도) 공간 포지셔닝을 제공합니다.
 
 ### 🤔 왜 ORB-SLAM3 대신 ORB-SLAM2인가요?
 
@@ -84,11 +84,12 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 - **🎯 재로컬라이제이션 및 매칭** —— 기존 지도 로드 시 자세 추정 및 특징 매칭
 - **📊 신뢰도 시각화** —— 현재 프레임과 로드된 지도 간의 키포인트 추적 및 매칭 통계
 - **📐 평면 감지** —— 현재 자세와 포인트 클라우드 데이터 기반의 바닥/표면 감지
-- **🎨 네이티브 AR 렌더링** —— **cgltf** 및 OpenGL ES 기반 고성능 3D 렌더링, GLB/glTF 모델의 초고속 로드 지원
+- **🎨 네이티브 AR 렌더링** —— **cgltf** 및 OpenGL ES 기반 고성능 3D 렌더링, 대용량 GLB/glTF 모델의 초고속 로딩 및 감지된 평면 위 배치·상호작용 지원
 - **🌑 어두운 프레임 감지** —— SLAM 스레드 블로킹 방지를 위해 어두운 프레임 자동 건너뛰기
-- **🖱️ AR 오브젝트 관리** —— 3D 객체 배치, 핀치 제스처로 확대/축소
-- **🧭 3DOF 방향 추적** —— 내장 기기 센서를 이용한 3자유도 방향 추적, 다단계 대체 소스 지원(회전 벡터 / 게임 회전 벡터 / 가속도계 + 자력계 / 자이로스코프 적분)으로 자력계가 없어도 동작
-- **📑 다중 지도 지원** —— 여러 지도 파일의 동시 로드, 매칭 및 관리
+- **🖱️ AR 오브젝트 관리** —— 3D 객체 배치, 핀치 제스처로 확대/축소 및 다중 지도 앵커 라이프사이클 관리
+- **🧭 3DOF 방향 추적** —— 내장 기기 센서를 이용한 3자유도 방향 추적, 다단계 대체 소스 지원(회전 벡터 / 게임 회전 벡터 / 가속도계 + 자력계 / 자이로스코프 적분)으로 단안 시각의 일시적 추적 실패나 급격한 회전 시에도 부드럽게 자세 보정
+- **📑 다중 지도 지원** —— 여러 지도 파일의 동시 로드 및 매칭
+- **🖥️ 크로스 플랫폼 지원** —— Windows, macOS, Linux(룽신 LoongArch64 포함) 및 PlayStation Vita를 위한 독립형 데스크톱/임베디드 실행 및 오프라인 벤치마크 기능 제공
 
 ---
 
@@ -99,10 +100,12 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 | SoC                     | 장치                  | 성능      |
 | ----------------------- | --------------------- | --------- |
 | Snapdragon 8 Elite      | Xiaomi 15             | 30 FPS    |
+| Snapdragon 8 Gen 3      | Redmi K80             | 30 FPS    |
 | Snapdragon 8+ Gen1      | Redmi K60             | 30 FPS    |
 | Snapdragon 870          | Xiaomi 10S            | 30 FPS    |
 | Snapdragon 7s Gen 2     | Redmi Pad Pro         | 30 FPS    |
 | Snapdragon 6s Gen 2     | Redmi Pad 2 SE 4G     | 30 FPS    |
+| Snapdragon 765G 5G      | vivo iQOO Z1x         | 30 FPS    |
 | Snapdragon 835          | Xiaomi 6              | 20-30 FPS |
 | Snapdragon AR1 Gen 1    | Rokid Glass3          | 30 FPS    |
 | MediaTek Dimensity 6300 | Lenovo Xiaoxin Pad 11 | 20-30 FPS |
@@ -118,10 +121,12 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 - [x] 희소 포인트 클라우드 SLAM 매핑
 - [x] 지도 저장 / 로드 기능
 - [x] 재로컬라이제이션 매칭
-- [x] 기본 AR 렌더링 엔진
+- [x] 네이티브 AR 렌더링 엔진
 - [x] 어두운 프레임 건너뛰기 로직
-- [x] 3D AR 오브젝트 관리
+- [x] 3D AR 오브젝트 관리 및 다중 지도 앵커 라이프사이클 유지
 - [x] 다중 지도 파일의 동시 로드 및 매칭
+- [x] 3DoF 융합 센서 보조 추적
+- [x] 크로스 플랫폼 독립 실행 및 벤치마크(Windows / macOS / Linux / LoongArch64 / PS Vita)
 
 ## 🗺️ 향후 로드맵
 
@@ -263,11 +268,27 @@ g2o에 필요합니다(아래 참조). 다운로드 및 설치 지침은 다음�
 
 ---
 
-# 🧭 관성 항법(IMU) 정보
+# 💻 크로스 플랫폼 지원 (Desktop & Embedded)
 
-참고：https://github.com/Olsc/Android_3dof
+Android 기기 외에도, 본 프로젝트는 동일한 핵심 SLAM 알고리즘을 공유하는 데스크톱 및 휴대용 기기를 위한 독립형 SLAM 데모와 오프라인 벤치마크 도구를 `MenthaAR/src/main/cpp/Thirdparty_Platforms/`에서 제공합니다:
 
-_이 프로젝트는 아직 연구 통합이 완료되지 않았습니다._
+| 플랫폼 | 디렉터리 | 설명 |
+| :--- | :--- | :--- |
+| **Windows** | [`windows/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/windows/Readme.md) | MSVC/MinGW 지원, AVX2 SIMD 가속 활성화, 실시간 카메라 SLAM 및 오프라인 비디오 벤치마크 지원 |
+| **Ubuntu / Linux** | [`ubuntu/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/ubuntu/Readme.md) | x86_64, aarch64 및 중국산 룽신 **LoongArch64** 아키텍처 지원 |
+| **macOS** | [`mac/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/mac/Readme.md) | Apple Silicon(arm64, NEON) 및 Intel(x86_64, AVX2) 네이티브 지원, AVFoundation 및 Cocoa GUI 통합 |
+| **PlayStation Vita** | [`psvita/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/psvita/Readme.md) | VitaSDK 기반 휴대용 콘솔용 실험적 단안 SLAM, 전후면 카메라 실시간 트래킹, 포인트 클라우드 렌더링 및 바이너리 지도 저장 지원 |
+
+---
+
+# 🧭 관성 항법(IMU) 및 센서 퓨전 정보
+
+참고 연구 프로젝트: https://github.com/Olsc/Android_3dof
+
+위 연구를 바탕으로 본 프로젝트는 내장 센서 3DoF 자세 추정 및 센서 보조 트래킹을 통합 구현하였습니다:
+- **다단계 센서 폴백 전략**: `TYPE_ROTATION_VECTOR`를 최우선으로 사용하며, 지자기 센서가 없는 기기에서는 `TYPE_GAME_ROTATION_VECTOR`로 자동 대체됩니다. 복합 센서가 없는 경우 가속도계+지자기계 또는 자이로스코프 수치 적분과 상보 필터를 통해 자세를 계산하여 광범위한 Android 기기 호환성을 보장합니다.
+- **SLAM 자세 보정**: 급격한 카메라 회전이나 시야 차폐로 인해 단안 시각 트래킹이 일시적으로 중단되었을 때, 센서 회전량을 활용하여 자세 추측 항법(Dead Reckoning)과 연속성 스무딩을 제공하여 AR 흔들림을 방지합니다.
+- **향후 계획**: 하드웨어 타임스탬프 동기화를 적용한 긴밀 결합 시각 관성 주행계(VIO)는 지속적으로 연구 및 개발 진행 중입니다.
 
 ---
 
