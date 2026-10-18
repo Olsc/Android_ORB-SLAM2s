@@ -102,11 +102,4 @@ public class NativeHelper {
 
     // AR对象缩放
     public native void updateArObjectScale(float scaleFactor);
-
-    // 计算最佳分辨率
-    public static native int[] nativeComputeOptimalResolution(int screenWidth, int screenHeight);
-
-    public static int[] computeOptimalResolution(int screenWidth, int screenHeight) {
-        return nativeComputeOptimalResolution(screenWidth, screenHeight);
-    }
 }

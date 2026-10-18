@@ -24,22 +24,15 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.opengl.Matrix;
 import android.util.Log;
+import android.view.Surface;
 
 import com.orb.slam2s.constant.GlobalConstant;
 
-// 3DOF 方向传感器管理：按优先级选择姿态来源（旋转矢量 / 游戏旋转矢量 / 加速度计+磁力计 / 陀螺仪积分），
-// 仅维护 Android 传感器生命周期与事件监听，姿态解算与横屏重映射在原生层完成。
+// 3DOF 方向传感器管理：按优先级多级回退选择姿态来源（旋转矢量 / 游戏旋转矢量 / 加速度计+磁力计 / 陀螺仪积分）
 public class OrientationSensor implements SensorEventListener {
     private static final String TAG = "OrientationSensor";
-
-    static {
-        try {
-            System.loadLibrary("MenthaAR_Engine");
-        } catch (UnsatisfiedLinkError e) {
-            Log.e(TAG, "加载 MenthaAR_Engine 失败: " + e.getMessage());
-        }
-    }
 
     // 姿态来源模式
     public enum Mode {
@@ -59,21 +52,40 @@ public class OrientationSensor implements SensorEventListener {
 
     private Mode mode = Mode.NONE;
 
-    // C++ 原生处理器指针
-    private long nativeHandle = 0L;
+    // 预分配矩阵缓存
+    private final float[] rawRotationMatrix = new float[16]; // 原始旋转矩阵
+    private final float[] rotationMatrix = new float[16];    // 重映射后的旋转矩阵
 
-    // 横屏重映射后的旋转矩阵缓存
-    private final float[] rotationMatrix = new float[16];
+    private final float[] gravity = new float[3];
+    private final float[] geomagnetic = new float[3];
+    private boolean hasGravity = false;
+    private boolean hasGeomagnetic = false;
+
+    // 陀螺仪积分复用缓存
+    private long lastGyroTimestamp = 0L;
+    private final float[] gyroDeltaVector = new float[3];
+    private final float[] gyroDeltaMatrix = new float[16];
+    private final float[] gyroTempMatrix = new float[16];
+
+    // 加速度计 + 磁力计姿态解算复用缓存
+    private final float[] accelMagR = new float[16];
+    private final float[] accelMagI = new float[16];
+
+    // 传感器是否已产生第一个有效读数（跨线程读取保持可见性）
+    private volatile boolean ready = false;
 
     public OrientationSensor() {
-        nativeHandle = nativeCreate();
-        if (nativeHandle != 0L) {
-            nativeGetRotationMatrix(nativeHandle, rotationMatrix);
-        }
+        Matrix.setIdentityM(rawRotationMatrix, 0);
+        Matrix.setIdentityM(rotationMatrix, 0);
     }
 
     // 检测设备可用的姿态来源并按优先级选择模式（不注册监听器）
     public Mode detectMode(Context context) {
+        if (context == null) {
+            mode = Mode.NONE;
+            return mode;
+        }
+
         SensorManager sm = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
         if (sm == null) {
             mode = Mode.NONE;
@@ -107,6 +119,7 @@ public class OrientationSensor implements SensorEventListener {
 
     // 注册传感器监听器并开始获取数据
     public void start(Context context) {
+        if (context == null) return;
         sensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
         if (sensorManager == null) {
             mode = Mode.NONE;
@@ -116,9 +129,12 @@ public class OrientationSensor implements SensorEventListener {
         // 每次启动重新探测，保证传感器引用有效
         detectMode(context);
 
-        if (nativeHandle != 0L) {
-            nativeReset(nativeHandle);
-        }
+        ready = false;
+        hasGravity = false;
+        hasGeomagnetic = false;
+        lastGyroTimestamp = 0L;
+        Matrix.setIdentityM(rawRotationMatrix, 0);
+        remapForLandscape();
 
         switch (mode) {
             case ROTATION_VECTOR:
@@ -153,45 +169,134 @@ public class OrientationSensor implements SensorEventListener {
         if (sensorManager != null) {
             sensorManager.unregisterListener(this);
         }
-        if (nativeHandle != 0L) {
-            nativeReset(nativeHandle);
-        }
+        lastGyroTimestamp = 0L;
+        ready = false;
+    }
+
+    // 销毁与资源清理
+    public void destroy() {
+        stop();
+        sensorManager = null;
     }
 
     // 检查传感器是否已产生第一个有效读数
     public boolean isReady() {
-        return nativeHandle != 0L && nativeIsReady(nativeHandle);
+        return ready;
     }
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        if (nativeHandle == 0L || event == null || event.values == null) {
+        if (event == null || event.values == null) {
             return;
         }
-
-        final int displayRotation = GlobalConstant.DISPLAY_ROTATION;
 
         switch (event.sensor.getType()) {
             case Sensor.TYPE_ROTATION_VECTOR:
             case Sensor.TYPE_GAME_ROTATION_VECTOR:
-                nativeUpdateRotationVector(nativeHandle, event.values, displayRotation);
+                SensorManager.getRotationMatrixFromVector(rawRotationMatrix, event.values);
+                remapForLandscape();
+                markReady();
                 break;
 
             case Sensor.TYPE_ACCELEROMETER:
-                nativeUpdateAccelerometer(nativeHandle, event.values, displayRotation);
+                System.arraycopy(event.values, 0, gravity, 0, 3);
+                hasGravity = true;
+                updateRotationMatrixFromAccelMag();
                 break;
 
             case Sensor.TYPE_MAGNETIC_FIELD:
-                nativeUpdateMagnetometer(nativeHandle, event.values, displayRotation);
+                System.arraycopy(event.values, 0, geomagnetic, 0, 3);
+                hasGeomagnetic = true;
+                updateRotationMatrixFromAccelMag();
                 break;
 
             case Sensor.TYPE_GYROSCOPE:
-                nativeIntegrateGyroscope(nativeHandle, event.values, event.timestamp, displayRotation);
+                integrateGyroscope(event);
                 break;
 
             default:
                 break;
         }
+    }
+
+    private void markReady() {
+        if (!ready) {
+            ready = true;
+            Log.d(TAG, "传感器就绪（模式=" + mode + "）");
+        }
+    }
+
+    // 当同时拥有重力和地磁数据时，解算旋转矩阵
+    private void updateRotationMatrixFromAccelMag() {
+        if (hasGravity && hasGeomagnetic) {
+            if (SensorManager.getRotationMatrix(accelMagR, accelMagI, gravity, geomagnetic)) {
+                System.arraycopy(accelMagR, 0, rawRotationMatrix, 0, 16);
+                remapForLandscape();
+                markReady();
+            }
+        }
+    }
+
+    // 陀螺仪角速度增量积分
+    private void integrateGyroscope(SensorEvent event) {
+        long now = event.timestamp;
+        if (lastGyroTimestamp == 0L) {
+            lastGyroTimestamp = now;
+            return;
+        }
+        float dt = (now - lastGyroTimestamp) * 1.0e-9f;
+        lastGyroTimestamp = now;
+        // 过滤异常时间间隔
+        if (dt <= 0f || dt > 0.5f) {
+            return;
+        }
+
+        // 小角度近似：角增量矢量 = 角速度 * dt
+        gyroDeltaVector[0] = event.values[0] * dt;
+        gyroDeltaVector[1] = event.values[1] * dt;
+        gyroDeltaVector[2] = event.values[2] * dt;
+        SensorManager.getRotationMatrixFromVector(gyroDeltaMatrix, gyroDeltaVector);
+
+        // R = R * deltaR (机体系右乘)
+        Matrix.multiplyMM(gyroTempMatrix, 0, rawRotationMatrix, 0, gyroDeltaMatrix, 0);
+        System.arraycopy(gyroTempMatrix, 0, rawRotationMatrix, 0, 16);
+
+        // 定期 Gram-Schmidt 正交规范化，抑制数值漂移
+        orthonormalize(rawRotationMatrix);
+        remapForLandscape();
+
+        markReady();
+    }
+
+    // 对 4x4 列主序旋转矩阵的 3x3 部分做 Gram-Schmidt 正交规范化
+    private void orthonormalize(float[] m) {
+        float c0x = m[0], c0y = m[1], c0z = m[2];
+        float c1x = m[4], c1y = m[5], c1z = m[6];
+
+        // 归一化第 0 列 (X 轴)
+        float len0 = (float) Math.sqrt(c0x * c0x + c0y * c0y + c0z * c0z);
+        if (len0 < 1.0e-6f) return;
+        float invLen0 = 1.0f / len0;
+        c0x *= invLen0; c0y *= invLen0; c0z *= invLen0;
+
+        // 第 1 列 (Y 轴) 减去在第 0 列上的投影并归一化
+        float d = c1x * c0x + c1y * c0y + c1z * c0z;
+        c1x -= d * c0x;
+        c1y -= d * c0y;
+        c1z -= d * c0z;
+        float len1 = (float) Math.sqrt(c1x * c1x + c1y * c1y + c1z * c1z);
+        if (len1 < 1.0e-6f) return;
+        float invLen1 = 1.0f / len1;
+        c1x *= invLen1; c1y *= invLen1; c1z *= invLen1;
+
+        // 第 2 列 (Z 轴) = 第 0 列 x 第 1 列 (叉乘保证右手正交系)
+        float c2x = c0y * c1z - c0z * c1y;
+        float c2y = c0z * c1x - c0x * c1z;
+        float c2z = c0x * c1y - c0y * c1x;
+
+        m[0] = c0x; m[1] = c0y; m[2] = c0z;
+        m[4] = c1x; m[5] = c1y; m[6] = c1z;
+        m[8] = c2x; m[9] = c2y; m[10] = c2z;
     }
 
     @Override
@@ -201,9 +306,6 @@ public class OrientationSensor implements SensorEventListener {
 
     // 获取横屏重映射后的旋转矩阵
     public float[] getRotationMatrix() {
-        if (nativeHandle != 0L) {
-            nativeGetRotationMatrix(nativeHandle, rotationMatrix);
-        }
         return rotationMatrix;
     }
 
@@ -212,32 +314,44 @@ public class OrientationSensor implements SensorEventListener {
         return detectMode(context) != Mode.NONE;
     }
 
-    // 销毁并释放原生资源
-    public synchronized void destroy() {
-        if (nativeHandle != 0L) {
-            nativeDestroy(nativeHandle);
-            nativeHandle = 0L;
+    // 将传感器坐标系重映射为当前屏幕坐标系
+    private void remapForLandscape() {
+        int displayRotation = GlobalConstant.DISPLAY_ROTATION;
+        switch (displayRotation) {
+            case Surface.ROTATION_90:
+            case 90:
+                // 左横屏：新 X 轴 = 旧 Y 轴，新 Y 轴 = 旧 -X 轴
+                SensorManager.remapCoordinateSystem(
+                    rawRotationMatrix,
+                    SensorManager.AXIS_Y,
+                    SensorManager.AXIS_MINUS_X,
+                    rotationMatrix
+                );
+                break;
+            case Surface.ROTATION_180:
+            case 180:
+                // 反向竖屏：新 X 轴 = 旧 -X 轴，新 Y 轴 = 旧 -Y 轴
+                SensorManager.remapCoordinateSystem(
+                    rawRotationMatrix,
+                    SensorManager.AXIS_MINUS_X,
+                    SensorManager.AXIS_MINUS_Y,
+                    rotationMatrix
+                );
+                break;
+            case Surface.ROTATION_270:
+            case 270:
+                // 右横屏：新 X 轴 = 旧 -Y 轴，新 Y 轴 = 旧 X 轴
+                SensorManager.remapCoordinateSystem(
+                    rawRotationMatrix,
+                    SensorManager.AXIS_MINUS_Y,
+                    SensorManager.AXIS_X,
+                    rotationMatrix
+                );
+                break;
+            default:
+                // ROTATION_0：保持传感器原始坐标系
+                System.arraycopy(rawRotationMatrix, 0, rotationMatrix, 0, 16);
+                break;
         }
     }
-
-    @Override
-    protected void finalize() throws Throwable {
-        try {
-            destroy();
-        } finally {
-            super.finalize();
-        }
-    }
-
-    // 本地 JNI 声明
-    private native long nativeCreate();
-    private native void nativeDestroy(long handle);
-    private native void nativeReset(long handle);
-    private native void nativeUpdateRotationVector(long handle, float[] values, int displayRotation);
-    private native void nativeUpdateAccelerometer(long handle, float[] values, int displayRotation);
-    private native void nativeUpdateMagnetometer(long handle, float[] values, int displayRotation);
-    private native void nativeIntegrateGyroscope(long handle, float[] values, long timestampNs, int displayRotation);
-    private native void nativeRemapForDisplayRotation(long handle, int displayRotation);
-    private native boolean nativeIsReady(long handle);
-    private native void nativeGetRotationMatrix(long handle, float[] outMatrix);
 }

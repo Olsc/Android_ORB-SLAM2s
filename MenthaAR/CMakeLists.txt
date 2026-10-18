@@ -274,7 +274,6 @@ add_library(MenthaAR_Engine SHARED
         src/main/cpp/UIUtils.cpp
         src/main/cpp/Plane.cpp
         src/main/cpp/Matrix.cpp
-        src/main/cpp/OrientationProcessor.cpp
         )
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

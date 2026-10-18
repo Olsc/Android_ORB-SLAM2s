@@ -33,22 +33,11 @@ public class GlobalConstant {
     public static int RESOLUTION_WIDTH = 1280;
     public static int RESOLUTION_HEIGHT = 720;
 
-    // 显示旋转角度 (0=正常左横屏, 180=右横屏)
+    // 显示旋转角度，取值为 Surface.ROTATION_0/90/180/270
     public static int DISPLAY_ROTATION = 0;
 
     // 根据屏幕尺寸计算最佳相机分辨率，保持 16:9 比例且不超过参考分辨率
     public static void computeOptimalResolution(int screenWidth, int screenHeight) {
-        try {
-            int[] res = com.orb.slam2s.slamar.NativeHelper.computeOptimalResolution(screenWidth, screenHeight);
-            if (res != null && res.length == 2 && res[0] > 0 && res[1] > 0) {
-                RESOLUTION_WIDTH = res[0];
-                RESOLUTION_HEIGHT = res[1];
-                return;
-            }
-        } catch (Throwable ignored) {
-        }
-
-        // 本地库未就绪时的兜底计算
         if (screenWidth < screenHeight) {
             int tmp = screenWidth;
             screenWidth = screenHeight;
@@ -74,7 +63,7 @@ public class GlobalConstant {
         RESOLUTION_HEIGHT = targetH;
     }
 
-    // 更新显示旋转角度：左横屏 ROTATION_90 记 0 度，右横屏 ROTATION_270 记 180 度
+    // 更新显示旋转角度，rotation 取值为 Surface.ROTATION_0/90/180/270
     public static void setDisplayRotation(int rotation) {
         // 传感器坐标系重映射由 OrientationSensor 处理
         DISPLAY_ROTATION = rotation;

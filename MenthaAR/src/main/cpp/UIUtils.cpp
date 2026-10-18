@@ -172,35 +172,3 @@ void getColMajorMatrixFromMat(float M[],cv::Mat &Tcw){
     M[14] = Tcw.at<float>(2,3);
     M[15]  = 1.0;
 }
-
-// 根据屏幕尺寸计算最佳相机分辨率，保持16:9比例且不超过参考分辨率
-void computeOptimalResolution(int screenWidth, int screenHeight, int &outW, int &outH) {
-    if (screenWidth < screenHeight) {
-        std::swap(screenWidth, screenHeight);
-    }
-
-    const int REFERENCE_WIDTH = 1280;
-    const int REFERENCE_HEIGHT = 720;
-    const float screenRatio = static_cast<float>(screenWidth) / static_cast<float>(screenHeight);
-    const float targetRatio = static_cast<float>(REFERENCE_WIDTH) / static_cast<float>(REFERENCE_HEIGHT);
-
-    int targetW, targetH;
-    if (screenRatio > targetRatio) {
-        targetH = std::min(screenHeight, REFERENCE_HEIGHT);
-        targetW = static_cast<int>(targetH * targetRatio);
-    } else {
-        targetW = std::min(screenWidth, REFERENCE_WIDTH);
-        targetH = static_cast<int>(targetW / targetRatio);
-    }
-
-    if (targetW < 640) {
-        targetW = 640;
-        targetH = static_cast<int>(targetW / targetRatio);
-    }
-
-    if (targetW % 2 != 0) targetW++;
-    if (targetH % 2 != 0) targetH++;
-
-    outW = targetW;
-    outH = targetH;
-}

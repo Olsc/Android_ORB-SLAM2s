@@ -48,7 +48,6 @@
 #include "include/Config.h"
 #include "MenthaProfiler.h"
 #include "ArAnchor.h"
-#include "OrientationProcessor.h"
 
 extern "C" {
 
@@ -1116,111 +1115,4 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeShutdown(JNIEnv* env, jobject inst
     }
     LOGD("nativeShutdown: SLAM 系统已完全释放");
 }
-
-// OrientationProcessor JNI 接口
-JNIEXPORT jlong JNICALL
-Java_com_orb_slam2s_sensors_OrientationSensor_nativeCreate(JNIEnv* env, jobject instance) {
-    return reinterpret_cast<jlong>(new OrientationProcessor());
-}
-
-JNIEXPORT void JNICALL
-Java_com_orb_slam2s_sensors_OrientationSensor_nativeDestroy(JNIEnv* env, jobject instance, jlong handle) {
-    auto* processor = reinterpret_cast<OrientationProcessor*>(handle);
-    delete processor;
-}
-
-JNIEXPORT void JNICALL
-Java_com_orb_slam2s_sensors_OrientationSensor_nativeReset(JNIEnv* env, jobject instance, jlong handle) {
-    auto* processor = reinterpret_cast<OrientationProcessor*>(handle);
-    if (processor) {
-        processor->Reset();
-    }
-}
-
-JNIEXPORT void JNICALL
-Java_com_orb_slam2s_sensors_OrientationSensor_nativeUpdateRotationVector(
-    JNIEnv* env, jobject instance, jlong handle, jfloatArray values_, jint displayRotation) {
-    auto* processor = reinterpret_cast<OrientationProcessor*>(handle);
-    if (!processor || !values_) return;
-    const jsize len = env->GetArrayLength(values_);
-    if (len < 3) return;
-    float vals[4] = {0};
-    const jsize count = len > 4 ? 4 : len;
-    env->GetFloatArrayRegion(values_, 0, count, vals);
-    processor->UpdateRotationVector(vals, static_cast<int>(count), displayRotation);
-}
-
-JNIEXPORT void JNICALL
-Java_com_orb_slam2s_sensors_OrientationSensor_nativeUpdateAccelerometer(
-    JNIEnv* env, jobject instance, jlong handle, jfloatArray values_, jint displayRotation) {
-    auto* processor = reinterpret_cast<OrientationProcessor*>(handle);
-    if (!processor || !values_) return;
-    if (env->GetArrayLength(values_) < 3) return;
-    float vals[3] = {0};
-    env->GetFloatArrayRegion(values_, 0, 3, vals);
-    processor->UpdateAccelerometer(vals, displayRotation);
-}
-
-JNIEXPORT void JNICALL
-Java_com_orb_slam2s_sensors_OrientationSensor_nativeUpdateMagnetometer(
-    JNIEnv* env, jobject instance, jlong handle, jfloatArray values_, jint displayRotation) {
-    auto* processor = reinterpret_cast<OrientationProcessor*>(handle);
-    if (!processor || !values_) return;
-    if (env->GetArrayLength(values_) < 3) return;
-    float vals[3] = {0};
-    env->GetFloatArrayRegion(values_, 0, 3, vals);
-    processor->UpdateMagnetometer(vals, displayRotation);
-}
-
-JNIEXPORT void JNICALL
-Java_com_orb_slam2s_sensors_OrientationSensor_nativeIntegrateGyroscope(
-    JNIEnv* env, jobject instance, jlong handle, jfloatArray values_, jlong timestampNs, jint displayRotation) {
-    auto* processor = reinterpret_cast<OrientationProcessor*>(handle);
-    if (!processor || !values_) return;
-    if (env->GetArrayLength(values_) < 3) return;
-    float vals[3] = {0};
-    env->GetFloatArrayRegion(values_, 0, 3, vals);
-    processor->IntegrateGyroscope(vals, static_cast<int64_t>(timestampNs), displayRotation);
-}
-
-JNIEXPORT void JNICALL
-Java_com_orb_slam2s_sensors_OrientationSensor_nativeRemapForDisplayRotation(
-    JNIEnv* env, jobject instance, jlong handle, jint displayRotation) {
-    auto* processor = reinterpret_cast<OrientationProcessor*>(handle);
-    if (processor) {
-        processor->RemapForDisplayRotation(displayRotation);
-    }
-}
-
-JNIEXPORT jboolean JNICALL
-Java_com_orb_slam2s_sensors_OrientationSensor_nativeIsReady(JNIEnv* env, jobject instance, jlong handle) {
-    auto* processor = reinterpret_cast<OrientationProcessor*>(handle);
-    return processor ? static_cast<jboolean>(processor->IsReady()) : JNI_FALSE;
-}
-
-JNIEXPORT void JNICALL
-Java_com_orb_slam2s_sensors_OrientationSensor_nativeGetRotationMatrix(
-    JNIEnv* env, jobject instance, jlong handle, jfloatArray outMatrix_) {
-    auto* processor = reinterpret_cast<OrientationProcessor*>(handle);
-    if (!processor || !outMatrix_) return;
-    if (env->GetArrayLength(outMatrix_) < 16) return;
-    float temp[16];
-    processor->GetRotationMatrix(temp);
-    env->SetFloatArrayRegion(outMatrix_, 0, 16, temp);
-}
-
-// 相机分辨率计算 JNI 接口
-JNIEXPORT jintArray JNICALL
-Java_com_orb_slam2s_slamar_NativeHelper_nativeComputeOptimalResolution(
-    JNIEnv* env, jclass clazz, jint screenWidth, jint screenHeight) {
-    int outW = 0, outH = 0;
-    computeOptimalResolution(screenWidth, screenHeight, outW, outH);
-    jintArray result = env->NewIntArray(2);
-    if (result) {
-        jint res[2] = {outW, outH};
-        env->SetIntArrayRegion(result, 0, 2, res);
-    }
-    return result;
-}
-
 }

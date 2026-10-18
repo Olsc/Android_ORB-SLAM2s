@@ -41,7 +41,4 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
 // 将OpenCV的Mat矩阵转换为OpenGL的列主序矩阵
 void getColMajorMatrixFromMat(float M[],cv::Mat &img);
 
-// 根据屏幕尺寸计算最佳相机分辨率，保持16:9比例且不超过基准分辨率(1280x720)，对齐到偶数
-void computeOptimalResolution(int screenWidth, int screenHeight, int &outW, int &outH);
-
 #endif // UTILS_H
