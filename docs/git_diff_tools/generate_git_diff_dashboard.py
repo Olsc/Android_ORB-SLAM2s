@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# Copyright (C) 2026 The Android ORB-SLAM2s Authors
+# SPDX-License-Identifier: Apache-2.0
 
 """
 Git 变更交互式仪表盘生成器 (Git Diff Interactive Dashboard Generator)

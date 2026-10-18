@@ -1,9 +1,30 @@
+/*
+ * Portions Copyright (C) 2007 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Copyright (C) 2025-2026 Olsc <OlscStudio@outlook.com>
+ * This file is part of the Android ORB-SLAM2s project (a fork of ORB-SLAM2)
+ * and is distributed under the GNU General Public License v3.0.
+ * See MenthaAR/LICENSE for details.
+ */
+
 /**
  * Created by Ads on 2017/3/5.
  * 由Olsc于2025/8/25开始进行修改
  */
 
-// 矩阵运算模块：提供3D图形学常用的矩阵与四元数运算，用于AR渲染和坐标转换
+// 矩阵运算模块：提供 3D 图形学常用的矩阵与四元数运算，用于 AR 渲染和坐标转换
 
 #ifndef ORB_SLAM2_AR_MATRIX_H
 #define ORB_SLAM2_AR_MATRIX_H
@@ -48,4 +69,16 @@ void getRUBViewMatrixFromRDF(float inM[],float outM[]);
 // 将RDF坐标系矩阵转换为RUB坐标系模型矩阵
 void getRUBModelMatrixFromRDF(float inM[],float outM[]);
 
-#endif //ORB_SLAM2_AR_MATRIX_H
+// 对4x4列主序矩阵的3x3旋转部分做Gram-Schmidt正交规范化
+void orthonormalize(float* m);
+
+// 从旋转矢量/四元数计算4x4列主序旋转矩阵 (兼容3元素与4元素矢量)
+void getRotationMatrixFromVector(float* outR, const float* rotationVector, int length);
+
+// 从加速度计(重力)和磁力计(地磁)计算4x4列主序旋转矩阵
+bool getRotationMatrixFromAccelMag(float* outR, const float* gravity, const float* geomagnetic);
+
+// 重映射坐标系 (支持标准与反转横屏及通用轴重映射，对应Android SensorManager坐标轴常量)
+bool remapCoordinateSystem(const float* inR, int X, int Y, float* outR);
+
+#endif // ORB_SLAM2_AR_MATRIX_H

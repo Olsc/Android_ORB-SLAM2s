@@ -1,4 +1,23 @@
 /**
+ * Copyright (C) 2025-2026 Olsc <OlscStudio@outlook.com>
+ *
+ * This file is part of the Android ORB-SLAM2s project (a fork of ORB-SLAM2).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/**
  * 由Olsc于2025/8/25开始进行修改
  */
 
@@ -29,6 +48,7 @@
 #include "include/Config.h"
 #include "MenthaProfiler.h"
 #include "ArAnchor.h"
+#include "OrientationProcessor.h"
 
 extern "C" {
 
@@ -45,13 +65,13 @@ bool slamInitialized = false;
 
 std::vector<ORB_SLAM2::MapPoint*> vMPs;
 
-// 用于 vMPs 线程安全访问的互斥锁
+// vMPs 访问互斥锁
 std::mutex gMapPointsMutex;
 
 // 点云显示开关（同时控制绿色和蓝色点云）：由 binder/UI 线程写、SLAM 线程读，保持原子量
 std::atomic<bool> gEnablePointCloudDisplay{true}; // 默认启用点云显示
 
-// SLAM丢失自动重置相关变量
+// SLAM 丢失自动重置状态
 const double LOST_RESET_TIMEOUT = ORB_SLAM2::LOST_RESET_TIMEOUT; // 名义超时（秒），仅用于换算帧数
 int gLostFrameCount = 0; // 连续丢失帧计数
 
@@ -62,10 +82,10 @@ std::map<int, AR::ArAnchor> gMapAnchors;
 AR::AlignHoldState gAlignHold;
 const int ALIGN_HOLD_FRAMES = ORB_SLAM2::ALIGN_HOLD_FRAMES; // raw 对齐丢失后仍按"对齐帧"渲染的保持帧数
 
-// 多地图支持
+// 多地图数据锁
 std::mutex gMapDataMutex;
 
-// SLAM 系统访问的读写锁
+// SLAM 系统指针与运行状态同步
 static std::mutex gSlamPtrLock; // 仅保护 slamSys 指针（极短临界区）
 static std::atomic<int> gProcessingFrames{0}; // 正在处理的帧数（用于写操作协调）
 static std::condition_variable gCvProcessingFrames; // gProcessingFrames 归零时通知写操作
@@ -77,7 +97,7 @@ int gActiveMapId = 0;
 int gMapSwitchCounter = 0;
 const int MAP_SWITCH_THRESHOLD = ORB_SLAM2::MAP_SWITCH_THRESHOLD; // 至少连续3帧识别到新地图才切换
 
-// AR对象渲染状态（跨线程读写：SLAM 线程产、binder/GL 线程读--保持原子）
+// AR 对象渲染状态：SLAM 线程写入，binder/GL 线程读取，使用原子变量保证一致性
 static std::atomic<bool> gShouldDrawArObject{false};
 static std::atomic<float> gArObjectScale{ORB_SLAM2::AR_OBJECT_SCALE_DEFAULT}; // 默认缩放
 float gCurrentModelMatrix[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
@@ -230,7 +250,7 @@ static bool AR_RenderFrame(const cv::Mat& localTcw, bool trackingOk) {
     return draw;
 }
 
-// 保存平面和AR对象信息到 .arinfo 文件，与SLAM地图配套保存
+// 保存平面与 AR 对象信息到 .arinfo 文件，与 SLAM 地图配套保存
 void SavePlaneAndArInfo(const std::string& filename)
 {
     std::lock_guard<std::mutex> lock(gMapDataMutex);
@@ -1096,4 +1116,111 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeShutdown(JNIEnv* env, jobject inst
     }
     LOGD("nativeShutdown: SLAM 系统已完全释放");
 }
+
+// OrientationProcessor JNI 接口
+JNIEXPORT jlong JNICALL
+Java_com_orb_slam2s_sensors_OrientationSensor_nativeCreate(JNIEnv* env, jobject instance) {
+    return reinterpret_cast<jlong>(new OrientationProcessor());
+}
+
+JNIEXPORT void JNICALL
+Java_com_orb_slam2s_sensors_OrientationSensor_nativeDestroy(JNIEnv* env, jobject instance, jlong handle) {
+    auto* processor = reinterpret_cast<OrientationProcessor*>(handle);
+    delete processor;
+}
+
+JNIEXPORT void JNICALL
+Java_com_orb_slam2s_sensors_OrientationSensor_nativeReset(JNIEnv* env, jobject instance, jlong handle) {
+    auto* processor = reinterpret_cast<OrientationProcessor*>(handle);
+    if (processor) {
+        processor->Reset();
+    }
+}
+
+JNIEXPORT void JNICALL
+Java_com_orb_slam2s_sensors_OrientationSensor_nativeUpdateRotationVector(
+    JNIEnv* env, jobject instance, jlong handle, jfloatArray values_, jint displayRotation) {
+    auto* processor = reinterpret_cast<OrientationProcessor*>(handle);
+    if (!processor || !values_) return;
+    const jsize len = env->GetArrayLength(values_);
+    if (len < 3) return;
+    float vals[4] = {0};
+    const jsize count = len > 4 ? 4 : len;
+    env->GetFloatArrayRegion(values_, 0, count, vals);
+    processor->UpdateRotationVector(vals, static_cast<int>(count), displayRotation);
+}
+
+JNIEXPORT void JNICALL
+Java_com_orb_slam2s_sensors_OrientationSensor_nativeUpdateAccelerometer(
+    JNIEnv* env, jobject instance, jlong handle, jfloatArray values_, jint displayRotation) {
+    auto* processor = reinterpret_cast<OrientationProcessor*>(handle);
+    if (!processor || !values_) return;
+    if (env->GetArrayLength(values_) < 3) return;
+    float vals[3] = {0};
+    env->GetFloatArrayRegion(values_, 0, 3, vals);
+    processor->UpdateAccelerometer(vals, displayRotation);
+}
+
+JNIEXPORT void JNICALL
+Java_com_orb_slam2s_sensors_OrientationSensor_nativeUpdateMagnetometer(
+    JNIEnv* env, jobject instance, jlong handle, jfloatArray values_, jint displayRotation) {
+    auto* processor = reinterpret_cast<OrientationProcessor*>(handle);
+    if (!processor || !values_) return;
+    if (env->GetArrayLength(values_) < 3) return;
+    float vals[3] = {0};
+    env->GetFloatArrayRegion(values_, 0, 3, vals);
+    processor->UpdateMagnetometer(vals, displayRotation);
+}
+
+JNIEXPORT void JNICALL
+Java_com_orb_slam2s_sensors_OrientationSensor_nativeIntegrateGyroscope(
+    JNIEnv* env, jobject instance, jlong handle, jfloatArray values_, jlong timestampNs, jint displayRotation) {
+    auto* processor = reinterpret_cast<OrientationProcessor*>(handle);
+    if (!processor || !values_) return;
+    if (env->GetArrayLength(values_) < 3) return;
+    float vals[3] = {0};
+    env->GetFloatArrayRegion(values_, 0, 3, vals);
+    processor->IntegrateGyroscope(vals, static_cast<int64_t>(timestampNs), displayRotation);
+}
+
+JNIEXPORT void JNICALL
+Java_com_orb_slam2s_sensors_OrientationSensor_nativeRemapForDisplayRotation(
+    JNIEnv* env, jobject instance, jlong handle, jint displayRotation) {
+    auto* processor = reinterpret_cast<OrientationProcessor*>(handle);
+    if (processor) {
+        processor->RemapForDisplayRotation(displayRotation);
+    }
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_orb_slam2s_sensors_OrientationSensor_nativeIsReady(JNIEnv* env, jobject instance, jlong handle) {
+    auto* processor = reinterpret_cast<OrientationProcessor*>(handle);
+    return processor ? static_cast<jboolean>(processor->IsReady()) : JNI_FALSE;
+}
+
+JNIEXPORT void JNICALL
+Java_com_orb_slam2s_sensors_OrientationSensor_nativeGetRotationMatrix(
+    JNIEnv* env, jobject instance, jlong handle, jfloatArray outMatrix_) {
+    auto* processor = reinterpret_cast<OrientationProcessor*>(handle);
+    if (!processor || !outMatrix_) return;
+    if (env->GetArrayLength(outMatrix_) < 16) return;
+    float temp[16];
+    processor->GetRotationMatrix(temp);
+    env->SetFloatArrayRegion(outMatrix_, 0, 16, temp);
+}
+
+// 相机分辨率计算 JNI 接口
+JNIEXPORT jintArray JNICALL
+Java_com_orb_slam2s_slamar_NativeHelper_nativeComputeOptimalResolution(
+    JNIEnv* env, jclass clazz, jint screenWidth, jint screenHeight) {
+    int outW = 0, outH = 0;
+    computeOptimalResolution(screenWidth, screenHeight, outW, outH);
+    jintArray result = env->NewIntArray(2);
+    if (result) {
+        jint res[2] = {outW, outH};
+        env->SetIntArrayRegion(result, 0, 2, res);
+    }
+    return result;
+}
+
 }

@@ -1,3 +1,6 @@
+# Copyright (C) 2026 Olsc <OlscStudio@outlook.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 cmake_minimum_required(VERSION 3.16)
 
 if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)

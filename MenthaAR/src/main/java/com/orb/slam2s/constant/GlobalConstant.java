@@ -1,3 +1,22 @@
+/**
+ * Copyright (C) 2025-2026 Olsc <OlscStudio@outlook.com>
+ *
+ * This file is part of the Android ORB-SLAM2s project (a fork of ORB-SLAM2).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.orb.slam2s.constant;
 
 /**
@@ -17,50 +36,47 @@ public class GlobalConstant {
     // 显示旋转角度 (0=正常左横屏, 180=右横屏)
     public static int DISPLAY_ROTATION = 0;
 
-    // 根据屏幕尺寸计算最佳相机分辨率，保持16:9比例且不超过参考分辨率
+    // 根据屏幕尺寸计算最佳相机分辨率，保持 16:9 比例且不超过参考分辨率
     public static void computeOptimalResolution(int screenWidth, int screenHeight) {
-        // 确保宽>高 (横屏)
+        try {
+            int[] res = com.orb.slam2s.slamar.NativeHelper.computeOptimalResolution(screenWidth, screenHeight);
+            if (res != null && res.length == 2 && res[0] > 0 && res[1] > 0) {
+                RESOLUTION_WIDTH = res[0];
+                RESOLUTION_HEIGHT = res[1];
+                return;
+            }
+        } catch (Throwable ignored) {
+        }
+
+        // 本地库未就绪时的兜底计算
         if (screenWidth < screenHeight) {
             int tmp = screenWidth;
             screenWidth = screenHeight;
             screenHeight = tmp;
         }
-
-        // 以参考分辨率为基准，按屏幕比例缩放
-        // 保持16:9宽高比
         float screenRatio = (float) screenWidth / screenHeight;
-        float targetRatio = (float) REFERENCE_WIDTH / REFERENCE_HEIGHT; // 16:9
-
+        float targetRatio = (float) REFERENCE_WIDTH / REFERENCE_HEIGHT;
         int targetW, targetH;
-
         if (screenRatio > targetRatio) {
-            // 屏幕更宽：高度适配
             targetH = Math.min(screenHeight, REFERENCE_HEIGHT);
             targetW = (int) (targetH * targetRatio);
         } else {
-            // 屏幕更高或相等：宽度适配
             targetW = Math.min(screenWidth, REFERENCE_WIDTH);
             targetH = (int) (targetW / targetRatio);
         }
-
-        // 确保最低分辨率不低于640x360 (保证SLAM特征点数量)
         if (targetW < 640) {
             targetW = 640;
             targetH = (int) (targetW / targetRatio);
         }
-
-        // 确保奇数尺寸对齐到偶数 (OpenCV处理需要)
         if (targetW % 2 != 0) targetW++;
         if (targetH % 2 != 0) targetH++;
-
         RESOLUTION_WIDTH = targetW;
         RESOLUTION_HEIGHT = targetH;
     }
 
-    // 更新显示旋转角度，rotation 为 Android Surface 旋转角度
+    // 更新显示旋转角度：左横屏 ROTATION_90 记 0 度，右横屏 ROTATION_270 记 180 度
     public static void setDisplayRotation(int rotation) {
-        // 记录屏幕旋转角度：左横屏 ROTATION_90 记 0 度，右横屏 ROTATION_270 记 180 度，
-        // 传感器坐标系重映射已在 OrientationSensor 中处理
+        // 传感器坐标系重映射由 OrientationSensor 处理
         DISPLAY_ROTATION = rotation;
     }
 }

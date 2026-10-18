@@ -4,7 +4,7 @@ set(CMAKE_VERBOSE_MAKEFILE on)
 
 project(MenthaAR C CXX)
 
-# 16 KB page size 支持
+# 16 KB 内存页对齐链接选项
 add_link_options("-Wl,-z,max-page-size=16384")
 
 find_package(OpenMP)
@@ -14,10 +14,10 @@ else()
     message(WARNING "OpenMP CXX NOT found! OpenCV will compile without OpenMP acceleration.")
 endif()
 
-# OpenCV 构建
+# OpenCV 源码路径
 set(OPENCV_SRC_DIR "${CMAKE_SOURCE_DIR}/src/main/cpp/Thirdparty/opencv")
 
-# 强制开启 C++ 编译器全局优化参数 (O3) 和 LTO (Link Time Optimization)
+# Release 构建编译选项：O3、NDEBUG 与 ThinLTO
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -flto=thin" CACHE STRING "" FORCE)
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -DNDEBUG -flto=thin" CACHE STRING "" FORCE)
 set(CMAKE_CXX_FLAGS_DEBUG "-O2 -g" CACHE STRING "" FORCE)
@@ -28,30 +28,30 @@ set(CMAKE_C_FLAGS_DEBUG "-O2 -g" CACHE STRING "" FORCE)
 set(ARCH_SPECIFIC_OPTIMIZATION_FLAGS "")
 
 if(ANDROID_ABI STREQUAL "arm64-v8a" OR CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64)")
-    # ARM64: 保持 Android 标准 arm64-v8a 基线兼容性 (ARMv8.0-A)，兼容所有大小核架构
+    # ARM64：使用 ARMv8.0-A 基线，兼容全部大小核架构
     list(APPEND ARCH_SPECIFIC_OPTIMIZATION_FLAGS "-march=armv8-a")
     message(STATUS "[MenthaAR] 针对目标架构 ARM64 (arm64-v8a) 启用基础优化: ${ARCH_SPECIFIC_OPTIMIZATION_FLAGS}")
 
 elseif(ANDROID_ABI STREQUAL "armeabi-v7a" OR CMAKE_SYSTEM_PROCESSOR MATCHES "^(armv7|arm)")
-    # ARMv7-A: 启用 NEON-VFPv4 浮点向量计算单元与 softfp 浮点调用约定
+    # ARMv7-A：启用 NEON-VFPv4 与 softfp 浮点调用约定
     list(APPEND ARCH_SPECIFIC_OPTIMIZATION_FLAGS "-mfpu=neon-vfpv4" "-mfloat-abi=softfp")
     message(STATUS "[MenthaAR] 针对目标架构 ARMv7-A (armeabi-v7a) 启用专属优化: ${ARCH_SPECIFIC_OPTIMIZATION_FLAGS}")
 
 elseif(ANDROID_ABI STREQUAL "x86_64" OR CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64|amd64)")
-    # x86_64: 启用 x86-64-v2 微架构基线（包含 SSE3/SSSE3/SSE4.1/SSE4.2/POPCNT 等），
-    # 彻底激活 ORB 描述子汉明距离硬件 popcount 指令 (__builtin_popcountll -> POPCNT 单指令) 及 Eigen/OpenCV 向量化
+    # x86_64：启用 x86-64-v2 基线（SSE3/SSSE3/SSE4.1/SSE4.2/POPCNT），
+    # 支持 ORB 汉明距离的硬件 popcount 指令及 Eigen/OpenCV 向量化
     list(APPEND ARCH_SPECIFIC_OPTIMIZATION_FLAGS "-march=x86-64-v2" "-mssse3" "-msse4.1" "-msse4.2" "-mpopcnt")
     set(CPU_BASELINE "SSE4_2;POPCNT" CACHE STRING "OpenCV baseline optimizations" FORCE)
     message(STATUS "[MenthaAR] 针对目标架构 x86_64 启用专属优化: ${ARCH_SPECIFIC_OPTIMIZATION_FLAGS}")
 
 elseif(ANDROID_ABI STREQUAL "x86" OR CMAKE_SYSTEM_PROCESSOR MATCHES "^(i[3-6]86|x86)")
-    # x86 32位: 启用 SSSE3/SSE4.1/SSE4.2 与硬件 POPCNT 指令加速，强制使用 SSE 浮点计算单元
+    # x86 32 位：启用 SSSE3/SSE4.1/SSE4.2、硬件 POPCNT 与 SSE 浮点运算
     list(APPEND ARCH_SPECIFIC_OPTIMIZATION_FLAGS "-mssse3" "-msse4.1" "-msse4.2" "-mpopcnt" "-mfpmath=sse")
     message(STATUS "[MenthaAR] 针对目标架构 x86 (32-bit) 启用专属优化: ${ARCH_SPECIFIC_OPTIMIZATION_FLAGS}")
 
 elseif(ANDROID_ABI STREQUAL "riscv64" OR CMAKE_SYSTEM_PROCESSOR MATCHES "^(riscv64|riscv)")
-    # RISC-V 64位: 启用 RV64GCV（RVV 1.0 矢量 SIMD 扩展）与位操作扩展（Zba/Zbb/Zbs），
-    # 其中 Zbb 扩展原生提供 cpop 硬件指令，将 ORB 汉明距离从数十周期软件模拟优化为单周期硬件执行
+    # RISC-V 64 位：启用 RV64GCV（RVV 1.0）与 Zba/Zbb/Zbs 位操作扩展，
+    # 其中 Zbb 提供 cpop 指令，用于 ORB 汉明距离的硬件计算
     list(APPEND ARCH_SPECIFIC_OPTIMIZATION_FLAGS "-march=rv64gcv_zba_zbb_zbs")
     set(ENABLE_RVV ON CACHE BOOL "Enable RVV for RISC-V" FORCE)
     message(STATUS "[MenthaAR] 针对目标架构 RISC-V 64 (riscv64) 启用专属优化: ${ARCH_SPECIFIC_OPTIMIZATION_FLAGS}")
@@ -60,7 +60,7 @@ else()
     message(STATUS "[MenthaAR] 当前架构 (ABI: ${ANDROID_ABI}, ARCH: ${CMAKE_SYSTEM_PROCESSOR}) 使用默认优化配置")
 endif()
 
-# 强制设置编译参数以排除非必要模块与测试，缩短编译时间
+# 精简 OpenCV 构建：仅保留必要模块，关闭测试与示例
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
 set(BUILD_LIST "core,imgproc,features2d,flann,calib3d" CACHE STRING "List of modules to build" FORCE)
 set(BUILD_opencv_apps OFF CACHE BOOL "Build apps" FORCE)
@@ -222,7 +222,7 @@ else()
             $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:-flto -O3>)
 endif()
 
-# 应用架构专属优化参数到 g2o (在 Release 和 RelWithDebInfo 下生效)
+# 将架构相关编译选项应用到 g2o（Release 与 RelWithDebInfo）
 if(ARCH_SPECIFIC_OPTIMIZATION_FLAGS)
     foreach(opt_flag IN LISTS ARCH_SPECIFIC_OPTIMIZATION_FLAGS)
         target_compile_options(g2o PRIVATE
@@ -230,9 +230,9 @@ if(ARCH_SPECIFIC_OPTIMIZATION_FLAGS)
     endforeach()
 endif()
 
-# 整合所有组件到一个 SO：libMenthaAR_Engine.so
+# 单一共享库目标：libMenthaAR_Engine.so
 add_library(MenthaAR_Engine SHARED
-        # SLAM Core 组件
+        # SLAM 核心组件
         src/main/cpp/include/System.h
         src/main/cpp/include/Tracking.h
         src/main/cpp/include/LocalMapping.h
@@ -269,11 +269,12 @@ add_library(MenthaAR_Engine SHARED
         src/main/cpp/src/Sim3Solver.cc
         src/main/cpp/src/Initializer.cc
 
-        # JNI 接口层与 IPC 通讯层
+        # JNI 接口与 IPC 通信层
         src/main/cpp/native-lib.cpp
         src/main/cpp/UIUtils.cpp
         src/main/cpp/Plane.cpp
         src/main/cpp/Matrix.cpp
+        src/main/cpp/OrientationProcessor.cpp
         )
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -286,7 +287,7 @@ else()
             $<$<CONFIG:Debug>:-O2 -g -fno-omit-frame-pointer -fno-strict-aliasing>)
 endif()
 
-# LTO 链接标志（仅 Release 和 RelWithDebInfo）
+# LTO 链接选项（Release 与 RelWithDebInfo）
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_link_options(MenthaAR_Engine PRIVATE
             $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:-flto=thin -O3>)
@@ -295,7 +296,7 @@ else()
             $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:-flto -O3>)
 endif()
 
-# 应用架构专属优化参数到 MenthaAR_Engine (在 Release 和 RelWithDebInfo 下生效)
+# 将架构相关编译选项应用到 MenthaAR_Engine（Release 与 RelWithDebInfo）
 if(ARCH_SPECIFIC_OPTIMIZATION_FLAGS)
     foreach(opt_flag IN LISTS ARCH_SPECIFIC_OPTIMIZATION_FLAGS)
         target_compile_options(MenthaAR_Engine PRIVATE
@@ -325,25 +326,25 @@ if(OpenMP_CXX_FOUND)
     target_compile_options(MenthaAR_Engine PRIVATE ${OpenMP_CXX_FLAGS})
 endif()
 
-# Mentha 性能分析器
-set(MENTHA_DEVELOP_MODE OFF) # <--- 修改这里：ON 开启，OFF 关闭
+# Mentha 性能分析器配置
+set(MENTHA_DEVELOP_MODE OFF) # ON 启用分析器，OFF 关闭
 
 message(STATUS "Mentha 分析器状态: ${MENTHA_DEVELOP_MODE}")
 
-# 始终包含此目录，以便编译器在 OFF 模式下也能找到头文件并展开空宏
+# 始终包含分析器头文件目录，确保关闭时仍可展开空宏
 include_directories(src/main/cpp/profiler)
 
 if(MENTHA_DEVELOP_MODE)
-    # 仅在开启时添加分析器库
+    # 启用分析器时构建对应共享库
     add_library(Mentha_Profiler SHARED
             src/main/cpp/profiler/MenthaProfiler.cpp
             src/main/cpp/profiler/MenthaProfiler.h
     )
 
-    # 使用 PUBLIC 确保宏定义传播给所有链接到此库的目标（如 MenthaAR_Engine）
+    # PUBLIC 保证宏定义传递给链接此库的目标
     target_compile_definitions(Mentha_Profiler PUBLIC MENTHA_DEVELOP_MODE)
 
-    # 应用架构专属优化参数
+    # 应用架构相关编译选项
     if(ARCH_SPECIFIC_OPTIMIZATION_FLAGS)
         foreach(opt_flag IN LISTS ARCH_SPECIFIC_OPTIMIZATION_FLAGS)
             target_compile_options(Mentha_Profiler PRIVATE
@@ -357,6 +358,6 @@ if(MENTHA_DEVELOP_MODE)
         target_link_libraries(Mentha_Profiler OpenMP::OpenMP_CXX -static-openmp)
     endif()
 
-    # 链接分析器库
+    # 将分析器库链接到主引擎
     target_link_libraries(MenthaAR_Engine Mentha_Profiler)
 endif()

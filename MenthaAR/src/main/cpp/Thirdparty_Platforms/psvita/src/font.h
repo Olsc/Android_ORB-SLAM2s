@@ -3,9 +3,10 @@
 
 /*
  * 8x8 bitmap font, taken from the VitaSDK "samples" repository
- * (common/debugScreenFont.c, PSPSDK/BSD licensed). Only the glyph table is
- * reused here; the actual text rendering is done by our software renderer so
- * that no system font / PGF-PVF service is required at runtime.
+ * (common/debugScreenFont.c, PSPSDK/BSD-3-Clause licensed; see
+ * LICENSE-PSPSDK.txt). Only the glyph table is reused here; the actual text
+ * rendering is done by our software renderer so that no system font / PGF-PVF
+ * service is required at runtime.
  */
 
 typedef struct PsvDebugScreenFont {

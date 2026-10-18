@@ -1,8 +1,7 @@
-#include "font.h"
 /*
  * PSP Software Development Kit - http://www.pspdev.org
  * -----------------------------------------------------------------------
- * Licensed under the BSD license, see LICENSE in PSPSDK root for details.
+ * Licensed under the BSD-3-Clause license, see LICENSE-PSPSDK.txt for details.
  *
  * font.c - Debug Font.
  *
@@ -12,6 +11,8 @@
  *
  * $Id: font.c 540 2005-07-08 19:35:10Z warren $
  */
+
+#include "font.h"
 
 PsvDebugScreenFont psvDebugScreenFont = { glyphs:(unsigned char*)
 "\x00\x00\x00\x00\x00\x00\x00\x00\x3c\x42\xa5\x81\xa5\x99\x42\x3c"

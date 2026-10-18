@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright (C) 2026 The Android ORB-SLAM2s Authors
+# SPDX-License-Identifier: Apache-2.0
+
 """
 分析 profile_trace.json 中的 SLAM 各阶段耗时分布，
 找出导致扫描/跟踪不稳定的性能瓶颈。
