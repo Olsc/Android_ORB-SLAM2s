@@ -99,6 +99,8 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
     private Button mBtnMapList;
     private Button mBtnTogglePointCloud;
     private Button mBtnSwitchCamera;
+    private Button mBtnMirrorVertical;
+    private Button mBtnMirrorHorizontal;
     private Button mBtn3DofCube;
 
     private final Handler mUiHandler = new Handler(Looper.getMainLooper());
@@ -312,6 +314,8 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
                 return true;
             });
         }
+
+        initMirrorControls();
 
         Button btnGroupAr = findViewById(R.id.btn_group_ar);
         if (btnGroupAr != null) {
@@ -759,6 +763,48 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
             });
             Log.d(TAG, "虚拟摇杆初始化完成");
         }
+    }
+
+    // 画面镜像控制：手动切换上下/左右镜像。
+    // 开关状态由 CameraPreviewView 自行持久化并在构造时恢复，这里只负责按钮与文案同步。
+    private void initMirrorControls() {
+        mBtnMirrorVertical = findViewById(R.id.btn_mirror_vertical);
+        mBtnMirrorHorizontal = findViewById(R.id.btn_mirror_horizontal);
+
+        boolean mirrorVertical = mCameraPreviewView != null && mCameraPreviewView.isMirrorVertical();
+        boolean mirrorHorizontal = mCameraPreviewView != null && mCameraPreviewView.isMirrorHorizontal();
+        updateMirrorButton(mBtnMirrorVertical, R.string.btn_mirror_vertical, mirrorVertical);
+        updateMirrorButton(mBtnMirrorHorizontal, R.string.btn_mirror_horizontal, mirrorHorizontal);
+
+        if (mBtnMirrorVertical != null) {
+            mBtnMirrorVertical.setOnClickListener(v ->
+                    setMirrorVertical(mCameraPreviewView == null || !mCameraPreviewView.isMirrorVertical()));
+        }
+        if (mBtnMirrorHorizontal != null) {
+            mBtnMirrorHorizontal.setOnClickListener(v ->
+                    setMirrorHorizontal(mCameraPreviewView == null || !mCameraPreviewView.isMirrorHorizontal()));
+        }
+    }
+
+    private void setMirrorVertical(boolean enabled) {
+        if (mCameraPreviewView != null) {
+            mCameraPreviewView.setMirrorVertical(enabled);
+        }
+        updateMirrorButton(mBtnMirrorVertical, R.string.btn_mirror_vertical, enabled);
+    }
+
+    private void setMirrorHorizontal(boolean enabled) {
+        if (mCameraPreviewView != null) {
+            mCameraPreviewView.setMirrorHorizontal(enabled);
+        }
+        updateMirrorButton(mBtnMirrorHorizontal, R.string.btn_mirror_horizontal, enabled);
+    }
+
+    // 镜像按钮文案：开启时加 ✓ 前缀，与点云按钮的激活反馈保持一致
+    private void updateMirrorButton(Button button, int labelRes, boolean enabled) {
+        if (button == null) return;
+        String label = getString(labelRes);
+        button.setText(enabled ? "✓" + label : label);
     }
 
     private void togglePointCloudDisplay() {

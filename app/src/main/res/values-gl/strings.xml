@@ -57,7 +57,6 @@
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>
     <string name="category_display">Zobrazenie</string>
-    <string name="btn_3dof">Sensor: DESACTIVADO</string>
     <string name="btn_3dof_off">Sensor: DESACTIVADO</string>
     <string name="btn_3dof_on">Sensor: ACTIVADO</string>
     <string name="hint_3dof_unavailable">Sensor non dispoñible</string>
@@ -90,6 +89,8 @@
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
     <string name="btn_switch_camera">Cambiar cámara</string>
+    <string name="btn_mirror_vertical">Espello vertical</string>
+    <string name="btn_mirror_horizontal">Espello horizontal</string>
     <string name="hint_camera_switched_back">Cambiouse á cámara traseira</string>
     <string name="hint_camera_switched_front">Cambiouse á cámara frontal</string>
     <string name="hint_camera_switched_other">Cambiouse á cámara %1$s</string>

@@ -56,7 +56,6 @@
     <string name="category_ar">Kontrol AR</string>
     <string name="category_map">Peta</string>
     <string name="category_display">Tampilan</string>
-    <string name="btn_3dof">Sensor: NONAKTIF</string>
     <string name="btn_3dof_off">Sensor: NONAKTIF</string>
     <string name="btn_3dof_on">Sensor: AKTIF</string>
     <string name="hint_3dof_unavailable">Sensor tidak tersedia</string>
@@ -88,6 +87,8 @@
     <string name="icon_note">Catatan: Pada beberapa peluncur, pembaruan ikon mungkin memerlukan beberapa detik.</string>
 
     <string name="btn_switch_camera">Ganti Kamera</string>
+    <string name="btn_mirror_vertical">Cermin vertikal</string>
+    <string name="btn_mirror_horizontal">Cermin horizontal</string>
     <string name="hint_camera_switched_back">Beralih ke kamera belakang</string>
     <string name="hint_camera_switched_front">Beralih ke kamera depan</string>
     <string name="hint_camera_switched_other">Beralih ke kamera %1$s</string>

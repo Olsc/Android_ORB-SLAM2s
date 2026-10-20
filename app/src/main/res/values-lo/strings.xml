@@ -56,7 +56,6 @@
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>
     <string name="category_display">Zobrazenie</string>
-    <string name="btn_3dof">ເຊັນເຊີ: ປິດ</string>
     <string name="btn_3dof_off">ເຊັນເຊີ: ປິດ</string>
     <string name="btn_3dof_on">ເຊັນເຊີ: ເປີດ</string>
     <string name="hint_3dof_unavailable">ເຊັນເຊີບໍ່ສາມາດໃຊ້ໄດ້</string>
@@ -88,6 +87,8 @@
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
     <string name="btn_switch_camera">ປ່ຽນກ້ອງ</string>
+    <string name="btn_mirror_vertical">ກະຈົກແນວຕັ້ງ</string>
+    <string name="btn_mirror_horizontal">ກະຈົກແນວນອນ</string>
     <string name="hint_camera_switched_back">ປ່ຽນເປັນກ້ອງຫຼັງແລ້ວ</string>
     <string name="hint_camera_switched_front">ປ່ຽນເປັນກ້ອງໜ້າແລ້ວ</string>
     <string name="hint_camera_switched_other">ປ່ຽນເປັນກ້ອງ %1$s ແລ້ວ</string>

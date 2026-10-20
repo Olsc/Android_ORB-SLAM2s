@@ -58,7 +58,6 @@
     <string name="category_ar">Controles AR</string>
     <string name="category_map">Mapa</string>
     <string name="category_display">Pantalla</string>
-    <string name="btn_3dof">Sensor: DES</string>
     <string name="btn_3dof_off">Sensor: DES</string>
     <string name="btn_3dof_on">Sensor: ACT</string>
     <string name="hint_3dof_unavailable">Sensor no disponible</string>
@@ -92,6 +91,8 @@
     <string name="icon_note">Nota: En algunos lanzadores, la actualización puede tardar unos segundos.</string>
 
     <string name="btn_switch_camera">Cambiar cámara</string>
+    <string name="btn_mirror_vertical">Espejo vertical</string>
+    <string name="btn_mirror_horizontal">Espejo horizontal</string>
     <string name="hint_camera_switched_back">Cambiado a la cámara trasera</string>
     <string name="hint_camera_switched_front">Cambiado a la cámara frontal</string>
     <string name="hint_camera_switched_other">Cambiado a la cámara %1$s</string>

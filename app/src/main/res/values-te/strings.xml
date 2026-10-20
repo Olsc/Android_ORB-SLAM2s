@@ -57,7 +57,6 @@
     <string name="category_ar">AR నియంత్రణలు</string>
     <string name="category_map">మ్యాప్</string>
     <string name="category_display">ప్రదర్శన</string>
-    <string name="btn_3dof">సెన్సార్: ఆఫ్</string>
     <string name="btn_3dof_off">సెన్సార్: ఆఫ్</string>
     <string name="btn_3dof_on">సెన్సార్: ఆన్</string>
     <string name="hint_3dof_unavailable">సెన్సార్ అందుబాటులో లేదు</string>
@@ -90,6 +89,8 @@
     <string name="icon_note">గమనిక: కొన్ని లాంచర్‌లలో హోమ్ స్క్రీన్‌పై అప్‌డేట్ కావడానికి కొన్ని సెకన్లు పట్టవచ్చు.</string>
 
     <string name="btn_switch_camera">కెమెరా మార్చు</string>
+    <string name="btn_mirror_vertical">నిలువు అద్దం</string>
+    <string name="btn_mirror_horizontal">అడ్డ అద్దం</string>
     <string name="hint_camera_switched_back">వెనుక కెమెరాకు మార్చబడింది</string>
     <string name="hint_camera_switched_front">ముందు కెమెరాకు మార్చబడింది</string>
     <string name="hint_camera_switched_other">కెమెరా %1$s కు మార్చబడింది</string>

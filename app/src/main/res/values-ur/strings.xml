@@ -57,7 +57,6 @@
     <string name="category_ar">AR کنٹرول</string>
     <string name="category_map">نقشہ</string>
     <string name="category_display">ڈسپلے</string>
-    <string name="btn_3dof">سینسر: بند</string>
     <string name="btn_3dof_off">سینسر: بند</string>
     <string name="btn_3dof_on">سینسر: آن</string>
     <string name="hint_3dof_unavailable">سینسر دستیاب نہیں</string>
@@ -90,6 +89,8 @@
     <string name="icon_note">نوٹ: کچھ لانچرز پر ہوم اسکرین پر اپ ڈیٹ ہونے میں چند سیکنڈ لگ سکتے ہیں۔</string>
 
     <string name="btn_switch_camera">کیمرہ تبدیل کریں</string>
+    <string name="btn_mirror_vertical">عمودی آئینہ</string>
+    <string name="btn_mirror_horizontal">افقی آئینہ</string>
     <string name="hint_camera_switched_back">پچھلے کیمرے پر تبدیل ہو گیا</string>
     <string name="hint_camera_switched_front">سامنے والے کیمرے پر تبدیل ہو گیا</string>
     <string name="hint_camera_switched_other">کیمرہ %1$s پر تبدیل ہو گیا</string>

@@ -59,7 +59,6 @@
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>
     <string name="category_display">Zobrazenie</string>
-    <string name="btn_3dof">Senzor: IZKLOPLJEN</string>
     <string name="btn_3dof_off">Senzor: IZKLOPLJEN</string>
     <string name="btn_3dof_on">Senzor: VKLOPLJEN</string>
     <string name="hint_3dof_unavailable">Senzor ni na voljo</string>
@@ -94,6 +93,8 @@
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
     <string name="btn_switch_camera">Preklopi kamero</string>
+    <string name="btn_mirror_vertical">Zrcali navpično</string>
+    <string name="btn_mirror_horizontal">Zrcali vodoravno</string>
     <string name="hint_camera_switched_back">Preklopljeno na zadnjo kamero</string>
     <string name="hint_camera_switched_front">Preklopljeno na sprednjo kamero</string>
     <string name="hint_camera_switched_other">Preklopljeno na kamero %1$s</string>

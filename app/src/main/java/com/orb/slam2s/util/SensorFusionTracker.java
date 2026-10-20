@@ -105,8 +105,6 @@ public class SensorFusionTracker {
 
         // 2. 情况 A：视觉 SLAM 正在正常跟踪 (isVisionTrackingOk == true)
         if (isVisionTrackingOk) {
-            mLastValidMapId = activeMapId;
-
             // 缓存最后一次有效的 Model 和 Proj 矩阵
             System.arraycopy(rawMvp48, 0, mLastValidModel, 0, 16);
             System.arraycopy(rawMvp48, vProjOffset, mLastValidProj, 0, 16);

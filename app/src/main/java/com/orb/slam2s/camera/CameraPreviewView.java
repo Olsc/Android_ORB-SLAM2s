@@ -16,6 +16,7 @@
 package com.orb.slam2s.camera;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.PixelFormat;
 import android.hardware.camera2.CameraManager;
@@ -49,7 +50,6 @@ import androidx.lifecycle.LifecycleOwner;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.orb.slam2s.constant.GlobalConstant;
-import com.orb.slam2s.device.DeviceCompat;
 import com.orb.slam2s.graphics.AspectGLSurfaceView;
 import com.orb.slam2s.graphics.GLPassThroughRenderer;
 import com.orb.slam2s.graphics.GLPointCloudRenderer;
@@ -101,6 +101,13 @@ public class CameraPreviewView extends AspectGLSurfaceView {
     private int mSendPing;            // 当前发送缓冲索引 (0/1)
     private int[] mCachePixels;       // 预览位图像素数组
 
+    // 画面镜像开关（手动切换，同时作用于预览与送往 SLAM 的灰度帧；状态持久化，下次启动自动恢复）
+    private volatile boolean mMirrorVertical;
+    private volatile boolean mMirrorHorizontal;
+    private static final String PREFS_DISPLAY = "camera_display_settings";
+    private static final String PREF_MIRROR_VERTICAL = "mirror_vertical";
+    private static final String PREF_MIRROR_HORIZONTAL = "mirror_horizontal";
+
     private GLPassThroughRenderer mPassThroughRenderer;
     private GLPointCloudRenderer mPointCloudRenderer;
 
@@ -146,6 +153,14 @@ public class CameraPreviewView extends AspectGLSurfaceView {
     public CameraPreviewView(Context context, AttributeSet attrs) {
         super(context, attrs);
         this.mContext = context;
+        restoreMirrorSettings();
+    }
+
+    // 从本地配置恢复镜像开关（构造时执行，早于首帧渲染与相机启动）
+    private void restoreMirrorSettings() {
+        SharedPreferences prefs = mContext.getSharedPreferences(PREFS_DISPLAY, Context.MODE_PRIVATE);
+        mMirrorVertical = prefs.getBoolean(PREF_MIRROR_VERTICAL, false);
+        mMirrorHorizontal = prefs.getBoolean(PREF_MIRROR_HORIZONTAL, false);
     }
 
     public void setSlamIPCClient(SlamIPCClient client) {
@@ -154,6 +169,28 @@ public class CameraPreviewView extends AspectGLSurfaceView {
 
     public void setFrameListener(FrameListener listener) {
         this.mFrameListener = listener;
+    }
+
+    // 设置上下镜像（垂直翻转），可随时切换，下一帧生效，并保存到本地配置
+    public void setMirrorVertical(boolean enabled) {
+        mMirrorVertical = enabled;
+        mContext.getSharedPreferences(PREFS_DISPLAY, Context.MODE_PRIVATE)
+                .edit().putBoolean(PREF_MIRROR_VERTICAL, enabled).apply();
+    }
+
+    public boolean isMirrorVertical() {
+        return mMirrorVertical;
+    }
+
+    // 设置左右镜像（水平翻转），可随时切换，下一帧生效，并保存到本地配置
+    public void setMirrorHorizontal(boolean enabled) {
+        mMirrorHorizontal = enabled;
+        mContext.getSharedPreferences(PREFS_DISPLAY, Context.MODE_PRIVATE)
+                .edit().putBoolean(PREF_MIRROR_HORIZONTAL, enabled).apply();
+    }
+
+    public boolean isMirrorHorizontal() {
+        return mMirrorHorizontal;
     }
 
     public void requestPlaneDetection() {
@@ -327,21 +364,36 @@ public class CameraPreviewView extends AspectGLSurfaceView {
                                 }
                                 byte[] yBuf = mYuvSendBuffers[mSendPing];
 
+                                final boolean mirrorV = mMirrorVertical;
+                                final boolean mirrorH = mMirrorHorizontal;
                                 synchronized (mSyncLock) {
-                                    if (mCacheBitmap != null && !mCacheBitmap.isRecycled()) {
+                                    boolean previewVisible = mCacheBitmap != null && !mCacheBitmap.isRecycled();
+                                    if (previewVisible) {
                                         if (mCachePixels == null || mCachePixels.length < requiredSize) {
                                             mCachePixels = new int[requiredSize];
                                         }
-                                        for (int i = 0; i < requiredSize; i++) {
-                                            int idx = i * 4;
-                                            int r = rgbaBuf[idx] & 0xFF;
-                                            int g = rgbaBuf[idx + 1] & 0xFF;
-                                            int b = rgbaBuf[idx + 2] & 0xFF;
-                                            yBuf[i] = (byte) ((r * 77 + g * 150 + b * 29) >> 8);
-                                            mCachePixels[i] = 0xFF000000 | (r << 16) | (g << 8) | b;
+                                    }
+                                    int[] previewPixels = previewVisible ? mCachePixels : null;
+
+                                    // 一次遍历完成 RGBA→灰度/ARGB 转换与镜像搬移：按镜像开关直接写入目标坐标，避免额外翻转开销
+                                    for (int y = 0; y < h; y++) {
+                                        int srcRowOffset = y * w * 4;
+                                        int dstRowOffset = (mirrorV ? (h - 1 - y) : y) * w;
+                                        for (int x = 0; x < w; x++) {
+                                            int srcIdx = srcRowOffset + x * 4;
+                                            int r = rgbaBuf[srcIdx] & 0xFF;
+                                            int g = rgbaBuf[srcIdx + 1] & 0xFF;
+                                            int b = rgbaBuf[srcIdx + 2] & 0xFF;
+                                            int dstIdx = dstRowOffset + (mirrorH ? (w - 1 - x) : x);
+                                            yBuf[dstIdx] = (byte) ((r * 77 + g * 150 + b * 29) >> 8);
+                                            if (previewPixels != null) {
+                                                previewPixels[dstIdx] = 0xFF000000 | (r << 16) | (g << 8) | b;
+                                            }
                                         }
-                                        DeviceCompat.checkAndFlipFrame(mCachePixels, w, h);
-                                        mCacheBitmap.setPixels(mCachePixels, 0, w, 0, 0, w, h);
+                                    }
+
+                                    if (previewPixels != null) {
+                                        mCacheBitmap.setPixels(previewPixels, 0, w, 0, 0, w, h);
                                         queueEvent(() -> {
                                             synchronized (mSyncLock) {
                                                 if (mSurfaceExist && mCacheBitmap != null && !mCacheBitmap.isRecycled()) {
@@ -349,18 +401,8 @@ public class CameraPreviewView extends AspectGLSurfaceView {
                                                 }
                                             }
                                         });
-                                    } else {
-                                        for (int i = 0; i < requiredSize; i++) {
-                                            int idx = i * 4;
-                                            int r = rgbaBuf[idx] & 0xFF;
-                                            int g = rgbaBuf[idx + 1] & 0xFF;
-                                            int b = rgbaBuf[idx + 2] & 0xFF;
-                                            yBuf[i] = (byte) ((r * 77 + g * 150 + b * 29) >> 8);
-                                        }
                                     }
                                 }
-
-                                DeviceCompat.checkAndFlipFrame(yBuf, w, h);
 
                                 if (mSlamIPCClient != null && mSlamIPCClient.isConnected()) {
                                     if (mIsIpcProcessing.compareAndSet(false, true)) {

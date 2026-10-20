@@ -31,7 +31,7 @@ public:
     bool loadFromMemory(const uint8_t* buffer, size_t size);
 
     // 在 OpenGL 上下文中上传 GPU 顶点缓冲与纹理
-    void uploadGL(std::function<int(const uint8_t*, size_t)> textureLoader);
+    void uploadGL(const std::function<int(const uint8_t*, size_t)>& textureLoader);
 
     // 释放 GPU 缓冲与纹理
     void destroyGL();
@@ -42,7 +42,8 @@ public:
     bool isGPUUploaded() const { return mIsGPUUploaded; }
 
 private:
-    void computeNormalsIfMissing(GlbPrimitive& prim);
+    // 生成缺失的法线数据（纯计算，不访问成员变量）
+    static void computeNormalsIfMissing(GlbPrimitive& prim);
 
     bool mIsLoaded = false;
     bool mIsGPUUploaded = false;

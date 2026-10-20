@@ -57,7 +57,6 @@
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>
     <string name="category_display">Zobrazenie</string>
-    <string name="btn_3dof">സെൻസർ: ഓഫ്</string>
     <string name="btn_3dof_off">സെൻസർ: ഓഫ്</string>
     <string name="btn_3dof_on">സെൻസർ: ഓൺ</string>
     <string name="hint_3dof_unavailable">സെൻസർ ലഭ്യമല്ല</string>
@@ -90,6 +89,8 @@
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
     <string name="btn_switch_camera">ക്യാമറ മാറ്റുക</string>
+    <string name="btn_mirror_vertical">ലംബ മിറർ</string>
+    <string name="btn_mirror_horizontal">തിരശ്ചീന മിറർ</string>
     <string name="hint_camera_switched_back">പിൻ ക്യാമറയിലേക്ക് മാറ്റി</string>
     <string name="hint_camera_switched_front">മുൻ ക്യാമറയിലേക്ക് മാറ്റി</string>
     <string name="hint_camera_switched_other">ക്യാമറ %1$s ലേക്ക് മാറ്റി</string>

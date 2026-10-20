@@ -57,7 +57,6 @@
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>
     <string name="category_display">Zobrazenie</string>
-    <string name="btn_3dof">Andur: VÄLJAS</string>
     <string name="btn_3dof_off">Andur: VÄLJAS</string>
     <string name="btn_3dof_on">Andur: SEES</string>
     <string name="hint_3dof_unavailable">Andur pole saadaval</string>
@@ -90,6 +89,8 @@
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
     <string name="btn_switch_camera">Vaheta kaamerat</string>
+    <string name="btn_mirror_vertical">Peegelda vertikaalselt</string>
+    <string name="btn_mirror_horizontal">Peegelda horisontaalselt</string>
     <string name="hint_camera_switched_back">Lülitati tagumisele kaamerale</string>
     <string name="hint_camera_switched_front">Lülitati esikaamerale</string>
     <string name="hint_camera_switched_other">Lülitati kaamerale %1$s</string>

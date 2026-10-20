@@ -112,11 +112,6 @@ public class OrientationSensor implements SensorEventListener {
         return mode;
     }
 
-    // 检测设备是否存在可用于 3DOF 的姿态传感器硬件
-    public boolean hasSensorHardware(Context context) {
-        return detectMode(context) != Mode.NONE;
-    }
-
     // 返回当前（或最近一次检测到的）姿态来源模式
     public Mode getMode() {
         return mode;

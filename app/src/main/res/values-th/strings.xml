@@ -56,7 +56,6 @@
     <string name="category_ar">ควบคุม AR</string>
     <string name="category_map">แผนที่</string>
     <string name="category_display">การแสดงผล</string>
-    <string name="btn_3dof">เซ็นเซอร์: ปิด</string>
     <string name="btn_3dof_off">เซ็นเซอร์: ปิด</string>
     <string name="btn_3dof_on">เซ็นเซอร์: เปิด</string>
     <string name="hint_3dof_unavailable">ไม่พบเซ็นเซอร์</string>
@@ -88,6 +87,8 @@
     <string name="icon_note">หมายเหตุ: ลอนเชอร์บางตัวอาจใช้เวลาสองสามวินาทีในการอัปเดตไอคอนบนหน้าจอหลัก</string>
 
     <string name="btn_switch_camera">สลับกล้อง</string>
+    <string name="btn_mirror_vertical">กระจกแนวตั้ง</string>
+    <string name="btn_mirror_horizontal">กระจกแนวนอน</string>
     <string name="hint_camera_switched_back">สลับไปยังกล้องหลังแล้ว</string>
     <string name="hint_camera_switched_front">สลับไปยังกล้องหน้าแล้ว</string>
     <string name="hint_camera_switched_other">สลับไปยังกล้อง %1$s แล้ว</string>

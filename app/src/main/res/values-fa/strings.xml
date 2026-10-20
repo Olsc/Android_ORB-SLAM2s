@@ -57,7 +57,6 @@
     <string name="category_ar">کنترل AR</string>
     <string name="category_map">نقشه</string>
     <string name="category_display">نمایش</string>
-    <string name="btn_3dof">حسگر: خاموش</string>
     <string name="btn_3dof_off">حسگر: خاموش</string>
     <string name="btn_3dof_on">حسگر: روشن</string>
     <string name="hint_3dof_unavailable">حسگر در دسترس نیست</string>
@@ -90,6 +89,8 @@
     <string name="icon_note">توجه: در برخی لانچرها ممکن است به‌روزرسانی در صفحه اصلی چند ثانیه طول بکشد.</string>
 
     <string name="btn_switch_camera">تغییر دوربین</string>
+    <string name="btn_mirror_vertical">آینه عمودی</string>
+    <string name="btn_mirror_horizontal">آینه افقی</string>
     <string name="hint_camera_switched_back">به دوربین پشت منتقل شد</string>
     <string name="hint_camera_switched_front">به دوربین جلو منتقل شد</string>
     <string name="hint_camera_switched_other">به دوربین %1$s منتقل شد</string>

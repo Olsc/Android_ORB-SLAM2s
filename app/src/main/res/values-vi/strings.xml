@@ -56,7 +56,6 @@
     <string name="category_ar">Điều khiển AR</string>
     <string name="category_map">Bản đồ</string>
     <string name="category_display">Hiển thị</string>
-    <string name="btn_3dof">Cảm biến: TẮT</string>
     <string name="btn_3dof_off">Cảm biến: TẮT</string>
     <string name="btn_3dof_on">Cảm biến: BẬT</string>
     <string name="hint_3dof_unavailable">Cảm biến không khả dụng</string>
@@ -88,6 +87,8 @@
     <string name="icon_note">Lưu ý: Một số launcher có thể mất vài giây để cập nhật biểu tượng trên màn hình chính.</string>
 
     <string name="btn_switch_camera">Đổi camera</string>
+    <string name="btn_mirror_vertical">Gương dọc</string>
+    <string name="btn_mirror_horizontal">Gương ngang</string>
     <string name="hint_camera_switched_back">Đã chuyển sang camera sau</string>
     <string name="hint_camera_switched_front">Đã chuyển sang camera trước</string>
     <string name="hint_camera_switched_other">Đã chuyển sang camera %1$s</string>

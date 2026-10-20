@@ -58,7 +58,6 @@
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>
     <string name="category_display">Zobrazenie</string>
-    <string name="btn_3dof">Senzor: ISKLJ</string>
     <string name="btn_3dof_off">Senzor: ISKLJ</string>
     <string name="btn_3dof_on">Senzor: UKLJ</string>
     <string name="hint_3dof_unavailable">Senzor nije dostupan</string>
@@ -92,6 +91,8 @@
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
     <string name="btn_switch_camera">Promijeni kameru</string>
+    <string name="btn_mirror_vertical">Vertikalno preslikavanje</string>
+    <string name="btn_mirror_horizontal">Horizontalno preslikavanje</string>
     <string name="hint_camera_switched_back">Prebačeno na zadnju kameru</string>
     <string name="hint_camera_switched_front">Prebačeno na prednju kameru</string>
     <string name="hint_camera_switched_other">Prebačeno na kameru %1$s</string>

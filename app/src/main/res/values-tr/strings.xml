@@ -57,7 +57,6 @@
     <string name="category_ar">AR Kontrolleri</string>
     <string name="category_map">Harita</string>
     <string name="category_display">Görüntü</string>
-    <string name="btn_3dof">Sensör: KAPALI</string>
     <string name="btn_3dof_off">Sensör: KAPALI</string>
     <string name="btn_3dof_on">Sensör: AÇIK</string>
     <string name="hint_3dof_unavailable">Sensör kullanılamıyor</string>
@@ -90,6 +89,8 @@
     <string name="icon_note">Not: Bazı başlatıcılarda ana ekranda yenilenmesi birkaç saniye sürebilir.</string>
 
     <string name="btn_switch_camera">Kamera Değiştir</string>
+    <string name="btn_mirror_vertical">Dikey ayna</string>
+    <string name="btn_mirror_horizontal">Yatay ayna</string>
     <string name="hint_camera_switched_back">Arka kameraya geçildi</string>
     <string name="hint_camera_switched_front">Ön kameraya geçildi</string>
     <string name="hint_camera_switched_other">Kamera %1$s olarak değiştirildi</string>
