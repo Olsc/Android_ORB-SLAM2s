@@ -23,7 +23,7 @@ import android.util.Log;
 public class SensorFusionTracker {
     private static final String TAG = "SensorFusionTracker";
 
-    private boolean m3DofAssistEnabled = false; // 默认关闭
+    private boolean m3DofAssistEnabled = false; // 初始状态由宿主根据传感器硬件探测结果决定 (默认启动)
 
     // 传感器校准对齐偏置矩阵 R_offset: R_view = R_sensor * R_offset
     private final float[] mAlignmentOffset = new float[16];
@@ -51,7 +51,7 @@ public class SensorFusionTracker {
         Matrix.setIdentityM(mLastValidProj, 0);
     }
 
-    // 开启或关闭 3DOF 传感器辅助功能，默认关闭
+    // 开启或关闭 3DOF 传感器辅助功能
     public synchronized void set3DofAssistEnabled(boolean enabled) {
         if (this.m3DofAssistEnabled != enabled) {
             this.m3DofAssistEnabled = enabled;

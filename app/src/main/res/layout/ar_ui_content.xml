@@ -117,7 +117,7 @@
                 android:layout_height="wrap_content"
                 android:minHeight="32dp"
                 android:layout_marginBottom="4dp"
-                android:text="@string/btn_3dof"
+                android:text="@string/btn_3dof_on"
                 android:textSize="11sp"
                 android:textAllCaps="false"
                 android:backgroundTint="#FF5722"
