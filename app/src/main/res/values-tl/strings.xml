@@ -57,7 +57,6 @@
     <string name="category_ar">Mga Kontrol ng AR</string>
     <string name="category_map">Mapa</string>
     <string name="category_display">Display</string>
-    <string name="btn_3dof">Sensor: NAKA-OFF</string>
     <string name="btn_3dof_off">Sensor: NAKA-OFF</string>
     <string name="btn_3dof_on">Sensor: NAKA-ON</string>
     <string name="hint_3dof_unavailable">Hindi available ang sensor</string>
@@ -90,6 +89,8 @@
     <string name="icon_note">Tandaan: Sa ilang launcher, maaaring tumagal ng ilang segundo bago mag-refresh sa home screen.</string>
 
     <string name="btn_switch_camera">Palitan ang Camera</string>
+    <string name="btn_mirror_vertical">Salamin patayo</string>
+    <string name="btn_mirror_horizontal">Salamin pahalang</string>
     <string name="hint_camera_switched_back">Lumipat sa camera sa likod</string>
     <string name="hint_camera_switched_front">Lumipat sa camera sa harap</string>
     <string name="hint_camera_switched_other">Lumipat sa camera %1$s</string>

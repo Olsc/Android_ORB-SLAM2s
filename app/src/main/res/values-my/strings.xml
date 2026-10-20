@@ -56,7 +56,6 @@
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>
     <string name="category_display">Zobrazenie</string>
-    <string name="btn_3dof">အာရုံခံ − ပိတ်</string>
     <string name="btn_3dof_off">အာရုံခံ − ပိတ်</string>
     <string name="btn_3dof_on">အာရုံခံ − ဖွင့်</string>
     <string name="hint_3dof_unavailable">အာရုံခံကိရိယာ မရနိုင်ပါ</string>
@@ -88,6 +87,8 @@
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
     <string name="btn_switch_camera">ကင်မရာပြောင်းရန်</string>
+    <string name="btn_mirror_vertical">ဒေါင်လိုက် ကြေးမုံ</string>
+    <string name="btn_mirror_horizontal">အလျားလိုက် ကြေးမုံ</string>
     <string name="hint_camera_switched_back">နောက်ကင်မရာသို့ ပြောင်းပြီးပါပြီ</string>
     <string name="hint_camera_switched_front">ရှေ့ကင်မရာသို့ ပြောင်းပြီးပါပြီ</string>
     <string name="hint_camera_switched_other">ကင်မရာ %1$s သို့ ပြောင်းပြီးပါပြီ</string>

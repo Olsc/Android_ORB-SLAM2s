@@ -57,7 +57,6 @@
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>
     <string name="category_display">Zobrazenie</string>
-    <string name="btn_3dof">සංවේදකය: ක්‍රියාවිරහිත</string>
     <string name="btn_3dof_off">සංවේදකය: ක්‍රියාවිරහිත</string>
     <string name="btn_3dof_on">සංවේදකය: ක්‍රියාත්මක</string>
     <string name="hint_3dof_unavailable">සංවේදකය නොමැත</string>
@@ -90,6 +89,8 @@
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
     <string name="btn_switch_camera">කැමරාව මාරු කරන්න</string>
+    <string name="btn_mirror_vertical">සිරස් කැඩපත</string>
+    <string name="btn_mirror_horizontal">තිරස් කැඩපත</string>
     <string name="hint_camera_switched_back">පසුපස කැමරාවට මාරු විය</string>
     <string name="hint_camera_switched_front">ඉදිරිපස කැමරාවට මාරු විය</string>
     <string name="hint_camera_switched_other">කැමරා %1$s වෙත මාරු විය</string>

@@ -56,7 +56,6 @@
     <string name="category_ar">AR 조종</string>
     <string name="category_map">지도</string>
     <string name="category_display">화면</string>
-    <string name="btn_3dof">센서: 꺼짐</string>
     <string name="btn_3dof_off">센서: 꺼짐</string>
     <string name="btn_3dof_on">센서: 켜짐</string>
     <string name="hint_3dof_unavailable">센서를 사용할 수 없습니다</string>
@@ -88,6 +87,8 @@
     <string name="icon_note">참고: 일부 런처에서는 홈 화면에 반영되는 데 몇 초 정도 걸릴 수 있습니다.</string>
 
     <string name="btn_switch_camera">카메라 전환</string>
+    <string name="btn_mirror_vertical">상하 반전</string>
+    <string name="btn_mirror_horizontal">좌우 반전</string>
     <string name="hint_camera_switched_back">후면 카메라로 전환되였습니다</string>
     <string name="hint_camera_switched_front">전면 카메라로 전환되였습니다</string>
     <string name="hint_camera_switched_other">카메라 %1$s(으)로 전환되였습니다</string>

@@ -58,7 +58,6 @@
     <string name="category_ar">Controale AR</string>
     <string name="category_map">Hartă</string>
     <string name="category_display">Afișaj</string>
-    <string name="btn_3dof">Senzor: OPRIT</string>
     <string name="btn_3dof_off">Senzor: OPRIT</string>
     <string name="btn_3dof_on">Senzor: PORNIT</string>
     <string name="hint_3dof_unavailable">Senzorul nu este disponibil</string>
@@ -92,6 +91,8 @@
     <string name="icon_note">Notă: Pe unele lansatoare, actualizarea pe ecranul de pornire poate dura câteva secunde.</string>
 
     <string name="btn_switch_camera">Schimbă camera</string>
+    <string name="btn_mirror_vertical">Oglindire verticală</string>
+    <string name="btn_mirror_horizontal">Oglindire orizontală</string>
     <string name="hint_camera_switched_back">Comutat la camera din spate</string>
     <string name="hint_camera_switched_front">Comutat la camera frontală</string>
     <string name="hint_camera_switched_other">Comutat la camera %1$s</string>

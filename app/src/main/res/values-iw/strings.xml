@@ -58,7 +58,6 @@
     <string name="category_ar">פקדי AR</string>
     <string name="category_map">מפה</string>
     <string name="category_display">תצוגה</string>
-    <string name="btn_3dof">חיישן: כבוי</string>
     <string name="btn_3dof_off">חיישן: כבוי</string>
     <string name="btn_3dof_on">חיישן: פועל</string>
     <string name="hint_3dof_unavailable">החיישן אינו זמין</string>
@@ -92,6 +91,8 @@
     <string name="icon_note">הערה: בחלק מממשקי הבית ייתכן שיידרשו מספר שניות לעדכון הסמל.</string>
 
     <string name="btn_switch_camera">החלף מצלמה</string>
+    <string name="btn_mirror_vertical">שיקוף אנכי</string>
+    <string name="btn_mirror_horizontal">שיקוף אופקי</string>
     <string name="hint_camera_switched_back">הוחלף למצלמה אחורית</string>
     <string name="hint_camera_switched_front">הוחלף למצלמה קדמית</string>
     <string name="hint_camera_switched_other">הוחלף למצלמה %1$s</string>

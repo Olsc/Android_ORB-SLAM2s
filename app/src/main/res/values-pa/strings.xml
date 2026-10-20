@@ -57,7 +57,6 @@
     <string name="category_ar">AR ਕੰਟਰੋਲ</string>
     <string name="category_map">ਨਕਸ਼ਾ</string>
     <string name="category_display">ਡਿਸਪਲੇ</string>
-    <string name="btn_3dof">ਸੈਂਸਰ: ਬੰਦ</string>
     <string name="btn_3dof_off">ਸੈਂਸਰ: ਬੰਦ</string>
     <string name="btn_3dof_on">ਸੈਂਸਰ: ਚਾਲੂ</string>
     <string name="hint_3dof_unavailable">ਸੈਂਸਰ ਉਪਲਬਧ ਨਹੀਂ</string>
@@ -90,6 +89,8 @@
     <string name="icon_note">ਨੋਟ: ਕੁਝ ਲਾਂਚਰਾਂ ਤੇ ਹੋਮ ਸਕ੍ਰੀਨ ਤੇ ਅੱਪਡੇਟ ਹੋਣ ਵਿੱਚ ਕੁਝ ਸਕਿੰਟ ਲੱਗ ਸਕਦੇ ਹਨ।</string>
 
     <string name="btn_switch_camera">ਕੈਮਰਾ ਬਦਲੋ</string>
+    <string name="btn_mirror_vertical">ਲੰਬਕਾਰੀ ਸ਼ੀਸ਼ਾ</string>
+    <string name="btn_mirror_horizontal">ਖਿਤਿਜੀ ਸ਼ੀਸ਼ਾ</string>
     <string name="hint_camera_switched_back">ਪਿਛਲੇ ਕੈਮਰੇ \'ਤੇ ਬਦਲਿਆ ਗਿਆ</string>
     <string name="hint_camera_switched_front">ਅਗਲੇ ਕੈਮਰੇ \'ਤੇ ਬਦਲਿਆ ਗਿਆ</string>
     <string name="hint_camera_switched_other">ਕੈਮਰਾ %1$s \'ਤੇ ਬਦਲਿਆ ਗਿਆ</string>

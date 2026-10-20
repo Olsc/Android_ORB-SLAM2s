@@ -17,6 +17,7 @@
 #include "glb_renderer.h"
 #include <cmath>
 #include <cstring>
+#include <utility>
 
 namespace {
 
@@ -303,7 +304,7 @@ void GlbRenderer::onResize(int width, int height) {
 }
 
 void GlbRenderer::setModel(std::shared_ptr<GlbModel> model) {
-    mModel = model;
+    mModel = std::move(model);
 }
 
 void GlbRenderer::render(const float* slamModelMatrix,

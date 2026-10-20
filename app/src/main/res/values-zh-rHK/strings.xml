@@ -56,7 +56,6 @@
     <string name="category_map">地圖管理</string>
     <string name="category_display">顯示控制</string>
 
-    <string name="btn_3dof">感應器: 關</string>
     <string name="btn_3dof_off">感應器: 關</string>
     <string name="btn_3dof_on">感應器: 開</string>
     <string name="hint_3dof_unavailable">裝置缺少方向感應器</string>
@@ -88,6 +87,8 @@
     <string name="icon_note">提示：部分手機桌面可能需要 1~2 秒刷新圖示顯示</string>
 
     <string name="btn_switch_camera">切換相機</string>
+    <string name="btn_mirror_vertical">上下鏡像</string>
+    <string name="btn_mirror_horizontal">左右鏡像</string>
     <string name="hint_camera_switched_back">已切換至後置相機</string>
     <string name="hint_camera_switched_front">已切換至前置相機</string>
     <string name="hint_camera_switched_other">已切換至相機 %1$s</string>

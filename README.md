@@ -97,18 +97,20 @@ It shares similar performance optimization concepts with this project, though it
 
 Currently tested primarily on Qualcomm Snapdragon platform CPUs:
 
-| SoC                     | Device                | Performance |
-| ----------------------- | --------------------- | ----------- |
-| Snapdragon 8 Elite      | Xiaomi 15             | 30 FPS      |
-| Snapdragon 8 Gen 3      | Redmi K80             | 30 FPS      |
-| Snapdragon 8+ Gen1      | Redmi K60             | 30 FPS      |
-| Snapdragon 870          | Xiaomi 10S            | 30 FPS      |
-| Snapdragon 7s Gen 2     | Redmi Pad Pro         | 30 FPS      |
-| Snapdragon 6s Gen 2     | Redmi Pad 2 SE 4G     | 30 FPS      |
-| Snapdragon 765G 5G      | vivo iQOO Z1x         | 30 FPS      |
-| Snapdragon 835          | Xiaomi 6              | 20-30 FPS   |
-| Snapdragon AR1 Gen 1    | Rokid Glass3          | 30 FPS      |
-| MediaTek Dimensity 6300 | Lenovo Xiaoxin Pad 11 | 20-30 FPS   |
+| SoC                      | Device                   | Performance      |
+| ------------------------ | ------------------------ | ---------------- |
+| Snapdragon 8 Elite       | Xiaomi 15                | 30 FPS           |
+| Snapdragon 8 Gen 3       | Redmi K80                | 30 FPS           |
+| Snapdragon 8 Gen 2       | Xiaomi 13 Pro            | 30 FPS           |
+| Snapdragon 8+ Gen 1      | Redmi K60                | 30 FPS           |
+| Snapdragon 870           | Xiaomi 10S               | 30 FPS           |
+| Snapdragon 7s Gen 2      | Redmi Pad Pro            | 30 FPS           |
+| Snapdragon 6s Gen 2      | Redmi Pad 2 SE 4G        | 30 FPS           |
+| Snapdragon 765G 5G       | vivo iQOO Z1x            | 30 FPS           |
+| Snapdragon 835           | Xiaomi 6                 | 20-30 FPS        |
+| Snapdragon AR1 Gen 1     | Rokid Glass3             | 30 FPS           |
+| MediaTek Dimensity 6300  | Lenovo Xiaoxin Pad 11    | 20-30 FPS        |
+| UNISOC W527              | Chaodai CD12MAX (Watch)  | 10 FPS (Locked)  |
 
 ### 🌑 Dark Frame Detection
 

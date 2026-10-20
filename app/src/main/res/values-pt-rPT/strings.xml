@@ -58,7 +58,6 @@
     <string name="category_ar">Controlos AR</string>
     <string name="category_map">Mapa</string>
     <string name="category_display">Ecrã</string>
-    <string name="btn_3dof">Sensor: DESL</string>
     <string name="btn_3dof_off">Sensor: DESL</string>
     <string name="btn_3dof_on">Sensor: LIG</string>
     <string name="hint_3dof_unavailable">Sensor indisponível</string>
@@ -92,6 +91,8 @@
     <string name="icon_note">Nota: Em alguns inicializadores, a atualização pode demorar alguns segundos.</string>
 
     <string name="btn_switch_camera">Mudar câmara</string>
+    <string name="btn_mirror_vertical">Espelhar vertical</string>
+    <string name="btn_mirror_horizontal">Espelhar horizontal</string>
     <string name="hint_camera_switched_back">Mudado para a câmara traseira</string>
     <string name="hint_camera_switched_front">Mudado para a câmara frontal</string>
     <string name="hint_camera_switched_other">Mudado para a câmara %1$s</string>

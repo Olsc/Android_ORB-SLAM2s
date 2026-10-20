@@ -271,7 +271,7 @@ void GlbModel::computeNormalsIfMissing(GlbPrimitive& prim) {
     }
 }
 
-void GlbModel::uploadGL(std::function<int(const uint8_t*, size_t)> textureLoader) {
+void GlbModel::uploadGL(const std::function<int(const uint8_t*, size_t)>& textureLoader) {
     if (mIsGPUUploaded) return;
 
     if (mPrimitives.empty()) return;
@@ -280,14 +280,18 @@ void GlbModel::uploadGL(std::function<int(const uint8_t*, size_t)> textureLoader
         // 创建并填充 VBO
         glGenBuffers(1, &prim.vbo);
         glBindBuffer(GL_ARRAY_BUFFER, prim.vbo);
-        glBufferData(GL_ARRAY_BUFFER, prim.vertices.size() * sizeof(GlbVertex),
+        glBufferData(GL_ARRAY_BUFFER,
+                     static_cast<GLsizeiptr>(prim.vertices.size()) *
+                             static_cast<GLsizeiptr>(sizeof(GlbVertex)),
                      prim.vertices.data(), GL_STATIC_DRAW);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         // 创建并填充 IBO
         glGenBuffers(1, &prim.ibo);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, prim.ibo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, prim.indices.size() * sizeof(uint32_t),
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                     static_cast<GLsizeiptr>(prim.indices.size()) *
+                             static_cast<GLsizeiptr>(sizeof(uint32_t)),
                      prim.indices.data(), GL_STATIC_DRAW);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
@@ -333,7 +337,7 @@ void GlbModel::destroyGL() {
     }
 
     for (auto& pair : mImageToTextureMap) {
-        GLuint tex = static_cast<GLuint>(pair.second);
+        auto tex = static_cast<GLuint>(pair.second);
         if (tex) {
             glDeleteTextures(1, &tex);
         }

@@ -59,7 +59,6 @@
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>
     <string name="category_display">Zobrazenie</string>
-    <string name="btn_3dof">Senzor: VYP</string>
     <string name="btn_3dof_off">Senzor: VYP</string>
     <string name="btn_3dof_on">Senzor: ZAP</string>
     <string name="hint_3dof_unavailable">Senzor nie je k dispozícii</string>
@@ -94,6 +93,8 @@
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
     <string name="btn_switch_camera">Prepnúť kameru</string>
+    <string name="btn_mirror_vertical">Zrkadliť zvisle</string>
+    <string name="btn_mirror_horizontal">Zrkadliť vodorovne</string>
     <string name="hint_camera_switched_back">Prepnuté na zadnú kameru</string>
     <string name="hint_camera_switched_front">Prepnuté na prednú kameru</string>
     <string name="hint_camera_switched_other">Prepnuté na kameru %1$s</string>

@@ -59,7 +59,6 @@
     <string name="category_ar">Ovládání AR</string>
     <string name="category_map">Mapa</string>
     <string name="category_display">Zobrazení</string>
-    <string name="btn_3dof">Senzor: VYP</string>
     <string name="btn_3dof_off">Senzor: VYP</string>
     <string name="btn_3dof_on">Senzor: ZAP</string>
     <string name="hint_3dof_unavailable">Senzor není k dispozici</string>
@@ -94,6 +93,8 @@
     <string name="icon_note">Poznámka: U některých launcherů může obnovení na domovské obrazovce trvat několik sekund.</string>
 
     <string name="btn_switch_camera">Přepnout kameru</string>
+    <string name="btn_mirror_vertical">Zrcadlit svisle</string>
+    <string name="btn_mirror_horizontal">Zrcadlit vodorovně</string>
     <string name="hint_camera_switched_back">Přepnuto na zadní kameru</string>
     <string name="hint_camera_switched_front">Přepnuto na přední kameru</string>
     <string name="hint_camera_switched_other">Přepnuto na kameru %1$s</string>

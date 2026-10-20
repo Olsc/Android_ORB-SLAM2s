@@ -57,7 +57,6 @@
     <string name="category_ar">AR-kontroller</string>
     <string name="category_map">Kort</string>
     <string name="category_display">Visning</string>
-    <string name="btn_3dof">Sensor: FRA</string>
     <string name="btn_3dof_off">Sensor: FRA</string>
     <string name="btn_3dof_on">Sensor: TIL</string>
     <string name="hint_3dof_unavailable">Sensor ikke tilgængelig</string>
@@ -90,6 +89,8 @@
     <string name="icon_note">Bemærk: På visse launchers kan det tage et par sekunder at opdatere på startskærmen.</string>
 
     <string name="btn_switch_camera">Skift kamera</string>
+    <string name="btn_mirror_vertical">Spejl lodret</string>
+    <string name="btn_mirror_horizontal">Spejl vandret</string>
     <string name="hint_camera_switched_back">Skiftet til bagkamera</string>
     <string name="hint_camera_switched_front">Skiftet til frontkamera</string>
     <string name="hint_camera_switched_other">Skiftet til kamera %1$s</string>

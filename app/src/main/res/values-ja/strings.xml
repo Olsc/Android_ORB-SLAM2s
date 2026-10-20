@@ -56,7 +56,6 @@
     <string name="category_ar">AR操作</string>
     <string name="category_map">マップ</string>
     <string name="category_display">表示</string>
-    <string name="btn_3dof">センサー: オフ</string>
     <string name="btn_3dof_off">センサー: オフ</string>
     <string name="btn_3dof_on">センサー: オン</string>
     <string name="hint_3dof_unavailable">センサーを利用できません</string>
@@ -88,6 +87,8 @@
     <string name="icon_note">注：一部のランチャーではホーム画面の反映に数秒かかる場合があります。</string>
 
     <string name="btn_switch_camera">カメラ切替</string>
+    <string name="btn_mirror_vertical">上下反転</string>
+    <string name="btn_mirror_horizontal">左右反転</string>
     <string name="hint_camera_switched_back">背面カメラに切り替えました</string>
     <string name="hint_camera_switched_front">前面カメラに切り替えました</string>
     <string name="hint_camera_switched_other">カメラ %1$s に切り替えました</string>

@@ -58,7 +58,6 @@
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>
     <string name="category_display">Zobrazenie</string>
-    <string name="btn_3dof">Sensors: IZSLĒGTS</string>
     <string name="btn_3dof_off">Sensors: IZSLĒGTS</string>
     <string name="btn_3dof_on">Sensors: IESLĒGTS</string>
     <string name="hint_3dof_unavailable">Sensors nav pieejams</string>
@@ -92,6 +91,8 @@
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
     <string name="btn_switch_camera">Pārslēgt kameru</string>
+    <string name="btn_mirror_vertical">Spoguļot vertikāli</string>
+    <string name="btn_mirror_horizontal">Spoguļot horizontāli</string>
     <string name="hint_camera_switched_back">Pārslēgts uz aizmugurējo kameru</string>
     <string name="hint_camera_switched_front">Pārslēgts uz priekšējo kameru</string>
     <string name="hint_camera_switched_other">Pārslēgts uz kameru %1$s</string>

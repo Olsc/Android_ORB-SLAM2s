@@ -61,7 +61,6 @@
     <string name="category_ar">أدوات AR</string>
     <string name="category_map">الخريطة</string>
     <string name="category_display">العرض</string>
-    <string name="btn_3dof">المستشعر: إيقاف</string>
     <string name="btn_3dof_off">المستشعر: إيقاف</string>
     <string name="btn_3dof_on">المستشعر: تشغيل</string>
     <string name="hint_3dof_unavailable">المستشعر غير متوفر</string>
@@ -98,6 +97,8 @@
     <string name="icon_note">ملاحظة: قد تستغرق بعض واجهات النظام بضع ثوانٍ لتحديث الأيقونة على الشاشة الرئيسية.</string>
 
     <string name="btn_switch_camera">تبديل الكاميرا</string>
+    <string name="btn_mirror_vertical">انعكاس رأسي</string>
+    <string name="btn_mirror_horizontal">انعكاس أفقي</string>
     <string name="hint_camera_switched_back">تم التبديل إلى الكاميرا الخلفية</string>
     <string name="hint_camera_switched_front">تم التبديل إلى الكاميرا الأمامية</string>
     <string name="hint_camera_switched_other">تم التبديل إلى الكاميرا %1$s</string>

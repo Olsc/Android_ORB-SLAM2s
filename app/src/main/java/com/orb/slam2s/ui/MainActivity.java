@@ -99,6 +99,8 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
     private Button mBtnMapList;
     private Button mBtnTogglePointCloud;
     private Button mBtnSwitchCamera;
+    private Button mBtnMirrorVertical;
+    private Button mBtnMirrorHorizontal;
     private Button mBtn3DofCube;
 
     private final Handler mUiHandler = new Handler(Looper.getMainLooper());
@@ -126,7 +128,7 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
     // 虚拟摇杆
     private VirtualJoystickView mJoystickView;
 
-    // 3DOF 传感器辅助定位跟踪 (默认关闭)
+    // 3DOF 传感器辅助定位跟踪 (默认开启，若检测到硬件)
     private OrientationSensor mOrientationSensor;
     private SensorFusionTracker mSensorFusionTracker;
     private boolean mIs3DofMode = false;
@@ -143,8 +145,11 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
         initViewsAndServices();
 
         // 恢复进程被回收前的用户状态（如 3DOF 模式）
-        if (savedInstanceState != null && savedInstanceState.getBoolean(KEY_3DOF_MODE, false)) {
-            toggle3DofMode();
+        if (savedInstanceState != null && savedInstanceState.containsKey(KEY_3DOF_MODE)) {
+            boolean savedMode = savedInstanceState.getBoolean(KEY_3DOF_MODE, true);
+            if (savedMode != mIs3DofMode) {
+                set3DofMode(savedMode, false);
+            }
         }
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
@@ -245,6 +250,11 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
         mIsInitFinished = false;
         mTouchHelper = new TouchGestureHelper(this);
 
+        mBtn3DofCube = findViewById(R.id.btn_3dof_cube);
+        if (mBtn3DofCube != null) {
+            mBtn3DofCube.setOnClickListener(v -> toggle3DofMode());
+        }
+
         init3DofTracker();
         initFilamentModel();
 
@@ -305,6 +315,8 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
             });
         }
 
+        initMirrorControls();
+
         Button btnGroupAr = findViewById(R.id.btn_group_ar);
         if (btnGroupAr != null) {
             btnGroupAr.setOnClickListener(v -> toggleExclusiveMenu(R.id.group_ar));
@@ -316,11 +328,6 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
         Button btnGroupDisplay = findViewById(R.id.btn_group_display);
         if (btnGroupDisplay != null) {
             btnGroupDisplay.setOnClickListener(v -> toggleExclusiveMenu(R.id.group_display));
-        }
-
-        mBtn3DofCube = findViewById(R.id.btn_3dof_cube);
-        if (mBtn3DofCube != null) {
-            mBtn3DofCube.setOnClickListener(v -> toggle3DofMode());
         }
 
         initJoystick();
@@ -758,6 +765,48 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
         }
     }
 
+    // 画面镜像控制：手动切换上下/左右镜像。
+    // 开关状态由 CameraPreviewView 自行持久化并在构造时恢复，这里只负责按钮与文案同步。
+    private void initMirrorControls() {
+        mBtnMirrorVertical = findViewById(R.id.btn_mirror_vertical);
+        mBtnMirrorHorizontal = findViewById(R.id.btn_mirror_horizontal);
+
+        boolean mirrorVertical = mCameraPreviewView != null && mCameraPreviewView.isMirrorVertical();
+        boolean mirrorHorizontal = mCameraPreviewView != null && mCameraPreviewView.isMirrorHorizontal();
+        updateMirrorButton(mBtnMirrorVertical, R.string.btn_mirror_vertical, mirrorVertical);
+        updateMirrorButton(mBtnMirrorHorizontal, R.string.btn_mirror_horizontal, mirrorHorizontal);
+
+        if (mBtnMirrorVertical != null) {
+            mBtnMirrorVertical.setOnClickListener(v ->
+                    setMirrorVertical(mCameraPreviewView == null || !mCameraPreviewView.isMirrorVertical()));
+        }
+        if (mBtnMirrorHorizontal != null) {
+            mBtnMirrorHorizontal.setOnClickListener(v ->
+                    setMirrorHorizontal(mCameraPreviewView == null || !mCameraPreviewView.isMirrorHorizontal()));
+        }
+    }
+
+    private void setMirrorVertical(boolean enabled) {
+        if (mCameraPreviewView != null) {
+            mCameraPreviewView.setMirrorVertical(enabled);
+        }
+        updateMirrorButton(mBtnMirrorVertical, R.string.btn_mirror_vertical, enabled);
+    }
+
+    private void setMirrorHorizontal(boolean enabled) {
+        if (mCameraPreviewView != null) {
+            mCameraPreviewView.setMirrorHorizontal(enabled);
+        }
+        updateMirrorButton(mBtnMirrorHorizontal, R.string.btn_mirror_horizontal, enabled);
+    }
+
+    // 镜像按钮文案：开启时加 ✓ 前缀，与点云按钮的激活反馈保持一致
+    private void updateMirrorButton(Button button, int labelRes, boolean enabled) {
+        if (button == null) return;
+        String label = getString(labelRes);
+        button.setText(enabled ? "✓" + label : label);
+    }
+
     private void togglePointCloudDisplay() {
         if (mSlamIPCClient != null && mBtnTogglePointCloud != null) {
             boolean currentState = mSlamIPCClient.isPointCloudDisplayEnabled();
@@ -858,38 +907,68 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
     private void init3DofTracker() {
         mOrientationSensor = new OrientationSensor();
         mSensorFusionTracker = new SensorFusionTracker();
-        mSensorFusionTracker.set3DofAssistEnabled(false); // 默认关闭
+
+        // 确保获取传感器控制按钮引用
+        if (mBtn3DofCube == null) {
+            mBtn3DofCube = findViewById(R.id.btn_3dof_cube);
+            if (mBtn3DofCube != null) {
+                mBtn3DofCube.setOnClickListener(v -> toggle3DofMode());
+            }
+        }
 
         // 多级回退检测：具备任意一种姿态来源即可开启，不再强制要求磁力计/旋转矢量
         OrientationSensor.Mode mode = mOrientationSensor.detectMode(this);
         Log.d(TAG, "3DOF 姿态来源检测结果: " + mode);
 
         if (mode == OrientationSensor.Mode.NONE) {
-            Log.w(TAG, "设备没有任何可用于 3DOF 的姿态传感器");
+            Log.w(TAG, "设备没有任何可用于 3DOF 的姿态传感器硬件，隐藏传感器按钮");
+            mIs3DofMode = false;
+            mSensorFusionTracker.set3DofAssistEnabled(false);
             if (mBtn3DofCube != null) {
-                mBtn3DofCube.setEnabled(false);
-                mBtn3DofCube.setAlpha(0.5f);
+                mBtn3DofCube.setVisibility(View.GONE);
             }
             return;
         }
 
+        // 检测到对应硬件：默认启动传感器辅助定位
+        mIs3DofMode = true;
+        mOrientationSensor.start(this);
+        mSensorFusionTracker.set3DofAssistEnabled(true);
+
         if (mBtn3DofCube != null) {
-            mBtn3DofCube.setText(getString(R.string.btn_3dof_off));
+            mBtn3DofCube.setVisibility(View.VISIBLE);
+            mBtn3DofCube.setText(getString(R.string.btn_3dof_on));
         }
 
-        Log.d(TAG, "3DOF 传感器与融合跟踪器初始化完成 (默认关闭)");
+        Log.d(TAG, "3DOF 传感器与融合跟踪器初始化完成 (默认启动，姿态来源: " + mode + ")");
     }
 
     private void toggle3DofMode() {
+        set3DofMode(!mIs3DofMode, true);
+    }
+
+    private void set3DofMode(boolean enabled, boolean showToast) {
         if (mOrientationSensor == null || mSensorFusionTracker == null) {
-            showToast(getString(R.string.hint_3dof_unavailable));
+            if (showToast) {
+                showToast(getString(R.string.hint_3dof_unavailable));
+            }
+            if (mBtn3DofCube != null) {
+                mBtn3DofCube.setVisibility(View.GONE);
+            }
             return;
         }
 
-        if (!mIs3DofMode) {
-            // 开启前重新确认姿态来源，避免无传感器时按钮状态与实际能力不符
+        if (enabled) {
+            // 开启前重新确认姿态来源，若无传感器硬件则隐藏按钮并提示
             if (mOrientationSensor.detectMode(this) == OrientationSensor.Mode.NONE) {
-                showToast(getString(R.string.hint_3dof_unavailable));
+                if (showToast) {
+                    showToast(getString(R.string.hint_3dof_unavailable));
+                }
+                if (mBtn3DofCube != null) {
+                    mBtn3DofCube.setVisibility(View.GONE);
+                }
+                mIs3DofMode = false;
+                mSensorFusionTracker.set3DofAssistEnabled(false);
                 return;
             }
             mIs3DofMode = true;
@@ -897,9 +976,12 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
             mSensorFusionTracker.set3DofAssistEnabled(true);
 
             if (mBtn3DofCube != null) {
+                mBtn3DofCube.setVisibility(View.VISIBLE);
                 mBtn3DofCube.setText(getString(R.string.btn_3dof_on));
             }
-            showSensorModeToast();
+            if (showToast) {
+                showSensorModeToast();
+            }
             Log.d(TAG, "3DOF 传感器辅助定位已开启 (旋转防抖 + 丢失空间保活)");
         } else {
             mIs3DofMode = false;
@@ -909,7 +991,9 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
             if (mBtn3DofCube != null) {
                 mBtn3DofCube.setText(getString(R.string.btn_3dof_off));
             }
-            showToast(getString(R.string.hint_3dof_assisted_off));
+            if (showToast) {
+                showToast(getString(R.string.hint_3dof_assisted_off));
+            }
             Log.d(TAG, "3DOF 辅助定位已关闭，恢复纯视觉 SLAM");
         }
     }

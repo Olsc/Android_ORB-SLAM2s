@@ -57,7 +57,6 @@
     <string name="category_ar">Ovládanie AR</string>
     <string name="category_map">Mapa</string>
     <string name="category_display">Zobrazenie</string>
-    <string name="btn_3dof">Сенсор: ӨЧҮК</string>
     <string name="btn_3dof_off">Сенсор: ӨЧҮК</string>
     <string name="btn_3dof_on">Сенсор: КҮЙҮК</string>
     <string name="hint_3dof_unavailable">Сенсор жеткиликсиз</string>
@@ -90,6 +89,8 @@
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
     <string name="btn_switch_camera">Камераны алмаштыруу</string>
+    <string name="btn_mirror_vertical">Тик чагылдыруу</string>
+    <string name="btn_mirror_horizontal">Туурасынан чагылдыруу</string>
     <string name="hint_camera_switched_back">Арткы камерага которулду</string>
     <string name="hint_camera_switched_front">Алдыңкы камерага которулду</string>
     <string name="hint_camera_switched_other">%1$s камерасына которулду</string>

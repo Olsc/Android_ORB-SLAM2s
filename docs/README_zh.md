@@ -97,18 +97,20 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 
 目前主要在高通骁龙平台 CPU 上测试：
 
-| SoC                     | 设备                | 性能      |
-| ----------------------- | ------------------- | --------- |
-| Snapdragon 8 Elite      | 小米 15             | 30 FPS    |
-| Snapdragon 8 Gen 3      | 红米 K80            | 30 FPS    |
-| Snapdragon 8+ Gen1      | 红米 K60            | 30 FPS    |
-| Snapdragon 870          | 小米 10S            | 30 FPS    |
-| Snapdragon 7s Gen 2     | Redmi Pad Pro       | 30 FPS    |
-| Snapdragon 6s Gen 2     | Redmi Pad 2 SE 4G   | 30 FPS    |
-| Snapdragon 765G 5G      | vivo iQOO Z1x       | 30 FPS    |
-| Snapdragon 835          | 小米 6              | 20-30 FPS |
-| Snapdragon AR1 Gen 1    | Rokid Glass3        | 30 FPS    |
-| MediaTek Dimensity 6300 | 联想小新平板11      | 20-30 FPS |
+| SoC                     | 设备                  | 性能            |
+| ----------------------- | --------------------- | --------------- |
+| 高通 骁龙 8 Elite       | 小米 15               | 30 FPS          |
+| 高通 骁龙 8 Gen 3       | 红米 K80              | 30 FPS          |
+| 高通 骁龙 8 Gen 2       | 小米 13 Pro           | 30 FPS          |
+| 高通 骁龙 8+ Gen 1      | 红米 K60              | 30 FPS          |
+| 高通 骁龙 870           | 小米 10S              | 30 FPS          |
+| 高通 骁龙 7s Gen 2      | Redmi Pad Pro         | 30 FPS          |
+| 高通 骁龙 6s Gen 2      | Redmi Pad 2 SE 4G     | 30 FPS          |
+| 高通 骁龙 765G 5G       | vivo iQOO Z1x         | 30 FPS          |
+| 高通 骁龙 835           | 小米 6                | 20-30 FPS       |
+| 高通 骁龙 AR1 Gen 1     | Rokid Glass3          | 30 FPS          |
+| 联发科 天玑 6300        | 联想小新平板11        | 20-30 FPS       |
+| 紫光展锐 W527           | 超戴 CD12MAX (手表)   | 10 FPS (锁帧)   |
 
 ### 🌑 暗帧检测
 

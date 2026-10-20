@@ -57,7 +57,6 @@
     <string name="category_ar">AR கட்டுப்பாடுகள்</string>
     <string name="category_map">வரைபடம்</string>
     <string name="category_display">காட்சி</string>
-    <string name="btn_3dof">சென்சார்: ஆஃப்</string>
     <string name="btn_3dof_off">சென்சார்: ஆஃப்</string>
     <string name="btn_3dof_on">சென்சார்: ஆன்</string>
     <string name="hint_3dof_unavailable">சென்சார் கிடைக்கவில்லை</string>
@@ -90,6 +89,8 @@
     <string name="icon_note">குறிப்பு: சில லாஞ்சர்களில் முகப்புத் திரையில் புதுப்பிக்க சில வினாடிகள் ஆகலாம்.</string>
 
     <string name="btn_switch_camera">கேமரா மாற்று</string>
+    <string name="btn_mirror_vertical">செங்குத்து கண்ணாடி</string>
+    <string name="btn_mirror_horizontal">கிடைமட்ட கண்ணாடி</string>
     <string name="hint_camera_switched_back">பின் கேமராவிற்கு மாற்றப்பட்டது</string>
     <string name="hint_camera_switched_front">முன் கேமராவிற்கு மாற்றப்பட்டது</string>
     <string name="hint_camera_switched_other">கேமரா %1$s க்கு மாற்றப்பட்டது</string>

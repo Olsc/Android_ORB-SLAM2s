@@ -58,7 +58,6 @@
     <string name="category_ar">Contrôles AR</string>
     <string name="category_map">Carte</string>
     <string name="category_display">Affichage</string>
-    <string name="btn_3dof">Capteur: DÉSACTIVÉ</string>
     <string name="btn_3dof_off">Capteur: DÉSACTIVÉ</string>
     <string name="btn_3dof_on">Capteur: ACTIVÉ</string>
     <string name="hint_3dof_unavailable">Capteur non disponible</string>
@@ -92,6 +91,8 @@
     <string name="icon_note">"Remarque : selon le lanceur, l'actualisation peut prendre quelques secondes."</string>
 
     <string name="btn_switch_camera">Changer caméra</string>
+    <string name="btn_mirror_vertical">Miroir vertical</string>
+    <string name="btn_mirror_horizontal">Miroir horizontal</string>
     <string name="hint_camera_switched_back">Basculé sur la caméra arrière</string>
     <string name="hint_camera_switched_front">Basculé sur la caméra avant</string>
     <string name="hint_camera_switched_other">Basculé sur la caméra %1$s</string>
