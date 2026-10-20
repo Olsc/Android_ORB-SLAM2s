@@ -280,7 +280,9 @@ void GlbModel::uploadGL(const std::function<int(const uint8_t*, size_t)>& textur
         // 创建并填充 VBO
         glGenBuffers(1, &prim.vbo);
         glBindBuffer(GL_ARRAY_BUFFER, prim.vbo);
-        glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(prim.vertices.size() * sizeof(GlbVertex)),
+        glBufferData(GL_ARRAY_BUFFER,
+                     static_cast<GLsizeiptr>(prim.vertices.size()) *
+                             static_cast<GLsizeiptr>(sizeof(GlbVertex)),
                      prim.vertices.data(), GL_STATIC_DRAW);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
@@ -288,7 +290,8 @@ void GlbModel::uploadGL(const std::function<int(const uint8_t*, size_t)>& textur
         glGenBuffers(1, &prim.ibo);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, prim.ibo);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                     static_cast<GLsizeiptr>(prim.indices.size() * sizeof(uint32_t)),
+                     static_cast<GLsizeiptr>(prim.indices.size()) *
+                             static_cast<GLsizeiptr>(sizeof(uint32_t)),
                      prim.indices.data(), GL_STATIC_DRAW);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
