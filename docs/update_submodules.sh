@@ -112,6 +112,16 @@ to_web_url() {
 # ---------------------------------------------------------------------------
 # 主循环
 # ---------------------------------------------------------------------------
+# 禁用自动 GC 和后台维护任务，防止浅克隆（--depth）下后台 gc 与前台 fetch
+# 并发修改 .git/shallow 引发 "fatal: shallow file has changed since we read it"
+export GIT_CONFIG_COUNT=3
+export GIT_CONFIG_KEY_0="gc.auto"
+export GIT_CONFIG_VALUE_0="0"
+export GIT_CONFIG_KEY_1="gc.autodetach"
+export GIT_CONFIG_VALUE_1="false"
+export GIT_CONFIG_KEY_2="maintenance.auto"
+export GIT_CONFIG_VALUE_2="false"
+
 declare -a CHANGED=()
 declare -a UNCHANGED=()
 declare -A ROW_BY_PATH=()
@@ -176,7 +186,24 @@ for path in "${ALL_PATHS[@]}"; do
         #    branch 不同时，--depth 生成的是“单分支”浅克隆，里面没有
         #    refs/remotes/origin/<branch>，--remote 会报
         #    "Unable to find refs/remotes/origin/<branch> revision" 并以 128 退出。
-        git -C "$path" fetch "${fetch_opts[@]}" origin "$fetch_ref"
+        #    带重试与清理浅克隆锁机制，防止极端情况下文件锁竞争。
+        fetch_success="false"
+        for attempt in 1 2 3; do
+            if git -C "$path" fetch "${fetch_opts[@]}" origin "$fetch_ref"; then
+                fetch_success="true"
+                break
+            fi
+            echo "  fetch 失败 (第 $attempt 次尝试)，清理锁并重试..." >&2
+            git_dir="$(git -C "$path" rev-parse --git-dir 2>/dev/null || true)"
+            if [[ -n "$git_dir" && -f "$git_dir/shallow.lock" ]]; then
+                rm -f "$git_dir/shallow.lock"
+            fi
+            sleep 1
+        done
+        if [[ "$fetch_success" != "true" ]]; then
+            echo "error: fetch $path 失败" >&2
+            exit 1
+        fi
         git -C "$path" checkout --quiet --detach FETCH_HEAD
         after_sha="$(git -C "$path" rev-parse HEAD 2>/dev/null || echo '')"
     fi
