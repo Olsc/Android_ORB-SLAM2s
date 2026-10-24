@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='utf-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">Oggetto AR</string>
@@ -81,14 +81,14 @@
     <string name="map_action_refresh">Aggiorna</string>
 
     <string name="shortcut_change_icon">Cambia icona</string>
-    <string name="icon_select_title">"Icona dell'app"</string>
+    <string name="icon_select_title">Icona dell\'app</string>
     <string name="icon_select_desc">Scegli la tua icona preferita. Tieni premuto sulla schermata iniziale per cambiarla in qualsiasi momento.</string>
     <string name="icon_default_name">Blu tecnologico</string>
     <string name="icon_red_name">Rosso fiamma</string>
     <string name="icon_mint_name">Menta carina</string>
     <string name="icon_in_use">In uso</string>
-    <string name="icon_switched_hint">"Icona dell'app aggiornata a %s"</string>
-    <string name="icon_note">"Nota: in alcuni launcher l'aggiornamento potrebbe richiedere alcuni secondi."</string>
+    <string name="icon_switched_hint">Icona dell\'app aggiornata a %s</string>
+    <string name="icon_note">Nota: in alcuni launcher l\'aggiornamento potrebbe richiedere alcuni secondi.</string>
 
     <string name="btn_switch_camera">Cambia fotocamera</string>
     <string name="btn_mirror_vertical">Specchia verticale</string>

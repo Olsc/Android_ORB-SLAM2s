@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='utf-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR-об\'єкт</string>
@@ -87,7 +87,7 @@
     <string name="icon_select_desc">Оберіть бажану піктограму програми. Утримуйте на головному екрані, щоб змінити будь-коли.</string>
     <string name="icon_default_name">Технологічний синій</string>
     <string name="icon_red_name">Полум\'яно-червоний</string>
-    <string name="icon_mint_name">"Мила м'ята"</string>
+    <string name="icon_mint_name">Мила м\'ята</string>
     <string name="icon_in_use">Використовується</string>
     <string name="icon_switched_hint">Піктограму програми змінено на %s</string>
     <string name="icon_note">Примітка: на деяких робочих столах оновлення може тривати кілька секунд.</string>

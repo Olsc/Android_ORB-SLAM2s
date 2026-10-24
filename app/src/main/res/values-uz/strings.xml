@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='utf-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR obyekti</string>
@@ -18,11 +18,11 @@
     <string name="input_map_name">Xarita nomini kiriting</string>
     <string name="dialog_save_map">Xaritani saqlash</string>
     <string name="button_cancel">Bekor qilish</string>
-    <string name="hint_no_maps">"Saqlangan xaritalar yo'q"</string>
+    <string name="hint_no_maps">Saqlangan xaritalar yo\'q</string>
     <string name="dialog_map_manage">Xaritalarni boshqarish</string>
     <string name="dialog_select_map">Vybrať mapu</string>
     <string name="action_load">Yuklash</string>
-    <string name="action_delete">"O'chirish"</string>
+    <string name="action_delete">O\'chirish</string>
     <string name="action_view_details">Tafsilotlar</string>
     <string name="dialog_confirm_delete">Potvrdiť odstránenie</string>
     <string name="dialog_confirm_delete_message">Odstrániť mapu \"%1$s\"?</string>
@@ -37,7 +37,7 @@
     <string name="map_details_time">Vytvorené: %1$s</string>
     <string name="map_details_plane">Rovina: %1$s</string>
     <string name="map_details_plane_yes">Ha</string>
-    <string name="map_details_plane_no">"Yo'q"</string>
+    <string name="map_details_plane_no">Yo\'q</string>
     <string name="button_ok">OK</string>
     <string name="map_stats_format">KS: %1$d | BM: %2$d | Rovina: %3$s</string>
     <string name="map_stats_plane_yes">Áno</string>
@@ -78,14 +78,14 @@
     <string name="map_details_path">Cesta: %1$s</string>
     <string name="map_action_refresh">Yangilash</string>
 
-    <string name="shortcut_change_icon">"Belgini o'zgartirish"</string>
+    <string name="shortcut_change_icon">Belgini o\'zgartirish</string>
     <string name="icon_select_title">Ilova belgisi</string>
     <string name="icon_select_desc">Vyberte ikonu aplikácie.</string>
-    <string name="icon_default_name">"Texnologik ko'k"</string>
+    <string name="icon_default_name">Texnologik ko\'k</string>
     <string name="icon_red_name">Olov qizil</string>
     <string name="icon_mint_name">Shirin yalpiz</string>
     <string name="icon_in_use">Ishlatilmoqda</string>
-    <string name="icon_switched_hint">"Belgi %s ga o'zgartirildi"</string>
+    <string name="icon_switched_hint">Belgi %s ga o\'zgartirildi</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
     <string name="btn_switch_camera">Kamerani almashtirish</string>

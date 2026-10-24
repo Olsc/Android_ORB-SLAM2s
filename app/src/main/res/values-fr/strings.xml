@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='utf-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">Objet AR</string>
@@ -80,15 +80,15 @@
     <string name="map_details_path">Chemin du fichier : %1$s</string>
     <string name="map_action_refresh">Actualiser</string>
 
-    <string name="shortcut_change_icon">"Changer d'icône"</string>
-    <string name="icon_select_title">"Icône de l'application"</string>
-    <string name="icon_select_desc">"Choisissez votre icône préférée. Appuyez longuement sur l'écran d'accueil pour la modifier à tout moment."</string>
+    <string name="shortcut_change_icon">Changer d\'icône</string>
+    <string name="icon_select_title">Icône de l\'application</string>
+    <string name="icon_select_desc">Choisissez votre icône préférée. Appuyez longuement sur l\'écran d\'accueil pour la modifier à tout moment.</string>
     <string name="icon_default_name">Bleu technologique</string>
     <string name="icon_red_name">Rouge flamme</string>
     <string name="icon_mint_name">Menthe mignonne</string>
-    <string name="icon_in_use">"En cours d'utilisation"</string>
+    <string name="icon_in_use">En cours d\'utilisation</string>
     <string name="icon_switched_hint">Icône mise à jour vers %s</string>
-    <string name="icon_note">"Remarque : selon le lanceur, l'actualisation peut prendre quelques secondes."</string>
+    <string name="icon_note">Remarque : selon le lanceur, l\'actualisation peut prendre quelques secondes.</string>
 
     <string name="btn_switch_camera">Changer caméra</string>
     <string name="btn_mirror_vertical">Miroir vertical</string>

@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='utf-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR বস্তু</string>
@@ -85,7 +85,7 @@
     <string name="icon_red_name">অগ্নিশিখা ৰঙা</string>
     <string name="icon_mint_name">মিঠা পুদিনা</string>
     <string name="icon_in_use">ব্যৱহাৰত আছে</string>
-    <string name="icon_switched_hint">"আইকন %s লৈ সলনি কৰা হ'ল"</string>
+    <string name="icon_switched_hint">আইকন %s লৈ সলনি কৰা হ\'ল</string>
     <string name="icon_note">Upozornenie: Obnovenie môže chvíľu trvať.</string>
 
     <string name="btn_switch_camera">কেমেৰা সলনি কৰক</string>
