@@ -461,7 +461,6 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
         mRefLastBuildKFCount = mpMap->KeyFramesInMap();
         mRefGrid = std::move(newGrid); // 一并原子更新网格
     }
-    LOGD("BuildLoadedRefCache: 树中已缓存 %d 个点，总地图点数 = %d", (int)mRefCachedMPCount, (int)allMPs.size());
 
     // 通知后台线程参考缓存已就绪
     mSnapSeqProduced++;
@@ -1193,7 +1192,6 @@ void Tracking::Track()
         }
         else {
             if(mState == OK) {
-                LOGD("跟踪丢失！标记参考缓存失效，由后台线程异步重建以快速重定位。");
                 InvalidateRefCache(); // 避免主线程同步构建造成掉帧
             }
             mState=LOST;

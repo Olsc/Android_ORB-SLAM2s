@@ -34,13 +34,14 @@ public:
     // 设置模型实例
     void setModel(std::shared_ptr<GlbModel> model);
 
-    // 渲染一帧
+    // 渲染一帧；flipWinding 为真时交换正反面剔除（显示层变换含奇数次反射）
     void render(const float* slamModelMatrix,
                 const float* viewMatrix,
                 const float* projMatrix,
                 float scale,
                 float userRotationX,
-                float userRotationY);
+                float userRotationY,
+                bool flipWinding);
 
     // 销毁并释放 OpenGL 资源
     void destroyGL();

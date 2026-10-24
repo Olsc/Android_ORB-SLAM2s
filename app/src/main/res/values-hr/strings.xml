@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='utf-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR objekt</string>
@@ -61,8 +61,6 @@
     <string name="btn_3dof_off">Senzor: ISKLJ</string>
     <string name="btn_3dof_on">Senzor: UKLJ</string>
     <string name="hint_3dof_unavailable">Senzor nije dostupan</string>
-    <string name="hint_3dof_assisted_on">Podrška senzora omogućena (stabilizacija rotacije + zadržavanje pri gubitku)</string>
-    <string name="hint_3dof_assisted_off">Podrška senzora onemogućena, obnovljeno čisto vizualno praćenje</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 
@@ -102,14 +100,5 @@
     <string name="camera_facing_front">Prednja kamera (%1$s)</string>
     <string name="camera_facing_other">Kamera %1$s</string>
     <string name="dialog_select_camera">Odaberite kameru</string>
-
-    <string name="sensor_mode_active">Način senzora: %1$s</string>
-    <string name="sensor_mode_rotation_vector">Vektor rotacije (apsolutni)</string>
-    <string name="sensor_mode_game_rotation_vector">Vektor rotacije igre (relativni)</string>
-    <string name="sensor_mode_accel_mag">Akcelerometar + magnetometar</string>
-    <string name="sensor_mode_gyroscope">Integracija žiroskopa</string>
-    <string name="sensor_mode_none">Nema senzora orijentacije</string>
-    <string name="sensor_mode_notice_fallback">Ograničeni senzori: koristi se zamjenski izvor orijentacije; smjer može s vremenom odlutati.</string>
-    <string name="sensor_mode_notice_none">Nema dostupnog senzora orijentacije; 3DOF ostaje nepomičan.</string>
 
 </resources>

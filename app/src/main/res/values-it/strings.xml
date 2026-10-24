@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='utf-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">Oggetto AR</string>
@@ -61,8 +61,6 @@
     <string name="btn_3dof_off">Sensore: DIS</string>
     <string name="btn_3dof_on">Sensore: ATT</string>
     <string name="hint_3dof_unavailable">Sensore non disponibile</string>
-    <string name="hint_3dof_assisted_on">Assistenza sensore abilitata (anti-vibrazione + mantenimento in perdita)</string>
-    <string name="hint_3dof_assisted_off">Assistenza sensore disabilitata, ripristinato SLAM visivo</string>
 
     <string name="hint_no_camera">Nessuna fotocamera rilevata (modalità schermo nero)</string>
 
@@ -81,14 +79,14 @@
     <string name="map_action_refresh">Aggiorna</string>
 
     <string name="shortcut_change_icon">Cambia icona</string>
-    <string name="icon_select_title">"Icona dell'app"</string>
+    <string name="icon_select_title">Icona dell\'app</string>
     <string name="icon_select_desc">Scegli la tua icona preferita. Tieni premuto sulla schermata iniziale per cambiarla in qualsiasi momento.</string>
     <string name="icon_default_name">Blu tecnologico</string>
     <string name="icon_red_name">Rosso fiamma</string>
     <string name="icon_mint_name">Menta carina</string>
     <string name="icon_in_use">In uso</string>
-    <string name="icon_switched_hint">"Icona dell'app aggiornata a %s"</string>
-    <string name="icon_note">"Nota: in alcuni launcher l'aggiornamento potrebbe richiedere alcuni secondi."</string>
+    <string name="icon_switched_hint">Icona dell\'app aggiornata a %s</string>
+    <string name="icon_note">Nota: in alcuni launcher l\'aggiornamento potrebbe richiedere alcuni secondi.</string>
 
     <string name="btn_switch_camera">Cambia fotocamera</string>
     <string name="btn_mirror_vertical">Specchia verticale</string>
@@ -102,14 +100,5 @@
     <string name="camera_facing_front">Fotocamera anteriore (%1$s)</string>
     <string name="camera_facing_other">Fotocamera %1$s</string>
     <string name="dialog_select_camera">Seleziona fotocamera</string>
-
-    <string name="sensor_mode_active">Modalità sensore: %1$s</string>
-    <string name="sensor_mode_rotation_vector">Vettore di rotazione (assoluto)</string>
-    <string name="sensor_mode_game_rotation_vector">Vettore di rotazione di gioco (relativo)</string>
-    <string name="sensor_mode_accel_mag">Accelerometro + magnetometro</string>
-    <string name="sensor_mode_gyroscope">Integrazione giroscopica</string>
-    <string name="sensor_mode_none">Nessun sensore di orientamento</string>
-    <string name="sensor_mode_notice_fallback">Sensori limitati: in uso una sorgente di orientamento di riserva; la direzione può andare alla deriva nel tempo.</string>
-    <string name="sensor_mode_notice_none">Nessun sensore di orientamento disponibile; il 3DOF resta fermo.</string>
 
 </resources>

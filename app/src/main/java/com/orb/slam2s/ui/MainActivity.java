@@ -18,7 +18,6 @@ package com.orb.slam2s.ui;
 import android.app.AlertDialog;
 import android.content.ComponentCallbacks2;
 import android.content.Context;
-import android.content.pm.ActivityInfo;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.opengl.GLSurfaceView;
@@ -28,9 +27,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.text.format.Formatter;
 import android.util.Log;
-import android.view.Display;
 import android.view.MotionEvent;
-import android.view.Surface;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -58,6 +55,7 @@ import com.orb.slam2s.R;
 import com.orb.slam2s.camera.CameraPreviewView;
 import com.orb.slam2s.constant.GlobalConstant;
 import com.orb.slam2s.graphics.AspectGLSurfaceView;
+import com.orb.slam2s.graphics.DisplayCorrection;
 import com.orb.slam2s.graphics.GlbModelRenderer;
 import com.orb.slam2s.ipc.SlamIPCClient;
 import com.orb.slam2s.sensors.OrientationSensor;
@@ -78,11 +76,13 @@ import java.util.List;
 import java.util.Locale;
 
 // SLAM AR 主控制 Activity（调度相机、3D 模型渲染、3DOF 追踪、地图管理与交互控制）
-public class MainActivity extends ComponentActivity implements CameraPreviewView.FrameListener {
+public class MainActivity extends ComponentActivity
+        implements CameraPreviewView.FrameListener, CameraPreviewView.DisplayCorrectionListener {
 
     private static final String TAG = "MainActivity";
 
     private CameraPreviewView mCameraPreviewView;
+    private AspectGLSurfaceView mArObjectView;
     private boolean mIsInitFinished = false;
 
     private SlamIPCClient mSlamIPCClient;
@@ -128,7 +128,7 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
     // 虚拟摇杆
     private VirtualJoystickView mJoystickView;
 
-    // 3DOF 传感器辅助定位跟踪 (默认开启，若检测到硬件)
+    // 辅助定位跟踪 (默认开启，若检测到硬件)
     private OrientationSensor mOrientationSensor;
     private SensorFusionTracker mSensorFusionTracker;
     private boolean mIs3DofMode = false;
@@ -138,7 +138,6 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
         super.onCreate(savedInstanceState);
         Log.d(TAG, "onCreate: 初始化 SLAM 主界面");
 
-        lockCurrentOrientation();
         computeScreenResolution();
 
         setContentView(R.layout.ar_ui_content);
@@ -200,34 +199,6 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
         return dir != null ? dir : new File(getFilesDir(), "SLAM");
     }
 
-    @SuppressWarnings("deprecation")
-    private void lockCurrentOrientation() {
-        try {
-            WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
-            if (wm != null) {
-                int rotation;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    Display display = getDisplay();
-                    rotation = (display != null) ? display.getRotation() : Surface.ROTATION_90;
-                } else {
-                    rotation = wm.getDefaultDisplay().getRotation();
-                }
-
-                GlobalConstant.setDisplayRotation(rotation);
-
-                if (rotation == Surface.ROTATION_270) {
-                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
-                    Log.d(TAG, "锁定为右横屏方向 (REVERSE_LANDSCAPE)");
-                } else {
-                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                    Log.d(TAG, "锁定为左横屏方向 (LANDSCAPE)");
-                }
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "锁定方向失败: " + e.getMessage());
-        }
-    }
-
     private void initViewsAndServices() {
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -244,6 +215,7 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
         mCameraPreviewView = findViewById(R.id.my_fake_glsurface_view);
         mCameraPreviewView.setVisibility(View.VISIBLE);
         mCameraPreviewView.setFrameListener(this);
+        mCameraPreviewView.setDisplayCorrectionListener(this);
         mCameraPreviewView.setSlamIPCClient(mSlamIPCClient);
         mCameraPreviewView.init();
 
@@ -345,7 +317,7 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
                     WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
             );
 
-            // 动态避让虚拟摇杆 (left/start + bottom)
+            // 动态避让虚拟摇杆 (start + bottom)
             View joystickView = findViewById(R.id.joystick_view);
             if (joystickView != null && joystickView.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
                 ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) joystickView.getLayoutParams();
@@ -356,7 +328,7 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
                 joystickView.setLayoutParams(lp);
             }
 
-            // 动态避让右下角操作面板 (right/end + bottom)
+            // 动态避让右下角操作面板 (end + bottom)
             View actionPanel = findViewById(R.id.action_panel);
             if (actionPanel != null && actionPanel.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
                 ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) actionPanel.getLayoutParams();
@@ -527,6 +499,7 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
 
         final AspectGLSurfaceView glRootView = findViewById(R.id.ar_object_view_gles2_obj);
         glRootView.setAspectRatio(GlobalConstant.RESOLUTION_WIDTH, GlobalConstant.RESOLUTION_HEIGHT);
+        mArObjectView = glRootView;
 
         mModelRenderer = GlbModelRenderer.newInstance()
                 .setArObjectView(glRootView)
@@ -542,6 +515,25 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
                     }
                 }))
                 .init(mTouchHelper);
+
+        // 若首帧之前已得到矫正，先同步给 AR 层
+        applyDisplayCorrection(mCameraPreviewView != null ? mCameraPreviewView.getDisplayCorrection() : null);
+    }
+
+    // 应用显示层矫正：更新 AR 视图宽高比与模型投影，与预览位图、点云保持同一变换。
+    @Override
+    public void onDisplayCorrectionChanged(DisplayCorrection correction) {
+        applyDisplayCorrection(correction);
+    }
+
+    private void applyDisplayCorrection(DisplayCorrection correction) {
+        if (correction == null) return;
+        if (mArObjectView != null) {
+            mArObjectView.setAspectRatio(correction.displayWidth, correction.displayHeight);
+        }
+        if (mModelRenderer != null) {
+            mModelRenderer.setDisplayCorrection(correction);
+        }
     }
 
     @Override
@@ -758,6 +750,8 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
                     float speed = 3.0f * intensity;
                     float yawDelta = (float) Math.cos(Math.toRadians(angleDeg)) * speed;
                     float pitchDelta = -(float) Math.sin(Math.toRadians(angleDeg)) * speed;
+
+                    // 摇杆方向直接映射到模型自转：向右偏航、向上俯仰
                     mModelRenderer.addUserRotation(yawDelta, pitchDelta);
                 }
             });
@@ -765,8 +759,8 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
         }
     }
 
-    // 画面镜像控制：手动切换上下/左右镜像。
-    // 开关状态由 CameraPreviewView 自行持久化并在构造时恢复，这里只负责按钮与文案同步。
+    // 画面镜像控制：切换显示层的上下与左右镜像，
+    // 开关状态由 CameraPreviewView 持久化，这里仅同步按钮状态与文案。
     private void initMirrorControls() {
         mBtnMirrorVertical = findViewById(R.id.btn_mirror_vertical);
         mBtnMirrorHorizontal = findViewById(R.id.btn_mirror_horizontal);
@@ -932,6 +926,7 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
 
         // 检测到对应硬件：默认启动传感器辅助定位
         mIs3DofMode = true;
+        mSensorFusionTracker.setRotationDof(mOrientationSensor.getRotationDof());
         mOrientationSensor.start(this);
         mSensorFusionTracker.set3DofAssistEnabled(true);
 
@@ -972,6 +967,7 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
                 return;
             }
             mIs3DofMode = true;
+            mSensorFusionTracker.setRotationDof(mOrientationSensor.getRotationDof());
             mOrientationSensor.start(this);
             mSensorFusionTracker.set3DofAssistEnabled(true);
 
@@ -979,10 +975,7 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
                 mBtn3DofCube.setVisibility(View.VISIBLE);
                 mBtn3DofCube.setText(getString(R.string.btn_3dof_on));
             }
-            if (showToast) {
-                showSensorModeToast();
-            }
-            Log.d(TAG, "3DOF 传感器辅助定位已开启 (旋转防抖 + 丢失空间保活)");
+            Log.d(TAG, "辅助定位已开启 (旋转防抖 + 丢失空间保活)");
         } else {
             mIs3DofMode = false;
             mOrientationSensor.stop();
@@ -991,51 +984,7 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
             if (mBtn3DofCube != null) {
                 mBtn3DofCube.setText(getString(R.string.btn_3dof_off));
             }
-            if (showToast) {
-                showToast(getString(R.string.hint_3dof_assisted_off));
-            }
             Log.d(TAG, "3DOF 辅助定位已关闭，恢复纯视觉 SLAM");
-        }
-    }
-
-    // 提示当前实际使用的姿态来源，并对回退模式的局限性给出说明
-    private void showSensorModeToast() {
-        OrientationSensor.Mode mode = mOrientationSensor.getMode();
-        StringBuilder sb = new StringBuilder(getString(R.string.hint_3dof_assisted_on));
-        sb.append('\n').append(getString(R.string.sensor_mode_active, getString(getSensorModeNameRes(mode))));
-        int noticeRes = getSensorModeNoticeRes(mode);
-        if (noticeRes != 0) {
-            sb.append('\n').append(getString(noticeRes));
-        }
-        showToast(sb.toString());
-    }
-
-    private int getSensorModeNameRes(OrientationSensor.Mode mode) {
-        if (mode == null) return R.string.sensor_mode_none;
-        switch (mode) {
-            case ROTATION_VECTOR:
-                return R.string.sensor_mode_rotation_vector;
-            case GAME_ROTATION_VECTOR:
-                return R.string.sensor_mode_game_rotation_vector;
-            case ACCEL_MAG:
-                return R.string.sensor_mode_accel_mag;
-            case GYROSCOPE:
-                return R.string.sensor_mode_gyroscope;
-            default:
-                return R.string.sensor_mode_none;
-        }
-    }
-
-    private int getSensorModeNoticeRes(OrientationSensor.Mode mode) {
-        if (mode == null) return R.string.sensor_mode_notice_none;
-        switch (mode) {
-            case GAME_ROTATION_VECTOR:
-            case GYROSCOPE:
-                return R.string.sensor_mode_notice_fallback;
-            case NONE:
-                return R.string.sensor_mode_notice_none;
-            default:
-                return 0;
         }
     }
 }

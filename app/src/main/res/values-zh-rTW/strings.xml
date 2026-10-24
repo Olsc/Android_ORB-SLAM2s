@@ -59,8 +59,6 @@
     <string name="btn_3dof_off">感應器: 關</string>
     <string name="btn_3dof_on">感應器: 開</string>
     <string name="hint_3dof_unavailable">裝置缺少方向感應器</string>
-    <string name="hint_3dof_assisted_on">已開啟感應器輔助定位（旋轉防抖+丟失保活）</string>
-    <string name="hint_3dof_assisted_off">已關閉感應器輔助，恢復純視覺SLAM定位</string>
 
     <string name="hint_no_camera">未偵測到可用相機（黑畫面模式）</string>
 
@@ -98,14 +96,5 @@
     <string name="camera_facing_front">前置相機 (%1$s)</string>
     <string name="camera_facing_other">相機 %1$s</string>
     <string name="dialog_select_camera">選擇相機</string>
-
-    <string name="sensor_mode_active">感應器模式：%1$s</string>
-    <string name="sensor_mode_rotation_vector">旋轉向量（絕對姿態）</string>
-    <string name="sensor_mode_game_rotation_vector">遊戲旋轉向量（相對姿態）</string>
-    <string name="sensor_mode_accel_mag">加速度計 + 磁力計</string>
-    <string name="sensor_mode_gyroscope">陀螺儀積分</string>
-    <string name="sensor_mode_none">無可用方向感應器</string>
-    <string name="sensor_mode_notice_fallback">未偵測到理想感應器，已使用回退姿態來源，航向可能隨時間漂移。</string>
-    <string name="sensor_mode_notice_none">未偵測到可用於 3DOF 的方向感應器，將保持靜止。</string>
 
 </resources>

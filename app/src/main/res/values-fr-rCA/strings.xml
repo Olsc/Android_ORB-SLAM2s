@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='utf-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">Objet AR</string>
@@ -61,8 +61,6 @@
     <string name="btn_3dof_off">Capteur: DÉSACTIVÉ</string>
     <string name="btn_3dof_on">Capteur: ACTIVÉ</string>
     <string name="hint_3dof_unavailable">Capteur non disponible</string>
-    <string name="hint_3dof_assisted_on">Assistance capteur activée (anti-tremblement + maintien en cas de perte)</string>
-    <string name="hint_3dof_assisted_off">Assistance capteur désactivée, suivi visuel restauré</string>
 
     <string name="hint_no_camera">Aucune caméra détectée (mode écran noir)</string>
 
@@ -80,15 +78,15 @@
     <string name="map_details_path">Chemin du fichier : %1$s</string>
     <string name="map_action_refresh">Actualiser</string>
 
-    <string name="shortcut_change_icon">"Changer d'icône"</string>
-    <string name="icon_select_title">"Icône de l'application"</string>
-    <string name="icon_select_desc">"Choisissez votre icône préférée. Appuyez longuement sur l'écran d'accueil pour la modifier à tout moment."</string>
+    <string name="shortcut_change_icon">Changer d\'icône</string>
+    <string name="icon_select_title">Icône de l\'application</string>
+    <string name="icon_select_desc">Choisissez votre icône préférée. Appuyez longuement sur l\'écran d\'accueil pour la modifier à tout moment.</string>
     <string name="icon_default_name">Bleu technologique</string>
     <string name="icon_red_name">Rouge flamme</string>
     <string name="icon_mint_name">Menthe mignonne</string>
-    <string name="icon_in_use">"En cours d'utilisation"</string>
+    <string name="icon_in_use">En cours d\'utilisation</string>
     <string name="icon_switched_hint">Icône mise à jour vers %s</string>
-    <string name="icon_note">"Remarque : selon le lanceur, l'actualisation peut prendre quelques secondes."</string>
+    <string name="icon_note">Remarque : selon le lanceur, l\'actualisation peut prendre quelques secondes.</string>
 
     <string name="btn_switch_camera">Changer caméra</string>
     <string name="btn_mirror_vertical">Miroir vertical</string>
@@ -102,14 +100,5 @@
     <string name="camera_facing_front">Caméra avant (%1$s)</string>
     <string name="camera_facing_other">Caméra %1$s</string>
     <string name="dialog_select_camera">Sélectionner la caméra</string>
-
-    <string name="sensor_mode_active">Mode capteur : %1$s</string>
-    <string name="sensor_mode_rotation_vector">Vecteur de rotation (absolu)</string>
-    <string name="sensor_mode_game_rotation_vector">Vecteur de rotation de jeu (relatif)</string>
-    <string name="sensor_mode_accel_mag">Accéléromètre + magnétomètre</string>
-    <string name="sensor_mode_gyroscope">Intégration gyroscopique</string>
-    <string name="sensor_mode_none">Aucun capteur d\'orientation</string>
-    <string name="sensor_mode_notice_fallback">Capteurs limités : source d\'orientation de secours utilisée ; le cap peut dériver avec le temps.</string>
-    <string name="sensor_mode_notice_none">Aucun capteur d\'orientation disponible ; le 3DOF reste immobile.</string>
 
 </resources>

@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='utf-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR বস্তু</string>
@@ -60,8 +60,6 @@
     <string name="btn_3dof_off">সেন্সর: বন্ধ</string>
     <string name="btn_3dof_on">সেন্সর: চালু</string>
     <string name="hint_3dof_unavailable">সেন্সর উপলব্ধ নয়</string>
-    <string name="hint_3dof_assisted_on">সেন্সর সহায়তা সক্রিয় (ঘূর্ণন স্থিতিশীলতা + হারালে ধরে রাখা)</string>
-    <string name="hint_3dof_assisted_off">সেন্সর সহায়তা নিষ্ক্রিয়, বিশুদ্ধ ভিজ্যুয়াল ট্র্যাকিং পুনরুদ্ধার</string>
 
     <string name="hint_no_camera">কোনো ক্যামেরা পাওয়া যায়নি (কালো পর্দা মোড)</string>
 
@@ -100,14 +98,5 @@
     <string name="camera_facing_front">সামনের ক্যামেরা (%1$s)</string>
     <string name="camera_facing_other">ক্যামেরা %1$s</string>
     <string name="dialog_select_camera">ক্যামেরা নির্বাচন করুন</string>
-
-    <string name="sensor_mode_active">সেন্সর মোড: %1$s</string>
-    <string name="sensor_mode_rotation_vector">ঘূর্ণন ভেক্টর (পরম)</string>
-    <string name="sensor_mode_game_rotation_vector">গেম ঘূর্ণন ভেক্টর (আপেক্ষিক)</string>
-    <string name="sensor_mode_accel_mag">অ্যাক্সিলেরোমিটার + ম্যাগনেটোমিটার</string>
-    <string name="sensor_mode_gyroscope">জাইরোস্কোপ ইন্টিগ্রেশন</string>
-    <string name="sensor_mode_none">কোনো অভিমুখ সেন্সর নেই</string>
-    <string name="sensor_mode_notice_fallback">সীমিত সেন্সর: বিকল্প অভিমুখ উৎস ব্যবহৃত হচ্ছে; দিক সময়ের সাথে সরে যেতে পারে।</string>
-    <string name="sensor_mode_notice_none">কোনো অভিমুখ সেন্সর পাওয়া যায়নি; 3DOF স্থির থাকবে।</string>
 
 </resources>

@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='utf-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR-objekt</string>
@@ -60,8 +60,6 @@
     <string name="btn_3dof_off">Sensor: AV</string>
     <string name="btn_3dof_on">Sensor: PÅ</string>
     <string name="hint_3dof_unavailable">Sensorn är inte tillgänglig</string>
-    <string name="hint_3dof_assisted_on">Sensorstöd aktiverat (rotationsstabilisering + håll vid förlust)</string>
-    <string name="hint_3dof_assisted_off">Sensorstöd inaktiverat, ren visuell spårning återställd</string>
 
     <string name="hint_no_camera">Ingen kamera upptäcktes (svart skärm-läge)</string>
 
@@ -100,14 +98,5 @@
     <string name="camera_facing_front">Främre kamera (%1$s)</string>
     <string name="camera_facing_other">Kamera %1$s</string>
     <string name="dialog_select_camera">Välj kamera</string>
-
-    <string name="sensor_mode_active">Sensorläge: %1$s</string>
-    <string name="sensor_mode_rotation_vector">Rotationsvektor (absolut)</string>
-    <string name="sensor_mode_game_rotation_vector">Spelrotationsvektor (relativ)</string>
-    <string name="sensor_mode_accel_mag">Accelerometer + magnetometer</string>
-    <string name="sensor_mode_gyroscope">Gyroskopintegrering</string>
-    <string name="sensor_mode_none">Ingen riktningssensor</string>
-    <string name="sensor_mode_notice_fallback">Begränsade sensorer: reservriktningskälla används; kursen kan driva med tiden.</string>
-    <string name="sensor_mode_notice_none">Ingen riktningssensor tillgänglig; 3DOF förblir stilla.</string>
 
 </resources>

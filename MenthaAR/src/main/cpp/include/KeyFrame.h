@@ -124,6 +124,8 @@ public:
     // 启用/禁用坏标志更改
     void SetNotErase();
     void SetErase();
+    // 是否正被其它线程持有（回环线程取出后置位），持有期间不得直接释放
+    bool IsNotErase();
 
     // 设置/检查坏标志
     void SetBadFlag();

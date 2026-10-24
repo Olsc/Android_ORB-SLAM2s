@@ -59,8 +59,6 @@
     <string name="btn_3dof_off">传感器: 关</string>
     <string name="btn_3dof_on">传感器: 开</string>
     <string name="hint_3dof_unavailable">设备缺少方向传感器</string>
-    <string name="hint_3dof_assisted_on">已开启传感器辅助定位（旋转防抖+丢失保活）</string>
-    <string name="hint_3dof_assisted_off">已关闭传感器辅助，恢复纯视觉SLAM定位</string>
 
     <string name="hint_no_camera">未检测到可用相机（黑屏模式）</string>
 
@@ -98,14 +96,5 @@
     <string name="camera_facing_front">前置相机 (%1$s)</string>
     <string name="camera_facing_other">相机 %1$s</string>
     <string name="dialog_select_camera">选择相机</string>
-
-    <string name="sensor_mode_active">传感器模式：%1$s</string>
-    <string name="sensor_mode_rotation_vector">旋转矢量（绝对姿态）</string>
-    <string name="sensor_mode_game_rotation_vector">游戏旋转矢量（相对姿态）</string>
-    <string name="sensor_mode_accel_mag">加速度计 + 磁力计</string>
-    <string name="sensor_mode_gyroscope">陀螺仪积分</string>
-    <string name="sensor_mode_none">无可用方向传感器</string>
-    <string name="sensor_mode_notice_fallback">未检测到理想传感器，已使用回退姿态来源，航向可能随时间漂移。</string>
-    <string name="sensor_mode_notice_none">未检测到可用于 3DOF 的方向传感器，将保持静止。</string>
 
 </resources>

@@ -126,7 +126,7 @@ JNIEXPORT void JNICALL
 Java_com_orb_slam2s_graphics_GlbModelRenderer_nativeRender(
         JNIEnv* env, jobject thiz, jlong handle,
         jfloatArray modelM, jfloatArray viewM, jfloatArray projM,
-        jfloat scale, jfloat rotX, jfloat rotY) {
+        jfloat scale, jfloat rotX, jfloat rotY, jboolean flipWinding) {
     auto* ctx = reinterpret_cast<GlbContext*>(handle);
     if (!ctx) return;
 
@@ -142,7 +142,7 @@ Java_com_orb_slam2s_graphics_GlbModelRenderer_nativeRender(
     jfloat* vPtr = env->GetFloatArrayElements(viewM, nullptr);
     jfloat* pPtr = env->GetFloatArrayElements(projM, nullptr);
 
-    ctx->renderer->render(mPtr, vPtr, pPtr, scale, rotX, rotY);
+    ctx->renderer->render(mPtr, vPtr, pPtr, scale, rotX, rotY, flipWinding != JNI_FALSE);
 
     env->ReleaseFloatArrayElements(modelM, mPtr, JNI_ABORT);
     env->ReleaseFloatArrayElements(viewM, vPtr, JNI_ABORT);

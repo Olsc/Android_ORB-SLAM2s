@@ -18,34 +18,39 @@ package com.orb.slam2s.util;
 import android.opengl.Matrix;
 import android.util.Log;
 
-// 姿态传感器融合跟踪器：3DOF 辅助关闭时透传视觉 SLAM 位姿；
-// 开启时正常跟踪透传视觉，跟踪丢失则平滑切换到传感器保持，并按地图切换重建兜底状态。
+// 姿态传感器融合跟踪器：视觉良好时透传 SLAM 位姿，跟踪丢失时视图直接跟随传感器姿态。
 public class SensorFusionTracker {
     private static final String TAG = "SensorFusionTracker";
 
     private boolean m3DofAssistEnabled = false; // 初始状态由宿主根据传感器硬件探测结果决定 (默认启动)
 
-    // 传感器校准对齐偏置矩阵 R_offset: R_view = R_sensor * R_offset
+    // 相机图像帧相对设备帧的安装夹角（绕光轴），由 rotationDegrees 决定
+    private final float[] mCameraFrameRot = new float[16];
+    private int mCameraFrameDegrees = -1;
+
+    // 冻结偏移：R_view = M(t) · R_offset，M(t) = 安装夹角 · R_sensor(t)ᵀ
     private final float[] mAlignmentOffset = new float[16];
     private boolean mHasAlignment = false;
 
     // 缓存最后一次视觉有效跟踪时的状态 (用于 Lost-Hold 兜底)
     private final float[] mLastValidModel = new float[16];
+    private final float[] mLastValidView = new float[16];
     private final float[] mLastValidProj = new float[16];
     private final float[] mLastValidTranslation = new float[3]; // [tx, ty, tz]
     private int mLastValidMapId = -1;
     private boolean mHasValidState = false;
+    private boolean mHasLastPose = false;
+    private boolean mHoldUnavailableLogged = false;
 
     // 矩阵计算复用缓存，避免高频渲染循环中GC开销
     private final float[] mTempSensorTrans = new float[16];
+    private final float[] mTempSensorView = new float[16];
     private final float[] mTempOffsetInst = new float[16];
     private final float[] mTempFusedRot = new float[16];
     private final float[] mTempPureRot = new float[16];
 
-    // 在线自适应平滑系数 (alpha 越小越平滑，主要依靠传感器防抖，低频向视觉收敛)
-    private static final float ALIGN_SMOOTH_FACTOR = 0.06f;
-
     public SensorFusionTracker() {
+        Matrix.setIdentityM(mCameraFrameRot, 0);
         Matrix.setIdentityM(mAlignmentOffset, 0);
         Matrix.setIdentityM(mLastValidModel, 0);
         Matrix.setIdentityM(mLastValidProj, 0);
@@ -55,16 +60,34 @@ public class SensorFusionTracker {
     public synchronized void set3DofAssistEnabled(boolean enabled) {
         if (this.m3DofAssistEnabled != enabled) {
             this.m3DofAssistEnabled = enabled;
-            Log.i(TAG, "3DOF 传感器辅助定位状态切换为: " + (enabled ? "开启" : "关闭"));
+            Log.i(TAG, "辅助定位状态切换为: " + (enabled ? "开启" : "关闭"));
             if (!enabled) {
-                // 关闭时重置对齐与保活状态
                 mHasAlignment = false;
                 mHasValidState = false;
+                mHasLastPose = false;
             }
         }
     }
 
-    // 每帧融合与解耦计算：透传视觉位姿或在丢失时切换 3DOF 保持，返回是否绘制 AR 物体。
+    // 记录传感器可观测自由度，3 含航向，2 仅俯仰与滚转，仅用于诊断日志
+    public synchronized void setRotationDof(int dof) {
+        Log.i(TAG, "传感器姿态自由度: " + dof);
+    }
+
+    // 设置相机帧与设备帧的安装夹角，取值来自 CameraX 的 rotationDegrees
+    public synchronized void setCameraFrameRotation(int rotationDegrees) {
+        final int degrees = ((rotationDegrees % 360) + 360) % 360;
+        if (degrees == mCameraFrameDegrees) {
+            return;
+        }
+        mCameraFrameDegrees = degrees;
+        buildCameraFrameRotation(degrees);
+        mHasAlignment = false;
+        mHasValidState = false;
+        Log.i(TAG, "相机图像帧相对设备帧旋转: " + degrees);
+    }
+
+    // 每帧融合与解耦计算：透传视觉位姿或在丢失时视图跟随传感器，返回是否绘制 AR 物体。
     // 入参为绘制标志、跟踪状态、地图 ID、原始 MVP、传感器旋转矩阵与就绪标志，输出 Model/View/Proj 矩阵。
     public synchronized boolean update(boolean rawDrawFlag, int trackingState, int activeMapId,
                                       float[] rawMvp48, float[] sensorRot, boolean isSensorReady,
@@ -91,11 +114,10 @@ public class SensorFusionTracker {
             return false;
         }
 
-        // 开启了 3DOF 传感器辅助时的逻辑：
-
-        // 1. 多地图识别与切换检测：如果检测到地图 ID 发生变化，重置旧地图的兜底状态（绝不跨地图保活）
+        // 1. 多地图识别：仅在正常跟踪时确认切换才丢弃保持状态；
+        //    丢失期间地图 ID 变化多为自动重置或子地图建立，不应打断保活
         if (activeMapId != mLastValidMapId) {
-            if (mHasValidState) {
+            if (mLastValidMapId >= 0 && isVisionTrackingOk && mHasValidState) {
                 Log.i(TAG, "多地图切换确认: 退出旧地图 " + mLastValidMapId + " 的保持状态 (当前地图 " + activeMapId + ")");
                 mHasAlignment = false;
                 mHasValidState = false;
@@ -103,10 +125,10 @@ public class SensorFusionTracker {
             mLastValidMapId = activeMapId;
         }
 
-        // 2. 情况 A：视觉 SLAM 正在正常跟踪 (isVisionTrackingOk == true)
+        // 2. 情况 A：视觉 SLAM 正在正常跟踪，透传视觉位姿并刷新冻结偏移
         if (isVisionTrackingOk) {
-            // 缓存最后一次有效的 Model 和 Proj 矩阵
             System.arraycopy(rawMvp48, 0, mLastValidModel, 0, 16);
+            System.arraycopy(rawMvp48, vViewOffset, mLastValidView, 0, 16);
             System.arraycopy(rawMvp48, vProjOffset, mLastValidProj, 0, 16);
 
             // 提取视觉 View 矩阵的平移 [tx, ty, tz]
@@ -121,39 +143,33 @@ public class SensorFusionTracker {
             mTempPureRot[14] = 0.0f;
             mTempPureRot[15] = 1.0f;
 
-            if (isSensorReady && sensorRot != null) {
-                // 计算当前瞬时对齐偏移: R_offset = R_sensor^T * R_view
-                Matrix.transposeM(mTempSensorTrans, 0, sensorRot, 0);
+            final boolean hasSensor = (isSensorReady && sensorRot != null);
+            if (hasSensor) {
+                buildSensorView(sensorRot);
+                Matrix.transposeM(mTempSensorTrans, 0, mTempSensorView, 0);
                 Matrix.multiplyMM(mTempOffsetInst, 0, mTempSensorTrans, 0, mTempPureRot, 0);
-
-                if (!mHasAlignment) {
-                    // 初次对齐建立基准
-                    System.arraycopy(mTempOffsetInst, 0, mAlignmentOffset, 0, 16);
-                    mHasAlignment = true;
-                    Log.d(TAG, "视觉与传感器完成初次基准对齐 (MapId=" + activeMapId + ")");
-                } else {
-                    // 在线平滑滤波更新 R_offset (低通消除传感器慢漂移，为丢失时兜底做准备)
-                    smoothMatrix(mAlignmentOffset, mTempOffsetInst);
-                }
+                System.arraycopy(mTempOffsetInst, 0, mAlignmentOffset, 0, 16);
+                mHasAlignment = true;
             }
+            mHasValidState = hasSensor;
+            mHasLastPose = true;
+            mHoldUnavailableLogged = false;
 
             // 视觉稳定跟踪时严格使用视觉 SLAM 位姿，避免传感器时延与微抖
             System.arraycopy(rawMvp48, 0, outModel, 0, 16);
             System.arraycopy(rawMvp48, vViewOffset, outView, 0, 16);
             System.arraycopy(rawMvp48, vProjOffset, outProj, 0, 16);
-            mHasValidState = true;
             return true;
         }
 
-        // 3. 情况 B：视觉 SLAM 突然丢失跟踪 (isVisionTrackingOk == false)
-        // 触发纯 3DOF 空间保活兜底机制 (Lost-Hold)
+        // 3. 情况 B：视觉 SLAM 丢失跟踪，视图旋转直接跟随传感器姿态 (Lost-Hold)
         if (mHasValidState && mHasAlignment && isSensorReady && sensorRot != null) {
-            // 保持最后的模型矩阵与投影矩阵
             System.arraycopy(mLastValidModel, 0, outModel, 0, 16);
             System.arraycopy(mLastValidProj, 0, outProj, 0, 16);
 
-            // View 矩阵：平移保持丢失前的估计，旋转随设备传感器实时转动
-            Matrix.multiplyMM(mTempFusedRot, 0, sensorRot, 0, mAlignmentOffset, 0);
+            // View 矩阵：旋转由传感器姿态换算到相机帧后叠加冻结偏移，平移沿用丢失前的估计
+            buildSensorView(sensorRot);
+            Matrix.multiplyMM(mTempFusedRot, 0, mTempSensorView, 0, mAlignmentOffset, 0);
             System.arraycopy(mTempFusedRot, 0, outView, 0, 16);
             outView[12] = mLastValidTranslation[0];
             outView[13] = mLastValidTranslation[1];
@@ -161,52 +177,42 @@ public class SensorFusionTracker {
             outView[15] = 1.0f;
 
             // 保活模式下强制绘制，确保 AR 物体不闪退
+            mHoldUnavailableLogged = false;
             return true;
         }
 
-        // 既无当前视觉也无历史对齐基准时，无法绘制
+        // 兜底：曾经有过有效位姿时改用冻结姿态继续绘制，避免物体闪退
+        if (mHasLastPose) {
+            System.arraycopy(mLastValidModel, 0, outModel, 0, 16);
+            System.arraycopy(mLastValidProj, 0, outProj, 0, 16);
+            System.arraycopy(mLastValidView, 0, outView, 0, 16);
+            if (!mHoldUnavailableLogged) {
+                mHoldUnavailableLogged = true;
+                Log.w(TAG, "保持态不可用，改用冻结姿态: 基准=" + mHasValidState + " 对齐=" + mHasAlignment
+                        + " 传感器就绪=" + isSensorReady + " 地图=" + activeMapId);
+            }
+            return true;
+        }
+
+        // 从未获得过有效位姿，无法绘制
         return false;
     }
 
-    // 对旋转矩阵进行一阶低通平滑并做 Gram-Schmidt 正交规范化
-    private void smoothMatrix(float[] target, float[] source) {
-        for (int i = 0; i < 16; i++) {
-            target[i] = (1.0f - ALIGN_SMOOTH_FACTOR) * target[i] + ALIGN_SMOOTH_FACTOR * source[i];
-        }
-
-        // 正交规范化前三列 (X, Y, Z 轴)
-        normalizeVector(target, 0); // X 列单位化
-
-        // Y 列减去其在 X 列上的投影
-        float dotXY = target[0] * target[4] + target[1] * target[5] + target[2] * target[6];
-        target[4] -= dotXY * target[0];
-        target[5] -= dotXY * target[1];
-        target[6] -= dotXY * target[2];
-        normalizeVector(target, 4); // Y 列单位化
-
-        // Z 列 = X 列 * Y 列 (叉乘保证右手正交系)
-        target[8]  = target[1] * target[6] - target[2] * target[5];
-        target[9]  = target[2] * target[4] - target[0] * target[6];
-        target[10] = target[0] * target[5] - target[1] * target[4];
-        normalizeVector(target, 8);
-
-        // 齐次第 4 列与第 4 行清理
-        target[3] = 0.0f;
-        target[7] = 0.0f;
-        target[11] = 0.0f;
-        target[12] = 0.0f;
-        target[13] = 0.0f;
-        target[14] = 0.0f;
-        target[15] = 1.0f;
+    // 传感器姿态换算到相机图像帧：M = 安装夹角 · R_sensorᵀ
+    private void buildSensorView(float[] sensorRot) {
+        Matrix.transposeM(mTempSensorTrans, 0, sensorRot, 0);
+        Matrix.multiplyMM(mTempSensorView, 0, mCameraFrameRot, 0, mTempSensorTrans, 0);
     }
 
-    private void normalizeVector(float[] m, int offset) {
-        float lenSq = m[offset] * m[offset] + m[offset + 1] * m[offset + 1] + m[offset + 2] * m[offset + 2];
-        if (lenSq > 1e-8f) {
-            float invLen = 1.0f / (float) Math.sqrt(lenSq);
-            m[offset] *= invLen;
-            m[offset + 1] *= invLen;
-            m[offset + 2] *= invLen;
-        }
+    // 绕光轴构造安装夹角，列主序；rotationDegrees 为顺时针角度，相机帧手性相反故取负
+    private void buildCameraFrameRotation(int degrees) {
+        final double rad = Math.toRadians(-degrees);
+        final float c = (float) Math.cos(rad);
+        final float s = (float) Math.sin(rad);
+        Matrix.setIdentityM(mCameraFrameRot, 0);
+        mCameraFrameRot[0] = c;
+        mCameraFrameRot[1] = s;
+        mCameraFrameRot[4] = -s;
+        mCameraFrameRot[5] = c;
     }
 }

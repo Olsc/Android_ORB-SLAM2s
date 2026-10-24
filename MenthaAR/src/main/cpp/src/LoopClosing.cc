@@ -695,7 +695,9 @@ void LoopClosing::ResetIfRequested()
 void LoopClosing::WaitForResetComplete()
 {
     unique_lock<mutex> lock(mMutexResetComplete);
-    mCvResetComplete.wait_for(lock, std::chrono::milliseconds(ORB_SLAM2::RESET_COMPLETE_TIMEOUT_MS), [this]{ return mbResetComplete; });
+    bool bComplete = mCvResetComplete.wait_for(lock, std::chrono::milliseconds(ORB_SLAM2::RESET_COMPLETE_TIMEOUT_MS), [this]{ return mbResetComplete; });
+    if(!bComplete)
+        LOGE("回环线程重置超时，本轮地图对象将被延后释放");
     mbResetComplete = false;
 }
 

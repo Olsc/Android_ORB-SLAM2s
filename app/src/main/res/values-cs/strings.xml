@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='utf-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR objekt</string>
@@ -62,8 +62,6 @@
     <string name="btn_3dof_off">Senzor: VYP</string>
     <string name="btn_3dof_on">Senzor: ZAP</string>
     <string name="hint_3dof_unavailable">Senzor není k dispozici</string>
-    <string name="hint_3dof_assisted_on">Podpora senzoru zapnuta (stabilizace rotace + podržení při ztrátě)</string>
-    <string name="hint_3dof_assisted_off">Podpora senzoru vypnuta, obnoveno čistě vizuální sledování</string>
 
     <string name="hint_no_camera">Nebyla detekována žádná kamera (režim černé obrazovky)</string>
 
@@ -104,14 +102,5 @@
     <string name="camera_facing_front">Přední kamera (%1$s)</string>
     <string name="camera_facing_other">Kamera %1$s</string>
     <string name="dialog_select_camera">Vyberte kameru</string>
-
-    <string name="sensor_mode_active">Režim senzoru: %1$s</string>
-    <string name="sensor_mode_rotation_vector">Rotační vektor (absolutní)</string>
-    <string name="sensor_mode_game_rotation_vector">Herní rotační vektor (relativní)</string>
-    <string name="sensor_mode_accel_mag">Akcelerometr + magnetometr</string>
-    <string name="sensor_mode_gyroscope">Integrace gyroskopu</string>
-    <string name="sensor_mode_none">Žádný senzor orientace</string>
-    <string name="sensor_mode_notice_fallback">Omezené senzory: používá se záložní zdroj orientace; kurz se může časem posouvat.</string>
-    <string name="sensor_mode_notice_none">Není k dispozici žádný senzor orientace; 3DOF zůstane nehybné.</string>
 
 </resources>

@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='utf-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR اشیاء</string>
@@ -60,8 +60,6 @@
     <string name="btn_3dof_off">سینسر: بند</string>
     <string name="btn_3dof_on">سینسر: آن</string>
     <string name="hint_3dof_unavailable">سینسر دستیاب نہیں</string>
-    <string name="hint_3dof_assisted_on">سینسر معاونت فعال (گردش استحکام + گم ہونے پر برقرار رکھنا)</string>
-    <string name="hint_3dof_assisted_off">سینسر معاونت غیر فعال، خالص بصری ٹریکنگ بحال</string>
 
     <string name="hint_no_camera">کوئی کیمرہ نہیں ملا (بلیک اسکرین موڈ)</string>
 
@@ -100,14 +98,5 @@
     <string name="camera_facing_front">اگلا کیمرہ (%1$s)</string>
     <string name="camera_facing_other">کیمرہ %1$s</string>
     <string name="dialog_select_camera">کیمرہ منتخب کریں</string>
-
-    <string name="sensor_mode_active">سینسر موڈ: %1$s</string>
-    <string name="sensor_mode_rotation_vector">گردشی ویکٹر (مطلق)</string>
-    <string name="sensor_mode_game_rotation_vector">گیم گردشی ویکٹر (اضافی)</string>
-    <string name="sensor_mode_accel_mag">ایکسیلیرومیٹر + میگنیٹومیٹر</string>
-    <string name="sensor_mode_gyroscope">جائروسکوپ انضمام</string>
-    <string name="sensor_mode_none">کوئی سمت سینسر نہیں</string>
-    <string name="sensor_mode_notice_fallback">محدود سینسر: متبادل سمت ماخذ استعمال میں؛ سمت وقت کے ساتھ سرک سکتی ہے۔</string>
-    <string name="sensor_mode_notice_none">کوئی سمت سینسر دستیاب نہیں؛ 3DOF ساکن رہے گا۔</string>
 
 </resources>

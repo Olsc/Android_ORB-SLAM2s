@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='utf-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR물체</string>
@@ -59,8 +59,6 @@
     <string name="btn_3dof_off">센서: 꺼짐</string>
     <string name="btn_3dof_on">센서: 켜짐</string>
     <string name="hint_3dof_unavailable">센서를 사용할 수 없습니다</string>
-    <string name="hint_3dof_assisted_on">센서 보조 추적 활성화 (회전 흔들림 방지 + 분실 유지)</string>
-    <string name="hint_3dof_assisted_off">센서 보조 끄기, 순수 비전 추적으로 복원</string>
 
     <string name="hint_no_camera">리용 가능한 카메라가 감지되지 않았습니다 (검은 화면 방식)</string>
 
@@ -98,14 +96,5 @@
     <string name="camera_facing_front">전면 카메라 (%1$s)</string>
     <string name="camera_facing_other">카메라 %1$s</string>
     <string name="dialog_select_camera">카메라 선택</string>
-
-    <string name="sensor_mode_active">센서 모드: %1$s</string>
-    <string name="sensor_mode_rotation_vector">회전 벡터(절대)</string>
-    <string name="sensor_mode_game_rotation_vector">게임 회전 벡터(상대)</string>
-    <string name="sensor_mode_accel_mag">가속도계 + 자력계</string>
-    <string name="sensor_mode_gyroscope">자이로스코프 적분</string>
-    <string name="sensor_mode_none">방향 센서 없음</string>
-    <string name="sensor_mode_notice_fallback">센서 제한: 대체 자세 소스를 사용 중이며 방위가 시간이 지나면 드리프트될 수 있습니다.</string>
-    <string name="sensor_mode_notice_none">사용 가능한 방향 센서가 없습니다. 3DOF는 정지 상태로 유지됩니다.</string>
 
 </resources>

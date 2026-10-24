@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='utf-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">شیء AR</string>
@@ -60,8 +60,6 @@
     <string name="btn_3dof_off">حسگر: خاموش</string>
     <string name="btn_3dof_on">حسگر: روشن</string>
     <string name="hint_3dof_unavailable">حسگر در دسترس نیست</string>
-    <string name="hint_3dof_assisted_on">کمک حسگر فعال شد (تثبیت چرخش + حفظ هنگام گم شدن)</string>
-    <string name="hint_3dof_assisted_off">کمک حسگر غیرفعال شد، ردیابی بصری خالص بازگردانده شد</string>
 
     <string name="hint_no_camera">دوربینی پیدا نشد (حالت صفحه سیاه)</string>
 
@@ -100,14 +98,5 @@
     <string name="camera_facing_front">دوربین جلو (%1$s)</string>
     <string name="camera_facing_other">دوربین %1$s</string>
     <string name="dialog_select_camera">انتخاب دوربین</string>
-
-    <string name="sensor_mode_active">حالت حسگر: %1$s</string>
-    <string name="sensor_mode_rotation_vector">بردار چرخش (مطلق)</string>
-    <string name="sensor_mode_game_rotation_vector">بردار چرخش بازی (نسبی)</string>
-    <string name="sensor_mode_accel_mag">شتاب‌سنج + مغناطیس‌سنج</string>
-    <string name="sensor_mode_gyroscope">ادغام ژیروسکوپ</string>
-    <string name="sensor_mode_none">حسگر جهت‌یابی وجود ندارد</string>
-    <string name="sensor_mode_notice_fallback">حسگرهای محدود: از منبع جهت‌یابی جایگزین استفاده می‌شود؛ ممکن است جهت در طول زمان منحرف شود.</string>
-    <string name="sensor_mode_notice_none">حسگر جهت‌یابی در دسترس نیست؛ 3DOF ثابت می‌ماند.</string>
 
 </resources>

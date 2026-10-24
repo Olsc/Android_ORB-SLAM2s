@@ -73,6 +73,10 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
     private float userRotationY = 0.0f;
     private float userRotationX = 0.0f;
 
+    // 显示层几何矫正（相机画面方向 + 用户镜像）：只作用于绘制，不影响 SLAM 输出
+    private volatile DisplayCorrection displayCorrection;
+    private final float[] correctedProjection = new float[16];
+
     public interface DrawStateListener {
         void onDrawStateChanged(boolean shouldDraw);
     }
@@ -126,6 +130,16 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
 
     public GlbModelRenderer setDrawStateListener(DrawStateListener listener) {
         this.drawStateListener = listener;
+        return this;
+    }
+
+    // 设置显示层矫正，由 CameraPreviewView 在方向、镜像或画面尺寸变化时调用；
+    // 同时把相机帧与设备帧的安装夹角交给融合层，避免上下与左右串轴。
+    public GlbModelRenderer setDisplayCorrection(DisplayCorrection correction) {
+        this.displayCorrection = correction;
+        if (correction != null && sensorFusionTracker != null) {
+            sensorFusionTracker.setCameraFrameRotation(correction.rotationDegrees);
+        }
         return this;
     }
 
@@ -249,8 +263,20 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
 
         if (shouldDraw && matricesReady && isModelLoaded && nativeHandle != 0) {
             float finalScale = initSize * currentScaleFactor * autoScaleFactor;
-            nativeRender(nativeHandle, modelMatrix, viewMatrix, projectionMatrix,
-                    finalScale, userRotationX, userRotationY);
+
+            // 将显示层矫正（旋转与镜像）左乘到投影矩阵，与预览位图、点云使用同一变换以保证对齐；
+            // 含奇数次反射时三角形绕序翻转，同时交换正反面剔除。
+            final DisplayCorrection correction = displayCorrection;
+            float[] proj = projectionMatrix;
+            boolean flipWinding = false;
+            if (correction != null && !correction.isIdentity()) {
+                Matrix.multiplyMM(correctedProjection, 0, correction.getNdcTransform(), 0, projectionMatrix, 0);
+                proj = correctedProjection;
+                flipWinding = correction.flipWinding;
+            }
+
+            nativeRender(nativeHandle, modelMatrix, viewMatrix, proj,
+                    finalScale, userRotationX, userRotationY, flipWinding);
         }
     }
 
@@ -324,6 +350,6 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
     private native boolean nativeInitGL(long handle);
     private native void nativeResize(long handle, int width, int height);
     private native void nativeRender(long handle, float[] modelM, float[] viewM, float[] projM,
-                                     float scale, float rotX, float rotY);
+                                     float scale, float rotX, float rotY, boolean flipWinding);
     private native void nativeDestroy(long handle);
 }

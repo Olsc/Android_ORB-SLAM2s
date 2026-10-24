@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='utf-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">MenthaAR</string>
     <string name="btn_ar_object">AR වස්තුව</string>
@@ -60,8 +60,6 @@
     <string name="btn_3dof_off">සංවේදකය: ක්‍රියාවිරහිත</string>
     <string name="btn_3dof_on">සංවේදකය: ක්‍රියාත්මක</string>
     <string name="hint_3dof_unavailable">සංවේදකය නොමැත</string>
-    <string name="hint_3dof_assisted_on">සංවේදක සහාය සක්‍රීයයි (භ්‍රමණ ස්ථාවරත්වය + නැති වූ විට රඳවා තබා ගැනීම)</string>
-    <string name="hint_3dof_assisted_off">සංවේදක සහාය අක්‍රීයයි, පිරිසිදු දෘශ්‍ය ට්‍රැක් කිරීම නැවත පිහිටුවන ලදී</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 
@@ -100,14 +98,5 @@
     <string name="camera_facing_front">ඉදිරිපස කැමරාව (%1$s)</string>
     <string name="camera_facing_other">කැමරාව %1$s</string>
     <string name="dialog_select_camera">කැමරාව තෝරන්න</string>
-
-    <string name="sensor_mode_active">සංවේදක මාදිලිය: %1$s</string>
-    <string name="sensor_mode_rotation_vector">භ්‍රමණ දෛශිකය (නිරපේක්ෂ)</string>
-    <string name="sensor_mode_game_rotation_vector">ක්‍රීඩා භ්‍රමණ දෛශිකය (සාපේක්ෂ)</string>
-    <string name="sensor_mode_accel_mag">ත්වරණමානය + චුම්බකමානය</string>
-    <string name="sensor_mode_gyroscope">ජයිරෝස්කෝප් ඒකාබද්ධ කිරීම</string>
-    <string name="sensor_mode_none">දිශා සංවේදකයක් නැත</string>
-    <string name="sensor_mode_notice_fallback">සීමිත සංවේදක: විකල්ප දිශා මූලාශ්‍රයක් භාවිතයේ; දිශාව කාලයත් සමඟ ලිස්සා යා හැක.</string>
-    <string name="sensor_mode_notice_none">දිශා සංවේදකයක් නොමැත; 3DOF නිශ්චලව පවතී.</string>
 
 </resources>

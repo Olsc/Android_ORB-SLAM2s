@@ -51,6 +51,7 @@ import androidx.lifecycle.LifecycleOwner;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.orb.slam2s.constant.GlobalConstant;
 import com.orb.slam2s.graphics.AspectGLSurfaceView;
+import com.orb.slam2s.graphics.DisplayCorrection;
 import com.orb.slam2s.graphics.GLPassThroughRenderer;
 import com.orb.slam2s.graphics.GLPointCloudRenderer;
 import com.orb.slam2s.graphics.GLUtils;
@@ -100,13 +101,19 @@ public class CameraPreviewView extends AspectGLSurfaceView {
     private byte[][] mRgbaBuffers;    // 相机 RGBA 帧双缓冲
     private int mSendPing;            // 当前发送缓冲索引 (0/1)
     private int[] mCachePixels;       // 预览位图像素数组
+    private boolean mPortraitFrameWarned;
 
-    // 画面镜像开关（手动切换，同时作用于预览与送往 SLAM 的灰度帧；状态持久化，下次启动自动恢复）
+    // 画面镜像开关，仅作用于显示端并持久化，下次启动自动恢复；
+    // 送往 SLAM 的灰度帧始终是相机原始像素，因此镜像不改变地图坐标系与 MenthaAR 输出。
     private volatile boolean mMirrorVertical;
     private volatile boolean mMirrorHorizontal;
     private static final String PREFS_DISPLAY = "camera_display_settings";
     private static final String PREF_MIRROR_VERTICAL = "mirror_vertical";
     private static final String PREF_MIRROR_HORIZONTAL = "mirror_horizontal";
+
+    // 当前生效的显示层矫正（方向 + 镜像），由相机帧的 rotationDegrees 自动推导
+    private volatile DisplayCorrection mDisplayCorrection;
+    private volatile DisplayCorrectionListener mDisplayCorrectionListener;
 
     private GLPassThroughRenderer mPassThroughRenderer;
     private GLPointCloudRenderer mPointCloudRenderer;
@@ -115,6 +122,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
     private final float[] mPointCloudBuffer = new float[SharedMemoryBuffer.POINTCLOUD_MAX_BYTES / 4];
     private final float[] mTempMvp = new float[48];
     private final float[] mVPMatrix = new float[16];
+    private final float[] mDisplayVPMatrix = new float[16];
 
     private final Context mContext;
     private SlamIPCClient mSlamIPCClient;
@@ -128,6 +136,11 @@ public class CameraPreviewView extends AspectGLSurfaceView {
         void onCameraStopped();
         void onCameraFrame();
         default void onCameraUnavailable(int cameraCount) {}
+    }
+
+    // 显示层几何（方向/镜像/画面尺寸）变化回调：供 AR 渲染层做同样的矫正
+    public interface DisplayCorrectionListener {
+        void onDisplayCorrectionChanged(DisplayCorrection correction);
     }
 
     public static class CameraSwitchResult {
@@ -167,11 +180,20 @@ public class CameraPreviewView extends AspectGLSurfaceView {
         this.mSlamIPCClient = client;
     }
 
+    public void setDisplayCorrectionListener(DisplayCorrectionListener listener) {
+        this.mDisplayCorrectionListener = listener;
+    }
+
+    // 当前生效的显示层矫正；首帧到达前为 null
+    public DisplayCorrection getDisplayCorrection() {
+        return mDisplayCorrection;
+    }
+
     public void setFrameListener(FrameListener listener) {
         this.mFrameListener = listener;
     }
 
-    // 设置上下镜像（垂直翻转），可随时切换，下一帧生效，并保存到本地配置
+    // 设置上下镜像，下一帧生效并持久化；只影响显示端，不改变 SLAM 输入
     public void setMirrorVertical(boolean enabled) {
         mMirrorVertical = enabled;
         mContext.getSharedPreferences(PREFS_DISPLAY, Context.MODE_PRIVATE)
@@ -182,7 +204,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
         return mMirrorVertical;
     }
 
-    // 设置左右镜像（水平翻转），可随时切换，下一帧生效，并保存到本地配置
+    // 设置左右镜像，下一帧生效并持久化；只影响显示端，不改变 SLAM 输入
     public void setMirrorHorizontal(boolean enabled) {
         mMirrorHorizontal = enabled;
         mContext.getSharedPreferences(PREFS_DISPLAY, Context.MODE_PRIVATE)
@@ -191,6 +213,35 @@ public class CameraPreviewView extends AspectGLSurfaceView {
 
     public boolean isMirrorHorizontal() {
         return mMirrorHorizontal;
+    }
+
+    // 按显示方向尺寸准备预览位图（90/270 矫正后长宽互换，需要重建）
+    // 调用时必须已持有 mSyncLock，保证 GL 线程不会正在上传旧位图
+    private void ensureCacheBitmap(int width, int height) {
+        if (mCacheBitmap != null && !mCacheBitmap.isRecycled()
+                && mCacheBitmap.getWidth() == width && mCacheBitmap.getHeight() == height) {
+            return;
+        }
+        Bitmap old = mCacheBitmap;
+        mCacheBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        mCacheBitmap.eraseColor(0xFF000000);
+        if (old != null && !old.isRecycled()) {
+            old.recycle();
+        }
+        Log.i(TAG, "预览位图按显示方向重建: " + width + "x" + height);
+    }
+
+    // 显示几何发生变化（方向/镜像/真实帧尺寸）时的低频通知：
+    // 更新本 View 的宽高比，并通知 AR 渲染层同步变换
+    private void postDisplayCorrection(final DisplayCorrection correction) {
+        post(() -> {
+            setAspectRatio(correction.displayWidth, correction.displayHeight);
+            Log.i(TAG, "显示层矫正生效: " + correction);
+            DisplayCorrectionListener listener = mDisplayCorrectionListener;
+            if (listener != null) {
+                listener.onDisplayCorrectionChanged(correction);
+            }
+        });
     }
 
     public void requestPlaneDetection() {
@@ -364,36 +415,68 @@ public class CameraPreviewView extends AspectGLSurfaceView {
                                 }
                                 byte[] yBuf = mYuvSendBuffers[mSendPing];
 
-                                final boolean mirrorV = mMirrorVertical;
-                                final boolean mirrorH = mMirrorHorizontal;
+                                // SLAM 内参按横向底图标定，出现竖向帧时提示，便于定位异常机型
+                                if (w < h && !mPortraitFrameWarned) {
+                                    mPortraitFrameWarned = true;
+                                    Log.w(TAG, "相机帧为竖向尺寸 " + w + "x" + h + "，SLAM 内参按横向标定，跟踪可能异常");
+                                }
+
+                                // 上报真实帧尺寸：CameraX 解析出的分辨率可能与期望值不同
+                                if (w != mFrameWidth || h != mFrameHeight) {
+                                    mFrameWidth = w;
+                                    mFrameHeight = h;
+                                    if (mFrameListener != null) {
+                                        mFrameListener.onCameraStarted(w, h);
+                                    }
+                                }
+
+                                // 方向取自相机帧的 rotationDegrees，镜像取自用户开关；
+                                // 仅用于下方写预览位图与渲染，送 SLAM 的灰度帧保持原始像素。
+                                final int rotationDegrees = image.getImageInfo().getRotationDegrees();
+                                DisplayCorrection correction = mDisplayCorrection;
+                                if (correction == null
+                                        || correction.rawWidth != w || correction.rawHeight != h
+                                        || correction.rotationDegrees != DisplayCorrection.normalizeRotation(rotationDegrees)
+                                        || correction.mirrorH != mMirrorHorizontal
+                                        || correction.mirrorV != mMirrorVertical) {
+                                    correction = DisplayCorrection.create(w, h, rotationDegrees,
+                                            mMirrorHorizontal, mMirrorVertical);
+                                    mDisplayCorrection = correction;
+                                    postDisplayCorrection(correction);
+                                }
+                                final int displaySize = correction.displayWidth * correction.displayHeight;
+                                final int rowStep = correction.previewRowStep();
+
                                 synchronized (mSyncLock) {
+                                    ensureCacheBitmap(correction.displayWidth, correction.displayHeight);
                                     boolean previewVisible = mCacheBitmap != null && !mCacheBitmap.isRecycled();
-                                    if (previewVisible) {
-                                        if (mCachePixels == null || mCachePixels.length < requiredSize) {
-                                            mCachePixels = new int[requiredSize];
-                                        }
+                                    if (previewVisible && (mCachePixels == null || mCachePixels.length < displaySize)) {
+                                        mCachePixels = new int[displaySize];
                                     }
                                     int[] previewPixels = previewVisible ? mCachePixels : null;
 
-                                    // 一次遍历完成 RGBA→灰度/ARGB 转换与镜像搬移：按镜像开关直接写入目标坐标，避免额外翻转开销
+                                    // 一次遍历同时写两路：灰度按原始像素序供 SLAM 使用，
+                                    // ARGB 按矫正后的目标坐标写入，无需额外翻转
                                     for (int y = 0; y < h; y++) {
-                                        int srcRowOffset = y * w * 4;
-                                        int dstRowOffset = (mirrorV ? (h - 1 - y) : y) * w;
+                                        final int srcRowOffset = y * w * 4;
+                                        final int yRowOffset = y * w;
+                                        int dstIdx = previewPixels != null ? correction.previewRowBase(y) : 0;
                                         for (int x = 0; x < w; x++) {
                                             int srcIdx = srcRowOffset + x * 4;
                                             int r = rgbaBuf[srcIdx] & 0xFF;
                                             int g = rgbaBuf[srcIdx + 1] & 0xFF;
                                             int b = rgbaBuf[srcIdx + 2] & 0xFF;
-                                            int dstIdx = dstRowOffset + (mirrorH ? (w - 1 - x) : x);
-                                            yBuf[dstIdx] = (byte) ((r * 77 + g * 150 + b * 29) >> 8);
+                                            yBuf[yRowOffset + x] = (byte) ((r * 77 + g * 150 + b * 29) >> 8);
                                             if (previewPixels != null) {
                                                 previewPixels[dstIdx] = 0xFF000000 | (r << 16) | (g << 8) | b;
+                                                dstIdx += rowStep;
                                             }
                                         }
                                     }
 
                                     if (previewPixels != null) {
-                                        mCacheBitmap.setPixels(previewPixels, 0, w, 0, 0, w, h);
+                                        mCacheBitmap.setPixels(previewPixels, 0, correction.displayWidth, 0, 0,
+                                                correction.displayWidth, correction.displayHeight);
                                         queueEvent(() -> {
                                             synchronized (mSyncLock) {
                                                 if (mSurfaceExist && mCacheBitmap != null && !mCacheBitmap.isRecycled()) {
@@ -661,9 +744,18 @@ public class CameraPreviewView extends AspectGLSurfaceView {
                     mVPMatrix[10] = -mVPMatrix[10];
                     mVPMatrix[11] = -mVPMatrix[11];
 
+                    // 显示层矫正（方向/镜像）左乘到投影矩阵：与预览位图的矫正严格等价，
+                    // 因此点云始终与屏上所见画面逐像素对齐，而与 SLAM 内部坐标系无关
+                    final DisplayCorrection correction = mDisplayCorrection;
+                    float[] drawMatrix = mVPMatrix;
+                    if (correction != null && !correction.isIdentity()) {
+                        Matrix.multiplyMM(mDisplayVPMatrix, 0, correction.getNdcTransform(), 0, mVPMatrix, 0);
+                        drawMatrix = mDisplayVPMatrix;
+                    }
+
                     mPointCloudRenderer.updatePoints(mPointCloudBuffer, floats);
                     GLES20.glDisable(GLES20.GL_DEPTH_TEST);
-                    mPointCloudRenderer.draw(mVPMatrix);
+                    mPointCloudRenderer.draw(drawMatrix);
                     GLES20.glEnable(GLES20.GL_DEPTH_TEST);
                 }
             }
