@@ -53,7 +53,8 @@ void KeyFrameDatabase::add(KeyFrame *pKF)
 {
     unique_lock<mutex> lock(mMutex);
 
-    if (pKF->mDescriptors.empty()) return;
+    // N 与描述子行数不一致时，按下标展开会越界读取
+    if (pKF->mDescriptors.empty() || pKF->N <= 0 || pKF->N > pKF->mDescriptors.rows) return;
 
     std::vector<size_t> objects(pKF->N);
     for(int i=0; i<pKF->N; i++) objects[i] = i;
@@ -303,8 +304,8 @@ void KeyFrameDatabase::rebuild()
     // 2. 在锁外无锁构建新树
     HBSTTree* pNewTree = new HBSTTree();
     for (KeyFrame* pKF : vpKFs) {
-        if (!pKF || pKF->isBad() || pKF->mDescriptors.empty())
-            continue;
+        if (!pKF || pKF->isBad() || pKF->mDescriptors.empty()) continue;
+        if (pKF->N <= 0 || pKF->N > pKF->mDescriptors.rows) continue;
 
         std::vector<size_t> objects(pKF->N);
         for(int i = 0; i < pKF->N; i++) objects[i] = i;

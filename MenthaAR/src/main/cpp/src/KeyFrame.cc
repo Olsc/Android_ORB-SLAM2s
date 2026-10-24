@@ -504,6 +504,12 @@ void KeyFrame::SetNotErase()
     mbNotErase = true;
 }
 
+bool KeyFrame::IsNotErase()
+{
+    unique_lock<mutex> lock(mMutexConnections);
+    return mbNotErase;
+}
+
 void KeyFrame::SetErase()
 {
     {

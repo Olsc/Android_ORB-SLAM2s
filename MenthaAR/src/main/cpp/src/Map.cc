@@ -51,6 +51,15 @@ Map::Map():mnMaxKFid(0),mnBigChangeIdx(0)
 {
 }
 
+Map::~Map()
+{
+    // 此时 SLAM 线程已全部 join，可直接释放残留对象与回收站
+    for(auto p : mspMapPoints) delete p;
+    for(auto p : mspKeyFrames) delete p;
+    for(auto p : mspMapPointsTrash) delete p;
+    for(auto p : mspKeyFramesTrash) delete p;
+}
+
 void Map::AddKeyFrame(KeyFrame *pKF)
 {
     unique_lock<mutex> lock(mMutexMap);
@@ -165,10 +174,37 @@ void Map::clear()
         mnBigChangeIdx++;
     }
 
+    // 上一轮回收站的对象此时已无任何线程持有，可以释放
+    for(auto p : spMPTrash) delete p;
+
+    // SetNotErase 只阻止 SetBadFlag，不阻止直接 delete
+    bool bKFInUse = false;
+    for(auto p : spKF)
+    {
+        if(p && p->IsNotErase()) { bKFInUse = true; break; }
+    }
+    if(!bKFInUse)
+    {
+        for(auto p : spKFTrash)
+        {
+            if(p && p->IsNotErase()) { bKFInUse = true; break; }
+        }
+    }
+
+    if(bKFInUse)
+    {
+        LOGD("地图清理: 检测到使用中的关键帧，本轮对象延后释放");
+        unique_lock<mutex> lock(mMutexMap);
+        mspMapPointsTrash.insert(spMP.begin(), spMP.end());
+        mspMapPointsTrash.insert(spMPTrash.begin(), spMPTrash.end());
+        mspKeyFramesTrash.insert(spKF.begin(), spKF.end());
+        mspKeyFramesTrash.insert(spKFTrash.begin(), spKFTrash.end());
+        return;
+    }
+
     // 在锁外逐个释放内存
     for(auto p : spMP) delete p;
     for(auto p : spKF) delete p;
-    for(auto p : spMPTrash) delete p;
     for(auto p : spKFTrash) delete p;
 }
 
