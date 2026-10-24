@@ -102,8 +102,6 @@ public class OrientationSensor implements SensorEventListener {
         gyroscope = sm.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
         gravitySensor = sm.getDefaultSensor(Sensor.TYPE_GRAVITY);
 
-        logAvailableSensors(sm);
-
         if (rotationSensor != null) {
             mode = Mode.ROTATION_VECTOR;
         } else if (gameRotationSensor != null) {
@@ -119,16 +117,6 @@ public class OrientationSensor implements SensorEventListener {
             mode = Mode.NONE;
         }
         return mode;
-    }
-
-    // 输出设备上报的全部传感器，便于比对系统设置与实际注册情况
-    private void logAvailableSensors(SensorManager sm) {
-        List<Sensor> all = sm.getSensorList(Sensor.TYPE_ALL);
-        StringBuilder sb = new StringBuilder("设备传感器共 ").append(all.size()).append(" 个: ");
-        for (Sensor s : all) {
-            sb.append('[').append(s.getType()).append(' ').append(s.getName()).append("] ");
-        }
-        Log.d(TAG, sb.toString());
     }
 
     // 当前姿态来源可观测的自由度，3 含航向，2 仅俯仰与滚转，0 不可用
