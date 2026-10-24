@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">ਗੇਮ ਘੁੰਮਾਓ ਵੈਕਟਰ (ਸਾਪੇਖ)</string>
     <string name="sensor_mode_accel_mag">ਐਕਸਲਰੋਮੀਟਰ + ਮੈਗਨੇਟੋਮੀਟਰ</string>
     <string name="sensor_mode_gyroscope">ਜਾਇਰੋਸਕੋਪ ਏਕੀਕਰਨ</string>
+    <string name="sensor_mode_accel_only">ਸਿਰਫ਼ ਗੁਰੂਤਵ (ਝੁਕਾਅ)</string>
     <string name="sensor_mode_none">ਕੋਈ ਦਿਸ਼ਾ ਸੈਂਸਰ ਨਹੀਂ</string>
     <string name="sensor_mode_notice_fallback">ਸੀਮਤ ਸੈਂਸਰ: ਬਦਲਵਾਂ ਦਿਸ਼ਾ ਸਰੋਤ ਵਰਤਿਆ ਜਾ ਰਿਹਾ ਹੈ; ਦਿਸ਼ਾ ਸਮੇਂ ਨਾਲ ਖਿਸਕ ਸਕਦੀ ਹੈ।</string>
+    <string name="sensor_mode_notice_accel_only">ਜਾਇਰੋਸਕੋਪ ਨਹੀਂ: ਸਿਰਫ਼ ਝੁਕਾਅ ਟ੍ਰੈਕ ਹੁੰਦਾ ਹੈ, ਦਿਸ਼ਾ ਟ੍ਰੈਕ ਨਹੀਂ ਹੁੰਦੀ।</string>
     <string name="sensor_mode_notice_none">ਕੋਈ ਦਿਸ਼ਾ ਸੈਂਸਰ ਉਪਲਬਧ ਨਹੀਂ; 3DOF ਸਥਿਰ ਰਹੇਗਾ।</string>
 
 </resources>

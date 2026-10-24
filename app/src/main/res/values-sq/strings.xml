@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">Vektori i rrotullimit të lojës (relativ)</string>
     <string name="sensor_mode_accel_mag">Akselerometri + magnetometri</string>
     <string name="sensor_mode_gyroscope">Integrimi i xhiroskopit</string>
+    <string name="sensor_mode_accel_only">Vetëm graviteti (pjerrësi)</string>
     <string name="sensor_mode_none">Nuk ka sensor orientimi</string>
     <string name="sensor_mode_notice_fallback">Sensorë të kufizuar: po përdoret një burim alternativ orientimi; drejtimi mund të zhvendoset me kalimin e kohës.</string>
+    <string name="sensor_mode_notice_accel_only">Pa xhiroskop: ndiqet vetëm pjerrësia, drejtimi nuk ndiqet.</string>
     <string name="sensor_mode_notice_none">Nuk ka sensor orientimi të disponueshëm; 3DOF mbetet i palëvizshëm.</string>
 
 </resources>

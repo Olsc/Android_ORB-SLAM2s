@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">Joko biraketa-bektorea (erlazionatua)</string>
     <string name="sensor_mode_accel_mag">Azelerometroa + magnetometroa</string>
     <string name="sensor_mode_gyroscope">Giroskopioaren integrazioa</string>
+    <string name="sensor_mode_accel_only">Grabitatea soilik (inklinazioa)</string>
     <string name="sensor_mode_none">Orientazio-sentsorerik ez</string>
     <string name="sensor_mode_notice_fallback">Sentsore mugatuak: orientazio-iturri ordezkoa erabiliz; norabidea denborarekin desbidera daiteke.</string>
+    <string name="sensor_mode_notice_accel_only">Giroskopiorik gabe: inklinazioa soilik jarraitzen da, norabidea ez da jarraitzen.</string>
     <string name="sensor_mode_notice_none">Ez dago orientazio-sentsorerik eskuragarri; 3DOF geldirik mantentzen da.</string>
 
 </resources>

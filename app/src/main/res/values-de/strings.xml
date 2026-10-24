@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">Spiel-Rotationsvektor (relativ)</string>
     <string name="sensor_mode_accel_mag">Beschleunigungssensor + Magnetometer</string>
     <string name="sensor_mode_gyroscope">Gyroskop-Integration</string>
+    <string name="sensor_mode_accel_only">Nur Gravitation (Neigung)</string>
     <string name="sensor_mode_none">Kein Lagesensor</string>
     <string name="sensor_mode_notice_fallback">Eingeschränkte Sensoren: Fallback-Lagequelle aktiv; der Kurs kann mit der Zeit driften.</string>
+    <string name="sensor_mode_notice_accel_only">Kein Gyroskop: nur die Neigung wird verfolgt, die Blickrichtung folgt nicht.</string>
     <string name="sensor_mode_notice_none">Kein Lagesensor verfügbar; 3DOF bleibt stehen.</string>
 
 </resources>

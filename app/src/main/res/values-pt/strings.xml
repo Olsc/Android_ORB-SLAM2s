@@ -108,8 +108,10 @@
     <string name="sensor_mode_game_rotation_vector">Vetor de rotação de jogo (relativo)</string>
     <string name="sensor_mode_accel_mag">Acelerômetro + magnetômetro</string>
     <string name="sensor_mode_gyroscope">Integração do giroscópio</string>
+    <string name="sensor_mode_accel_only">Apenas gravidade (inclinação)</string>
     <string name="sensor_mode_none">Sem sensor de orientação</string>
     <string name="sensor_mode_notice_fallback">Sensores limitados: a usar uma fonte de orientação alternativa; o rumo pode derivar com o tempo.</string>
+    <string name="sensor_mode_notice_accel_only">Sem giroscópio: apenas a inclinação é seguida, a direção não é seguida.</string>
     <string name="sensor_mode_notice_none">Nenhum sensor de orientação disponível; o 3DOF permanece parado.</string>
 
 </resources>

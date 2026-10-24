@@ -114,8 +114,10 @@
     <string name="sensor_mode_game_rotation_vector">متجه دوران اللعبة (نسبي)</string>
     <string name="sensor_mode_accel_mag">مقياس التسارع + مقياس المغناطيسية</string>
     <string name="sensor_mode_gyroscope">تكامل الجيروسكوب</string>
+    <string name="sensor_mode_accel_only">اتجاه الجاذبية فقط (إمالة)</string>
     <string name="sensor_mode_none">لا يوجد مستشعر اتجاه</string>
     <string name="sensor_mode_notice_fallback">مستشعرات محدودة: يتم استخدام مصدر اتجاه احتياطي؛ قد ينحرف الاتجاه بمرور الوقت.</string>
+    <string name="sensor_mode_notice_accel_only">لا يوجد جيروسكوب: يتم تتبع الإمالة فقط، والاتجاه لا يتبع.</string>
     <string name="sensor_mode_notice_none">لا يتوفر مستشعر اتجاه؛ سيبقى 3DOF ثابتًا.</string>
 
 </resources>

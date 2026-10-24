@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">Leiksnúningsvigur (hlutfallslegur)</string>
     <string name="sensor_mode_accel_mag">Hraðamælir + segulmælir</string>
     <string name="sensor_mode_gyroscope">Samþætting gyroscope</string>
+    <string name="sensor_mode_accel_only">Aðeins þyngdarafl (halli)</string>
     <string name="sensor_mode_none">Enginn stefnuskynjari</string>
     <string name="sensor_mode_notice_fallback">Takmarkaðir skynjarar: varastefnuuppspretta í notkun; stefna getur rekist til með tímanum.</string>
+    <string name="sensor_mode_notice_accel_only">Enginn gíróskóp: aðeins halli er fylgst með, stefna fylgir ekki.</string>
     <string name="sensor_mode_notice_none">Enginn stefnuskynjari í boði; 3DOF stendur kyrr.</string>
 
 </resources>

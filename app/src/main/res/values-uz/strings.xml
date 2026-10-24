@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">Oʻyin aylanish vektori (nisbiy)</string>
     <string name="sensor_mode_accel_mag">Akselerometr + magnitometr</string>
     <string name="sensor_mode_gyroscope">Giroskop integratsiyasi</string>
+    <string name="sensor_mode_accel_only">Faqat gravitatsiya (og‘ish)</string>
     <string name="sensor_mode_none">Yoʻnalish sensori yoʻq</string>
     <string name="sensor_mode_notice_fallback">Cheklangan sensorlar: zaxira yoʻnalish manbasi ishlatilmoqda; yoʻnalish vaqt oʻtishi bilan surilishi mumkin.</string>
+    <string name="sensor_mode_notice_accel_only">Giroskop yo‘q: faqat og‘ish kuzatiladi, yo‘nalish kuzatilmaydi.</string>
     <string name="sensor_mode_notice_none">Yoʻnalish sensori mavjud emas; 3DOF harakatsiz qoladi.</string>
 
 </resources>

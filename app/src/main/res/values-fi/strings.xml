@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">Pelin kiertovektori (suhteellinen)</string>
     <string name="sensor_mode_accel_mag">Kiihtyvyysanturi + magnetometri</string>
     <string name="sensor_mode_gyroscope">Gyroskoopin integrointi</string>
+    <string name="sensor_mode_accel_only">Vain painovoima (kaltevuus)</string>
     <string name="sensor_mode_none">Ei suunta-anturia</string>
     <string name="sensor_mode_notice_fallback">Rajoitetut anturit: varasuuntauslähde käytössä; suunta voi ajautua ajan myötä.</string>
+    <string name="sensor_mode_notice_accel_only">Ei gyroskooppia: vain kaltevuutta seurataan, suunta ei seuraa.</string>
     <string name="sensor_mode_notice_none">Suunta-anturia ei ole saatavilla; 3DOF pysyy paikallaan.</string>
 
 </resources>

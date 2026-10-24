@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">Ойын айналу векторы (салыстырмалы)</string>
     <string name="sensor_mode_accel_mag">Акселерометр + магнитометр</string>
     <string name="sensor_mode_gyroscope">Гироскопты интеграциялау</string>
+    <string name="sensor_mode_accel_only">Тек гравитация (көлбеу)</string>
     <string name="sensor_mode_none">Бағыт сенсоры жоқ</string>
     <string name="sensor_mode_notice_fallback">Шектеулі сенсорлар: қосалқы бағыт көзі қолданылуда; курс уақыт өте келе ауытқуы мүмкін.</string>
+    <string name="sensor_mode_notice_accel_only">Гироскоп жоқ: тек көлбеу бақыланады, бағыт бақыланбайды.</string>
     <string name="sensor_mode_notice_none">Қолжетімді бағыт сенсоры жоқ; 3DOF қозғалмайды.</string>
 
 </resources>

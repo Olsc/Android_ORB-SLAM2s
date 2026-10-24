@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">गेम घुर्णन भेक्टर (सापेक्ष)</string>
     <string name="sensor_mode_accel_mag">त्वरणमापक + चुम्बकमापक</string>
     <string name="sensor_mode_gyroscope">जाइरोस्कोप एकीकरण</string>
+    <string name="sensor_mode_accel_only">केवल गुरुत्व (झुकाव)</string>
     <string name="sensor_mode_none">दिशा सेन्सर छैन</string>
     <string name="sensor_mode_notice_fallback">सीमित सेन्सर: वैकल्पिक दिशा स्रोत प्रयोगमा; दिशा समयसँगै सर्न सक्छ।</string>
+    <string name="sensor_mode_notice_accel_only">जाइरोस्कोप छैन: झुकाव मात्र ट्र्याक हुन्छ, दिशा ट्र्याक हुँदैन।</string>
     <string name="sensor_mode_notice_none">दिशा सेन्सर उपलब्ध छैन; 3DOF स्थिर रहनेछ।</string>
 
 </resources>

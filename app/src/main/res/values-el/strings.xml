@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">Διάνυσμα περιστροφής παιχνιδιού (σχετικό)</string>
     <string name="sensor_mode_accel_mag">Επιταχυνσιόμετρο + μαγνητόμετρο</string>
     <string name="sensor_mode_gyroscope">Ολοκλήρωση γυροσκοπίου</string>
+    <string name="sensor_mode_accel_only">Μόνο βαρύτητα (κλίση)</string>
     <string name="sensor_mode_none">Δεν υπάρχει αισθητήρας προσανατολισμού</string>
     <string name="sensor_mode_notice_fallback">Περιορισμένοι αισθητήρες: χρήση εφεδρικής πηγής προσανατολισμού· η πορεία μπορεί να αποκλίνει με τον χρόνο.</string>
+    <string name="sensor_mode_notice_accel_only">Χωρίς γυροσκόπιο: παρακολουθείται μόνο η κλίση, η κατεύθυνση δεν ακολουθεί.</string>
     <string name="sensor_mode_notice_none">Δεν υπάρχει διαθέσιμος αισθητήρας προσανατολισμού· το 3DOF παραμένει ακίνητο.</string>
 
 </resources>

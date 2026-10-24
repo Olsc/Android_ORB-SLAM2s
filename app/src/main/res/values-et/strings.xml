@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">Mängu pöördvektor (suhteline)</string>
     <string name="sensor_mode_accel_mag">Kiirendusmõõtur + magnetomeeter</string>
     <string name="sensor_mode_gyroscope">Güroskoobi integreerimine</string>
+    <string name="sensor_mode_accel_only">Ainult gravitatsioon (kalle)</string>
     <string name="sensor_mode_none">Puudub orientatsiooniandur</string>
     <string name="sensor_mode_notice_fallback">Piiratud andurid: kasutusel varu-orientatsiooniallikas; kurss võib aja jooksul triivima hakata.</string>
+    <string name="sensor_mode_notice_accel_only">Güroskoop puudub: jälgitakse ainult kallet, suund ei jälgi.</string>
     <string name="sensor_mode_notice_none">Orientatsiooniandur pole saadaval; 3DOF jääb paigale.</string>
 
 </resources>

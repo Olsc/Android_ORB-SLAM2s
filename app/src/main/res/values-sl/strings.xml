@@ -110,8 +110,10 @@
     <string name="sensor_mode_game_rotation_vector">Vektor vrtenja igre (relativni)</string>
     <string name="sensor_mode_accel_mag">Merilnik pospeška + magnetometer</string>
     <string name="sensor_mode_gyroscope">Integracija žiroskopa</string>
+    <string name="sensor_mode_accel_only">Samo gravitacija (naklon)</string>
     <string name="sensor_mode_none">Ni senzorja orientacije</string>
     <string name="sensor_mode_notice_fallback">Omejeni senzorji: uporablja se nadomestni vir orientacije; smer lahko s časom zanese.</string>
+    <string name="sensor_mode_notice_accel_only">Brez žiroskopa: spremlja se samo naklon, smer se ne spremlja.</string>
     <string name="sensor_mode_notice_none">Senzor orientacije ni na voljo; 3DOF ostane nepremično.</string>
 
 </resources>

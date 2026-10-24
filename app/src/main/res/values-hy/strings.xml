@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">Խաղի պտույտի վեկտոր (հարաբերական)</string>
     <string name="sensor_mode_accel_mag">Արագացումաչափ + մագնիսաչափ</string>
     <string name="sensor_mode_gyroscope">Գիրոսկոպի ինտեգրում</string>
+    <string name="sensor_mode_accel_only">Միայն ձգողություն (թեքում)</string>
     <string name="sensor_mode_none">Ուղղության սենսոր չկա</string>
     <string name="sensor_mode_notice_fallback">Սահմանափակ սենսորներ. օգտագործվում է պահուստային ուղղության աղբյուր. ուղղությունը կարող է ժամանակի ընթացքում շեղվել:</string>
+    <string name="sensor_mode_notice_accel_only">Գիրոսկոպ չկա. հետևվում է միայն թեքումը, ուղղությունը չի հետևվում։</string>
     <string name="sensor_mode_notice_none">Ուղղության սենսոր հասանելի չէ. 3DOF-ը մնում է անշարժ:</string>
 
 </resources>

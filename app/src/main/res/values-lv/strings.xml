@@ -108,8 +108,10 @@
     <string name="sensor_mode_game_rotation_vector">Spēles rotācijas vektors (relatīvs)</string>
     <string name="sensor_mode_accel_mag">Akselerometrs + magnetometrs</string>
     <string name="sensor_mode_gyroscope">Žiroskopa integrācija</string>
+    <string name="sensor_mode_accel_only">Tikai gravitācija (slīpums)</string>
     <string name="sensor_mode_none">Nav orientācijas sensora</string>
     <string name="sensor_mode_notice_fallback">Ierobežoti sensori: tiek izmantots rezerves orientācijas avots; kurss laika gaitā var driftēt.</string>
+    <string name="sensor_mode_notice_accel_only">Nav žiroskopa: tiek izsekots tikai slīpums, virziens netiek izsekots.</string>
     <string name="sensor_mode_notice_none">Orientācijas sensors nav pieejams; 3DOF paliek nekustīgs.</string>
 
 </resources>

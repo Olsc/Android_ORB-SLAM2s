@@ -104,8 +104,10 @@
     <string name="sensor_mode_game_rotation_vector">ເວັກເຕີການໝູນວຽນເກມ (ສຳພັນ)</string>
     <string name="sensor_mode_accel_mag">ເຄື່ອງວັດຄວາມເລັ່ງ + ເຄື່ອງວັດແມ່ເຫຼັກ</string>
     <string name="sensor_mode_gyroscope">ການລວມ gyroscope</string>
+    <string name="sensor_mode_accel_only">ພຽງແຕ່ແຮງໂນ້ມຖ່ວງ (ອຽງ)</string>
     <string name="sensor_mode_none">ບໍ່ມີເຊັນເຊີທິດທາງ</string>
     <string name="sensor_mode_notice_fallback">ເຊັນເຊີຈຳກັດ: ກຳລັງໃຊ້ແຫຼ່ງທິດທາງສຳຮອງ; ທິດທາງອາດຈະຄ່ອຍໆເລື່ອນ.</string>
+    <string name="sensor_mode_notice_accel_only">ບໍ່ມີ gyroscope: ຕິດຕາມພຽງແຕ່ການອຽງ, ທິດທາງບໍ່ຕິດຕາມ.</string>
     <string name="sensor_mode_notice_none">ບໍ່ມີເຊັນເຊີທິດທາງ; 3DOF ຈະຢູ່ນິ້ງ.</string>
 
 </resources>

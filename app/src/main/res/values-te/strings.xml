@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">గేమ్ భ్రమణ వెక్టర్ (సాపేక్ష)</string>
     <string name="sensor_mode_accel_mag">త్వరణమాపకం + అయస్కాంతమాపకం</string>
     <string name="sensor_mode_gyroscope">జైరోస్కోప్ ఏకీకరణ</string>
+    <string name="sensor_mode_accel_only">గురుత్వం మాత్రమే (వంపు)</string>
     <string name="sensor_mode_none">దిశ సెన్సార్ లేదు</string>
     <string name="sensor_mode_notice_fallback">పరిమిత సెన్సార్లు: ప్రత్యామ్నాయ దిశ మూలం వాడుతోంది; దిశ కాలక్రమేణా జారవచ్చు.</string>
+    <string name="sensor_mode_notice_accel_only">జైరోస్కోప్ లేదు: వంపు మాత్రమే ట్రాక్ అవుతుంది, దిశ ట్రాక్ కాదు.</string>
     <string name="sensor_mode_notice_none">దిశ సెన్సార్ అందుబాటులో లేదు; 3DOF స్థిరంగా ఉంటుంది.</string>
 
 </resources>

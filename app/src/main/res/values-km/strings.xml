@@ -104,8 +104,10 @@
     <string name="sensor_mode_game_rotation_vector">វ៉ិចទ័របង្វិលហ្គេម (ទាក់ទង)</string>
     <string name="sensor_mode_accel_mag">ឧបករណ៍វាស់សំទុះ + ឧបករណ៍វាស់ម៉ាញេទិច</string>
     <string name="sensor_mode_gyroscope">ការរួមបញ្ចូល gyroscope</string>
+    <string name="sensor_mode_accel_only">ទំនាញតែប៉ុណ្ណោះ (ផ្អៀង)</string>
     <string name="sensor_mode_none">គ្មានឧបករណ៍ចាប់ទិសដៅ</string>
     <string name="sensor_mode_notice_fallback">ឧបករណ៍ចាប់សញ្ញាមានកំណត់៖ កំពុងប្រើប្រភពទិសដៅបម្រុង; ទិសដៅអាចរសាត់តាមពេលវេលា។</string>
+    <string name="sensor_mode_notice_accel_only">គ្មាន gyroscope៖ តាមដានតែការផ្អៀង ទិសដៅមិនតាមដានទេ។</string>
     <string name="sensor_mode_notice_none">មិនមានឧបករណ៍ចាប់ទិសដៅទេ; 3DOF នឹងនៅស្ងៀម។</string>
 
 </resources>

@@ -110,8 +110,10 @@
     <string name="sensor_mode_game_rotation_vector">Гульнявы вектар вярчэння (адносны)</string>
     <string name="sensor_mode_accel_mag">Аксэлерометр + магнітометр</string>
     <string name="sensor_mode_gyroscope">Інтэграванне гіраскопа</string>
+    <string name="sensor_mode_accel_only">Толькі гравітацыя (нахіл)</string>
     <string name="sensor_mode_none">Няма датчыка арыентацыі</string>
     <string name="sensor_mode_notice_fallback">Абмежаваныя датчыкі: выкарыстоўваецца рэзервовая крыніца арыентацыі; курс можа з часам дрыфтаваць.</string>
+    <string name="sensor_mode_notice_accel_only">Няма гіраскопа: адсочваецца толькі нахіл, кірунак не адсочваецца.</string>
     <string name="sensor_mode_notice_none">Даступны датчык арыентацыі адсутнічае; 3DOF застаецца нерухомым.</string>
 
 </resources>

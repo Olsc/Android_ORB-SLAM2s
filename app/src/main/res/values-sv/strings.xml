@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">Spelrotationsvektor (relativ)</string>
     <string name="sensor_mode_accel_mag">Accelerometer + magnetometer</string>
     <string name="sensor_mode_gyroscope">Gyroskopintegrering</string>
+    <string name="sensor_mode_accel_only">Endast gravitation (lutning)</string>
     <string name="sensor_mode_none">Ingen riktningssensor</string>
     <string name="sensor_mode_notice_fallback">Begränsade sensorer: reservriktningskälla används; kursen kan driva med tiden.</string>
+    <string name="sensor_mode_notice_accel_only">Ingen gyroskop: endast lutning följs, riktningen följer inte.</string>
     <string name="sensor_mode_notice_none">Ingen riktningssensor tillgänglig; 3DOF förblir stilla.</string>
 
 </resources>

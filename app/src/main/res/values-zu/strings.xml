@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">Ivekhtha yokuzungeza yomdlalo (ngokulinganiselwe)</string>
     <string name="sensor_mode_accel_mag">Isilinganisi sokushesha + isilinganisi sikazibuthe</string>
     <string name="sensor_mode_gyroscope">Ukuhlanganiswa kwe-gyroscope</string>
+    <string name="sensor_mode_accel_only">Amandla adonsela phansi kuphela (ukutsheka)</string>
     <string name="sensor_mode_none">Asikho inzwa yomumo</string>
     <string name="sensor_mode_notice_fallback">Izinzwa ezinomkhawulo: kusetshenziswa umthombo womumo oyisipele; isiqondiso singase sidembe ngokuhamba kwesikhathi.</string>
+    <string name="sensor_mode_notice_accel_only">Awekho i-gyroscope: kukhahlelwa ukutsheka kuphela, indlela ayilandelwa.</string>
     <string name="sensor_mode_notice_none">Ayikho inzwa yomumo etholakalayo; i-3DOF ihlala inyamanzi.</string>
 
 </resources>

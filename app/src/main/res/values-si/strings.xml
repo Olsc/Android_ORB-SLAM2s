@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">ක්‍රීඩා භ්‍රමණ දෛශිකය (සාපේක්ෂ)</string>
     <string name="sensor_mode_accel_mag">ත්වරණමානය + චුම්බකමානය</string>
     <string name="sensor_mode_gyroscope">ජයිරෝස්කෝප් ඒකාබද්ධ කිරීම</string>
+    <string name="sensor_mode_accel_only">ගුරුත්වය පමණි (ආනතිය)</string>
     <string name="sensor_mode_none">දිශා සංවේදකයක් නැත</string>
     <string name="sensor_mode_notice_fallback">සීමිත සංවේදක: විකල්ප දිශා මූලාශ්‍රයක් භාවිතයේ; දිශාව කාලයත් සමඟ ලිස්සා යා හැක.</string>
+    <string name="sensor_mode_notice_accel_only">ජයිරෝස්කෝප් නැත: ආනතිය පමණක් නිරීක්ෂණය වේ, දිශාව නිරීක්ෂණය නොවේ.</string>
     <string name="sensor_mode_notice_none">දිශා සංවේදකයක් නොමැත; 3DOF නිශ්චලව පවතී.</string>
 
 </resources>

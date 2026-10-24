@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">Тоглоомын эргэлтийн вектор (харьцангуй)</string>
     <string name="sensor_mode_accel_mag">Хурдатгал хэмжигч + соронзон хэмжигч</string>
     <string name="sensor_mode_gyroscope">Гироскопын интеграц</string>
+    <string name="sensor_mode_accel_only">Зөвхөн таталцал (хазайлт)</string>
     <string name="sensor_mode_none">Чиглэлийн мэдрэгч байхгүй</string>
     <string name="sensor_mode_notice_fallback">Хязгаарлагдмал мэдрэгч: нөөц чиглэлийн эх үүсвэр ашиглаж байна; чиглэл цаг хугацааны явцад шилжиж болно.</string>
+    <string name="sensor_mode_notice_accel_only">Гироскоп байхгүй: зөвхөн хазайлтыг хянана, чиглэлийг хянахгүй.</string>
     <string name="sensor_mode_notice_none">Чиглэлийн мэдрэгч байхгүй; 3DOF хөдөлгөөнгүй байна.</string>
 
 </resources>

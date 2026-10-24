@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">بردار چرخش بازی (نسبی)</string>
     <string name="sensor_mode_accel_mag">شتاب‌سنج + مغناطیس‌سنج</string>
     <string name="sensor_mode_gyroscope">ادغام ژیروسکوپ</string>
+    <string name="sensor_mode_accel_only">فقط گرانش (شیب)</string>
     <string name="sensor_mode_none">حسگر جهت‌یابی وجود ندارد</string>
     <string name="sensor_mode_notice_fallback">حسگرهای محدود: از منبع جهت‌یابی جایگزین استفاده می‌شود؛ ممکن است جهت در طول زمان منحرف شود.</string>
+    <string name="sensor_mode_notice_accel_only">بدون ژیروسکوپ: فقط شیب دنبال می‌شود، جهت دنبال نمی‌شود.</string>
     <string name="sensor_mode_notice_none">حسگر جهت‌یابی در دسترس نیست؛ 3DOF ثابت می‌ماند.</string>
 
 </resources>

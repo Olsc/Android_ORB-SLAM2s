@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">ગેમ પરિભ્રમણ વેક્ટર (સાપેક્ષ)</string>
     <string name="sensor_mode_accel_mag">એક્સેલરોમીટર + મેગ્નેટોમીટર</string>
     <string name="sensor_mode_gyroscope">જાયરોસ્કોપ એકીકરણ</string>
+    <string name="sensor_mode_accel_only">ફક્ત ગુરુત્વાકર્ષણ (ઝુકાવ)</string>
     <string name="sensor_mode_none">કોઈ દિશા સેન્સર નથી</string>
     <string name="sensor_mode_notice_fallback">મર્યાદિત સેન્સર: વૈકલ્પિક દિશા સ્રોત વપરાય છે; દિશા સમય સાથે ખસી શકે છે.</string>
+    <string name="sensor_mode_notice_accel_only">જાયરોસ્કોપ નથી: ફક્ત ઝુકાવ અનુસરે છે, દિશા અનુસરતી નથી.</string>
     <string name="sensor_mode_notice_none">કોઈ દિશા સેન્સર ઉપલબ્ધ નથી; 3DOF સ્થિર રહેશે.</string>
 
 </resources>

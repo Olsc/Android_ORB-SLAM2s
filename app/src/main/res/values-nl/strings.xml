@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">Spelrotatievector (relatief)</string>
     <string name="sensor_mode_accel_mag">Versnellingsmeter + magnetometer</string>
     <string name="sensor_mode_gyroscope">Gyroscoop-integratie</string>
+    <string name="sensor_mode_accel_only">Alleen zwaartekracht (kanteling)</string>
     <string name="sensor_mode_none">Geen oriëntatiesensor</string>
     <string name="sensor_mode_notice_fallback">Beperkte sensoren: fallback-oriëntatiebron in gebruik; koers kan na verloop van tijd afwijken.</string>
+    <string name="sensor_mode_notice_accel_only">Geen gyroscoop: alleen kanteling wordt gevolgd, de koers volgt niet.</string>
     <string name="sensor_mode_notice_none">Geen oriëntatiesensor beschikbaar; 3DOF blijft stil.</string>
 
 </resources>

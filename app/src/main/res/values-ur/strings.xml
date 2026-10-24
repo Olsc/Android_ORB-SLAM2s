@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">گیم گردشی ویکٹر (اضافی)</string>
     <string name="sensor_mode_accel_mag">ایکسیلیرومیٹر + میگنیٹومیٹر</string>
     <string name="sensor_mode_gyroscope">جائروسکوپ انضمام</string>
+    <string name="sensor_mode_accel_only">صرف کشش ثقل (جھکاؤ)</string>
     <string name="sensor_mode_none">کوئی سمت سینسر نہیں</string>
     <string name="sensor_mode_notice_fallback">محدود سینسر: متبادل سمت ماخذ استعمال میں؛ سمت وقت کے ساتھ سرک سکتی ہے۔</string>
+    <string name="sensor_mode_notice_accel_only">جائیروسکوپ نہیں: صرف جھکاؤ ٹریک ہوتا ہے، سمت ٹریک نہیں ہوتی۔</string>
     <string name="sensor_mode_notice_none">کوئی سمت سینسر دستیاب نہیں؛ 3DOF ساکن رہے گا۔</string>
 
 </resources>

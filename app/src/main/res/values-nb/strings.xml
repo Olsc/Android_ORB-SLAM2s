@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">Spillrotasjonsvektor (relativ)</string>
     <string name="sensor_mode_accel_mag">Akselerometer + magnetometer</string>
     <string name="sensor_mode_gyroscope">Gyroskopintegrasjon</string>
+    <string name="sensor_mode_accel_only">Kun tyngdekraft (helling)</string>
     <string name="sensor_mode_none">Ingen retningssensor</string>
     <string name="sensor_mode_notice_fallback">Begrensede sensorer: reserveretningskilde i bruk; kursen kan drive over tid.</string>
+    <string name="sensor_mode_notice_accel_only">Ingen gyroskop: bare helling følges, retningen følger ikke.</string>
     <string name="sensor_mode_notice_none">Ingen retningssensor tilgjengelig; 3DOF forblir stille.</string>
 
 </resources>

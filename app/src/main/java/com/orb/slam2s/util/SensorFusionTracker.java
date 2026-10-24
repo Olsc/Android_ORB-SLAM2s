@@ -24,6 +24,7 @@ public class SensorFusionTracker {
     private static final String TAG = "SensorFusionTracker";
 
     private boolean m3DofAssistEnabled = false; // 初始状态由宿主根据传感器硬件探测结果决定 (默认启动)
+    private int mRotationDof = 3;               // 传感器姿态可观测自由度: 3 含航向, 2 仅俯仰与滚转
 
     // 传感器校准对齐偏置矩阵 R_offset: R_view = R_sensor * R_offset
     private final float[] mAlignmentOffset = new float[16];
@@ -61,6 +62,14 @@ public class SensorFusionTracker {
                 mHasAlignment = false;
                 mHasValidState = false;
             }
+        }
+    }
+
+    // 设置传感器姿态可观测自由度，2 表示航向不可观测（仅重力矢量）
+    public synchronized void setRotationDof(int dof) {
+        if (mRotationDof != dof) {
+            mRotationDof = dof;
+            Log.i(TAG, "传感器姿态自由度切换为: " + dof);
         }
     }
 
@@ -131,6 +140,10 @@ public class SensorFusionTracker {
                     System.arraycopy(mTempOffsetInst, 0, mAlignmentOffset, 0, 16);
                     mHasAlignment = true;
                     Log.d(TAG, "视觉与传感器完成初次基准对齐 (MapId=" + activeMapId + ")");
+                } else if (mRotationDof < 3) {
+                    // 航向不可观测时重力分量本身无漂移，直接采用当帧对齐，
+                    // 避免低通滤波造成丢失瞬间的航向滞后
+                    System.arraycopy(mTempOffsetInst, 0, mAlignmentOffset, 0, 16);
                 } else {
                     // 在线平滑滤波更新 R_offset (低通消除传感器慢漂移，为丢失时兜底做准备)
                     smoothMatrix(mAlignmentOffset, mTempOffsetInst);

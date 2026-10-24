@@ -104,8 +104,10 @@
     <string name="sensor_mode_game_rotation_vector">ゲーム回転ベクトル（相対）</string>
     <string name="sensor_mode_accel_mag">加速度計 + 磁力計</string>
     <string name="sensor_mode_gyroscope">ジャイロ積分</string>
+    <string name="sensor_mode_accel_only">重力のみ（傾き）</string>
     <string name="sensor_mode_none">方向センサーなし</string>
     <string name="sensor_mode_notice_fallback">センサーが限定的です：代替の姿勢ソースを使用中。方位は時間とともにドリフトする可能性があります。</string>
+    <string name="sensor_mode_notice_accel_only">ジャイロなし：傾きのみ追従、方位は追従しません。</string>
     <string name="sensor_mode_notice_none">利用可能な方向センサーがありません。3DOF は静止します。</string>
 
 </resources>

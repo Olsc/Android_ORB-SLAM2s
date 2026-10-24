@@ -104,8 +104,10 @@
     <string name="sensor_mode_game_rotation_vector">เวกเตอร์การหมุนเกม (สัมพัทธ์)</string>
     <string name="sensor_mode_accel_mag">มาตรวัดความเร่ง + มาตรวัดสนามแม่เหล็ก</string>
     <string name="sensor_mode_gyroscope">การรวมไจโรสโคป</string>
+    <string name="sensor_mode_accel_only">แรงโน้มถ่วงเท่านั้น (การเอียง)</string>
     <string name="sensor_mode_none">ไม่มีเซ็นเซอร์วัดทิศทาง</string>
     <string name="sensor_mode_notice_fallback">เซ็นเซอร์จำกัด: กำลังใช้แหล่งทิศทางสำรอง ทิศทางอาจค่อย ๆ คลาดเคลื่อนตามเวลา</string>
+    <string name="sensor_mode_notice_accel_only">ไม่มีไจโรสโคป: ติดตามเฉพาะการเอียง ทิศทางไม่ติดตาม</string>
     <string name="sensor_mode_notice_none">ไม่มีเซ็นเซอร์วัดทิศทาง 3DOF จะอยู่นิ่ง</string>
 
 </resources>

@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">Rotation vector ng laro (relative)</string>
     <string name="sensor_mode_accel_mag">Accelerometer + magnetometer</string>
     <string name="sensor_mode_gyroscope">Pagsasama ng gyroscope</string>
+    <string name="sensor_mode_accel_only">Grabidad lang (pagkiling)</string>
     <string name="sensor_mode_none">Walang orientation sensor</string>
     <string name="sensor_mode_notice_fallback">Limitadong sensor: gumagamit ng fallback na pinagmumulan ng orientation; maaaring mag-drift ang heading sa paglipas ng panahon.</string>
+    <string name="sensor_mode_notice_accel_only">Walang gyroscope: pagkiling lang ang sinusubaybayan, hindi sinusubaybayan ang direksyon.</string>
     <string name="sensor_mode_notice_none">Walang available na orientation sensor; mananatiling still ang 3DOF.</string>
 
 </resources>

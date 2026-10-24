@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">Játék forgatásvektor (relatív)</string>
     <string name="sensor_mode_accel_mag">Gyorsulásmérő + magnetométer</string>
     <string name="sensor_mode_gyroscope">Giroszkóp-integráció</string>
+    <string name="sensor_mode_accel_only">Csak gravitáció (dőlés)</string>
     <string name="sensor_mode_none">Nincs tájolásérzékelő</string>
     <string name="sensor_mode_notice_fallback">Korlátozott érzékelők: tartalék tájolásforrás használatban; az irány idővel sodródhat.</string>
+    <string name="sensor_mode_notice_accel_only">Nincs giroszkóp: csak a dőlés követhető, az irány nem követi.</string>
     <string name="sensor_mode_notice_none">Nem érhető el tájolásérzékelő; a 3DOF mozdulatlan marad.</string>
 
 </resources>

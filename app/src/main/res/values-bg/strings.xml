@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">Игрови вектор на въртене (относителен)</string>
     <string name="sensor_mode_accel_mag">Акселерометър + магнитометър</string>
     <string name="sensor_mode_gyroscope">Интегриране на жироскоп</string>
+    <string name="sensor_mode_accel_only">Само гравитация (наклон)</string>
     <string name="sensor_mode_none">Няма сензор за ориентация</string>
     <string name="sensor_mode_notice_fallback">Ограничени сензори: използва се резервен източник на ориентация; курсът може да се отклони с времето.</string>
+    <string name="sensor_mode_notice_accel_only">Няма жироскоп: проследява се само наклонът, посоката не се проследява.</string>
     <string name="sensor_mode_notice_none">Няма наличен сензор за ориентация; 3DOF остава неподвижен.</string>
 
 </resources>

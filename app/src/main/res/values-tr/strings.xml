@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">Oyun dönüş vektörü (göreli)</string>
     <string name="sensor_mode_accel_mag">İvmeölçer + manyetometre</string>
     <string name="sensor_mode_gyroscope">Jiroskop entegrasyonu</string>
+    <string name="sensor_mode_accel_only">Yalnızca yerçekimi (eğim)</string>
     <string name="sensor_mode_none">Yön sensörü yok</string>
     <string name="sensor_mode_notice_fallback">Sınırlı sensörler: yedek yön kaynağı kullanılıyor; yön zamanla kayabilir.</string>
+    <string name="sensor_mode_notice_accel_only">Jiroskop yok: yalnızca eğim izlenir, yön izlenmez.</string>
     <string name="sensor_mode_notice_none">Kullanılabilir yön sensörü yok; 3DOF hareketsiz kalır.</string>
 
 </resources>

@@ -108,8 +108,10 @@
     <string name="sensor_mode_game_rotation_vector">Vector de rotació de joc (relatiu)</string>
     <string name="sensor_mode_accel_mag">Acceleròmetre + magnetòmetre</string>
     <string name="sensor_mode_gyroscope">Integració del giroscopi</string>
+    <string name="sensor_mode_accel_only">Només gravetat (inclinació)</string>
     <string name="sensor_mode_none">Sense sensor d\'orientació</string>
     <string name="sensor_mode_notice_fallback">Sensors limitats: s\'utilitza una font d\'orientació alternativa; el rumb pot derivar amb el temps.</string>
+    <string name="sensor_mode_notice_accel_only">Sense giroscopi: només se segueix la inclinació, el rumb no se segueix.</string>
     <string name="sensor_mode_notice_none">No hi ha cap sensor d\'orientació disponible; el 3DOF es manté quiet.</string>
 
 </resources>

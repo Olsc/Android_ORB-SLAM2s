@@ -104,8 +104,10 @@
     <string name="sensor_mode_game_rotation_vector">遊戲旋轉向量（相對姿態）</string>
     <string name="sensor_mode_accel_mag">加速度計 + 磁力計</string>
     <string name="sensor_mode_gyroscope">陀螺儀積分</string>
+    <string name="sensor_mode_accel_only">僅重力向量（俯仰/滾轉）</string>
     <string name="sensor_mode_none">無可用方向感應器</string>
     <string name="sensor_mode_notice_fallback">未偵測到理想感應器，已使用回退姿態來源，航向可能隨時間漂移。</string>
+    <string name="sensor_mode_notice_accel_only">無陀螺儀：僅跟隨俯仰與滾轉，航向不跟隨。</string>
     <string name="sensor_mode_notice_none">未偵測到可用於 3DOF 的方向感應器，將保持靜止。</string>
 
 </resources>

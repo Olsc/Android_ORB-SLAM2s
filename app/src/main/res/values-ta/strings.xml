@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">விளையாட்டு சுழற்சி திசையன் (சார்பு)</string>
     <string name="sensor_mode_accel_mag">முடுக்கமானி + காந்தமானி</string>
     <string name="sensor_mode_gyroscope">ஜைரோஸ்கோப் ஒருங்கிணைப்பு</string>
+    <string name="sensor_mode_accel_only">ஈர்ப்பு மட்டும் (சாய்வு)</string>
     <string name="sensor_mode_none">திசை சென்சார் இல்லை</string>
     <string name="sensor_mode_notice_fallback">வரம்புக்குட்பட்ட சென்சார்கள்: மாற்று திசை மூலம் பயன்படுத்தப்படுகிறது; திசை காலப்போக்கில் நகரலாம்.</string>
+    <string name="sensor_mode_notice_accel_only">ஜைரோஸ்கோப் இல்லை: சாய்வு மட்டுமே கண்காணிக்கப்படும், திசை கண்காணிக்கப்படாது.</string>
     <string name="sensor_mode_notice_none">திசை சென்சார் கிடைக்கவில்லை; 3DOF அசையாமல் இருக்கும்.</string>
 
 </resources>

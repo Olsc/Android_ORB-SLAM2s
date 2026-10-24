@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">Oyun fırlanma vektoru (nisbi)</string>
     <string name="sensor_mode_accel_mag">Akselerometr + maqnitometr</string>
     <string name="sensor_mode_gyroscope">Ciroskop inteqrasiyası</string>
+    <string name="sensor_mode_accel_only">Yalnız cazibə (əyilmə)</string>
     <string name="sensor_mode_none">İstiqamət sensoru yoxdur</string>
     <string name="sensor_mode_notice_fallback">Məhdud sensorlar: ehtiyat istiqamət mənbəyi istifadə olunur; kurs zamanla sürüşə bilər.</string>
+    <string name="sensor_mode_notice_accel_only">Giroskop yoxdur: yalnız əyilmə izlənir, istiqamət izlənmir.</string>
     <string name="sensor_mode_notice_none">İstiqamət sensoru mövcud deyil; 3DOF hərəkətsiz qalır.</string>
 
 </resources>

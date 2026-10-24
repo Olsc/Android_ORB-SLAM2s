@@ -110,8 +110,10 @@
     <string name="sensor_mode_game_rotation_vector">Wektor obrotu w grze (względny)</string>
     <string name="sensor_mode_accel_mag">Akcelerometr + magnetometr</string>
     <string name="sensor_mode_gyroscope">Integracja żyroskopu</string>
+    <string name="sensor_mode_accel_only">Tylko grawitacja (pochylenie)</string>
     <string name="sensor_mode_none">Brak czujnika orientacji</string>
     <string name="sensor_mode_notice_fallback">Ograniczone czujniki: używane zapasowe źródło orientacji; kurs może z czasem dryfować.</string>
+    <string name="sensor_mode_notice_accel_only">Brak żyroskopu: śledzone jest tylko pochylenie, kierunek nie jest śledzony.</string>
     <string name="sensor_mode_notice_none">Brak dostępnego czujnika orientacji; 3DOF pozostaje nieruchome.</string>
 
 </resources>

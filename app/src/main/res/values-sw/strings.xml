@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">Kivekta cha mzunguko wa mchezo (linganifu)</string>
     <string name="sensor_mode_accel_mag">Kipima kasi + kipima sumaku</string>
     <string name="sensor_mode_gyroscope">Muunganisho wa jiroskopu</string>
+    <string name="sensor_mode_accel_only">Graviti pekee (mwinuko)</string>
     <string name="sensor_mode_none">Hakuna kihisi cha mwelekeo</string>
     <string name="sensor_mode_notice_fallback">Vihisi vichache: kutumia chanzo mbadala cha mwelekeo; mwelekeo unaweza kuteleza kwa muda.</string>
+    <string name="sensor_mode_notice_accel_only">Hakuna gyroscope: mwinuko pekee hufuatiliwa, mwelekeo haufuatiliwi.</string>
     <string name="sensor_mode_notice_none">Hakuna kihisi cha mwelekeo kinachopatikana; 3DOF itabaki tuli.</string>
 
 </resources>

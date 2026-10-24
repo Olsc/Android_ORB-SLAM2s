@@ -108,8 +108,10 @@
     <string name="sensor_mode_game_rotation_vector">Vector de rotație pentru joc (relativ)</string>
     <string name="sensor_mode_accel_mag">Accelerometru + magnetometru</string>
     <string name="sensor_mode_gyroscope">Integrare giroscop</string>
+    <string name="sensor_mode_accel_only">Doar gravitație (înclinare)</string>
     <string name="sensor_mode_none">Fără senzor de orientare</string>
     <string name="sensor_mode_notice_fallback">Senzori limitați: se folosește o sursă de orientare de rezervă; direcția se poate deplasa în timp.</string>
+    <string name="sensor_mode_notice_accel_only">Fără giroscop: se urmărește doar înclinarea, direcția nu este urmărită.</string>
     <string name="sensor_mode_notice_none">Nu există senzor de orientare disponibil; 3DOF rămâne nemișcat.</string>
 
 </resources>

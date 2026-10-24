@@ -110,8 +110,10 @@
     <string name="sensor_mode_game_rotation_vector">Ігровий вектор обертання (відносний)</string>
     <string name="sensor_mode_accel_mag">Акселерометр + магнітометр</string>
     <string name="sensor_mode_gyroscope">Інтегрування гіроскопа</string>
+    <string name="sensor_mode_accel_only">Лише гравітація (нахил)</string>
     <string name="sensor_mode_none">Немає датчика орієнтації</string>
     <string name="sensor_mode_notice_fallback">Обмежені датчики: використовується резервне джерело орієнтації; курс може з часом дрейфувати.</string>
+    <string name="sensor_mode_notice_accel_only">Немає гіроскопа: відстежується лише нахил, напрямок не відстежується.</string>
     <string name="sensor_mode_notice_none">Доступний датчик орієнтації відсутній; 3DOF залишається нерухомим.</string>
 
 </resources>

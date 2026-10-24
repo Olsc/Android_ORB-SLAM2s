@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">ഗെയിം ഭ്രമണ വെക്റ്റർ (ആപേക്ഷികം)</string>
     <string name="sensor_mode_accel_mag">ആക്സിലറോമീറ്റർ + മാഗ്നറ്റോമീറ്റർ</string>
     <string name="sensor_mode_gyroscope">ജൈറോസ്കോപ്പ് സംയോജനം</string>
+    <string name="sensor_mode_accel_only">ഗുരുത്വം മാത്രം (ചരിവ്)</string>
     <string name="sensor_mode_none">ദിശാ സെൻസർ ഇല്ല</string>
     <string name="sensor_mode_notice_fallback">പരിമിത സെൻസറുകൾ: ബദൽ ദിശാ സ്രോതസ്സ് ഉപയോഗിക്കുന്നു; ദിശ കാലക്രമേണ നീങ്ങാം.</string>
+    <string name="sensor_mode_notice_accel_only">ജൈറോസ്കോപ്പ് ഇല്ല: ചരിവ് മാത്രം ട്രാക്ക് ചെയ്യുന്നു, ദിശ ട്രാക്ക് ചെയ്യുന്നില്ല.</string>
     <string name="sensor_mode_notice_none">ദിശാ സെൻസർ ലഭ്യമല്ല; 3DOF നിശ്ചലമായിരിക്കും.</string>
 
 </resources>

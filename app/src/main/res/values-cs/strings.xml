@@ -110,8 +110,10 @@
     <string name="sensor_mode_game_rotation_vector">Herní rotační vektor (relativní)</string>
     <string name="sensor_mode_accel_mag">Akcelerometr + magnetometr</string>
     <string name="sensor_mode_gyroscope">Integrace gyroskopu</string>
+    <string name="sensor_mode_accel_only">Pouze gravitace (náklon)</string>
     <string name="sensor_mode_none">Žádný senzor orientace</string>
     <string name="sensor_mode_notice_fallback">Omezené senzory: používá se záložní zdroj orientace; kurz se může časem posouvat.</string>
+    <string name="sensor_mode_notice_accel_only">Bez gyroskopu: sleduje se pouze náklon, směr se nesleduje.</string>
     <string name="sensor_mode_notice_none">Není k dispozici žádný senzor orientace; 3DOF zůstane nehybné.</string>
 
 </resources>

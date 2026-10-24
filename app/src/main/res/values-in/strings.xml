@@ -104,8 +104,10 @@
     <string name="sensor_mode_game_rotation_vector">Vektor rotasi game (relatif)</string>
     <string name="sensor_mode_accel_mag">Akselerometer + magnetometer</string>
     <string name="sensor_mode_gyroscope">Integrasi giroskop</string>
+    <string name="sensor_mode_accel_only">Hanya gravitasi (kemiringan)</string>
     <string name="sensor_mode_none">Tidak ada sensor orientasi</string>
     <string name="sensor_mode_notice_fallback">Sensor terbatas: memakai sumber orientasi cadangan; arah dapat bergeser seiring waktu.</string>
+    <string name="sensor_mode_notice_accel_only">Tanpa giroskop: hanya kemiringan yang dilacak, arah tidak dilacak.</string>
     <string name="sensor_mode_notice_none">Tidak ada sensor orientasi yang tersedia; 3DOF tetap diam.</string>
 
 </resources>

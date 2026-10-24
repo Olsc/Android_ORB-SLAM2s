@@ -87,7 +87,7 @@ It shares similar performance optimization concepts with this project, though it
 - **🎨 Native AR Rendering** —— High-performance 3D rendering via **cgltf** and OpenGL ES, supporting fast loading of large GLB/glTF 3D models and interactive placement on detected planes
 - **🌑 Dark Frame Detection** —— Automatically skips dark or low-quality frames to prevent SLAM thread blocking
 - **🖱️ AR Object Management** —— Place, scale (pinch gesture), and interact with 3D objects, with persistent multi-map anchor lifecycle management
-- **🧭 3DOF Orientation Tracking** —— Three-degrees-of-freedom orientation tracking using onboard device sensors, with multi-tier fallback (Rotation Vector / Game Rotation Vector / Accelerometer + Magnetometer / Gyroscope integration), providing smooth attitude compensation during visual tracking loss or quick panning
+- **🧭 3DOF Orientation Tracking** —— Three-degrees-of-freedom orientation tracking using onboard device sensors, with multi-tier fallback (Rotation Vector / Game Rotation Vector / Accelerometer + Magnetometer / Gyroscope integration / Gravity only), providing smooth attitude compensation during visual tracking loss or quick panning
 - **📑 Multi-Map Support** —— Simultaneous loading and matching of multiple map files
 - **🖥️ Cross-Platform Support** —— Standalone desktop and embedded platform implementations for Windows, macOS, Linux (including LoongArch64), PlayStation Vita, and more, featuring offline benchmarking tools
 
@@ -288,7 +288,7 @@ Beyond Android, this project provides standalone SLAM implementations and offlin
 Reference Research: https://github.com/Olsc/Android_3dof
 
 Based on the research above, this project has integrated onboard sensor 3DoF orientation tracking and sensor-assisted pose estimation:
-- **Multi-Tier Sensor Fallback Strategy**: Prioritizes `TYPE_ROTATION_VECTOR`, automatically falls back to `TYPE_GAME_ROTATION_VECTOR` when a magnetometer is absent, and utilizes accelerometer + magnetometer or gyroscope numerical integration with complementary filtering as secondary fallbacks to ensure compatibility across all Android devices.
+- **Multi-Tier Sensor Fallback Strategy**: Prioritizes `TYPE_ROTATION_VECTOR`, automatically falls back to `TYPE_GAME_ROTATION_VECTOR` when a magnetometer is absent, and utilizes accelerometer + magnetometer or gyroscope numerical integration with complementary filtering as secondary fallbacks. On devices without a gyroscope, the final tier derives pitch and roll from the gravity vector alone, ensuring compatibility across all Android devices.
 - **SLAM Motion Compensation**: When visual tracking degrades or momentarily loses lock during rapid camera movements or occlusion, sensor orientation changes provide pose dead reckoning and continuity smoothing, stabilizing the AR experience.
 - **Future Direction**: Tightly-coupled Visual-Inertial Odometry (VIO) with hardware timestamp synchronization remains under ongoing development.
 

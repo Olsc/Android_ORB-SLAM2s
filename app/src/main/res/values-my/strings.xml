@@ -104,8 +104,10 @@
     <string name="sensor_mode_game_rotation_vector">ဂိမ်းလှည့်ပတ်မာတိကာ (နှိုင်းရ)</string>
     <string name="sensor_mode_accel_mag">အရှိန်တိုင်းကိရိယာ + သံလိုက်တိုင်းကိရိယာ</string>
     <string name="sensor_mode_gyroscope">ဂျိုင်ရိုစကုပ်ပေါင်းစပ်မှု</string>
+    <string name="sensor_mode_accel_only">ဆွဲငင်အား သီးသန့် (စောင်းခြင်း)</string>
     <string name="sensor_mode_none">ဦးတည်ချက် အာရုံခံကိရိယာမရှိ</string>
     <string name="sensor_mode_notice_fallback">အာရုံခံကိရိယာ အကန့်အသတ်ရှိ − အရန်ဦးတည်ချက်အရင်းအမြစ် သုံးနေသည်။ ဦးတည်ချက် ရွေ့လျားနိုင်သည်။</string>
+    <string name="sensor_mode_notice_accel_only">gyroscope မရှိပါ- စောင်းခြင်းကိုသာ ခြေရာခံသည်၊ ဦးတည်ချက် မခြေရာခံပါ။</string>
     <string name="sensor_mode_notice_none">ဦးတည်ချက် အာရုံခံကိရိယာ မရနိုင်ပါ။ 3DOF ရပ်တန့်နေမည်။</string>
 
 </resources>

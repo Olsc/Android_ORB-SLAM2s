@@ -108,8 +108,10 @@
     <string name="sensor_mode_game_rotation_vector">וקטור סיבוב משחק (יחסי)</string>
     <string name="sensor_mode_accel_mag">מדי תאוצה + מגנטומטר</string>
     <string name="sensor_mode_gyroscope">שילוב גירוסקופ</string>
+    <string name="sensor_mode_accel_only">כבידה בלבד (הטיה)</string>
     <string name="sensor_mode_none">אין חיישן כיוון</string>
     <string name="sensor_mode_notice_fallback">חיישנים מוגבלים: נעשה שימוש במקור כיוון חלופי; הכיוון עשוי לסטות עם הזמן.</string>
+    <string name="sensor_mode_notice_accel_only">אין גירוסקופ: רק ההטיה נעקבת, הכיוון אינו נעקב.</string>
     <string name="sensor_mode_notice_none">אין חיישן כיוון זמין; 3DOF יישאר ללא תנועה.</string>
 
 </resources>

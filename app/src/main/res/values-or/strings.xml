@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">ଗେମ ଘୂର୍ଣ୍ଣନ ଭେକ୍ଟର (ସାପେକ୍ଷ)</string>
     <string name="sensor_mode_accel_mag">ତ୍ୱରଣମାପକ + ଚୁମ୍ବକମାପକ</string>
     <string name="sensor_mode_gyroscope">ଜାଇରୋସ୍କୋପ ସଂଯୋଜନ</string>
+    <string name="sensor_mode_accel_only">କେବଳ ମାଧ୍ୟାକର୍ଷଣ (ଝୁମ୍ପା)</string>
     <string name="sensor_mode_none">କୌଣସି ଦିଶା ସେନ୍ସର ନାହିଁ</string>
     <string name="sensor_mode_notice_fallback">ସୀମିତ ସେନ୍ସର: ବିକଳ୍ପ ଦିଶା ଉତ୍ସ ବ୍ୟବହୃତ; ଦିଶା ସମୟ ସହିତ ଖସିଯାଇପାରେ।</string>
+    <string name="sensor_mode_notice_accel_only">ଜାଇରୋସ୍କୋପ ନାହିଁ: କେବଳ ଝୁମ୍ପା ଟ୍ରାକ୍ ହୁଏ, ଦିଗ ଟ୍ରାକ୍ ହୁଏ ନାହିଁ।</string>
     <string name="sensor_mode_notice_none">କୌଣସି ଦିଶା ସେନ୍ସର ଉପଲବ୍ଧ ନାହିଁ; 3DOF ସ୍ଥିର ରହିବ।</string>
 
 </resources>

@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">Game rotation vector (relative)</string>
     <string name="sensor_mode_accel_mag">Accelerometer + magnetometer</string>
     <string name="sensor_mode_gyroscope">Gyroscope integration</string>
+    <string name="sensor_mode_accel_only">Gravity only (tilt)</string>
     <string name="sensor_mode_none">No orientation sensor</string>
     <string name="sensor_mode_notice_fallback">Limited sensors: using a fallback orientation source; heading may drift over time.</string>
+    <string name="sensor_mode_notice_accel_only">No gyroscope: only pitch and roll are tracked, heading does not follow.</string>
     <string name="sensor_mode_notice_none">No orientation sensor available; 3DOF stays still.</string>
 
 </resources>

@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">Spilrotationsvektor (relativ)</string>
     <string name="sensor_mode_accel_mag">Accelerometer + magnetometer</string>
     <string name="sensor_mode_gyroscope">Gyroskop-integration</string>
+    <string name="sensor_mode_accel_only">Kun tyngdekraft (hældning)</string>
     <string name="sensor_mode_none">Ingen retningssensor</string>
     <string name="sensor_mode_notice_fallback">Begrænsede sensorer: reservretningskilde i brug; kursen kan drive med tiden.</string>
+    <string name="sensor_mode_notice_accel_only">Ingen gyroskop: kun hældning følges, retningen følger ikke.</string>
     <string name="sensor_mode_notice_none">Ingen retningssensor tilgængelig; 3DOF forbliver stille.</string>
 
 </resources>

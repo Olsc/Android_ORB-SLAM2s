@@ -932,6 +932,7 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
 
         // 检测到对应硬件：默认启动传感器辅助定位
         mIs3DofMode = true;
+        mSensorFusionTracker.setRotationDof(mOrientationSensor.getRotationDof());
         mOrientationSensor.start(this);
         mSensorFusionTracker.set3DofAssistEnabled(true);
 
@@ -972,6 +973,7 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
                 return;
             }
             mIs3DofMode = true;
+            mSensorFusionTracker.setRotationDof(mOrientationSensor.getRotationDof());
             mOrientationSensor.start(this);
             mSensorFusionTracker.set3DofAssistEnabled(true);
 
@@ -1021,6 +1023,8 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
                 return R.string.sensor_mode_accel_mag;
             case GYROSCOPE:
                 return R.string.sensor_mode_gyroscope;
+            case ACCEL_ONLY:
+                return R.string.sensor_mode_accel_only;
             default:
                 return R.string.sensor_mode_none;
         }
@@ -1032,6 +1036,8 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
             case GAME_ROTATION_VECTOR:
             case GYROSCOPE:
                 return R.string.sensor_mode_notice_fallback;
+            case ACCEL_ONLY:
+                return R.string.sensor_mode_notice_accel_only;
             case NONE:
                 return R.string.sensor_mode_notice_none;
             default:

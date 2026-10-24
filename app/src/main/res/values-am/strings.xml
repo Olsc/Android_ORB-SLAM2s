@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">የጨዋታ ማሽከርከሪያ ቬክተር (አንጻራዊ)</string>
     <string name="sensor_mode_accel_mag">አክስለሮሜትር + ማግኔቶሜትር</string>
     <string name="sensor_mode_gyroscope">የጋይሮስኮፕ ውህደት</string>
+    <string name="sensor_mode_accel_only">የስበት አቅጣጫ ብቻ (ማዘንበል)</string>
     <string name="sensor_mode_none">የአቅጣጫ ሴንሰር የለም</string>
     <string name="sensor_mode_notice_fallback">የተገደቡ ሴንሰሮች፦ አማራጭ የአቅጣጫ ምንጭ ጥቅም ላይ ውሏል፤ አቅጣጫ በጊዜ ሂደት ሊንሸራተት ይችላል።</string>
+    <string name="sensor_mode_notice_accel_only">ጋይሮስኮፕ የለም፦ የሚከታተለው ማዘንበል ብቻ ነው፤ አቅጣጫ አይከተልም።</string>
     <string name="sensor_mode_notice_none">የሚገኝ የአቅጣጫ ሴንሰር የለም፤ 3DOF እንዳለ ይቆያል።</string>
 
 </resources>

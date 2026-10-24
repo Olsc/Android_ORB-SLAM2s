@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">খেলৰ ঘূৰ্ণন ভেক্টৰ (সাপেক্ষ)</string>
     <string name="sensor_mode_accel_mag">এক্সিলেৰ\'মিটাৰ + মেগনেট\'মিটাৰ</string>
     <string name="sensor_mode_gyroscope">জাইৰ\'স্কপ সংহতি</string>
+    <string name="sensor_mode_accel_only">কেৱল মাধ্যাকৰ্ষণ (দোলন)</string>
     <string name="sensor_mode_none">কোনো দিশ চেন্সৰ নাই</string>
     <string name="sensor_mode_notice_fallback">সীমিত চেন্সৰ: বিকল্প দিশ উৎস ব্যৱহাৰ কৰা হৈছে; দিশ সময়ৰ লগে লগে স্থানান্তৰ হ\'ব পাৰে।</string>
+    <string name="sensor_mode_notice_accel_only">জাইৰ\'স্কপ নাই: কেৱল দোলন অনুসৰণ কৰা হয়, দিশ অনুসৰণ নকৰে।</string>
     <string name="sensor_mode_notice_none">কোনো দিশ চেন্সৰ উপলব্ধ নাই; 3DOF স্থিৰ থাকিব।</string>
 
 </resources>

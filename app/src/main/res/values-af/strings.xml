@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">Speletjie-rotasievektor (relatief)</string>
     <string name="sensor_mode_accel_mag">Versnellingsmeter + magnetometer</string>
     <string name="sensor_mode_gyroscope">Gyroskoopintegrasie</string>
+    <string name="sensor_mode_accel_only">Slegs swaartekrag (kantel)</string>
     <string name="sensor_mode_none">Geen oriëntasiesensor</string>
     <string name="sensor_mode_notice_fallback">Beperkte sensors: terugval-oriëntasiebron in gebruik; rigting kan mettertyd wegdryf.</string>
+    <string name="sensor_mode_notice_accel_only">Geen giroskoop nie: slegs kantel word gevolg, rigting volg nie.</string>
     <string name="sensor_mode_notice_none">Geen oriëntasiesensor beskikbaar nie; 3DOF bly stil.</string>
 
 </resources>

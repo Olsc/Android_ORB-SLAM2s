@@ -104,8 +104,10 @@
     <string name="sensor_mode_game_rotation_vector">Vektor putaran permainan (relatif)</string>
     <string name="sensor_mode_accel_mag">Pecutan meter + magnetometer</string>
     <string name="sensor_mode_gyroscope">Penyepaduan giroskop</string>
+    <string name="sensor_mode_accel_only">Graviti sahaja (kecondongan)</string>
     <string name="sensor_mode_none">Tiada sensor orientasi</string>
     <string name="sensor_mode_notice_fallback">Sensor terhad: sumber orientasi sandaran digunakan; hala tuju mungkin melayang seiring masa.</string>
+    <string name="sensor_mode_notice_accel_only">Tiada giroskop: hanya kecondongan dikesan, hala tuju tidak dikesan.</string>
     <string name="sensor_mode_notice_none">Tiada sensor orientasi tersedia; 3DOF kekal tidak bergerak.</string>
 
 </resources>

@@ -104,8 +104,10 @@
     <string name="sensor_mode_game_rotation_vector">Vectơ quay trò chơi (tương đối)</string>
     <string name="sensor_mode_accel_mag">Gia tốc kế + từ kế</string>
     <string name="sensor_mode_gyroscope">Tích phân con quay hồi chuyển</string>
+    <string name="sensor_mode_accel_only">Chỉ trọng lực (nghiêng)</string>
     <string name="sensor_mode_none">Không có cảm biến hướng</string>
     <string name="sensor_mode_notice_fallback">Cảm biến hạn chế: đang dùng nguồn hướng dự phòng; hướng có thể trôi theo thời gian.</string>
+    <string name="sensor_mode_notice_accel_only">Không có con quay hồi chuyển: chỉ theo dõi độ nghiêng, hướng không theo dõi.</string>
     <string name="sensor_mode_notice_none">Không có cảm biến hướng; 3DOF sẽ đứng yên.</string>
 
 </resources>

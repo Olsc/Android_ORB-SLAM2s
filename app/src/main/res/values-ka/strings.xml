@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">თამაშის ბრუნვის ვექტორი (ფარდობითი)</string>
     <string name="sensor_mode_accel_mag">აქსელერომეტრი + მაგნიტომეტრი</string>
     <string name="sensor_mode_gyroscope">გიროსკოპის ინტეგრაცია</string>
+    <string name="sensor_mode_accel_only">მხოლოდ გრავიტაცია (დახრა)</string>
     <string name="sensor_mode_none">ორიენტაციის სენსორი არ არის</string>
     <string name="sensor_mode_notice_fallback">შეზღუდული სენსორები: გამოიყენება სარეზერვო ორიენტაციის წყარო; კურსი დროთა განმავლობაში შეიძლება გადაიხაროს.</string>
+    <string name="sensor_mode_notice_accel_only">გიროსკოპი არ არის: თვალყურს ვადევნებთ მხოლოდ დახრას, მიმართულებას არა.</string>
     <string name="sensor_mode_notice_none">ორიენტაციის სენსორი მიუწვდომელია; 3DOF უმოძრაოდ რჩება.</string>
 
 </resources>

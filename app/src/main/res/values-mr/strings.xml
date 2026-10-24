@@ -106,8 +106,10 @@
     <string name="sensor_mode_game_rotation_vector">गेम रोटेशन वेक्टर (सापेक्ष)</string>
     <string name="sensor_mode_accel_mag">प्रवेगमापक + चुंबकमापक</string>
     <string name="sensor_mode_gyroscope">जायरोस्कोप एकत्रीकरण</string>
+    <string name="sensor_mode_accel_only">फक्त गुरुत्व (कल)</string>
     <string name="sensor_mode_none">दिशा सेन्सर नाही</string>
     <string name="sensor_mode_notice_fallback">मर्यादित सेन्सर: पर्यायी दिशा स्रोत वापरात; दिशा कालांतराने सरकू शकते.</string>
+    <string name="sensor_mode_notice_accel_only">जायरोस्कोप नाही: फक्त कल ट्रॅक होते, दिशा ट्रॅक होत नाही.</string>
     <string name="sensor_mode_notice_none">दिशा सेन्सर उपलब्ध नाही; 3DOF स्थिर राहील.</string>
 
 </resources>

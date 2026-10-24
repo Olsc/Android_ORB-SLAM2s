@@ -104,8 +104,10 @@
     <string name="sensor_mode_game_rotation_vector">게임 회전 벡터(상대)</string>
     <string name="sensor_mode_accel_mag">가속도계 + 자력계</string>
     <string name="sensor_mode_gyroscope">자이로스코프 적분</string>
+    <string name="sensor_mode_accel_only">중력만 사용(기울기)</string>
     <string name="sensor_mode_none">방향 센서 없음</string>
     <string name="sensor_mode_notice_fallback">센서 제한: 대체 자세 소스를 사용 중이며 방위가 시간이 지나면 드리프트될 수 있습니다.</string>
+    <string name="sensor_mode_notice_accel_only">자이로스코프 없음: 기울기만 추적하며 방위는 추적하지 않습니다.</string>
     <string name="sensor_mode_notice_none">사용 가능한 방향 센서가 없습니다. 3DOF는 정지 상태로 유지됩니다.</string>
 
 </resources>

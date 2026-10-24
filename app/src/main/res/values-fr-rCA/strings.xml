@@ -108,8 +108,10 @@
     <string name="sensor_mode_game_rotation_vector">Vecteur de rotation de jeu (relatif)</string>
     <string name="sensor_mode_accel_mag">Accéléromètre + magnétomètre</string>
     <string name="sensor_mode_gyroscope">Intégration gyroscopique</string>
+    <string name="sensor_mode_accel_only">Gravité seule (inclinaison)</string>
     <string name="sensor_mode_none">Aucun capteur d\'orientation</string>
     <string name="sensor_mode_notice_fallback">Capteurs limités : source d\'orientation de secours utilisée ; le cap peut dériver avec le temps.</string>
+    <string name="sensor_mode_notice_accel_only">Pas de gyroscope : seule l\'inclinaison est suivie, le cap ne suit pas.</string>
     <string name="sensor_mode_notice_none">Aucun capteur d\'orientation disponible ; le 3DOF reste immobile.</string>
 
 </resources>
