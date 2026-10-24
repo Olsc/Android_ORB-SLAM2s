@@ -312,7 +312,8 @@ void GlbRenderer::render(const float* slamModelMatrix,
                          const float* projMatrix,
                          float scale,
                          float userRotationX,
-                         float userRotationY) {
+                         float userRotationY,
+                         bool flipWinding) {
     if (!mIsGLReady || !mModel || !mModel->isLoaded() || !mModel->isGPUUploaded()) {
         return;
     }
@@ -397,7 +398,8 @@ void GlbRenderer::render(const float* slamModelMatrix,
             glDisable(GL_CULL_FACE);
         } else {
             glEnable(GL_CULL_FACE);
-            glCullFace(GL_BACK);
+            // 显示层变换为反射（奇数次镜像）时绕序翻转，正反面剔除需对调
+            glCullFace(flipWinding ? GL_FRONT : GL_BACK);
         }
 
         // 绑定 VBO 并设置顶点属性

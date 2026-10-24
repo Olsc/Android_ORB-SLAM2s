@@ -29,6 +29,7 @@ import android.os.Looper;
 import android.text.format.Formatter;
 import android.util.Log;
 import android.view.Display;
+import android.hardware.display.DisplayManager;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.View;
@@ -58,6 +59,7 @@ import com.orb.slam2s.R;
 import com.orb.slam2s.camera.CameraPreviewView;
 import com.orb.slam2s.constant.GlobalConstant;
 import com.orb.slam2s.graphics.AspectGLSurfaceView;
+import com.orb.slam2s.graphics.DisplayCorrection;
 import com.orb.slam2s.graphics.GlbModelRenderer;
 import com.orb.slam2s.ipc.SlamIPCClient;
 import com.orb.slam2s.sensors.OrientationSensor;
@@ -78,11 +80,13 @@ import java.util.List;
 import java.util.Locale;
 
 // SLAM AR 主控制 Activity（调度相机、3D 模型渲染、3DOF 追踪、地图管理与交互控制）
-public class MainActivity extends ComponentActivity implements CameraPreviewView.FrameListener {
+public class MainActivity extends ComponentActivity
+        implements CameraPreviewView.FrameListener, CameraPreviewView.DisplayCorrectionListener {
 
     private static final String TAG = "MainActivity";
 
     private CameraPreviewView mCameraPreviewView;
+    private AspectGLSurfaceView mArObjectView;
     private boolean mIsInitFinished = false;
 
     private SlamIPCClient mSlamIPCClient;
@@ -200,19 +204,72 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
         return dir != null ? dir : new File(getFilesDir(), "SLAM");
     }
 
+    // 读取当前显示方向，取值对应 Surface.ROTATION_0/90/180/270
+    @SuppressWarnings("deprecation")
+    private int readDisplayRotation() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                Display display = getDisplay();
+                if (display != null) return display.getRotation();
+            }
+            WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+            if (wm != null) return wm.getDefaultDisplay().getRotation();
+        } catch (Exception e) {
+            Log.e(TAG, "读取显示方向失败: " + e.getMessage());
+        }
+        return Surface.ROTATION_90;
+    }
+
+    // 将实际显示方向同步给 SLAM 侧的传感器重映射（3DOF 用）；
+    // onCreate 读到的值可能偏旧，故在 onResume 与 onDisplayChanged 时再对齐一次。
+    private void refreshDisplayRotation() {
+        int rotation = readDisplayRotation();
+        if (rotation != GlobalConstant.DISPLAY_ROTATION) {
+            Log.d(TAG, "显示方向更新: " + GlobalConstant.DISPLAY_ROTATION + " -> " + rotation);
+            GlobalConstant.setDisplayRotation(rotation);
+        }
+    }
+
+    // 监听显示方向变化（横屏左右切换/多屏），保持 3DOF 的传感器坐标系与显示方向一致
+    private DisplayManager mDisplayManager;
+    private boolean mDisplayListenerRegistered;
+    private final DisplayManager.DisplayListener mDisplayListener = new DisplayManager.DisplayListener() {
+        @Override
+        public void onDisplayAdded(int displayId) {
+        }
+
+        @Override
+        public void onDisplayRemoved(int displayId) {
+        }
+
+        @Override
+        public void onDisplayChanged(int displayId) {
+            refreshDisplayRotation();
+        }
+    };
+
+    private void registerDisplayListener() {
+        if (mDisplayListenerRegistered) return;
+        if (mDisplayManager == null) {
+            mDisplayManager = (DisplayManager) getSystemService(Context.DISPLAY_SERVICE);
+        }
+        if (mDisplayManager == null) return;
+        mDisplayManager.registerDisplayListener(mDisplayListener, mUiHandler);
+        mDisplayListenerRegistered = true;
+    }
+
+    private void unregisterDisplayListener() {
+        if (!mDisplayListenerRegistered || mDisplayManager == null) return;
+        mDisplayManager.unregisterDisplayListener(mDisplayListener);
+        mDisplayListenerRegistered = false;
+    }
+
     @SuppressWarnings("deprecation")
     private void lockCurrentOrientation() {
         try {
             WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
             if (wm != null) {
-                int rotation;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    Display display = getDisplay();
-                    rotation = (display != null) ? display.getRotation() : Surface.ROTATION_90;
-                } else {
-                    rotation = wm.getDefaultDisplay().getRotation();
-                }
-
+                int rotation = readDisplayRotation();
                 GlobalConstant.setDisplayRotation(rotation);
 
                 if (rotation == Surface.ROTATION_270) {
@@ -244,6 +301,7 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
         mCameraPreviewView = findViewById(R.id.my_fake_glsurface_view);
         mCameraPreviewView.setVisibility(View.VISIBLE);
         mCameraPreviewView.setFrameListener(this);
+        mCameraPreviewView.setDisplayCorrectionListener(this);
         mCameraPreviewView.setSlamIPCClient(mSlamIPCClient);
         mCameraPreviewView.init();
 
@@ -527,6 +585,7 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
 
         final AspectGLSurfaceView glRootView = findViewById(R.id.ar_object_view_gles2_obj);
         glRootView.setAspectRatio(GlobalConstant.RESOLUTION_WIDTH, GlobalConstant.RESOLUTION_HEIGHT);
+        mArObjectView = glRootView;
 
         mModelRenderer = GlbModelRenderer.newInstance()
                 .setArObjectView(glRootView)
@@ -542,12 +601,32 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
                     }
                 }))
                 .init(mTouchHelper);
+
+        // 若首帧之前已得到矫正，先同步给 AR 层
+        applyDisplayCorrection(mCameraPreviewView != null ? mCameraPreviewView.getDisplayCorrection() : null);
+    }
+
+    // 应用显示层矫正：更新 AR 视图宽高比与模型投影，与预览位图、点云保持同一变换。
+    @Override
+    public void onDisplayCorrectionChanged(DisplayCorrection correction) {
+        applyDisplayCorrection(correction);
+    }
+
+    private void applyDisplayCorrection(DisplayCorrection correction) {
+        if (correction == null) return;
+        if (mArObjectView != null) {
+            mArObjectView.setAspectRatio(correction.displayWidth, correction.displayHeight);
+        }
+        if (mModelRenderer != null) {
+            mModelRenderer.setDisplayCorrection(correction);
+        }
     }
 
     @Override
     protected void onPause() {
         Log.d(TAG, "onPause: 暂停摄像头视图");
         super.onPause();
+        unregisterDisplayListener();
         stopMapStatsUpdater();
         if (mCameraPreviewView != null) {
             mCameraPreviewView.disableView();
@@ -570,6 +649,10 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
     protected void onResume() {
         Log.d(TAG, "onResume: 准备启动");
         super.onResume();
+
+        // window 已 attach，此时读到的是真实显示方向（onCreate 阶段可能还是旧值）
+        refreshDisplayRotation();
+        registerDisplayListener();
 
         if (mModelRenderer != null) {
             mModelRenderer.onResume();
@@ -758,6 +841,15 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
                     float speed = 3.0f * intensity;
                     float yawDelta = (float) Math.cos(Math.toRadians(angleDeg)) * speed;
                     float pitchDelta = -(float) Math.sin(Math.toRadians(angleDeg)) * speed;
+
+                    // 摇杆位于屏幕坐标系，模型旋转作用在世界系，
+                    // 显示层镜像或旋转时需同步翻转方向，否则推向右却向左转
+                    DisplayCorrection correction = mCameraPreviewView != null
+                            ? mCameraPreviewView.getDisplayCorrection() : null;
+                    if (correction != null) {
+                        yawDelta *= correction.screenXSign();
+                        pitchDelta *= correction.screenYSign();
+                    }
                     mModelRenderer.addUserRotation(yawDelta, pitchDelta);
                 }
             });
@@ -765,8 +857,8 @@ public class MainActivity extends ComponentActivity implements CameraPreviewView
         }
     }
 
-    // 画面镜像控制：手动切换上下/左右镜像。
-    // 开关状态由 CameraPreviewView 自行持久化并在构造时恢复，这里只负责按钮与文案同步。
+    // 画面镜像控制：切换显示层的上下与左右镜像，
+    // 开关状态由 CameraPreviewView 持久化，这里仅同步按钮状态与文案。
     private void initMirrorControls() {
         mBtnMirrorVertical = findViewById(R.id.btn_mirror_vertical);
         mBtnMirrorHorizontal = findViewById(R.id.btn_mirror_horizontal);
