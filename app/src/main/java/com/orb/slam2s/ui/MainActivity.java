@@ -317,20 +317,24 @@ public class MainActivity extends ComponentActivity
                     WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
             );
 
-            // 动态避让虚拟摇杆 (start)，底部间距由操作面板承担
+            // 动态避让虚拟摇杆 (start + bottom)
             View joystickView = findViewById(R.id.joystick_view);
             if (joystickView != null && joystickView.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
                 ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) joystickView.getLayoutParams();
                 int baseStart = (int) (16 * getResources().getDisplayMetrics().density);
+                int baseBottom = (int) (16 * getResources().getDisplayMetrics().density);
                 lp.setMarginStart(baseStart + insets.left);
+                lp.bottomMargin = baseBottom + insets.bottom;
                 joystickView.setLayoutParams(lp);
             }
 
-            // 动态避让底部操作面板 (bottom)
+            // 动态避让右下角操作面板 (end + bottom)
             View actionPanel = findViewById(R.id.action_panel);
             if (actionPanel != null && actionPanel.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
                 ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) actionPanel.getLayoutParams();
+                int baseEnd = (int) (8 * getResources().getDisplayMetrics().density);
                 int baseBottom = (int) (8 * getResources().getDisplayMetrics().density);
+                lp.setMarginEnd(baseEnd + insets.right);
                 lp.bottomMargin = baseBottom + insets.bottom;
                 actionPanel.setLayoutParams(lp);
             }

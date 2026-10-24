@@ -455,8 +455,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
                                     }
                                     int[] previewPixels = previewVisible ? mCachePixels : null;
 
-                                    // 一次遍历同时写灰度帧与预览位图：
-                                    // 灰度按原始像素序供 SLAM 使用；
+                                    // 一次遍历同时写两路：灰度按原始像素序供 SLAM 使用，
                                     // ARGB 按矫正后的目标坐标写入，无需额外翻转
                                     for (int y = 0; y < h; y++) {
                                         final int srcRowOffset = y * w * 4;
