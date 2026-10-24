@@ -60,8 +60,6 @@
     <string name="btn_3dof_off">ሴንሰር፦ ጠፍቷል</string>
     <string name="btn_3dof_on">ሴንሰር፦ በርቷል</string>
     <string name="hint_3dof_unavailable">ሴንሰር አይገኝም</string>
-    <string name="hint_3dof_assisted_on">የሴንሰር ድጋፍ በርቷል (የማሽከርከር ማረጋጊያ + ሲጠፋ መያዝ)</string>
-    <string name="hint_3dof_assisted_off">የሴንሰር ድጋፍ ጠፍቷል፣ ንጹህ የእይታ ክትትል ተመልሷል</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 
@@ -100,16 +98,5 @@
     <string name="camera_facing_front">የፊት ካሜራ (%1$s)</string>
     <string name="camera_facing_other">ካሜራ %1$s</string>
     <string name="dialog_select_camera">ካሜራ ይምረጡ</string>
-
-    <string name="sensor_mode_active">የሴንሰር ሁነታ፦ %1$s</string>
-    <string name="sensor_mode_rotation_vector">የማሽከርከሪያ ቬክተር (ፍጹም)</string>
-    <string name="sensor_mode_game_rotation_vector">የጨዋታ ማሽከርከሪያ ቬክተር (አንጻራዊ)</string>
-    <string name="sensor_mode_accel_mag">አክስለሮሜትር + ማግኔቶሜትር</string>
-    <string name="sensor_mode_gyroscope">የጋይሮስኮፕ ውህደት</string>
-    <string name="sensor_mode_accel_only">የስበት አቅጣጫ ብቻ (ማዘንበል)</string>
-    <string name="sensor_mode_none">የአቅጣጫ ሴንሰር የለም</string>
-    <string name="sensor_mode_notice_fallback">የተገደቡ ሴንሰሮች፦ አማራጭ የአቅጣጫ ምንጭ ጥቅም ላይ ውሏል፤ አቅጣጫ በጊዜ ሂደት ሊንሸራተት ይችላል።</string>
-    <string name="sensor_mode_notice_accel_only">ጋይሮስኮፕ የለም፦ የሚከታተለው ማዘንበል ብቻ ነው፤ አቅጣጫ አይከተልም።</string>
-    <string name="sensor_mode_notice_none">የሚገኝ የአቅጣጫ ሴንሰር የለም፤ 3DOF እንዳለ ይቆያል።</string>
 
 </resources>

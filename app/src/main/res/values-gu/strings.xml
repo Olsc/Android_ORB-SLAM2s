@@ -60,8 +60,6 @@
     <string name="btn_3dof_off">સેન્સર: બંધ</string>
     <string name="btn_3dof_on">સેન્સર: ચાલુ</string>
     <string name="hint_3dof_unavailable">સેન્સર ઉપલબ્ધ નથી</string>
-    <string name="hint_3dof_assisted_on">સેન્સર સહાય સક્રિય (પરિભ્રમણ સ્થિરતા + ખોવાઈ જાય ત્યારે જાળવણી)</string>
-    <string name="hint_3dof_assisted_off">સેન્સર સહાય નિષ્ક્રિય, શુદ્ધ વિઝ્યુઅલ ટ્રેકિંગ પુનઃસ્થાપિત</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 
@@ -100,16 +98,5 @@
     <string name="camera_facing_front">આગળનો કૅમેરો (%1$s)</string>
     <string name="camera_facing_other">કૅમેરો %1$s</string>
     <string name="dialog_select_camera">કૅમેરો પસંદ કરો</string>
-
-    <string name="sensor_mode_active">સેન્સર મોડ: %1$s</string>
-    <string name="sensor_mode_rotation_vector">પરિભ્રમણ વેક્ટર (નિરપેક્ષ)</string>
-    <string name="sensor_mode_game_rotation_vector">ગેમ પરિભ્રમણ વેક્ટર (સાપેક્ષ)</string>
-    <string name="sensor_mode_accel_mag">એક્સેલરોમીટર + મેગ્નેટોમીટર</string>
-    <string name="sensor_mode_gyroscope">જાયરોસ્કોપ એકીકરણ</string>
-    <string name="sensor_mode_accel_only">ફક્ત ગુરુત્વાકર્ષણ (ઝુકાવ)</string>
-    <string name="sensor_mode_none">કોઈ દિશા સેન્સર નથી</string>
-    <string name="sensor_mode_notice_fallback">મર્યાદિત સેન્સર: વૈકલ્પિક દિશા સ્રોત વપરાય છે; દિશા સમય સાથે ખસી શકે છે.</string>
-    <string name="sensor_mode_notice_accel_only">જાયરોસ્કોપ નથી: ફક્ત ઝુકાવ અનુસરે છે, દિશા અનુસરતી નથી.</string>
-    <string name="sensor_mode_notice_none">કોઈ દિશા સેન્સર ઉપલબ્ધ નથી; 3DOF સ્થિર રહેશે.</string>
 
 </resources>

@@ -128,7 +128,7 @@ public class MainActivity extends ComponentActivity
     // 虚拟摇杆
     private VirtualJoystickView mJoystickView;
 
-    // 3DOF 传感器辅助定位跟踪 (默认开启，若检测到硬件)
+    // 辅助定位跟踪 (默认开启，若检测到硬件)
     private OrientationSensor mOrientationSensor;
     private SensorFusionTracker mSensorFusionTracker;
     private boolean mIs3DofMode = false;
@@ -975,10 +975,7 @@ public class MainActivity extends ComponentActivity
                 mBtn3DofCube.setVisibility(View.VISIBLE);
                 mBtn3DofCube.setText(getString(R.string.btn_3dof_on));
             }
-            if (showToast) {
-                showSensorModeToast();
-            }
-            Log.d(TAG, "3DOF 传感器辅助定位已开启 (旋转防抖 + 丢失空间保活)");
+            Log.d(TAG, "辅助定位已开启 (旋转防抖 + 丢失空间保活)");
         } else {
             mIs3DofMode = false;
             mOrientationSensor.stop();
@@ -987,55 +984,7 @@ public class MainActivity extends ComponentActivity
             if (mBtn3DofCube != null) {
                 mBtn3DofCube.setText(getString(R.string.btn_3dof_off));
             }
-            if (showToast) {
-                showToast(getString(R.string.hint_3dof_assisted_off));
-            }
             Log.d(TAG, "3DOF 辅助定位已关闭，恢复纯视觉 SLAM");
-        }
-    }
-
-    // 提示当前实际使用的姿态来源，并对回退模式的局限性给出说明
-    private void showSensorModeToast() {
-        OrientationSensor.Mode mode = mOrientationSensor.getMode();
-        StringBuilder sb = new StringBuilder(getString(R.string.hint_3dof_assisted_on));
-        sb.append('\n').append(getString(R.string.sensor_mode_active, getString(getSensorModeNameRes(mode))));
-        int noticeRes = getSensorModeNoticeRes(mode);
-        if (noticeRes != 0) {
-            sb.append('\n').append(getString(noticeRes));
-        }
-        showToast(sb.toString());
-    }
-
-    private int getSensorModeNameRes(OrientationSensor.Mode mode) {
-        if (mode == null) return R.string.sensor_mode_none;
-        switch (mode) {
-            case ROTATION_VECTOR:
-                return R.string.sensor_mode_rotation_vector;
-            case GAME_ROTATION_VECTOR:
-                return R.string.sensor_mode_game_rotation_vector;
-            case ACCEL_MAG:
-                return R.string.sensor_mode_accel_mag;
-            case GYROSCOPE:
-                return R.string.sensor_mode_gyroscope;
-            case ACCEL_ONLY:
-                return R.string.sensor_mode_accel_only;
-            default:
-                return R.string.sensor_mode_none;
-        }
-    }
-
-    private int getSensorModeNoticeRes(OrientationSensor.Mode mode) {
-        if (mode == null) return R.string.sensor_mode_notice_none;
-        switch (mode) {
-            case GAME_ROTATION_VECTOR:
-            case GYROSCOPE:
-                return R.string.sensor_mode_notice_fallback;
-            case ACCEL_ONLY:
-                return R.string.sensor_mode_notice_accel_only;
-            case NONE:
-                return R.string.sensor_mode_notice_none;
-            default:
-                return 0;
         }
     }
 }

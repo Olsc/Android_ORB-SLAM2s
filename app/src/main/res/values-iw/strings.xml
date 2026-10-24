@@ -61,8 +61,6 @@
     <string name="btn_3dof_off">חיישן: כבוי</string>
     <string name="btn_3dof_on">חיישן: פועל</string>
     <string name="hint_3dof_unavailable">החיישן אינו זמין</string>
-    <string name="hint_3dof_assisted_on">תמיכת חיישן הופעלה (ייצוב סיבוב + החזקה בעת אובדן)</string>
-    <string name="hint_3dof_assisted_off">תמיכת חיישן הושבתה, מעקב חזותי טהור שוחזר</string>
 
     <string name="hint_no_camera">לא זוהתה מצלמה (מצב מסך שחור)</string>
 
@@ -102,16 +100,5 @@
     <string name="camera_facing_front">מצלמה קדמית (%1$s)</string>
     <string name="camera_facing_other">מצלמה %1$s</string>
     <string name="dialog_select_camera">בחר מצלמה</string>
-
-    <string name="sensor_mode_active">מצב חיישן: %1$s</string>
-    <string name="sensor_mode_rotation_vector">וקטור סיבוב (מוחלט)</string>
-    <string name="sensor_mode_game_rotation_vector">וקטור סיבוב משחק (יחסי)</string>
-    <string name="sensor_mode_accel_mag">מדי תאוצה + מגנטומטר</string>
-    <string name="sensor_mode_gyroscope">שילוב גירוסקופ</string>
-    <string name="sensor_mode_accel_only">כבידה בלבד (הטיה)</string>
-    <string name="sensor_mode_none">אין חיישן כיוון</string>
-    <string name="sensor_mode_notice_fallback">חיישנים מוגבלים: נעשה שימוש במקור כיוון חלופי; הכיוון עשוי לסטות עם הזמן.</string>
-    <string name="sensor_mode_notice_accel_only">אין גירוסקופ: רק ההטיה נעקבת, הכיוון אינו נעקב.</string>
-    <string name="sensor_mode_notice_none">אין חיישן כיוון זמין; 3DOF יישאר ללא תנועה.</string>
 
 </resources>

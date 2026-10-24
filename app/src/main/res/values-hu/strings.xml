@@ -60,8 +60,6 @@
     <string name="btn_3dof_off">Érzékelő: KI</string>
     <string name="btn_3dof_on">Érzékelő: BE</string>
     <string name="hint_3dof_unavailable">Az érzékelő nem érhető el</string>
-    <string name="hint_3dof_assisted_on">Érzékelő-támogatás bekapcsolva (forgásstabilizálás + megtartás elvesztéskor)</string>
-    <string name="hint_3dof_assisted_off">Érzékelő-támogatás kikapcsolva, tiszta vizuális követés visszaállítva</string>
 
     <string name="hint_no_camera">Nem található kamera (fekete képernyő mód)</string>
 
@@ -100,16 +98,5 @@
     <string name="camera_facing_front">Előlapi kamera (%1$s)</string>
     <string name="camera_facing_other">Kamera %1$s</string>
     <string name="dialog_select_camera">Kamera kiválasztása</string>
-
-    <string name="sensor_mode_active">Szenzor mód: %1$s</string>
-    <string name="sensor_mode_rotation_vector">Forgatásvektor (abszolút)</string>
-    <string name="sensor_mode_game_rotation_vector">Játék forgatásvektor (relatív)</string>
-    <string name="sensor_mode_accel_mag">Gyorsulásmérő + magnetométer</string>
-    <string name="sensor_mode_gyroscope">Giroszkóp-integráció</string>
-    <string name="sensor_mode_accel_only">Csak gravitáció (dőlés)</string>
-    <string name="sensor_mode_none">Nincs tájolásérzékelő</string>
-    <string name="sensor_mode_notice_fallback">Korlátozott érzékelők: tartalék tájolásforrás használatban; az irány idővel sodródhat.</string>
-    <string name="sensor_mode_notice_accel_only">Nincs giroszkóp: csak a dőlés követhető, az irány nem követi.</string>
-    <string name="sensor_mode_notice_none">Nem érhető el tájolásérzékelő; a 3DOF mozdulatlan marad.</string>
 
 </resources>

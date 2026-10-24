@@ -60,8 +60,6 @@
     <string name="btn_3dof_off">ਸੈਂਸਰ: ਬੰਦ</string>
     <string name="btn_3dof_on">ਸੈਂਸਰ: ਚਾਲੂ</string>
     <string name="hint_3dof_unavailable">ਸੈਂਸਰ ਉਪਲਬਧ ਨਹੀਂ</string>
-    <string name="hint_3dof_assisted_on">ਸੈਂਸਰ ਸਹਾਇਤਾ ਸਮਰੱਥ (ਘੁੰਮਣ ਸਥਿਰਤਾ + ਗੁੰਮ ਹੋਣ ਵੇਲੇ ਰੱਖਣਾ)</string>
-    <string name="hint_3dof_assisted_off">ਸੈਂਸਰ ਸਹਾਇਤਾ ਅਸਮਰੱਥ, ਸ਼ੁੱਧ ਵਿਜ਼ੂਅਲ ਟਰੈਕਿੰਗ ਬਹਾਲ</string>
 
     <string name="hint_no_camera">ਕੋਈ ਕੈਮਰਾ ਨਹੀਂ ਮਿਲਿਆ (ਬਲੈਕ ਸਕ੍ਰੀਨ ਮੋਡ)</string>
 
@@ -100,16 +98,5 @@
     <string name="camera_facing_front">ਅਗਲਾ ਕੈਮਰਾ (%1$s)</string>
     <string name="camera_facing_other">ਕੈਮਰਾ %1$s</string>
     <string name="dialog_select_camera">ਕੈਮਰਾ ਚੁਣੋ</string>
-
-    <string name="sensor_mode_active">ਸੈਂਸਰ ਮੋਡ: %1$s</string>
-    <string name="sensor_mode_rotation_vector">ਘੁੰਮਾਓ ਵੈਕਟਰ (ਨਿਰਪੇਖ)</string>
-    <string name="sensor_mode_game_rotation_vector">ਗੇਮ ਘੁੰਮਾਓ ਵੈਕਟਰ (ਸਾਪੇਖ)</string>
-    <string name="sensor_mode_accel_mag">ਐਕਸਲਰੋਮੀਟਰ + ਮੈਗਨੇਟੋਮੀਟਰ</string>
-    <string name="sensor_mode_gyroscope">ਜਾਇਰੋਸਕੋਪ ਏਕੀਕਰਨ</string>
-    <string name="sensor_mode_accel_only">ਸਿਰਫ਼ ਗੁਰੂਤਵ (ਝੁਕਾਅ)</string>
-    <string name="sensor_mode_none">ਕੋਈ ਦਿਸ਼ਾ ਸੈਂਸਰ ਨਹੀਂ</string>
-    <string name="sensor_mode_notice_fallback">ਸੀਮਤ ਸੈਂਸਰ: ਬਦਲਵਾਂ ਦਿਸ਼ਾ ਸਰੋਤ ਵਰਤਿਆ ਜਾ ਰਿਹਾ ਹੈ; ਦਿਸ਼ਾ ਸਮੇਂ ਨਾਲ ਖਿਸਕ ਸਕਦੀ ਹੈ।</string>
-    <string name="sensor_mode_notice_accel_only">ਜਾਇਰੋਸਕੋਪ ਨਹੀਂ: ਸਿਰਫ਼ ਝੁਕਾਅ ਟ੍ਰੈਕ ਹੁੰਦਾ ਹੈ, ਦਿਸ਼ਾ ਟ੍ਰੈਕ ਨਹੀਂ ਹੁੰਦੀ।</string>
-    <string name="sensor_mode_notice_none">ਕੋਈ ਦਿਸ਼ਾ ਸੈਂਸਰ ਉਪਲਬਧ ਨਹੀਂ; 3DOF ਸਥਿਰ ਰਹੇਗਾ।</string>
 
 </resources>

@@ -84,7 +84,7 @@ public class SensorFusionTracker {
     public synchronized void set3DofAssistEnabled(boolean enabled) {
         if (this.m3DofAssistEnabled != enabled) {
             this.m3DofAssistEnabled = enabled;
-            Log.i(TAG, "3DOF 传感器辅助定位状态切换为: " + (enabled ? "开启" : "关闭"));
+            Log.i(TAG, "辅助定位状态切换为: " + (enabled ? "开启" : "关闭"));
             if (!enabled) {
                 mHasAlignment = false;
                 mHasValidState = false;

@@ -64,8 +64,6 @@
     <string name="btn_3dof_off">المستشعر: إيقاف</string>
     <string name="btn_3dof_on">المستشعر: تشغيل</string>
     <string name="hint_3dof_unavailable">المستشعر غير متوفر</string>
-    <string name="hint_3dof_assisted_on">تم تمكين مساعدة المستشعر (تثبيت الدوران + الاحتفاظ عند الفقد)</string>
-    <string name="hint_3dof_assisted_off">تم تعطيل مساعدة المستشعر، وتمت استعادة التتبع البصري</string>
 
     <string name="hint_no_camera">لم يتم اكتشاف كاميرا (وضع الشاشة السوداء)</string>
 
@@ -108,16 +106,5 @@
     <string name="camera_facing_front">الكاميرا الأمامية (%1$s)</string>
     <string name="camera_facing_other">الكاميرا %1$s</string>
     <string name="dialog_select_camera">تحديد الكاميرا</string>
-
-    <string name="sensor_mode_active">وضع المستشعر: %1$s</string>
-    <string name="sensor_mode_rotation_vector">متجه الدوران (مطلق)</string>
-    <string name="sensor_mode_game_rotation_vector">متجه دوران اللعبة (نسبي)</string>
-    <string name="sensor_mode_accel_mag">مقياس التسارع + مقياس المغناطيسية</string>
-    <string name="sensor_mode_gyroscope">تكامل الجيروسكوب</string>
-    <string name="sensor_mode_accel_only">اتجاه الجاذبية فقط (إمالة)</string>
-    <string name="sensor_mode_none">لا يوجد مستشعر اتجاه</string>
-    <string name="sensor_mode_notice_fallback">مستشعرات محدودة: يتم استخدام مصدر اتجاه احتياطي؛ قد ينحرف الاتجاه بمرور الوقت.</string>
-    <string name="sensor_mode_notice_accel_only">لا يوجد جيروسكوب: يتم تتبع الإمالة فقط، والاتجاه لا يتبع.</string>
-    <string name="sensor_mode_notice_none">لا يتوفر مستشعر اتجاه؛ سيبقى 3DOF ثابتًا.</string>
 
 </resources>

@@ -60,8 +60,6 @@
     <string name="btn_3dof_off">ಸೆನ್ಸರ್: ಆಫ್</string>
     <string name="btn_3dof_on">ಸೆನ್ಸರ್: ಆನ್</string>
     <string name="hint_3dof_unavailable">ಸೆನ್ಸರ್ ಲಭ್ಯವಿಲ್ಲ</string>
-    <string name="hint_3dof_assisted_on">ಸೆನ್ಸರ್ ಸಹಾಯ ಸಕ್ರಿಯ (ತಿರುಗುವಿಕೆ ಸ್ಥಿರೀಕರಣ + ಕಳೆದುಕೊಂಡಾಗ ಉಳಿಸಿಕೊಳ್ಳುವುದು)</string>
-    <string name="hint_3dof_assisted_off">ಸೆನ್ಸರ್ ಸಹಾಯ ನಿಷ್ಕ್ರಿಯ, ಶುದ್ಧ ದೃಶ್ಯ ಟ್ರ್ಯಾಕಿಂಗ್ ಮರುಸ್ಥಾಪಿಸಲಾಗಿದೆ</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 
@@ -100,16 +98,5 @@
     <string name="camera_facing_front">ಮುಂಬದಿಯ ಕ್ಯಾಮರಾ (%1$s)</string>
     <string name="camera_facing_other">ಕ್ಯಾಮರಾ %1$s</string>
     <string name="dialog_select_camera">ಕ್ಯಾಮರಾ ಆಯ್ಕೆಮಾಡಿ</string>
-
-    <string name="sensor_mode_active">ಸೆನ್ಸರ್ ಮೋಡ್: %1$s</string>
-    <string name="sensor_mode_rotation_vector">ತಿರುಗುವಿಕೆ ವೆಕ್ಟರ್ (ಸಂಪೂರ್ಣ)</string>
-    <string name="sensor_mode_game_rotation_vector">ಆಟದ ತಿರುಗುವಿಕೆ ವೆಕ್ಟರ್ (ಸಾಪೇಕ್ಷ)</string>
-    <string name="sensor_mode_accel_mag">ವೇಗವರ್ಧಕ ಮಾಪಕ + ಕಾಂತ ಮಾಪಕ</string>
-    <string name="sensor_mode_gyroscope">ಜೈರೋಸ್ಕೋಪ್ ಸಂಯೋಜನೆ</string>
-    <string name="sensor_mode_accel_only">ಗುರುತ್ವ ಮಾತ್ರ (ಓರೆ)</string>
-    <string name="sensor_mode_none">ದಿಕ್ಕು ಸೆನ್ಸರ್ ಇಲ್ಲ</string>
-    <string name="sensor_mode_notice_fallback">ಸೀಮಿತ ಸೆನ್ಸರ್‌ಗಳು: ಪರ್ಯಾಯ ದಿಕ್ಕು ಮೂಲ ಬಳಕೆಯಲ್ಲಿದೆ; ದಿಕ್ಕು ಕಾಲಕ್ರಮೇಣ ಜಾರಬಹುದು.</string>
-    <string name="sensor_mode_notice_accel_only">ಜೈರೋಸ್ಕೋಪ್ ಇಲ್ಲ: ಓರೆಯನ್ನು ಮಾತ್ರ ಟ್ರ್ಯಾಕ್ ಮಾಡಲಾಗುತ್ತದೆ, ದಿಕ್ಕು ಟ್ರ್ಯಾಕ್ ಆಗುವುದಿಲ್ಲ.</string>
-    <string name="sensor_mode_notice_none">ಲಭ್ಯವಿರುವ ದಿಕ್ಕು ಸೆನ್ಸರ್ ಇಲ್ಲ; 3DOF ಸ್ಥಿರವಾಗಿರುತ್ತದೆ.</string>
 
 </resources>

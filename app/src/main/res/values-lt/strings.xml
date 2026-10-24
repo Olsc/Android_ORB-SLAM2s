@@ -62,8 +62,6 @@
     <string name="btn_3dof_off">Jutiklis: IŠJ</string>
     <string name="btn_3dof_on">Jutiklis: ĮJ</string>
     <string name="hint_3dof_unavailable">Jutiklis nepasiekiamas</string>
-    <string name="hint_3dof_assisted_on">Jutiklio pagalba įjungta (sukimosi stabilizavimas + išlaikymas praradus)</string>
-    <string name="hint_3dof_assisted_off">Jutiklio pagalba išjungta, atkurta vaizdinė sekimo sistema</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 
@@ -104,16 +102,5 @@
     <string name="camera_facing_front">Priekinė kamera (%1$s)</string>
     <string name="camera_facing_other">Kamera %1$s</string>
     <string name="dialog_select_camera">Pasirinkite kamerą</string>
-
-    <string name="sensor_mode_active">Jutiklio režimas: %1$s</string>
-    <string name="sensor_mode_rotation_vector">Sukimosi vektorius (absoliutus)</string>
-    <string name="sensor_mode_game_rotation_vector">Žaidimo sukimosi vektorius (santykinis)</string>
-    <string name="sensor_mode_accel_mag">Akcelerometras + magnetometras</string>
-    <string name="sensor_mode_gyroscope">Giroskopo integravimas</string>
-    <string name="sensor_mode_accel_only">Tik gravitacija (pokrypis)</string>
-    <string name="sensor_mode_none">Nėra orientacijos jutiklio</string>
-    <string name="sensor_mode_notice_fallback">Riboti jutikliai: naudojamas atsarginis orientacijos šaltinis; kursas laikui bėgant gali dreifuoti.</string>
-    <string name="sensor_mode_notice_accel_only">Nėra giroskopo: stebimas tik pokrypis, kryptis nesekama.</string>
-    <string name="sensor_mode_notice_none">Orientacijos jutiklis nepasiekiamas; 3DOF lieka nejudrus.</string>
 
 </resources>

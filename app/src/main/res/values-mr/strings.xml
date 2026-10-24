@@ -60,8 +60,6 @@
     <string name="btn_3dof_off">सेन्सर: बंद</string>
     <string name="btn_3dof_on">सेन्सर: चालू</string>
     <string name="hint_3dof_unavailable">सेन्सर उपलब्ध नाही</string>
-    <string name="hint_3dof_assisted_on">सेन्सर सहाय्य सक्षम (फिरणे स्थिरीकरण + हरवल्यास टिकवणे)</string>
-    <string name="hint_3dof_assisted_off">सेन्सर सहाय्य अक्षम, शुद्ध दृश्य ट्रॅकिंग पुनर्संचयित</string>
 
     <string name="hint_no_camera">कोणताही कॅमेरा आढळला नाही (काळा स्क्रीन मोड)</string>
 
@@ -100,16 +98,5 @@
     <string name="camera_facing_front">पुढील कॅमेरा (%1$s)</string>
     <string name="camera_facing_other">कॅमेरा %1$s</string>
     <string name="dialog_select_camera">कॅमेरा निवडा</string>
-
-    <string name="sensor_mode_active">सेन्सर मोड: %1$s</string>
-    <string name="sensor_mode_rotation_vector">रोटेशन वेक्टर (निरपेक्ष)</string>
-    <string name="sensor_mode_game_rotation_vector">गेम रोटेशन वेक्टर (सापेक्ष)</string>
-    <string name="sensor_mode_accel_mag">प्रवेगमापक + चुंबकमापक</string>
-    <string name="sensor_mode_gyroscope">जायरोस्कोप एकत्रीकरण</string>
-    <string name="sensor_mode_accel_only">फक्त गुरुत्व (कल)</string>
-    <string name="sensor_mode_none">दिशा सेन्सर नाही</string>
-    <string name="sensor_mode_notice_fallback">मर्यादित सेन्सर: पर्यायी दिशा स्रोत वापरात; दिशा कालांतराने सरकू शकते.</string>
-    <string name="sensor_mode_notice_accel_only">जायरोस्कोप नाही: फक्त कल ट्रॅक होते, दिशा ट्रॅक होत नाही.</string>
-    <string name="sensor_mode_notice_none">दिशा सेन्सर उपलब्ध नाही; 3DOF स्थिर राहील.</string>
 
 </resources>
