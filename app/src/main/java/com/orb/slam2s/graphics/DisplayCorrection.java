@@ -76,7 +76,7 @@ public final class DisplayCorrection {
                 break;
             case 270:
                 lax = 0;  lay = 1;  lcx = 0;
-                lbx = 1;  lby = 0;  lcy = rawWidth - 1;
+                lbx = -1; lby = 0;  lcy = rawWidth - 1;
                 break;
             default:
                 lax = 1;  lay = 0;  lcx = 0;
@@ -143,18 +143,6 @@ public final class DisplayCorrection {
 
     public int mapDisplayY(int x, int y) {
         return bx * x + by * y + cy;
-    }
-
-    // 摇杆方向映射：屏幕 x 轴相对原始帧是否反向
-    public int screenXSign() {
-        int sign = (rotationDegrees == 180 || rotationDegrees == 270) ? -1 : 1;
-        return mirrorH ? -sign : sign;
-    }
-
-    // 摇杆方向映射：屏幕 y 轴相对原始帧是否反向
-    public int screenYSign() {
-        int sign = (rotationDegrees == 180 || rotationDegrees == 270) ? -1 : 1;
-        return mirrorV ? -sign : sign;
     }
 
     public static int normalizeRotation(int degrees) {

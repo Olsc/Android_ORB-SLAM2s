@@ -26,9 +26,6 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.opengl.Matrix;
 import android.util.Log;
-import android.view.Surface;
-
-import com.orb.slam2s.constant.GlobalConstant;
 
 import java.util.List;
 
@@ -58,7 +55,6 @@ public class OrientationSensor implements SensorEventListener {
 
     // 预分配矩阵缓存
     private final float[] rawRotationMatrix = new float[16]; // 原始旋转矩阵
-    private final float[] rotationMatrix = new float[16];    // 重映射后的旋转矩阵
 
     private final float[] gravity = new float[3];
     private final float[] geomagnetic = new float[3];
@@ -84,7 +80,6 @@ public class OrientationSensor implements SensorEventListener {
 
     public OrientationSensor() {
         Matrix.setIdentityM(rawRotationMatrix, 0);
-        Matrix.setIdentityM(rotationMatrix, 0);
     }
 
     // 检测设备可用的姿态来源并按优先级选择模式（不注册监听器）
@@ -171,7 +166,6 @@ public class OrientationSensor implements SensorEventListener {
         hasFilteredGravity = false;
         lastGyroTimestamp = 0L;
         Matrix.setIdentityM(rawRotationMatrix, 0);
-        remapForLandscape();
 
         switch (mode) {
             case ROTATION_VECTOR:
@@ -234,7 +228,6 @@ public class OrientationSensor implements SensorEventListener {
             case Sensor.TYPE_ROTATION_VECTOR:
             case Sensor.TYPE_GAME_ROTATION_VECTOR:
                 SensorManager.getRotationMatrixFromVector(rawRotationMatrix, event.values);
-                remapForLandscape();
                 markReady();
                 break;
 
@@ -286,7 +279,6 @@ public class OrientationSensor implements SensorEventListener {
         if (hasGravity && hasGeomagnetic) {
             if (SensorManager.getRotationMatrix(accelMagR, accelMagI, gravity, geomagnetic)) {
                 System.arraycopy(accelMagR, 0, rawRotationMatrix, 0, 16);
-                remapForLandscape();
                 markReady();
             }
         }
@@ -320,14 +312,12 @@ public class OrientationSensor implements SensorEventListener {
 
         if (nz > 0.99999f) {
             // 近似平放，即单位阵
-            remapForLandscape();
             return true;
         }
         if (nz < -0.99999f) {
             // 屏幕朝下，绕 X 轴翻转 180 度以避开退化
             rawRotationMatrix[5] = -1f;
             rawRotationMatrix[10] = -1f;
-            remapForLandscape();
             return true;
         }
 
@@ -342,7 +332,6 @@ public class OrientationSensor implements SensorEventListener {
         rawRotationMatrix[8] = nx;
         rawRotationMatrix[9] = ny;
         rawRotationMatrix[10] = nz;
-        remapForLandscape();
         return true;
     }
 
@@ -372,7 +361,6 @@ public class OrientationSensor implements SensorEventListener {
 
         // 定期 Gram-Schmidt 正交规范化，抑制数值漂移
         orthonormalize(rawRotationMatrix);
-        remapForLandscape();
 
         markReady();
     }
@@ -413,49 +401,9 @@ public class OrientationSensor implements SensorEventListener {
         // 无需处理精度变化
     }
 
-    // 获取横屏重映射后的旋转矩阵
+    // 获取世界坐标系下的旋转矩阵（竖屏下设备系即屏幕系，无需重映射）
     public float[] getRotationMatrix() {
-        return rotationMatrix;
+        return rawRotationMatrix;
     }
 
-    // 将传感器坐标系重映射为当前屏幕坐标系
-    private void remapForLandscape() {
-        int displayRotation = GlobalConstant.DISPLAY_ROTATION;
-        switch (displayRotation) {
-            case Surface.ROTATION_90:
-            case 90:
-                // 左横屏：新 X 轴 = 旧 Y 轴，新 Y 轴 = 旧 -X 轴
-                SensorManager.remapCoordinateSystem(
-                    rawRotationMatrix,
-                    SensorManager.AXIS_Y,
-                    SensorManager.AXIS_MINUS_X,
-                    rotationMatrix
-                );
-                break;
-            case Surface.ROTATION_180:
-            case 180:
-                // 反向竖屏：新 X 轴 = 旧 -X 轴，新 Y 轴 = 旧 -Y 轴
-                SensorManager.remapCoordinateSystem(
-                    rawRotationMatrix,
-                    SensorManager.AXIS_MINUS_X,
-                    SensorManager.AXIS_MINUS_Y,
-                    rotationMatrix
-                );
-                break;
-            case Surface.ROTATION_270:
-            case 270:
-                // 右横屏：新 X 轴 = 旧 -Y 轴，新 Y 轴 = 旧 X 轴
-                SensorManager.remapCoordinateSystem(
-                    rawRotationMatrix,
-                    SensorManager.AXIS_MINUS_Y,
-                    SensorManager.AXIS_X,
-                    rotationMatrix
-                );
-                break;
-            default:
-                // ROTATION_0：保持传感器原始坐标系
-                System.arraycopy(rawRotationMatrix, 0, rotationMatrix, 0, 16);
-                break;
-        }
-    }
 }

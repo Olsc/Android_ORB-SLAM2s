@@ -133,9 +133,13 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
         return this;
     }
 
-    // 设置显示层矫正，由 CameraPreviewView 在方向、镜像或画面尺寸变化时调用
+    // 设置显示层矫正，由 CameraPreviewView 在方向、镜像或画面尺寸变化时调用；
+    // 同时把相机帧与设备帧的安装夹角交给融合层，避免上下与左右串轴。
     public GlbModelRenderer setDisplayCorrection(DisplayCorrection correction) {
         this.displayCorrection = correction;
+        if (correction != null && sensorFusionTracker != null) {
+            sensorFusionTracker.setCameraFrameRotation(correction.rotationDegrees);
+        }
         return this;
     }
 

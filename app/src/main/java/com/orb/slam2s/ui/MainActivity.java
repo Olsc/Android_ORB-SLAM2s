@@ -18,7 +18,6 @@ package com.orb.slam2s.ui;
 import android.app.AlertDialog;
 import android.content.ComponentCallbacks2;
 import android.content.Context;
-import android.content.pm.ActivityInfo;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.opengl.GLSurfaceView;
@@ -28,10 +27,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.text.format.Formatter;
 import android.util.Log;
-import android.view.Display;
-import android.hardware.display.DisplayManager;
 import android.view.MotionEvent;
-import android.view.Surface;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -142,7 +138,6 @@ public class MainActivity extends ComponentActivity
         super.onCreate(savedInstanceState);
         Log.d(TAG, "onCreate: 初始化 SLAM 主界面");
 
-        lockCurrentOrientation();
         computeScreenResolution();
 
         setContentView(R.layout.ar_ui_content);
@@ -202,87 +197,6 @@ public class MainActivity extends ComponentActivity
     private File getSlamDir() {
         File dir = getExternalFilesDir("SLAM");
         return dir != null ? dir : new File(getFilesDir(), "SLAM");
-    }
-
-    // 读取当前显示方向，取值对应 Surface.ROTATION_0/90/180/270
-    @SuppressWarnings("deprecation")
-    private int readDisplayRotation() {
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                Display display = getDisplay();
-                if (display != null) return display.getRotation();
-            }
-            WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
-            if (wm != null) return wm.getDefaultDisplay().getRotation();
-        } catch (Exception e) {
-            Log.e(TAG, "读取显示方向失败: " + e.getMessage());
-        }
-        return Surface.ROTATION_90;
-    }
-
-    // 将实际显示方向同步给 SLAM 侧的传感器重映射（3DOF 用）；
-    // onCreate 读到的值可能偏旧，故在 onResume 与 onDisplayChanged 时再对齐一次。
-    private void refreshDisplayRotation() {
-        int rotation = readDisplayRotation();
-        if (rotation != GlobalConstant.DISPLAY_ROTATION) {
-            Log.d(TAG, "显示方向更新: " + GlobalConstant.DISPLAY_ROTATION + " -> " + rotation);
-            GlobalConstant.setDisplayRotation(rotation);
-        }
-    }
-
-    // 监听显示方向变化（横屏左右切换/多屏），保持 3DOF 的传感器坐标系与显示方向一致
-    private DisplayManager mDisplayManager;
-    private boolean mDisplayListenerRegistered;
-    private final DisplayManager.DisplayListener mDisplayListener = new DisplayManager.DisplayListener() {
-        @Override
-        public void onDisplayAdded(int displayId) {
-        }
-
-        @Override
-        public void onDisplayRemoved(int displayId) {
-        }
-
-        @Override
-        public void onDisplayChanged(int displayId) {
-            refreshDisplayRotation();
-        }
-    };
-
-    private void registerDisplayListener() {
-        if (mDisplayListenerRegistered) return;
-        if (mDisplayManager == null) {
-            mDisplayManager = (DisplayManager) getSystemService(Context.DISPLAY_SERVICE);
-        }
-        if (mDisplayManager == null) return;
-        mDisplayManager.registerDisplayListener(mDisplayListener, mUiHandler);
-        mDisplayListenerRegistered = true;
-    }
-
-    private void unregisterDisplayListener() {
-        if (!mDisplayListenerRegistered || mDisplayManager == null) return;
-        mDisplayManager.unregisterDisplayListener(mDisplayListener);
-        mDisplayListenerRegistered = false;
-    }
-
-    @SuppressWarnings("deprecation")
-    private void lockCurrentOrientation() {
-        try {
-            WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
-            if (wm != null) {
-                int rotation = readDisplayRotation();
-                GlobalConstant.setDisplayRotation(rotation);
-
-                if (rotation == Surface.ROTATION_270) {
-                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
-                    Log.d(TAG, "锁定为右横屏方向 (REVERSE_LANDSCAPE)");
-                } else {
-                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                    Log.d(TAG, "锁定为左横屏方向 (LANDSCAPE)");
-                }
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "锁定方向失败: " + e.getMessage());
-        }
     }
 
     private void initViewsAndServices() {
@@ -403,24 +317,20 @@ public class MainActivity extends ComponentActivity
                     WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
             );
 
-            // 动态避让虚拟摇杆 (left/start + bottom)
+            // 动态避让虚拟摇杆 (start)，底部间距由操作面板承担
             View joystickView = findViewById(R.id.joystick_view);
             if (joystickView != null && joystickView.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
                 ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) joystickView.getLayoutParams();
                 int baseStart = (int) (16 * getResources().getDisplayMetrics().density);
-                int baseBottom = (int) (16 * getResources().getDisplayMetrics().density);
                 lp.setMarginStart(baseStart + insets.left);
-                lp.bottomMargin = baseBottom + insets.bottom;
                 joystickView.setLayoutParams(lp);
             }
 
-            // 动态避让右下角操作面板 (right/end + bottom)
+            // 动态避让底部操作面板 (bottom)
             View actionPanel = findViewById(R.id.action_panel);
             if (actionPanel != null && actionPanel.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
                 ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) actionPanel.getLayoutParams();
-                int baseEnd = (int) (8 * getResources().getDisplayMetrics().density);
                 int baseBottom = (int) (8 * getResources().getDisplayMetrics().density);
-                lp.setMarginEnd(baseEnd + insets.right);
                 lp.bottomMargin = baseBottom + insets.bottom;
                 actionPanel.setLayoutParams(lp);
             }
@@ -626,7 +536,6 @@ public class MainActivity extends ComponentActivity
     protected void onPause() {
         Log.d(TAG, "onPause: 暂停摄像头视图");
         super.onPause();
-        unregisterDisplayListener();
         stopMapStatsUpdater();
         if (mCameraPreviewView != null) {
             mCameraPreviewView.disableView();
@@ -649,10 +558,6 @@ public class MainActivity extends ComponentActivity
     protected void onResume() {
         Log.d(TAG, "onResume: 准备启动");
         super.onResume();
-
-        // window 已 attach，此时读到的是真实显示方向（onCreate 阶段可能还是旧值）
-        refreshDisplayRotation();
-        registerDisplayListener();
 
         if (mModelRenderer != null) {
             mModelRenderer.onResume();
@@ -842,14 +747,7 @@ public class MainActivity extends ComponentActivity
                     float yawDelta = (float) Math.cos(Math.toRadians(angleDeg)) * speed;
                     float pitchDelta = -(float) Math.sin(Math.toRadians(angleDeg)) * speed;
 
-                    // 摇杆位于屏幕坐标系，模型旋转作用在世界系，
-                    // 显示层镜像或旋转时需同步翻转方向，否则推向右却向左转
-                    DisplayCorrection correction = mCameraPreviewView != null
-                            ? mCameraPreviewView.getDisplayCorrection() : null;
-                    if (correction != null) {
-                        yawDelta *= correction.screenXSign();
-                        pitchDelta *= correction.screenYSign();
-                    }
+                    // 摇杆方向直接映射到模型自转：向右偏航、向上俯仰
                     mModelRenderer.addUserRotation(yawDelta, pitchDelta);
                 }
             });

@@ -101,6 +101,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
     private byte[][] mRgbaBuffers;    // 相机 RGBA 帧双缓冲
     private int mSendPing;            // 当前发送缓冲索引 (0/1)
     private int[] mCachePixels;       // 预览位图像素数组
+    private boolean mPortraitFrameWarned;
 
     // 画面镜像开关，仅作用于显示端并持久化，下次启动自动恢复；
     // 送往 SLAM 的灰度帧始终是相机原始像素，因此镜像不改变地图坐标系与 MenthaAR 输出。
@@ -413,6 +414,12 @@ public class CameraPreviewView extends AspectGLSurfaceView {
                                     mYuvSendBuffers[mSendPing] = new byte[requiredSize];
                                 }
                                 byte[] yBuf = mYuvSendBuffers[mSendPing];
+
+                                // SLAM 内参按横向底图标定，出现竖向帧时提示，便于定位异常机型
+                                if (w < h && !mPortraitFrameWarned) {
+                                    mPortraitFrameWarned = true;
+                                    Log.w(TAG, "相机帧为竖向尺寸 " + w + "x" + h + "，SLAM 内参按横向标定，跟踪可能异常");
+                                }
 
                                 // 上报真实帧尺寸：CameraX 解析出的分辨率可能与期望值不同
                                 if (w != mFrameWidth || h != mFrameHeight) {

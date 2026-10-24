@@ -18,18 +18,7 @@
     <View
         android:id="@+id/touch_panel"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_centerInParent="true" />
-
-    <com.orb.slam2s.ui.VirtualJoystickView
-        android:id="@+id/joystick_view"
-        android:layout_width="120dp"
-        android:layout_height="120dp"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentBottom="true"
-        android:layout_marginStart="16dp"
-        android:layout_marginBottom="16dp"
-        android:visibility="gone" />
+        android:layout_height="match_parent" />
 
     <LinearLayout
         android:id="@+id/info_panel"
@@ -65,31 +54,27 @@
             android:shadowRadius="2"/>
     </LinearLayout>
 
+    <com.orb.slam2s.ui.VirtualJoystickView
+        android:id="@+id/joystick_view"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_alignParentStart="true"
+        android:layout_above="@+id/action_panel"
+        android:layout_marginStart="16dp"
+        android:layout_marginBottom="8dp"
+        android:visibility="gone" />
+
     <LinearLayout
         android:id="@+id/action_panel"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
         android:layout_alignParentBottom="true"
-        android:layout_marginEnd="8dp"
         android:layout_marginBottom="8dp"
         android:orientation="vertical"
-        android:gravity="end">
+        android:gravity="end"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp">
 
-        <Button
-            android:id="@+id/btn_group_ar"
-            android:layout_width="wrap_content"
-            android:minWidth="76dp"
-            android:layout_height="wrap_content"
-            android:minHeight="32dp"
-            android:layout_marginBottom="4dp"
-            android:text="@string/category_ar"
-            android:textSize="11sp"
-            android:textAllCaps="false"
-            android:backgroundTint="#607D8B"
-            android:alpha="0.90"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"/>
         <LinearLayout
             android:id="@+id/group_ar"
             android:layout_width="wrap_content"
@@ -127,20 +112,6 @@
                 android:paddingEnd="8dp"/>
         </LinearLayout>
 
-        <Button
-            android:id="@+id/btn_group_map"
-            android:layout_width="wrap_content"
-            android:minWidth="76dp"
-            android:layout_height="wrap_content"
-            android:minHeight="32dp"
-            android:layout_marginBottom="4dp"
-            android:text="@string/category_map"
-            android:textSize="11sp"
-            android:textAllCaps="false"
-            android:backgroundTint="#607D8B"
-            android:alpha="0.90"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"/>
         <LinearLayout
             android:id="@+id/group_map"
             android:layout_width="wrap_content"
@@ -189,20 +160,6 @@
                 android:paddingEnd="8dp"/>
         </LinearLayout>
 
-        <Button
-            android:id="@+id/btn_group_display"
-            android:layout_width="wrap_content"
-            android:minWidth="76dp"
-            android:layout_height="wrap_content"
-            android:minHeight="32dp"
-            android:layout_marginBottom="4dp"
-            android:text="@string/category_display"
-            android:textSize="11sp"
-            android:textAllCaps="false"
-            android:backgroundTint="#607D8B"
-            android:alpha="0.90"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"/>
         <LinearLayout
             android:id="@+id/group_display"
             android:layout_width="wrap_content"
@@ -262,6 +219,58 @@
                 android:alpha="0.85"
                 android:paddingStart="8dp"
                 android:paddingEnd="8dp"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btn_group_ar"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:minHeight="36dp"
+                android:layout_marginEnd="4dp"
+                android:text="@string/category_ar"
+                android:textSize="12sp"
+                android:textAllCaps="false"
+                android:backgroundTint="#607D8B"
+                android:alpha="0.90"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"/>
+
+            <Button
+                android:id="@+id/btn_group_map"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:minHeight="36dp"
+                android:layout_marginStart="2dp"
+                android:layout_marginEnd="2dp"
+                android:text="@string/category_map"
+                android:textSize="12sp"
+                android:textAllCaps="false"
+                android:backgroundTint="#607D8B"
+                android:alpha="0.90"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"/>
+
+            <Button
+                android:id="@+id/btn_group_display"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:minHeight="36dp"
+                android:layout_marginStart="4dp"
+                android:text="@string/category_display"
+                android:textSize="12sp"
+                android:textAllCaps="false"
+                android:backgroundTint="#607D8B"
+                android:alpha="0.90"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"/>
         </LinearLayout>
 
     </LinearLayout>

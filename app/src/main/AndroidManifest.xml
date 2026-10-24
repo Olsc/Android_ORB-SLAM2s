@@ -26,7 +26,7 @@
         <activity
             android:name="com.orb.slam2s.app.SplashActivity"
             android:exported="true"
-            android:screenOrientation="fullSensor"
+            android:screenOrientation="portrait"
             tools:ignore="DiscouragedApi,CustomSplashScreen" />
 
         <activity-alias
@@ -84,21 +84,21 @@
             android:name="com.orb.slam2s.ui.MainActivity"
             android:exported="false"
             android:theme="@style/ListTheme"
-            android:screenOrientation="sensorLandscape"
+            android:screenOrientation="portrait"
             android:configChanges="orientation|screenSize"
             tools:ignore="Instantiatable,DiscouragedApi" />
         <activity
             android:name="com.orb.slam2s.ui.MapManageActivity"
             android:exported="false"
             android:theme="@style/DarkNoActionBarTheme"
-            android:screenOrientation="fullSensor"
+            android:screenOrientation="portrait"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
             tools:ignore="DiscouragedApi" />
         <activity
             android:name="com.orb.slam2s.ui.IconSelectActivity"
             android:exported="false"
             android:theme="@style/DarkNoActionBarTheme"
-            android:screenOrientation="fullSensor"
+            android:screenOrientation="portrait"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
             tools:ignore="DiscouragedApi" />
     </application>
