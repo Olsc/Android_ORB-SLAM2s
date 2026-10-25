@@ -257,21 +257,6 @@ static bool AR_RenderFrame(const cv::Mat& localTcw, bool trackingOk) {
     // 5) 发布
     memcpy(gCurrentViewMatrix, view, sizeof(view));
     memcpy(gCurrentModelMatrix, model, sizeof(model));
-
-    // 每 60 帧输出一次锚点与坐标系状态，末位为物体在相机系的 z，负值才在镜头前方
-    static int sArStateLogCounter = 0;
-    if (++sArStateLogCounter >= 60) {
-        sArStateLogCounter = 0;
-        const float px = view[0] * model[12] + view[4] * model[13] + view[8] * model[14] + view[12];
-        const float py = view[1] * model[12] + view[5] * model[13] + view[9] * model[14] + view[13];
-        const float pz = view[2] * model[12] + view[6] * model[13] + view[10] * model[14] + view[14];
-        // 物体局部 Y 轴在相机系的方向：x 分量接近 0 表示屏幕竖直，接近 ±1 表示被绕光轴转了 90 度
-        const float ux = view[0] * model[4] + view[4] * model[5] + view[8] * model[6];
-        const float uy = view[1] * model[4] + view[5] * model[5] + view[9] * model[6];
-        LOGD("AR状态: 地图=%d 锚点地图=%d 坐标系=%d 对齐=%d/%d 持帧=%d 绘制=%d 相机系=(%.2f,%.2f,%.2f) up=(%.2f,%.2f)",
-             gActiveMapId, gAnchor.mapId, (int)gAnchor.frame, (int)rawAligned,
-             (int)gAlignHold.effAligned, (int)usingHold, (int)draw, px, py, pz, ux, uy);
-    }
     return draw;
 }
 

@@ -55,7 +55,6 @@ public final class PoseFusion {
     private boolean mHasLastPose = false;
     private boolean mHoldUnavailableLogged = false;
     private long mLastVisionOkNanos = 0L;
-    private int mHoldLogCounter = 0;
 
     // 矩阵运算复用缓存，避免每帧产生 GC
     private final float[] mTempSensorTrans = new float[16];
@@ -203,19 +202,6 @@ public final class PoseFusion {
             outView[13] = mTempFusedRot[1] * tx + mTempFusedRot[5] * ty + mTempFusedRot[9] * tz;
             outView[14] = mTempFusedRot[2] * tx + mTempFusedRot[6] * ty + mTempFusedRot[10] * tz;
             outView[15] = 1.0f;
-
-            // 保持态诊断：每 30 帧输出安装角、冻结视图与合成视图的上方向，便于定位方向异常
-            if ((++mHoldLogCounter % 30) == 0) {
-                Log.d(TAG, "保持态: 安装角=" + mCameraImageDegrees
-                        + " 反向=" + mSensorReverse
-                        + " 冻结up=(" + String.format("%.2f", mLastValidView[4]) + ","
-                        + String.format("%.2f", mLastValidView[5]) + ")"
-                        + " 合成up=(" + String.format("%.2f", outView[4]) + ","
-                        + String.format("%.2f", outView[5]) + ")"
-                        + " 平移=(" + String.format("%.2f", tx) + ","
-                        + String.format("%.2f", ty) + "," + String.format("%.2f", tz) + ")"
-                        + " 地图=" + activeMapId);
-            }
             mHoldUnavailableLogged = false;
             return true;
         }
