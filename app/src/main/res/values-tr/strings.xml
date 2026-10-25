@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">Kamera Değiştir</string>
     <string name="btn_mirror_vertical">Dikey ayna</string>
     <string name="btn_mirror_horizontal">Yatay ayna</string>
+    <string name="btn_reverse_sensor">IMU ters çevir</string>
     <string name="hint_camera_switched_back">Arka kameraya geçildi</string>
     <string name="hint_camera_switched_front">Ön kameraya geçildi</string>
     <string name="hint_camera_switched_other">Kamera %1$s olarak değiştirildi</string>

@@ -87,6 +87,7 @@
     <string name="btn_switch_camera">カメラ切替</string>
     <string name="btn_mirror_vertical">上下反転</string>
     <string name="btn_mirror_horizontal">左右反転</string>
+    <string name="btn_reverse_sensor">IMU 反転</string>
     <string name="hint_camera_switched_back">背面カメラに切り替えました</string>
     <string name="hint_camera_switched_front">前面カメラに切り替えました</string>
     <string name="hint_camera_switched_other">カメラ %1$s に切り替えました</string>

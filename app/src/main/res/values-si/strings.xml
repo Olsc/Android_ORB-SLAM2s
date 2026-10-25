@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">කැමරාව මාරු කරන්න</string>
     <string name="btn_mirror_vertical">සිරස් කැඩපත</string>
     <string name="btn_mirror_horizontal">තිරස් කැඩපත</string>
+    <string name="btn_reverse_sensor">IMU ප්‍රතිලෝම</string>
     <string name="hint_camera_switched_back">පසුපස කැමරාවට මාරු විය</string>
     <string name="hint_camera_switched_front">ඉදිරිපස කැමරාවට මාරු විය</string>
     <string name="hint_camera_switched_other">කැමරා %1$s වෙත මාරු විය</string>

@@ -87,6 +87,7 @@
     <string name="btn_switch_camera">สลับกล้อง</string>
     <string name="btn_mirror_vertical">กระจกแนวตั้ง</string>
     <string name="btn_mirror_horizontal">กระจกแนวนอน</string>
+    <string name="btn_reverse_sensor">กลับทิศ IMU</string>
     <string name="hint_camera_switched_back">สลับไปยังกล้องหลังแล้ว</string>
     <string name="hint_camera_switched_front">สลับไปยังกล้องหน้าแล้ว</string>
     <string name="hint_camera_switched_other">สลับไปยังกล้อง %1$s แล้ว</string>

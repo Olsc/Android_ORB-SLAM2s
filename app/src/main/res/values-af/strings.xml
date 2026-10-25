@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">Wissel kamera</string>
     <string name="btn_mirror_vertical">Spieël vertikaal</string>
     <string name="btn_mirror_horizontal">Spieël horisontaal</string>
+    <string name="btn_reverse_sensor">Keer IMU om</string>
     <string name="hint_camera_switched_back">Oorgeskakel na agterkamera</string>
     <string name="hint_camera_switched_front">Oorgeskakel na voorkamera</string>
     <string name="hint_camera_switched_other">Oorgeskakel na kamera %1$s</string>

@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">কেমেৰা সলনি কৰক</string>
     <string name="btn_mirror_vertical">উলম্ব মিৰৰ</string>
     <string name="btn_mirror_horizontal">অনুভূমিক মিৰৰ</string>
+    <string name="btn_reverse_sensor">IMU ওলোটা</string>
     <string name="hint_camera_switched_back">পিছৰ কেমেৰালৈ সলনি কৰা হ’ল</string>
     <string name="hint_camera_switched_front">আগৰ কেমেৰালৈ সলনি কৰা হ’ল</string>
     <string name="hint_camera_switched_other">কেমেৰা %1$s লৈ সলনি কৰা হ’ল</string>

@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">ക്യാമറ മാറ്റുക</string>
     <string name="btn_mirror_vertical">ലംബ മിറർ</string>
     <string name="btn_mirror_horizontal">തിരശ്ചീന മിറർ</string>
+    <string name="btn_reverse_sensor">IMU തിരിക്കുക</string>
     <string name="hint_camera_switched_back">പിൻ ക്യാമറയിലേക്ക് മാറ്റി</string>
     <string name="hint_camera_switched_front">മുൻ ക്യാമറയിലേക്ക് മാറ്റി</string>
     <string name="hint_camera_switched_other">ക്യാമറ %1$s ലേക്ക് മാറ്റി</string>

@@ -87,6 +87,7 @@
     <string name="btn_switch_camera">Tukar Kamera</string>
     <string name="btn_mirror_vertical">Cermin menegak</string>
     <string name="btn_mirror_horizontal">Cermin mendatar</string>
+    <string name="btn_reverse_sensor">Songsang IMU</string>
     <string name="hint_camera_switched_back">Beralih ke kamera belakang</string>
     <string name="hint_camera_switched_front">Beralih ke kamera depan</string>
     <string name="hint_camera_switched_other">Beralih ke kamera %1$s</string>

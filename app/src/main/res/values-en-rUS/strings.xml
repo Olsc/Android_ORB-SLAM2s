@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">Switch Cam</string>
     <string name="btn_mirror_vertical">Mirror V</string>
     <string name="btn_mirror_horizontal">Mirror H</string>
+    <string name="btn_reverse_sensor">Reverse IMU</string>
     <string name="hint_camera_switched_back">Switched to rear camera</string>
     <string name="hint_camera_switched_front">Switched to front camera</string>
     <string name="hint_camera_switched_other">Switched to camera %1$s</string>

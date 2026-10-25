@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">కెమెరా మార్చు</string>
     <string name="btn_mirror_vertical">నిలువు అద్దం</string>
     <string name="btn_mirror_horizontal">అడ్డ అద్దం</string>
+    <string name="btn_reverse_sensor">IMU తిప్పు</string>
     <string name="hint_camera_switched_back">వెనుక కెమెరాకు మార్చబడింది</string>
     <string name="hint_camera_switched_front">ముందు కెమెరాకు మార్చబడింది</string>
     <string name="hint_camera_switched_other">కెమెరా %1$s కు మార్చబడింది</string>

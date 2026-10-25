@@ -87,6 +87,7 @@
     <string name="btn_switch_camera">ကင်မရာပြောင်းရန်</string>
     <string name="btn_mirror_vertical">ဒေါင်လိုက် ကြေးမုံ</string>
     <string name="btn_mirror_horizontal">အလျားလိုက် ကြေးမုံ</string>
+    <string name="btn_reverse_sensor">IMU ပြောင်းပြန်</string>
     <string name="hint_camera_switched_back">နောက်ကင်မရာသို့ ပြောင်းပြီးပါပြီ</string>
     <string name="hint_camera_switched_front">ရှေ့ကင်မရာသို့ ပြောင်းပြီးပါပြီ</string>
     <string name="hint_camera_switched_other">ကင်မရာ %1$s သို့ ပြောင်းပြီးပါပြီ</string>

@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">تغییر دوربین</string>
     <string name="btn_mirror_vertical">آینه عمودی</string>
     <string name="btn_mirror_horizontal">آینه افقی</string>
+    <string name="btn_reverse_sensor">معکوس IMU</string>
     <string name="hint_camera_switched_back">به دوربین پشت منتقل شد</string>
     <string name="hint_camera_switched_front">به دوربین جلو منتقل شد</string>
     <string name="hint_camera_switched_other">به دوربین %1$s منتقل شد</string>

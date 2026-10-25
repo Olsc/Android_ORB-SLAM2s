@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">Skift kamera</string>
     <string name="btn_mirror_vertical">Spejl lodret</string>
     <string name="btn_mirror_horizontal">Spejl vandret</string>
+    <string name="btn_reverse_sensor">Vend IMU</string>
     <string name="hint_camera_switched_back">Skiftet til bagkamera</string>
     <string name="hint_camera_switched_front">Skiftet til frontkamera</string>
     <string name="hint_camera_switched_other">Skiftet til kamera %1$s</string>

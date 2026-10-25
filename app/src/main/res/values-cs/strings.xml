@@ -93,6 +93,7 @@
     <string name="btn_switch_camera">Přepnout kameru</string>
     <string name="btn_mirror_vertical">Zrcadlit svisle</string>
     <string name="btn_mirror_horizontal">Zrcadlit vodorovně</string>
+    <string name="btn_reverse_sensor">Invertovat IMU</string>
     <string name="hint_camera_switched_back">Přepnuto na zadní kameru</string>
     <string name="hint_camera_switched_front">Přepnuto na přední kameru</string>
     <string name="hint_camera_switched_other">Přepnuto na kameru %1$s</string>

@@ -91,6 +91,7 @@
     <string name="btn_switch_camera">Промени камеру</string>
     <string name="btn_mirror_vertical">Вертикално пресликавање</string>
     <string name="btn_mirror_horizontal">Хоризонтално пресликавање</string>
+    <string name="btn_reverse_sensor">Обрни IMU</string>
     <string name="hint_camera_switched_back">Пребачено на задњу камеру</string>
     <string name="hint_camera_switched_front">Пребачено на предњу камеру</string>
     <string name="hint_camera_switched_other">Пребачено на камеру %1$s</string>

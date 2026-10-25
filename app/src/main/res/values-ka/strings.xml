@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">კამერის შეცვლა</string>
     <string name="btn_mirror_vertical">ვერტიკალური სარკე</string>
     <string name="btn_mirror_horizontal">ჰორიზონტალური სარკე</string>
+    <string name="btn_reverse_sensor">IMU შებრუნება</string>
     <string name="hint_camera_switched_back">გადაერთო უკანა კამერაზე</string>
     <string name="hint_camera_switched_front">გადაერთო წინა კამერაზე</string>
     <string name="hint_camera_switched_other">გადაერთო კამერაზე %1$s</string>

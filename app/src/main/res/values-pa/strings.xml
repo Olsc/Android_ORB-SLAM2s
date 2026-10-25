@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">ਕੈਮਰਾ ਬਦਲੋ</string>
     <string name="btn_mirror_vertical">ਲੰਬਕਾਰੀ ਸ਼ੀਸ਼ਾ</string>
     <string name="btn_mirror_horizontal">ਖਿਤਿਜੀ ਸ਼ੀਸ਼ਾ</string>
+    <string name="btn_reverse_sensor">IMU ਪਲਟੋ</string>
     <string name="hint_camera_switched_back">ਪਿਛਲੇ ਕੈਮਰੇ \'ਤੇ ਬਦਲਿਆ ਗਿਆ</string>
     <string name="hint_camera_switched_front">ਅਗਲੇ ਕੈਮਰੇ \'ਤੇ ਬਦਲਿਆ ਗਿਆ</string>
     <string name="hint_camera_switched_other">ਕੈਮਰਾ %1$s \'ਤੇ ਬਦਲਿਆ ਗਿਆ</string>

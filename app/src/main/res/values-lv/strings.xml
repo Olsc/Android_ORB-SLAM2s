@@ -91,6 +91,7 @@
     <string name="btn_switch_camera">Pārslēgt kameru</string>
     <string name="btn_mirror_vertical">Spoguļot vertikāli</string>
     <string name="btn_mirror_horizontal">Spoguļot horizontāli</string>
+    <string name="btn_reverse_sensor">Apgriezt IMU</string>
     <string name="hint_camera_switched_back">Pārslēgts uz aizmugurējo kameru</string>
     <string name="hint_camera_switched_front">Pārslēgts uz priekšējo kameru</string>
     <string name="hint_camera_switched_other">Pārslēgts uz kameru %1$s</string>

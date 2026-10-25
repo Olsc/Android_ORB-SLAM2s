@@ -91,6 +91,7 @@
     <string name="btn_switch_camera">Schimbă camera</string>
     <string name="btn_mirror_vertical">Oglindire verticală</string>
     <string name="btn_mirror_horizontal">Oglindire orizontală</string>
+    <string name="btn_reverse_sensor">Inversează IMU</string>
     <string name="hint_camera_switched_back">Comutat la camera din spate</string>
     <string name="hint_camera_switched_front">Comutat la camera frontală</string>
     <string name="hint_camera_switched_other">Comutat la camera %1$s</string>

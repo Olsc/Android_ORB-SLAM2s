@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">Камераны алмаштыруу</string>
     <string name="btn_mirror_vertical">Тик чагылдыруу</string>
     <string name="btn_mirror_horizontal">Туурасынан чагылдыруу</string>
+    <string name="btn_reverse_sensor">IMU тескери</string>
     <string name="hint_camera_switched_back">Арткы камерага которулду</string>
     <string name="hint_camera_switched_front">Алдыңкы камерага которулду</string>
     <string name="hint_camera_switched_other">%1$s камерасына которулду</string>

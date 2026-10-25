@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">Kameranı dəyiş</string>
     <string name="btn_mirror_vertical">Şaquli əks</string>
     <string name="btn_mirror_horizontal">Üfüqi əks</string>
+    <string name="btn_reverse_sensor">IMU tərsinə</string>
     <string name="hint_camera_switched_back">Arxa kameraya keçirildi</string>
     <string name="hint_camera_switched_front">Ön kameraya keçirildi</string>
     <string name="hint_camera_switched_other">Kamera %1$s-ə keçirildi</string>

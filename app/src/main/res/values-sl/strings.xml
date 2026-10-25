@@ -93,6 +93,7 @@
     <string name="btn_switch_camera">Preklopi kamero</string>
     <string name="btn_mirror_vertical">Zrcali navpično</string>
     <string name="btn_mirror_horizontal">Zrcali vodoravno</string>
+    <string name="btn_reverse_sensor">Obrni IMU</string>
     <string name="hint_camera_switched_back">Preklopljeno na zadnjo kamero</string>
     <string name="hint_camera_switched_front">Preklopljeno na sprednjo kamero</string>
     <string name="hint_camera_switched_other">Preklopljeno na kamero %1$s</string>

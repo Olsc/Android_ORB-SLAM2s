@@ -47,6 +47,9 @@ public class SensorFusionTracker {
     private final float[] mPrevSensorRot = new float[16];
     private final float[] mPrevViewRot = new float[16];
 
+    // 反向传感器：可由用户手动反向 3DOF 方向
+    private boolean mSensorReverse = false;
+
     // 冻结偏移：视图 = M(t) * offset，M(t) = 安装角 * R_sensor 或其转置
     private final float[] mAlignmentOffset = new float[16];
     private boolean mHasAlignment = false;
@@ -111,6 +114,14 @@ public class SensorFusionTracker {
         mCameraFrameDegrees = degrees;
         buildMountRotations(degrees);
         Log.i(TAG, "相机图像帧相对设备帧旋转: " + degrees);
+    }
+
+    // 设置是否反向传感器姿态，仅作用于丢失保持时的融合方向
+    public synchronized void setSensorReverseEnabled(boolean enabled) {
+        if (mSensorReverse != enabled) {
+            mSensorReverse = enabled;
+            Log.i(TAG, "传感器方向反向: " + (enabled ? "开启" : "关闭"));
+        }
     }
 
     // 每帧融合：透传视觉位姿或在丢失时跟随传感器，返回是否绘制 AR 物体。
@@ -208,6 +219,9 @@ public class SensorFusionTracker {
             // 旋转由传感器姿态与冻结偏移合成，平移沿用丢失前的估计
             buildSensorView(sensorRot);
             Matrix.multiplyMM(mTempFusedRot, 0, mTempSensorView, 0, mAlignmentOffset, 0);
+            if (mSensorReverse) {
+                transposeRot3(mTempFusedRot);
+            }
             System.arraycopy(mTempFusedRot, 0, outView, 0, 16);
             outView[12] = mLastValidTranslation[0];
             outView[13] = mLastValidTranslation[1];
@@ -262,6 +276,19 @@ public class SensorFusionTracker {
         Matrix.multiplyMM(mTempSensorView, 0, mMountRot[mMountIndex >> 1], 0, mTempSensorTrans, 0);
     }
 
+    // 转置 4x4 矩阵的 3x3 旋转块，等价于取旋转逆
+    private static void transposeRot3(float[] m) {
+        float t = m[1];
+        m[1] = m[4];
+        m[4] = t;
+        t = m[2];
+        m[2] = m[8];
+        m[8] = t;
+        t = m[6];
+        m[6] = m[9];
+        m[9] = t;
+    }
+
     // 按视觉增量与传感器增量的换基一致性为候选打分
     private void updateMountCalibration(float[] sensorRot, float[] pureViewRot) {
         if (!mHasPrevPair) {
@@ -291,11 +318,12 @@ public class SensorFusionTracker {
 
         for (int c = 0; c < MOUNT_CANDIDATE_COUNT; c++) {
             final float[] candidate = mMountRot[c >> 1];
-            // 偶数候选按共轭打分，奇数候选按转置共轭，对应另一种手性约定
-            if ((c & 1) == 0) {
-                System.arraycopy(mTempSensorView, 0, mTempConj, 0, 16);
-            } else {
+            // 偶数候选按共轭打分，奇数候选按转置共轭，对应另一种手性约定；
+            // 不因手动反向而改变，避免标定把用户的开关设置抵消掉
+            if ((c & 1) == 1) {
                 Matrix.transposeM(mTempConj, 0, mTempSensorView, 0);
+            } else {
+                System.arraycopy(mTempSensorView, 0, mTempConj, 0, 16);
             }
             Matrix.multiplyMM(mTempFusedRot, 0, candidate, 0, mTempConj, 0);
             Matrix.transposeM(mTempSensorTrans, 0, candidate, 0);

@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">कॅमेरा बदला</string>
     <string name="btn_mirror_vertical">उभे मिरर</string>
     <string name="btn_mirror_horizontal">आडवे मिरर</string>
+    <string name="btn_reverse_sensor">IMU उलटा</string>
     <string name="hint_camera_switched_back">मागील कॅमेऱ्यावर बदलले</string>
     <string name="hint_camera_switched_front">पुढील कॅमेऱ्यावर बदलले</string>
     <string name="hint_camera_switched_other">कॅमेरा %1$s वर बदलले</string>

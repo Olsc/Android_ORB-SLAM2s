@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">Փոխել տեսախցիկը</string>
     <string name="btn_mirror_vertical">Ուղղահայաց հայելի</string>
     <string name="btn_mirror_horizontal">Հորիզոնական հայելի</string>
+    <string name="btn_reverse_sensor">Շրջել IMU</string>
     <string name="hint_camera_switched_back">Փոխարկվել է հետևի տեսախցիկի</string>
     <string name="hint_camera_switched_front">Փոխարկվել է առջևի տեսախցիկի</string>
     <string name="hint_camera_switched_other">Փոխարկվել է %1$s տեսախցիկի</string>

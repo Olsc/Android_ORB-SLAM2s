@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">Skipta um myndavél</string>
     <string name="btn_mirror_vertical">Spegla lóðrétt</string>
     <string name="btn_mirror_horizontal">Spegla lárétt</string>
+    <string name="btn_reverse_sensor">Snúa IMU</string>
     <string name="hint_camera_switched_back">Skipt yfir á aftari myndavél</string>
     <string name="hint_camera_switched_front">Skipt yfir á fremri myndavél</string>
     <string name="hint_camera_switched_other">Skipt yfir á myndavél %1$s</string>

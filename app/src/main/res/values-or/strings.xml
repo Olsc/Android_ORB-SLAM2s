@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">କ୍ୟାମେରା ବଦଳାନ୍ତୁ</string>
     <string name="btn_mirror_vertical">ଭୂଲମ୍ବ ଦର୍ପଣ</string>
     <string name="btn_mirror_horizontal">ଭୂସମାନ୍ତର ଦର୍ପଣ</string>
+    <string name="btn_reverse_sensor">IMU ଓଲଟାନ୍ତୁ</string>
     <string name="hint_camera_switched_back">ପଛ କ୍ୟାମେରାକୁ ବଦଳାଗଲା</string>
     <string name="hint_camera_switched_front">ଆଗ କ୍ୟାମେରାକୁ ବଦଳାଗଲା</string>
     <string name="hint_camera_switched_other">କ୍ୟାମେରା %1$s କୁ ବଦଳାଗଲା</string>

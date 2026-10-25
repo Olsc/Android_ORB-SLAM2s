@@ -101,6 +101,7 @@ public class MainActivity extends ComponentActivity
     private Button mBtnSwitchCamera;
     private Button mBtnMirrorVertical;
     private Button mBtnMirrorHorizontal;
+    private Button mBtnReverseSensor;
     private Button mBtn3DofCube;
 
     private final Handler mUiHandler = new Handler(Looper.getMainLooper());
@@ -124,6 +125,10 @@ public class MainActivity extends ComponentActivity
     };
 
     private static final String KEY_3DOF_MODE = "is_3dof_mode";
+
+    // 3DOF 传感器方向反向的持久化配置
+    private static final String PREFS_3DOF = "camera_3dof_settings";
+    private static final String PREF_SENSOR_REVERSE = "sensor_reverse";
 
     // 虚拟摇杆
     private VirtualJoystickView mJoystickView;
@@ -759,16 +764,17 @@ public class MainActivity extends ComponentActivity
         }
     }
 
-    // 画面镜像控制：切换显示层的上下与左右镜像，
-    // 开关状态由 CameraPreviewView 持久化，这里仅同步按钮状态与文案。
+    // 画面镜像与传感器方向控制：开关状态均持久化，这里负责同步按钮文案与下发
     private void initMirrorControls() {
         mBtnMirrorVertical = findViewById(R.id.btn_mirror_vertical);
         mBtnMirrorHorizontal = findViewById(R.id.btn_mirror_horizontal);
+        mBtnReverseSensor = findViewById(R.id.btn_reverse_sensor);
 
         boolean mirrorVertical = mCameraPreviewView != null && mCameraPreviewView.isMirrorVertical();
         boolean mirrorHorizontal = mCameraPreviewView != null && mCameraPreviewView.isMirrorHorizontal();
-        updateMirrorButton(mBtnMirrorVertical, R.string.btn_mirror_vertical, mirrorVertical);
-        updateMirrorButton(mBtnMirrorHorizontal, R.string.btn_mirror_horizontal, mirrorHorizontal);
+        updateToggleButton(mBtnMirrorVertical, R.string.btn_mirror_vertical, mirrorVertical);
+        updateToggleButton(mBtnMirrorHorizontal, R.string.btn_mirror_horizontal, mirrorHorizontal);
+        updateToggleButton(mBtnReverseSensor, R.string.btn_reverse_sensor, isSensorReverseEnabled());
 
         if (mBtnMirrorVertical != null) {
             mBtnMirrorVertical.setOnClickListener(v ->
@@ -778,24 +784,42 @@ public class MainActivity extends ComponentActivity
             mBtnMirrorHorizontal.setOnClickListener(v ->
                     setMirrorHorizontal(mCameraPreviewView == null || !mCameraPreviewView.isMirrorHorizontal()));
         }
+        if (mBtnReverseSensor != null) {
+            mBtnReverseSensor.setOnClickListener(v -> setSensorReverse(!isSensorReverseEnabled()));
+        }
     }
 
     private void setMirrorVertical(boolean enabled) {
         if (mCameraPreviewView != null) {
             mCameraPreviewView.setMirrorVertical(enabled);
         }
-        updateMirrorButton(mBtnMirrorVertical, R.string.btn_mirror_vertical, enabled);
+        updateToggleButton(mBtnMirrorVertical, R.string.btn_mirror_vertical, enabled);
     }
 
     private void setMirrorHorizontal(boolean enabled) {
         if (mCameraPreviewView != null) {
             mCameraPreviewView.setMirrorHorizontal(enabled);
         }
-        updateMirrorButton(mBtnMirrorHorizontal, R.string.btn_mirror_horizontal, enabled);
+        updateToggleButton(mBtnMirrorHorizontal, R.string.btn_mirror_horizontal, enabled);
     }
 
-    // 镜像按钮文案：开启时加 ✓ 前缀，与点云按钮的激活反馈保持一致
-    private void updateMirrorButton(Button button, int labelRes, boolean enabled) {
+    // 设置传感器方向反向：下发到融合层并持久化，用于纠正 3DOF 方向
+    private void setSensorReverse(boolean enabled) {
+        if (mSensorFusionTracker != null) {
+            mSensorFusionTracker.setSensorReverseEnabled(enabled);
+        }
+        getSharedPreferences(PREFS_3DOF, MODE_PRIVATE)
+                .edit().putBoolean(PREF_SENSOR_REVERSE, enabled).apply();
+        updateToggleButton(mBtnReverseSensor, R.string.btn_reverse_sensor, enabled);
+    }
+
+    private boolean isSensorReverseEnabled() {
+        return getSharedPreferences(PREFS_3DOF, MODE_PRIVATE)
+                .getBoolean(PREF_SENSOR_REVERSE, false);
+    }
+
+    // 开关按钮文案：开启时加 ✓ 前缀，与点云按钮的激活反馈保持一致
+    private void updateToggleButton(Button button, int labelRes, boolean enabled) {
         if (button == null) return;
         String label = getString(labelRes);
         button.setText(enabled ? "✓" + label : label);
@@ -901,6 +925,8 @@ public class MainActivity extends ComponentActivity
     private void init3DofTracker() {
         mOrientationSensor = new OrientationSensor();
         mSensorFusionTracker = new SensorFusionTracker();
+        // 应用上次退出前保存的传感器反向开关
+        mSensorFusionTracker.setSensorReverseEnabled(isSensorReverseEnabled());
 
         // 确保获取传感器控制按钮引用
         if (mBtn3DofCube == null) {
@@ -908,6 +934,9 @@ public class MainActivity extends ComponentActivity
             if (mBtn3DofCube != null) {
                 mBtn3DofCube.setOnClickListener(v -> toggle3DofMode());
             }
+        }
+        if (mBtnReverseSensor == null) {
+            mBtnReverseSensor = findViewById(R.id.btn_reverse_sensor);
         }
 
         // 多级回退检测：具备任意一种姿态来源即可开启，不再强制要求磁力计/旋转矢量
@@ -920,6 +949,9 @@ public class MainActivity extends ComponentActivity
             mSensorFusionTracker.set3DofAssistEnabled(false);
             if (mBtn3DofCube != null) {
                 mBtn3DofCube.setVisibility(View.GONE);
+            }
+            if (mBtnReverseSensor != null) {
+                mBtnReverseSensor.setVisibility(View.GONE);
             }
             return;
         }
@@ -950,6 +982,9 @@ public class MainActivity extends ComponentActivity
             if (mBtn3DofCube != null) {
                 mBtn3DofCube.setVisibility(View.GONE);
             }
+            if (mBtnReverseSensor != null) {
+                mBtnReverseSensor.setVisibility(View.GONE);
+            }
             return;
         }
 
@@ -961,6 +996,9 @@ public class MainActivity extends ComponentActivity
                 }
                 if (mBtn3DofCube != null) {
                     mBtn3DofCube.setVisibility(View.GONE);
+                }
+                if (mBtnReverseSensor != null) {
+                    mBtnReverseSensor.setVisibility(View.GONE);
                 }
                 mIs3DofMode = false;
                 mSensorFusionTracker.set3DofAssistEnabled(false);

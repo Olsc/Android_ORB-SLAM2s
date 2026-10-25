@@ -93,6 +93,7 @@
     <string name="btn_switch_camera">Przełącz kamerę</string>
     <string name="btn_mirror_vertical">Lustro pionowe</string>
     <string name="btn_mirror_horizontal">Lustro poziome</string>
+    <string name="btn_reverse_sensor">Odwróć IMU</string>
     <string name="hint_camera_switched_back">Przełączono na aparat tylny</string>
     <string name="hint_camera_switched_front">Przełączono na aparat przedni</string>
     <string name="hint_camera_switched_other">Przełączono na aparat %1$s</string>
