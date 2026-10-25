@@ -126,7 +126,8 @@ dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation 'androidx.activity:activity:1.13.0'
 
-    implementation project(':MenthaAR')
+    implementation project(':MenthaAR-ipc')
+    runtimeOnly project(':MenthaAR')
 
     implementation 'androidx.camera:camera-core:1.6.2'
     implementation 'androidx.camera:camera-camera2:1.6.2'

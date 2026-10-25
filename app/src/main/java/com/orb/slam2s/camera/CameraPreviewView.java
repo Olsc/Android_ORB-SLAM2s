@@ -49,7 +49,6 @@ import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LifecycleOwner;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.orb.slam2s.constant.GlobalConstant;
 import com.orb.slam2s.graphics.AspectGLSurfaceView;
 import com.orb.slam2s.graphics.DisplayCorrection;
 import com.orb.slam2s.graphics.GLPassThroughRenderer;
@@ -69,7 +68,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-// 相机预览与图像流摄取视图（基于 CameraX 采集、双缓冲灰度转换、IPC 帧推送与 OpenGL 视图呈现）
+// 相机预览与图像流摄取视图(基于 CameraX 采集、双缓冲灰度转换、IPC 帧推送与 OpenGL 视图呈现)
 public class CameraPreviewView extends AspectGLSurfaceView {
 
     private static final String TAG = "CameraPreviewView";
@@ -97,7 +96,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
     private List<CameraInfo> mAvailableCameraInfos = new ArrayList<>();
     private int mCurrentCameraIndex = -1;
 
-    private byte[][] mYuvSendBuffers; // 灰度帧发送双缓冲（复用避免 GC）
+    private byte[][] mYuvSendBuffers; // 灰度帧发送双缓冲(复用避免 GC)
     private byte[][] mRgbaBuffers;    // 相机 RGBA 帧双缓冲
     private int mSendPing;            // 当前发送缓冲索引 (0/1)
     private int[] mCachePixels;       // 预览位图像素数组
@@ -111,7 +110,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
     private static final String PREF_MIRROR_VERTICAL = "mirror_vertical";
     private static final String PREF_MIRROR_HORIZONTAL = "mirror_horizontal";
 
-    // 当前生效的显示层矫正（方向 + 镜像），由相机帧的 rotationDegrees 自动推导
+    // 当前生效的显示层矫正(方向 + 镜像)，由相机帧的 rotationDegrees 自动推导
     private volatile DisplayCorrection mDisplayCorrection;
     private volatile DisplayCorrectionListener mDisplayCorrectionListener;
 
@@ -138,7 +137,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
         default void onCameraUnavailable(int cameraCount) {}
     }
 
-    // 显示层几何（方向/镜像/画面尺寸）变化回调：供 AR 渲染层做同样的矫正
+    // 显示层几何(方向/镜像/画面尺寸)变化回调：供 AR 渲染层做同样的矫正
     public interface DisplayCorrectionListener {
         void onDisplayCorrectionChanged(DisplayCorrection correction);
     }
@@ -169,7 +168,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
         restoreMirrorSettings();
     }
 
-    // 从本地配置恢复镜像开关（构造时执行，早于首帧渲染与相机启动）
+    // 从本地配置恢复镜像开关(构造时执行，早于首帧渲染与相机启动)
     private void restoreMirrorSettings() {
         SharedPreferences prefs = mContext.getSharedPreferences(PREFS_DISPLAY, Context.MODE_PRIVATE);
         mMirrorVertical = prefs.getBoolean(PREF_MIRROR_VERTICAL, false);
@@ -215,7 +214,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
         return mMirrorHorizontal;
     }
 
-    // 按显示方向尺寸准备预览位图（90/270 矫正后长宽互换，需要重建）
+    // 按显示方向尺寸准备预览位图(90/270 矫正后长宽互换，需要重建)
     // 调用时必须已持有 mSyncLock，保证 GL 线程不会正在上传旧位图
     private void ensureCacheBitmap(int width, int height) {
         if (mCacheBitmap != null && !mCacheBitmap.isRecycled()
@@ -231,7 +230,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
         Log.i(TAG, "预览位图按显示方向重建: " + width + "x" + height);
     }
 
-    // 显示几何发生变化（方向/镜像/真实帧尺寸）时的低频通知：
+    // 显示几何发生变化(方向/镜像/真实帧尺寸)时的低频通知：
     // 更新本 View 的宽高比，并通知 AR 渲染层同步变换
     private void postDisplayCorrection(final DisplayCorrection correction) {
         post(() -> {
@@ -249,7 +248,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
     }
 
     public void init() {
-        setAspectRatio(GlobalConstant.RESOLUTION_WIDTH, GlobalConstant.RESOLUTION_HEIGHT);
+        setAspectRatio(CameraResolution.width, CameraResolution.height);
         setEGLContextClientVersion(2);
         setEGLConfigChooser(8, 8, 8, 8, 16, 0);
         getHolder().setFormat(PixelFormat.TRANSLUCENT);
@@ -351,8 +350,8 @@ public class CameraPreviewView extends AspectGLSurfaceView {
                         return;
                     }
 
-                    mFrameWidth = GlobalConstant.RESOLUTION_WIDTH;
-                    mFrameHeight = GlobalConstant.RESOLUTION_HEIGHT;
+                    mFrameWidth = CameraResolution.width;
+                    mFrameHeight = CameraResolution.height;
                     mCacheBitmap = Bitmap.createBitmap(mFrameWidth, mFrameHeight, Bitmap.Config.ARGB_8888);
                     mCacheBitmap.eraseColor(0xFF000000);
 
@@ -703,7 +702,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
     private class CameraRenderer implements GLSurfaceView.Renderer {
         @Override
         public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-            Bitmap bitmap = Bitmap.createBitmap(GlobalConstant.RESOLUTION_WIDTH, GlobalConstant.RESOLUTION_HEIGHT, Bitmap.Config.ARGB_8888);
+            Bitmap bitmap = Bitmap.createBitmap(CameraResolution.width, CameraResolution.height, Bitmap.Config.ARGB_8888);
             bitmap.eraseColor(0xFF000000);
             mImageTextureId = GLUtils.loadTexture(bitmap, 0);
             bitmap.recycle();
@@ -744,7 +743,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
                     mVPMatrix[10] = -mVPMatrix[10];
                     mVPMatrix[11] = -mVPMatrix[11];
 
-                    // 显示层矫正（方向/镜像）左乘到投影矩阵：与预览位图的矫正严格等价，
+                    // 显示层矫正(方向/镜像)左乘到投影矩阵：与预览位图的矫正严格等价，
                     // 因此点云始终与屏上所见画面逐像素对齐，而与 SLAM 内部坐标系无关
                     final DisplayCorrection correction = mDisplayCorrection;
                     float[] drawMatrix = mVPMatrix;

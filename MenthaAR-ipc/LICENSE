@@ -1,0 +1,18 @@
+MenthaAR-ipc is dual-licensed. You may choose either of the following licenses:
+
+  1. Apache License, Version 2.0 (Apache-2.0)
+     Full text: LICENSE-APACHE-2.0
+
+  2. GNU General Public License, Version 3.0 (GPLv3)
+     Full text: LICENSE-GPL-3.0
+
+This module contains only AIDL interface definitions and the shared-memory IPC
+client. It deliberately contains no GPL-only implementation code, so that
+applications released under Apache-2.0 (or other compatible licenses) can use
+this module under the Apache-2.0 terms without triggering GPLv3 obligations.
+Choosing Apache-2.0 for this module does not grant any rights to the
+`MenthaAR/` engine module, which is licensed under GPLv3 only.
+
+SDK 的双许可说明：本模块仅包含 AIDL 与共享内存 IPC 客户端，不包含任何 GPL-only
+实现代码。使用者可在 Apache-2.0 与 GPLv3 之间任选其一；选择 Apache-2.0 不会对
+`MenthaAR/` 引擎模块（仅 GPLv3）产生任何授权。

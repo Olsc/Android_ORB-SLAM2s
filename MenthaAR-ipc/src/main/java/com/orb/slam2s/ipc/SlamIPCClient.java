@@ -33,14 +33,24 @@ import android.os.ParcelFileDescriptor;
 import android.os.RemoteException;
 import android.util.Log;
 
-// SLAM 跨进程通信客户端：通过共享内存实现无锁高速视频帧推送与位姿/点云读取
-// 结合背压丢帧策略保障双缓冲稳定性，控制指令通过 AIDL 异步分发
+// MenthaAR 定位 SDK 对外接口：控制指令经 AIDL 下发，位姿与点云经共享内存读取。
 public class SlamIPCClient {
     private static final String TAG = "SlamIPCClient";
+
+    // 以组件名绑定
+    private static final String SERVICE_CLASS = "com.orb.slam2s.ipc.SlamService";
+
+    // 服务连接回调，供 App 在连接后同步配置项
+    public interface ConnectionListener {
+        void onServiceConnected();
+
+        void onServiceDisconnected();
+    }
 
     private final Context context;
     private ISlamService slamService;
     private boolean isBound;
+    private volatile ConnectionListener connectionListener;
 
     private volatile SharedMemoryBuffer sharedMemoryBuffer;
 
@@ -64,6 +74,10 @@ public class SlamIPCClient {
             } catch (RemoteException e) {
                 Log.e(TAG, "延迟初始化异常: " + e.getMessage());
             }
+            final ConnectionListener listener = connectionListener;
+            if (listener != null) {
+                listener.onServiceConnected();
+            }
         }
 
         @Override
@@ -71,6 +85,10 @@ public class SlamIPCClient {
             slamService = null;
             isBound = false;
             Log.w(TAG, "MenthaAR SlamService 进程连接断开");
+            final ConnectionListener listener = connectionListener;
+            if (listener != null) {
+                listener.onServiceDisconnected();
+            }
         }
     };
 
@@ -78,8 +96,14 @@ public class SlamIPCClient {
         this.context = context;
     }
 
+    public void setConnectionListener(ConnectionListener listener) {
+        this.connectionListener = listener;
+    }
+
+    // 绑定 SDK 服务，以组件名寻址，不依赖 GPL 实现类
     public void bindService() {
-        Intent intent = new Intent(context, SlamService.class);
+        Intent intent = new Intent();
+        intent.setComponent(new ComponentName(context.getPackageName(), SERVICE_CLASS));
         context.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
     }
 
@@ -98,6 +122,7 @@ public class SlamIPCClient {
         return isBound && slamService != null;
     }
 
+    // 初始化引擎，未连接时自动挂起，连接后执行
     public void initSLAM(String resDir) {
         this.pendingResDir = resDir;
         if (slamService != null) {
@@ -112,8 +137,8 @@ public class SlamIPCClient {
         }
     }
 
-    // 将一帧灰度 Y 数据写入共享内存并投递给 SLAM 进程（oneway，不阻塞）
-    // 内部双缓冲 + 背压丢帧，可在任意线程调用（内部已串行化）
+    // 将一帧灰度 Y 数据写入共享内存并投递给 SLAM 进程(oneway，不阻塞)
+    // 内部双缓冲 + 背压丢帧，可在任意线程调用(内部已串行化)
     public void sendFrameData(byte[] frameData, int width, int height) {
         if (slamService == null || frameData == null) return;
         if (width <= 0 || height <= 0) return;
@@ -142,9 +167,9 @@ public class SlamIPCClient {
             int seq = lastSeq + 1;
             int bufIndex = seq & 1;
 
-            // 背压：目标缓冲（seq模2）必须空闲，即 SLAM 已完成 seq-2
+            // 背压：目标缓冲(seq模2)必须空闲，即 SLAM 已完成 seq-2
             if (sharedMemoryBuffer.readSlamDoneSeq() < seq - 2) {
-                // SLAM 处理落后于发送，丢帧（不覆盖正在处理的缓冲）
+                // SLAM 处理落后于发送，丢帧(不覆盖正在处理的缓冲)
                 return;
             }
 
@@ -173,12 +198,12 @@ public class SlamIPCClient {
         }
     }
 
-    // 读取最新 MVP（48 floats：M[16]+V[16]+P[16]），返回 false 表示无有效数据
+    // 读取最终 AR 位姿(48 floats：M[16]+V[16]+P[16])，失败表示暂无有效数据
     public boolean readMvp(float[] out48) {
         return sharedMemoryBuffer != null && sharedMemoryBuffer.readMvp(out48);
     }
 
-    // 是否应绘制 AR 物体
+    // 是否绘制 AR 物体(已含丢失保持与跨地图判定)
     public boolean readDrawFlag() {
         return sharedMemoryBuffer != null && sharedMemoryBuffer.readDrawFlag() != 0;
     }
@@ -193,9 +218,50 @@ public class SlamIPCClient {
         return sharedMemoryBuffer != null ? sharedMemoryBuffer.readActiveMapId() : 0;
     }
 
-    // 读取点云（每点 7 floats），返回点数，0 表示无点云
+    // 读取点云(每点 7 floats)，返回点数，0 表示无点云
     public int readPointCloud(float[] out, int maxFloats) {
         return sharedMemoryBuffer != null ? sharedMemoryBuffer.readPointCloud(out, maxFloats) : 0;
+    }
+
+    // 姿态辅助开关：融合在 SDK 进程内执行，App 只需下发开关
+    public void set3DofAssistEnabled(boolean enabled) {
+        if (slamService == null) return;
+        try {
+            slamService.set3DofAssistEnabled(enabled);
+        } catch (RemoteException e) {
+            Log.e(TAG, "set3DofAssistEnabled 异常: " + e.getMessage());
+        }
+    }
+
+    // 反向传感器方向：前后摄像头光学朝向相反时使用
+    public void setSensorReverse(boolean reversed) {
+        if (slamService == null) return;
+        try {
+            slamService.setSensorReverse(reversed);
+        } catch (RemoteException e) {
+            Log.e(TAG, "setSensorReverse 异常: " + e.getMessage());
+        }
+    }
+
+    // 相机图像相对设备坐标系的旋转角，取值来自 CameraX 的 rotationDegrees
+    public void setCameraImageRotation(int degrees) {
+        if (slamService == null) return;
+        try {
+            slamService.setCameraImageRotation(degrees);
+        } catch (RemoteException e) {
+            Log.e(TAG, "setCameraImageRotation 异常: " + e.getMessage());
+        }
+    }
+
+    // 姿态传感器可观测自由度：3 含航向，2 仅俯仰与滚转，0 表示不可用
+    public int getSensorDof() {
+        if (slamService == null) return 0;
+        try {
+            return slamService.getSensorDof();
+        } catch (RemoteException e) {
+            Log.e(TAG, "getSensorDof 异常: " + e.getMessage());
+            return 0;
+        }
     }
 
     public void detectPlane() {

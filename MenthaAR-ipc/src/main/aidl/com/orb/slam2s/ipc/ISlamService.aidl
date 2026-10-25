@@ -27,10 +27,10 @@ package com.orb.slam2s.ipc;
 import android.os.ParcelFileDescriptor;
 
 interface ISlamService {
-    // 低频/耗时操作：oneway 避免占用 binder 线程（initSLAM 需加载词汇表约 1 秒）
+    // 低频/耗时操作：oneway 避免占用 binder 线程(initSLAM 需加载词汇表约 1 秒)
     oneway void initSLAM(String resDir);
 
-    // 共享内存 attach：低频（仅缓冲创建/尺寸变化时），保持同步以便确认成功
+    // 共享内存 attach：低频(仅缓冲创建/尺寸变化时)，保持同步以便确认成功
     boolean attachFrameBuffer(in ParcelFileDescriptor pfd, int size);
 
     // 每帧路径：oneway 投递帧序号，SLAM 进程内部专用线程处理，binder 线程不被占用
@@ -44,4 +44,12 @@ interface ISlamService {
     void loadMapWithId(String mapPath, int mapId, boolean append);
     int[] getMapStats();
     void updateArObjectScale(float scaleFactor);
+
+    // 姿态辅助(3DOF)开关与方向反向，由 App 作为配置下发
+    void set3DofAssistEnabled(boolean enable);
+    void setSensorReverse(boolean reversed);
+    oneway void setCameraImageRotation(int degrees);
+
+    // 姿态传感器可观测自由度：3 含航向，2 仅俯仰与滚转，0 表示不可用
+    int getSensorDof();
 }

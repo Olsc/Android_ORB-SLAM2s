@@ -6,23 +6,32 @@ This project uses a modular license structure based on Android IPC process isola
 2. `MenthaAR/` Engine Module:
    Derived from ORB-SLAM2 and released under the GNU General Public License v3.0 (GPLv3). See MenthaAR/LICENSE for details.
 
-3. Inter-Process Communication (IPC):
-   The `app` module and `MenthaAR` engine run in separate OS processes and communicate strictly via Binder IPC and SharedMemory (Ashmem/memfd), preserving license boundaries.
+3. `MenthaAR-ipc/` Interface Module:
+   Dual-licensed under the Apache License, Version 2.0 (Apache-2.0) or the GNU General Public License v3.0 (GPLv3).
+   The recipient may choose either license. See MenthaAR-ipc/LICENSE, MenthaAR-ipc/LICENSE-APACHE-2.0 and
+   MenthaAR-ipc/LICENSE-GPL-3.0 for details. When this module is used under Apache-2.0, only the Apache-2.0
+   terms apply to it and no GPLv3 obligation is triggered by that module itself.
+
+4. Inter-Process Communication (IPC):
+   The `app` module and `MenthaAR` engine run in separate OS processes and communicate strictly via Binder IPC and SharedMemory (Ashmem/memfd), preserving license boundaries. The `app` module depends on `MenthaAR-ipc` at compile time only and packages the GPLv3 engine as a runtime-only artifact.
 
 Please see Dependencies.md for a list of all included code and library dependencies that are not the property of the authors of ORB-SLAM2.
 
 For a closed-source version of ORB-SLAM2 for commercial purposes, please contact the original authors.
 
+Authors' Statement on AI Model Training (non-binding)
 
-Additional AI Model Training Restrictions:
+The authors state a preference that this software not be used, in whole or in
+part, for training, fine-tuning or evaluating proprietary or closed-source
+artificial intelligence models, and invite users who build open-source models
+with it to keep their resulting works open as well.
 
-1. This software may not be used, in whole or in part, for the training, fine-tuning, optimization, alignment, evaluation, or development of any proprietary, closed-source, or commercially restricted artificial intelligence, machine learning, or foundation models.
-
-2. Use of this software for training, fine-tuning, evaluation, or development of open-source artificial intelligence or machine learning models is permitted, provided that all resulting works, modifications, derivative works, and distributions comply with the terms and obligations of the GNU General Public License v3.0 (GPLv3).
-
-3. Any model, dataset, software, or derivative work created using this software must preserve all applicable copyright notices, license notices, attribution requirements, and source code disclosure obligations required by GPLv3.
-
-4. Redistribution of modified versions or derivative works that incorporate or are based upon this software must remain licensed under GPLv3 and must make corresponding source code available as required by GPLv3.
+This statement is a declaration of intent only. It is not a license condition:
+it does not add any restriction to, or remove any right granted by, the GNU
+General Public License v3.0 or the Apache License 2.0, and it creates no
+obligation for any recipient. Rights and obligations for each module are
+governed exclusively by the applicable license texts listed above: app/LICENSE,
+MenthaAR-ipc/LICENSE and MenthaAR/LICENSE.
 
 If you use ORB-SLAM in academic work, please cite the most relevant publication associated with the project by visiting:
 https://github.com/raulmur/ORB_SLAM2

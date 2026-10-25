@@ -193,10 +193,11 @@ ORB-SLAM2 코어 라이브러리는 [GPLv3 라이선스](https://github.com/raul
 본 프로젝트는 Android IPC 프로세스 격리를 기반으로 한 다중 모듈 라이선스 아키텍처를 채택합니다:
 
 - **`app/` 모듈**: **[Apache License 2.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/app/LICENSE)** (Apache-2.0)에 따라 라이선스가 부여됩니다. UI, 카메라 프리뷰, 네이티브 cgltf/OpenGL ES 3D 렌더링 및 센서 구성 요소가 포함되어 있습니다.
-- **`MenthaAR/` 엔진 모듈**: ORB-SLAM2에서 파생되었으며 **[GNU General Public License v3.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/MenthaAR/LICENSE)** (GPLv3)에 따라 라이선스가 부여됩니다. C++ SLAM 핵심 알고리즘 및 네이티브 처리가 포함되어 있습니다.
-- **IPC 프로세스 격리 통신**: `app` 모듈과 `MenthaAR` 엔진은 독립된 Android OS 프로세스에서 실행되며 Binder IPC 및 공유 메모리(Ashmem/memfd)를 통해서만 통신하여 각 모듈의 라이선스 경계를 유지합니다.
+- **`MenthaAR-ipc/` 인터페이스 모듈**: **Apache-2.0 또는 GPLv3 듀얼 라이선스**(택일). AIDL 정의와 공유 메모리 클라이언트만 포함하며, `app`과 GPL 구현 사이의 유일한 컴파일 타임 경계입니다.
+- **`MenthaAR/` 엔진 모듈**: ORB-SLAM2에서 파생되었으며 **[GNU General Public License v3.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/MenthaAR/LICENSE)** (GPLv3)에 따라 라이선스가 부여됩니다. C++ SLAM 핵심 알고리즘, 자세 센서, 자세 융합이 포함되어 있습니다.
+- **프로세스 격리**: `app`과 `MenthaAR` 엔진은 별도 프로세스에서 실행되며 Binder IPC와 공유 메모리(Ashmem/memfd)로만 데이터를 교환합니다. GPL 구현은 `runtimeOnly` 의존성으로 패키징되어 App 소스에서 참조할 수 없습니다.
 
-자세한 내용은 [LICENSE](../LICENSE), [app/LICENSE](../app/LICENSE) 및 [MenthaAR/LICENSE](../MenthaAR/LICENSE) 파일을 참조하십시오.
+자세한 내용은 [LICENSE](../LICENSE), [app/LICENSE](../app/LICENSE), [MenthaAR-ipc/LICENSE](../MenthaAR-ipc/LICENSE) 및 [MenthaAR/LICENSE](../MenthaAR/LICENSE) 파일을 참조하십시오.
 
 프로젝트 협업 또는 기타 분야 협력 문의는 **OlscStudio@outlook.com**으로 연락 주십시오.
 

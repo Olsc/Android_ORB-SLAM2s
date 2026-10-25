@@ -29,18 +29,18 @@ import android.util.Log;
 
 import java.util.List;
 
-// 3DOF 方向传感器管理：按优先级多级回退选择姿态来源（旋转矢量 / 游戏旋转矢量 / 加速度计+磁力计 / 陀螺仪积分 / 仅重力矢量）
+// 3DOF 方向传感器管理：按优先级多级回退选择姿态来源(旋转矢量 / 游戏旋转矢量 / 加速度计+磁力计 / 陀螺仪积分 / 仅重力矢量)
 public class OrientationSensor implements SensorEventListener {
     private static final String TAG = "OrientationSensor";
 
     // 姿态来源模式
     public enum Mode {
         NONE,                 // 无任何可用传感器，场景保持静止
-        ROTATION_VECTOR,      // 旋转矢量（绝对姿态）
-        GAME_ROTATION_VECTOR, // 游戏旋转矢量（相对姿态）
+        ROTATION_VECTOR,      // 旋转矢量(绝对姿态)
+        GAME_ROTATION_VECTOR, // 游戏旋转矢量(相对姿态)
         ACCEL_MAG,            // 加速度计 + 磁力计
         GYROSCOPE,            // 仅陀螺仪积分
-        ACCEL_ONLY            // 仅重力矢量（俯仰与滚转，无航向）
+        ACCEL_ONLY            // 仅重力矢量(俯仰与滚转，无航向)
     }
 
     private SensorManager sensorManager;
@@ -75,14 +75,27 @@ public class OrientationSensor implements SensorEventListener {
     private final float[] accelMagR = new float[16];
     private final float[] accelMagI = new float[16];
 
-    // 传感器是否已产生第一个有效读数（跨线程读取保持可见性）
+    // 相对姿态：陀螺仪积分、重力矢量校倾，不使用磁力计。
+    // 纯 3DOF 保持只需要相对最后一次视觉帧的旋转，绝对航向受磁干扰时会造成方向漂移甚至翻转
+    private final float[] relRotationMatrix = new float[16];
+    private final float[] relTempMatrix = new float[16];
+    private final float[] relTiltAxis = new float[3];
+    private final float[] relTiltVector = new float[3];
+    private final float[] relComposed = new float[16];
+    private boolean hasGyroRelative = false;
+    private volatile boolean relSampleReady = false;
+    // 每次重力样本的校倾比例，越小越平滑但纠偏越慢
+    private static final float TILT_CORRECT_RATIO = 0.02f;
+    private static final float GRAVITY_MIN_NORM = 6.0f;
+
+    // 传感器是否已产生第一个有效读数(跨线程读取保持可见性)
     private volatile boolean ready = false;
 
     public OrientationSensor() {
         Matrix.setIdentityM(rawRotationMatrix, 0);
     }
 
-    // 检测设备可用的姿态来源并按优先级选择模式（不注册监听器）
+    // 检测设备可用的姿态来源并按优先级选择模式(不注册监听器)
     public Mode detectMode(Context context) {
         if (context == null) {
             mode = Mode.NONE;
@@ -131,7 +144,7 @@ public class OrientationSensor implements SensorEventListener {
         }
     }
 
-    // 返回当前（或最近一次检测到的）姿态来源模式
+    // 返回当前(或最近一次检测到的)姿态来源模式
     public Mode getMode() {
         return mode;
     }
@@ -154,6 +167,20 @@ public class OrientationSensor implements SensorEventListener {
         hasFilteredGravity = false;
         lastGyroTimestamp = 0L;
         Matrix.setIdentityM(rawRotationMatrix, 0);
+        Matrix.setIdentityM(relRotationMatrix, 0);
+        hasGyroRelative = false;
+        relSampleReady = false;
+
+        // 陀螺仪 + 重力：为 3DOF 保持提供只用相对旋转的姿态来源
+        if (gyroscope != null) {
+            sensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_GAME);
+            hasGyroRelative = true;
+        }
+        if (gravitySensor != null) {
+            sensorManager.registerListener(this, gravitySensor, SensorManager.SENSOR_DELAY_GAME);
+        } else if (accelerometer != null) {
+            sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
+        }
 
         switch (mode) {
             case ROTATION_VECTOR:
@@ -206,8 +233,9 @@ public class OrientationSensor implements SensorEventListener {
         return ready;
     }
 
+    // 回调与快照拷贝共用同一锁，避免跨线程读到撕裂的旋转矩阵
     @Override
-    public void onSensorChanged(SensorEvent event) {
+    public synchronized void onSensorChanged(SensorEvent event) {
         if (event == null || event.values == null) {
             return;
         }
@@ -230,14 +258,16 @@ public class OrientationSensor implements SensorEventListener {
                 }
                 System.arraycopy(event.values, 0, gravity, 0, 3);
                 hasGravity = true;
+                correctRelativeTilt(event.values);
                 updateRotationMatrixFromAccelMag();
                 break;
 
             case Sensor.TYPE_GRAVITY:
-                // 系统已融合的重力矢量，直接解算倾斜
+                // 系统已融合的重力矢量，直接解算倾斜，并校正相对姿态的倾角
                 if (updateRotationMatrixFromGravity(event.values)) {
                     markReady();
                 }
+                correctRelativeTilt(event.values);
                 break;
 
             case Sensor.TYPE_MAGNETIC_FIELD:
@@ -346,6 +376,9 @@ public class OrientationSensor implements SensorEventListener {
         // R = R * deltaR (机体系右乘)
         Matrix.multiplyMM(gyroTempMatrix, 0, rawRotationMatrix, 0, gyroDeltaMatrix, 0);
         System.arraycopy(gyroTempMatrix, 0, rawRotationMatrix, 0, 16);
+        Matrix.multiplyMM(relTempMatrix, 0, relRotationMatrix, 0, gyroDeltaMatrix, 0);
+        System.arraycopy(relTempMatrix, 0, relRotationMatrix, 0, 16);
+        relSampleReady = true;
 
         // 定期 Gram-Schmidt 正交规范化，抑制数值漂移
         orthonormalize(rawRotationMatrix);
@@ -389,9 +422,50 @@ public class OrientationSensor implements SensorEventListener {
         // 无需处理精度变化
     }
 
-    // 获取世界坐标系下的旋转矩阵（竖屏下设备系即屏幕系，无需重映射）
-    public float[] getRotationMatrix() {
-        return rawRotationMatrix;
+    // 重力校倾：把相对姿态下的重力方向缓慢旋回世界竖直方向，抑制积分漂移
+    private void correctRelativeTilt(float[] gravityVector) {
+        final float gx = gravityVector[0], gy = gravityVector[1], gz = gravityVector[2];
+        final float norm = (float) Math.sqrt(gx * gx + gy * gy + gz * gz);
+        if (norm < GRAVITY_MIN_NORM) {
+            return;
+        }
+    // 设备系下重力方向(单位化)，旋转到世界系后应与世界竖直轴一致
+        final float ux = (relRotationMatrix[0] * gx + relRotationMatrix[4] * gy + relRotationMatrix[8] * gz) / norm;
+        final float uy = (relRotationMatrix[1] * gx + relRotationMatrix[5] * gy + relRotationMatrix[9] * gz) / norm;
+        final float uz = (relRotationMatrix[2] * gx + relRotationMatrix[6] * gy + relRotationMatrix[10] * gz) / norm;
+
+        // 误差轴 = u × 世界竖直轴
+        relTiltAxis[0] = -uy;
+        relTiltAxis[1] = ux;
+        relTiltAxis[2] = 0.0f;
+        final float axisLen = (float) Math.sqrt(relTiltAxis[0] * relTiltAxis[0] + relTiltAxis[1] * relTiltAxis[1]);
+        if (axisLen < 1e-6f) {
+            return;
+        }
+        final float angle = (float) Math.atan2(axisLen, uz) * TILT_CORRECT_RATIO;
+        relTiltVector[0] = relTiltAxis[0] / axisLen * angle;
+        relTiltVector[1] = relTiltAxis[1] / axisLen * angle;
+        relTiltVector[2] = relTiltAxis[2] / axisLen * angle;
+        SensorManager.getRotationMatrixFromVector(relTempMatrix, relTiltVector);
+        // 世界系先乘：R = deltaR * R
+        Matrix.multiplyMM(relComposed, 0, relTempMatrix, 0, relRotationMatrix, 0);
+        System.arraycopy(relComposed, 0, relRotationMatrix, 0, 16);
     }
 
+    // 复制当前旋转矩阵快照，供帧处理线程安全读取
+    public synchronized void copyRotationMatrix(float[] out) {
+        if (out == null || out.length < 16) {
+            return;
+        }
+        System.arraycopy(rawRotationMatrix, 0, out, 0, 16);
+    }
+
+    // 复制相对姿态快照：陀螺积分 + 重力校倾，不含磁力计航向
+    public synchronized boolean copyRelativeRotationMatrix(float[] out) {
+        if (out == null || out.length < 16 || !hasGyroRelative || !relSampleReady) {
+            return false;
+        }
+        System.arraycopy(relRotationMatrix, 0, out, 0, 16);
+        return true;
+    }
 }

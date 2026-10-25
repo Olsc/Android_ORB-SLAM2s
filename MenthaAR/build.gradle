@@ -67,3 +67,7 @@ android {
         disable 'InferredThreadDetector'
     }
 }
+
+dependencies {
+    implementation project(':MenthaAR-ipc')
+}

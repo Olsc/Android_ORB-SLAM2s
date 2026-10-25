@@ -53,15 +53,13 @@ import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.orb.slam2s.R;
 import com.orb.slam2s.camera.CameraPreviewView;
-import com.orb.slam2s.constant.GlobalConstant;
+import com.orb.slam2s.camera.CameraResolution;
 import com.orb.slam2s.graphics.AspectGLSurfaceView;
 import com.orb.slam2s.graphics.DisplayCorrection;
 import com.orb.slam2s.graphics.GlbModelRenderer;
 import com.orb.slam2s.ipc.SlamIPCClient;
-import com.orb.slam2s.sensors.OrientationSensor;
 import com.orb.slam2s.util.FpsCalculator;
 import com.orb.slam2s.util.MapManager;
-import com.orb.slam2s.util.SensorFusionTracker;
 import com.orb.slam2s.util.TouchGestureHelper;
 
 import androidx.camera.camera2.interop.Camera2CameraInfo;
@@ -75,7 +73,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-// SLAM AR 主控制 Activity（调度相机、3D 模型渲染、3DOF 追踪、地图管理与交互控制）
+// SLAM AR 主控制 Activity(调度相机、3D 模型渲染、3DOF 追踪、地图管理与交互控制)
 public class MainActivity extends ComponentActivity
         implements CameraPreviewView.FrameListener, CameraPreviewView.DisplayCorrectionListener {
 
@@ -107,7 +105,7 @@ public class MainActivity extends ComponentActivity
     private final Handler mUiHandler = new Handler(Looper.getMainLooper());
     private AlertDialog mLoadingDialog;
 
-    // 地图统计轮询（1Hz）：仅在 onResume~onPause 之间运行，避免后台无谓唤醒与 IPC 占用
+    // 地图统计轮询(1Hz)：仅在 onResume~onPause 之间运行，避免后台无谓唤醒与 IPC 占用
     private final Runnable mMapStatsUpdater = new Runnable() {
         @Override
         public void run() {
@@ -128,15 +126,15 @@ public class MainActivity extends ComponentActivity
 
     // 3DOF 传感器方向反向的持久化配置
     private static final String PREFS_3DOF = "camera_3dof_settings";
-    private static final String PREF_SENSOR_REVERSE = "sensor_reverse";
+    // 键名带版本：默认值改为开启后，避免历史保存的关闭状态覆盖新默认
+    private static final String PREF_SENSOR_REVERSE = "sensor_reverse_default_on";
 
     // 虚拟摇杆
     private VirtualJoystickView mJoystickView;
 
-    // 辅助定位跟踪 (默认开启，若检测到硬件)
-    private OrientationSensor mOrientationSensor;
-    private SensorFusionTracker mSensorFusionTracker;
-    private boolean mIs3DofMode = false;
+    // 辅助定位状态(传感器与融合均由 SDK 持有，这里只保存 UI 开关)
+    private boolean mIs3DofMode = true;
+    private int mSensorDof = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -148,7 +146,7 @@ public class MainActivity extends ComponentActivity
         setContentView(R.layout.ar_ui_content);
         initViewsAndServices();
 
-        // 恢复进程被回收前的用户状态（如 3DOF 模式）
+        // 恢复进程被回收前的用户状态(如 3DOF 模式)
         if (savedInstanceState != null && savedInstanceState.containsKey(KEY_3DOF_MODE)) {
             boolean savedMode = savedInstanceState.getBoolean(KEY_3DOF_MODE, true);
             if (savedMode != mIs3DofMode) {
@@ -195,8 +193,8 @@ public class MainActivity extends ComponentActivity
         int screenHeight = size.y;
         Log.d(TAG, "屏幕分辨率: " + screenWidth + "x" + screenHeight);
 
-        GlobalConstant.computeOptimalResolution(screenWidth, screenHeight);
-        Log.d(TAG, "选择相机分辨率: " + GlobalConstant.RESOLUTION_WIDTH + "x" + GlobalConstant.RESOLUTION_HEIGHT);
+        CameraResolution.computeOptimal(screenWidth, screenHeight);
+        Log.d(TAG, "选择相机分辨率: " + CameraResolution.width + "x" + CameraResolution.height);
     }
 
     private File getSlamDir() {
@@ -232,7 +230,7 @@ public class MainActivity extends ComponentActivity
             mBtn3DofCube.setOnClickListener(v -> toggle3DofMode());
         }
 
-        init3DofTracker();
+        init3DofControls();
         initFilamentModel();
 
         View touchView = findViewById(R.id.touch_panel);
@@ -503,14 +501,12 @@ public class MainActivity extends ComponentActivity
         Log.d(TAG, "initFilamentModel: 初始化原生 C++ GLB 渲染器");
 
         final AspectGLSurfaceView glRootView = findViewById(R.id.ar_object_view_gles2_obj);
-        glRootView.setAspectRatio(GlobalConstant.RESOLUTION_WIDTH, GlobalConstant.RESOLUTION_HEIGHT);
+        glRootView.setAspectRatio(CameraResolution.width, CameraResolution.height);
         mArObjectView = glRootView;
 
         mModelRenderer = GlbModelRenderer.newInstance()
                 .setArObjectView(glRootView)
                 .setSlamIPCClient(mSlamIPCClient)
-                .setOrientationSensor(mOrientationSensor)
-                .setSensorFusionTracker(mSensorFusionTracker)
                 .setContext(this)
                 .setModelPath("model.glb")
                 .setInitSize(0.20f)
@@ -550,8 +546,8 @@ public class MainActivity extends ComponentActivity
             mCameraPreviewView.disableView();
         }
 
-        if (mIs3DofMode && mOrientationSensor != null) {
-            mOrientationSensor.stop();
+        if (mIs3DofMode) {
+            mSlamIPCClient.set3DofAssistEnabled(false);
         }
 
         if (mModelRenderer != null) {
@@ -583,8 +579,8 @@ public class MainActivity extends ComponentActivity
             mCameraPreviewView.enableView();
         }
 
-        if (mIs3DofMode && mOrientationSensor != null) {
-            mOrientationSensor.start(this);
+        if (mIs3DofMode) {
+            mSlamIPCClient.set3DofAssistEnabled(true);
         }
 
         startMapStatsUpdater();
@@ -803,10 +799,10 @@ public class MainActivity extends ComponentActivity
         updateToggleButton(mBtnMirrorHorizontal, R.string.btn_mirror_horizontal, enabled);
     }
 
-    // 设置传感器方向反向：下发到融合层并持久化，用于纠正 3DOF 方向
+    // 设置传感器方向反向：下发给 SDK 融合层并持久化，用于纠正 3DOF 方向
     private void setSensorReverse(boolean enabled) {
-        if (mSensorFusionTracker != null) {
-            mSensorFusionTracker.setSensorReverseEnabled(enabled);
+        if (mSlamIPCClient != null) {
+            mSlamIPCClient.setSensorReverse(enabled);
         }
         getSharedPreferences(PREFS_3DOF, MODE_PRIVATE)
                 .edit().putBoolean(PREF_SENSOR_REVERSE, enabled).apply();
@@ -815,7 +811,7 @@ public class MainActivity extends ComponentActivity
 
     private boolean isSensorReverseEnabled() {
         return getSharedPreferences(PREFS_3DOF, MODE_PRIVATE)
-                .getBoolean(PREF_SENSOR_REVERSE, false);
+                .getBoolean(PREF_SENSOR_REVERSE, true);
     }
 
     // 开关按钮文案：开启时加 ✓ 前缀，与点云按钮的激活反馈保持一致
@@ -922,13 +918,8 @@ public class MainActivity extends ComponentActivity
                 .show();
     }
 
-    private void init3DofTracker() {
-        mOrientationSensor = new OrientationSensor();
-        mSensorFusionTracker = new SensorFusionTracker();
-        // 应用上次退出前保存的传感器反向开关
-        mSensorFusionTracker.setSensorReverseEnabled(isSensorReverseEnabled());
-
-        // 确保获取传感器控制按钮引用
+    // 姿态辅助控制：传感器与融合均由 SDK 进程持有，此处只下发开关并同步 UI
+    private void init3DofControls() {
         if (mBtn3DofCube == null) {
             mBtn3DofCube = findViewById(R.id.btn_3dof_cube);
             if (mBtn3DofCube != null) {
@@ -938,15 +929,30 @@ public class MainActivity extends ComponentActivity
         if (mBtnReverseSensor == null) {
             mBtnReverseSensor = findViewById(R.id.btn_reverse_sensor);
         }
+        if (mSlamIPCClient != null) {
+            mSlamIPCClient.setConnectionListener(new SlamIPCClient.ConnectionListener() {
+                @Override
+                public void onServiceConnected() {
+                    runOnUiThread(MainActivity.this::apply3DofConfig);
+                }
 
-        // 多级回退检测：具备任意一种姿态来源即可开启，不再强制要求磁力计/旋转矢量
-        OrientationSensor.Mode mode = mOrientationSensor.detectMode(this);
-        Log.d(TAG, "3DOF 姿态来源检测结果: " + mode);
+                @Override
+                public void onServiceDisconnected() {
+                    // 重连成功后由 onServiceConnected 重新下发配置
+                }
+            });
+        }
+    }
 
-        if (mode == OrientationSensor.Mode.NONE) {
-            Log.w(TAG, "设备没有任何可用于 3DOF 的姿态传感器硬件，隐藏传感器按钮");
+    // SDK 连接后同步：能力探测、开关与反向状态
+    private void apply3DofConfig() {
+        if (mSlamIPCClient == null) return;
+        mSensorDof = mSlamIPCClient.getSensorDof();
+        Log.d(TAG, "SDK 姿态自由度: " + mSensorDof);
+
+        if (mSensorDof <= 0) {
             mIs3DofMode = false;
-            mSensorFusionTracker.set3DofAssistEnabled(false);
+            mSlamIPCClient.set3DofAssistEnabled(false);
             if (mBtn3DofCube != null) {
                 mBtn3DofCube.setVisibility(View.GONE);
             }
@@ -956,18 +962,17 @@ public class MainActivity extends ComponentActivity
             return;
         }
 
-        // 检测到对应硬件：默认启动传感器辅助定位
-        mIs3DofMode = true;
-        mSensorFusionTracker.setRotationDof(mOrientationSensor.getRotationDof());
-        mOrientationSensor.start(this);
-        mSensorFusionTracker.set3DofAssistEnabled(true);
-
         if (mBtn3DofCube != null) {
             mBtn3DofCube.setVisibility(View.VISIBLE);
-            mBtn3DofCube.setText(getString(R.string.btn_3dof_on));
+            mBtn3DofCube.setText(getString(mIs3DofMode
+                    ? R.string.btn_3dof_on : R.string.btn_3dof_off));
         }
-
-        Log.d(TAG, "3DOF 传感器与融合跟踪器初始化完成 (默认启动，姿态来源: " + mode + ")");
+        if (mBtnReverseSensor != null) {
+            mBtnReverseSensor.setVisibility(View.VISIBLE);
+        }
+        mSlamIPCClient.set3DofAssistEnabled(mIs3DofMode);
+        mSlamIPCClient.setSensorReverse(isSensorReverseEnabled());
+        updateToggleButton(mBtnReverseSensor, R.string.btn_reverse_sensor, isSensorReverseEnabled());
     }
 
     private void toggle3DofMode() {
@@ -975,7 +980,7 @@ public class MainActivity extends ComponentActivity
     }
 
     private void set3DofMode(boolean enabled, boolean showToast) {
-        if (mOrientationSensor == null || mSensorFusionTracker == null) {
+        if (mSlamIPCClient == null || mSensorDof <= 0) {
             if (showToast) {
                 showToast(getString(R.string.hint_3dof_unavailable));
             }
@@ -988,41 +993,12 @@ public class MainActivity extends ComponentActivity
             return;
         }
 
-        if (enabled) {
-            // 开启前重新确认姿态来源，若无传感器硬件则隐藏按钮并提示
-            if (mOrientationSensor.detectMode(this) == OrientationSensor.Mode.NONE) {
-                if (showToast) {
-                    showToast(getString(R.string.hint_3dof_unavailable));
-                }
-                if (mBtn3DofCube != null) {
-                    mBtn3DofCube.setVisibility(View.GONE);
-                }
-                if (mBtnReverseSensor != null) {
-                    mBtnReverseSensor.setVisibility(View.GONE);
-                }
-                mIs3DofMode = false;
-                mSensorFusionTracker.set3DofAssistEnabled(false);
-                return;
-            }
-            mIs3DofMode = true;
-            mSensorFusionTracker.setRotationDof(mOrientationSensor.getRotationDof());
-            mOrientationSensor.start(this);
-            mSensorFusionTracker.set3DofAssistEnabled(true);
-
-            if (mBtn3DofCube != null) {
-                mBtn3DofCube.setVisibility(View.VISIBLE);
-                mBtn3DofCube.setText(getString(R.string.btn_3dof_on));
-            }
-            Log.d(TAG, "辅助定位已开启 (旋转防抖 + 丢失空间保活)");
-        } else {
-            mIs3DofMode = false;
-            mOrientationSensor.stop();
-            mSensorFusionTracker.set3DofAssistEnabled(false);
-
-            if (mBtn3DofCube != null) {
-                mBtn3DofCube.setText(getString(R.string.btn_3dof_off));
-            }
-            Log.d(TAG, "3DOF 辅助定位已关闭，恢复纯视觉 SLAM");
+        mIs3DofMode = enabled;
+        mSlamIPCClient.set3DofAssistEnabled(enabled);
+        if (mBtn3DofCube != null) {
+            mBtn3DofCube.setText(getString(enabled
+                    ? R.string.btn_3dof_on : R.string.btn_3dof_off));
         }
+        Log.d(TAG, enabled ? "姿态辅助已开启" : "姿态辅助已关闭，恢复纯视觉 SLAM");
     }
 }

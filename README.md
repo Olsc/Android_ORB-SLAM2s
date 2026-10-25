@@ -192,11 +192,12 @@ For a closed-source version of ORB-SLAM2 for commercial purposes, please contact
 
 This project adopts a modular license architecture based on Android IPC process isolation:
 
-- **`app/` Module**: Licensed under the **[Apache License, Version 2.0](app/LICENSE)** (Apache-2.0). Contains UI, camera preview, native cgltf/OpenGL ES 3D rendering, and sensor components.
-- **`MenthaAR/` Engine Module**: Derived from ORB-SLAM2 and released under the **[GNU General Public License v3.0](MenthaAR/LICENSE)** (GPLv3). Contains native C++ SLAM algorithms and processing.
-- **Inter-Process Communication (IPC)**: The `app` module and `MenthaAR` engine run in separate Android OS processes and communicate strictly via Binder IPC and SharedMemory (Ashmem/memfd), preserving license boundaries between modules.
+- **`app/` Module**: Licensed under the **[Apache License, Version 2.0](app/LICENSE)** (Apache-2.0). Contains UI, camera preview and GLB rendering only; it never references GPL-only code at compile time.
+- **`MenthaAR-ipc/` Interface Module**: **Dual-licensed under Apache-2.0 or GPLv3** (either one). Contains only the AIDL definitions and the shared-memory client, and is the single compile-time boundary between `app` and the GPL implementation.
+- **`MenthaAR/` Engine Module**: Derived from ORB-SLAM2 and released under the **[GNU General Public License v3.0](MenthaAR/LICENSE)** (GPLv3). Contains the C++ SLAM algorithms, pose sensors and pose fusion.
+- **Process Isolation**: `app` and the `MenthaAR` engine run in separate processes and exchange data only through Binder IPC and SharedMemory (Ashmem/memfd). The GPL implementation is packaged as a `runtimeOnly` dependency and is not reachable from app source code.
 
-See [LICENSE](LICENSE), [app/LICENSE](app/LICENSE), and [MenthaAR/LICENSE](MenthaAR/LICENSE) for details.
+See [LICENSE](LICENSE), [app/LICENSE](app/LICENSE), [MenthaAR-ipc/LICENSE](MenthaAR-ipc/LICENSE), and [MenthaAR/LICENSE](MenthaAR/LICENSE) for details.
 
 For project collaboration or other field cooperation inquiries, please contact: **OlscStudio@outlook.com**
 
