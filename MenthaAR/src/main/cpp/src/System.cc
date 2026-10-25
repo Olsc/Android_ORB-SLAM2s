@@ -288,7 +288,7 @@ bool System::HasMapAlignment()
 
 bool System::HasLoadedMap()
 {
-    return mpTracker ? mpTracker->HasLoadedMapData() : false;
+    return mpTracker && mpTracker->HasLoadedMapData();
 }
 
 // 完整拆除并释放旧子地图。前提由 CreateNewMap 时序保证：reloc 已 join、LM/LC 队列已清空、Tracking 线程串行执行、目标非当前地图，故可安全直删。

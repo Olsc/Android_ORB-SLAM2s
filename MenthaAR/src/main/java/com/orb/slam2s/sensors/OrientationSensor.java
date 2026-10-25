@@ -144,11 +144,6 @@ public class OrientationSensor implements SensorEventListener {
         }
     }
 
-    // 返回当前(或最近一次检测到的)姿态来源模式
-    public Mode getMode() {
-        return mode;
-    }
-
     // 注册传感器监听器并开始获取数据
     public void start(Context context) {
         if (context == null) return;

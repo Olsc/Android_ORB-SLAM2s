@@ -17,6 +17,8 @@ package com.orb.slam2s.graphics;
 
 import android.opengl.Matrix;
 
+import androidx.annotation.NonNull;
+
 // 显示层几何矫正：把 SLAM 使用的原始相机像素坐标系映射到屏幕显示坐标系。
 // 仅用于预览位图、点云与 AR 绘制，不参与 SLAM 计算，也不改变地图坐标系与 MenthaAR 输出。
 public final class DisplayCorrection {
@@ -106,19 +108,9 @@ public final class DisplayCorrection {
         return new DisplayCorrection(rawWidth, rawHeight, rotationDegrees, mirrorH, mirrorV);
     }
 
-    // 判断与另一份矫正是否完全等价，用于避免每帧重复下发
-    public boolean sameAs(DisplayCorrection other) {
-        return other != null
-                && other.rawWidth == rawWidth
-                && other.rawHeight == rawHeight
-                && other.rotationDegrees == rotationDegrees
-                && other.mirrorH == mirrorH
-                && other.mirrorV == mirrorV;
-    }
-
-    // 原始帧已正立且无镜像时返回 true
-    public boolean isIdentity() {
-        return rotationDegrees == 0 && !mirrorH && !mirrorV;
+    // 需要应用旋转或镜像矫正时返回 true
+    public boolean needsCorrection() {
+        return rotationDegrees != 0 || mirrorH || mirrorV;
     }
 
     // 返回作用于投影矩阵左侧的 4x4 列主序变换，调用方只读
@@ -134,15 +126,6 @@ public final class DisplayCorrection {
     // 预览位图写入用：行内每前进一个原始像素，显示缓冲索引的增量
     public int previewRowStep() {
         return bx * displayWidth + ax;
-    }
-
-    // 原始像素到显示像素的映射，逐像素慢路径
-    public int mapDisplayX(int x, int y) {
-        return ax * x + ay * y + cx;
-    }
-
-    public int mapDisplayY(int x, int y) {
-        return bx * x + by * y + cy;
     }
 
     public static int normalizeRotation(int degrees) {
@@ -191,6 +174,7 @@ public final class DisplayCorrection {
     }
 
     @Override
+    @NonNull
     public String toString() {
         return "DisplayCorrection{raw=" + rawWidth + "x" + rawHeight
                 + ", rot=" + rotationDegrees

@@ -244,7 +244,7 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
             final DisplayCorrection correction = displayCorrection;
             float[] proj = projectionMatrix;
             boolean flipWinding = false;
-            if (correction != null && !correction.isIdentity()) {
+            if (correction != null && correction.needsCorrection()) {
                 Matrix.multiplyMM(correctedProjection, 0, correction.getNdcTransform(), 0, projectionMatrix, 0);
                 proj = correctedProjection;
                 flipWinding = correction.flipWinding;

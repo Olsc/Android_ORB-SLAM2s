@@ -208,16 +208,6 @@ public class SlamIPCClient {
         return sharedMemoryBuffer != null && sharedMemoryBuffer.readDrawFlag() != 0;
     }
 
-    // 读取当前 SLAM 跟踪状态 (2=OK, 3=LOST)
-    public int readTrackingState() {
-        return sharedMemoryBuffer != null ? sharedMemoryBuffer.readTrackingState() : 0;
-    }
-
-    // 读取当前活跃地图 ID
-    public int readActiveMapId() {
-        return sharedMemoryBuffer != null ? sharedMemoryBuffer.readActiveMapId() : 0;
-    }
-
     // 读取点云(每点 7 floats)，返回点数，0 表示无点云
     public int readPointCloud(float[] out, int maxFloats) {
         return sharedMemoryBuffer != null ? sharedMemoryBuffer.readPointCloud(out, maxFloats) : 0;

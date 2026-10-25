@@ -69,5 +69,5 @@ android {
 }
 
 dependencies {
-    implementation project(':MenthaAR-ipc')
+    implementation project(':MenthaAR-SDK')
 }

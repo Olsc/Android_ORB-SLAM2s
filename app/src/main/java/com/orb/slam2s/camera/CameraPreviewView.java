@@ -747,7 +747,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
                     // 因此点云始终与屏上所见画面逐像素对齐，而与 SLAM 内部坐标系无关
                     final DisplayCorrection correction = mDisplayCorrection;
                     float[] drawMatrix = mVPMatrix;
-                    if (correction != null && !correction.isIdentity()) {
+                    if (correction != null && correction.needsCorrection()) {
                         Matrix.multiplyMM(mDisplayVPMatrix, 0, correction.getNdcTransform(), 0, mVPMatrix, 0);
                         drawMatrix = mDisplayVPMatrix;
                     }

@@ -27,7 +27,7 @@ package com.orb.slam2s.ipc;
 import android.os.ParcelFileDescriptor;
 
 interface ISlamService {
-    // 低频/耗时操作：oneway 避免占用 binder 线程(initSLAM 需加载词汇表约 1 秒)
+    // 低频/耗时操作：oneway 避免占用 binder 线程
     oneway void initSLAM(String resDir);
 
     // 共享内存 attach：低频(仅缓冲创建/尺寸变化时)，保持同步以便确认成功
