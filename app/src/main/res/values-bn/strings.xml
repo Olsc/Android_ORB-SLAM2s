@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">ক্যামেরা পরিবর্তন</string>
     <string name="btn_mirror_vertical">উল্লম্ব মিরর</string>
     <string name="btn_mirror_horizontal">অনুভূমিক মিরর</string>
+    <string name="btn_reverse_sensor">IMU উল্টান</string>
     <string name="hint_camera_switched_back">পিছনের ক্যামেরায় পরিবর্তন করা হয়েছে</string>
     <string name="hint_camera_switched_front">সামনের ক্যামেরায় পরিবর্তন করা হয়েছে</string>
     <string name="hint_camera_switched_other">ক্যামেরা %1$s এ পরিবর্তন করা হয়েছে</string>

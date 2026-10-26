@@ -24,14 +24,26 @@ import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
 
+import com.orb.slam2s.sensors.OrientationSensor;
+import com.orb.slam2s.sensors.PoseFusion;
 import com.orb.slam2s.slamar.NativeHelper;
 
 // SLAM 独立后台服务：在独立高优先级线程中执行单目特征提取与位姿跟踪
-// 采用轻量 oneway AIDL 接收任务，计算结果直接写回共享内存避免 Binder 阻塞
+// 姿态辅助融合也在本进程完成，App 只通过共享内存读取最终 AR 位姿
 public class SlamService extends Service {
     private static final String TAG = "SlamService";
 
     private NativeHelper nativeHelper;
+
+    // 姿态辅助：传感器读取与位姿融合均在 SDK 进程内完成
+    private final PoseFusion poseFusion = new PoseFusion();
+    private OrientationSensor orientationSensor;
+    private final float[] rawPose = new float[48];
+    private final int[] poseInfo = new int[3];
+    private final float[] sensorRotation = new float[16];
+    private final float[] fusedModel = new float[16];
+    private final float[] fusedView = new float[16];
+    private final float[] fusedProj = new float[16];
 
     // 专用 SLAM 处理线程
     private Thread slamThread;
@@ -39,7 +51,7 @@ public class SlamService extends Service {
     private final java.util.ArrayDeque<Runnable> taskQueue = new java.util.ArrayDeque<>();
     private volatile boolean running = false;
 
-    // 帧共享内存（仅持有 fd，native 层 mmap 后直接读写 header/帧/点云）
+    // 帧共享内存(仅持有 fd，native 层 mmap 后直接读写 header/帧/点云)
     private ParcelFileDescriptor framePfd;
     private final int[] frameStatus = new int[2];  // [0]=tracking, [1]=shouldDraw
 
@@ -85,7 +97,7 @@ public class SlamService extends Service {
 
         @Override
         public void detectPlane() {
-            // 作为任务入队：与帧处理在同一处理线程串行执行（避免并发调用 native）
+            // 作为任务入队：与帧处理在同一处理线程串行执行(避免并发调用 native)
             postTask(SlamService.this::doDetectPlane);
         }
 
@@ -113,7 +125,7 @@ public class SlamService extends Service {
 
         @Override
         public void saveMap(final String mapPath) {
-            // 与帧处理同一处理线程串行执行：避免保存过程中与帧/建图线程并发遍历并改写地图（native 侧 SaveMap 会读取全部 KF/MP，并可能补齐描述子）
+            // 与帧处理同一处理线程串行执行：避免保存过程中与帧/建图线程并发遍历并改写地图(native 侧 SaveMap 会读取全部 KF/MP，并可能补齐描述子)
             postTask(() -> {
                 if (nativeHelper != null) {
                     nativeHelper.saveMap(mapPath);
@@ -123,7 +135,7 @@ public class SlamService extends Service {
 
         @Override
         public void loadMapWithId(final String mapPath, final int mapId, final boolean append) {
-            // 与帧处理同一处理线程串行执行：加载会重建当前地图内容，必须与帧处理互斥（native 侧另有 gProcessingFrames 等待作为双重保障）
+            // 与帧处理同一处理线程串行执行：加载会重建当前地图内容，必须与帧处理互斥(native 侧另有 gProcessingFrames 等待作为双重保障)
             postTask(() -> {
                 if (nativeHelper != null) {
                     nativeHelper.loadMapWithId(mapPath, mapId, append);
@@ -142,7 +154,55 @@ public class SlamService extends Service {
                 nativeHelper.updateArObjectScale(scaleFactor);
             }
         }
+
+        @Override
+        public void set3DofAssistEnabled(boolean enable) {
+            postTask(() -> apply3DofEnabled(enable));
+        }
+
+        @Override
+        public void setSensorReverse(boolean reversed) {
+            poseFusion.setSensorReverse(reversed);
+        }
+
+        @Override
+        public void setCameraImageRotation(int degrees) {
+            poseFusion.setCameraImageRotation(degrees);
+        }
+
+        @Override
+        public int getSensorDof() {
+            final OrientationSensor sensor = ensureSensor();
+            return sensor != null ? sensor.getRotationDof() : 0;
+        }
     };
+
+    // 开启与关闭姿态辅助：开关传感器监听并同步融合器状态
+    private void apply3DofEnabled(boolean enabled) {
+        poseFusion.setEnabled(enabled);
+        if (enabled) {
+            final OrientationSensor sensor = ensureSensor();
+            if (sensor == null) {
+                Log.w(TAG, "无可用姿态传感器，姿态辅助不可用");
+                return;
+            }
+            sensor.start(this);
+            // 传感器重启会重置姿态基准，旧冻结偏移必须丢弃，否则首帧会大幅偏移
+            poseFusion.resetAlignment();
+        } else if (orientationSensor != null) {
+            orientationSensor.stop();
+        }
+    }
+
+    // 懒创建传感器，首次调用时探测可用姿态来源
+    private OrientationSensor ensureSensor() {
+        if (orientationSensor == null) {
+            orientationSensor = new OrientationSensor();
+            final OrientationSensor.Mode mode = orientationSensor.detectMode(this);
+            Log.i(TAG, "姿态来源: " + mode + "，自由度: " + orientationSensor.getRotationDof());
+        }
+        return orientationSensor.getRotationDof() > 0 ? orientationSensor : null;
+    }
 
     private void postTask(Runnable r) {
         synchronized (queueLock) {
@@ -206,9 +266,32 @@ public class SlamService extends Service {
         try {
             // native 处理共享内存中的帧，并把 tracking/draw/MVP/点云/slamDoneSeq 写回共享内存
             nativeHelper.processFrameSharedMem(bufIndex, seq, w, h, frameStatus);
+            publishArPose();
         } catch (Exception e) {
             Log.e(TAG, "处理共享内存帧异常: " + e.getMessage());
         }
+    }
+
+    // 读取原始位姿并融合后回写，App 端只会看到最终结果
+    private void publishArPose() {
+        if (!poseFusion.isEnabled() || nativeHelper == null) {
+            return;
+        }
+        if (!nativeHelper.getArPose(rawPose, poseInfo)) {
+            return;
+        }
+        final boolean sensorReady = orientationSensor != null && orientationSensor.isReady();
+        if (sensorReady) {
+            // 保持态只需要相对最后一次视觉帧的旋转，优先用陀螺积分 + 重力校倾的相对姿态：
+            // 该来源不含磁力计航向，避免磁干扰或航向偏差导致方向漂移甚至翻转
+            if (!orientationSensor.copyRelativeRotationMatrix(sensorRotation)) {
+                orientationSensor.copyRotationMatrix(sensorRotation);
+            }
+        }
+        final boolean draw = poseFusion.fuse(poseInfo[1] != 0, poseInfo[0], poseInfo[2], rawPose,
+                sensorReady ? sensorRotation : null, sensorReady,
+                fusedModel, fusedView, fusedProj);
+        nativeHelper.publishArPose(fusedModel, fusedView, fusedProj, draw);
     }
 
     private void doDetectPlane() {
@@ -240,8 +323,12 @@ public class SlamService extends Service {
         super.onDestroy();
         Log.d(TAG, "SlamService onDestroy: 停止处理线程并释放 SLAM 系统");
         stopSlamThread();
-        // 服务进程销毁时依次执行：停帧处理、shutdownSLAM（join 工作线程）、detach 共享内存，
-        // 确保三条常驻线程（LM/LC/GlobalReloc）全部释放，避免内存泄漏与 mmap 残留
+        if (orientationSensor != null) {
+            orientationSensor.stop();
+            orientationSensor = null;
+        }
+        // 服务进程销毁时依次执行：停帧处理、shutdownSLAM(join 工作线程)、detach 共享内存，
+        // 确保三条常驻线程(LM/LC/GlobalReloc)全部释放，避免内存泄漏与 mmap 残留
         if (nativeHelper != null) {
             nativeHelper.shutdownSLAM();
             nativeHelper.detachFrameBuffer();

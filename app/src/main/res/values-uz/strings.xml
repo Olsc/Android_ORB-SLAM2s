@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">Kamerani almashtirish</string>
     <string name="btn_mirror_vertical">Vertikal aks ettirish</string>
     <string name="btn_mirror_horizontal">Gorizontal aks ettirish</string>
+    <string name="btn_reverse_sensor">IMU teskari</string>
     <string name="hint_camera_switched_back">Orqa kameraga o\'tkazildi</string>
     <string name="hint_camera_switched_front">Old kameraga o\'tkazildi</string>
     <string name="hint_camera_switched_other">%1$s kamerasiga o\'tkazildi</string>

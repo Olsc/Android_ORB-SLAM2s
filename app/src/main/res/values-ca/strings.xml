@@ -91,6 +91,7 @@
     <string name="btn_switch_camera">Canviar càmera</string>
     <string name="btn_mirror_vertical">Mirall vertical</string>
     <string name="btn_mirror_horizontal">Mirall horitzontal</string>
+    <string name="btn_reverse_sensor">Inverteix IMU</string>
     <string name="hint_camera_switched_back">S\'ha canviat a la càmera posterior</string>
     <string name="hint_camera_switched_front">S\'ha canviat a la càmera frontal</string>
     <string name="hint_camera_switched_other">S\'ha canviat a la càmera %1$s</string>

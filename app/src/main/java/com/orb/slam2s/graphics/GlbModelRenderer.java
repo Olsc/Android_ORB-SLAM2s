@@ -28,8 +28,6 @@ import android.util.Log;
 import androidx.annotation.Keep;
 
 import com.orb.slam2s.ipc.SlamIPCClient;
-import com.orb.slam2s.sensors.OrientationSensor;
-import com.orb.slam2s.util.SensorFusionTracker;
 import com.orb.slam2s.util.TouchGestureHelper;
 
 import java.io.ByteArrayOutputStream;
@@ -39,6 +37,7 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 // 基于原生 C++ (cgltf + OpenGL ES) 的 AR 3D 模型渲染器，负责高效解析与渲染 GLB 资产
+// 只消费 SDK 输出的 Model/View/Proj 与绘制标志，不参与任何定位计算
 public class GlbModelRenderer implements GLSurfaceView.Renderer {
     private static final String TAG = "GlbModelRenderer";
 
@@ -49,8 +48,6 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
     private AspectGLSurfaceView arObjectView;
     private Context context;
     private SlamIPCClient slamIPCClient;
-    private OrientationSensor orientationSensor;
-    private SensorFusionTracker sensorFusionTracker;
 
     private String modelPath;
     private float initSize = 1.0f;
@@ -73,7 +70,7 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
     private float userRotationY = 0.0f;
     private float userRotationX = 0.0f;
 
-    // 显示层几何矫正（相机画面方向 + 用户镜像）：只作用于绘制，不影响 SLAM 输出
+    // 显示层几何矫正(相机画面方向 + 用户镜像)：只作用于绘制，不影响 SLAM 输出
     private volatile DisplayCorrection displayCorrection;
     private final float[] correctedProjection = new float[16];
 
@@ -108,16 +105,6 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
         return this;
     }
 
-    public GlbModelRenderer setOrientationSensor(OrientationSensor sensor) {
-        this.orientationSensor = sensor;
-        return this;
-    }
-
-    public GlbModelRenderer setSensorFusionTracker(SensorFusionTracker tracker) {
-        this.sensorFusionTracker = tracker;
-        return this;
-    }
-
     public GlbModelRenderer setModelPath(String modelPath) {
         this.modelPath = modelPath;
         return this;
@@ -134,11 +121,11 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
     }
 
     // 设置显示层矫正，由 CameraPreviewView 在方向、镜像或画面尺寸变化时调用；
-    // 同时把相机帧与设备帧的安装夹角交给融合层，避免上下与左右串轴。
+    // 相机图像旋转角同时下发给 SDK，供姿态辅助换算安装夹角
     public GlbModelRenderer setDisplayCorrection(DisplayCorrection correction) {
         this.displayCorrection = correction;
-        if (correction != null && sensorFusionTracker != null) {
-            sensorFusionTracker.setCameraFrameRotation(correction.rotationDegrees);
+        if (correction != null && slamIPCClient != null) {
+            slamIPCClient.setCameraImageRotation(correction.rotationDegrees);
         }
         return this;
     }
@@ -229,26 +216,14 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
 
         if (slamIPCClient != null && slamIPCClient.isConnected()) {
-            boolean rawDrawFlag = slamIPCClient.readDrawFlag();
-            int trackingState = slamIPCClient.readTrackingState();
-            int activeMapId = slamIPCClient.readActiveMapId();
-            boolean hasMvp = slamIPCClient.readMvp(tempMvp);
-
+            // 位姿与绘制决策均由 SDK 给出，App 侧只搬运矩阵
             boolean effectiveDraw = false;
-            if (hasMvp) {
-                if (sensorFusionTracker != null) {
-                    float[] sensorRot = orientationSensor != null ? orientationSensor.getRotationMatrix() : null;
-                    boolean isSensorReady = orientationSensor != null && orientationSensor.isReady();
-                    effectiveDraw = sensorFusionTracker.update(rawDrawFlag, trackingState, activeMapId,
-                            tempMvp, sensorRot, isSensorReady,
-                            modelMatrix, viewMatrix, projectionMatrix);
-                } else {
-                    effectiveDraw = rawDrawFlag;
-                    if (effectiveDraw) {
-                        System.arraycopy(tempMvp, 0, modelMatrix, 0, 16);
-                        System.arraycopy(tempMvp, 16, viewMatrix, 0, 16);
-                        System.arraycopy(tempMvp, 32, projectionMatrix, 0, 16);
-                    }
+            if (slamIPCClient.readMvp(tempMvp)) {
+                effectiveDraw = slamIPCClient.readDrawFlag();
+                if (effectiveDraw) {
+                    System.arraycopy(tempMvp, 0, modelMatrix, 0, 16);
+                    System.arraycopy(tempMvp, 16, viewMatrix, 0, 16);
+                    System.arraycopy(tempMvp, 32, projectionMatrix, 0, 16);
                 }
             }
 
@@ -264,12 +239,12 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
         if (shouldDraw && matricesReady && isModelLoaded && nativeHandle != 0) {
             float finalScale = initSize * currentScaleFactor * autoScaleFactor;
 
-            // 将显示层矫正（旋转与镜像）左乘到投影矩阵，与预览位图、点云使用同一变换以保证对齐；
+            // 将显示层矫正(旋转与镜像)左乘到投影矩阵，与预览位图、点云使用同一变换以保证对齐；
             // 含奇数次反射时三角形绕序翻转，同时交换正反面剔除。
             final DisplayCorrection correction = displayCorrection;
             float[] proj = projectionMatrix;
             boolean flipWinding = false;
-            if (correction != null && !correction.isIdentity()) {
+            if (correction != null && correction.needsCorrection()) {
                 Matrix.multiplyMM(correctedProjection, 0, correction.getNdcTransform(), 0, projectionMatrix, 0);
                 proj = correctedProjection;
                 flipWinding = correction.flipWinding;

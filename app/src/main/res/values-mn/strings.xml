@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">Камер солих</string>
     <string name="btn_mirror_vertical">Босоо толь</string>
     <string name="btn_mirror_horizontal">Хэвтээ толь</string>
+    <string name="btn_reverse_sensor">IMU эргүүлэх</string>
     <string name="hint_camera_switched_back">Ард талын камер руу шилжлээ</string>
     <string name="hint_camera_switched_front">Урд талын камер руу шилжлээ</string>
     <string name="hint_camera_switched_other">%1$s камер руу шилжлээ</string>

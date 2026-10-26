@@ -192,7 +192,7 @@ public class SharedMemoryBuffer {
     public boolean readMvp(float[] out48) {
         if (out48 == null || out48.length < 48) return false;
         if (mappedFloatView != null) {
-            // 批量读取 48 个 float（M/V/P 各 16）
+            // 批量读取 48 个 float(M/V/P 各 16)
             synchronized (mReadLock) {
                 mappedFloatView.position(OFF_MVP / 4);
                 mappedFloatView.get(out48, 0, 48);
@@ -244,7 +244,7 @@ public class SharedMemoryBuffer {
         return 0;
     }
 
-    // 调用方需先确认目标缓冲空闲（readSlamDoneSeq() >= seq - 2）
+    // 调用方需先确认目标缓冲空闲(readSlamDoneSeq() >= seq - 2)
     public boolean writeFrame(byte[] yData, int bufIndex, int w, int h) {
         if (mappedBuffer == null && memoryFile == null) return false;
         if (frameW != w || frameH != h) {

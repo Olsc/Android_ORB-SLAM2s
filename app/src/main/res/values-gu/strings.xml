@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">કૅમેરો બદલો</string>
     <string name="btn_mirror_vertical">ઊભું મિરર</string>
     <string name="btn_mirror_horizontal">આડું મિરર</string>
+    <string name="btn_reverse_sensor">IMU ઉલટાવો</string>
     <string name="hint_camera_switched_back">પાછળના કૅમેરા પર સ્વિચ કર્યું</string>
     <string name="hint_camera_switched_front">આગળના કૅમેરા પર સ્વિચ કર્યું</string>
     <string name="hint_camera_switched_other">કૅમેરા %1$s પર સ્વિચ કર્યું</string>

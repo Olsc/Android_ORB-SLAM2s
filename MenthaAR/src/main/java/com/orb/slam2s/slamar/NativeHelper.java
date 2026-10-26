@@ -32,7 +32,7 @@ public class NativeHelper {
         } catch (UnsatisfiedLinkError e) {
             Log.d(TAG, "未开启Profiler");
         }
-        System.loadLibrary("MenthaAR_Engine"); // 整合后的 SLAM_AR（含 OpenCV 原生模块）
+        System.loadLibrary("MenthaAR_Engine"); // 整合后的 SLAM_AR(含 OpenCV 原生模块)
     }
 
     private final int[] statusBuf = new int[3];
@@ -45,11 +45,11 @@ public class NativeHelper {
         detect(statusBuf);
     }
 
-    // 持久映射共享内存帧缓冲（仅在创建或尺寸变化时调用）
+    // 持久映射共享内存帧缓冲(仅在创建或尺寸变化时调用)
     public native boolean nativeAttachFrameBuffer(int fd, int size);
     public native void nativeDetachFrameBuffer();
 
-    // 处理持久映射缓冲中的帧（双缓冲 bufIndex 0/1，每帧只传序号与宽高）
+    // 处理持久映射缓冲中的帧(双缓冲 bufIndex 0/1，每帧只传序号与宽高)
     // native 处理完成后将 tracking/draw/MVP/点云/slamDoneSeq 写回共享内存 header
     public native void nativeProcessFrameSharedMem(int bufIndex, int seq, int width, int height, int[] statusBuf);
 
@@ -71,7 +71,7 @@ public class NativeHelper {
     // 初始化 SLAM
     public native void initSLAM(String path);
 
-    // 关停并释放 SLAM 系统（join 全部工作线程后 delete）
+    // 关停并释放 SLAM 系统(join 全部工作线程后 delete)
     public native void nativeShutdown();
 
     public void shutdownSLAM() {
@@ -96,9 +96,23 @@ public class NativeHelper {
     public native void loadMapWithId(String path, int mapId, boolean append);
     public native int[] getMapStats();
 
-    // 点云显示控制（控制绿色和蓝色点云）
+    // 点云显示控制(控制绿色和蓝色点云)
     public native void setPointCloudDisplay(boolean enable);
     public native boolean isPointCloudDisplayEnabled();
+
+    // 读取当前帧原始 AR 位姿：out48 = Model/View/Proj，outInfo = [跟踪状态, 绘制标志, 地图ID]
+    public native boolean nativeGetArPose(float[] out48, int[] outInfo);
+
+    // 回写融合后的 AR 位姿到共享内存，App 端只读结果
+    public native void nativePublishArPose(float[] model, float[] view, float[] projection, boolean draw);
+
+    public boolean getArPose(float[] out48, int[] outInfo) {
+        return nativeGetArPose(out48, outInfo);
+    }
+
+    public void publishArPose(float[] model, float[] view, float[] projection, boolean draw) {
+        nativePublishArPose(model, view, projection, draw);
+    }
 
     // AR对象缩放
     public native void updateArObjectScale(float scaleFactor);

@@ -87,6 +87,7 @@
     <string name="btn_switch_camera">ປ່ຽນກ້ອງ</string>
     <string name="btn_mirror_vertical">ກະຈົກແນວຕັ້ງ</string>
     <string name="btn_mirror_horizontal">ກະຈົກແນວນອນ</string>
+    <string name="btn_reverse_sensor">ກັບ IMU</string>
     <string name="hint_camera_switched_back">ປ່ຽນເປັນກ້ອງຫຼັງແລ້ວ</string>
     <string name="hint_camera_switched_front">ປ່ຽນເປັນກ້ອງໜ້າແລ້ວ</string>
     <string name="hint_camera_switched_other">ປ່ຽນເປັນກ້ອງ %1$s ແລ້ວ</string>

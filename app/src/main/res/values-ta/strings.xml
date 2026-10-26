@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">கேமரா மாற்று</string>
     <string name="btn_mirror_vertical">செங்குத்து கண்ணாடி</string>
     <string name="btn_mirror_horizontal">கிடைமட்ட கண்ணாடி</string>
+    <string name="btn_reverse_sensor">IMU திருப்பு</string>
     <string name="hint_camera_switched_back">பின் கேமராவிற்கு மாற்றப்பட்டது</string>
     <string name="hint_camera_switched_front">முன் கேமராவிற்கு மாற்றப்பட்டது</string>
     <string name="hint_camera_switched_other">கேமரா %1$s க்கு மாற்றப்பட்டது</string>

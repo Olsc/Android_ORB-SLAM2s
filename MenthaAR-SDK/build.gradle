@@ -1,0 +1,104 @@
+plugins {
+    id 'com.android.library'
+}
+
+android {
+    namespace 'com.orb.slam2s.ipc.sdk'
+    compileSdk 37
+    compileSdkMinor 1
+    buildToolsVersion '37.0.0'
+
+    defaultConfig {
+        minSdk 23
+        targetSdk 37
+        consumerProguardFiles 'consumer-rules.pro'
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    buildFeatures {
+        aidl = true
+        buildConfig = false
+    }
+
+    lint {
+        abortOnError false
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+def registerIntegratedAar = { String buildType ->
+    def cap = buildType.substring(0, 1).toUpperCase() + buildType.substring(1)
+    def sdkAar = layout.buildDirectory.file("outputs/aar/MenthaAR-SDK-${buildType}.aar")
+    def engineAar = rootProject.file("MenthaAR/build/outputs/aar/MenthaAR-${buildType}.aar")
+    def work = layout.buildDirectory.dir("aarMerge/${buildType}")
+
+    tasks.register("unpackAars${cap}", Copy) {
+        dependsOn "bundle${cap}Aar", ":MenthaAR:bundle${cap}Aar"
+        from({ zipTree(sdkAar.get().asFile) }) { into 'sdk' }
+        from({ zipTree(engineAar) }) { into 'engine' }
+        into work
+    }
+
+    tasks.register("mergeClassesJar${cap}", Jar) {
+        dependsOn "unpackAars${cap}"
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        from({ zipTree(new File(work.get().dir('sdk').asFile, 'classes.jar')) })
+        from({ zipTree(new File(work.get().dir('engine').asFile, 'classes.jar')) })
+        archiveFileName = 'classes.jar'
+        destinationDirectory = work.map { it.dir('merged') }
+    }
+
+    tasks.register("mergeProguard${cap}", DefaultTask) {
+        dependsOn "unpackAars${cap}"
+        def outFile = work.map { it.file('merged/proguard.txt').asFile }
+        outputs.file(outFile)
+        doLast {
+            def merged = new File(work.get().asFile, 'merged/proguard.txt')
+            merged.parentFile.mkdirs()
+            merged.text = ''
+            ['sdk', 'engine'].each { layer ->
+                def f = new File(work.get().asFile, layer + '/proguard.txt')
+                if (f.exists()) {
+                    merged << f.text
+                    merged << System.lineSeparator()
+                }
+            }
+        }
+    }
+
+    tasks.register("assembleIntegratedAar${cap}", Zip) {
+        dependsOn "bundle${cap}Aar", ":MenthaAR:bundle${cap}Aar",
+                "mergeClassesJar${cap}", "mergeProguard${cap}"
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+        from({ zipTree(sdkAar.get().asFile) }) {
+            exclude 'classes.jar', 'AndroidManifest.xml', 'R.txt', 'proguard.txt'
+        }
+        from({ zipTree(engineAar) }) {
+            exclude 'classes.jar', 'R.txt', 'proguard.txt', 'META-INF/**', 'AndroidManifest.xml'
+        }
+        from(work.map { it.file('merged/classes.jar') })
+        from({ zipTree(engineAar) }) { include 'AndroidManifest.xml', 'R.txt' }
+        from(work.map { it.file('merged/proguard.txt') })
+
+        archiveFileName = "MenthaAR-SDK-integrated-${buildType}.aar"
+        destinationDirectory = layout.buildDirectory.dir('outputs/aar')
+    }
+}
+
+registerIntegratedAar('debug')
+registerIntegratedAar('release')
+
+// 兼容旧入口：默认产出 release 整合包
+tasks.register('assembleIntegratedAar') {
+    dependsOn 'assembleIntegratedAarRelease'
+}

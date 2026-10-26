@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">Byt kamera</string>
     <string name="btn_mirror_vertical">Spegla lodrätt</string>
     <string name="btn_mirror_horizontal">Spegla vågrätt</string>
+    <string name="btn_reverse_sensor">Vänd IMU</string>
     <string name="hint_camera_switched_back">Bytte till bakre kamera</string>
     <string name="hint_camera_switched_front">Bytte till främre kamera</string>
     <string name="hint_camera_switched_other">Bytte till kamera %1$s</string>

@@ -91,6 +91,7 @@
     <string name="btn_switch_camera">Mudar câmara</string>
     <string name="btn_mirror_vertical">Espelhar vertical</string>
     <string name="btn_mirror_horizontal">Espelhar horizontal</string>
+    <string name="btn_reverse_sensor">Inverter IMU</string>
     <string name="hint_camera_switched_back">Alternado para a câmara traseira</string>
     <string name="hint_camera_switched_front">Alternado para a câmara frontal</string>
     <string name="hint_camera_switched_other">Alternado para a câmara %1$s</string>

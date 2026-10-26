@@ -9,4 +9,3 @@
 -keep class com.orb.slam2s.ipc.SlamService { *; }
 -keep class com.orb.slam2s.ipc.SharedMemoryBuffer { *; }
 
--keep class com.orb.slam2s.constant.GlobalConstant { *; }

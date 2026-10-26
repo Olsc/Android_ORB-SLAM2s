@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">Badilisha Kamera</string>
     <string name="btn_mirror_vertical">Kioo wima</string>
     <string name="btn_mirror_horizontal">Kioo mlalo</string>
+    <string name="btn_reverse_sensor">Geuza IMU</string>
     <string name="hint_camera_switched_back">Imebadilishwa kuwa kamera ya nyuma</string>
     <string name="hint_camera_switched_front">Imebadilishwa kuwa kamera ya mbele</string>
     <string name="hint_camera_switched_other">Imebadilishwa kuwa kamera %1$s</string>

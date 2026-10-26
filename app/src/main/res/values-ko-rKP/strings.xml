@@ -87,6 +87,7 @@
     <string name="btn_switch_camera">카메라 전환</string>
     <string name="btn_mirror_vertical">상하 반전</string>
     <string name="btn_mirror_horizontal">좌우 반전</string>
+    <string name="btn_reverse_sensor">IMU 반전</string>
     <string name="hint_camera_switched_back">후면 카메라로 전환되였습니다</string>
     <string name="hint_camera_switched_front">전면 카메라로 전환되였습니다</string>
     <string name="hint_camera_switched_other">카메라 %1$s(으)로 전환되였습니다</string>

@@ -67,17 +67,17 @@ std::vector<ORB_SLAM2::MapPoint*> vMPs;
 // vMPs 访问互斥锁
 std::mutex gMapPointsMutex;
 
-// 点云显示开关（同时控制绿色和蓝色点云）：由 binder/UI 线程写、SLAM 线程读，保持原子量
+// 点云显示开关(同时控制绿色和蓝色点云)：由 binder/UI 线程写、SLAM 线程读，保持原子量
 std::atomic<bool> gEnablePointCloudDisplay{true}; // 默认启用点云显示
 
 // SLAM 丢失自动重置状态
-const double LOST_RESET_TIMEOUT = ORB_SLAM2::LOST_RESET_TIMEOUT; // 名义超时（秒），仅用于换算帧数
+const double LOST_RESET_TIMEOUT = ORB_SLAM2::LOST_RESET_TIMEOUT; // 名义超时(秒)，仅用于换算帧数
 int gLostFrameCount = 0; // 连续丢失帧计数
 
 // AR 锚点
 AR::ArAnchor gAnchor;
 std::map<int, AR::ArAnchor> gMapAnchors;
-// 渲染层对齐滞回状态（与 SLAM 核心 mbHaveMapAlign 解耦，由 AR_RenderFrame 维护）
+// 渲染层对齐滞回状态(与 SLAM 核心 mbHaveMapAlign 解耦，由 AR_RenderFrame 维护)
 AR::AlignHoldState gAlignHold;
 const int ALIGN_HOLD_FRAMES = ORB_SLAM2::ALIGN_HOLD_FRAMES; // raw 对齐丢失后仍按"对齐帧"渲染的保持帧数
 
@@ -85,13 +85,13 @@ const int ALIGN_HOLD_FRAMES = ORB_SLAM2::ALIGN_HOLD_FRAMES; // raw 对齐丢失�
 std::mutex gMapDataMutex;
 
 // SLAM 系统指针与运行状态同步
-static std::mutex gSlamPtrLock; // 仅保护 slamSys 指针（极短临界区）
-static std::atomic<int> gProcessingFrames{0}; // 正在处理的帧数（用于写操作协调）
+static std::mutex gSlamPtrLock; // 仅保护 slamSys 指针(极短临界区)
+static std::atomic<int> gProcessingFrames{0}; // 正在处理的帧数(用于写操作协调)
 static std::condition_variable gCvProcessingFrames; // gProcessingFrames 归零时通知写操作
 static std::mutex gTcwLock; // 保护 Tcw 缓存
 static cv::Mat gCachedTcw; // 线程安全的 Tcw 缓存
 // 跟踪状态快照原子量：GL/Web 线程读、SLAM 线程写
-static std::atomic<int> gCachedTrackingState{0}; // 最近跟踪状态快照（0=NO_IMAGES_YET）
+static std::atomic<int> gCachedTrackingState{0}; // 最近跟踪状态快照(0=NO_IMAGES_YET)
 int gActiveMapId = 0;
 int gMapSwitchCounter = 0;
 const int MAP_SWITCH_THRESHOLD = ORB_SLAM2::MAP_SWITCH_THRESHOLD; // 至少连续3帧识别到新地图才切换
@@ -102,18 +102,25 @@ static std::atomic<float> gArObjectScale{ORB_SLAM2::AR_OBJECT_SCALE_DEFAULT}; //
 float gCurrentModelMatrix[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
 float gCurrentViewMatrix[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
 
+// 原始位姿快照：与共享内存中的对外结果分离，避免融合结果被当作下一帧输入
+static float gRawProjectionMatrix[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
+static std::atomic<int> gRawTrackingState{0};
+static std::atomic<int> gRawDrawFlag{0};
+static std::atomic<int> gRawActiveMapId{0};
+
 // 重置渲染层对齐滞回状态
 static void AR_ResetAlignHold() {
     gAlignHold.Reset();
 }
 
-// 事件：用户放置 AR 物体（detect 检测到平面后调用）
+// 事件：用户放置 AR 物体(detect 检测到平面后调用)
 static void AR_OnArPlaced(Plane* detected, bool whileAligned) {
     std::lock_guard<std::mutex> lk(gMapDataMutex);
     gAnchor.Reset();
     gAnchor.plane.reset(detected); // 接管所有权；旧锚点自动释放
     gAnchor.frame = whileAligned ? AR::AnchorFrame::kMap : AR::AnchorFrame::kSlam;
     gAnchor.isFromLoadedMap = false;
+    gAnchor.mapId = gActiveMapId;
     gAnchor.valid = true;
     AR_ResetAlignHold(); // 新锚点必须重新按当前帧渲染，避免冻结旧锚点的 lastGood
     if (gAnchor.plane) {
@@ -132,6 +139,7 @@ static void AR_OnArPlaced(Plane* detected, bool whileAligned) {
 // 事件：加载地图的 AR 数据
 static void AR_OnMapDataLoaded(int mapId, AR::ArAnchor loaded) {
     std::lock_guard<std::mutex> lk(gMapDataMutex);
+    loaded.mapId = mapId;
     gMapAnchors[mapId] = std::move(loaded);
 
     if (mapId == gActiveMapId) {
@@ -153,11 +161,12 @@ static void AR_OnMapDataLoaded(int mapId, AR::ArAnchor loaded) {
     }
 }
 
-// 事件：确认切换到另一地图（processImage 切换阈值确认后调用）
+// 事件：确认切换到另一地图(processImage 切换阈值确认后调用)
 // 保存当前锚点到旧地图缓存；目标地图若有绑定 AR 物体则恢复，否则清空当前显示
 static void AR_OnMapSwitched(int oldId, int newId) {
     std::lock_guard<std::mutex> lk(gMapDataMutex);
     if (gAnchor.valid && (gAnchor.plane != nullptr || !gAnchor.objects.empty())) {
+        gAnchor.mapId = oldId;
         gMapAnchors[oldId] = gAnchor.Clone(); // 仅当旧地图锚点有效时保存
     } else {
         gMapAnchors.erase(oldId);
@@ -167,7 +176,8 @@ static void AR_OnMapSwitched(int oldId, int newId) {
 
     if (gMapAnchors.count(newId) && (gMapAnchors[newId].valid || gMapAnchors[newId].plane != nullptr || !gMapAnchors[newId].objects.empty())) {
         gAnchor = gMapAnchors[newId].Clone();
-        // 保留克隆出来的原始 frame 与 isFromLoadedMap（在线扫描放置为 kSlam，离线加载为 kMap）
+        gAnchor.mapId = newId;
+        // 保留克隆出来的原始 frame 与 isFromLoadedMap(在线扫描放置为 kSlam，离线加载为 kMap)
         // 绝不可强行重写为 kMap，否则在线放置的 AR 物体会因无离线对齐而被永久隐藏
         AR_ResetAlignHold();
         if (gAnchor.plane) {
@@ -211,10 +221,11 @@ static bool AR_RenderFrame(const cv::Mat& localTcw, bool trackingOk) {
         getRUBViewMatrixFromRDF(tmp, view);
     }
 
-    // 3) Model + 绘制门控
+    // 3) Model + 绘制门控：锚点必须属于当前地图，避免跨帧坐标系混用
     float model[16];
     setIdentityM(model);
-    bool draw = trackingOk && gAnchor.valid && gAnchor.plane;
+    bool draw = trackingOk && gAnchor.valid && gAnchor.plane
+                && (gAnchor.mapId < 0 || gAnchor.mapId == gActiveMapId);
     if (draw) {
         if (usingHold) {
             memcpy(model, gAlignHold.lastModel, sizeof(model)); // 冻结最后对齐模型
@@ -224,7 +235,7 @@ static bool AR_RenderFrame(const cv::Mat& localTcw, bool trackingOk) {
             } else {
                 draw = false; // 地图锚点无对齐时不可调和 -> 隐藏而非画错位置
             }
-        } else { // kSlam 本地锚点：两种帧都可画（view/model 同帧 -> 数学上不变量成立）
+        } else { // kSlam 本地锚点：两种帧都可画(view/model 同帧 -> 数学上不变量成立)
             if (gAlignHold.effAligned && rawAligned) {
                 cv::Mat alignedTpw = slamSys->GetMapAlignedPose(gAnchor.plane->Tpw);
                 float tmp[16];
@@ -236,7 +247,7 @@ static bool AR_RenderFrame(const cv::Mat& localTcw, bool trackingOk) {
         }
     }
 
-    // 4) 真对齐时缓存 lastGood（view/model 都在地图帧）
+    // 4) 真对齐时缓存 lastGood(view/model 都在地图帧)
     if (gAlignHold.effAligned && rawAligned) {
         memcpy(gAlignHold.lastView, view, sizeof(view));
         memcpy(gAlignHold.lastModel, model, sizeof(model));
@@ -335,7 +346,7 @@ void LoadPlaneAndArInfo(const std::string& filename, int mapId)
         return;
     }
 
-    // 解析出完整的 AR 锚点（坐标位于目标/地图坐标系）
+    // 解析出完整的 AR 锚点(坐标位于目标/地图坐标系)
     AR::ArAnchor loaded;
 
     // 加载平面信息
@@ -434,7 +445,7 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
             gProcessingFrames.fetch_add(1, std::memory_order_relaxed);
     }
 
-    // RAII 帧引用：无论从哪个 return 退出，都在本函数结束时才递减并唤醒等待的写操作（LoadMap 等），
+    // RAII 帧引用：无论从哪个 return 退出，都在本函数结束时才递减并唤醒等待的写操作(LoadMap 等)，
     // 保证写方在计数归零后访问 slamSys 时对象必然存活
     const bool bHoldsFrameRef = (currentSlamSys != nullptr);
     struct FrameRefGuard {
@@ -472,7 +483,7 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
         status = 0;
     }
 
-    // 使用锁内快照 currentSlamSys（持有帧引用计数期间对象保证存活），避免未同步读取全局指针
+    // 使用锁内快照 currentSlamSys(持有帧引用计数期间对象保证存活)，避免未同步读取全局指针
     if(!currentSlamSys) {
         return status;
     }
@@ -556,7 +567,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_initSLAM(JNIEnv* env, jobject instance, 
 
     VT_PROFILE_INITIALIZE(modelPath + "/mentha_profile.bin");
     LOGD("Create SLAM System...");
-    // 进程亲和性诊断：SLAM 独立进程（:slam_process）可能被分配受限 cpuset，
+    // 进程亲和性诊断：SLAM 独立进程(:slam_process)可能被分配受限 cpuset，
     // 启动时打印可用核数便于排查调度受限问题
     {
         char cpuset[128] = {0};
@@ -715,7 +726,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_detect(JNIEnv *env, jobject instance,
     }
     if(!currentTcw.empty()){
         // vMPs 写入侧由 gMapPointsMutex 保护，先持锁拷贝快照再做无锁使用，
-        // 锁序与全局一致（gMapDataMutex -> gMapPointsMutex）
+        // 锁序与全局一致(gMapDataMutex -> gMapPointsMutex)
         std::vector<ORB_SLAM2::MapPoint*> localMPs;
         {
             std::lock_guard<std::mutex> _mpLock(gMapPointsMutex);
@@ -743,7 +754,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_detect(JNIEnv *env, jobject instance,
 
 JNIEXPORT jintArray JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_getMapStats(JNIEnv *env, jobject instance) {
-    // 锁内快照（锁序 gSlamPtrLock -> gMapDataMutex，不得反向嵌套）
+    // 锁内快照(锁序 gSlamPtrLock -> gMapDataMutex，不得反向嵌套)
     ORB_SLAM2::System* sys = nullptr;
     {
         std::lock_guard<std::mutex> ptrLock(gSlamPtrLock);
@@ -810,6 +821,55 @@ static inline int shPointCloudOffset() {
     return SH_HEADER_SIZE + 2 * (gSharedW * gSharedH);
 }
 
+// 读取当前帧原始 AR 位姿与状态，供 SDK 内层融合使用
+JNIEXPORT jboolean JNICALL
+Java_com_orb_slam2s_slamar_NativeHelper_nativeGetArPose(
+    JNIEnv* env, jobject instance, jfloatArray out48, jintArray outInfo)
+{
+    if (!out48 || !outInfo) return JNI_FALSE;
+    if (env->GetArrayLength(out48) < 48 || env->GetArrayLength(outInfo) < 3) return JNI_FALSE;
+
+    float pose[48];
+    {
+        std::lock_guard<std::mutex> lock(gMapDataMutex);
+        memcpy(pose, gCurrentModelMatrix, 16 * sizeof(float));
+        memcpy(pose + 16, gCurrentViewMatrix, 16 * sizeof(float));
+    }
+    memcpy(pose + 32, gRawProjectionMatrix, 16 * sizeof(float));
+    const jint info[3] = {
+        gRawTrackingState.load(std::memory_order_relaxed),
+        gRawDrawFlag.load(std::memory_order_relaxed),
+        gRawActiveMapId.load(std::memory_order_relaxed)
+    };
+    env->SetFloatArrayRegion(out48, 0, 48, pose);
+    env->SetIntArrayRegion(outInfo, 0, 3, info);
+    return JNI_TRUE;
+}
+
+// 回写融合后的 AR 位姿：Model/View/Proj 与绘制标志
+JNIEXPORT void JNICALL
+Java_com_orb_slam2s_slamar_NativeHelper_nativePublishArPose(
+    JNIEnv* env, jobject instance, jfloatArray model, jfloatArray view, jfloatArray projection, jboolean draw)
+{
+    if (!gSharedFramePtr || !model || !view || !projection) return;
+    if (env->GetArrayLength(model) < 16 || env->GetArrayLength(view) < 16
+            || env->GetArrayLength(projection) < 16) {
+        return;
+    }
+
+    float m[16], v[16], p[16];
+    env->GetFloatArrayRegion(model, 0, 16, m);
+    env->GetFloatArrayRegion(view, 0, 16, v);
+    env->GetFloatArrayRegion(projection, 0, 16, p);
+
+    // 只覆盖共享内存中的对外结果，native 内部缓存的原始位姿保持不变
+    float* mvp = shFloatPtr(SH_OFF_MVP);
+    memcpy(mvp, m, sizeof(m));
+    memcpy(mvp + 16, v, sizeof(v));
+    memcpy(mvp + 32, p, sizeof(p));
+    *shIntPtr(SH_OFF_DRAW_FLAG) = draw ? 1 : 0;
+}
+
 JNIEXPORT jboolean JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_nativeAttachFrameBuffer(
     JNIEnv* env, jobject instance, jint fd, jint size)
@@ -868,6 +928,12 @@ static void writeResultToSharedMemory(int seq, int tracking, bool draw, int w, i
     frustumM_RUB(projW, projH, fx, fy, cx, cy,
                  ORB_SLAM2::PROJECTION_ZNEAR, ORB_SLAM2::PROJECTION_ZFAR, mvp + 32);
 
+    // 同步一份原始快照，供 SDK 内层融合使用
+    memcpy(gRawProjectionMatrix, mvp + 32, 16 * sizeof(float));
+    gRawTrackingState.store(tracking, std::memory_order_relaxed);
+    gRawDrawFlag.store(draw ? 1 : 0, std::memory_order_relaxed);
+    gRawActiveMapId.store(gActiveMapId, std::memory_order_relaxed);
+
     *shIntPtr(SH_OFF_SLAM_DONE_SEQ) = seq;
 }
 
@@ -923,7 +989,7 @@ static void writePointCloudToSharedMemory() {
     std::unordered_set<ORB_SLAM2::MapPoint*> renderedMPs;
     renderedMPs.reserve(localMPs.size() + 1024);
 
-    // 1. 优先渲染当前帧直接跟踪到的特征点（高亮清晰）
+    // 1. 优先渲染当前帧直接跟踪到的特征点(高亮清晰)
     const size_t NMPs = localMPs.size();
     for (size_t i = 0; i < NMPs; ++i) {
         ORB_SLAM2::MapPoint* pMP = localMPs[i];
@@ -966,7 +1032,7 @@ static void writePointCloudToSharedMemory() {
         n++;
     }
 
-    // 2. 补充渲染已加载的参考地图点云（仅在对齐成功时）
+    // 2. 补充渲染已加载的参考地图点云(仅在对齐成功时)
     const int status = slamSys->GetTrackingState();
     if (status == 2 && hasAlign && n * 7 + 7 <= maxFloats) {
         std::vector<ORB_SLAM2::MapPoint*> allMPs = slamSys->GetAllMapPoints();
@@ -1007,7 +1073,7 @@ JNIEXPORT void JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_nativeProcessFrameSharedMem(
     JNIEnv* env, jobject instance, jint bufIndex, jint seq, jint width, jint height, jintArray statusBuf_)
 {
-    // 帧入口全程耗时（含共享内存锁与 gSlamPtrLock 等待、结果写回），与 processImage 相减即预处理开销
+    // 帧入口全程耗时(含共享内存锁与 gSlamPtrLock 等待、结果写回)，与 processImage 相减即预处理开销
     VT_PROFILE_SCOPE("JNI_FrameProcess");
     if (width <= 0 || height <= 0) return;
     jint* statusBuf = env->GetIntArrayElements(statusBuf_, nullptr);
@@ -1071,7 +1137,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeProcessFrameSharedMem(
 }
 
 // 关停并释放 SLAM 系统：等待帧处理归零后 join 全部工作线程再 delete。
-// 由 Activity.onDestroy 调用，确保三条常驻线程（LM/LC/GlobalReloc）全部退出。
+// 由 Activity.onDestroy 调用，确保三条常驻线程(LM/LC/GlobalReloc)全部退出。
 JNIEXPORT void JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_nativeShutdown(JNIEnv* env, jobject instance)
 {

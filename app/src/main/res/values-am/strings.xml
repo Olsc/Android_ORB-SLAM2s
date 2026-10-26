@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">ካሜራ ቀይር</string>
     <string name="btn_mirror_vertical">አቀባዊ መስታወት</string>
     <string name="btn_mirror_horizontal">አግድም መስታወት</string>
+    <string name="btn_reverse_sensor">IMU ተቃራኒ</string>
     <string name="hint_camera_switched_back">ወደ ኋላ ካሜራ ተቀይሯል</string>
     <string name="hint_camera_switched_front">ወደ ፊት ካሜራ ተቀይሯል</string>
     <string name="hint_camera_switched_other">ወደ ካሜራ %1$s ተቀይሯል</string>

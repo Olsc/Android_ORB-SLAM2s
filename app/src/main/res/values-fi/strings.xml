@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">Vaihda kamera</string>
     <string name="btn_mirror_vertical">Peilaa pysty</string>
     <string name="btn_mirror_horizontal">Peilaa vaaka</string>
+    <string name="btn_reverse_sensor">Käännä IMU</string>
     <string name="hint_camera_switched_back">Vaihdettu takakameraan</string>
     <string name="hint_camera_switched_front">Vaihdettu etukameraan</string>
     <string name="hint_camera_switched_other">Vaihdettu kameraan %1$s</string>

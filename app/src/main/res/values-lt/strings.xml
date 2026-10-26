@@ -93,6 +93,7 @@
     <string name="btn_switch_camera">Perjungti kamerą</string>
     <string name="btn_mirror_vertical">Atspindėti vertikaliai</string>
     <string name="btn_mirror_horizontal">Atspindėti horizontaliai</string>
+    <string name="btn_reverse_sensor">Apversti IMU</string>
     <string name="hint_camera_switched_back">Perjungta į galinę kamerą</string>
     <string name="hint_camera_switched_front">Perjungta į priekinę kamerą</string>
     <string name="hint_camera_switched_other">Perjungta į kamerą %1$s</string>

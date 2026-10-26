@@ -192,11 +192,12 @@ ORB-SLAM2 核心库以 [GPLv3 许可证](https://github.com/raulmur/ORB_SLAM2/bl
 
 本项目基于 Android IPC 进程隔离采用分层/多模块开源许可架构：
 
-- **`app/` 模块**：采用 **[Apache License 2.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/app/LICENSE)** (Apache-2.0) 授权。包含 UI 交互、相机预览、原生 cgltf/OpenGL ES 3D 渲染与传感器组件。
-- **`MenthaAR/` 引擎模块**：基于 ORB-SLAM2 衍生，采用 **[GNU General Public License v3.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/MenthaAR/LICENSE)** (GPLv3) 授权。包含 C++ SLAM 核心算法与原生底层处理。
-- **IPC 进程隔离通信**：`app` 模块与 `MenthaAR` 引擎运行在独立的 Android 系统进程中，仅通过 Binder IPC 和共享内存（Ashmem/memfd）通信，各自保持独立的许可证边界。
+- **`app/` 模块**：采用 **[Apache License 2.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/app/LICENSE)** (Apache-2.0) 授权。仅包含 UI 交互、相机预览与 GLB 模型渲染，编译期不引用任何 GPL-only 实现。
+- **`MenthaAR-SDK/` 接口模块**：采用 **Apache-2.0 或 GPLv3 双许可**（任选其一）。仅包含 AIDL 定义与共享内存客户端，是 `app` 与 GPL 实现之间唯一的编译期边界。
+- **`MenthaAR/` 引擎模块**：基于 ORB-SLAM2 衍生，采用 **[GNU General Public License v3.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/MenthaAR/LICENSE)** (GPLv3) 授权。包含 C++ SLAM 核心算法、姿态传感器与位姿融合。
+- **进程隔离**：`app` 与 `MenthaAR` 引擎运行在独立进程中，仅通过 Binder IPC 与共享内存（Ashmem/memfd）传递数据；`app` 以 `runtimeOnly` 方式随包分发 GPL 实现，源码层不可引用。
 
-详情请参见 [LICENSE](../LICENSE)、[app/LICENSE](../app/LICENSE) 和 [MenthaAR/LICENSE](../MenthaAR/LICENSE) 文件。
+详情请参见 [LICENSE](../LICENSE)、[app/LICENSE](../app/LICENSE)、[MenthaAR-SDK/LICENSE](../MenthaAR-SDK/LICENSE) 与 [MenthaAR/LICENSE](../MenthaAR/LICENSE) 文件。
 
 项目合作或其他领域合作咨询，请联系：**OlscStudio@outlook.com**
 

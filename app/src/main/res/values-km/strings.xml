@@ -87,6 +87,7 @@
     <string name="btn_switch_camera">ប្តូរកាមេរ៉ា</string>
     <string name="btn_mirror_vertical">កញ្ចក់បញ្ឈរ</string>
     <string name="btn_mirror_horizontal">កញ្ចក់ផ្តេក</string>
+    <string name="btn_reverse_sensor">បញ្ច្រាស IMU</string>
     <string name="hint_camera_switched_back">បានប្តូរទៅកាមេរ៉ាក្រោយ</string>
     <string name="hint_camera_switched_front">បានប្តូរទៅកាមេរ៉ាមុខ</string>
     <string name="hint_camera_switched_other">បានប្តូរទៅកាមេរ៉ា %1$s</string>

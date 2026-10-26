@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">Bytt kamera</string>
     <string name="btn_mirror_vertical">Speil loddrett</string>
     <string name="btn_mirror_horizontal">Speil vannrett</string>
+    <string name="btn_reverse_sensor">Snu IMU</string>
     <string name="hint_camera_switched_back">Byttet til bakkamera</string>
     <string name="hint_camera_switched_front">Byttet til frontkamera</string>
     <string name="hint_camera_switched_other">Byttet til kamera %1$s</string>

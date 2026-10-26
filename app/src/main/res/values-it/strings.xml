@@ -91,6 +91,7 @@
     <string name="btn_switch_camera">Cambia fotocamera</string>
     <string name="btn_mirror_vertical">Specchia verticale</string>
     <string name="btn_mirror_horizontal">Specchia orizzontale</string>
+    <string name="btn_reverse_sensor">Inverti IMU</string>
     <string name="hint_camera_switched_back">Passato alla fotocamera posteriore</string>
     <string name="hint_camera_switched_front">Passato alla fotocamera anteriore</string>
     <string name="hint_camera_switched_other">Passato alla fotocamera %1$s</string>

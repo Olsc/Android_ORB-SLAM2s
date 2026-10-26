@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">Vaheta kaamerat</string>
     <string name="btn_mirror_vertical">Peegelda vertikaalselt</string>
     <string name="btn_mirror_horizontal">Peegelda horisontaalselt</string>
+    <string name="btn_reverse_sensor">Pööra IMU</string>
     <string name="hint_camera_switched_back">Lülitati tagumisele kaamerale</string>
     <string name="hint_camera_switched_front">Lülitati esikaamerale</string>
     <string name="hint_camera_switched_other">Lülitati kaamerale %1$s</string>

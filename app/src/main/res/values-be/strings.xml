@@ -93,6 +93,7 @@
     <string name="btn_switch_camera">Змена камеры</string>
     <string name="btn_mirror_vertical">Вертыкальнае адлюстраванне</string>
     <string name="btn_mirror_horizontal">Гарызантальнае адлюстраванне</string>
+    <string name="btn_reverse_sensor">Інверсія IMU</string>
     <string name="hint_camera_switched_back">Пераключана на заднюю камеру</string>
     <string name="hint_camera_switched_front">Пераключана на франтальную камеру</string>
     <string name="hint_camera_switched_other">Пераключана на камеру %1$s</string>

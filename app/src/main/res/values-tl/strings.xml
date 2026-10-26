@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">Palitan ang Camera</string>
     <string name="btn_mirror_vertical">Salamin patayo</string>
     <string name="btn_mirror_horizontal">Salamin pahalang</string>
+    <string name="btn_reverse_sensor">Baliktarin IMU</string>
     <string name="hint_camera_switched_back">Lumipat sa camera sa likod</string>
     <string name="hint_camera_switched_front">Lumipat sa camera sa harap</string>
     <string name="hint_camera_switched_other">Lumipat sa camera %1$s</string>

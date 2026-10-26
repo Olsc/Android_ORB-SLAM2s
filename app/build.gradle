@@ -126,12 +126,22 @@ dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation 'androidx.activity:activity:1.13.0'
 
-    implementation project(':MenthaAR')
+    implementation project(':MenthaAR-SDK')
+    runtimeOnly project(':MenthaAR')
 
     implementation 'androidx.camera:camera-core:1.6.2'
     implementation 'androidx.camera:camera-camera2:1.6.2'
     implementation 'androidx.camera:camera-lifecycle:1.6.2'
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
+}
+
+// 打包 APK 时同步产出与之一致的构建类型的整合 AAR
+tasks.configureEach { t ->
+    if (t.name == 'assembleDebug') {
+        t.dependsOn ':MenthaAR-SDK:assembleIntegratedAarDebug'
+    } else if (t.name == 'assembleRelease') {
+        t.dependsOn ':MenthaAR-SDK:assembleIntegratedAarRelease'
+    }
 }
 
 configurations.configureEach {

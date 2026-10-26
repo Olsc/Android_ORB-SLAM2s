@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">Ndërro kamerën</string>
     <string name="btn_mirror_vertical">Pasqyrim vertikal</string>
     <string name="btn_mirror_horizontal">Pasqyrim horizontal</string>
+    <string name="btn_reverse_sensor">Kthe IMU</string>
     <string name="hint_camera_switched_back">U kalua te kamera e pasme</string>
     <string name="hint_camera_switched_front">U kalua te kamera e përparme</string>
     <string name="hint_camera_switched_other">U kalua te kamera %1$s</string>

@@ -91,6 +91,7 @@
     <string name="btn_switch_camera">החלף מצלמה</string>
     <string name="btn_mirror_vertical">שיקוף אנכי</string>
     <string name="btn_mirror_horizontal">שיקוף אופקי</string>
+    <string name="btn_reverse_sensor">הפוך IMU</string>
     <string name="hint_camera_switched_back">הוחלף למצלמה אחורית</string>
     <string name="hint_camera_switched_front">הוחלף למצלמה קדמית</string>
     <string name="hint_camera_switched_other">הוחלף למצלמה %1$s</string>

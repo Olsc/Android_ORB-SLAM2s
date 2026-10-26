@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">ಕ್ಯಾಮರಾ ಬದಲಾಯಿಸಿ</string>
     <string name="btn_mirror_vertical">ಲಂಬ ಕನ್ನಡಿ</string>
     <string name="btn_mirror_horizontal">ಅಡ್ಡ ಕನ್ನಡಿ</string>
+    <string name="btn_reverse_sensor">IMU ತಿರುಗಿಸಿ</string>
     <string name="hint_camera_switched_back">ಹಿಂಬದಿಯ ಕ್ಯಾಮರಾಗೆ ಬದಲಾಯಿಸಲಾಗಿದೆ</string>
     <string name="hint_camera_switched_front">ಮುಂಬದಿಯ ಕ್ಯಾಮರಾಗೆ ಬದಲಾಯಿಸಲಾಗಿದೆ</string>
     <string name="hint_camera_switched_other">ಕ್ಯಾಮರಾ %1$s ಗೆ ಬದಲಾಯಿಸಲಾಗಿದೆ</string>

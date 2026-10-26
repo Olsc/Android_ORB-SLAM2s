@@ -193,10 +193,11 @@ ORB-SLAM2 основная библиотека выпущена под [GPLv3 �
 В данном проекте используется многомодульная архитектура лицензирования, основанная на межпроцессной изоляции Android IPC:
 
 - **Модуль `app/`**: Лицензирован под **[Apache License 2.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/app/LICENSE)** (Apache-2.0). Содержит пользовательский интерфейс, предварительный просмотр камеры, нативный 3D-рендеринг cgltf и компоненты датчиков.
-- **Движок `MenthaAR/`**: Создан на основе ORB-SLAM2 и распространяется под **[GNU General Public License v3.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/MenthaAR/LICENSE)** (GPLv3). Содержит алгоритмы C++ SLAM и нативную обработку.
-- **Межпроцессное взаимодействие (IPC)**: Модуль `app` и движок `MenthaAR` работают в отдельных процессах ОС Android и взаимодействуют исключительно через Binder IPC и общую память (Ashmem/memfd), сохраняя границы лицензий между модулями.
+- **Модуль интерфейса `MenthaAR-SDK/`**: **двойная лицензия Apache-2.0 или GPLv3** (на выбор). Содержит только определения AIDL и клиент разделяемой памяти и является единственной границей на этапе компиляции между `app` и GPL-реализацией.
+- **Движок `MenthaAR/`**: Создан на основе ORB-SLAM2 и распространяется под **[GNU General Public License v3.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/MenthaAR/LICENSE)** (GPLv3). Содержит алгоритмы C++ SLAM, датчики и объединение поз.
+- **Изоляция процессов**: `app` и движок `MenthaAR` работают в разных процессах и обмениваются данными только через Binder IPC и разделяемую память (Ashmem/memfd). GPL-реализация подключается как зависимость `runtimeOnly` и недоступна из исходного кода App.
 
-Подробности см. в файлах [LICENSE](../LICENSE), [app/LICENSE](../app/LICENSE) и [MenthaAR/LICENSE](../MenthaAR/LICENSE).
+Подробности см. в файлах [LICENSE](../LICENSE), [app/LICENSE](../app/LICENSE), [MenthaAR-SDK/LICENSE](../MenthaAR-SDK/LICENSE) и [MenthaAR/LICENSE](../MenthaAR/LICENSE).
 
 Для сотрудничества по проекту или других вопросов обращайтесь：**OlscStudio@outlook.com**
 

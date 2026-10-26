@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">Aldatu kamera</string>
     <string name="btn_mirror_vertical">Ispilu bertikala</string>
     <string name="btn_mirror_horizontal">Ispilu horizontala</string>
+    <string name="btn_reverse_sensor">Alderantziz IMU</string>
     <string name="hint_camera_switched_back">Atzeko kamerara aldatu da</string>
     <string name="hint_camera_switched_front">Aurreko kamerara aldatu da</string>
     <string name="hint_camera_switched_other">%1$s kamerara aldatu da</string>

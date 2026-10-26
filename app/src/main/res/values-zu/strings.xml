@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">Shintsha Ikhamera</string>
     <string name="btn_mirror_vertical">Isibuko esiqondile</string>
     <string name="btn_mirror_horizontal">Isibuko esivundlile</string>
+    <string name="btn_reverse_sensor">Phendula IMU</string>
     <string name="hint_camera_switched_back">Kushintshelwe kukhamera yangemuva</string>
     <string name="hint_camera_switched_front">Kushintshelwe kukhamera yangaphambili</string>
     <string name="hint_camera_switched_other">Kushintshelwe kukhamera engu-%1$s</string>

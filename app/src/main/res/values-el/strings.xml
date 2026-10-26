@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">Αλλαγή κάμερας</string>
     <string name="btn_mirror_vertical">Κατακόρυφη αναστροφή</string>
     <string name="btn_mirror_horizontal">Οριζόντια αναστροφή</string>
+    <string name="btn_reverse_sensor">Αντιστροφή IMU</string>
     <string name="hint_camera_switched_back">Εναλλαγή στην πίσω κάμερα</string>
     <string name="hint_camera_switched_front">Εναλλαγή στην μπροστινή κάμερα</string>
     <string name="hint_camera_switched_other">Εναλλαγή στην κάμερα %1$s</string>

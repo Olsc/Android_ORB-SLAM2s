@@ -87,6 +87,7 @@
     <string name="btn_switch_camera">Đổi camera</string>
     <string name="btn_mirror_vertical">Gương dọc</string>
     <string name="btn_mirror_horizontal">Gương ngang</string>
+    <string name="btn_reverse_sensor">Đảo IMU</string>
     <string name="hint_camera_switched_back">Đã chuyển sang camera sau</string>
     <string name="hint_camera_switched_front">Đã chuyển sang camera trước</string>
     <string name="hint_camera_switched_other">Đã chuyển sang camera %1$s</string>

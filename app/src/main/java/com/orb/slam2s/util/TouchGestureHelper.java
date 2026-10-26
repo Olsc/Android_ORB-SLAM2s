@@ -21,6 +21,7 @@ import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +48,7 @@ public class TouchGestureHelper {
             }
 
             @Override
-            public boolean onScroll(@NonNull MotionEvent e1, @NonNull MotionEvent e2, float distanceX, float distanceY) {
+            public boolean onScroll(@Nullable MotionEvent e1, @Nullable MotionEvent e2, float distanceX, float distanceY) {
                 return super.onScroll(e1, e2, distanceX, distanceY);
             }
         });

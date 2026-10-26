@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">Camera wisselen</string>
     <string name="btn_mirror_vertical">Verticaal spiegelen</string>
     <string name="btn_mirror_horizontal">Horizontaal spiegelen</string>
+    <string name="btn_reverse_sensor">IMU omkeren</string>
     <string name="hint_camera_switched_back">Naar achtercamera gewisseld</string>
     <string name="hint_camera_switched_front">Naar frontcamera gewisseld</string>
     <string name="hint_camera_switched_other">Naar camera %1$s gewisseld</string>

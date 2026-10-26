@@ -89,6 +89,7 @@
     <string name="btn_switch_camera">Kameraváltás</string>
     <string name="btn_mirror_vertical">Függőleges tükrözés</string>
     <string name="btn_mirror_horizontal">Vízszintes tükrözés</string>
+    <string name="btn_reverse_sensor">IMU fordítása</string>
     <string name="hint_camera_switched_back">Váltás a hátlapi kamerára</string>
     <string name="hint_camera_switched_front">Váltás az előlapi kamerára</string>
     <string name="hint_camera_switched_other">Váltás a(z) %1$s kamerára</string>

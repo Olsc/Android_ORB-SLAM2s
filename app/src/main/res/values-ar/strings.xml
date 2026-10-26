@@ -97,6 +97,7 @@
     <string name="btn_switch_camera">تبديل الكاميرا</string>
     <string name="btn_mirror_vertical">انعكاس رأسي</string>
     <string name="btn_mirror_horizontal">انعكاس أفقي</string>
+    <string name="btn_reverse_sensor">عكس IMU</string>
     <string name="hint_camera_switched_back">تم التبديل إلى الكاميرا الخلفية</string>
     <string name="hint_camera_switched_front">تم التبديل إلى الكاميرا الأمامية</string>
     <string name="hint_camera_switched_other">تم التبديل إلى الكاميرا %1$s</string>

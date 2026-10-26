@@ -87,6 +87,7 @@
     <string name="btn_switch_camera">切换相机</string>
     <string name="btn_mirror_vertical">上下镜像</string>
     <string name="btn_mirror_horizontal">左右镜像</string>
+    <string name="btn_reverse_sensor">反向传感器</string>
     <string name="hint_camera_switched_back">已切换至后置相机</string>
     <string name="hint_camera_switched_front">已切换至前置相机</string>
     <string name="hint_camera_switched_other">已切换至相机 %1$s</string>
