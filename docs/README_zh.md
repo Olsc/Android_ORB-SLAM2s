@@ -263,7 +263,7 @@ ORB-SLAM2 核心库以 [GPLv3 许可证](https://github.com/raulmur/ORB_SLAM2/bl
 
 ## Eigen3
 
-g2o 所需（见下文）。下载和安装说明可在以下网址找到：http://eigen.tuxfamily.org。
+g2o 所需（见下文）。下载和安装说明可在以下网址找到：http://eigen.tuxfamily.org
 
 ## DBoW2 和 g2o（包含在 Thirdparty 文件夹中）
 
