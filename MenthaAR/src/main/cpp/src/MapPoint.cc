@@ -52,7 +52,7 @@ MapPoint::MapPoint(const cv::Mat &Pos, KeyFrame *pRefKF, Map* pMap):
     Pos.copyTo(mWorldPos);
     mNormalVector = cv::Mat::zeros(3,1,CV_32F);
 
-    // MapPoints 可以从 Tracking 和 Local Mapping 创建。此互斥锁避免 ID 冲突。
+    // MapPoints 可以从 Tracking 和 Local Mapping 创建
     std::unique_lock<std::mutex> lock(mpMap->mMutexPointCreation);
     mnId=nNextId++;
 }
@@ -64,7 +64,7 @@ MapPoint::MapPoint(const cv::Mat &Pos, Map* pMap, Frame* pFrame, const int &idxF
     mnFound(1), mbBad(false), mpReplaced(nullptr), mpMap(pMap)
 {
     Pos.copyTo(mWorldPos);
-    // 读取相机中心（Frame 无锁），PC = Pos - Ow 逐分量计算
+    // 读取相机中心，PC = Pos - Ow 逐分量计算
     cv::Point3f Ow;
     pFrame->GetCameraCenter(Ow);
 
@@ -90,7 +90,7 @@ MapPoint::MapPoint(const cv::Mat &Pos, Map* pMap, Frame* pFrame, const int &idxF
     mfMinDistInvariance.store(MAPPOINT_MIN_DIST_INVARIANCE_FACTOR*mfMinDistance, std::memory_order_relaxed);
     mfMaxDistInvariance.store(MAPPOINT_MAX_DIST_INVARIANCE_FACTOR*mfMaxDistance, std::memory_order_relaxed);
 
-    // MapPoints 可以从 Tracking 和 Local Mapping 创建。此互斥锁避免 ID 冲突。
+    // MapPoints 可以从 Tracking 和 Local Mapping 创建
     unique_lock<mutex> lock(mpMap->mMutexPointCreation);
     mnId=nNextId++;
 }
@@ -246,7 +246,6 @@ int MapPoint::GetRedundantObservationsCount(KeyFrame* pKF, int scaleLevel)
 
 int MapPoint::Observations() const
 {
-    // nObs 为原子变量，无需加锁
     return nObs.load(std::memory_order_relaxed);
 }
 
@@ -321,7 +320,6 @@ void MapPoint::Replace(MapPoint* pMP)
 
 bool MapPoint::isBad()
 {
-    // mbBad 为原子变量，无需加锁，使用 memory_order_relaxed
     return mbBad.load(std::memory_order_relaxed);
 }
 
@@ -337,7 +335,7 @@ void MapPoint::IncreaseFound(int n)
 
 float MapPoint::GetFoundRatio()
 {
-    // mnVisible 至少为 1（构造函数初始化），无需除零保护
+    // mnVisible 至少为 1（构造函数初始化）
     return static_cast<float>(mnFound.load(std::memory_order_relaxed)) /
            mnVisible.load(std::memory_order_relaxed);
 }

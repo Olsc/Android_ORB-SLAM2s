@@ -19,8 +19,6 @@ allprojects {
     }
 }
 
-// 清理 CMake 的 .cxx 外部构建缓存：更换 NDK/CMake 参数后必须重新生成。
-// 必须排在 AGP 的 ninja clean 之后，否则找不到 build.ninja。
 def cxxCacheDirs = subprojects.collect { new File(it.projectDir, '.cxx') } + new File(rootDir, '.cxx')
 def nativeCleanTasks = subprojects.collect { p ->
     p.tasks.matching { t -> t.name.startsWith('externalNativeBuildClean') || t.name == 'clean' }
@@ -43,7 +41,6 @@ tasks.register("clean", Delete) {
     finalizedBy "cleanCxx"
 }
 
-// 各子模块 clean 完成后同样清掉 .cxx
 subprojects {
     tasks.configureEach { t ->
         if (t.name == 'clean' || t.name.startsWith('externalNativeBuildClean')) {

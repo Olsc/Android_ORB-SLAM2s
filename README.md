@@ -263,7 +263,7 @@ We have integrated [srrg_hbst](https://gitlab.com/srrg-software/srrg_hbst) for f
 
 ## Eigen3
 
-Required by g2o (see below). Download and install instructions can be found at: http://eigen.tuxfamily.org.
+Required by g2o (see below). Download and install instructions can be found at: http://eigen.tuxfamily.org
 
 ## DBoW2 and g2o (Included in Thirdparty folder)
 

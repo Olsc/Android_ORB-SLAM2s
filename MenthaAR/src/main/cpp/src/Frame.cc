@@ -244,8 +244,7 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
     const float u = u_num * invz;
     const float v = v_num * invz;
 
-    // 检查常规点的距离不变性和视角。
-    // 对于没有描述符的已加载点，放宽约束以允许基于投影的匹配。
+    // 检查常规点的距离不变性和视角。对于没有描述符的已加载点，放宽约束以允许基于投影的匹配。
     const float POx = p3f.x - mOw_arr[0];
     const float POy = p3f.y - mOw_arr[1];
     const float POz = p3f.z - mOw_arr[2];

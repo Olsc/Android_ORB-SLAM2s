@@ -49,7 +49,6 @@ android {
         noCompress "tflite", "mindir", "glb", "mtl"
     }
 
-    // 加载签名密钥
     def keystorePropsFile = rootProject.file('keystore.properties')
     def keystoreProps = new Properties()
     if (keystorePropsFile.exists()) {

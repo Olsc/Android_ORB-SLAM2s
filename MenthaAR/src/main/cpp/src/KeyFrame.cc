@@ -551,7 +551,7 @@ void KeyFrame::SetBadFlag()
         mvpMapPoints.assign(N, nullptr);
     }
 
-    // 在锁外进行所有的 Erase 操作，避免死锁和迭代器失效
+    // 在锁外进行所有的 Erase 操作
     for(map<KeyFrame*,int>::iterator mit = connectedWeightsCopy.begin(), mend=connectedWeightsCopy.end(); mit!=mend; mit++)
     {
         mit->first->EraseConnection(this);
@@ -580,8 +580,7 @@ void KeyFrame::SetBadFlag()
     set<KeyFrame*> sParentCandidates;
     sParentCandidates.insert(pParentCopy);
 
-    // 在每次迭代中，为子节点分配一个父节点（共视权重最高的那对）
-    // 将该子节点作为其余节点的新父节点候选
+    // 在每次迭代中，为子节点分配一个父节点（共视权重最高的那对），将该子节点作为其余节点的新父节点候选
     while(!mspChildrensCopy.empty())
     {
         bool bContinue = false;

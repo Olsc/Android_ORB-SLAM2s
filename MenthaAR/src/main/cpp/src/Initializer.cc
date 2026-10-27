@@ -814,8 +814,7 @@ void Initializer::Triangulate(const cv::KeyPoint &kp1, const cv::KeyPoint &kp2, 
     // 线性三角化（公共 DLT 实现，见 Converter::TriangulateDLT）
     if (!Converter::TriangulateDLT(P1, P2, kp1.pt.x, kp1.pt.y, kp2.pt.x, kp2.pt.y, x3D))
     {
-        // w==0 退化时填充 inf，
-        // 由 CheckRT 的 isfinite 检查兜底拒绝该点。
+        // w==0 退化时填充 inf，由 CheckRT 的 isfinite 检查兜底拒绝该点。
         const float inf = std::numeric_limits<float>::infinity();
         x3D = (cv::Mat_<float>(3,1) << inf, inf, inf);
     }

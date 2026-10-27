@@ -963,8 +963,6 @@ void Tracking::SetRelocConfig(int topKWords, int maxCandidates, int matchChunk, 
     if(maxBindInliers>0) mCfgMaxBindInliers = maxBindInliers;
     if(maxProjBinds>0) mCfgMaxProjBinds = maxProjBinds;
 
-    // 设置合理的默认值，确保后台线程不会过于频繁地运行
-
     if(mCfgMaxCandidates > RELOC_MAX_CANDIDATES_HARD_CAP) mCfgMaxCandidates = RELOC_MAX_CANDIDATES_HARD_CAP; // 限制候选数量
 }
 
@@ -1374,8 +1372,7 @@ void Tracking::Track()
     }
     else
     {
-        // 如果跟踪丢失，这可能发生
-        // 确保列表非空再访问 back()，防止 ClearTrackingState 后崩溃
+        // 如果跟踪丢失，确保列表非空再访问 back()
         if(!mlRelativeFramePoses.empty()) {
             mlRelativeFramePoses.push_back(mlRelativeFramePoses.back());
         } else {
@@ -1688,7 +1685,7 @@ void Tracking::UpdateLastFrame()
     // 根据参考关键帧更新位姿
     KeyFrame* pRef = mLastFrame.mpReferenceKF;
 
-    // 确保列表非空再访问 back()，防止 ClearTrackingState 后崩溃
+    // 确保列表非空再访问 back()
     cv::Mat Tlr;
     if(!mlRelativeFramePoses.empty()) {
         Tlr = mlRelativeFramePoses.back();
@@ -1728,7 +1725,6 @@ bool Tracking::TrackWithMotionModel()
     ORBmatcher matcher(ORB_MATCHER_NNRATIO_MOTION,true);
 
     // 根据参考关键帧更新上一帧位姿
-    // 如果处于定位模式则创建"视觉里程计"点
     UpdateLastFrame();
 
     if(mVelocity.empty())
@@ -1793,8 +1789,7 @@ bool Tracking::TrackLocalMap()
     // 在新匹配前清除匹配标志
     for(MapPoint* p : mvpLocalMapPoints){ if(p) p->mbMatchedInCurrentFrame = false; }
 
-    // 避免遍历全局已加载的地图点，这会导致严重卡顿且过早进行地图匹配。
-    // 必须等待SLAM建立一定规模的新地图（稳定）后，再尝试混合已加载的地图点。
+    // 等待SLAM建立一定规模的新地图（稳定）后，再尝试混合已加载的地图点。
     if((int)mvpLocalMapPoints.size()<LOCAL_MAP_SUPPLEMENT_TRIGGER)
     {
         // 此时跳过全局搜索，符合"先建图稳了再匹配"的逻辑
@@ -1929,7 +1924,7 @@ bool Tracking::TrackLocalMap()
                             if(u<0 || u>=mCurrentFrame.mnMaxX || v<0 || v>=mCurrentFrame.mnMaxY) continue;
 
                             const float searchRadius = RELOC_PROJ_SEARCH_RADIUS;
-                            // 半径搜索（本循环内单点串行，可安全复用线程局部容器）
+                            // 半径搜索
                             static thread_local std::vector<size_t> s_alignIndices;
                             s_alignIndices.clear();
                             mCurrentFrame.GetFeaturesInArea(u, v, searchRadius, s_alignIndices);
@@ -2032,8 +2027,7 @@ bool Tracking::TrackLocalMap()
                 }
                 if(!mbOnlyTracking)
                 {
-                    // 加载的地图点没有Observations，但仍应计入匹配数
-                    // 对于加载的地图点，跳过Observations检查
+                    // 加载的地图点没有Observations，但仍应计入匹配数。对于加载的地图点，跳过Observations检查
                     if(mCurrentFrame.mvpMapPoints[i]->mbFromLoadedMap ||
                        mCurrentFrame.mvpMapPoints[i]->Observations()>0)
                         mnMatchesInliers++;
@@ -2121,7 +2115,7 @@ bool Tracking::NeedNewKeyFrame()
     if(mSensor==System::MONOCULAR)
         thRefRatio = TRACKING_KF_MONO_RATIO;
 
-    // 单目模式运动位移与几何视差检测：防止静止或无微位移时密集产生零基线关键帧导致三角化失败
+    // 单目模式运动位移与几何视差检测
     bool bEnoughMotion = true;
     if(mSensor == System::MONOCULAR && nKFs > NEW_MAP_KF_COUNT && !mCurrentFrame.mTcw.empty() && mpReferenceKF)
     {
@@ -2161,7 +2155,7 @@ bool Tracking::NeedNewKeyFrame()
 
     // 帧间隔判定
     const bool bFrameGapOK = (mCurrentFrame.mnId >= mnLastKeyFrameId + mMinFrames);
-    // 条件1a：从上次关键帧插入以来已过去超过"MaxFrames"
+    // 条件1：从上次关键帧插入以来已过去超过"MaxFrames"
     const bool c1a = (mCurrentFrame.mnId >= mnLastKeyFrameId + mMaxFrames);
     // 初期建图特例：如果地图中只有很少关键帧，强制放宽闲置要求，允许频繁插入以迅速扩大地图
     const bool c1_init = (nKFs <= NEW_MAP_KF_COUNT && bFrameGapOK);
@@ -2171,7 +2165,6 @@ bool Tracking::NeedNewKeyFrame()
     const bool c2_decay = ((inliersForDecision < nRefMatches*thRefRatio || bNeedToInsertClose) && mnMatchesInliers >= TRACKING_SUCCESS_LOADED);
 
     // 综合初期快速成图(c1_init)、最大间隔保底(c1a)与视差衰减约束(c2_decay)判断是否插入关键帧
-    // 平衡局部建图队列负荷与位姿估计精度，避免冗余关键帧导致BA频繁中断
     const bool bNeedKeyFrame = c1_init || c1a || (bFrameGapOK && bEnoughMotion && c2_decay);
 
     if (bNeedKeyFrame)
@@ -2193,8 +2186,7 @@ bool Tracking::NeedNewKeyFrame()
             }
             else
             {
-                // 建图线程繁忙时仅在内点严重衰减且队列为空时中断BA紧急插帧
-                // 其余情况等待后台局部BA充分收敛以保证点云重建质量
+                // 建图线程繁忙时仅在内点严重衰减且队列为空时中断BA紧急插帧，其余情况等待后台局部BA充分收敛以保证点云重建质量
                 const bool bUrgentTrackingRisk = (inliersForDecision < nRefMatches * 0.5f);
                 if (mpLocalMapper->KeyframesInQueue() == 0 && bUrgentTrackingRisk)
                 {

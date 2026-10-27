@@ -263,7 +263,7 @@ ORB-SLAM2 코어 라이브러리는 [GPLv3 라이선스](https://github.com/raul
 
 ## Eigen3
 
-g2o에 필요합니다(아래 참조). 다운로드 및 설치 지침은 다음에서 찾을 수 있습니다：http://eigen.tuxfamily.org。
+g2o에 필요합니다(아래 참조). 다운로드 및 설치 지침은 다음에서 찾을 수 있습니다：http://eigen.tuxfamily.org
 
 ## DBoW2 및 g2o（Thirdparty 폴더에 포함됨）
 

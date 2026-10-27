@@ -67,7 +67,7 @@ std::vector<ORB_SLAM2::MapPoint*> vMPs;
 // vMPs 访问互斥锁
 std::mutex gMapPointsMutex;
 
-// 点云显示开关(同时控制绿色和蓝色点云)：由 binder/UI 线程写、SLAM 线程读，保持原子量
+// 点云显示开关
 std::atomic<bool> gEnablePointCloudDisplay{true}; // 默认启用点云显示
 
 // SLAM 丢失自动重置状态
@@ -178,7 +178,6 @@ static void AR_OnMapSwitched(int oldId, int newId) {
         gAnchor = gMapAnchors[newId].Clone();
         gAnchor.mapId = newId;
         // 保留克隆出来的原始 frame 与 isFromLoadedMap(在线扫描放置为 kSlam，离线加载为 kMap)
-        // 绝不可强行重写为 kMap，否则在线放置的 AR 物体会因无离线对齐而被永久隐藏
         AR_ResetAlignHold();
         if (gAnchor.plane) {
             getRUBModelMatrixFromRDF(gAnchor.plane->glTpw, gCurrentModelMatrix);
@@ -397,7 +396,7 @@ void LoadPlaneAndArInfo(const std::string& filename, int mapId)
     loaded.valid = (loaded.plane != nullptr || !loaded.objects.empty());
     LOGD("加载平面和AR信息：为地图%d加载%d个AR对象", numObjects, mapId);
 
-    // 生命周期事件：更新缓存与当前显示
+    // 更新缓存与当前显示
     AR_OnMapDataLoaded(mapId, std::move(loaded));
 }
 
@@ -445,8 +444,7 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
             gProcessingFrames.fetch_add(1, std::memory_order_relaxed);
     }
 
-    // RAII 帧引用：无论从哪个 return 退出，都在本函数结束时才递减并唤醒等待的写操作(LoadMap 等)，
-    // 保证写方在计数归零后访问 slamSys 时对象必然存活
+    // RAII 帧引用：无论从哪个 return 退出，都在本函数结束时才递减并唤醒等待的写操作(LoadMap 等)，保证写方在计数归零后访问 slamSys 时对象必然存活
     const bool bHoldsFrameRef = (currentSlamSys != nullptr);
     struct FrameRefGuard {
         const bool armed;
@@ -483,7 +481,7 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
         status = 0;
     }
 
-    // 使用锁内快照 currentSlamSys(持有帧引用计数期间对象保证存活)，避免未同步读取全局指针
+    // 使用锁内快照 currentSlamSys(持有帧引用计数期间对象保证存活)
     if(!currentSlamSys) {
         return status;
     }
@@ -567,8 +565,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_initSLAM(JNIEnv* env, jobject instance, 
 
     VT_PROFILE_INITIALIZE(modelPath + "/mentha_profile.bin");
     LOGD("Create SLAM System...");
-    // 进程亲和性诊断：SLAM 独立进程(:slam_process)可能被分配受限 cpuset，
-    // 启动时打印可用核数便于排查调度受限问题
+    // 进程亲和性诊断：SLAM 独立进程(:slam_process)可能被分配受限 cpuset，启动时打印可用核数便于排查调度受限问题
     {
         char cpuset[128] = {0};
         FILE* f = fopen("/proc/self/cpuset", "r");
@@ -588,8 +585,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_initSLAM(JNIEnv* env, jobject instance, 
         }
     }
 
-    // 构造与首次校准在 gSlamPtrLock 内发布：均为启动期一次性操作，
-    // 此时相机/GL 尚未调用其他 JNI 入口，持锁无争用
+    // 构造与首次校准在 gSlamPtrLock 内发布
     {
         std::lock_guard<std::mutex> ptrLock(gSlamPtrLock);
         slamSys = new ORB_SLAM2::System("", ORB_SLAM2::System::MONOCULAR);
@@ -644,8 +640,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_saveMap(JNIEnv* env, jobject instance, j
 {
     const char* path = env->GetStringUTFChars(path_, nullptr);
 
-    // 锁内快照：saveMap 为 UI 线程长操作，不在 gSlamPtrLock 内执行，
-    // 避免长时间阻塞帧处理线程的指针快照
+    // 锁内快照：saveMap 为 UI 线程长操作
     ORB_SLAM2::System* sys = nullptr;
     {
         std::lock_guard<std::mutex> ptrLock(gSlamPtrLock);
@@ -703,8 +698,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_detect(JNIEnv *env, jobject instance,
     VT_PROFILE_SCOPE("JNI_DetectPlane");
     jint *statusBuf = env->GetIntArrayElements(statusBuf_, nullptr);
 
-    // 锁内快照 System*：本函数与 nativeShutdown 同为 UI 线程，不并发，
-    // 快照消除对全局指针的未同步读；锁序 gSlamPtrLock -> gMapDataMutex
+    // 锁内快照 System*：本函数与 nativeShutdown 同为 UI 线程，不并发，快照消除对全局指针的未同步读；锁序 gSlamPtrLock -> gMapDataMutex
     ORB_SLAM2::System* sys = nullptr;
     {
         std::lock_guard<std::mutex> ptrLock(gSlamPtrLock);
@@ -725,8 +719,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_detect(JNIEnv *env, jobject instance,
         return;
     }
     if(!currentTcw.empty()){
-        // vMPs 写入侧由 gMapPointsMutex 保护，先持锁拷贝快照再做无锁使用，
-        // 锁序与全局一致(gMapDataMutex -> gMapPointsMutex)
+        // vMPs 写入侧由 gMapPointsMutex 保护，先持锁拷贝快照再做无锁使用，         锁序与全局一致(gMapDataMutex -> gMapPointsMutex)
         std::vector<ORB_SLAM2::MapPoint*> localMPs;
         {
             std::lock_guard<std::mutex> _mpLock(gMapPointsMutex);
@@ -1103,8 +1096,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeProcessFrameSharedMem(
     cv::Mat mGr(height, width, CV_8UC1, static_cast<char*>(gSharedFramePtr) + yOff);
     cv::Mat dummyOut;
 
-    // writePointCloudToSharedMemory 在 processImage 返回后仍解引用 slamSys 与 MapPoint，
-    // 此处持有第二条帧引用覆盖写回段，与 nativeShutdown 的归零再 delete 协议一致，避免悬空解引用
+    // writePointCloudToSharedMemory 在 processImage 返回后仍解引用 slamSys 与 MapPoint
     bool shmHoldsFrameRef = false;
     {
         std::lock_guard<std::mutex> ptrLock(gSlamPtrLock);
@@ -1136,8 +1128,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeProcessFrameSharedMem(
     env->ReleaseIntArrayElements(statusBuf_, statusBuf, 0);
 }
 
-// 关停并释放 SLAM 系统：等待帧处理归零后 join 全部工作线程再 delete。
-// 由 Activity.onDestroy 调用，确保三条常驻线程(LM/LC/GlobalReloc)全部退出。
+// 关停并释放 SLAM 系统：等待帧处理归零后 join 全部工作线程再 delete
 JNIEXPORT void JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_nativeShutdown(JNIEnv* env, jobject instance)
 {

@@ -107,8 +107,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float mi
 
         if (pKF->mDescriptors.empty()) return vector<KeyFrame*>();
 
-        // 使用瞬时 query matchables，而非 pKF->GetHBSTTree()，避免为全图关键帧常驻 HBST 树；
-        // 本函数对每个关键帧都会调用一次。
+        // 使用瞬时 query matchables，而非 pKF->GetHBSTTree()；本函数对每个关键帧都会调用一次。
         std::vector<size_t> objects(pKF->N);
         for(int i=0; i<pKF->N; i++) objects[i] = i;
 
@@ -205,8 +204,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
 
         if (F->mDescriptors.empty()) return vector<KeyFrame*>();
 
-        // 复用帧自身缓存的 HBST 树（重定位路径上已由 SearchByHBST 构建）；
-        // matchables 归树所有，调用方不得 delete
+        // 复用帧自身缓存的 HBST 树（重定位路径上已由 SearchByHBST 构建）；matchables 归树所有，调用方不得 delete
         std::shared_ptr<HBSTTree> treeQuery = F->GetHBSTTree();
         if (!treeQuery) return vector<KeyFrame*>();
 

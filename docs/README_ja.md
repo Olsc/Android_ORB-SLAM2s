@@ -263,7 +263,7 @@ ORB-SLAM2 コアライブラリは [GPLv3 ライセンス](https://github.com/ra
 
 ## Eigen3
 
-g2o に必要です（下記参照）。ダウンロードおよびインストール手順は以下にあります：http://eigen.tuxfamily.org。
+g2o に必要です（下記参照）。ダウンロードおよびインストール手順は以下にあります：http://eigen.tuxfamily.org
 
 ## DBoW2 および g2o（Thirdparty フォルダに含まれています）
 

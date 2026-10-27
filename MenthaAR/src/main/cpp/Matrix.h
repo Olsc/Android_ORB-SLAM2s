@@ -24,7 +24,7 @@
  * 由Olsc于2025/8/25开始进行修改
  */
 
-// 矩阵运算模块：提供 3D 图形学常用的矩阵与四元数运算，用于 AR 渲染和坐标转换
+// 矩阵运算模块
 
 #ifndef ORB_SLAM2_AR_MATRIX_H
 #define ORB_SLAM2_AR_MATRIX_H
