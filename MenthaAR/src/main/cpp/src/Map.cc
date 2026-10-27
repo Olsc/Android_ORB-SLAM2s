@@ -152,7 +152,7 @@ long unsigned int Map::GetMaxKFid()
 
 void Map::clear()
 {
-    // 先把数据移到锁外再删除，缩短持锁时间，避免重置时阻塞
+    // 先把数据移到锁外再删除
     std::set<MapPoint*> spMP;
     std::set<KeyFrame*> spKF;
     std::set<MapPoint*> spMPTrash;

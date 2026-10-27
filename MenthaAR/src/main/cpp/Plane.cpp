@@ -130,7 +130,8 @@ Plane::Plane(const float& nx, const float& ny, const float& nz,
     Tpw = cv::Mat::eye(4, 4, CV_32F);
 
     if (sa > 1e-6f)
-    {  // 法向量不平行于up向量
+    {
+        // 法向量不平行于up向量
         // 组合两个旋转：先旋转到up方向，再绕法向量旋转rang角度
         const float factor = ang / sa;
         cv::Mat R1 = ExpSO3(vx * factor, vy * factor, vz * factor);

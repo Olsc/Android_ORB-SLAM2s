@@ -42,7 +42,7 @@
 #include<mutex>
 #include<chrono>
 #include<algorithm>
-#include "MenthaProfiler.h" // 性能分析器
+#include "MenthaProfiler.h"
 
 namespace ORB_SLAM2
 {
@@ -179,7 +179,7 @@ void LocalMapping::Run()
         }
         else if(Stop())
         {
-            // 安全停止区域（纯生命周期与 RAII 保证，零超时盲等）
+            // 安全停止区域
             VT_PROFILE_SCOPE("LocalMapping::Stopped");
             {
                 std::unique_lock<std::mutex> lock(mMutexEvent);
@@ -662,7 +662,7 @@ void LocalMapping::SearchInNeighbors()
         if(mbResetRequested.load()) return;
         KeyFrame* pKFi = *vit;
         if(!isFrustumIntersecting(pKFi))
-            continue; // 物理视锥无交集，零漏检安全跳过整帧投影
+            continue;
 
         matcher.Fuse(pKFi, vpMapPointMatches, ORB_MATCHER_DEFAULT_FUSE_TH, &vModifiedMPs);
     }

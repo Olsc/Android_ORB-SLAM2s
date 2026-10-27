@@ -411,7 +411,7 @@ int ORBmatcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapP
         if(distSq < minDistance*minDistance || distSq > maxDistance*maxDistance)
             continue;
 
-        // 观察角度过滤：先做平方不等式判定，避免开方
+        // 观察角度过滤
         cv::Point3f Pn;
         pMP->GetNormal(Pn);
         const float dotVal = POx*Pn.x + POy*Pn.y + POz*Pn.z;
@@ -1239,10 +1239,11 @@ int ORBmatcher::Fuse(KeyFrame *pKF, cv::Mat Scw, const vector<MapPoint *> &vpPoi
         if(dist3DSq < minDistance*minDistance || dist3DSq > maxDistance*maxDistance)
             continue;
 
-        // 观察角度过滤：先做平方不等式判定，避免开方
+        // 观察角度过滤
         cv::Point3f Pn;
         pMP->GetNormal(Pn);
         const float dotVal = POx*Pn.x + POy*Pn.y + POz*Pn.z;
+        
         // 此处写死 0.25，与 MATCH_VIEW_COS_SQ_TH 同值但未用常量，待统一
         if(dotVal < 0.0f || dotVal*dotVal < 0.25f*dist3DSq)
             continue;

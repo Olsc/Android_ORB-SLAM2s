@@ -294,7 +294,6 @@ bool LoopClosing::ComputeSim3()
     vpSim3Solvers.resize(nInitialCandidates);
 
     // RAII 守卫统一释放全部求解器：本函数存在多个出口，手工释放易漏；
-    // 未分配槽位为 nullptr，delete 空指针安全
     struct Sim3SolverArrayGuard {
         vector<Sim3Solver*>& v;
         explicit Sim3SolverArrayGuard(vector<Sim3Solver*>& vv) : v(vv) {}
@@ -344,8 +343,7 @@ bool LoopClosing::ComputeSim3()
 
     bool bMatch = false;
 
-    // 轮流为每个候选执行 RANSAC 迭代
-    // 直到有一个成功或全部失败
+    // 轮流为每个候选执行 RANSAC 迭代，直到有一个成功或全部失败
     while(nCandidates>0 && !bMatch)
     {
         for(int i=0; i<nInitialCandidates; i++)
@@ -563,8 +561,7 @@ void LoopClosing::CorrectLoop()
             pKFi->SetPose(mapCorrectedPoses[pKFi]);
         }
 
-        // 开始闭环融合
-        // 更新匹配的地图点，如果重复则替换
+        // 开始闭环融合，更新匹配的地图点，如果重复则替换
         for(size_t i=0; i<mvpCurrentMatchedPoints.size(); i++)
         {
             if(mvpCurrentMatchedPoints[i])
@@ -741,8 +738,7 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
             unique_lock<mutex> lock(mMutexGBA);
             if(idx!=mnFullBAIdx)
             {
-                // 被新闭环中止的 GBA 也必须复位标志，否则 isRunningGBA() 将永远为 true。
-                // 线程对象已由中止方（CorrectLoop）清理。
+                // 被新闭环中止的 GBA 也必须复位标志，否则 isRunningGBA() 将永远为 true。线程对象已由中止方（CorrectLoop）清理。
                 mbFinishedGBA = true;
                 mbRunningGBA = false;
                 return;
@@ -840,7 +836,7 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
                         pKF->SetPose(pKF->mTcwGBA);
                 }
 
-                // 校正地图点（锁内仅写坐标，法向/深度更新移出 mMutexMapUpdate，避免大地图时 Tracking 的 UpdateLastFrame/初始化在全局锁上排队数秒）
+                // 校正地图点
                 const vector<MapPoint*> vpMPs = mpMap->GetAllMapPoints();
                 vector<MapPoint*> vpToUpdateNormal;
                 vpToUpdateNormal.reserve(vpMPs.size());

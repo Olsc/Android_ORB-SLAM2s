@@ -24,7 +24,7 @@
  * 由Olsc于2025/8/25开始进行修改
  */
 
-// 矩阵运算模块实现：提供 3D 图形学常用的矩阵与四元数运算
+// 矩阵运算模块实现
 
 #include "Matrix.h"
 #include <cstring>
@@ -68,7 +68,7 @@ void frustumM(float m[], int offset,
               float left, float right, float bottom, float top,
               float nearZ, float farZ) {
 
-    // 预计算倒数，将除法转换为乘法
+    // 预计算倒数
     float r_width  = 1.0f / (right - left);
     float r_height = 1.0f / (top - bottom);
     float r_depth  = 1.0f / (nearZ - farZ);

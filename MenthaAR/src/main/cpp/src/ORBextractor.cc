@@ -182,7 +182,7 @@ static float IC_Angle(const Mat& image, Point2f pt,  const vector<int> & u_max)
         // 中心列 (u=0)
         v_sum += (ptr_plus[0] - ptr_minus[0]);
 
-        // m_10 同样用后缀和累加求得，避免内层乘法
+        // m_10 同样用后缀和累加求得
         int suffix = 0;
         for (int u = d; u >= 1; --u)
         {
@@ -1329,8 +1329,7 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
     }
 }
 
-// sigma=2 七点定点核 [36,67,98,110,98,67,36]/512（sum=512 保证 >>9 归一），
-// 累加峰值 255×512=130560 远小于 int 上限；乘子以移位加减实现
+// sigma=2 七点定点核 [36,67,98,110,98,67,36]/512（sum=512 保证 >>9 归一），累加峰值 255×512=130560 远小于 int 上限；乘子以移位加减实现
 inline static int mul36(int x) { return (x << 5) + (x << 2); }
 inline static int mul67(int x) { return (x << 6) + (x << 1) + x; }
 inline static int mul98(int x) { return (x << 6) + (x << 5) + (x << 1); }

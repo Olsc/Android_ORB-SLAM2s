@@ -22,7 +22,7 @@
  * 由Olsc于2025/8/25开始进行修改
  */
 
-// 平面检测与表示模块：从3D地图点中检测平面，用于AR物体放置
+// 平面检测与表示模块
 
 #ifndef ORB_SLAM2_AR_PLANE_H
 #define ORB_SLAM2_AR_PLANE_H

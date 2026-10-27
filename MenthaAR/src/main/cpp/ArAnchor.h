@@ -17,7 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// AR 物体/平面锚点 -- 集中式状态定义
+// AR 物体/平面锚点
 
 #ifndef ORB_SLAM2_AR_ANCHOR_H
 #define ORB_SLAM2_AR_ANCHOR_H
@@ -70,7 +70,7 @@ struct ArAnchor {
     }
 };
 
-// 渲染层对齐滞回状态(与 SLAM 核心 mbHaveMapAlign 解耦)
+// 渲染层对齐滞回状态
 struct AlignHoldState {
     bool effAligned  = false; // 当前"按地图帧渲染"(滞回后的有效值)
     int   dropHold   = 0; // raw 对齐丢失后的保持帧计数

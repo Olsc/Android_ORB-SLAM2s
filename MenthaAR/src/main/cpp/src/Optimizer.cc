@@ -63,7 +63,7 @@ void Optimizer::GlobalBundleAdjustemnt(Map* pMap, int nIterations, bool* pbStopF
 void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<MapPoint *> &vpMP,
                                  int nIterations, bool* pbStopFlag, const unsigned long nLoopKF, const bool bRobust)
 {
-    // 空优化保护：无关键帧或无地图点时直接返回，避免 g2o 空跑
+    // 空优化保护：无关键帧或无地图点时直接返回
     if(vpKFs.empty() || vpMP.empty())
         return;
 
@@ -230,7 +230,7 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
     }
 
     optimizer.initializeOptimization();
-    // 空优化保护：active（非固定）顶点为 0 时跳过，避免 g2o 空跑
+    // 空优化保护：active（非固定）顶点为 0 时跳过
     if(optimizer.activeVertices().empty())
     {
         // 确保所有参与的非 bad KF 的 mTcwGBA 被有效赋为当前位姿，防止后续传播空矩阵崩溃
@@ -303,7 +303,7 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
 
 int Optimizer::PoseOptimization(Frame *pFrame)
 {
-    // 线程局部缓存：避免每帧 new/delete 求解器对象
+    // 线程局部缓存
     thread_local struct {
         g2o::SparseOptimizer optimizer;
         g2o::BlockSolver_6_3::LinearSolverType* linearSolver = nullptr;
@@ -467,7 +467,7 @@ static void LocalBundleAdjustmentImpl(KeyFrame *pKF, const StopFlagT* pbStopFlag
     pKF->mnBALocalForKF = pKF->mnId;
 
     const vector<KeyFrame*> vNeighKFs = pKF->GetVectorCovisibleKeyFrames();
-    // 限制局部BA窗口大小：只取共视最强的若干关键帧，防止局部BA耗时过久阻塞跟踪
+    // 限制局部BA窗口大小：只取共视最强的若干关键帧
     const int nMaxBAKFs = std::min((int)vNeighKFs.size(), LOCAL_BA_MAX_KFS);
     for(int i=0; i<nMaxBAKFs; i++)
     {
@@ -495,8 +495,7 @@ static void LocalBundleAdjustmentImpl(KeyFrame *pKF, const StopFlagT* pbStopFlag
         }
     }
 
-    // 固定关键帧。看到局部地图点但不是局部关键帧的关键帧
-    // 统计各固定关键帧观测到的局部地图点数量，按观测关联权重筛选最强约束的固定帧，防止极端共视膨胀
+    // 固定关键帧。看到局部地图点但不是局部关键帧的关键帧，统计各固定关键帧观测到的局部地图点数量，按观测关联权重筛选最强约束的固定帧，防止极端共视膨胀
     std::unordered_map<KeyFrame*, int> fixedKFObsCount;
     for(list<MapPoint*>::iterator lit=lLocalMapPoints.begin(), lend=lLocalMapPoints.end(); lit!=lend; lit++)
     {
@@ -687,7 +686,7 @@ static void LocalBundleAdjustmentImpl(KeyFrame *pKF, const StopFlagT* pbStopFlag
     if(isStopRequested())
         return;
 
-    // 空优化保护：无有效顶点时跳过，避免 g2o 空跑浪费
+    // 空优化保护：无有效顶点时跳过
     if(optimizer.vertices().empty())
         return;
 

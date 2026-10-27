@@ -83,7 +83,6 @@ System::System(const std::string &strSettingsFile, const eSensor sensor):mSensor
     mpFrameDrawer = new FrameDrawer(mpMap);
 
     //初始化跟踪线程
-    //(它将运行在主执行线程中，即调用此构造函数的线程)
     mpTracker = new Tracking(this, mpFrameDrawer,
                              mpMap, mpKeyFrameDatabase, strSettingsFile, mSensor);
 
