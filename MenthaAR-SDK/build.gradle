@@ -5,7 +5,6 @@ plugins {
 android {
     namespace 'com.orb.slam2s.ipc.sdk'
     compileSdk 37
-    compileSdkMinor 1
     buildToolsVersion '37.0.0'
 
     defaultConfig {
@@ -33,6 +32,7 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+    compileSdkMinor 2
 }
 
 def registerIntegratedAar = { String buildType ->

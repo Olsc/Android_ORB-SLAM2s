@@ -59,13 +59,13 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
     buildToolsVersion '37.0.0'
-    compileSdkMinor 1
 
     lint {
         abortOnError false
         checkReleaseBuilds false
         disable 'InferredThreadDetector'
     }
+    compileSdkMinor 2
 }
 
 dependencies {
