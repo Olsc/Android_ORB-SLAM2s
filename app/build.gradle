@@ -103,7 +103,6 @@ android {
     }
     namespace 'com.orb.slam2s'
     buildToolsVersion '37.0.0'
-    compileSdkMinor 1
 
     lint {
         abortOnError false
@@ -117,6 +116,7 @@ android {
             version '3.22.1'
         }
     }
+    compileSdkMinor 2
 
     //dynamicFeatures = [":slam"]
 }
