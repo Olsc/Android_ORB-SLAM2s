@@ -777,6 +777,11 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
         return 0;
     const auto& matchables2 = tree2->matchables();
 
+    // 两帧的地图点关联各取一次快照：原先每个候选都调用加锁的 GetMapPoint（每个关键帧约 10^5~10^6 次锁操作，
+    // simpleperf 中 pthread_mutex 的 16 位原子操作占建图线程约 20%）
+    const vector<MapPoint*> vpMapPoints1 = pKF1->GetMapPointMatches();
+    const vector<MapPoint*> vpMapPoints2 = pKF2->GetMapPointMatches();
+
     // 计算两相机间的相对旋转 R21 = R2w * R1w^T (常数项外提)
     float R21[9];
     for(int r = 0; r < 3; ++r) {
@@ -823,7 +828,7 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
 
     // 遍历关键帧 pKF1 中未关联地图点的特征点
     for (int idx1 = 0; idx1 < pKF1->N; idx1++) {
-        MapPoint* pMP1 = pKF1->GetMapPoint(idx1);
+        MapPoint* pMP1 = vpMapPoints1[idx1];
         if (pMP1)
             continue;
 
@@ -887,7 +892,7 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
                 for (size_t iCell = 0, iEndCell = vCell.size(); iCell < iEndCell; ++iCell) {
                     const size_t idx2 = vCell[iCell];
 
-                    if (pKF2->GetMapPoint(idx2) || vbMatched2[idx2])
+                    if (vpMapPoints2[idx2] || vbMatched2[idx2])
                         continue;
 
                     const bool bStereo2 = false;

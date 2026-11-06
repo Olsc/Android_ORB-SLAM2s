@@ -587,6 +587,56 @@ namespace srrg_hbst {
       }
     }
 
+    //! @brief 只统计每个参考图像（关键帧 id）匹配上的查询描述子数量。
+    //! 结果中每个 id 的计数等于 match(matchables_query_, MatchVectorMap) 之后 matches_[id].size()，
+    //! 但不构造任何 Match 对象（原版本每个匹配要分配两个 std::vector），输出按 id 升序。
+    //! 调用方（KeyFrameDatabase）只使用每个 id 的匹配数，不使用匹配对本身。
+    void matchCount(const MatchableVector& matchables_query_,
+                    std::vector<std::pair<uint64_t, uint32_t>>& counts_,
+                    const uint32_t& maximum_distance_matching_ = 25) const {
+      counts_.clear();
+      if (matchables_query_.empty() || _added_identifiers_train.empty()) {
+        return;
+      }
+      const uint64_t max_id = *_added_identifiers_train.rbegin();
+      std::vector<uint32_t> dense(max_id + 1, 0u);
+      std::vector<uint64_t> seen;
+      seen.reserve(16);
+
+      for (const Matchable* matchable_query : matchables_query_) {
+        const Node* node_current = _root;
+        while (node_current) {
+          if (node_current->has_leafs) {
+            if (matchable_query->descriptor[node_current->index_split_bit]) {
+              node_current = node_current->right;
+            } else {
+              node_current = node_current->left;
+            }
+          } else {
+            // 与 _matchExhaustive 相同：同一查询对同一参考 id 只计一次
+            seen.clear();
+            for (const Matchable* matchable_reference : node_current->matchables) {
+              if (matchable_query->distance(matchable_reference) < maximum_distance_matching_) {
+                for (const ObjectMapElement& object : matchable_reference->objects) {
+                  const uint64_t id = object.first;
+                  bool already = false;
+                  for (uint64_t s : seen) { if (s == id) { already = true; break; } }
+                  if (already) continue;
+                  seen.push_back(id);
+                  if (id <= max_id) ++dense[id];
+                }
+              }
+            }
+            break;
+          }
+        }
+      }
+
+      for (uint64_t id = 0; id <= max_id; ++id) {
+        if (dense[id]) counts_.push_back(std::make_pair(id, dense[id]));
+      }
+    }
+
     //! @brief 增量式增長樹
     //! @param[in] matchables_ 要整合到當前樹中的新輸入可匹配對象（轉移所有權！）
     //! @param[in] train_mode_ 訓練模式

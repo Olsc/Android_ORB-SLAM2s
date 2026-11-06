@@ -1,4 +1,4 @@
-﻿# 离线回放基准：构建 arm64 Release 引擎 + slam_bench，推到设备，用固定帧序列运行并取回结果。
+# 离线回放基准：构建 arm64 Release 引擎 + slam_bench，推到设备，用固定帧序列运行并取回结果。
 #
 # 用法（在仓库根目录）：
 #   powershell -File docs\bench\run_device_bench.ps1 -Tag base            # 构建 + 运行，结果保存为 docs\bench\results\base.txt
@@ -81,7 +81,7 @@ if (-not $SkipPush) {
 
 for ($r = 1; $r -le $Runs; $r++) {
     # KMP_BLOCKTIME 与 NativeHelper 中 App 的设置一致
-    $line = & $Adb shell "cd $DeviceDir && KMP_BLOCKTIME=30 LD_LIBRARY_PATH=. ./slam_bench frames.raw 1280 720 out.txt $MaxFrames $Sync 1"
+    $line = & $Adb shell "cd $DeviceDir && KMP_BLOCKTIME=60 LD_LIBRARY_PATH=. ./slam_bench frames.raw 1280 720 out.txt $MaxFrames $Sync 1"
     Write-Host "[$Tag run $r] $line"
 }
 & $Adb pull "$DeviceDir/out.txt" (Join-Path $resDir "$Tag.txt") | Out-Null

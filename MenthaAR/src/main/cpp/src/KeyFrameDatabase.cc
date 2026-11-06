@@ -113,22 +113,24 @@ vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float mi
 
         HBSTTree::MatchableVector query_matchables = HBSTTree::getMatchables(pKF->mDescriptors, objects, pKF->mnId);
 
-        HBSTTree::MatchVectorMap matches;
-        mpTree->match(query_matchables, matches, KFD_HBST_MATCH_LIMIT);
+        // 只需要每个关键帧的匹配数，用计数遍历代替构造匹配向量（按 id 升序，顺序与内存地址无关）
+        std::vector<std::pair<uint64_t, uint32_t>> matchCounts;
+        mpTree->matchCount(query_matchables, matchCounts, KFD_HBST_MATCH_LIMIT);
 
         for (auto m : query_matchables) delete m;
 
-        for (const auto& match_pair : matches) {
+        for (const auto& match_pair : matchCounts) {
             long unsigned int id = match_pair.first;
             if (id == pKF->mnId) continue;
 
-            if (mhmKeyFrames.count(id) == 0) continue;
+            auto itKF = mhmKeyFrames.find(id);
+            if (itKF == mhmKeyFrames.end()) continue;
 
-            KeyFrame* pKFi = mhmKeyFrames[id];
+            KeyFrame* pKFi = itKF->second;
             if (spConnectedKeyFrames.count(pKFi)) continue;
             if (pKFi->GetMap() != pKF->GetMap()) continue;
 
-            int num_matches = match_pair.second.size();
+            int num_matches = (int)match_pair.second;
             float score = (float)num_matches / (float)pKF->N;
 
             pKFi->mLoopScore = score;
@@ -208,16 +210,17 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
         std::shared_ptr<HBSTTree> treeQuery = F->GetHBSTTree();
         if (!treeQuery) return vector<KeyFrame*>();
 
-        HBSTTree::MatchVectorMap matches;
-        mpTree->match(treeQuery->matchables(), matches, KFD_HBST_MATCH_LIMIT);
+        std::vector<std::pair<uint64_t, uint32_t>> matchCounts;
+        mpTree->matchCount(treeQuery->matchables(), matchCounts, KFD_HBST_MATCH_LIMIT);
 
-        for (const auto& match_pair : matches) {
+        for (const auto& match_pair : matchCounts) {
             long unsigned int id = match_pair.first;
-            if (mhmKeyFrames.count(id) == 0) continue;
+            auto itKF = mhmKeyFrames.find(id);
+            if (itKF == mhmKeyFrames.end()) continue;
 
-            KeyFrame* pKFi = mhmKeyFrames[id];
+            KeyFrame* pKFi = itKF->second;
 
-            int num_matches = match_pair.second.size();
+            int num_matches = (int)match_pair.second;
             float score = (float)num_matches / (float)F->N;
 
             pKFi->mRelocScore = score;

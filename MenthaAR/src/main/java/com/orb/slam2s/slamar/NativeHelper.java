@@ -31,10 +31,11 @@ public class NativeHelper {
         // CPU 亲和性，libomp 初始化时 sched_setaffinity 失败会直接 abort（引擎进程一启动即崩溃）
         try {
             android.system.Os.setenv("KMP_AFFINITY", "disabled", true);
-            // libomp 默认在并行区结束后自旋 200 ms 再休眠：30 fps 下工作线程几乎永不休眠，占满一个核并与建图/闭环线程抢核。
-            // 设备实测（slam_bench，1017 帧）：0 ms 会让工作线程所在核降频/迁核，跟踪均值 13.6→19.7 ms；
-            // 30 ms 跟踪耗时不变，后端耗时 −4%，且空闲时自旋有界
-            android.system.Os.setenv("KMP_BLOCKTIME", "30", true);
+            // libomp 默认在并行区结束后自旋 200 ms 再休眠。设备实测（slam_bench，1017 帧，同步回放）：
+            // 0 ms 时工作线程所在核降频/迁核，跟踪均值 13.6→19.7 ms；30/50 ms 时紧跟关键帧之后的帧慢约 6 ms（p90 27→33）；
+            // ≥100 ms 与默认一致。相机 30 fps 时两次提取之间的间隔约 25 ms，60 ms 足以让工作线程在帧间保持唤醒，
+            // 同时在暂停/低帧率时把空转限制在 60 ms 内
+            android.system.Os.setenv("KMP_BLOCKTIME", "60", true);
         } catch (Throwable t) {
             Log.w(TAG, "设置 KMP 环境变量失败", t);
         }
