@@ -33,9 +33,11 @@
  */
 
 #include <type_traits>
+#include <functional>
 #include "Optimizer.h"
 
 #include "Thirdparty/g2o/g2o/core/block_solver.h"
+#include "Thirdparty/g2o/g2o/core/hyper_graph_action.h"
 #include "Thirdparty/g2o/g2o/core/optimization_algorithm_levenberg.h"
 #include "Thirdparty/g2o/g2o/solvers/linear_solver_eigen.h"
 #include "Thirdparty/g2o/g2o/types/types_six_dof_expmap.h"
@@ -558,10 +560,39 @@ static void LocalBundleAdjustmentImpl(KeyFrame *pKF, const StopFlagT* pbStopFlag
     g2o::SparseOptimizer& optimizer = cache.optimizer;
     optimizer.clear();
 
-    if constexpr (std::is_same<StopFlagT, bool>::value) {
-        if(pbStopFlag)
-            optimizer.setForceStopFlag(const_cast<bool*>(pbStopFlag));
-    }
+    // 两个阶段各只调用一次 optimize(N)：g2o 的 optimize() 每次调用都执行 _algorithm->init()，LM 在 iteration==0 时重建稀疏块结构并重置 λ；
+    // 原来写成 for(it<5){ optimize(1); 早停判断 } 使每轮都重建结构（成本与边数线性）。早停与外部中止放到 post-iteration 回调中，
+    // 通过 g2o 的 forceStopFlag 在下一轮开始前终止；λ 在迭代间延续（基准 §10：与每轮重置的 χ² 轨迹几乎相同）
+    bool bForceStop = false;
+    optimizer.setForceStopFlag(&bForceStop);
+    struct EarlyStopAction : public g2o::HyperGraphAction {
+        g2o::SparseOptimizer* opt = nullptr;
+        bool* pForceStop = nullptr;
+        std::function<bool()> externalStop;
+        double prevChi2 = 0.0;
+        void reset() { prevChi2 = 0.0; }
+        g2o::HyperGraphAction* operator()(const g2o::HyperGraph*, g2o::HyperGraphAction::Parameters* params) override {
+            const int it = params ? static_cast<g2o::HyperGraphAction::ParametersIteration*>(params)->iteration : 0;
+            const double curChi2 = opt->activeChi2();
+            if(it > 0 && prevChi2 > 0.0) {
+                const double relChange = std::abs(prevChi2 - curChi2) / prevChi2;
+                if(relChange < LOCAL_BA_EARLY_STOP_REL_CHANGE)
+                    *pForceStop = true;
+            }
+            prevChi2 = curChi2;
+            if(externalStop())
+                *pForceStop = true;
+            return this;
+        }
+    } earlyStop;
+    earlyStop.opt = &optimizer;
+    earlyStop.pForceStop = &bForceStop;
+    earlyStop.externalStop = isStopRequested;
+    optimizer.addPostIterationAction(&earlyStop);
+    struct ActionGuard {
+        g2o::SparseOptimizer& o; g2o::HyperGraphAction* a;
+        ~ActionGuard() { o.removePostIterationAction(a); o.setForceStopFlag(nullptr); }
+    } actionGuard{optimizer, &earlyStop};
 
     // 窗口内（局部 + 固定）关键帧的最大 id：地图点顶点 id = mnId + maxKFid + 1
     unsigned long maxKFid = 0;
@@ -701,20 +732,10 @@ static void LocalBundleAdjustmentImpl(KeyFrame *pKF, const StopFlagT* pbStopFlag
     if(optimizer.activeVertices().empty())
         return;
 
-    // 带相对残差收敛早停准则（Early-Stopping）
-    double prevChi2 = 0.0;
-    for(int it = 0; it < LOCAL_BA_ITERATIONS; ++it) {
-        if(isStopRequested()) break;
-        optimizer.optimize(1);
-        double curChi2 = optimizer.activeChi2();
-        if(it > 0 && prevChi2 > 0.0) {
-            double relChange = std::abs(prevChi2 - curChi2) / prevChi2;
-            if(relChange < LOCAL_BA_EARLY_STOP_REL_CHANGE) {
-                break;
-            }
-        }
-        prevChi2 = curChi2;
-    }
+    // 带相对残差收敛早停准则（Early-Stopping，在 post-iteration 回调中判断）
+    earlyStop.reset();
+    bForceStop = false;
+    optimizer.optimize(LOCAL_BA_ITERATIONS);
 
     bool bDoMore= true;
 
@@ -746,19 +767,10 @@ static void LocalBundleAdjustmentImpl(KeyFrame *pKF, const StopFlagT* pbStopFlag
     if(optimizer.activeVertices().empty())
         return;
 
-    prevChi2 = 0.0;
-    for(int it = 0; it < LOCAL_BA_ITERATIONS; ++it) {
-        if(isStopRequested()) break;
-        optimizer.optimize(1);
-        double curChi2 = optimizer.activeChi2();
-        if(it > 0 && prevChi2 > 0.0) {
-            double relChange = std::abs(prevChi2 - curChi2) / prevChi2;
-            if(relChange < LOCAL_BA_EARLY_STOP_REL_CHANGE) {
-                break;
-            }
-        }
-        prevChi2 = curChi2;
-    }
+    earlyStop.reset();
+    bForceStop = false;
+    if(!isStopRequested())
+        optimizer.optimize(LOCAL_BA_ITERATIONS);
 
     }
 
