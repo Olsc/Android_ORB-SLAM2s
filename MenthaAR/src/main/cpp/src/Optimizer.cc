@@ -460,10 +460,11 @@ static void LocalBundleAdjustmentImpl(KeyFrame *pKF, const StopFlagT* pbStopFlag
         }
     };
 
-    // 局部关键帧：从当前关键帧开始的广度优先搜索
-    list<KeyFrame*> lLocalKeyFrames;
+    // 局部关键帧：当前关键帧 + 共视最强的若干关键帧（顺序与 g2o 顶点插入顺序一致，不可改变）
+    vector<KeyFrame*> vLocalKeyFrames;
+    vLocalKeyFrames.reserve(LOCAL_BA_MAX_KFS + 1);
 
-    lLocalKeyFrames.push_back(pKF);
+    vLocalKeyFrames.push_back(pKF);
     pKF->mnBALocalForKF = pKF->mnId;
 
     const vector<KeyFrame*> vNeighKFs = pKF->GetVectorCovisibleKeyFrames();
@@ -474,14 +475,15 @@ static void LocalBundleAdjustmentImpl(KeyFrame *pKF, const StopFlagT* pbStopFlag
         KeyFrame* pKFi = vNeighKFs[i];
         pKFi->mnBALocalForKF = pKF->mnId;
         if(!pKFi->isBad())
-            lLocalKeyFrames.push_back(pKFi);
+            vLocalKeyFrames.push_back(pKFi);
     }
 
     // 在局部关键帧中看到的局部地图点
-    list<MapPoint*> lLocalMapPoints;
-    for(list<KeyFrame*>::iterator lit=lLocalKeyFrames.begin() , lend=lLocalKeyFrames.end(); lit!=lend; lit++)
+    vector<MapPoint*> vLocalMapPoints;
+    vLocalMapPoints.reserve(vLocalKeyFrames.size() * 256);
+    for(size_t k=0; k<vLocalKeyFrames.size(); k++)
     {
-        vector<MapPoint*> vpMPs = (*lit)->GetMapPointMatches();
+        vector<MapPoint*> vpMPs = vLocalKeyFrames[k]->GetMapPointMatches();
         for(vector<MapPoint*>::iterator vit=vpMPs.begin(), vend=vpMPs.end(); vit!=vend; vit++)
         {
             MapPoint* pMP = *vit;
@@ -489,7 +491,7 @@ static void LocalBundleAdjustmentImpl(KeyFrame *pKF, const StopFlagT* pbStopFlag
                 if(!pMP->isBad() && !pMP->mbFromLoadedMap)
                     if(pMP->mnBALocalForKF!=pKF->mnId)
                     {
-                        lLocalMapPoints.push_back(pMP);
+                        vLocalMapPoints.push_back(pMP);
                         pMP->mnBALocalForKF=pKF->mnId;
                     }
         }
@@ -497,9 +499,9 @@ static void LocalBundleAdjustmentImpl(KeyFrame *pKF, const StopFlagT* pbStopFlag
 
     // 固定关键帧。看到局部地图点但不是局部关键帧的关键帧，统计各固定关键帧观测到的局部地图点数量，按观测关联权重筛选最强约束的固定帧，防止极端共视膨胀
     KeyFrameMap<int> fixedKFObsCount;
-    for(list<MapPoint*>::iterator lit=lLocalMapPoints.begin(), lend=lLocalMapPoints.end(); lit!=lend; lit++)
+    for(size_t k=0; k<vLocalMapPoints.size(); k++)
     {
-        (*lit)->ForEachObservation([&](KeyFrame* pKFi, size_t) {
+        vLocalMapPoints[k]->ForEachObservation([&](KeyFrame* pKFi, size_t) {
             if(pKFi && pKFi->mnBALocalForKF!=pKF->mnId)
             {
                 if(!pKFi->isBad())
@@ -508,14 +510,15 @@ static void LocalBundleAdjustmentImpl(KeyFrame *pKF, const StopFlagT* pbStopFlag
         });
     }
 
-    list<KeyFrame*> lFixedCameras;
+    vector<KeyFrame*> vFixedCameras;
     if((int)fixedKFObsCount.size() <= LOCAL_BA_MAX_FIXED_KFS)
     {
+        vFixedCameras.reserve(fixedKFObsCount.size());
         for(const auto& pair : fixedKFObsCount)
         {
             KeyFrame* pKFi = pair.first;
             pKFi->mnBAFixedForKF = pKF->mnId;
-            lFixedCameras.push_back(pKFi);
+            vFixedCameras.push_back(pKFi);
         }
     }
     else
@@ -529,11 +532,12 @@ static void LocalBundleAdjustmentImpl(KeyFrame *pKF, const StopFlagT* pbStopFlag
                       return a.first->mnId < b.first->mnId;
                   });
         vSortedFixed.resize(LOCAL_BA_MAX_FIXED_KFS);
+        vFixedCameras.reserve(LOCAL_BA_MAX_FIXED_KFS);
         for(const auto& pair : vSortedFixed)
         {
             KeyFrame* pKFi = pair.first;
             pKFi->mnBAFixedForKF = pKF->mnId;
-            lFixedCameras.push_back(pKFi);
+            vFixedCameras.push_back(pKFi);
         }
     }
 
@@ -559,16 +563,21 @@ static void LocalBundleAdjustmentImpl(KeyFrame *pKF, const StopFlagT* pbStopFlag
             optimizer.setForceStopFlag(const_cast<bool*>(pbStopFlag));
     }
 
+    // 窗口内（局部 + 固定）关键帧的最大 id：地图点顶点 id = mnId + maxKFid + 1
     unsigned long maxKFid = 0;
+    for(size_t k=0; k<vLocalKeyFrames.size(); k++)
+        if(vLocalKeyFrames[k]->mnId>maxKFid) maxKFid=vLocalKeyFrames[k]->mnId;
+    for(size_t k=0; k<vFixedCameras.size(); k++)
+        if(vFixedCameras[k]->mnId>maxKFid) maxKFid=vFixedCameras[k]->mnId;
 
-    // 顶点指针数组（按 id 索引，一次分配）
-    std::vector<g2o::OptimizableGraph::Vertex*> vAllVertices(
-        (size_t)pMap->GetMaxKFid() + 2, nullptr);
+    // 关键帧顶点按 mnId 索引（只覆盖窗口内的 id 范围）；地图点顶点与 vLocalMapPoints 平行存放。
+    // 原先用一个按全图最大地图点 id 扩容的数组（十万级点时约 800 KB 清零），写回时再做哈希查找
+    std::vector<g2o::VertexSE3Expmap*> vKFVertices(maxKFid + 1, nullptr);
 
     // 设置局部关键帧顶点
-    for(list<KeyFrame*>::iterator lit=lLocalKeyFrames.begin(), lend=lLocalKeyFrames.end(); lit!=lend; lit++)
+    for(size_t k=0; k<vLocalKeyFrames.size(); k++)
     {
-        KeyFrame* pKFi = *lit;
+        KeyFrame* pKFi = vLocalKeyFrames[k];
         g2o::VertexSE3Expmap * vSE3 = new g2o::VertexSE3Expmap();
         // 读取位姿
         float poseF[16];
@@ -582,15 +591,13 @@ static void LocalBundleAdjustmentImpl(KeyFrame *pKF, const StopFlagT* pbStopFlag
         vSE3->setId(pKFi->mnId);
         vSE3->setFixed(pKFi->IsOrigin());
         optimizer.addVertex(vSE3);
-        vAllVertices[pKFi->mnId] = vSE3;
-        if(pKFi->mnId>maxKFid)
-            maxKFid=pKFi->mnId;
+        vKFVertices[pKFi->mnId] = vSE3;
     }
 
     // 设置固定关键帧顶点
-    for(list<KeyFrame*>::iterator lit=lFixedCameras.begin(), lend=lFixedCameras.end(); lit!=lend; lit++)
+    for(size_t k=0; k<vFixedCameras.size(); k++)
     {
-        KeyFrame* pKFi = *lit;
+        KeyFrame* pKFi = vFixedCameras[k];
         g2o::VertexSE3Expmap * vSE3 = new g2o::VertexSE3Expmap();
         // 读取位姿
         float poseF[16];
@@ -604,12 +611,10 @@ static void LocalBundleAdjustmentImpl(KeyFrame *pKF, const StopFlagT* pbStopFlag
         vSE3->setId(pKFi->mnId);
         vSE3->setFixed(true);
         optimizer.addVertex(vSE3);
-        vAllVertices[pKFi->mnId] = vSE3;
-        if(pKFi->mnId>maxKFid)
-            maxKFid=pKFi->mnId;
+        vKFVertices[pKFi->mnId] = vSE3;
     }
 
-    const size_t nReserve = lLocalMapPoints.size() * 5 + 16;
+    const size_t nReserve = vLocalMapPoints.size() * 5 + 16;
 
     vector<g2o::EdgeSE3ProjectXYZ*> vpEdgesMono;
     vpEdgesMono.reserve(nReserve);
@@ -620,11 +625,13 @@ static void LocalBundleAdjustmentImpl(KeyFrame *pKF, const StopFlagT* pbStopFlag
     vector<MapPoint*> vpMapPointEdgeMono;
     vpMapPointEdgeMono.reserve(nReserve);
 
+    std::vector<g2o::VertexSBAPointXYZ*> vPointVertices(vLocalMapPoints.size(), nullptr);
+
     const float thHuberMono = OPTIMIZER_HUBER_TH_2D; // Huber 核阈值
 
-    for(list<MapPoint*>::iterator lit=lLocalMapPoints.begin(), lend=lLocalMapPoints.end(); lit!=lend; lit++)
+    for(size_t k=0; k<vLocalMapPoints.size(); k++)
     {
-        MapPoint* pMP = *lit;
+        MapPoint* pMP = vLocalMapPoints[k];
         g2o::VertexSBAPointXYZ* vPoint = new g2o::VertexSBAPointXYZ();
         cv::Point3f p3f;
         pMP->GetWorldPos(p3f);
@@ -633,34 +640,30 @@ static void LocalBundleAdjustmentImpl(KeyFrame *pKF, const StopFlagT* pbStopFlag
         vPoint->setId(id);
         vPoint->setMarginalized(true);
         optimizer.addVertex(vPoint);
-        if((size_t)id >= vAllVertices.size())
-            vAllVertices.resize((size_t)id + 1, nullptr);
-        vAllVertices[id] = vPoint;
+        vPointVertices[k] = vPoint;
 
         // 设置边
         pMP->ForEachObservation([&](KeyFrame* pKFi, size_t featIdx) {
             if(pKFi && !pKFi->isBad())
             {
+                // 不在窗口内的观测（固定帧被截断、或 id 更大的关键帧）直接跳过。
+                // 不能按 mnId 回退到别的数组：id>maxKFid 的下标会落到地图点顶点上，把点顶点当相机顶点接到边上
+                if(pKFi->mnId > maxKFid)
+                    return;
+                g2o::VertexSE3Expmap* v1 = vKFVertices[pKFi->mnId];
+                if(!v1)
+                    return;
+
                 const cv::KeyPoint &kpUn = pKFi->mvKeysUn[featIdx];
                 Eigen::Matrix<double,2,1> obs;
                 obs << kpUn.pt.x, kpUn.pt.y;
-
-                // 不在窗口内的观测（固定帧被截断、或 id 更大的关键帧）直接跳过。
-                // 不能用 vAllVertices[pKFi->mnId] 回退：id>maxKFid 的下标落在地图点顶点区间，会把点顶点当相机顶点接到边上
-                if(pKFi->mnId > maxKFid)
-                    return;
-                g2o::OptimizableGraph::Vertex* v0 = vPoint;
-                g2o::OptimizableGraph::Vertex* v1 = vAllVertices[pKFi->mnId];
-
-                if(!v0 || !v1)
-                    return;
 
                 g2o::EdgeSE3ProjectXYZ* e = new g2o::EdgeSE3ProjectXYZ();
                 if(!e)
                     return;
 
                 try {
-                    e->setVertex(0, v0);
+                    e->setVertex(0, vPoint);
                     e->setVertex(1, v1);
                     e->setMeasurement(obs);
                     const float &invSigma2 = pKFi->mvInvLevelSigma2[kpUn.octave];
@@ -798,25 +801,25 @@ static void LocalBundleAdjustmentImpl(KeyFrame *pKF, const StopFlagT* pbStopFlag
         }
 
         // 关键帧
-        for(list<KeyFrame*>::iterator lit=lLocalKeyFrames.begin(), lend=lLocalKeyFrames.end(); lit!=lend; lit++)
+        for(size_t k=0; k<vLocalKeyFrames.size(); k++)
         {
-            KeyFrame* pKF = *lit;
-            if(!pKF || pKF->isBad())
+            KeyFrame* pKFk = vLocalKeyFrames[k];
+            if(!pKFk || pKFk->isBad())
                 continue;
-            g2o::VertexSE3Expmap* vSE3 = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(pKF->mnId));
+            g2o::VertexSE3Expmap* vSE3 = vKFVertices[pKFk->mnId];
             if(!vSE3)
                 continue;
             g2o::SE3Quat SE3quat = vSE3->estimate();
-            pKF->SetPose(Converter::toCvMat(SE3quat));
+            pKFk->SetPose(Converter::toCvMat(SE3quat));
         }
 
         // 地图点位置赋值
-        for(list<MapPoint*>::iterator lit=lLocalMapPoints.begin(), lend=lLocalMapPoints.end(); lit!=lend; lit++)
+        for(size_t k=0; k<vLocalMapPoints.size(); k++)
         {
-            MapPoint* pMP = *lit;
+            MapPoint* pMP = vLocalMapPoints[k];
             if(!pMP || pMP->isBad())
                 continue;
-            g2o::VertexSBAPointXYZ* vPoint = static_cast<g2o::VertexSBAPointXYZ*>(optimizer.vertex(pMP->mnId+maxKFid+1));
+            g2o::VertexSBAPointXYZ* vPoint = vPointVertices[k];
             if(!vPoint)
                 continue;
             pMP->SetWorldPos(Converter::toCvMat(vPoint->estimate()));
@@ -824,9 +827,9 @@ static void LocalBundleAdjustmentImpl(KeyFrame *pKF, const StopFlagT* pbStopFlag
     }
 
     // 在 mMutexMapUpdate 锁释放后，在锁外无锁更新地图点的法线和深度（消除主线程等待排队）
-    for(list<MapPoint*>::iterator lit=lLocalMapPoints.begin(), lend=lLocalMapPoints.end(); lit!=lend; lit++)
+    for(size_t k=0; k<vLocalMapPoints.size(); k++)
     {
-        MapPoint* pMP = *lit;
+        MapPoint* pMP = vLocalMapPoints[k];
         if(pMP && !pMP->isBad())
             pMP->UpdateNormalAndDepth();
     }

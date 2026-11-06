@@ -532,6 +532,21 @@ float MapPoint::GetMaxDistanceInvariance()
     return mfMaxDistInvariance.load(std::memory_order_relaxed);
 }
 
+// 两个 PredictScale 重载的公共实现：第一个满足 maxDistance <= currentDist * s[level] 的层
+int MapPoint::PredictScaleFromMaxDist(const float maxDistance, const float currentDist,
+                                      const std::vector<float>& vScaleFactors, const int nLevels)
+{
+    int nScale = 0;
+    for (; nScale < nLevels; ++nScale)
+    {
+        if (maxDistance <= currentDist * vScaleFactors[nScale])
+            break;
+    }
+    if (nScale >= nLevels)
+        nScale = nLevels - 1;
+    return nScale;
+}
+
 int MapPoint::PredictScale(const float &currentDist, KeyFrame* pKF)
 {
     float maxDistance;
@@ -539,19 +554,7 @@ int MapPoint::PredictScale(const float &currentDist, KeyFrame* pKF)
         unique_lock<mutex> lock(mMutexPos);
         maxDistance = mfMaxDistance;
     }
-
-    int nScale = 0;
-    const std::vector<float>& mvScaleFactors = pKF->mvScaleFactors;
-    const int nLevels = pKF->mnScaleLevels;
-    for (; nScale < nLevels; ++nScale)
-    {
-        if (maxDistance <= currentDist * mvScaleFactors[nScale])
-            break;
-    }
-    if (nScale >= nLevels)
-        nScale = nLevels - 1;
-
-    return nScale;
+    return PredictScaleFromMaxDist(maxDistance, currentDist, pKF->mvScaleFactors, pKF->mnScaleLevels);
 }
 
 int MapPoint::PredictScale(const float &currentDist, Frame* pF)
@@ -561,19 +564,20 @@ int MapPoint::PredictScale(const float &currentDist, Frame* pF)
         unique_lock<mutex> lock(mMutexPos);
         maxDistance = mfMaxDistance;
     }
+    return PredictScaleFromMaxDist(maxDistance, currentDist, pF->mvScaleFactors, pF->mnScaleLevels);
+}
 
-    int nScale = 0;
-    const std::vector<float>& mvScaleFactors = pF->mvScaleFactors;
-    const int nLevels = pF->mnScaleLevels;
-    for (; nScale < nLevels; ++nScale)
-    {
-        if (maxDistance <= currentDist * mvScaleFactors[nScale])
-            break;
-    }
-    if (nScale >= nLevels)
-        nScale = nLevels - 1;
-
-    return nScale;
+void MapPoint::GetTrackingSnapshot(cv::Point3f& pos, cv::Point3f& normal, float& maxDistance)
+{
+    // isInFrustum 需要位置、法向和 mfMaxDistance：一次加锁取出，原先要取三次 mMutexPos
+    std::unique_lock<std::mutex> lock(mMutexPos);
+    pos.x = mWorldPos.at<float>(0);
+    pos.y = mWorldPos.at<float>(1);
+    pos.z = mWorldPos.at<float>(2);
+    normal.x = mNormalVector.at<float>(0);
+    normal.y = mNormalVector.at<float>(1);
+    normal.z = mNormalVector.at<float>(2);
+    maxDistance = mfMaxDistance;
 }
 
 void MapPoint::SetMapId(int id)

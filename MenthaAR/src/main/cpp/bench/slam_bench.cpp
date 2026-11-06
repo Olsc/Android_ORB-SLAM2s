@@ -72,6 +72,8 @@ int main(int argc, char** argv)
     msTrack.reserve((size_t)nFrames * repeat);
     int stateCount[8] = {0};
     long nSyncTimeouts = 0;
+    double backendTotal = 0.0; // 同步模式下等待后端的时间（≈ 每个关键帧的 LM+LC 处理时间）
+    long backendCount = 0;
     long frameIdx = 0;
 
     const auto tAll0 = std::chrono::steady_clock::now();
@@ -97,7 +99,12 @@ int main(int argc, char** argv)
                 for (auto p : v) if (p) nTracked++;
             }
 
-            if (sync && !slam.WaitForBackendIdle(20000)) nSyncTimeouts++;
+            if (sync) {
+                const auto tb0 = std::chrono::steady_clock::now();
+                if (!slam.WaitForBackendIdle(20000)) nSyncTimeouts++;
+                const double backendMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - tb0).count();
+                if (backendMs > 2.0) { backendTotal += backendMs; backendCount++; } // 只统计真正处理了关键帧的等待
+            }
 
             std::fprintf(fout, "%ld %d %d %.3f %d %d", frameIdx, state, nTracked, ms,
                          slam.GetNumKeyFrames(), slam.GetNumMapPoints());
@@ -128,6 +135,8 @@ int main(int argc, char** argv)
                  frameIdx, nKF, nMP, sync ? 1 : 0, nSyncTimeouts);
     std::fprintf(fout, "# states: NO_IMAGES=%d NOT_INIT=%d OK=%d LOST=%d\n",
                  stateCount[0], stateCount[1], stateCount[2], stateCount[3]);
+    std::fprintf(fout, "# backend: keyframe_waits=%ld total_ms=%.1f mean_ms=%.2f\n", backendCount, backendTotal,
+                 backendCount ? backendTotal / backendCount : 0.0);
     std::fprintf(fout, "# track_ms: mean=%.3f p50=%.3f p90=%.3f p99=%.3f max=%.3f total_wall_s=%.3f\n",
                  msTrack.empty() ? 0.0 : sum / msTrack.size(), pct(0.5), pct(0.9), pct(0.99),
                  sorted.empty() ? 0.0 : sorted.back(),
@@ -135,9 +144,9 @@ int main(int argc, char** argv)
     std::fclose(fout);
     std::fclose(fin);
 
-    std::printf("frames=%ld keyframes=%d mappoints=%d OK=%d LOST=%d mean_ms=%.3f p50=%.3f p90=%.3f wall_s=%.2f syncTimeouts=%ld\n",
+    std::printf("frames=%ld keyframes=%d mappoints=%d OK=%d LOST=%d mean_ms=%.3f p50=%.3f p90=%.3f backend_ms=%.0f wall_s=%.2f syncTimeouts=%ld\n",
                 frameIdx, nKF, nMP, stateCount[2], stateCount[3],
-                msTrack.empty() ? 0.0 : sum / msTrack.size(), pct(0.5), pct(0.9),
+                msTrack.empty() ? 0.0 : sum / msTrack.size(), pct(0.5), pct(0.9), backendTotal,
                 std::chrono::duration<double>(tAll1 - tAll0).count(), nSyncTimeouts);
 
     slam.Shutdown();

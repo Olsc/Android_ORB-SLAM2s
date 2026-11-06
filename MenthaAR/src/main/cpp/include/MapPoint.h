@@ -134,6 +134,10 @@ public:
     float GetMaxDistanceInvariance();
     int PredictScale(const float &currentDist, KeyFrame*pKF);
     int PredictScale(const float &currentDist, Frame* pF);
+    static int PredictScaleFromMaxDist(const float maxDistance, const float currentDist,
+                                       const std::vector<float>& vScaleFactors, const int nLevels);
+    // 一次加锁取出位置、法向与最大距离（isInFrustum 用）
+    void GetTrackingSnapshot(cv::Point3f& pos, cv::Point3f& normal, float& maxDistance);
     inline void SetNormalAndDepth(const cv::Mat &normal, float minD, float maxD){
         std::lock_guard<std::mutex> lock(mMutexFeatures);
         mNormalVector = normal.clone();
@@ -159,7 +163,6 @@ public:
     // 标记从持久化地图加载的点用于可视化
     bool mbFromLoadedMap = false;
     // 标记在当前帧中的匹配点状态
-    bool mbMatchedInCurrentFrame = false;
 
     // 跟踪使用的变量
     float mTrackProjX;

@@ -334,7 +334,6 @@ void ORB_SLAM2::Tracking::BindLoadedMapPointsUsingSnapshots()
         MapPoint* pMP = (*refMPs)[c.refIdx];
         if(pMP && !pMP->isBad()){
             mCurrentFrame.mvpMapPoints[c.frameIdx] = pMP;
-            pMP->mbMatchedInCurrentFrame = true;
             frameUsed[c.frameIdx] = true;
             projBinds++;
         }
@@ -1062,7 +1061,6 @@ void Tracking::Track()
         // 仅支持单目初始化
         MonocularInitialization();
 
-        mpFrameDrawer->Update(this);
 
         if (mState != OK)
             return;
@@ -1199,7 +1197,6 @@ void Tracking::Track()
         }
 
         // 更新绘制器
-        mpFrameDrawer->Update(this);
 
         // 如果跟踪良好，检查是否插入关键帧
         if(bOK)
@@ -1603,7 +1600,6 @@ void Tracking::CreateInitialMapMonocular()
 
     mLastFrame = Frame(mCurrentFrame);
 
-    mpMap->SetReferenceMapPoints(mvpLocalMapPoints);
 
     //mpMapDrawer->SetCurrentCameraPose(pKFcur->GetPose());
 
@@ -1786,8 +1782,6 @@ bool Tracking::TrackWithMotionModel()
 bool Tracking::TrackLocalMap()
 {
     UpdateLocalMap();
-    // 在新匹配前清除匹配标志
-    for(MapPoint* p : mvpLocalMapPoints){ if(p) p->mbMatchedInCurrentFrame = false; }
 
     // 等待SLAM建立一定规模的新地图（稳定）后，再尝试混合已加载的地图点。
     if((int)mvpLocalMapPoints.size()<LOCAL_MAP_SUPPLEMENT_TRIGGER)
@@ -1947,7 +1941,6 @@ bool Tracking::TrackLocalMap()
                                 if(refMPsStrong && i < refMPsStrong->size()) pBind = (*refMPsStrong)[i];
                                 if(pBind && !pBind->isBad()){
                                     mCurrentFrame.mvpMapPoints[bestIdx] = pBind;
-                                    pBind->mbMatchedInCurrentFrame = true;
                                     strongBinds++;
                                     if(strongBinds >= mCfgMaxProjBinds) break;
                                 }
@@ -2017,7 +2010,6 @@ bool Tracking::TrackLocalMap()
             if(!mCurrentFrame.mvbOutlier[i])
             {
                 mCurrentFrame.mvpMapPoints[i]->IncreaseFound();
-                mCurrentFrame.mvpMapPoints[i]->mbMatchedInCurrentFrame = true;
                 if(mCurrentFrame.mvpMapPoints[i]->mbFromLoadedMap){
                     mnLoadedMapInliers++;
                     if(mCurrentFrame.mvpMapPoints[i]->mnMapId == curMapIdForCount)
@@ -2039,14 +2031,6 @@ bool Tracking::TrackLocalMap()
         }
     }
 
-    // 进一步确保：当前帧中来自已加载地图且非外点的匹配，统一标记为本帧已匹配
-    for(int i=0; i<mCurrentFrame.N; ++i)
-    {
-        MapPoint* p = mCurrentFrame.mvpMapPoints[i];
-        if(!p) continue;
-        if(mCurrentFrame.mvbOutlier[i]) continue;
-        if(p->mbFromLoadedMap) p->mbMatchedInCurrentFrame = true;
-    }
 
     if(mbHaveMapAlign){
         if(mnLoadedMapInliersCurMap < RELOC_KEEP_ALIGN_MIN_CURMAP_INLIERS) {
@@ -2359,7 +2343,6 @@ void Tracking::SearchLocalPoints()
 void Tracking::UpdateLocalMap()
 {
     // 这是为了可视化
-    mpMap->SetReferenceMapPoints(mvpLocalMapPoints);
 
     // 更新
     UpdateLocalKeyFrames();
@@ -2803,7 +2786,6 @@ bool Tracking::Relocalization()
                                         MapPoint* pMP = (*refMPs)[r];
                                         if(pMP && !pMP->isBad()) {
                                             mCurrentFrame.mvpMapPoints[q] = pMP;
-                                            pMP->mbMatchedInCurrentFrame = true;
                                         }
                                     }
                                 }
