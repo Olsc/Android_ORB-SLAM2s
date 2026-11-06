@@ -204,9 +204,8 @@ cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInlie
             mnIterations++;
             reset_correspondences();
 
-            std::fill(vUsed.begin(), vUsed.end(), false);
-
-            // 获取最小点集
+            // 获取最小点集（拒绝采样去重；迭代末只清本轮置位的 mRansacMinSet 个标志，而不是整份 fill(N)）
+            int picked[16];
             for(short i = 0; i < mRansacMinSet; ++i)
             {
                 int idx;
@@ -214,9 +213,12 @@ cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInlie
                     idx = mLcg.randomInt(0, N-1);
                 } while(vUsed[idx]);
                 vUsed[idx] = true;
+                picked[i] = idx;
 
                 add_correspondence(mvP3Dw[idx].x,mvP3Dw[idx].y,mvP3Dw[idx].z,mvP2D[idx].x,mvP2D[idx].y);
             }
+            for(short i = 0; i < mRansacMinSet; ++i)
+                vUsed[picked[i]] = false;
 
             // 计算相机位姿
             compute_pose(mRi, mti);
@@ -229,7 +231,8 @@ cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInlie
                 // 如果是目前的最佳解，保存它
                 if(mnInliersi>mnBestInliers)
                 {
-                    mvbBestInliers = mvbInliersi;
+                    mvbBestInliers.swap(mvbInliersi); // CheckInliers 每轮整份重写 mvbInliersi，交换即可
+                    if((int)mvbInliersi.size()!=N) mvbInliersi.resize(N);
                     mnBestInliers = mnInliersi;
 
                     cv::Mat Rcw(3,3,CV_64F,mRi);

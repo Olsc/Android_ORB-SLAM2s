@@ -40,6 +40,7 @@
 
 #include "KeyFrame.h"
 #include "Random.h"
+#include "Config.h"
 
 namespace ORB_SLAM2
 {
@@ -62,14 +63,15 @@ public:
 
 protected:
 
-    void ComputeCentroid(cv::Mat &P, cv::Mat &Pr, cv::Mat &C);
-
-    void ComputeSim3(cv::Mat &P1, cv::Mat &P2);
+    // Horn 闭式解，输入为 3 个对应点（每列一个点），全部在 double 中计算
+    void ComputeSim3(const double P1[3][SIM3_RANSAC_MIN_SET], const double P2[3][SIM3_RANSAC_MIN_SET]);
 
     void CheckInliers();
 
-    void Project(const std::vector<cv::Mat> &vP3Dw, std::vector<cv::Point2f> &vP2D, cv::Mat Tcw, cv::Mat K);
-    void FromCameraToImage(const std::vector<cv::Mat> &vP3Dc, std::vector<cv::Point2f> &vP2D, cv::Mat K);
+    // Xc' = s*R*Xc + t 后投影；Zc<=0 的点写 NaN（比较恒为假 → 外点）
+    static void Project(const std::vector<cv::Point3f> &vP3Dc, std::vector<cv::Point2f> &vP2D,
+                        const double R[3][3], const double s, const double t[3], const cv::Mat &K);
+    static void FromCameraToImage(const std::vector<cv::Point3f> &vP3Dc, std::vector<cv::Point2f> &vP2D, const cv::Mat &K);
 
 protected:
 
@@ -77,8 +79,8 @@ protected:
     KeyFrame* mpKF1;
     KeyFrame* mpKF2;
 
-    std::vector<cv::Mat> mvX3Dc1;
-    std::vector<cv::Mat> mvX3Dc2;
+    std::vector<cv::Point3f> mvX3Dc1;
+    std::vector<cv::Point3f> mvX3Dc2;
     std::vector<MapPoint*> mvpMapPoints1;
     std::vector<MapPoint*> mvpMapPoints2;
     std::vector<MapPoint*> mvpMatches12;
@@ -92,7 +94,12 @@ protected:
     int N;
     int mN1;
 
-    // 当前估计
+    // 当前估计（double 为计算与投影检验用；float cv::Mat 为对外接口）
+    double mR12d[3][3];
+    double mt12d[3];
+    double ms12d;
+    double mR21d[3][3]; // R12^T / s
+    double mt21d[3];
     cv::Mat mR12i;
     cv::Mat mt12i;
     float ms12i;
@@ -113,9 +120,11 @@ protected:
     // 随机选择的索引
     std::vector<size_t> mvAllIndices;
 
-    // 投影
+    // 投影（mvP2im1/mvP1im2 为 CheckInliers 复用的缓冲，不再每次迭代分配）
     std::vector<cv::Point2f> mvP1im1;
     std::vector<cv::Point2f> mvP2im2;
+    std::vector<cv::Point2f> mvP2im1;
+    std::vector<cv::Point2f> mvP1im2;
 
     // RANSAC概率
     double mRansacProb;

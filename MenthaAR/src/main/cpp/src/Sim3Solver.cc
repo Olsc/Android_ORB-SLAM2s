@@ -37,6 +37,7 @@
 
 #include <vector>
 #include <cmath>
+#include <limits>
 #include <opencv2/core/core.hpp>
 
 #include "KeyFrame.h"
@@ -63,10 +64,11 @@ Sim3Solver::Sim3Solver(KeyFrame *pKF1, KeyFrame *pKF2, const vector<MapPoint *> 
     mvX3Dc1.reserve(mN1);
     mvX3Dc2.reserve(mN1);
 
-    cv::Mat Rcw1 = pKF1->GetRotation();
-    cv::Mat tcw1 = pKF1->GetTranslation();
-    cv::Mat Rcw2 = pKF2->GetRotation();
-    cv::Mat tcw2 = pKF2->GetTranslation();
+    float Rcw1[9], tcw1[3], Rcw2[9], tcw2[3];
+    pKF1->GetRotation(Rcw1);
+    pKF1->GetTranslation(tcw1);
+    pKF2->GetRotation(Rcw2);
+    pKF2->GetTranslation(tcw2);
 
     mvAllIndices.reserve(mN1);
 
@@ -103,11 +105,16 @@ Sim3Solver::Sim3Solver(KeyFrame *pKF1, KeyFrame *pKF2, const vector<MapPoint *> 
             mvpMapPoints2.push_back(pMP2);
             mvnIndices1.push_back(i1);
 
-            cv::Mat X3D1w = pMP1->GetWorldPos();
-            mvX3Dc1.push_back(Rcw1*X3D1w+tcw1);
-
-            cv::Mat X3D2w = pMP2->GetWorldPos();
-            mvX3Dc2.push_back(Rcw2*X3D2w+tcw2);
+            // 相机坐标 Xc = Rcw*Xw + tcw（标量，不再为每个点分配 3x1 cv::Mat）
+            cv::Point3f X1w, X2w;
+            pMP1->GetWorldPos(X1w);
+            pMP2->GetWorldPos(X2w);
+            mvX3Dc1.push_back(cv::Point3f(Rcw1[0]*X1w.x + Rcw1[1]*X1w.y + Rcw1[2]*X1w.z + tcw1[0],
+                                          Rcw1[3]*X1w.x + Rcw1[4]*X1w.y + Rcw1[5]*X1w.z + tcw1[1],
+                                          Rcw1[6]*X1w.x + Rcw1[7]*X1w.y + Rcw1[8]*X1w.z + tcw1[2]));
+            mvX3Dc2.push_back(cv::Point3f(Rcw2[0]*X2w.x + Rcw2[1]*X2w.y + Rcw2[2]*X2w.z + tcw2[0],
+                                          Rcw2[3]*X2w.x + Rcw2[4]*X2w.y + Rcw2[5]*X2w.z + tcw2[1],
+                                          Rcw2[6]*X2w.x + Rcw2[7]*X2w.y + Rcw2[8]*X2w.z + tcw2[2]));
 
             mvAllIndices.push_back(idx);
             idx++;
@@ -132,6 +139,8 @@ void Sim3Solver::SetRansacParameters(double probability, int minInliers, int max
     N = mvpMapPoints1.size(); // 对应点的数量
 
     mvbInliersi.resize(N);
+    mvP2im1.resize(N);
+    mvP1im2.resize(N);
 
     // 根据对应点的数量调整参数
     float epsilon = (float)mRansacMinInliers/N;
@@ -161,10 +170,9 @@ cv::Mat Sim3Solver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInli
         return cv::Mat();
     }
 
-    vector<size_t> vAvailableIndices;
-
-    cv::Mat P3Dc1i(3,3,CV_32F);
-    cv::Mat P3Dc2i(3,3,CV_32F);
+    size_t sample[SIM3_RANSAC_MIN_SET];
+    double P1[3][SIM3_RANSAC_MIN_SET]; // 每列一个点
+    double P2[3][SIM3_RANSAC_MIN_SET];
 
     int nCurrentIterations = 0;
     while(mnIterations<mRansacMaxIts && nCurrentIterations<nIterations)
@@ -172,23 +180,17 @@ cv::Mat Sim3Solver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInli
         nCurrentIterations++;
         mnIterations++;
 
-        vAvailableIndices = mvAllIndices;
-
-        // 获取最小点集
-        for(short i = 0; i < SIM3_RANSAC_MIN_SET; ++i)
+        // 交换-恢复抽样：与“整份拷贝可用下标再删除”的实现产生相同样本，写入 O(3) 而非 O(N)
+        SampleWithoutReplacement(mLcg, mvAllIndices, SIM3_RANSAC_MIN_SET, sample);
+        for(int i = 0; i < SIM3_RANSAC_MIN_SET; ++i)
         {
-            int randi = mLcg.randomInt(0, (int)vAvailableIndices.size() - 1);
-
-            int idx = vAvailableIndices[randi];
-
-            mvX3Dc1[idx].copyTo(P3Dc1i.col(i));
-            mvX3Dc2[idx].copyTo(P3Dc2i.col(i));
-
-            vAvailableIndices[randi] = vAvailableIndices.back();
-            vAvailableIndices.pop_back();
+            const cv::Point3f &a = mvX3Dc1[sample[i]];
+            const cv::Point3f &b = mvX3Dc2[sample[i]];
+            P1[0][i] = a.x; P1[1][i] = a.y; P1[2][i] = a.z;
+            P2[0][i] = b.x; P2[1][i] = b.y; P2[2][i] = b.z;
         }
 
-        ComputeSim3(P3Dc1i,P3Dc2i);
+        ComputeSim3(P1,P2);
 
         CheckInliers();
 
@@ -224,156 +226,116 @@ cv::Mat Sim3Solver::find(vector<bool> &vbInliers12, int &nInliers)
     return iterate(mRansacMaxIts,bFlag,vbInliers12,nInliers);
 }
 
-void Sim3Solver::ComputeCentroid(cv::Mat &P, cv::Mat &Pr, cv::Mat &C)
+void Sim3Solver::ComputeSim3(const double P1[3][SIM3_RANSAC_MIN_SET], const double P2[3][SIM3_RANSAC_MIN_SET])
 {
-    const int cols = P.cols;
-    const float invCols = 1.0f / (float)cols;
-
-    float sumX = 0.0f, sumY = 0.0f, sumZ = 0.0f;
-    for (int i = 0; i < cols; ++i) {
-        sumX += P.at<float>(0, i);
-        sumY += P.at<float>(1, i);
-        sumZ += P.at<float>(2, i);
-    }
-
-    const float cx = sumX * invCols;
-    const float cy = sumY * invCols;
-    const float cz = sumZ * invCols;
-
-    C.create(3, 1, P.type());
-    C.at<float>(0) = cx;
-    C.at<float>(1) = cy;
-    C.at<float>(2) = cz;
-
-    Pr.create(3, cols, P.type());
-    for (int i = 0; i < cols; ++i) {
-        Pr.at<float>(0, i) = P.at<float>(0, i) - cx;
-        Pr.at<float>(1, i) = P.at<float>(1, i) - cy;
-        Pr.at<float>(2, i) = P.at<float>(2, i) - cz;
-    }
-}
-
-void Sim3Solver::ComputeSim3(cv::Mat &P1, cv::Mat &P2)
-{
-    // 自定义实现：
-    // Horn 1987，使用单位四元数的绝对方向闭式解
+    // Horn 1987：单位四元数的绝对定向闭式解。全部在 double 中进行（原实现为 float 求和与 float 特征分解），
+    // 结果以 float 写入 mR12i/mt12i/mT12i/mT21i 供外部使用，同时保留 double 版本给投影检验
+    const int n = SIM3_RANSAC_MIN_SET;
+    const double invN = 1.0 / n;
 
     // 步骤1：质心和相对坐标
+    double O1[3] = {0,0,0}, O2[3] = {0,0,0};
+    for(int i=0;i<n;i++) for(int r=0;r<3;r++) { O1[r] += P1[r][i]; O2[r] += P2[r][i]; }
+    for(int r=0;r<3;r++) { O1[r] *= invN; O2[r] *= invN; }
 
-    cv::Mat Pr1(P1.size(),P1.type()); // 相对于质心的坐标 (集合1)
-    cv::Mat Pr2(P2.size(),P2.type()); // 相对于质心的坐标 (集合2)
-    cv::Mat O1(3,1,Pr1.type()); // P1的质心
-    cv::Mat O2(3,1,Pr2.type()); // P2的质心
+    double Pr1[3][SIM3_RANSAC_MIN_SET], Pr2[3][SIM3_RANSAC_MIN_SET];
+    for(int i=0;i<n;i++) for(int r=0;r<3;r++) { Pr1[r][i] = P1[r][i]-O1[r]; Pr2[r][i] = P2[r][i]-O2[r]; }
 
-    ComputeCentroid(P1,Pr1,O1);
-    ComputeCentroid(P2,Pr2,O2);
+    // 步骤2：M = Pr2 * Pr1^T
+    double M[3][3];
+    for(int r=0;r<3;r++) for(int c=0;c<3;c++) { double s=0; for(int i=0;i<n;i++) s += Pr2[r][i]*Pr1[c][i]; M[r][c]=s; }
 
-    // 步骤2：计算M矩阵
+    // 步骤3：N 矩阵（4x4 对称）
+    cv::Mat Nm(4,4,CV_64F);
+    const double N11 = M[0][0]+M[1][1]+M[2][2];
+    const double N12 = M[1][2]-M[2][1];
+    const double N13 = M[2][0]-M[0][2];
+    const double N14 = M[0][1]-M[1][0];
+    const double N22 = M[0][0]-M[1][1]-M[2][2];
+    const double N23 = M[0][1]+M[1][0];
+    const double N24 = M[2][0]+M[0][2];
+    const double N33 = -M[0][0]+M[1][1]-M[2][2];
+    const double N34 = M[1][2]+M[2][1];
+    const double N44 = -M[0][0]-M[1][1]+M[2][2];
+    double* nm = Nm.ptr<double>();
+    nm[0]=N11; nm[1]=N12; nm[2]=N13; nm[3]=N14;
+    nm[4]=N12; nm[5]=N22; nm[6]=N23; nm[7]=N24;
+    nm[8]=N13; nm[9]=N23; nm[10]=N33; nm[11]=N34;
+    nm[12]=N14; nm[13]=N24; nm[14]=N34; nm[15]=N44;
 
-    cv::Mat M = Pr2*Pr1.t();
-
-    // 步骤3：计算N矩阵
-
-    double N11, N12, N13, N14, N22, N23, N24, N33, N34, N44;
-
-    cv::Mat N(4,4,P1.type());
-
-    N11 = M.at<float>(0,0)+M.at<float>(1,1)+M.at<float>(2,2);
-    N12 = M.at<float>(1,2)-M.at<float>(2,1);
-    N13 = M.at<float>(2,0)-M.at<float>(0,2);
-    N14 = M.at<float>(0,1)-M.at<float>(1,0);
-    N22 = M.at<float>(0,0)-M.at<float>(1,1)-M.at<float>(2,2);
-    N23 = M.at<float>(0,1)+M.at<float>(1,0);
-    N24 = M.at<float>(2,0)+M.at<float>(0,2);
-    N33 = -M.at<float>(0,0)+M.at<float>(1,1)-M.at<float>(2,2);
-    N34 = M.at<float>(1,2)+M.at<float>(2,1);
-    N44 = -M.at<float>(0,0)-M.at<float>(1,1)+M.at<float>(2,2);
-
-    N = (cv::Mat_<float>(4,4) << N11, N12, N13, N14,
-                                 N12, N22, N23, N24,
-                                 N13, N23, N33, N34,
-                                 N14, N24, N34, N44);
-
-    // 步骤4：最大特征值的特征向量
-
+    // 步骤4：最大特征值的特征向量（OpenCV 按降序返回）
     cv::Mat eval, evec;
-    // 计算最大特征值对应特征向量，OpenCV返回按降序排列
-    cv::eigen(N,eval,evec);
-    // 直接用四元数构造旋转矩阵
-    const float qw = evec.at<float>(0,0);
-    const float qx = evec.at<float>(0,1);
-    const float qy = evec.at<float>(0,2);
-    const float qz = evec.at<float>(0,3);
-    const float nq = std::sqrt(qw*qw+qx*qx+qy*qy+qz*qz)+1e-12f;
-    const float w = qw/nq, x = qx/nq, y = qy/nq, z = qz/nq;
-    mR12i.create(3,3,P1.type());
-    const float xx = x*x, yy = y*y, zz = z*z;
-    const float xy = x*y, xz = x*z, yz = y*z;
-    const float wx = w*x, wy = w*y, wz = w*z;
-    mR12i.at<float>(0,0) = 1.0f - 2.0f*(yy+zz);
-    mR12i.at<float>(0,1) = 2.0f*(xy - wz);
-    mR12i.at<float>(0,2) = 2.0f*(xz + wy);
-    mR12i.at<float>(1,0) = 2.0f*(xy + wz);
-    mR12i.at<float>(1,1) = 1.0f - 2.0f*(xx+zz);
-    mR12i.at<float>(1,2) = 2.0f*(yz - wx);
-    mR12i.at<float>(2,0) = 2.0f*(xz - wy);
-    mR12i.at<float>(2,1) = 2.0f*(yz + wx);
-    mR12i.at<float>(2,2) = 1.0f - 2.0f*(xx+yy);
+    cv::eigen(Nm,eval,evec);
+    const double qw0 = evec.at<double>(0,0);
+    const double qx0 = evec.at<double>(0,1);
+    const double qy0 = evec.at<double>(0,2);
+    const double qz0 = evec.at<double>(0,3);
+    const double nq = std::sqrt(qw0*qw0+qx0*qx0+qy0*qy0+qz0*qz0)+1e-300;
+    const double w = qw0/nq, x = qx0/nq, y = qy0/nq, z = qz0/nq;
+    const double xx = x*x, yy = y*y, zz = z*z;
+    const double xy = x*y, xz = x*z, yz = y*z;
+    const double wx = w*x, wy = w*y, wz = w*z;
+    mR12d[0][0] = 1.0 - 2.0*(yy+zz); mR12d[0][1] = 2.0*(xy - wz);       mR12d[0][2] = 2.0*(xz + wy);
+    mR12d[1][0] = 2.0*(xy + wz);     mR12d[1][1] = 1.0 - 2.0*(xx+zz);   mR12d[1][2] = 2.0*(yz - wx);
+    mR12d[2][0] = 2.0*(xz - wy);     mR12d[2][1] = 2.0*(yz + wx);       mR12d[2][2] = 1.0 - 2.0*(xx+yy);
 
-    // 步骤5：旋转集合2
+    // 步骤5：旋转集合2  P3 = R12 * Pr2
+    double P3[3][SIM3_RANSAC_MIN_SET];
+    for(int i=0;i<n;i++) for(int r=0;r<3;r++)
+        P3[r][i] = mR12d[r][0]*Pr2[0][i] + mR12d[r][1]*Pr2[1][i] + mR12d[r][2]*Pr2[2][i];
 
-    cv::Mat P3 = mR12i*Pr2;
-
-    // 步骤6：缩放
+    // 步骤6：尺度 s = <Pr1,P3> / <P3,P3>
     {
-        double nom = Pr1.dot(P3);
-        double den = P3.dot(P3);
-        ms12i = nom/den;
+        double nom = 0, den = 0;
+        for(int i=0;i<n;i++) for(int r=0;r<3;r++) { nom += Pr1[r][i]*P3[r][i]; den += P3[r][i]*P3[r][i]; }
+        ms12d = nom/den;
     }
 
-    // 步骤7：平移
+    // 步骤7：平移 t = O1 - s*R12*O2
+    for(int r=0;r<3;r++)
+        mt12d[r] = O1[r] - ms12d*(mR12d[r][0]*O2[0] + mR12d[r][1]*O2[1] + mR12d[r][2]*O2[2]);
 
-    mt12i.create(1,3,P1.type());
-    mt12i = O1 - ms12i*mR12i*O2;
+    // 步骤8：T21 = [R^T/s | -R^T t / s]
+    const double invS = 1.0/ms12d;
+    for(int r=0;r<3;r++) for(int c=0;c<3;c++) mR21d[r][c] = mR12d[c][r]*invS;
+    for(int r=0;r<3;r++) mt21d[r] = -(mR21d[r][0]*mt12d[0] + mR21d[r][1]*mt12d[1] + mR21d[r][2]*mt12d[2]);
 
-    // 步骤8：变换
-
-    // 步骤8.1 T12
-    mT12i = cv::Mat::eye(4,4,P1.type());
-
-    cv::Mat sR = ms12i*mR12i;
-
-    sR.copyTo(mT12i.rowRange(0,3).colRange(0,3));
-    mt12i.copyTo(mT12i.rowRange(0,3).col(3));
-
-    // 步骤8.2 T21
-
-    mT21i = cv::Mat::eye(4,4,P1.type());
-
-    cv::Mat sRinv = (1.0/ms12i)*mR12i.t();
-
-    sRinv.copyTo(mT21i.rowRange(0,3).colRange(0,3));
-    cv::Mat tinv = -sRinv*mt12i;
-    tinv.copyTo(mT21i.rowRange(0,3).col(3));
+    // 对外的 float 版本
+    ms12i = (float)ms12d;
+    mR12i.create(3,3,CV_32F);
+    mt12i.create(3,1,CV_32F);
+    for(int r=0;r<3;r++) { for(int c=0;c<3;c++) mR12i.at<float>(r,c) = (float)mR12d[r][c]; mt12i.at<float>(r) = (float)mt12d[r]; }
+    mT12i = cv::Mat::eye(4,4,CV_32F);
+    mT21i = cv::Mat::eye(4,4,CV_32F);
+    for(int r=0;r<3;r++)
+    {
+        for(int c=0;c<3;c++)
+        {
+            mT12i.at<float>(r,c) = (float)(ms12d*mR12d[r][c]);
+            mT21i.at<float>(r,c) = (float)mR21d[r][c];
+        }
+        mT12i.at<float>(r,3) = (float)mt12d[r];
+        mT21i.at<float>(r,3) = (float)mt21d[r];
+    }
 }
 
 void Sim3Solver::CheckInliers()
 {
-    vector<cv::Point2f> vP1im2, vP2im1;
-    Project(mvX3Dc2,vP2im1,mT12i,mK1);
-    Project(mvX3Dc1,vP1im2,mT21i,mK2);
+    // 2 → 1：用 s*R12, t12 把 Xc2 变到相机 1 再投影；1 → 2 用 T21
+    Project(mvX3Dc2, mvP2im1, mR12d, ms12d, mt12d, mK1);
+    Project(mvX3Dc1, mvP1im2, mR21d, 1.0, mt21d, mK2);
 
     mnInliersi=0;
 
     for(size_t i=0; i<mvP1im1.size(); i++)
     {
-        // 直接访问 Point2f 坐标
-        const float dx1 = mvP1im1[i].x - vP2im1[i].x;
-        const float dy1 = mvP1im1[i].y - vP2im1[i].y;
+        // 任一侧在相机后方（Project 置为 NaN）时比较为假，自然判为外点
+        const float dx1 = mvP1im1[i].x - mvP2im1[i].x;
+        const float dy1 = mvP1im1[i].y - mvP2im1[i].y;
         const float err1 = dx1*dx1 + dy1*dy1;
 
-        const float dx2 = vP1im2[i].x - mvP2im2[i].x;
-        const float dy2 = vP1im2[i].y - mvP2im2[i].y;
+        const float dx2 = mvP1im2[i].x - mvP2im2[i].x;
+        const float dy2 = mvP1im2[i].y - mvP2im2[i].y;
         const float err2 = dx2*dx2 + dy2*dy2;
 
         if(err1<mvnMaxError1[i] && err2<mvnMaxError2[i])
@@ -401,47 +363,38 @@ float Sim3Solver::GetEstimatedScale()
     return mBestScale;
 }
 
-void Sim3Solver::Project(const vector<cv::Mat> &vP3Dw, vector<cv::Point2f> &vP2D, cv::Mat Tcw, cv::Mat K)
+void Sim3Solver::Project(const vector<cv::Point3f> &vP3Dc, vector<cv::Point2f> &vP2D,
+                         const double R[3][3], const double s, const double t[3], const cv::Mat &K)
 {
-    // 提取矩阵元素为标量
-    cv::Mat Rcw = Tcw.rowRange(0,3).colRange(0,3);
-    cv::Mat tcw = Tcw.rowRange(0,3).col(3);
+    const double fx = K.at<float>(0,0);
+    const double fy = K.at<float>(1,1);
+    const double cx = K.at<float>(0,2);
+    const double cy = K.at<float>(1,2);
+    const float nanf = std::numeric_limits<float>::quiet_NaN();
 
-    const float r00 = Rcw.at<float>(0,0); const float r01 = Rcw.at<float>(0,1); const float r02 = Rcw.at<float>(0,2);
-    const float r10 = Rcw.at<float>(1,0); const float r11 = Rcw.at<float>(1,1); const float r12 = Rcw.at<float>(1,2);
-    const float r20 = Rcw.at<float>(2,0); const float r21 = Rcw.at<float>(2,1); const float r22 = Rcw.at<float>(2,2);
+    vP2D.resize(vP3Dc.size());
 
-    const float tx = tcw.at<float>(0);
-    const float ty = tcw.at<float>(1);
-    const float tz = tcw.at<float>(2);
-
-    const float &fx = K.at<float>(0,0);
-    const float &fy = K.at<float>(1,1);
-    const float &cx = K.at<float>(0,2);
-    const float &cy = K.at<float>(1,2);
-
-    vP2D.clear();
-    vP2D.reserve(vP3Dw.size());
-
-    for(size_t i=0, iend=vP3Dw.size(); i<iend; i++)
+    for(size_t i=0, iend=vP3Dc.size(); i<iend; i++)
     {
-        const float X = vP3Dw[i].at<float>(0);
-        const float Y = vP3Dw[i].at<float>(1);
-        const float Z = vP3Dw[i].at<float>(2);
+        const double X = vP3Dc[i].x, Y = vP3Dc[i].y, Z = vP3Dc[i].z;
 
-        const float Xc = r00*X + r01*Y + r02*Z + tx;
-        const float Yc = r10*X + r11*Y + r12*Z + ty;
-        const float Zc = r20*X + r21*Y + r22*Z + tz;
+        const double Xc = s*(R[0][0]*X + R[0][1]*Y + R[0][2]*Z) + t[0];
+        const double Yc = s*(R[1][0]*X + R[1][1]*Y + R[1][2]*Z) + t[1];
+        const double Zc = s*(R[2][0]*X + R[2][1]*Y + R[2][2]*Z) + t[2];
 
-        const float invz = 1.0f/Zc;
-        const float u = fx*Xc*invz+cx;
-        const float v = fy*Yc*invz+cy;
+        // 相机后方的点与前方镜像点投影到同一像素，原实现不判断深度符号
+        if(Zc <= 0.0)
+        {
+            vP2D[i] = cv::Point2f(nanf, nanf);
+            continue;
+        }
 
-        vP2D.push_back(cv::Point2f(u, v));
+        const double invz = 1.0/Zc;
+        vP2D[i] = cv::Point2f((float)(fx*Xc*invz+cx), (float)(fy*Yc*invz+cy));
     }
 }
 
-void Sim3Solver::FromCameraToImage(const vector<cv::Mat> &vP3Dc, vector<cv::Point2f> &vP2D, cv::Mat K)
+void Sim3Solver::FromCameraToImage(const vector<cv::Point3f> &vP3Dc, vector<cv::Point2f> &vP2D, const cv::Mat &K)
 {
     const float &fx = K.at<float>(0,0);
     const float &fy = K.at<float>(1,1);
@@ -453,9 +406,9 @@ void Sim3Solver::FromCameraToImage(const vector<cv::Mat> &vP3Dc, vector<cv::Poin
 
     for(size_t i=0, iend=vP3Dc.size(); i<iend; i++)
     {
-        const float invz = 1.0f/(vP3Dc[i].at<float>(2));
-        const float x = vP3Dc[i].at<float>(0)*invz;
-        const float y = vP3Dc[i].at<float>(1)*invz;
+        const float invz = 1.0f/vP3Dc[i].z;
+        const float x = vP3Dc[i].x*invz;
+        const float y = vP3Dc[i].y*invz;
 
         vP2D.push_back(cv::Point2f(fx*x+cx, fy*y+cy));
     }

@@ -68,9 +68,10 @@ private:
     cv::Mat ComputeH21(const vector<cv::Point2f> &vP1, const vector<cv::Point2f> &vP2);
     cv::Mat ComputeF21(const vector<cv::Point2f> &vP1, const vector<cv::Point2f> &vP2);
 
-    float CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vector<bool> &vbMatchesInliers, float sigma);
+    // nInliers 顺带返回内点数，避免得分提升时再数一遍
+    float CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vector<bool> &vbMatchesInliers, float sigma, int &nInliers);
 
-    float CheckFundamental(const cv::Mat &F21, vector<bool> &vbMatchesInliers, float sigma);
+    float CheckFundamental(const cv::Mat &F21, vector<bool> &vbMatchesInliers, float sigma, int &nInliers);
 
     bool ReconstructF(vector<bool> &vbMatchesInliers, cv::Mat &F21, cv::Mat &K,
                       cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated, float minParallax, int minTriangulated);
@@ -109,6 +110,10 @@ private:
 
     // Ransac集合
     vector<vector<size_t> > mvSets;
+
+    // 两帧关键点的归一化坐标与变换（Initialize 中计算一次，H/F 两个线程只读共享）
+    vector<cv::Point2f> mvPn1, mvPn2;
+    cv::Mat mT1, mT2;
 };
 
 } //namespace ORB_SLAM2

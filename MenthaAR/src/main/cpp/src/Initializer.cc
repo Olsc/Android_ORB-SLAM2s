@@ -86,34 +86,23 @@ bool Initializer::Initialize(const Frame &CurrentFrame, const vector<int> &vMatc
     // 最小集选择的索引
     vector<size_t> vAllIndices;
     vAllIndices.reserve(N);
-    vector<size_t> vAvailableIndices;
 
     for(int i=0; i<N; i++)
     {
         vAllIndices.push_back(i);
     }
 
-    // 生成每次迭代的最小样本集
+    // 生成每次迭代的最小样本集（交换-恢复抽样，与逐次拷贝数组的实现产生相同样本）
     mvSets = vector< vector<size_t> >(mMaxIterations,vector<size_t>(INITIALIZER_RANSAC_MIN_SET,0));
 
     LCG lcg(0);
 
     for(int it=0; it<mMaxIterations; it++)
-    {
-        vAvailableIndices = vAllIndices;
+        SampleWithoutReplacement(lcg, vAllIndices, INITIALIZER_RANSAC_MIN_SET, mvSets[it].data());
 
-        // 选择最小集
-        for(size_t j=0; j<INITIALIZER_RANSAC_MIN_SET; j++)
-        {
-            int randi = lcg.randomInt(0, vAvailableIndices.size()-1);
-            int idx = vAvailableIndices[randi];
-
-            mvSets[it][j] = idx;
-
-            vAvailableIndices[randi] = vAvailableIndices.back();
-            vAvailableIndices.pop_back();
-        }
-    }
+    // 两个线程都要用同一组归一化坐标：在这里算一次，FindHomography/FindFundamental 只读
+    Normalize(mvKeys1, mvPn1, mT1);
+    Normalize(mvKeys2, mvPn2, mT2);
 
     // 启动线程并行计算基础矩阵和单应性矩阵
     vector<bool> vbMatchesInliersH, vbMatchesInliersF;
@@ -143,12 +132,11 @@ void Initializer::FindHomography(vector<bool> &vbMatchesInliers, float &score, c
 {
     const int N = mvMatches12.size();
 
-    // 归一化坐标
-    vector<cv::Point2f> vPn1, vPn2;
-    cv::Mat T1, T2;
-    Normalize(mvKeys1,vPn1, T1);
-    Normalize(mvKeys2,vPn2, T2);
-    cv::Mat T2inv = T2.inv();
+    // 归一化坐标（Initialize 中已算好，两线程共享只读）
+    const vector<cv::Point2f>& vPn1 = mvPn1;
+    const vector<cv::Point2f>& vPn2 = mvPn2;
+    const cv::Mat& T1 = mT1;
+    cv::Mat T2inv = mT2.inv();
 
     // 最佳结果变量
     score = 0.0;
@@ -182,15 +170,15 @@ void Initializer::FindHomography(vector<bool> &vbMatchesInliers, float &score, c
         H21i = T2inv*Hn*T1;
         H12i = H21i.inv();
 
-        currentScore = CheckHomography(H21i, H12i, vbCurrentInliers, mSigma);
+        int nCurrentInliers = 0;
+        currentScore = CheckHomography(H21i, H12i, vbCurrentInliers, mSigma, nCurrentInliers);
 
         if(currentScore>score)
         {
             H21 = H21i.clone();
-            vbMatchesInliers = vbCurrentInliers;
+            vbMatchesInliers.swap(vbCurrentInliers); // 下一轮 Check* 会整份重写 vbCurrentInliers
             score = currentScore;
-            nInlierBest = 0;
-            for(int i=0; i<N; ++i) if(vbMatchesInliers[i]) nInlierBest++;
+            nInlierBest = nCurrentInliers;
         }
 
         // 自适应提前终止：内点率足够高时按标准公式估算剩余需求
@@ -214,12 +202,11 @@ void Initializer::FindFundamental(vector<bool> &vbMatchesInliers, float &score, 
     // 传入的 vbMatchesInliers 是空向量：原先取它的 size 得到 N=0，nInlierBest 恒为 0，自适应早停从不触发
     const int N = mvMatches12.size();
 
-    // 归一化坐标
-    vector<cv::Point2f> vPn1, vPn2;
-    cv::Mat T1, T2;
-    Normalize(mvKeys1,vPn1, T1);
-    Normalize(mvKeys2,vPn2, T2);
-    cv::Mat T2t = T2.t();
+    // 归一化坐标（Initialize 中已算好，两线程共享只读）
+    const vector<cv::Point2f>& vPn1 = mvPn1;
+    const vector<cv::Point2f>& vPn2 = mvPn2;
+    const cv::Mat& T1 = mT1;
+    cv::Mat T2t = mT2.t();
 
     // 最佳结果变量
     score = 0.0;
@@ -253,15 +240,15 @@ void Initializer::FindFundamental(vector<bool> &vbMatchesInliers, float &score, 
 
         F21i = T2t*Fn*T1;
 
-        currentScore = CheckFundamental(F21i, vbCurrentInliers, mSigma);
+        int nCurrentInliers = 0;
+        currentScore = CheckFundamental(F21i, vbCurrentInliers, mSigma, nCurrentInliers);
 
         if(currentScore>score)
         {
             F21 = F21i.clone();
-            vbMatchesInliers = vbCurrentInliers;
+            vbMatchesInliers.swap(vbCurrentInliers);
             score = currentScore;
-            nInlierBest = 0;
-            for(int i=0; i<N; ++i) if(vbMatchesInliers[i]) nInlierBest++;
+            nInlierBest = nCurrentInliers;
         }
 
         if(it >= INITIALIZER_ADAPTIVE_START_ITER && nInlierBest > 0)
@@ -356,9 +343,10 @@ cv::Mat Initializer::ComputeF21(const vector<cv::Point2f> &vP1,const vector<cv::
     return u * cv::Mat::diag(w) * vt;
 }
 
-float Initializer::CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vector<bool> &vbMatchesInliers, float sigma)
+float Initializer::CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vector<bool> &vbMatchesInliers, float sigma, int &nInliers)
 {
     const int N = mvMatches12.size();
+    nInliers = 0;
 
     const float h11 = H21.at<float>(0,0);
     const float h12 = H21.at<float>(0,1);
@@ -450,14 +438,16 @@ float Initializer::CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vecto
         const float squareDist2 = squareDist2_w2 * (inv_w1in2 * inv_w1in2);
         score += th * 2.0f - (squareDist1 + squareDist2) * invSigmaSquare;
         vbMatchesInliers[i] = true;
+        nInliers++;
     }
 
     return score;
 }
 
-float Initializer::CheckFundamental(const cv::Mat &F21, vector<bool> &vbMatchesInliers, float sigma)
+float Initializer::CheckFundamental(const cv::Mat &F21, vector<bool> &vbMatchesInliers, float sigma, int &nInliers)
 {
     const int N = mvMatches12.size();
+    nInliers = 0;
 
     const float f11 = F21.at<float>(0,0);
     const float f12 = F21.at<float>(0,1);
@@ -535,6 +525,7 @@ float Initializer::CheckFundamental(const cv::Mat &F21, vector<bool> &vbMatchesI
         const float squareDist2 = num1_sq / den1;
         score += thScore * 2.0f - (squareDist1 + squareDist2) * invSigmaSquare;
         vbMatchesInliers[i] = true;
+        nInliers++;
     }
 
     return score;
