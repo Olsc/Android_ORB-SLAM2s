@@ -8,6 +8,7 @@
     android:background="@drawable/bg_card"
     android:clickable="true"
     android:focusable="true"
+    android:foreground="?android:attr/selectableItemBackground"
     android:gravity="center_vertical"
     android:orientation="horizontal"
     android:padding="16dp">
@@ -29,7 +30,7 @@
             android:id="@+id/tv_icon_name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="#FFFFFFFF"
+            android:textColor="@color/text_primary"
             android:textSize="16sp"
             android:textStyle="bold" />
 
@@ -44,7 +45,7 @@
             android:paddingTop="3dp"
             android:paddingBottom="3dp"
             android:text="@string/icon_in_use"
-            android:textColor="#FF81C784"
+            android:textColor="@color/text_accent_green"
             android:textSize="12sp"
             android:visibility="gone" />
     </LinearLayout>
@@ -54,6 +55,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:clickable="false"
-        android:focusable="false" />
+        android:focusable="false"
+        android:importantForAccessibility="no" />
 
 </LinearLayout>

@@ -27,6 +27,13 @@ public class NativeHelper {
 
     // 加载必要的本地库
     static {
+        // 必须在 dlopen 前关闭 libomp 的亲和性绑定：部分 ROM（MIUI 等）限制了应用进程的
+        // CPU 亲和性，libomp 初始化时 sched_setaffinity 失败会直接 abort（引擎进程一启动即崩溃）
+        try {
+            android.system.Os.setenv("KMP_AFFINITY", "disabled", true);
+        } catch (Throwable t) {
+            Log.w(TAG, "设置 KMP_AFFINITY 失败", t);
+        }
         try {
             System.loadLibrary("Mentha_Profiler");
         } catch (UnsatisfiedLinkError e) {

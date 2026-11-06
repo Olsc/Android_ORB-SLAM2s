@@ -422,8 +422,17 @@ void System::CreateNewMap()
 
     // 限制子地图总数，超出时删除最旧的地图（id=0 的初始地图不删）
     if ((int)mvpMaps.size() >= MAX_SUBMAP_COUNT) {
+        // 逐出前必须确认 LM 已完全退出当前 LocalBundleAdjustment：
+        // SetAcceptKeyFrames/InterruptBA/ClearQueues 只置标志与清队列，不保证 BA 已返回
+        bool bLmIdle = true;
+        if (mpLocalMapper) {
+            mpLocalMapper->RequestReset();
+            bLmIdle = mpLocalMapper->WaitForResetComplete();
+            if (!bLmIdle)
+                LOGD("System::CreateNewMap 等待 LM 退出 BA 超时，本轮跳过子地图逐出");
+        }
         // 找出最旧的非 id=0 地图并完整拆除
-        for (size_t i = 1; i < mvpMaps.size(); ++i) {
+        for (size_t i = 1; bLmIdle && i < mvpMaps.size(); ++i) {
             if (mvpMaps[i] && mvpMaps[i] != mpMap) {
                 LOGD("System::CreateNewMap 子地图数=%zu 达上限=%d，完整拆除旧地图 id=%lu",
                      mvpMaps.size(), MAX_SUBMAP_COUNT, mvpMaps[i]->mnId);

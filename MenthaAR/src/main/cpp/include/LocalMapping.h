@@ -76,7 +76,8 @@ public:
     bool WaitForStopped();
 
     void RequestReset();
-    void WaitForResetComplete();
+    // 等待 LM 处理完 Reset（已离开 BA 且队列已清空）；true=已完成，false=超时
+    bool WaitForResetComplete();
     bool Stop();
     void Release();
     bool isStopped();

@@ -43,7 +43,6 @@ int loadTextureFromJava(JNIEnv* env, jobject thiz, const uint8_t* imageBytes, si
     }
     return static_cast<int>(texId);
 }
-
 } // namespace
 
 struct GlbContext {
@@ -99,13 +98,17 @@ Java_com_orb_slam2s_graphics_GlbModelRenderer_nativeInitGL(
     auto* ctx = reinterpret_cast<GlbContext*>(handle);
     if (!ctx) return JNI_FALSE;
 
+    // onSurfaceCreated 必然对应一个新的 EGL Context，旧 program/VBO/纹理名均已失效
+    // 须先丢弃本地记录再重建，否则会对失效句柄发 glUseProgram 并产生 GL_INVALID_OPERATION
+    ctx->renderer->onContextLost();
+
     if (!ctx->renderer->initGL()) {
         LOGE("GlbModelRenderer: nativeInitGL 失败");
         return JNI_FALSE;
     }
 
-    // 若模型已经在 GL 上下文就绪前加载完成（小模型常见），在这里补上传；
-    // 尚未加载完成的，交由 nativeRender 在加载结束后补做。
+    // 若模型已经在 GL 上下文就绪前加载完成（小模型常见），在这里补上传
+    // 尚未加载完成的，交由 nativeRender 在加载结束后补做
     ctx->model->uploadGL([&](const uint8_t* imgBytes, size_t imgSize) -> int {
         return loadTextureFromJava(env, thiz, imgBytes, imgSize);
     });
@@ -130,8 +133,8 @@ Java_com_orb_slam2s_graphics_GlbModelRenderer_nativeRender(
     auto* ctx = reinterpret_cast<GlbContext*>(handle);
     if (!ctx) return;
 
-    // 异步加载可能晚于 onSurfaceCreated 完成：这里补做 GPU 上传。
-    // uploadGL 内部对"已上传"和"尚无图元"都会立刻返回，逐帧调用开销可忽略。
+    // 异步加载可能晚于 onSurfaceCreated 完成：这里补做 GPU 上传
+    // uploadGL 内部对"已上传"和"尚无图元"都会立刻返回，逐帧调用开销可忽略
     if (ctx->model->isLoaded() && !ctx->model->isGPUUploaded()) {
         ctx->model->uploadGL([&](const uint8_t* imgBytes, size_t imgSize) -> int {
             return loadTextureFromJava(env, thiz, imgBytes, imgSize);
@@ -159,5 +162,4 @@ Java_com_orb_slam2s_graphics_GlbModelRenderer_nativeDestroy(
         delete ctx;
     }
 }
-
 } // extern "C"

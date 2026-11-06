@@ -22,10 +22,8 @@ package com.orb.slam2s.sensors;
 import android.opengl.Matrix;
 import android.util.Log;
 
-/**
- * 位姿融合器：视觉正常时透传 SLAM 位姿，跟踪丢失时由传感器姿态延续视图旋转。
- * 对外只暴露开关、相机安装角与方向反向三项配置，结果统一由 fuse 输出。
- */
+// 位姿融合器：视觉正常时透传 SLAM 位姿，跟踪丢失时由传感器姿态延续视图旋转。
+// 对外只暴露开关、相机安装角与方向反向三项配置，结果统一由 fuse 输出。
 public final class PoseFusion {
     private static final String TAG = "PoseFusion";
 
@@ -41,7 +39,7 @@ public final class PoseFusion {
 
     private final float[] mMountRot = new float[16];
 
-    // 冻结偏移：视图 = M(t) * offset，M(t) = 安装角 * R_sensor(t)ᵀ
+    // 冻结偏移：视图 = M(t) * offset，M(t) = 安装角 * R_sensor(t)^T
     private final float[] mAlignmentOffset = new float[16];
     private boolean mHasAlignment = false;
 

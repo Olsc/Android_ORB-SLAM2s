@@ -148,7 +148,8 @@ void LocalMapping::Run()
 
             const bool bQueueEmpty = !CheckNewKeyFrames();
 
-            if((bQueueEmpty || bForceCull) && !stopRequested())
+            // 有待处理的 Reset 时跳过 BA：上方已将 mbAbortBA 清零，否则 Reset 前到达的中断请求会丢失
+            if((bQueueEmpty || bForceCull) && !stopRequested() && !mbResetRequested.load())
             {
                 // 仅在队列为空且非强制跳过时执行局部 BA；队列有堆积时优先消化新关键帧
                 if(bQueueEmpty && mpMap->KeyFramesInMap()>=LOCAL_BA_MIN_KEYFRAMES)
@@ -1011,11 +1012,12 @@ void LocalMapping::ResetIfRequested()
     }
 }
 
-void LocalMapping::WaitForResetComplete()
+bool LocalMapping::WaitForResetComplete()
 {
     unique_lock<mutex> lock(mMutexResetComplete);
-    mCvResetComplete.wait_for(lock, std::chrono::milliseconds(ORB_SLAM2::RESET_COMPLETE_TIMEOUT_MS), [this]{ return mbResetComplete; });
+    const bool bDone = mCvResetComplete.wait_for(lock, std::chrono::milliseconds(ORB_SLAM2::RESET_COMPLETE_TIMEOUT_MS), [this]{ return mbResetComplete; });
     mbResetComplete = false;
+    return bDone;
 }
 
 void LocalMapping::RequestFinish()

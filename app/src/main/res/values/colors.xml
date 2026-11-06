@@ -1,6 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- 图标背景色 -->
     <color name="ic_launcher_background">#032234</color>
     <color name="ic_launcher_red_background">#C81619</color>
     <color name="ic_launcher_mint_background">#13171A</color>
+
+    <!-- 全局强调色：对话框按钮、单选/复选控件统一引用 -->
+    <color name="accent">#FF03A9F4</color>
+
+    <!-- 列表类页面窗口底色 -->
+    <color name="window_background_dark">#FF0D111A</color>
+
+    <!-- 文字层级色（布局已统一引用） -->
+    <color name="text_primary">#FFFFFFFF</color>
+    <color name="text_secondary">#FF90A4AE</color>
+    <color name="text_tertiary">#FF78909C</color>
+    <color name="text_accent_blue">#FF64B5F6</color>
+    <color name="text_accent_green">#FF81C784</color>
+    <!-- 导航栏 / chip / 次级按钮 / 危险操作文字色 -->
+    <color name="text_on_chip">#FFB0BEC5</color>
+    <color name="text_button_secondary">#FFE0E0E0</color>
+    <color name="text_danger">#FFFF5252</color>
 </resources>

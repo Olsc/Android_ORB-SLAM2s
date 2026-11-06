@@ -29,7 +29,7 @@
             android:layout_weight="1"
             android:layout_marginStart="8dp"
             android:text="@string/icon_select_title"
-            android:textColor="#FFFFFFFF"
+            android:textColor="@color/text_primary"
             android:textSize="18sp"
             android:textStyle="bold" />
     </LinearLayout>
@@ -51,7 +51,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/icon_select_desc"
-                android:textColor="#FF90A4AE"
+                android:textColor="@color/text_secondary"
                 android:textSize="13sp"
                 android:layout_marginBottom="16dp" />
 
@@ -66,7 +66,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 android:text="@string/icon_note"
-                android:textColor="#FF78909C"
+                android:textColor="@color/text_tertiary"
                 android:textSize="12sp" />
 
         </LinearLayout>

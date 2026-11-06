@@ -31,7 +31,7 @@
             android:layout_weight="1"
             android:layout_marginStart="8dp"
             android:text="@string/dialog_map_manage"
-            android:textColor="#FFFFFFFF"
+            android:textColor="@color/text_primary"
             android:textSize="18sp"
             android:textStyle="bold" />
 
@@ -59,7 +59,7 @@
             android:id="@+id/tv_storage_stats"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="#FF64B5F6"
+            android:textColor="@color/text_accent_blue"
             android:textSize="14sp"
             android:textStyle="bold" />
 
@@ -68,9 +68,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:textColor="#FF90A4AE"
-            android:textSize="12sp"
-            android:singleLine="false" />
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp" />
     </LinearLayout>
 
     <FrameLayout
@@ -107,7 +106,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:text="@string/hint_no_maps"
-                android:textColor="#FFFFFFFF"
+                android:textColor="@color/text_primary"
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
@@ -117,7 +116,7 @@
                 android:layout_marginTop="8dp"
                 android:gravity="center"
                 android:text="@string/map_manage_empty_desc"
-                android:textColor="#FF78909C"
+                android:textColor="@color/text_tertiary"
                 android:textSize="13sp" />
         </LinearLayout>
 
