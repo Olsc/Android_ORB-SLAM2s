@@ -66,89 +66,103 @@ public:
 
     static std::vector<float> toQuaternion(const cv::Mat &M);
 
-    // 空间射线公垂线中点几何闭式解
-    static inline bool TriangulateMidpoint(const float O1[3], const float d1[3],
-                                           const float O2[3], const float d2[3],
+    // 空间射线公垂线中点闭式解（叉积形式）。
+    // 两条射线 O1 + s·r1、O2 + t·r2 的最近点满足 (P - Q) ∥ n，n = r1 × r2：
+    //   s = ((O2-O1) × r2)·n / (n·n)，t = ((O2-O1) × r1)·n / (n·n)
+    // 与原来的 det = 1 - (d1·d2)² 形式在实数域恒等，但：
+    //   (1) 射线不需要归一化（省去调用方的 2 次 sqrt + 2 次除法）；
+    //   (2) 没有 1 - cos² 的灾难性相消（docs/bench/algo_bench.py §1：视差 1° 时中位相对误差 4.0e-4 → 1.1e-6）。
+    // 内部用 double 计算，输入/输出保持 float 接口。
+    static inline bool TriangulateMidpoint(const float O1[3], const float r1f[3],
+                                           const float O2[3], const float r2f[3],
                                            float out3D[3])
     {
-        // 相对位移 r = O1 - O2
-        const float rx = O1[0] - O2[0];
-        const float ry = O1[1] - O2[1];
-        const float rz = O1[2] - O2[2];
+        const double r1x = r1f[0], r1y = r1f[1], r1z = r1f[2];
+        const double r2x = r2f[0], r2y = r2f[1], r2z = r2f[2];
 
-        // 视线单位向量点乘 b = d1 · d2
-        const float b = d1[0]*d2[0] + d1[1]*d2[1] + d1[2]*d2[2];
-        const float det = 1.0f - b * b;
-        if(det < 1e-6f)
-            return false;
+        // w = O2 - O1
+        const double wx = (double)O2[0] - O1[0];
+        const double wy = (double)O2[1] - O1[1];
+        const double wz = (double)O2[2] - O1[2];
 
-        const float invDet = 1.0f / det;
-        const float d = d1[0]*rx + d1[1]*ry + d1[2]*rz;
-        const float e = d2[0]*rx + d2[1]*ry + d2[2]*rz;
+        // n = r1 × r2
+        const double nx = r1y*r2z - r1z*r2y;
+        const double ny = r1z*r2x - r1x*r2z;
+        const double nz = r1x*r2y - r1y*r2x;
+        const double nn = nx*nx + ny*ny + nz*nz;
+        if(!(nn > 1e-24))
+            return false; // 射线平行
 
-        const float s = (b * e - d) * invDet;
-        const float t = (e - b * d) * invDet;
+        // (w × r2)·n 与 (w × r1)·n
+        const double wr2x = wy*r2z - wz*r2y, wr2y = wz*r2x - wx*r2z, wr2z = wx*r2y - wy*r2x;
+        const double wr1x = wy*r1z - wz*r1y, wr1y = wz*r1x - wx*r1z, wr1z = wx*r1y - wy*r1x;
+        const double invNN = 1.0 / nn;
+        const double s = (wr2x*nx + wr2y*ny + wr2z*nz) * invNN;
+        const double t = (wr1x*nx + wr1y*ny + wr1z*nz) * invNN;
 
         // 空间点必须在两相机射线前方 (深度为正)
-        if(s <= 0.0f || t <= 0.0f)
+        if(s <= 0.0 || t <= 0.0)
             return false;
 
-        out3D[0] = 0.5f * ((O1[0] + s * d1[0]) + (O2[0] + t * d2[0]));
-        out3D[1] = 0.5f * ((O1[1] + s * d1[1]) + (O2[1] + t * d2[1]));
-        out3D[2] = 0.5f * ((O1[2] + s * d1[2]) + (O2[2] + t * d2[2]));
+        out3D[0] = (float)(0.5 * ((O1[0] + s * r1x) + (O2[0] + t * r2x)));
+        out3D[1] = (float)(0.5 * ((O1[1] + s * r1y) + (O2[1] + t * r2y)));
+        out3D[2] = (float)(0.5 * ((O1[2] + s * r1z) + (O2[2] + t * r2z)));
         return true;
     }
 
-    // 输出到栈数组的 DLT 三角化重载
+    // 输出到栈数组的 DLT 三角化（法方程 + 克莱姆法则）。
+    // 法方程 M = AᵀA 的条件数是 κ(A)²，float 下视差 0.5° 时中位相对误差 2.3e-4、最大 6e-2（基准 §1），
+    // 全部改为 double 后为 2.2e-6 / 2.3e-5；运算次数不变。
     static bool TriangulateWithCenters(const cv::Mat &P1, const cv::Mat &P2,
                                        const float[3], const float[3],
-                                       float x1, float y1, float x2, float y2,
+                                       float x1f, float y1f, float x2f, float y2f,
                                        float out3D[3])
     {
-        const float p1_00=P1.at<float>(0,0), p1_01=P1.at<float>(0,1), p1_02=P1.at<float>(0,2), p1_03=P1.at<float>(0,3);
-        const float p1_10=P1.at<float>(1,0), p1_11=P1.at<float>(1,1), p1_12=P1.at<float>(1,2), p1_13=P1.at<float>(1,3);
-        const float p1_20=P1.at<float>(2,0), p1_21=P1.at<float>(2,1), p1_22=P1.at<float>(2,2), p1_23=P1.at<float>(2,3);
+        const double x1 = x1f, y1 = y1f, x2 = x2f, y2 = y2f;
+        const double p1_00=P1.at<float>(0,0), p1_01=P1.at<float>(0,1), p1_02=P1.at<float>(0,2), p1_03=P1.at<float>(0,3);
+        const double p1_10=P1.at<float>(1,0), p1_11=P1.at<float>(1,1), p1_12=P1.at<float>(1,2), p1_13=P1.at<float>(1,3);
+        const double p1_20=P1.at<float>(2,0), p1_21=P1.at<float>(2,1), p1_22=P1.at<float>(2,2), p1_23=P1.at<float>(2,3);
 
-        const float p2_00=P2.at<float>(0,0), p2_01=P2.at<float>(0,1), p2_02=P2.at<float>(0,2), p2_03=P2.at<float>(0,3);
-        const float p2_10=P2.at<float>(1,0), p2_11=P2.at<float>(1,1), p2_12=P2.at<float>(1,2), p2_13=P2.at<float>(1,3);
-        const float p2_20=P2.at<float>(2,0), p2_21=P2.at<float>(2,1), p2_22=P2.at<float>(2,2), p2_23=P2.at<float>(2,3);
+        const double p2_00=P2.at<float>(0,0), p2_01=P2.at<float>(0,1), p2_02=P2.at<float>(0,2), p2_03=P2.at<float>(0,3);
+        const double p2_10=P2.at<float>(1,0), p2_11=P2.at<float>(1,1), p2_12=P2.at<float>(1,2), p2_13=P2.at<float>(1,3);
+        const double p2_20=P2.at<float>(2,0), p2_21=P2.at<float>(2,1), p2_22=P2.at<float>(2,2), p2_23=P2.at<float>(2,3);
 
         // 构造 DLT 代数矩阵 A (4x4) 的四行系数
-        const float a0_0 = x1*p1_20 - p1_00, a0_1 = x1*p1_21 - p1_01, a0_2 = x1*p1_22 - p1_02, a0_3 = x1*p1_23 - p1_03;
-        const float a1_0 = y1*p1_20 - p1_10, a1_1 = y1*p1_21 - p1_11, a1_2 = y1*p1_22 - p1_12, a1_3 = y1*p1_23 - p1_13;
-        const float a2_0 = x2*p2_20 - p2_00, a2_1 = x2*p2_21 - p2_01, a2_2 = x2*p2_22 - p2_02, a2_3 = x2*p2_23 - p2_03;
-        const float a3_0 = y2*p2_20 - p2_10, a3_1 = y2*p2_21 - p2_11, a3_2 = y2*p2_22 - p2_12, a3_3 = y2*p2_23 - p2_13;
+        const double a0_0 = x1*p1_20 - p1_00, a0_1 = x1*p1_21 - p1_01, a0_2 = x1*p1_22 - p1_02, a0_3 = x1*p1_23 - p1_03;
+        const double a1_0 = y1*p1_20 - p1_10, a1_1 = y1*p1_21 - p1_11, a1_2 = y1*p1_22 - p1_12, a1_3 = y1*p1_23 - p1_13;
+        const double a2_0 = x2*p2_20 - p2_00, a2_1 = x2*p2_21 - p2_01, a2_2 = x2*p2_22 - p2_02, a2_3 = x2*p2_23 - p2_03;
+        const double a3_0 = y2*p2_20 - p2_10, a3_1 = y2*p2_21 - p2_11, a3_2 = y2*p2_22 - p2_12, a3_3 = y2*p2_23 - p2_13;
 
         // 对称半正定法方程系数矩阵 M = A[:, :3]^T * A[:, :3]
-        const float m00 = a0_0*a0_0 + a1_0*a1_0 + a2_0*a2_0 + a3_0*a3_0;
-        const float m01 = a0_0*a0_1 + a1_0*a1_1 + a2_0*a2_1 + a3_0*a3_1;
-        const float m02 = a0_0*a0_2 + a1_0*a1_2 + a2_0*a2_2 + a3_0*a3_2;
-        const float m11 = a0_1*a0_1 + a1_1*a1_1 + a2_1*a2_1 + a3_1*a3_1;
-        const float m12 = a0_1*a0_2 + a1_1*a1_2 + a2_1*a2_2 + a3_1*a3_2;
-        const float m22 = a0_2*a0_2 + a1_2*a1_2 + a2_2*a2_2 + a3_2*a3_2;
+        const double m00 = a0_0*a0_0 + a1_0*a1_0 + a2_0*a2_0 + a3_0*a3_0;
+        const double m01 = a0_0*a0_1 + a1_0*a1_1 + a2_0*a2_1 + a3_0*a3_1;
+        const double m02 = a0_0*a0_2 + a1_0*a1_2 + a2_0*a2_2 + a3_0*a3_2;
+        const double m11 = a0_1*a0_1 + a1_1*a1_1 + a2_1*a2_1 + a3_1*a3_1;
+        const double m12 = a0_1*a0_2 + a1_1*a1_2 + a2_1*a2_2 + a3_1*a3_2;
+        const double m22 = a0_2*a0_2 + a1_2*a1_2 + a2_2*a2_2 + a3_2*a3_2;
 
         // 常数项向量 B = -A[:, :3]^T * A[:, 3]
-        const float b0 = -(a0_0*a0_3 + a1_0*a1_3 + a2_0*a2_3 + a3_0*a3_3);
-        const float b1 = -(a0_1*a0_3 + a1_1*a1_3 + a2_1*a2_3 + a3_1*a3_3);
-        const float b2 = -(a0_2*a0_3 + a1_2*a1_3 + a2_2*a2_3 + a3_2*a3_3);
+        const double b0 = -(a0_0*a0_3 + a1_0*a1_3 + a2_0*a2_3 + a3_0*a3_3);
+        const double b1 = -(a0_1*a0_3 + a1_1*a1_3 + a2_1*a2_3 + a3_1*a3_3);
+        const double b2 = -(a0_2*a0_3 + a1_2*a1_3 + a2_2*a2_3 + a3_2*a3_3);
 
         // 克莱姆法则闭式代数解
-        const float c00 = m11*m22 - m12*m12;
-        const float c01 = m02*m12 - m01*m22;
-        const float c02 = m01*m12 - m02*m11;
+        const double c00 = m11*m22 - m12*m12;
+        const double c01 = m02*m12 - m01*m22;
+        const double c02 = m01*m12 - m02*m11;
 
-        const float det = m00*c00 + m01*c01 + m02*c02;
-        if(std::fabs(det) < 1e-12f)
+        const double det = m00*c00 + m01*c01 + m02*c02;
+        if(std::fabs(det) < 1e-12) // 与原 float 实现相同的退化门限
             return false;
 
-        const float invDet = 1.0f / det;
-        const float c11 = m00*m22 - m02*m02;
-        const float c12 = m01*m02 - m00*m12;
-        const float c22 = m00*m11 - m01*m01;
+        const double invDet = 1.0 / det;
+        const double c11 = m00*m22 - m02*m02;
+        const double c12 = m01*m02 - m00*m12;
+        const double c22 = m00*m11 - m01*m01;
 
-        out3D[0] = (c00*b0 + c01*b1 + c02*b2) * invDet;
-        out3D[1] = (c01*b0 + c11*b1 + c12*b2) * invDet;
-        out3D[2] = (c02*b0 + c12*b1 + c22*b2) * invDet;
+        out3D[0] = (float)((c00*b0 + c01*b1 + c02*b2) * invDet);
+        out3D[1] = (float)((c01*b0 + c11*b1 + c12*b2) * invDet);
+        out3D[2] = (float)((c02*b0 + c12*b1 + c22*b2) * invDet);
         return true;
     }
 

@@ -340,6 +340,7 @@ void LocalMapping::CreateNewMapPoints()
     const float &invfy1 = mpCurrentKeyFrame->invfy;
 
     const float ratioFactor = LOCAL_MAPPING_TRIANGULATION_RATIO_FACTOR*mpCurrentKeyFrame->mfScaleFactor;
+    const float ratioFactorSq = ratioFactor*ratioFactor;
 
     int nnew=0;
 
@@ -451,16 +452,15 @@ void LocalMapping::CreateNewMapPoints()
             if(dotProduct * dotProduct >= s_parallaxThSq * (norm1Sq * norm2Sq))
                 continue; // 视差过小，短路跳过
 
-            // 仅对通过视差判定的有效候选点执行开方归一化与公垂线中点解算
-            const float invNorm1 = 1.0f / std::sqrt(norm1Sq);
-            const float invNorm2 = 1.0f / std::sqrt(norm2Sq);
-            const float d1[3] = {r1x * invNorm1, r1y * invNorm1, r1z * invNorm1};
-            const float d2[3] = {r2x * invNorm2, r2y * invNorm2, r2z * invNorm2};
+            // 叉积形式的公垂线中点解不需要归一化射线（省去 2 次 sqrt + 2 次除法）
+            const float d1[3] = {r1x, r1y, r1z};
+            const float d2[3] = {r2x, r2y, r2z};
 
             float x3D_buf[3];
             if (!Converter::TriangulateMidpoint(c1, d1, c2, d2, x3D_buf))
             {
-                // 若中点解由于平行退化，回退至法方程解法
+                // 中点解只在最近点落在某相机后方（s<=0 或 t<=0）时失败；回退到 double 法方程解，
+                // 这样的点随后几乎一定被下面的深度检查拒绝
                 if (!Converter::TriangulateWithCenters(Tcw1, Tcw2, c1, c2, xn1x, xn1y, xn2x, xn2y, x3D_buf))
                     continue;
             }
@@ -509,14 +509,14 @@ void LocalMapping::CreateNewMapPoints()
             if(dist1Sq < 1e-12f || dist2Sq < 1e-12f)
                 continue;
 
-            // 只在需要时计算实际距离
-            float dist1 = sqrt(dist1Sq);
-            float dist2 = sqrt(dist2Sq);
-
-            const float ratioDist = dist2/dist1;
-            const float ratioOctave = mpCurrentKeyFrame->mvScaleFactors[kp1.octave]/pKF2->mvScaleFactors[kp2.octave];
-
-            if(ratioDist*ratioFactor<ratioOctave || ratioDist>ratioOctave*ratioFactor)
+            // 尺度一致性：原判据 ratioDist*rf < ratioOctave || ratioDist > ratioOctave*rf，
+            // 其中 ratioDist = d2/d1，ratioOctave = s1/s2。所有量为正，两边平方并交叉相乘后恒等于
+            //   d2²·rf²·s2² < s1²·d1²   ||   d2²·s2² > s1²·rf²·d1²
+            // s1² = mvLevelSigma2[kp1.octave]、s2² = mvLevelSigma2[kp2.octave] 已在内存中：省去 2 次 sqrt、2 次除法
+            const float sig2_1 = mpCurrentKeyFrame->mvLevelSigma2[kp1.octave];
+            const float sig2_2 = pKF2->mvLevelSigma2[kp2.octave];
+            const float lhs1 = dist2Sq*sig2_2;
+            if(lhs1*ratioFactorSq < sig2_1*dist1Sq || lhs1 > sig2_1*ratioFactorSq*dist1Sq)
                 continue;
 
             // 三角化成功，构造 MapPoint

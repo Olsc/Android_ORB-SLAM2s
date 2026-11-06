@@ -1,4 +1,4 @@
-# 离线回放基准：构建 arm64 Release 引擎 + slam_bench，推到设备，用固定帧序列运行并取回结果。
+﻿# 离线回放基准：构建 arm64 Release 引擎 + slam_bench，推到设备，用固定帧序列运行并取回结果。
 #
 # 用法（在仓库根目录）：
 #   powershell -File docs\bench\run_device_bench.ps1 -Tag base            # 构建 + 运行，结果保存为 docs\bench\results\base.txt

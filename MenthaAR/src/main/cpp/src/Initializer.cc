@@ -885,8 +885,6 @@ int Initializer::CheckRT(const cv::Mat &R, const cv::Mat &t, const vector<cv::Ke
     cv::Mat P1(3,4,CV_32F,cv::Scalar(0));
     K.copyTo(P1.rowRange(0,3).colRange(0,3));
 
-    cv::Mat O1 = cv::Mat::zeros(3,1,CV_32F);
-
     // 相机2投影矩阵K[R|t]
     cv::Mat P2(3,4,CV_32F);
     R.copyTo(P2.rowRange(0,3).colRange(0,3));
@@ -896,6 +894,12 @@ int Initializer::CheckRT(const cv::Mat &R, const cv::Mat &t, const vector<cv::Ke
     cv::Mat O2 = -R.t()*t;
     const float Q1[3] = {0.0f, 0.0f, 0.0f};
     const float Q2[3] = {O2.at<float>(0), O2.at<float>(1), O2.at<float>(2)};
+    const double O2x = Q2[0], O2y = Q2[1], O2z = Q2[2];
+
+    // R、t 取成 double 标量：每个点的变换与重投影不再构造 cv::Mat 临时对象（原先每点 4 个），并在 double 中计算
+    const double r00 = R.at<float>(0,0), r01 = R.at<float>(0,1), r02 = R.at<float>(0,2), t0 = t.at<float>(0);
+    const double r10 = R.at<float>(1,0), r11 = R.at<float>(1,1), r12 = R.at<float>(1,2), t1 = t.at<float>(1);
+    const double r20 = R.at<float>(2,0), r21 = R.at<float>(2,1), r22 = R.at<float>(2,2), t2 = t.at<float>(2);
 
     int nGood=0;
 
@@ -906,68 +910,65 @@ int Initializer::CheckRT(const cv::Mat &R, const cv::Mat &t, const vector<cv::Ke
 
         const cv::KeyPoint &kp1 = vKeys1[vMatches12[i].first];
         const cv::KeyPoint &kp2 = vKeys2[vMatches12[i].second];
-        cv::Mat p3dC1;
+        float p3dC1[3];
 
-        // 闭式三角化：复用外层预计算的相机光心
+        // 闭式三角化（double 法方程）：复用外层预计算的相机光心
         if (!Converter::TriangulateWithCenters(P1, P2, Q1, Q2, kp1.pt.x, kp1.pt.y, kp2.pt.x, kp2.pt.y, p3dC1))
         {
             vbGood[vMatches12[i].first]=false;
             continue;
         }
 
-        if(!isfinite(p3dC1.at<float>(0)) || !isfinite(p3dC1.at<float>(1)) || !isfinite(p3dC1.at<float>(2)))
+        if(!isfinite(p3dC1[0]) || !isfinite(p3dC1[1]) || !isfinite(p3dC1[2]))
         {
             vbGood[vMatches12[i].first]=false;
             continue;
         }
 
-        // 检查视差
-        cv::Mat normal1 = p3dC1 - O1;
-        cv::Mat normal2 = p3dC1 - O2;
-        // 内联计算向量范数和点积
-        const float n1x = normal1.at<float>(0), n1y = normal1.at<float>(1), n1z = normal1.at<float>(2);
-        const float n2x = normal2.at<float>(0), n2y = normal2.at<float>(1), n2z = normal2.at<float>(2);
-        const float dist1Sq = n1x*n1x + n1y*n1y + n1z*n1z;
-        const float dist2Sq = n2x*n2x + n2y*n2y + n2z*n2z;
-        const float dotProd = n1x*n2x + n1y*n2y + n1z*n2z;
+        const double X = p3dC1[0], Y = p3dC1[1], Z = p3dC1[2];
 
-        float cosParallax = dotProd / sqrt(dist1Sq * dist2Sq);
-        float dist1 = sqrt(dist1Sq);
+        // 检查视差：相机 1 光心在原点，normal1 = X；normal2 = X - O2
+        const double n2x = X - O2x, n2y = Y - O2y, n2z = Z - O2z;
+        const double dist1Sq = X*X + Y*Y + Z*Z;
+        const double dist2Sq = n2x*n2x + n2y*n2y + n2z*n2z;
+        const double dotProd = X*n2x + Y*n2y + Z*n2z;
+
+        const float cosParallax = (float)(dotProd / std::sqrt(dist1Sq * dist2Sq));
 
         // 检查第一个相机前方的深度（仅当有足够的视差时，因为"无限远"点容易变为负深度）
-        if(p3dC1.at<float>(2)<=0 && cosParallax<INITIALIZER_PARALLAX_COS_TH)
+        if(Z<=0 && cosParallax<INITIALIZER_PARALLAX_COS_TH)
             continue;
 
-        // 检查第二个相机前方的深度（仅当有足够的视差时，因为"无限远"点容易变为负深度）
-        cv::Mat p3dC2 = R*p3dC1+t;
+        // 检查第二个相机前方的深度
+        const double X2 = r00*X + r01*Y + r02*Z + t0;
+        const double Y2 = r10*X + r11*Y + r12*Z + t1;
+        const double Z2 = r20*X + r21*Y + r22*Z + t2;
 
-        if(p3dC2.at<float>(2)<=0 && cosParallax<INITIALIZER_PARALLAX_COS_TH)
+        if(Z2<=0 && cosParallax<INITIALIZER_PARALLAX_COS_TH)
             continue;
 
         // 检查第一幅图像中的重投影误差
-        float im1x, im1y;
-        float invZ1 = 1.0/p3dC1.at<float>(2);
-        im1x = fx*p3dC1.at<float>(0)*invZ1+cx;
-        im1y = fy*p3dC1.at<float>(1)*invZ1+cy;
+        const double invZ1 = 1.0/Z;
+        const double im1x = fx*X*invZ1+cx;
+        const double im1y = fy*Y*invZ1+cy;
 
-        float squareError1 = (im1x-kp1.pt.x)*(im1x-kp1.pt.x)+(im1y-kp1.pt.y)*(im1y-kp1.pt.y);
+        const double squareError1 = (im1x-kp1.pt.x)*(im1x-kp1.pt.x)+(im1y-kp1.pt.y)*(im1y-kp1.pt.y);
 
         if(squareError1>th2)
             continue;
 
         // 检查第二幅图像中的重投影误差
-        float im2x, im2y;
-        float invZ2 = 1.0/p3dC2.at<float>(2);
-        im2x = fx*p3dC2.at<float>(0)*invZ2+cx;
-        im2y = fy*p3dC2.at<float>(1)*invZ2+cy;
+        const double invZ2 = 1.0/Z2;
+        const double im2x = fx*X2*invZ2+cx;
+        const double im2y = fy*Y2*invZ2+cy;
 
-        float squareError2 = (im2x-kp2.pt.x)*(im2x-kp2.pt.x)+(im2y-kp2.pt.y)*(im2y-kp2.pt.y);
+        const double squareError2 = (im2x-kp2.pt.x)*(im2x-kp2.pt.x)+(im2y-kp2.pt.y)*(im2y-kp2.pt.y);
 
         if(squareError2>th2)
             continue;
 
         vCosParallax.push_back(cosParallax);
-        vP3D[vMatches12[i].first] = cv::Point3f(p3dC1.at<float>(0),p3dC1.at<float>(1),p3dC1.at<float>(2));
+        vP3D[vMatches12[i].first] = cv::Point3f(p3dC1[0],p3dC1[1],p3dC1[2]);
         nGood++;
 
         if(cosParallax<INITIALIZER_PARALLAX_COS_TH)
