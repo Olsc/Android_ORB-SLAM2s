@@ -2418,8 +2418,7 @@ void Tracking::UpdateLocalPoints()
 void Tracking::UpdateLocalKeyFrames()
 {
     // 每个地图点都会投票给观察到它的关键帧
-    unordered_map<KeyFrame*,int> keyframeCounter;
-    keyframeCounter.reserve(256);
+    KeyFrameMap<int> keyframeCounter;
     for(int i=0; i<mCurrentFrame.N; i++)
     {
         if(mCurrentFrame.mvpMapPoints[i])
@@ -2641,7 +2640,7 @@ bool Tracking::Relocalization()
             {
                 Tcw.copyTo(mCurrentFrame.mTcw);
 
-                set<MapPoint*> sFound;
+                MapPointSet sFound;
 
                 const int np = vbInliers.size();
 

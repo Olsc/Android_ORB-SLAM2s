@@ -360,7 +360,7 @@ int ORBmatcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapP
     const float Ox = Ow.at<float>(0), Oy = Ow.at<float>(1), Oz = Ow.at<float>(2);
 
     // 关键帧中已找到的地图点集合
-    set<MapPoint*> spAlreadyFound(vpMatched.begin(), vpMatched.end());
+    MapPointSet spAlreadyFound(vpMatched.begin(), vpMatched.end());
     spAlreadyFound.erase(nullptr);
 
     int nmatches=0;
@@ -1187,7 +1187,7 @@ int ORBmatcher::Fuse(KeyFrame *pKF, cv::Mat Scw, const vector<MapPoint *> &vpPoi
     const float Ox = Ow.at<float>(0), Oy = Ow.at<float>(1), Oz = Ow.at<float>(2);
 
     // 关键帧中已找到的地图点集合
-    const set<MapPoint*> spAlreadyFound = pKF->GetMapPoints();
+    const MapPointSet spAlreadyFound = pKF->GetMapPoints();
 
     int nFused=0;
 
@@ -1738,7 +1738,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
     return nmatches;
 }
 
-int ORBmatcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const set<MapPoint*> &sAlreadyFound, const float th , const int ORBdist)
+int ORBmatcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const MapPointSet &sAlreadyFound, const float th , const int ORBdist)
 {
     int nmatches = 0;
 

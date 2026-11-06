@@ -79,7 +79,7 @@ public:
 
     // 将关键帧中看到的地图点投影到帧中并搜索匹配
     // 用于重定位
-    int SearchByProjection(Frame &CurrentFrame, KeyFrame* pKF, const std::set<MapPoint*> &sAlreadyFound, const float th, const int ORBdist);
+    int SearchByProjection(Frame &CurrentFrame, KeyFrame* pKF, const MapPointSet &sAlreadyFound, const float th, const int ORBdist);
 
     // 使用相似变换投影地图点并搜索匹配
     // 用于回环检测

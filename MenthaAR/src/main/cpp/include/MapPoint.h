@@ -35,6 +35,8 @@
 #ifndef MAPPOINT_H
 #define MAPPOINT_H
 
+#include"IdOrder.h"
+#include"IdOrder.h"
 #include"KeyFrame.h"
 #include"Frame.h"
 #include"Map.h"
@@ -71,7 +73,7 @@ public:
     void GetNormal(cv::Point3f& out);
     KeyFrame* GetReferenceKeyFrame();
 
-    std::map<KeyFrame*,size_t> GetObservations();
+    KeyFrameMap<size_t> GetObservations();
     template<typename F>
     void ForEachObservation(F&& func) {
         std::unique_lock<std::mutex> lock(mMutexFeatures);
@@ -80,7 +82,7 @@ public:
         }
     }
 
-    void ShareObservations(std::unordered_map<KeyFrame*, int>& counter, unsigned long excludeId = -1);
+    void ShareObservations(KeyFrameMap<int>& counter, unsigned long excludeId = -1);
     int GetRedundantObservationsCount(KeyFrame* pKF, int scaleLevel);
     int Observations() const;
 
@@ -185,7 +187,7 @@ protected:
      cv::Mat mWorldPos;
 
      // 观测该点的关键帧及在关键帧中的索引
-     std::map<KeyFrame*,size_t> mObservations;
+     KeyFrameMap<size_t> mObservations;
 
      // 平均观测方向
      cv::Mat mNormalVector;

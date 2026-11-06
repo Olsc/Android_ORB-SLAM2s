@@ -48,6 +48,13 @@ namespace ORB_SLAM2
 
 long unsigned int KeyFrame::nNextId=0;
 
+// 共视排序：权重降序，相同权重按关键帧 id 升序，使结果与内存地址无关
+static inline bool WeightDescIdAsc(const std::pair<int,KeyFrame*>& a, const std::pair<int,KeyFrame*>& b)
+{
+    if(a.first != b.first) return a.first > b.first;
+    return a.second->mnId < b.second->mnId;
+}
+
 KeyFrame::KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB):
     mnFrameId(F.mnId),  mTimeStamp(F.mTimeStamp), mnGridCols(FRAME_GRID_COLS), mnGridRows(FRAME_GRID_ROWS),
     mfGridElementWidthInv(F.mfGridElementWidthInv), mfGridElementHeightInv(F.mfGridElementHeightInv),
@@ -194,10 +201,11 @@ void KeyFrame::UpdateBestCovisibles()
     std::unique_lock<std::mutex> lock(mMutexConnections);
     std::vector<std::pair<int,KeyFrame*> > vPairs;
     vPairs.reserve(mConnectedKeyFrameWeights.size());
-    for(std::map<KeyFrame*,int>::const_iterator mit=mConnectedKeyFrameWeights.begin(), mend=mConnectedKeyFrameWeights.end(); mit!=mend; ++mit)
+    for(KeyFrameMap<int>::const_iterator mit=mConnectedKeyFrameWeights.begin(), mend=mConnectedKeyFrameWeights.end(); mit!=mend; ++mit)
        vPairs.push_back(std::make_pair(mit->second,mit->first));
 
-    std::sort(vPairs.rbegin(), vPairs.rend());
+    // 权重降序，权重相同按 id 升序（原先按指针地址打破平局，跨运行不可复现）
+    std::sort(vPairs.begin(), vPairs.end(), WeightDescIdAsc);
 
     mvpOrderedConnectedKeyFrames.resize(vPairs.size());
     mvOrderedWeights.resize(vPairs.size());
@@ -208,11 +216,11 @@ void KeyFrame::UpdateBestCovisibles()
     }
 }
 
-std::set<KeyFrame*> KeyFrame::GetConnectedKeyFrames()
+KeyFrameSet KeyFrame::GetConnectedKeyFrames()
 {
     std::unique_lock<std::mutex> lock(mMutexConnections);
-    std::set<KeyFrame*> s;
-    for(std::map<KeyFrame*,int>::iterator mit=mConnectedKeyFrameWeights.begin();mit!=mConnectedKeyFrameWeights.end();mit++)
+    KeyFrameSet s;
+    for(KeyFrameMap<int>::iterator mit=mConnectedKeyFrameWeights.begin();mit!=mConnectedKeyFrameWeights.end();mit++)
         s.insert(mit->first);
     return s;
 }
@@ -289,10 +297,10 @@ void KeyFrame::ReplaceMapPointMatch(const size_t &idx, MapPoint* pMP)
         mvpMapPoints[idx]=pMP;
 }
 
-set<MapPoint*> KeyFrame::GetMapPoints()
+MapPointSet KeyFrame::GetMapPoints()
 {
     unique_lock<mutex> lock(mMutexFeatures);
-    set<MapPoint*> s;
+    MapPointSet s;
     for(size_t i=0, iend=mvpMapPoints.size(); i<iend; i++)
     {
         if(!mvpMapPoints[i])
@@ -355,8 +363,7 @@ MapPoint* KeyFrame::GetMapPoint(const size_t &idx)
 void KeyFrame::UpdateConnections()
 {
     // 哈希计数；有序表在下方统一重建
-    unordered_map<KeyFrame*,int> KFcounter;
-    KFcounter.reserve(256);
+    KeyFrameMap<int> KFcounter;
 
     vector<MapPoint*> vpMP;
 
@@ -412,7 +419,7 @@ void KeyFrame::UpdateConnections()
         pKFmax->AddConnection(this,nmax);
     }
 
-    std::sort(vPairs.rbegin(), vPairs.rend());
+    std::sort(vPairs.begin(), vPairs.end(), WeightDescIdAsc);
 
     vector<KeyFrame*> vOrderedKFs(vPairs.size());
     vector<int> vOrderedWs(vPairs.size());
@@ -461,7 +468,7 @@ void KeyFrame::ChangeParent(KeyFrame *pKF)
     pKF->AddChild(this);
 }
 
-set<KeyFrame*> KeyFrame::GetChilds()
+KeyFrameSet KeyFrame::GetChilds()
 {
     unique_lock<mutex> lockCon(mMutexConnections);
     return mspChildrens;
@@ -492,7 +499,7 @@ void KeyFrame::AddLoopEdge(KeyFrame *pKF)
     mspLoopEdges.insert(pKF);
 }
 
-set<KeyFrame*> KeyFrame::GetLoopEdges()
+KeyFrameSet KeyFrame::GetLoopEdges()
 {
     unique_lock<mutex> lockCon(mMutexConnections);
     return mspLoopEdges;
@@ -529,7 +536,7 @@ void KeyFrame::SetErase()
 void KeyFrame::SetBadFlag()
 {
     // 拷贝连接关系
-    map<KeyFrame*,int> connectedWeightsCopy;
+    KeyFrameMap<int> connectedWeightsCopy;
     vector<MapPoint*> mapPointsCopy;
 
     {
@@ -552,7 +559,7 @@ void KeyFrame::SetBadFlag()
     }
 
     // 在锁外进行所有的 Erase 操作
-    for(map<KeyFrame*,int>::iterator mit = connectedWeightsCopy.begin(), mend=connectedWeightsCopy.end(); mit!=mend; mit++)
+    for(KeyFrameMap<int>::iterator mit = connectedWeightsCopy.begin(), mend=connectedWeightsCopy.end(); mit!=mend; mit++)
     {
         mit->first->EraseConnection(this);
     }
@@ -563,7 +570,7 @@ void KeyFrame::SetBadFlag()
             mapPointsCopy[i]->EraseObservation(this);
     }
 
-    set<KeyFrame*> mspChildrensCopy;
+    KeyFrameSet mspChildrensCopy;
     KeyFrame* pParentCopy = nullptr;
 
     {
@@ -577,7 +584,7 @@ void KeyFrame::SetBadFlag()
     }
 
     // 更新生成树
-    set<KeyFrame*> sParentCandidates;
+    KeyFrameSet sParentCandidates;
     sParentCandidates.insert(pParentCopy);
 
     // 在每次迭代中，为子节点分配一个父节点（共视权重最高的那对），将该子节点作为其余节点的新父节点候选
@@ -589,7 +596,7 @@ void KeyFrame::SetBadFlag()
         KeyFrame* pC = nullptr;
         KeyFrame* pP = nullptr;
 
-        for(set<KeyFrame*>::iterator sit=mspChildrensCopy.begin(), send=mspChildrensCopy.end(); sit!=send; sit++)
+        for(KeyFrameSet::iterator sit=mspChildrensCopy.begin(), send=mspChildrensCopy.end(); sit!=send; sit++)
         {
             KeyFrame* pKF = *sit;
             if(pKF->isBad())
@@ -599,7 +606,7 @@ void KeyFrame::SetBadFlag()
             vector<KeyFrame*> vpConnected = pKF->GetVectorCovisibleKeyFrames();
             for(size_t i=0, iend=vpConnected.size(); i<iend; i++)
             {
-                for(set<KeyFrame*>::iterator spcit=sParentCandidates.begin(), spcend=sParentCandidates.end(); spcit!=spcend; spcit++)
+                for(KeyFrameSet::iterator spcit=sParentCandidates.begin(), spcend=sParentCandidates.end(); spcit!=spcend; spcit++)
                 {
                     if(vpConnected[i]->mnId == (*spcit)->mnId)
                     {
@@ -629,7 +636,7 @@ void KeyFrame::SetBadFlag()
     // 如果子节点与任何父节点候选没有共视链接，则将其分配给此KF的原始父节点
     if(!mspChildrensCopy.empty())
     {
-        for(set<KeyFrame*>::iterator sit=mspChildrensCopy.begin(); sit!=mspChildrensCopy.end(); sit++)
+        for(KeyFrameSet::iterator sit=mspChildrensCopy.begin(); sit!=mspChildrensCopy.end(); sit++)
         {
             (*sit)->ChangeParent(pParentCopy);
         }

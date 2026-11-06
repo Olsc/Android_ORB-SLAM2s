@@ -130,6 +130,7 @@ void LoopClosing::Run()
         // 检查队列中是否有关键帧
         if(CheckNewKeyFrames())
         {
+            mbProcessing.store(true, std::memory_order_release);
             // 检测闭环候选并检查共视一致性
             if(DetectLoop())
             {
@@ -141,6 +142,7 @@ void LoopClosing::Run()
                    CorrectLoop();
                }
             }
+            mbProcessing.store(false, std::memory_order_release);
         }
 
         ResetIfRequested();
@@ -219,17 +221,17 @@ bool LoopClosing::DetectLoop()
     {
         KeyFrame* pCandidateKF = vpCandidateKFs[i];
 
-        set<KeyFrame*> spCandidateGroup = pCandidateKF->GetConnectedKeyFrames();
+        KeyFrameSet spCandidateGroup = pCandidateKF->GetConnectedKeyFrames();
         spCandidateGroup.insert(pCandidateKF);
 
         bool bEnoughConsistent = false;
         bool bConsistentForSomeGroup = false;
         for(size_t iG=0, iendG=mvConsistentGroups.size(); iG<iendG; iG++)
         {
-            set<KeyFrame*> sPreviousGroup = mvConsistentGroups[iG].first;
+            KeyFrameSet sPreviousGroup = mvConsistentGroups[iG].first;
 
             bool bConsistent = false;
-            for(set<KeyFrame*>::iterator sit=spCandidateGroup.begin(), send=spCandidateGroup.end(); sit!=send;sit++)
+            for(KeyFrameSet::iterator sit=spCandidateGroup.begin(), send=spCandidateGroup.end(); sit!=send;sit++)
             {
                 if(sPreviousGroup.count(*sit))
                 {
@@ -513,7 +515,7 @@ void LoopClosing::CorrectLoop()
     }
 
     // 2. 锁外预计算 SE3 矩阵
-    std::map<KeyFrame*, cv::Mat> mapCorrectedPoses;
+    KeyFrameMap<cv::Mat> mapCorrectedPoses;
     for(vector<KeyFrame*>::iterator vit=mvpCurrentConnectedKFs.begin(), vend=mvpCurrentConnectedKFs.end(); vit!=vend; vit++)
     {
         KeyFrame* pKFi = *vit;
@@ -584,7 +586,7 @@ void LoopClosing::CorrectLoop()
     SearchAndFuse(CorrectedSim3);
 
     // 地图点融合后，会在共视图中出现连接闭环两侧的新链接
-    map<KeyFrame*, set<KeyFrame*> > LoopConnections;
+    KeyFrameMap<KeyFrameSet> LoopConnections;
 
     for(vector<KeyFrame*>::iterator vit=mvpCurrentConnectedKFs.begin(), vend=mvpCurrentConnectedKFs.end(); vit!=vend; vit++)
     {
@@ -808,9 +810,9 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
                         pKF->mnBAGlobalForKF = nLoopKF;
                     }
 
-                    const set<KeyFrame*> sChilds = pKF->GetChilds();
+                    const KeyFrameSet sChilds = pKF->GetChilds();
                     cv::Mat Twc = pKF->GetPoseInverse();
-                    for(set<KeyFrame*>::const_iterator sit=sChilds.begin();sit!=sChilds.end();sit++)
+                    for(KeyFrameSet::const_iterator sit=sChilds.begin();sit!=sChilds.end();sit++)
                     {
                         KeyFrame* pChild = *sit;
                         if(!pChild || pChild->isBad())

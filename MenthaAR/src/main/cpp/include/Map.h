@@ -35,6 +35,8 @@
 #ifndef MAP_H
 #define MAP_H
 
+#include "IdOrder.h"
+#include "IdOrder.h"
 #include "MapPoint.h"
 #include "KeyFrame.h"
 #include <set>
@@ -86,12 +88,12 @@ public:
     std::mutex mMutexPointCreation;
 
 protected:
-    std::set<MapPoint*> mspMapPoints;
-    std::set<KeyFrame*> mspKeyFrames;
+    MapPointSet mspMapPoints;
+    KeyFrameSet mspKeyFrames;
 
     // 回收站：存储已被移除但尚未释放内存的指针，防止野指针崩溃
-    std::set<MapPoint*> mspMapPointsTrash;
-    std::set<KeyFrame*> mspKeyFramesTrash;
+    MapPointSet mspMapPointsTrash;
+    KeyFrameSet mspKeyFramesTrash;
 
     std::vector<MapPoint*> mvpReferenceMapPoints;
 

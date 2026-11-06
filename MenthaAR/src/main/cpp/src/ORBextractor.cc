@@ -883,7 +883,11 @@ vector<cv::KeyPoint> ORBextractor::DistributeOctTree(const vector<cv::KeyPoint>&
                 vector<pair<int,ExtractorNode*> > vPrevSizeAndPointerToNode = vSizeAndPointerToNode;
                 vSizeAndPointerToNode.clear();
 
-                sort(vPrevSizeAndPointerToNode.begin(),vPrevSizeAndPointerToNode.end());
+                // 只按点数排序并保持稳定：原先 pair 的第二分量是节点地址，点数相同时的分裂顺序随内存地址变化。
+                // 先反转再稳定排序，使点数相同的节点按“先生成者先分裂”处理（下方循环从尾部向前遍历）
+                std::reverse(vPrevSizeAndPointerToNode.begin(),vPrevSizeAndPointerToNode.end());
+                stable_sort(vPrevSizeAndPointerToNode.begin(),vPrevSizeAndPointerToNode.end(),
+                            [](const pair<int,ExtractorNode*>& a, const pair<int,ExtractorNode*>& b){ return a.first < b.first; });
                 for(int j=vPrevSizeAndPointerToNode.size()-1;j>=0;j--)
                 {
                     ExtractorNode n1,n2,n3,n4;

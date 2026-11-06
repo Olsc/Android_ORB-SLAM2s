@@ -99,7 +99,7 @@ void KeyFrameDatabase::clear()
 
 vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float minScore)
 {
-    set<KeyFrame*> spConnectedKeyFrames = pKF->GetConnectedKeyFrames();
+    KeyFrameSet spConnectedKeyFrames = pKF->GetConnectedKeyFrames();
     list<pair<float,KeyFrame*> > lScoreAndMatch;
 
     {
@@ -175,7 +175,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float mi
 
     float minScoreToRetain = KFD_SCORE_RETAIN_RATIO*bestAccScore;
 
-    set<KeyFrame*> spAlreadyAddedKF;
+    KeyFrameSet spAlreadyAddedKF;
     vector<KeyFrame*> vpLoopCandidates;
     vpLoopCandidates.reserve(lAccScoreAndMatch.size());
 
@@ -262,7 +262,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
     }
 
     float minScoreToRetain = KFD_SCORE_RETAIN_RATIO*bestAccScore;
-    set<KeyFrame*> spAlreadyAddedKF;
+    KeyFrameSet spAlreadyAddedKF;
     vector<KeyFrame*> vpRelocCandidates;
     vpRelocCandidates.reserve(lAccScoreAndMatch.size());
     for(list<pair<float,KeyFrame*> >::iterator it=lAccScoreAndMatch.begin(), itend=lAccScoreAndMatch.end(); it!=itend; it++)

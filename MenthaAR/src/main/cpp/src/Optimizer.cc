@@ -158,11 +158,11 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
             vAllVertices.resize((size_t)id + 1, nullptr);
         vAllVertices[id] = vPoint;
 
-       const map<KeyFrame*,size_t> observations = pMP->GetObservations();
+       const KeyFrameMap<size_t> observations = pMP->GetObservations();
 
         int nEdges = 0;
         // 设置边
-        for(map<KeyFrame*,size_t>::const_iterator mit=observations.begin(); mit!=observations.end(); mit++)
+        for(KeyFrameMap<size_t>::const_iterator mit=observations.begin(); mit!=observations.end(); mit++)
         {
 
             KeyFrame* pKF = mit->first;
@@ -496,7 +496,7 @@ static void LocalBundleAdjustmentImpl(KeyFrame *pKF, const StopFlagT* pbStopFlag
     }
 
     // 固定关键帧。看到局部地图点但不是局部关键帧的关键帧，统计各固定关键帧观测到的局部地图点数量，按观测关联权重筛选最强约束的固定帧，防止极端共视膨胀
-    std::unordered_map<KeyFrame*, int> fixedKFObsCount;
+    KeyFrameMap<int> fixedKFObsCount;
     for(list<MapPoint*>::iterator lit=lLocalMapPoints.begin(), lend=lLocalMapPoints.end(); lit!=lend; lit++)
     {
         (*lit)->ForEachObservation([&](KeyFrame* pKFi, size_t) {
@@ -521,11 +521,13 @@ static void LocalBundleAdjustmentImpl(KeyFrame *pKF, const StopFlagT* pbStopFlag
     else
     {
         // 超过上限，选取观测局部点最多的前 LOCAL_BA_MAX_FIXED_KFS 个关键帧
+        // 观测数降序、同观测数按 id 升序：选出的固定帧集合与加入 g2o 的顺序都与内存地址无关
         vector<pair<KeyFrame*, int>> vSortedFixed(fixedKFObsCount.begin(), fixedKFObsCount.end());
-        std::nth_element(vSortedFixed.begin(), vSortedFixed.begin() + LOCAL_BA_MAX_FIXED_KFS, vSortedFixed.end(),
-                         [](const pair<KeyFrame*, int>& a, const pair<KeyFrame*, int>& b){
-                             return a.second > b.second;
-                         });
+        std::sort(vSortedFixed.begin(), vSortedFixed.end(),
+                  [](const pair<KeyFrame*, int>& a, const pair<KeyFrame*, int>& b){
+                      if(a.second != b.second) return a.second > b.second;
+                      return a.first->mnId < b.first->mnId;
+                  });
         vSortedFixed.resize(LOCAL_BA_MAX_FIXED_KFS);
         for(const auto& pair : vSortedFixed)
         {
@@ -841,7 +843,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, const std::atomic<bool>* pb
 void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* pCurKF,
                                        const LoopClosing::KeyFrameAndPose &NonCorrectedSim3,
                                        const LoopClosing::KeyFrameAndPose &CorrectedSim3,
-                                       const map<KeyFrame *, set<KeyFrame *> > &LoopConnections)
+                                       const KeyFrameMap<KeyFrameSet> &LoopConnections)
 {
     // 设置优化器
     g2o::SparseOptimizer optimizer;
@@ -915,7 +917,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
     const Eigen::Matrix<double,7,7> matLambda = Eigen::Matrix<double,7,7>::Identity();
 
     // 设置闭环边
-    for(map<KeyFrame *, set<KeyFrame *> >::const_iterator mit = LoopConnections.begin(), mend=LoopConnections.end(); mit!=mend; mit++)
+    for(KeyFrameMap<KeyFrameSet>::const_iterator mit = LoopConnections.begin(), mend=LoopConnections.end(); mit!=mend; mit++)
     {
         KeyFrame* pKF = mit->first;
         // 添加空指针和isBad检查，防止访问已删除的KeyFrame
@@ -923,7 +925,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
             continue;
 
         const long unsigned int nIDi = pKF->mnId;
-        const set<KeyFrame*> &spConnections = mit->second;
+        const KeyFrameSet &spConnections = mit->second;
 
         // 边界检查
         if(nIDi > nMaxKFid)
@@ -934,7 +936,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
         const g2o::Sim3 Siw = vScw[nIDi];
         const g2o::Sim3 Swi = Siw.inverse();
 
-        for(set<KeyFrame*>::const_iterator sit=spConnections.begin(), send=spConnections.end(); sit!=send; sit++)
+        for(KeyFrameSet::const_iterator sit=spConnections.begin(), send=spConnections.end(); sit!=send; sit++)
         {
             KeyFrame* pKFj = *sit;
             // 检查KeyFrame指针是否有效
@@ -1067,8 +1069,8 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
         }
 
         // 闭环边
-        const set<KeyFrame*> sLoopEdges = pKF->GetLoopEdges();
-        for(set<KeyFrame*>::const_iterator sit=sLoopEdges.begin(), send=sLoopEdges.end(); sit!=send; sit++)
+        const KeyFrameSet sLoopEdges = pKF->GetLoopEdges();
+        for(KeyFrameSet::const_iterator sit=sLoopEdges.begin(), send=sLoopEdges.end(); sit!=send; sit++)
         {
             KeyFrame* pLKF = *sit;
             // 添加空指针和isBad检查，防止访问已删除的KeyFrame

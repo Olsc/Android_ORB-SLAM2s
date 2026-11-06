@@ -152,6 +152,24 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
     return Tcw;
 }
 
+bool System::WaitForBackendIdle(int timeoutMs)
+{
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeoutMs);
+    for(;;)
+    {
+        // 两个线程都空闲后再确认一次，避免 LM 刚把关键帧投递给 LC 的瞬间被误判为空闲
+        if(mpLocalMapper->IsIdle() && mpLoopCloser->IsIdle())
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            if(mpLocalMapper->IsIdle() && mpLoopCloser->IsIdle())
+                return true;
+        }
+        if(std::chrono::steady_clock::now() > deadline)
+            return false;
+        std::this_thread::sleep_for(std::chrono::microseconds(200));
+    }
+}
+
 bool System::MapChanged()
 {
     static std::atomic<int> n{0};
@@ -297,11 +315,11 @@ void System::RetireSubmap(Map* pOldMap)
     const vector<MapPoint*> vpOwnMPs = pOldMap->GetAllMapPoints();
 
     // 归属判定用容器成员关系及 GetMap() 双重校验（点/帧是否属于本图）
-    std::set<KeyFrame*> spDyingKFs(vpKFs.begin(), vpKFs.end());
-    std::set<MapPoint*> spOwnMPs(vpOwnMPs.begin(), vpOwnMPs.end());
+    KeyFrameSet spDyingKFs(vpKFs.begin(), vpKFs.end());
+    MapPointSet spOwnMPs(vpOwnMPs.begin(), vpOwnMPs.end());
 
     // 先剥离存活地图点对本图 KF 的观测（迁移点、跨图回环融合产物），否则先删 KF 会留下悬挂观测指针，后续法线/坏点判定将解引用已释放内存
-    std::set<MapPoint*> spForeignSeen;
+    MapPointSet spForeignSeen;
     for (size_t i = 0; i < vpKFs.size(); ++i) {
         KeyFrame* pKF = vpKFs[i];
         if (!pKF) continue;
@@ -319,8 +337,8 @@ void System::RetireSubmap(Map* pOldMap)
 
             // 预收集该点在本图 KF 上的全部观测（GetObservations 返回值拷贝，之后不再遍历其内部状态，规避摘除过程中的对象状态变化）
             vector<KeyFrame*> vObsToErase;
-            const map<KeyFrame*, size_t> obs = pForeign->GetObservations();
-            for (map<KeyFrame*, size_t>::const_iterator it = obs.begin(); it != obs.end(); ++it) {
+            const KeyFrameMap<size_t> obs = pForeign->GetObservations();
+            for (KeyFrameMap<size_t>::const_iterator it = obs.begin(); it != obs.end(); ++it) {
                 if (spDyingKFs.count(it->first))
                     vObsToErase.push_back(it->first);
             }
@@ -332,7 +350,7 @@ void System::RetireSubmap(Map* pOldMap)
     }
 
     // 再置空存活 KF 匹配数组中对本图点的残留引用（NULL 为数组合法状态），被改动的 KF 记录下来，最后重算共视连接
-    std::set<KeyFrame*> spTouchedSurvivorKFs;
+    KeyFrameSet spTouchedSurvivorKFs;
     for (size_t m = 0; m < mvpMaps.size(); ++m) {
         Map* pMap = mvpMaps[m];
         if (!pMap || pMap == pOldMap)
@@ -362,7 +380,7 @@ void System::RetireSubmap(Map* pOldMap)
     pOldMap->clear();
 
     // 重算被改动幸存 KF 的共视连接，剔除指向已删除对象的死边
-    for (std::set<KeyFrame*>::iterator it = spTouchedSurvivorKFs.begin();
+    for (KeyFrameSet::iterator it = spTouchedSurvivorKFs.begin();
          it != spTouchedSurvivorKFs.end(); ++it) {
         (*it)->UpdateConnections();
     }

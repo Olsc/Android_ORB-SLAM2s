@@ -35,6 +35,8 @@
 #ifndef KEYFRAME_H
 #define KEYFRAME_H
 
+#include "IdOrder.h"
+#include "IdOrder.h"
 #include "MapPoint.h"
 #include "HBSTTypes.h"
 #include "ORBextractor.h"
@@ -81,7 +83,7 @@ public:
     void EraseConnection(KeyFrame* pKF);
     void UpdateConnections();
     void UpdateBestCovisibles();
-    std::set<KeyFrame *> GetConnectedKeyFrames();
+    KeyFrameSet GetConnectedKeyFrames();
     std::vector<KeyFrame* > GetVectorCovisibleKeyFrames();
     std::vector<KeyFrame*> GetBestCovisibilityKeyFrames(const int &N);
     std::vector<KeyFrame*> GetCovisiblesByWeight(const int &w);
@@ -91,21 +93,21 @@ public:
     void AddChild(KeyFrame* pKF);
     void EraseChild(KeyFrame* pKF);
     void ChangeParent(KeyFrame* pKF);
-    std::set<KeyFrame*> GetChilds();
+    KeyFrameSet GetChilds();
     void GetChilds(std::vector<KeyFrame*>& vOutChilds);
     KeyFrame* GetParent();
     bool hasChild(KeyFrame* pKF);
 
     // 回环边
     void AddLoopEdge(KeyFrame* pKF);
-    std::set<KeyFrame*> GetLoopEdges();
+    KeyFrameSet GetLoopEdges();
 
     // 地图点观测函数
     void AddMapPoint(MapPoint* pMP, const size_t &idx);
     void EraseMapPointMatch(const size_t &idx);
     void EraseMapPointMatch(MapPoint* pMP);
     void ReplaceMapPointMatch(const size_t &idx, MapPoint* pMP);
-    std::set<MapPoint*> GetMapPoints();
+    MapPointSet GetMapPoints();
     std::vector<MapPoint*> GetMapPointMatches();
     // 将本关键帧的观测点追加到调用方缓冲
     void AppendMapPointMatches(std::vector<MapPoint*>& out);
@@ -229,15 +231,15 @@ protected:
 
     std::vector< std::vector <std::vector<size_t> > > mGrid;
 
-    std::map<KeyFrame*,int> mConnectedKeyFrameWeights;
+    KeyFrameMap<int> mConnectedKeyFrameWeights;
     std::vector<KeyFrame*> mvpOrderedConnectedKeyFrames;
     std::vector<int> mvOrderedWeights;
 
     // 生成树和回环边
     bool mbFirstConnection;
     KeyFrame* mpParent;
-    std::set<KeyFrame*> mspChildrens;
-    std::set<KeyFrame*> mspLoopEdges;
+    KeyFrameSet mspChildrens;
+    KeyFrameSet mspLoopEdges;
 
     // 坏标志
     bool mbNotErase;

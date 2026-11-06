@@ -63,8 +63,8 @@ class LoopClosing
 {
 public:
 
-    typedef std::pair<std::set<KeyFrame*>,int> ConsistentGroup;
-    typedef std::map<KeyFrame*,g2o::Sim3,std::less<KeyFrame*>,
+    typedef std::pair<KeyFrameSet,int> ConsistentGroup;
+    typedef std::map<KeyFrame*,g2o::Sim3,IdLess<KeyFrame>,
         Eigen::aligned_allocator<std::pair<KeyFrame *const, g2o::Sim3> > > KeyFrameAndPose;
 
 public:
@@ -103,6 +103,16 @@ public:
         return mbFinishedGBA;
     }
 
+    // 队列为空、未在处理关键帧、GBA 未运行（供离线回放的同步模式使用）
+    bool IsIdle(){
+        if(mbProcessing.load(std::memory_order_acquire)) return false;
+        {
+            std::unique_lock<std::mutex> lock(mMutexLoopQueue);
+            if(!mlpLoopKeyFrameQueue.empty()) return false;
+        }
+        return !isRunningGBA();
+    }
+
     void RequestFinish();
 
     bool isFinished();
@@ -122,6 +132,8 @@ protected:
     void ResetIfRequested();
     // 原子化以便事件谓词无锁读取（写入后统一 NotifyEvent）
     std::atomic<bool> mbResetRequested;
+    // 正在执行 DetectLoop/ComputeSim3/CorrectLoop
+    std::atomic<bool> mbProcessing{false};
     std::mutex mMutexReset;
 
     bool mbResetComplete = false;

@@ -695,7 +695,7 @@ void LocalMapping::SearchInNeighbors()
     // 增量脏标记更新：仅对本轮发生融合或新观测改变的地图点更新代表性描述子与法向
     if(!vModifiedMPs.empty())
     {
-        std::sort(vModifiedMPs.begin(), vModifiedMPs.end());
+        std::sort(vModifiedMPs.begin(), vModifiedMPs.end(), IdLess<MapPoint>());
         vModifiedMPs.erase(std::unique(vModifiedMPs.begin(), vModifiedMPs.end()), vModifiedMPs.end());
 
         for(size_t i=0, iend=vModifiedMPs.size(); i<iend; i++)
@@ -1066,7 +1066,7 @@ void LocalMapping::CheckLimits()
         int nErased = 0;
 
         // 获取局部关键帧（当前的邻居）以保护它们
-        set<KeyFrame*> spLocalKFs;
+        KeyFrameSet spLocalKFs;
         vector<KeyFrame*> vpLocalKFs = mpCurrentKeyFrame->GetVectorCovisibleKeyFrames();
         for(size_t i=0; i<vpLocalKFs.size(); i++) spLocalKFs.insert(vpLocalKFs[i]);
         spLocalKFs.insert(mpCurrentKeyFrame);
@@ -1104,7 +1104,7 @@ void LocalMapping::CheckLimits()
         int nErasedMP = 0;
 
         // 获取当前帧观测到的地图点以保护它们
-        set<MapPoint*> spLocalMPs;
+        MapPointSet spLocalMPs;
         if(mpCurrentKeyFrame) {
              vector<MapPoint*> currentMPs = mpCurrentKeyFrame->GetMapPointMatches();
              for(auto mp : currentMPs) if(mp) spLocalMPs.insert(mp);

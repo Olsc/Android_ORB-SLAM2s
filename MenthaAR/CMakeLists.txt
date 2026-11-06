@@ -325,6 +325,21 @@ if(OpenMP_CXX_FOUND)
     target_compile_options(MenthaAR_Engine PRIVATE ${OpenMP_CXX_FLAGS})
 endif()
 
+# 离线回放基准可执行文件（默认关闭；Gradle 传入 -PmenthaBench 时开启，产物在 .cxx 目录，用 adb push 到设备运行）
+option(MENTHA_BUILD_BENCH "Build offline replay benchmark executable" OFF)
+if(MENTHA_BUILD_BENCH)
+    add_executable(slam_bench src/main/cpp/bench/slam_bench.cpp)
+    target_link_libraries(slam_bench MenthaAR_Engine ${log-lib})
+    if(OpenMP_CXX_FOUND)
+        target_link_libraries(slam_bench OpenMP::OpenMP_CXX -static-openmp)
+    endif()
+    target_compile_options(slam_bench PRIVATE
+            $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:-O3>)
+    set_target_properties(slam_bench PROPERTIES
+            BUILD_WITH_INSTALL_RPATH TRUE
+            INSTALL_RPATH "\$ORIGIN")
+endif()
+
 # Mentha 性能分析器配置
 set(MENTHA_DEVELOP_MODE OFF) # ON 启用分析器，OFF 关闭
 

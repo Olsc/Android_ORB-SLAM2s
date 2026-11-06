@@ -203,16 +203,16 @@ void MapPoint::EraseObservation(KeyFrame* pKF)
         SetBadFlag();
 }
 
-map<KeyFrame*, size_t> MapPoint::GetObservations()
+KeyFrameMap<size_t> MapPoint::GetObservations()
 {
     unique_lock<mutex> lock(mMutexFeatures);
     return mObservations;
 }
 
-void MapPoint::ShareObservations(std::unordered_map<KeyFrame*, int>& counter, unsigned long excludeId)
+void MapPoint::ShareObservations(KeyFrameMap<int>& counter, unsigned long excludeId)
 {
     unique_lock<mutex> lock(mMutexFeatures);
-    for(std::map<KeyFrame*, size_t>::const_iterator mit=mObservations.begin(), mend=mObservations.end(); mit!=mend; mit++)
+    for(KeyFrameMap<size_t>::const_iterator mit=mObservations.begin(), mend=mObservations.end(); mit!=mend; mit++)
     {
         KeyFrame* pKF = mit->first;
         if(pKF->mnId == excludeId || pKF->isBad())
@@ -228,7 +228,7 @@ int MapPoint::GetRedundantObservationsCount(KeyFrame* pKF, int scaleLevel)
 
     unique_lock<mutex> lock(mMutexFeatures);
     int count = 0;
-    for(std::map<KeyFrame*, size_t>::const_iterator mit=mObservations.begin(), mend=mObservations.end(); mit!=mend; mit++)
+    for(KeyFrameMap<size_t>::const_iterator mit=mObservations.begin(), mend=mObservations.end(); mit!=mend; mit++)
     {
         KeyFrame* pKFi = mit->first;
         if(pKFi==pKF || pKFi->isBad())
@@ -251,7 +251,7 @@ int MapPoint::Observations() const
 
 void MapPoint::SetBadFlag()
 {
-    map<KeyFrame*,size_t> obs;
+    KeyFrameMap<size_t> obs;
     {
         unique_lock<mutex> lock1(mMutexFeatures);
         unique_lock<mutex> lock2(mMutexPos);
@@ -259,7 +259,7 @@ void MapPoint::SetBadFlag()
         obs = mObservations;
         mObservations.clear();
     }
-    for(map<KeyFrame*,size_t>::iterator mit=obs.begin(), mend=obs.end(); mit!=mend; mit++)
+    for(KeyFrameMap<size_t>::iterator mit=obs.begin(), mend=obs.end(); mit!=mend; mit++)
     {
         KeyFrame* pKF = mit->first;
         pKF->EraseMapPointMatch(mit->second);
@@ -284,7 +284,7 @@ void MapPoint::Replace(MapPoint* pMP)
         return;
 
     int nvisible, nfound;
-    map<KeyFrame*,size_t> obs;
+    KeyFrameMap<size_t> obs;
     {
         unique_lock<mutex> lock1(mMutexFeatures);
         unique_lock<mutex> lock2(mMutexPos);
@@ -296,7 +296,7 @@ void MapPoint::Replace(MapPoint* pMP)
         mpReplaced = pMP;
     }
 
-    for(map<KeyFrame*,size_t>::iterator mit=obs.begin(), mend=obs.end(); mit!=mend; mit++)
+    for(KeyFrameMap<size_t>::iterator mit=obs.begin(), mend=obs.end(); mit!=mend; mit++)
     {
         // 替换关键帧中的测量值
         KeyFrame* pKF = mit->first;
