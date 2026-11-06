@@ -136,11 +136,11 @@ Plane::Plane(const float& nx, const float& ny, const float& nz,
         const float factor = ang / sa;
         cv::Mat R1 = ExpSO3(vx * factor, vy * factor, vz * factor);
         cv::Mat R2 = ExpSO3(0.0f, rang, 0.0f);
-        Tpw.rowRange(0, 3).colRange(0, 3) = Mat33Mul(R1, R2);
+        Mat33Mul(R1, R2).copyTo(Tpw.rowRange(0, 3).colRange(0, 3)); // 对子矩阵头赋值只会替换临时头，必须 copyTo 才写进 Tpw
     }
     else
     {  // 法向量平行于up向量，绕up旋转rang角度
-        Tpw.rowRange(0, 3).colRange(0, 3) = ExpSO3(0.0f, rang, 0.0f);
+        ExpSO3(0.0f, rang, 0.0f).copyTo(Tpw.rowRange(0, 3).colRange(0, 3));
     }
 
     o.copyTo(Tpw.col(3).rowRange(0, 3)); // 设置平移部分
@@ -255,11 +255,11 @@ void Plane::Recompute()
         const float factor = ang / sa;
         cv::Mat R1 = ExpSO3(vx * factor, vy * factor, vz * factor);
         cv::Mat R2 = ExpSO3(0.0f, rang, 0.0f);
-        Tpw.rowRange(0, 3).colRange(0, 3) = Mat33Mul(R1, R2);
+        Mat33Mul(R1, R2).copyTo(Tpw.rowRange(0, 3).colRange(0, 3)); // 对子矩阵头赋值只会替换临时头，必须 copyTo 才写进 Tpw
     }
     else
     {  // 法向量平行于up向量（如水平地面），绕up旋转rang角度
-        Tpw.rowRange(0, 3).colRange(0, 3) = ExpSO3(0.0f, rang, 0.0f);
+        ExpSO3(0.0f, rang, 0.0f).copyTo(Tpw.rowRange(0, 3).colRange(0, 3));
     }
     o.copyTo(Tpw.col(3).rowRange(0, 3)); // 设置平移部分
 

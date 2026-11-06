@@ -85,8 +85,9 @@ protected:
     std::vector<size_t> mvnIndices1;
     std::vector<size_t> mvSigmaSquare1;
     std::vector<size_t> mvSigmaSquare2;
-    std::vector<size_t> mvnMaxError1;
-    std::vector<size_t> mvnMaxError2;
+    // 卡方阈值 9.210*σ²：必须是浮点，原先存成 size_t 会被截断（第 0 层 9.21→9，收紧 2.3%）
+    std::vector<float> mvnMaxError1;
+    std::vector<float> mvnMaxError2;
 
     int N;
     int mN1;

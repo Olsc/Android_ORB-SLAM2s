@@ -211,7 +211,8 @@ void Initializer::FindHomography(vector<bool> &vbMatchesInliers, float &score, c
 
 void Initializer::FindFundamental(vector<bool> &vbMatchesInliers, float &score, cv::Mat &F21)
 {
-    const int N = vbMatchesInliers.size();
+    // 传入的 vbMatchesInliers 是空向量：原先取它的 size 得到 N=0，nInlierBest 恒为 0，自适应早停从不触发
+    const int N = mvMatches12.size();
 
     // 归一化坐标
     vector<cv::Point2f> vPn1, vPn2;
@@ -401,8 +402,9 @@ float Initializer::CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vecto
 
         // x2in1 = H12*x2
         const float w2in1 = h31inv*u2 + h32inv*v2 + h33inv;
-        // 正深度判定：退化/无穷远点直接拒绝
-        if (w2in1 <= 0.0f)
+        // 只排除无穷远点（w=0）。SVD 零空间向量的符号是任意的：取到 -H 时所有 w 都为负，
+        // 按 w<=0 拒绝会让约一半的假设得 0 分；下方的平方判据本身与符号无关，正深度检查在 CheckRT 中完成
+        if (w2in1 == 0.0f)
         {
             vbMatchesInliers[i] = false;
             continue;
@@ -423,7 +425,7 @@ float Initializer::CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vecto
 
         // x1in2 = H21*x1
         const float w1in2 = h31*u1 + h32*v1 + h33;
-        if (w1in2 <= 0.0f)
+        if (w1in2 == 0.0f)
         {
             vbMatchesInliers[i] = false;
             continue;

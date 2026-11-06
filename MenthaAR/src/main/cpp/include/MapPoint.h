@@ -115,6 +115,7 @@ public:
         if(d && !d->empty()) {
             const size_t n = (d->cols < 32) ? static_cast<size_t>(d->cols) : 32u;
             memcpy(out, d->ptr<uint8_t>(0), n);
+            if(n < 32) memset(out + n, 0, 32 - n); // 短描述子时尾部必须有定义
             return true;
         }
         memset(out, 0, 32);

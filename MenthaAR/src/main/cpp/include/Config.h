@@ -718,8 +718,6 @@ const int SIM3_RANSAC_MIN_SET = 3;
 // PnP Gauss-Newton 迭代次数
 const int PNP_GN_ITERS = 5;
 
-// PnP RANSAC 迭代次数公式中 epsilon 的幂指数
-const int PNP_RANSAC_POWER = 3;
 
 // 关键帧数据库
 

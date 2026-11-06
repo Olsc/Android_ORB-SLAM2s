@@ -161,9 +161,10 @@ void PnPsolver::SetRansacParameters(double probability, int minInliers, int maxI
     if(mRansacMinInliers==N)
         nIterations=1;
     else
-        nIterations = ceil(log(1-mRansacProb)/log(1-pow(mRansacEpsilon,PNP_RANSAC_POWER)));
+        nIterations = ceil(log(1-mRansacProb)/log(1-pow(mRansacEpsilon,mRansacMinSet))); // 指数必须等于最小样本数（原先固定为 3，而最小集为 4）
 
     mRansacMaxIts = max(1,min(nIterations,mRansacMaxIts));
+    mnAdaptiveMaxIts = mRansacMaxIts;
 
     mvMaxError.resize(mvSigma2.size());
     for(size_t i=0; i<mvSigma2.size(); i++)
@@ -195,9 +196,9 @@ cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInlie
         vector<bool> vUsed(N, false);
 
         int nCurrentIterations = 0;
-        // 自适应RANSAC提前终止：当已有足够好的解且剩余迭代不可能找到更好的时停止
-        int maxAdaptiveIters = mRansacMaxIts;
-        while(mnIterations<maxAdaptiveIters || nCurrentIterations<nIterations)
+        // 自适应 RANSAC 提前终止：上限保存在成员 mnAdaptiveMaxIts 中并跨调用生效。
+        // 原先上限是每次调用都重置的局部变量，且循环条件用 ||，早停从未真正起作用
+        while(mnIterations<mnAdaptiveMaxIts && nCurrentIterations<nIterations)
         {
             nCurrentIterations++;
             mnIterations++;
@@ -257,26 +258,24 @@ cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInlie
 
             // 基于当前内点率自适应更新RANSAC最大迭代次数：N = log(1-p)/log(1-(1-e)^s)
             // 置信度p=0.99，最小样本集s=4，e为当前外点率
-            if (mnBestInliers > mRansacMinSet && nCurrentIterations > PNP_ADAPTIVE_START_ITER) {
-                float bestInlierRatio = (float)mnBestInliers / (float)N;
+            if (mnBestInliers > mRansacMinSet && mnIterations > PNP_ADAPTIVE_START_ITER) {
+                const double bestInlierRatio = (double)mnBestInliers / (double)N;
                 if (bestInlierRatio > PNP_ADAPTIVE_MIN_RATIO) {
-                    float outlierRatio = 1.0f - bestInlierRatio;
-                    float prob_no_good = 1.0f;
+                    double wPow = 1.0;
                     for (int k = 0; k < mRansacMinSet; k++)
-                        prob_no_good *= outlierRatio; // (1-ε)^s
-                    if (prob_no_good > 0.0f) {
-                        float n_needed = log(1.0 - mRansacProb) / log(1.0 - (1.0f - outlierRatio) * (1.0f - outlierRatio) * (1.0f - outlierRatio) * (1.0f - outlierRatio) + 1e-30f);
-                        n_needed = max(1.0f, n_needed);
-                        // 剩余迭代不足以找到更好的解 → 提前终止
-                        if (nCurrentIterations >= n_needed * PNP_ADAPTIVE_SAFETY_FACTOR) {
-                            maxAdaptiveIters = mnIterations; // 终止 while 循环
-                        }
+                        wPow *= bestInlierRatio; // w^s：一次抽样全为内点的概率
+                    if (wPow < 1.0) {
+                        double n_needed = log(1.0 - mRansacProb) / log(1.0 - wPow);
+                        n_needed = max(1.0, n_needed) * PNP_ADAPTIVE_SAFETY_FACTOR;
+                        // 已达到置信度所需的迭代数 → 收紧总上限，本次与后续调用都不再迭代
+                        if ((double)mnIterations >= n_needed && mnIterations < mnAdaptiveMaxIts)
+                            mnAdaptiveMaxIts = mnIterations;
                     }
                 }
             }
         }
 
-        if(mnIterations>=mRansacMaxIts)
+        if(mnIterations>=mnAdaptiveMaxIts)
         {
             bNoMore=true;
             if(mnBestInliers>=mRansacMinInliers)
@@ -356,29 +355,30 @@ void PnPsolver::CheckInliers()
 {
     mnInliersi=0;
 
-    const float fuc = (float)uc;
-    const float fvc = (float)vc;
-    const float ffu = (float)fu;
-    const float ffv = (float)fv;
-
+    // mRi/mti 本来就是 double：整个判据在 double 中计算，不再把 Xc/Yc/Zc 先舍入到 float。
+    // 免除法判据：|u - (uc + fu*Xc/Zc)|² + |v - (vc + fv*Yc/Zc)|² < e²
+    //   ⇔ ((u-uc)*Zc - fu*Xc)² + ((v-vc)*Zc - fv*Yc)² < e²·Zc²   （Zc>0）
     for(int i=0; i<N; i++)
     {
-        cv::Point3f P3Dw = mvP3Dw[i];
-        cv::Point2f P2D = mvP2D[i];
+        const cv::Point3f &P3Dw = mvP3Dw[i];
+        const cv::Point2f &P2D = mvP2D[i];
 
-        float Xc = mRi[0][0]*P3Dw.x+mRi[0][1]*P3Dw.y+mRi[0][2]*P3Dw.z+mti[0];
-        float Yc = mRi[1][0]*P3Dw.x+mRi[1][1]*P3Dw.y+mRi[1][2]*P3Dw.z+mti[1];
-        float invZc = 1/(mRi[2][0]*P3Dw.x+mRi[2][1]*P3Dw.y+mRi[2][2]*P3Dw.z+mti[2]);
+        const double Xc = mRi[0][0]*P3Dw.x+mRi[0][1]*P3Dw.y+mRi[0][2]*P3Dw.z+mti[0];
+        const double Yc = mRi[1][0]*P3Dw.x+mRi[1][1]*P3Dw.y+mRi[1][2]*P3Dw.z+mti[1];
+        const double Zc = mRi[2][0]*P3Dw.x+mRi[2][1]*P3Dw.y+mRi[2][2]*P3Dw.z+mti[2];
 
-        float ue = fuc + ffu * Xc * invZc;
-        float ve = fvc + ffv * Yc * invZc;
+        // 相机后方的点与前方镜像点投影到同一像素，必须按深度符号排除
+        if(Zc <= 0.0)
+        {
+            mvbInliersi[i]=false;
+            continue;
+        }
 
-        float distX = P2D.x-ue;
-        float distY = P2D.y-ve;
+        const double distX = ((double)P2D.x - uc) * Zc - fu * Xc;
+        const double distY = ((double)P2D.y - vc) * Zc - fv * Yc;
+        const double error2Zc2 = distX*distX+distY*distY;
 
-        float error2 = distX*distX+distY*distY;
-
-        if(error2<mvMaxError[i])
+        if(error2Zc2 < (double)mvMaxError[i] * Zc * Zc)
         {
             mvbInliersi[i]=true;
             mnInliersi++;

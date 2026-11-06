@@ -168,6 +168,9 @@ class PnPsolver {
   // RANSAC最大迭代次数
   int mRansacMaxIts;
 
+  // 自适应早停收紧后的总迭代上限（初始等于 mRansacMaxIts，跨 iterate() 调用生效）
+  int mnAdaptiveMaxIts = 0;
+
   // RANSAC期望的内点/总数比率
   float mRansacEpsilon;
 

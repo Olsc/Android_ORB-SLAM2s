@@ -211,7 +211,7 @@ int ORBmatcher::SearchByHBST(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoi
         rotHistInit = true;
     }
     for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].clear();
-    const float factor = 1.0f/HISTO_LENGTH;
+    const float factor = HISTO_LENGTH/360.0f; // 箱宽 360/HISTO_LENGTH 度；原 1/HISTO_LENGTH 只用到 0..12 号箱
 
     if(pKF->mDescriptors.empty() || F.mDescriptors.empty())
         return 0;
@@ -484,7 +484,7 @@ int ORBmatcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f
         rotHistInit = true;
     }
     for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].clear();
-    const float factor = 1.0f/HISTO_LENGTH;
+    const float factor = HISTO_LENGTH/360.0f; // 箱宽 360/HISTO_LENGTH 度；原 1/HISTO_LENGTH 只用到 0..12 号箱
 
     vector<int> vMatchedDistance(F2.mvKeysUn.size(),INT_MAX);
     vector<int> vnMatches21(F2.mvKeysUn.size(),-1);
@@ -622,7 +622,7 @@ int ORBmatcher::SearchByHBST(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> 
     }
     for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].clear();
 
-    const float factor = 1.0f / HISTO_LENGTH;
+    const float factor = HISTO_LENGTH/360.0f;
 
     if (Descriptors1.empty() || Descriptors2.empty())
         return 0;
@@ -814,7 +814,7 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
     }
     for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].clear();
 
-    const float factor = 1.0f/HISTO_LENGTH;
+    const float factor = HISTO_LENGTH/360.0f; // 箱宽 360/HISTO_LENGTH 度；原 1/HISTO_LENGTH 只用到 0..12 号箱
 
     // F12 对整个搜索恒定：九元素一次取出
     const float f00=F12.at<float>(0,0), f01=F12.at<float>(0,1), f02=F12.at<float>(0,2);
@@ -1605,7 +1605,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
         rotHistInit = true;
     }
     for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].clear();
-    const float factor = 1.0f/HISTO_LENGTH;
+    const float factor = HISTO_LENGTH/360.0f; // 箱宽 360/HISTO_LENGTH 度；原 1/HISTO_LENGTH 只用到 0..12 号箱
 
     const cv::Mat Rcw = CurrentFrame.mTcw.rowRange(0,3).colRange(0,3);
     const cv::Mat tcw = CurrentFrame.mTcw.rowRange(0,3).col(3);
@@ -1672,9 +1672,10 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
                 if(vIndices2.empty())
                     continue;
 
-                // 读取该点描述子
+                // 读取该点描述子；没有描述子的点不能用全零描述子参与匹配
                 uint8_t dMP[ORB_DESC_COLS];
-                pMP->GetDescriptor(dMP);
+                if(!pMP->GetDescriptor(dMP))
+                    continue;
 
                 int bestDist = ORB_MAX_DISTANCE;
                 int bestIdx2 = -1;
@@ -1682,6 +1683,12 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
                 for(vector<size_t>::const_iterator vit=vIndices2.begin(), vend=vIndices2.end(); vit!=vend; vit++)
                 {
                     const size_t i2 = *vit;
+
+                    // 已被前面的地图点匹配上的关键点跳过（与上游一致）：否则后来的点覆盖先前匹配、nmatches 重复计数，
+                    // 同一个 bestIdx2 被压入两次旋转直方图
+                    if(CurrentFrame.mvpMapPoints[i2])
+                        if(CurrentFrame.mvpMapPoints[i2]->Observations()>0)
+                            continue;
 
                     const int dist = DescriptorDistance(dMP, CurrentFrame.mDescriptors.ptr<uint8_t>(i2));
 
@@ -1760,7 +1767,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const Map
         rotHistInit = true;
     }
     for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].clear();
-    const float factor = 1.0f/HISTO_LENGTH;
+    const float factor = HISTO_LENGTH/360.0f; // 箱宽 360/HISTO_LENGTH 度；原 1/HISTO_LENGTH 只用到 0..12 号箱
 
     const vector<MapPoint*> vpMPs = pKF->GetMapPointMatches();
 

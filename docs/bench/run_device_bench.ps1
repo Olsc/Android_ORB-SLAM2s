@@ -34,7 +34,20 @@ if ($Compare) {
     if ($a.Count -ne $b.Count) { $diff += [Math]::Abs($a.Count - $b.Count) }
     if ($diff -eq 0) { Write-Host "IDENTICAL: $($Compare[0]) == $($Compare[1]) ($n frames, poses bit-exact)" -ForegroundColor Green }
     else { Write-Host "DIFFER: $diff frame(s) differ, first at frame $first" -ForegroundColor Yellow; Write-Host "  A: $($a[$first])"; Write-Host "  B: $($b[$first])" }
-    foreach ($t in $Compare) { Write-Host "--- $t"; Get-Content (Join-Path $resDir "$t.txt") | Where-Object { $_ -match '^#' } }
+    foreach ($t in $Compare) {
+        Write-Host "--- $t"
+        $sum = 0; $cnt = 0; $trMin = 1e9; $low = 0
+        foreach ($line in (Get-Content (Join-Path $resDir "$t.txt"))) {
+            if ($line -match '^#') { continue }
+            $p = $line.Split(' ')
+            if ($p[1] -ne '2') { continue }
+            $v = [int]$p[2]; $sum += $v; $cnt++
+            if ($v -lt $trMin) { $trMin = $v }
+            if ($v -lt 50) { $low++ }
+        }
+        if ($cnt -gt 0) { Write-Host ("# tracked/frame(OK): mean={0:F1} min={1} frames<50={2}" -f ($sum / $cnt), $trMin, $low) }
+        Get-Content (Join-Path $resDir "$t.txt") | Where-Object { $_ -match '^#' }
+    }
     exit 0
 }
 
