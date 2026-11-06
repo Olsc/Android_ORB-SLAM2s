@@ -773,10 +773,14 @@ cv::Mat LocalMapping::ComputeF12(KeyFrame *&pKF1, KeyFrame *&pKF2)
     return F;
 }
 
+// 停止请求采用计数：每个 RequestStop 必须配对一个 Release/CancelStopRequest。
+// 原先任一方的 Release 都会清掉所有人的请求：CorrectLoop 的显式 Release 加上 stopScope 析构的二次 Release，
+// 会撤销 GBA 线程刚发出的请求，GBA 线程在 WaitForStopped 中永久等待并一直持有 mMutexGBA，整个系统卡死。
 void LocalMapping::RequestStop()
 {
     {
         unique_lock<mutex> lock(mMutexStop);
+        ++mnStopRequests;
         mbStopRequested.store(true);
     }
     mbAbortBA.store(true);
@@ -785,12 +789,22 @@ void LocalMapping::RequestStop()
 
 void LocalMapping::CancelStopRequest()
 {
+    // 请求方放弃等待：与 Release 相同，只撤销自己那一份请求
+    Release();
+}
+
+void LocalMapping::ReleaseAll()
+{
+    // 强制清除所有停止请求（仅用于 Reset / Shutdown 等需要无条件唤醒建图线程的路径）
     {
         unique_lock<mutex> lock(mMutexStop);
-        mbStopRequested.store(false);
+        unique_lock<mutex> lock2(mMutexFinish);
+        if(mbFinished)
+            return;
+        mnStopRequests = 0;
         mbStopped.store(false);
+        mbStopRequested.store(false);
     }
-    // 若 LM 已陷入 Stopped 态的 cv 等待，需唤醒它以观察取消后的状态
     NotifyEvent();
 }
 
@@ -819,14 +833,18 @@ bool LocalMapping::isStopped()
     return mbStopped.load();
 }
 
-bool LocalMapping::WaitForStopped()
+bool LocalMapping::WaitForStopped(int timeoutMs)
 {
     if (isStopped()) return true;
     std::unique_lock<std::mutex> lock(mMutexEvent);
-    mCvEvent.wait(lock, [this]{
+    auto pred = [this]{
         return mbStopped.load(std::memory_order_acquire) ||
                mbFinishRequested.load(std::memory_order_acquire);
-    });
+    };
+    if(timeoutMs < 0)
+        mCvEvent.wait(lock, pred);
+    else
+        mCvEvent.wait_for(lock, std::chrono::milliseconds(timeoutMs), pred);
     return isStopped();
 }
 
@@ -843,8 +861,13 @@ void LocalMapping::Release()
         unique_lock<mutex> lock2(mMutexFinish);
         if(mbFinished)
             return;
-        mbStopped.store(false);
-        mbStopRequested.store(false);
+        if(mnStopRequests > 0)
+            --mnStopRequests;
+        if(mnStopRequests == 0)
+        {
+            mbStopped.store(false);
+            mbStopRequested.store(false);
+        }
     }
     // 事件通知在两把锁释放后进行（mMutexEvent 下 notify，确保可见性与不丢唤醒）
     NotifyEvent();
@@ -1001,7 +1024,11 @@ void LocalMapping::ResetIfRequested()
     unique_lock<mutex> lock(mMutexReset);
     if(mbResetRequested.load())
     {
-        mlNewKeyFrames.clear();
+        {
+            // 跟踪线程在 mMutexNewKFs 下 push_back，清空必须持同一把锁。锁序 mMutexReset -> mMutexNewKFs，无反向嵌套
+            unique_lock<mutex> lockQ(mMutexNewKFs);
+            mlNewKeyFrames.clear();
+        }
         mlpRecentAddedMapPoints.clear();
         mbResetRequested=false;
         {

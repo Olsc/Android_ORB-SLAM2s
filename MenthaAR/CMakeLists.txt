@@ -197,10 +197,12 @@ include_directories(
         src/main/cpp/Thirdparty/srrg_hbst
 )
 
-target_compile_definitions(g2o PRIVATE
+# PUBLIC：所有链接 g2o 的目标（MenthaAR_Engine 直接内联访问 g2o::SE3Quat / BaseVertex 等含 Eigen 成员的类）
+# 必须与 g2o 使用相同的 Eigen 对齐配置，否则同一类型在两侧的 sizeof / 成员偏移不同（ODR 违规）。
+# Eigen 3.2.8 没有 EIGEN_MAX_ALIGN_BYTES（3.3 引入），该宏在本项目中无效，已移除。
+target_compile_definitions(g2o PUBLIC
         EIGEN_DONT_ALIGN_STATICALLY
-        EIGEN_DISABLE_UNALIGNED_ARRAY_ASSERT
-        EIGEN_MAX_ALIGN_BYTES=16)
+        EIGEN_DISABLE_UNALIGNED_ARRAY_ASSERT)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(g2o PRIVATE

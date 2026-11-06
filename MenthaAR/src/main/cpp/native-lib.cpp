@@ -855,6 +855,10 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativePublishArPose(
     env->GetFloatArrayRegion(view, 0, 16, v);
     env->GetFloatArrayRegion(projection, 0, 16, p);
 
+    // attach（Binder 线程重映射）与 detach（onDestroy）会 munmap 旧映射，写映射必须持同一把锁
+    std::lock_guard<std::mutex> lock(gSharedFrameLock);
+    if (!gSharedFramePtr) return;
+
     // 只覆盖共享内存中的对外结果，native 内部缓存的原始位姿保持不变
     float* mvp = shFloatPtr(SH_OFF_MVP);
     memcpy(mvp, m, sizeof(m));

@@ -127,7 +127,7 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
         {
             // 如果 LM 正处于 Stopped 状态等待 Release，需要先唤醒它，否则 RequestReset 设置的标志永远不会被 LM 读取到。
             if (mpLocalMapper) {
-                mpLocalMapper->Release();
+                mpLocalMapper->ReleaseAll();
             }
 
             if(mbResetKeepMap) {
@@ -398,7 +398,7 @@ void System::CreateNewMap()
         mpLocalMapper->InterruptBA();
         mpLocalMapper->ClearQueues();
         // 释放 LM 线程
-        mpLocalMapper->Release();
+        mpLocalMapper->ReleaseAll();
     }
 
     // 清空 LoopClosing 的回环关键帧队列（旧 Map 的 KF），避免对新空 Map 做 CorrectLoop。
@@ -796,7 +796,7 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
 
     // 确保仍处于SLAM建图模式（不是仅定位），继续正常扫描与建图
     if(mpTracker) mpTracker->InformOnlyTracking(false);
-    if(mpLocalMapper) mpLocalMapper->Release();
+    if(mpLocalMapper) mpLocalMapper->ReleaseAll();
 
     LOGD("加载地图: 完成 KF=%lu MP=%lu",
          mpMap->KeyFramesInMap(), mpMap->MapPointsInMap());

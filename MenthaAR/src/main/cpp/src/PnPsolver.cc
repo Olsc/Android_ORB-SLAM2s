@@ -977,7 +977,11 @@ void PnPsolver::qr_solve(CvMat * A, CvMat * b, CvMat * X)
     }
 
     if (eta == 0) {
+      // 退化列：原实现直接返回而不写 X，调用方随后把未初始化的增量加到 beta 上。
+      // 这里把增量置零（本次高斯牛顿步不更新），结果有定义且与"奇异系统无解"一致
       A1[k] = A2[k] = 0.0;
+      double * pX = X->data.db;
+      for(int i = 0; i < nc; i++) pX[i] = 0.0;
       return;
     } else {
       double * ppAik = ppAkk, sum = 0.0, inv_eta = 1. / eta;

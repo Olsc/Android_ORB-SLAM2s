@@ -252,9 +252,18 @@ public class SlamService extends Service {
             queueLock.notifyAll();
         }
         if (slamThread != null) {
-            try {
-                slamThread.join(500);
-            } catch (InterruptedException ignored) {}
+            // 必须等处理线程真正退出：随后的 shutdownSLAM/detachFrameBuffer 会释放它正在使用的引擎与映射。
+            // 单帧处理是有界的（最多一帧跟踪 + 结果写回），不会无限等待
+            boolean interrupted = false;
+            while (true) {
+                try {
+                    slamThread.join();
+                    break;
+                } catch (InterruptedException e) {
+                    interrupted = true;
+                }
+            }
+            if (interrupted) Thread.currentThread().interrupt();
             slamThread = null;
         }
         synchronized (queueLock) {

@@ -125,6 +125,10 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
         }
     }
 
+    // 所有采样都因三点共线被跳过时没有任何模型，下面的 bestvDist[i] 会越界
+    if(bestvDist.empty())
+        return nullptr;
+
     // 内点阈值 = 最佳中值距离 * PLANE_INLIER_TH_RATIO
     const float th = ORB_SLAM2::PLANE_INLIER_TH_RATIO*bestDist;
     vector<bool> vbInliers(N,false);

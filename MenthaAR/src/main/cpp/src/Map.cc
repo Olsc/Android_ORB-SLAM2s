@@ -195,8 +195,8 @@ void Map::clear()
     {
         LOGD("地图清理: 检测到使用中的关键帧，本轮对象延后释放");
         unique_lock<mutex> lock(mMutexMap);
+        // spMPTrash 中的对象已在上方释放，不能再放回回收站（否则下一次 clear() 或析构会二次 delete）
         mspMapPointsTrash.insert(spMP.begin(), spMP.end());
-        mspMapPointsTrash.insert(spMPTrash.begin(), spMPTrash.end());
         mspKeyFramesTrash.insert(spKF.begin(), spKF.end());
         mspKeyFramesTrash.insert(spKFTrash.begin(), spKFTrash.end());
         return;

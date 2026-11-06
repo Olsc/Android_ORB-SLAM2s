@@ -673,6 +673,11 @@ const int LOOP_FUSE_SEARCH_TH = 4;
 // 全局 BA 迭代次数
 const int GBA_ITERATIONS = 10;
 
+// 闭环校正 / GBA 传播前等待局部建图线程停止的超时（毫秒）。
+// 建图线程在每个关键帧处理之间检查停止请求，局部 BA 会被 mbAbortBA 立即中断，正常情况远小于此值
+const int LOOP_LM_STOP_TIMEOUT_MS = 10000;
+const int GBA_LM_STOP_TIMEOUT_MS = 10000;
+
 // 地图加载（System）
 
 // 加载地图点初始化可见性计数（有描述子用前者，无描述子用后者；须远大于剔除阈值）

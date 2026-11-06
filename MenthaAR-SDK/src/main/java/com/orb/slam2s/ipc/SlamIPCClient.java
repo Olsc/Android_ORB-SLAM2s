@@ -112,9 +112,12 @@ public class SlamIPCClient {
             context.unbindService(serviceConnection);
             isBound = false;
         }
-        if (sharedMemoryBuffer != null) {
-            sharedMemoryBuffer.close();
-            sharedMemoryBuffer = null;
+        // 发送线程可能正在 sendFrameData 内写共享内存（持 sendLock）；SharedMemory.unmap 之后再访问会直接崩溃
+        synchronized (sendLock) {
+            if (sharedMemoryBuffer != null) {
+                sharedMemoryBuffer.close();
+                sharedMemoryBuffer = null;
+            }
         }
     }
 

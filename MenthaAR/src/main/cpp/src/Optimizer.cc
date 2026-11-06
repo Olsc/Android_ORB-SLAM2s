@@ -645,10 +645,12 @@ static void LocalBundleAdjustmentImpl(KeyFrame *pKF, const StopFlagT* pbStopFlag
                 Eigen::Matrix<double,2,1> obs;
                 obs << kpUn.pt.x, kpUn.pt.y;
 
+                // 不在窗口内的观测（固定帧被截断、或 id 更大的关键帧）直接跳过。
+                // 不能用 vAllVertices[pKFi->mnId] 回退：id>maxKFid 的下标落在地图点顶点区间，会把点顶点当相机顶点接到边上
+                if(pKFi->mnId > maxKFid)
+                    return;
                 g2o::OptimizableGraph::Vertex* v0 = vPoint;
-                g2o::OptimizableGraph::Vertex* v1 =
-                    ((size_t)pKFi->mnId < vAllVertices.size()) ? vAllVertices[pKFi->mnId]
-                    : dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pKFi->mnId));
+                g2o::OptimizableGraph::Vertex* v1 = vAllVertices[pKFi->mnId];
 
                 if(!v0 || !v1)
                     return;
@@ -1189,6 +1191,12 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
         return;
     optimizer.optimize(ESSENTIAL_GRAPH_BA_ITERS);
 
+    // 写回位姿与点坐标时持地图更新锁：否则跟踪线程会在同一帧内看到一半已校正、一半未校正的地图（与上游 ORB-SLAM2 一致）。
+    // 法向/深度更新不依赖一致性快照，放到锁外执行
+    unique_lock<mutex> lockMap(pMap->mMutexMapUpdate);
+    vector<MapPoint*> vpUpdated;
+    vpUpdated.reserve(vpMPs.size());
+
     // SE3 位姿恢复
     for(size_t i=0;i<vpKFs.size();i++)
     {
@@ -1244,11 +1252,15 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
 
         cv::Mat cvCorrectedP3Dw = Converter::toCvMat(eigCorrectedP3Dw);
 
-        {
-            // 对于单个点的更新，使用点自身的锁，减少全局锁占用
-            pMP->SetWorldPos(cvCorrectedP3Dw);
+        pMP->SetWorldPos(cvCorrectedP3Dw);
+        vpUpdated.push_back(pMP);
+    }
+    lockMap.unlock();
+
+    for(MapPoint* pMP : vpUpdated)
+    {
+        if(pMP && !pMP->isBad())
             pMP->UpdateNormalAndDepth();
-        }
     }
 }
 
