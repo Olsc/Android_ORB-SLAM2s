@@ -158,7 +158,8 @@ void Plane::Recompute()
     // 收集有效点并单次遍历计算质心
     std::vector<cv::Point3f> validPoints;
     validPoints.reserve(N);
-    float sumX = 0.0f, sumY = 0.0f, sumZ = 0.0f;
+    // 质心与协方差在 double 中累加：N 项 float 求和的误差按 O(N·ε) 增长（精度提升，运算次数不变）
+    double sumX = 0.0, sumY = 0.0, sumZ = 0.0;
 
     for (int i = 0; i < N; i++)
     {
@@ -177,35 +178,38 @@ void Plane::Recompute()
     const int nPoints = static_cast<int>(validPoints.size());
     if (nPoints < 3) return;
 
-    const float invN = 1.0f / nPoints;
-    const float meanX = sumX * invN;
-    const float meanY = sumY * invN;
-    const float meanZ = sumZ * invN;
+    const double invN = 1.0 / nPoints;
+    const double meanXd = sumX * invN;
+    const double meanYd = sumY * invN;
+    const double meanZd = sumZ * invN;
+    const float meanX = (float)meanXd;
+    const float meanY = (float)meanYd;
+    const float meanZ = (float)meanZd;
 
     o = (cv::Mat_<float>(3, 1) << meanX, meanY, meanZ);
 
-    // 闭式 PCA：累加 3x3 协方差矩阵
-    float cxx = 0.0f, cxy = 0.0f, cxz = 0.0f;
-    float cyy = 0.0f, cyz = 0.0f, czz = 0.0f;
+    // 闭式 PCA：累加 3x3 协方差矩阵（两遍法，先减质心）
+    double cxx = 0.0, cxy = 0.0, cxz = 0.0;
+    double cyy = 0.0, cyz = 0.0, czz = 0.0;
     for (int i = 0; i < nPoints; i++)
     {
-        const float dx = validPoints[i].x - meanX;
-        const float dy = validPoints[i].y - meanY;
-        const float dz = validPoints[i].z - meanZ;
+        const double dx = validPoints[i].x - meanXd;
+        const double dy = validPoints[i].y - meanYd;
+        const double dz = validPoints[i].z - meanZd;
         cxx += dx * dx; cxy += dx * dy; cxz += dx * dz;
         cyy += dy * dy; cyz += dy * dz; czz += dz * dz;
     }
 
-    cv::Mat Cov = (cv::Mat_<float>(3, 3) << cxx, cxy, cxz,
-                                            cxy, cyy, cyz,
-                                            cxz, cyz, czz);
+    cv::Mat Cov = (cv::Mat_<double>(3, 3) << cxx, cxy, cxz,
+                                             cxy, cyy, cyz,
+                                             cxz, cyz, czz);
     cv::Mat eval, evec;
     // cv::eigen 按特征值降序返回，平面法向量严格等于最小特征值对应特征向量 (第2行)
     cv::eigen(Cov, eval, evec);
 
-    float a = evec.at<float>(2, 0);
-    float b = evec.at<float>(2, 1);
-    float c = evec.at<float>(2, 2);
+    float a = (float)evec.at<double>(2, 0);
+    float b = (float)evec.at<double>(2, 1);
+    float c = (float)evec.at<double>(2, 2);
 
     const float f = 1.0f / std::sqrt(a * a + b * b + c * c);
 
