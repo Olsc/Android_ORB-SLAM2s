@@ -56,6 +56,8 @@ public class SharedMemoryBuffer {
     public static final int OFF_POINTCLOUD_BYTES = 32;
     public static final int OFF_ACTIVE_MAP_ID = 36;
     public static final int OFF_MVP = 40; // 48 floats = 192 bytes
+    public static final int OFF_MVP_SEQ = 232;        // MVP seqlock 序号（奇数 = 服务端正在写）
+    public static final int OFF_POINTCLOUD_SEQ = 236; // 点云区每次重写 +1
 
     // 点云上限：3000 点 * 7 floats * 4B，取 96KB 对齐
     public static final int POINTCLOUD_MAX_BYTES = 96 * 1024;
@@ -70,6 +72,11 @@ public class SharedMemoryBuffer {
 
     // mappedFloatView 为共享视图且 position 非线程安全，用此锁串行化多线程读取
     private final Object mReadLock = new Object();
+
+    // seqlock 读端的全屏障：ART 对 volatile 读写生成 ldar/stlr（或 dmb），对映射内存同样生效。
+    // 一次 volatile 写接一次 volatile 读构成 StoreLoad 屏障，保证序号与数据的读取不被重排
+    private volatile int mFence;
+    private void fullFence() { mFence = 0; int v = mFence; if (v != 0) mFence = v; }
 
     private int frameW;
     private int frameH;
@@ -144,6 +151,8 @@ public class SharedMemoryBuffer {
         writeInt(OFF_FRAME_H, h);
         writeInt(OFF_UI_WRITE_SEQ, 0);
         writeInt(OFF_SLAM_DONE_SEQ, 0);
+        writeInt(OFF_MVP_SEQ, 0);
+        writeInt(OFF_POINTCLOUD_SEQ, 0);
         return true;
     }
 
@@ -189,15 +198,26 @@ public class SharedMemoryBuffer {
 
     public int readActiveMapId() { return readInt(OFF_ACTIVE_MAP_ID); }
 
+    public int readPointCloudSeq() { return readInt(OFF_POINTCLOUD_SEQ); }
+
+    // 读取 48 个 float(M/V/P 各 16)。服务端以 seqlock 写入：序号为奇数或前后序号不同时重读，
+    // 最多重试 4 次，仍失败则返回 false（调用方沿用上一份快照），不会再读到撕裂的矩阵
     public boolean readMvp(float[] out48) {
         if (out48 == null || out48.length < 48) return false;
         if (mappedFloatView != null) {
-            // 批量读取 48 个 float(M/V/P 各 16)
             synchronized (mReadLock) {
-                mappedFloatView.position(OFF_MVP / 4);
-                mappedFloatView.get(out48, 0, 48);
+                for (int attempt = 0; attempt < 4; attempt++) {
+                    final int s1 = mappedBuffer.getInt(OFF_MVP_SEQ);
+                    if ((s1 & 1) != 0) continue;
+                    fullFence();
+                    mappedFloatView.position(OFF_MVP / 4);
+                    mappedFloatView.get(out48, 0, 48);
+                    fullFence();
+                    final int s2 = mappedBuffer.getInt(OFF_MVP_SEQ);
+                    if (s1 == s2) return true;
+                }
             }
-            return true;
+            return false;
         } else if (memoryFile != null) {
             byte[] b = new byte[48 * 4];
             try {
@@ -242,6 +262,22 @@ public class SharedMemoryBuffer {
             }
         }
         return 0;
+    }
+
+    // 返回第 bufIndex 个 Y 缓冲的 direct 切片（API 27+ 的 SharedMemory 映射），供调用方的 native 代码直接写入灰度；
+    // MemoryFile 路径没有直接映射，返回 null（调用方回退到 writeFrame）
+    public ByteBuffer sliceFrame(int bufIndex, int w, int h) {
+        if (mappedBuffer == null) return null;
+        if (frameW != w || frameH != h) {
+            setFrameSize(w, h);
+        }
+        final int off = yOffset(bufIndex);
+        final int len = w * h;
+        if (off < 0 || len <= 0 || off + len > bufferSize) return null;
+        ByteBuffer dup = mappedBuffer.duplicate();
+        dup.position(off);
+        dup.limit(off + len);
+        return dup.slice().order(ByteOrder.nativeOrder());
     }
 
     // 调用方需先确认目标缓冲空闲(readSlamDoneSeq() >= seq - 2)

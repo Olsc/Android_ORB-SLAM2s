@@ -220,6 +220,11 @@ public class MainActivity extends ComponentActivity
         mCameraPreviewView.setFrameListener(this);
         mCameraPreviewView.setDisplayCorrectionListener(this);
         mCameraPreviewView.setSlamIPCClient(mSlamIPCClient);
+        // SLAM 每产出一帧结果，AR 物体视图重绘一次（两个 GL 视图都是按需渲染）
+        mCameraPreviewView.setSlamResultListener(() -> {
+            final GlbModelRenderer renderer = mModelRenderer;
+            if (renderer != null) renderer.requestRender();
+        });
         mCameraPreviewView.init();
 
         mIsInitFinished = false;
@@ -973,6 +978,11 @@ public class MainActivity extends ComponentActivity
         mSlamIPCClient.set3DofAssistEnabled(mIs3DofMode);
         mSlamIPCClient.setSensorReverse(isSensorReverseEnabled());
         updateToggleButton(mBtnReverseSensor, R.string.btn_reverse_sensor, isSensorReverseEnabled());
+        // 重连后服务进程可能是全新实例，点云按钮文案与服务端实际状态同步
+        if (mBtnTogglePointCloud != null) {
+            mBtnTogglePointCloud.setText(getString(mSlamIPCClient.isPointCloudDisplayEnabled()
+                    ? R.string.btn_pointcloud_enabled : R.string.btn_pointcloud_disabled));
+        }
     }
 
     private void toggle3DofMode() {

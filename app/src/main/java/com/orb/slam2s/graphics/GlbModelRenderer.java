@@ -112,6 +112,7 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
 
     public GlbModelRenderer setInitSize(float initSize) {
         this.initSize = initSize;
+        requestRender();
         return this;
     }
 
@@ -127,7 +128,16 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
         if (correction != null && slamIPCClient != null) {
             slamIPCClient.setCameraImageRotation(correction.rotationDegrees);
         }
+        requestRender();
         return this;
+    }
+
+    // 请求重绘一帧（任意线程可调用；setRenderer 之前 GLSurfaceView 还没有 GL 线程，不能调用）
+    private volatile boolean rendererAttached = false;
+    public void requestRender() {
+        if (arObjectView != null && rendererAttached) {
+            arObjectView.requestRender();
+        }
     }
 
     public GlbModelRenderer init(TouchGestureHelper touchHelper) {
@@ -141,7 +151,10 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
         arObjectView.getHolder().setFormat(PixelFormat.TRANSLUCENT);
         arObjectView.setZOrderOnTop(true);
         arObjectView.setRenderer(this);
-        arObjectView.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
+        // 按需渲染：画面只随 SLAM 结果（CameraPreviewView 轮询 SLAM_DONE_SEQ 后调用 requestRender）、
+        // 手势缩放/旋转、模型加载完成、显示矫正变化而变化；模型本身无动画。原先按 60~120 Hz 持续重绘并重复读取 MVP
+        arObjectView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+        rendererAttached = true;
 
         if (touchHelper != null) {
             touchHelper.addScalingCallback(scaleFactor -> {
@@ -155,6 +168,7 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
                     if (slamIPCClient != null) {
                         slamIPCClient.updateArObjectScale(scaleFactor);
                     }
+                    requestRender();
                 }
             });
         }
@@ -182,6 +196,7 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
                     nativeGetBounds(nativeHandle, bounds);
                     autoScaleFactor = bounds[7];
                     isModelLoaded = true;
+                    requestRender();
                     Log.i(TAG, "GLB 模型异步解析完成: 自动缩放系数=" + autoScaleFactor);
                 } else {
                     Log.e(TAG, "原生 cgltf 加载 GLB 失败: " + modelPath);
@@ -295,6 +310,7 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
         userRotationX += pitchDelta;
         userRotationX = userRotationX % 360.0f;
         if (userRotationX < 0) userRotationX += 360.0f;
+        requestRender();
     }
 
     public void onPause() {
@@ -306,6 +322,7 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
     public void onResume() {
         if (arObjectView != null) {
             arObjectView.onResume();
+            arObjectView.requestRender();
         }
     }
 

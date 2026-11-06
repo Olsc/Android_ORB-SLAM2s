@@ -85,6 +85,8 @@ public class CameraPreviewView extends AspectGLSurfaceView {
     private int mFrameHeight;
     private Bitmap mCacheBitmap;
     private int mImageTextureId;
+    private volatile boolean mRendererSet = false; // setRenderer 之后才能 requestRender
+    private int mImageTextureW, mImageTextureH; // 当前纹理尺寸，与预览位图不一致时重建
 
     private ProcessCameraProvider mCameraProvider;
     private Camera mCameraX;
@@ -117,9 +119,34 @@ public class CameraPreviewView extends AspectGLSurfaceView {
     private GLPassThroughRenderer mPassThroughRenderer;
     private GLPointCloudRenderer mPointCloudRenderer;
 
-    // 点云读取缓冲
+    // 点云读取缓冲；mPointCloudFloats/mPointCloudSeq 为上一次上传到 VBO 的点云（只在服务端点云序号变化时重新读取与上传）
     private final float[] mPointCloudBuffer = new float[SharedMemoryBuffer.POINTCLOUD_MAX_BYTES / 4];
+    private int mPointCloudFloats = 0;
+    private int mPointCloudSeq = -1;
     private final float[] mTempMvp = new float[48];
+
+    // SLAM 结果轮询：AIDL 没有服务到 App 的回调，主线程每个 vsync 只读共享内存头部的 SLAM_DONE_SEQ（4 字节），
+    // 变化时才请求两个 GL 视图重绘。两个视图均为 RENDERMODE_WHEN_DIRTY
+    private int mLastSlamDoneSeq = -1;
+    private boolean mSlamPollActive = false;
+    private Runnable mSlamResultListener;
+    private final android.view.Choreographer.FrameCallback mSlamPollCallback = new android.view.Choreographer.FrameCallback() {
+        @Override
+        public void doFrame(long frameTimeNanos) {
+            if (!mSlamPollActive) return;
+            final SlamIPCClient client = mSlamIPCClient;
+            if (client != null && client.isConnected()) {
+                final int seq = client.readSlamDoneSeq();
+                if (seq != mLastSlamDoneSeq) {
+                    mLastSlamDoneSeq = seq;
+                    requestRender();
+                    final Runnable l = mSlamResultListener;
+                    if (l != null) l.run();
+                }
+            }
+            android.view.Choreographer.getInstance().postFrameCallback(this);
+        }
+    };
     private final float[] mVPMatrix = new float[16];
     private final float[] mDisplayVPMatrix = new float[16];
 
@@ -192,6 +219,28 @@ public class CameraPreviewView extends AspectGLSurfaceView {
         this.mFrameListener = listener;
     }
 
+    // SLAM 新结果到达（SLAM_DONE_SEQ 变化）时在主线程回调，供 AR 物体视图请求重绘
+    @Override
+    public void requestRender() {
+        if (mRendererSet) super.requestRender();
+    }
+
+    public void setSlamResultListener(Runnable listener) {
+        this.mSlamResultListener = listener;
+    }
+
+    private void startSlamPoll() {
+        if (mSlamPollActive) return;
+        mSlamPollActive = true;
+        mLastSlamDoneSeq = -1;
+        android.view.Choreographer.getInstance().postFrameCallback(mSlamPollCallback);
+    }
+
+    private void stopSlamPoll() {
+        mSlamPollActive = false;
+        android.view.Choreographer.getInstance().removeFrameCallback(mSlamPollCallback);
+    }
+
     // 设置上下镜像，下一帧生效并持久化；只影响显示端，不改变 SLAM 输入
     public void setMirrorVertical(boolean enabled) {
         mMirrorVertical = enabled;
@@ -255,8 +304,10 @@ public class CameraPreviewView extends AspectGLSurfaceView {
         setZOrderOnTop(false);
 
         setRenderer(new CameraRenderer());
-        setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
+        // 按需渲染：新相机帧上传后与 SLAM 结果变化时 requestRender；跳过的 vsync 上画面与上一帧逐像素相同
+        setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
         setPreserveEGLContextOnPause(true);
+        mRendererSet = true;
 
         mPassThroughRenderer = new GLPassThroughRenderer(mContext);
     }
@@ -266,9 +317,12 @@ public class CameraPreviewView extends AspectGLSurfaceView {
             mEnabled = true;
             checkCurrentState();
         }
+        post(this::startSlamPoll);
+        requestRender();
     }
 
     public void disableView() {
+        post(this::stopSlamPoll);
         synchronized (mSyncLock) {
             mEnabled = false;
             checkCurrentState();
@@ -384,35 +438,6 @@ public class CameraPreviewView extends AspectGLSurfaceView {
                                 ByteBuffer buf = rgbaPlane.getBuffer();
 
                                 int rowStride = rgbaPlane.getRowStride();
-                                int requiredSize = w * h;
-                                int rgbaSize = w * h * 4;
-
-                                if (mRgbaBuffers == null) {
-                                    mRgbaBuffers = new byte[2][];
-                                }
-                                if (mRgbaBuffers[mSendPing] == null || mRgbaBuffers[mSendPing].length < rgbaSize) {
-                                    mRgbaBuffers[mSendPing] = new byte[rgbaSize];
-                                }
-                                byte[] rgbaBuf = mRgbaBuffers[mSendPing];
-
-                                int bufPos = buf.position();
-                                if (rowStride == w * 4) {
-                                    buf.get(rgbaBuf, 0, Math.min(buf.remaining(), rgbaSize));
-                                } else {
-                                    for (int row = 0; row < h; row++) {
-                                        buf.position(bufPos + row * rowStride);
-                                        buf.get(rgbaBuf, row * w * 4, Math.min(w * 4, buf.remaining()));
-                                    }
-                                }
-                                buf.position(bufPos);
-
-                                if (mYuvSendBuffers == null) {
-                                    mYuvSendBuffers = new byte[2][];
-                                }
-                                if (mYuvSendBuffers[mSendPing] == null || mYuvSendBuffers[mSendPing].length < requiredSize) {
-                                    mYuvSendBuffers[mSendPing] = new byte[requiredSize];
-                                }
-                                byte[] yBuf = mYuvSendBuffers[mSendPing];
 
                                 // SLAM 内参按横向底图标定，出现竖向帧时提示，便于定位异常机型
                                 if (w < h && !mPortraitFrameWarned) {
@@ -443,65 +468,59 @@ public class CameraPreviewView extends AspectGLSurfaceView {
                                     mDisplayCorrection = correction;
                                     postDisplayCorrection(correction);
                                 }
-                                final int displaySize = correction.displayWidth * correction.displayHeight;
-                                final int rowStep = correction.previewRowStep();
 
-                                synchronized (mSyncLock) {
-                                    ensureCacheBitmap(correction.displayWidth, correction.displayHeight);
-                                    boolean previewVisible = mCacheBitmap != null && !mCacheBitmap.isRecycled();
-                                    if (previewVisible && (mCachePixels == null || mCachePixels.length < displaySize)) {
-                                        mCachePixels = new int[displaySize];
-                                    }
-                                    int[] previewPixels = previewVisible ? mCachePixels : null;
-
-                                    // 一次遍历同时写两路：灰度按原始像素序供 SLAM 使用，
-                                    // ARGB 按矫正后的目标坐标写入，无需额外翻转
-                                    for (int y = 0; y < h; y++) {
-                                        final int srcRowOffset = y * w * 4;
-                                        final int yRowOffset = y * w;
-                                        int dstIdx = previewPixels != null ? correction.previewRowBase(y) : 0;
-                                        for (int x = 0; x < w; x++) {
-                                            int srcIdx = srcRowOffset + x * 4;
-                                            int r = rgbaBuf[srcIdx] & 0xFF;
-                                            int g = rgbaBuf[srcIdx + 1] & 0xFF;
-                                            int b = rgbaBuf[srcIdx + 2] & 0xFF;
-                                            yBuf[yRowOffset + x] = (byte) ((r * 77 + g * 150 + b * 29) >> 8);
-                                            if (previewPixels != null) {
-                                                previewPixels[dstIdx] = 0xFF000000 | (r << 16) | (g << 8) | b;
-                                                dstIdx += rowStep;
-                                            }
-                                        }
-                                    }
-
-                                    if (previewPixels != null) {
-                                        mCacheBitmap.setPixels(previewPixels, 0, correction.displayWidth, 0, 0,
-                                                correction.displayWidth, correction.displayHeight);
-                                        queueEvent(() -> {
-                                            synchronized (mSyncLock) {
-                                                if (mSurfaceExist && mCacheBitmap != null && !mCacheBitmap.isRecycled()) {
-                                                    GLUtils.loadTexture(mCacheBitmap, mImageTextureId);
-                                                }
-                                            }
-                                        });
+                                // 先决定本帧是否送 SLAM（CAS + 背压 + 取槽位），灰度只在真正发送时才计算；
+                                // 原先每帧都先算灰度，再因忙碌/背压丢弃
+                                final boolean ipcReady = mSlamIPCClient != null && mSlamIPCClient.isConnected();
+                                SlamIPCClient.FrameSlot slot = null;
+                                boolean ipcTaken = false;
+                                if (ipcReady && FrameConverter.isAvailable() && mIsIpcProcessing.compareAndSet(false, true)) {
+                                    ipcTaken = true;
+                                    slot = mSlamIPCClient.acquireFrameSlot(w, h);
+                                    if (slot == null) {
+                                        // 背压丢帧或无直接映射：本帧不送 SLAM
+                                        mIsIpcProcessing.set(false);
+                                        ipcTaken = false;
                                     }
                                 }
 
-                                if (mSlamIPCClient != null && mSlamIPCClient.isConnected()) {
-                                    if (mIsIpcProcessing.compareAndSet(false, true)) {
-                                        final byte[] sendBuffer = yBuf;
-                                        mSendPing ^= 1;
-                                        final int frameW = w;
-                                        final int frameH = h;
+                                boolean converted = false;
+                                if (FrameConverter.isAvailable()) {
+                                    // 单次遍历：灰度直接写进共享内存槽位，ARGB 直接写进预览位图（像素与 Java 路径逐位相同）
+                                    synchronized (mSyncLock) {
+                                        ensureCacheBitmap(correction.displayWidth, correction.displayHeight);
+                                        final boolean previewVisible = mCacheBitmap != null && !mCacheBitmap.isRecycled();
+                                        converted = FrameConverter.convert(buf, rowStride, w, h,
+                                                slot != null ? slot.gray : null,
+                                                previewVisible ? mCacheBitmap : null, correction);
+                                        if (converted && previewVisible) {
+                                            queueEvent(() -> {
+                                                synchronized (mSyncLock) {
+                                                    if (mSurfaceExist && mCacheBitmap != null && !mCacheBitmap.isRecycled()) {
+                                                        uploadPreviewTexture(mCacheBitmap);
+                                                    }
+                                                }
+                                            });
+                                        }
+                                    }
+                                    if (converted) {
+                                        requestRender();
+                                    }
+                                }
+
+                                if (converted) {
+                                    if (slot != null) {
+                                        final SlamIPCClient.FrameSlot committed = slot;
                                         if (mIpcSendExecutor != null && !mIpcSendExecutor.isShutdown()) {
                                             mIpcSendExecutor.execute(() -> {
                                                 try {
-                                                    mSlamIPCClient.sendFrameData(sendBuffer, frameW, frameH);
+                                                    mSlamIPCClient.commitFrame(committed);
                                                     if (mPendingDetectPlane) {
                                                         mPendingDetectPlane = false;
                                                         mSlamIPCClient.detectPlane();
                                                     }
                                                 } catch (Exception e) {
-                                                    Log.e(TAG, "异步 IPC 发送帧异常: " + e.getMessage());
+                                                    Log.e(TAG, "异步 IPC 投递帧异常: " + e.getMessage());
                                                 } finally {
                                                     mIsIpcProcessing.set(false);
                                                 }
@@ -510,6 +529,12 @@ public class CameraPreviewView extends AspectGLSurfaceView {
                                             mIsIpcProcessing.set(false);
                                         }
                                     }
+                                } else {
+                                    // native 转换不可用（或本帧失败）：走原 Java 路径；已取的槽位作废
+                                    if (ipcTaken) {
+                                        mIsIpcProcessing.set(false);
+                                    }
+                                    analyzeJavaPath(buf, rowStride, w, h, correction, ipcReady);
                                 }
 
                                 if (mFrameListener != null) {
@@ -699,18 +724,141 @@ public class CameraPreviewView extends AspectGLSurfaceView {
         });
     }
 
+    // GL 线程：把预览位图上传到纹理。位图尺寸随显示方向变化（90/270 时长宽互换），
+    // 与纹理尺寸不一致时重建纹理（原先纹理固定为启动分辨率，texSubImage2D 会失败）
+    private void uploadPreviewTexture(Bitmap bitmap) {
+        if (mImageTextureId != 0 && (bitmap.getWidth() != mImageTextureW || bitmap.getHeight() != mImageTextureH)) {
+            GLES20.glDeleteTextures(1, new int[]{mImageTextureId}, 0);
+            mImageTextureId = 0;
+        }
+        if (mImageTextureId == 0) {
+            mImageTextureId = GLUtils.loadTexture(bitmap, 0);
+        } else {
+            GLUtils.loadTexture(bitmap, mImageTextureId);
+        }
+        mImageTextureW = bitmap.getWidth();
+        mImageTextureH = bitmap.getHeight();
+    }
+
+    // 原 Java 转换路径（native 转换不可用时的回退）：整帧拷出 RGBA，再一次遍历同时写灰度 byte[] 与预览 int[]
+    private void analyzeJavaPath(ByteBuffer buf, int rowStride, int w, int h,
+                                 DisplayCorrection correction, boolean ipcReady) {
+        int requiredSize = w * h;
+        int rgbaSize = w * h * 4;
+
+        if (mRgbaBuffers == null) {
+            mRgbaBuffers = new byte[2][];
+        }
+        if (mRgbaBuffers[mSendPing] == null || mRgbaBuffers[mSendPing].length < rgbaSize) {
+            mRgbaBuffers[mSendPing] = new byte[rgbaSize];
+        }
+        byte[] rgbaBuf = mRgbaBuffers[mSendPing];
+
+        int bufPos = buf.position();
+        if (rowStride == w * 4) {
+            buf.get(rgbaBuf, 0, Math.min(buf.remaining(), rgbaSize));
+        } else {
+            for (int row = 0; row < h; row++) {
+                buf.position(bufPos + row * rowStride);
+                buf.get(rgbaBuf, row * w * 4, Math.min(w * 4, buf.remaining()));
+            }
+        }
+        buf.position(bufPos);
+
+        if (mYuvSendBuffers == null) {
+            mYuvSendBuffers = new byte[2][];
+        }
+        if (mYuvSendBuffers[mSendPing] == null || mYuvSendBuffers[mSendPing].length < requiredSize) {
+            mYuvSendBuffers[mSendPing] = new byte[requiredSize];
+        }
+        byte[] yBuf = mYuvSendBuffers[mSendPing];
+
+        final int displaySize = correction.displayWidth * correction.displayHeight;
+        final int rowStep = correction.previewRowStep();
+
+        synchronized (mSyncLock) {
+            ensureCacheBitmap(correction.displayWidth, correction.displayHeight);
+            boolean previewVisible = mCacheBitmap != null && !mCacheBitmap.isRecycled();
+            if (previewVisible && (mCachePixels == null || mCachePixels.length < displaySize)) {
+                mCachePixels = new int[displaySize];
+            }
+            int[] previewPixels = previewVisible ? mCachePixels : null;
+
+            // 一次遍历同时写两路：灰度按原始像素序供 SLAM 使用，
+            // ARGB 按矫正后的目标坐标写入，无需额外翻转
+            for (int y = 0; y < h; y++) {
+                final int srcRowOffset = y * w * 4;
+                final int yRowOffset = y * w;
+                int dstIdx = previewPixels != null ? correction.previewRowBase(y) : 0;
+                for (int x = 0; x < w; x++) {
+                    int srcIdx = srcRowOffset + x * 4;
+                    int r = rgbaBuf[srcIdx] & 0xFF;
+                    int g = rgbaBuf[srcIdx + 1] & 0xFF;
+                    int b = rgbaBuf[srcIdx + 2] & 0xFF;
+                    yBuf[yRowOffset + x] = (byte) ((r * 77 + g * 150 + b * 29) >> 8);
+                    if (previewPixels != null) {
+                        previewPixels[dstIdx] = 0xFF000000 | (r << 16) | (g << 8) | b;
+                        dstIdx += rowStep;
+                    }
+                }
+            }
+
+            if (previewPixels != null) {
+                mCacheBitmap.setPixels(previewPixels, 0, correction.displayWidth, 0, 0,
+                        correction.displayWidth, correction.displayHeight);
+                queueEvent(() -> {
+                    synchronized (mSyncLock) {
+                        if (mSurfaceExist && mCacheBitmap != null && !mCacheBitmap.isRecycled()) {
+                            uploadPreviewTexture(mCacheBitmap);
+                        }
+                    }
+                });
+                requestRender();
+            }
+        }
+
+        if (ipcReady) {
+            if (mIsIpcProcessing.compareAndSet(false, true)) {
+                final byte[] sendBuffer = yBuf;
+                mSendPing ^= 1;
+                final int frameW = w;
+                final int frameH = h;
+                if (mIpcSendExecutor != null && !mIpcSendExecutor.isShutdown()) {
+                    mIpcSendExecutor.execute(() -> {
+                        try {
+                            mSlamIPCClient.sendFrameData(sendBuffer, frameW, frameH);
+                            if (mPendingDetectPlane) {
+                                mPendingDetectPlane = false;
+                                mSlamIPCClient.detectPlane();
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "异步 IPC 发送帧异常: " + e.getMessage());
+                        } finally {
+                            mIsIpcProcessing.set(false);
+                        }
+                    });
+                } else {
+                    mIsIpcProcessing.set(false);
+                }
+            }
+        }
+    }
+
     private class CameraRenderer implements GLSurfaceView.Renderer {
         @Override
         public void onSurfaceCreated(GL10 gl, EGLConfig config) {
             Bitmap bitmap = Bitmap.createBitmap(CameraResolution.width, CameraResolution.height, Bitmap.Config.ARGB_8888);
             bitmap.eraseColor(0xFF000000);
             mImageTextureId = GLUtils.loadTexture(bitmap, 0);
+            mImageTextureW = bitmap.getWidth();
+            mImageTextureH = bitmap.getHeight();
             bitmap.recycle();
 
             mPassThroughRenderer.init();
 
             mPointCloudRenderer = new GLPointCloudRenderer();
             mPointCloudRenderer.init();
+            mPointCloudSeq = -1; // 新的渲染器没有数据，下一次绘制强制重新读取点云
         }
 
         @Override
@@ -730,7 +878,14 @@ public class CameraPreviewView extends AspectGLSurfaceView {
             mPassThroughRenderer.onDrawFrame(mImageTextureId);
 
             if (mSlamIPCClient != null && mSlamIPCClient.isConnected() && mPointCloudRenderer != null) {
-                int floats = mSlamIPCClient.readPointCloud(mPointCloudBuffer, mPointCloudBuffer.length);
+                // 只在服务端重写了点云区时才重新读取（≤96 KB 拷贝）并上传 VBO
+                final int pcSeq = mSlamIPCClient.readPointCloudSeq();
+                final boolean pcChanged = (pcSeq != mPointCloudSeq);
+                if (pcChanged) {
+                    mPointCloudSeq = pcSeq;
+                    mPointCloudFloats = mSlamIPCClient.readPointCloud(mPointCloudBuffer, mPointCloudBuffer.length);
+                }
+                final int floats = mPointCloudFloats;
                 if (floats > 0 && mSlamIPCClient.readMvp(mTempMvp)) {
                     // 点云在相机坐标系 (RDF)，右乘对角阵 diag(1,-1,-1,1) 数学上恒等于将第1列与第2列取反
                     System.arraycopy(mTempMvp, 32, mVPMatrix, 0, 16);
@@ -752,7 +907,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
                         drawMatrix = mDisplayVPMatrix;
                     }
 
-                    mPointCloudRenderer.updatePoints(mPointCloudBuffer, floats);
+                    if (pcChanged) mPointCloudRenderer.updatePoints(mPointCloudBuffer, floats);
                     GLES20.glDisable(GLES20.GL_DEPTH_TEST);
                     mPointCloudRenderer.draw(drawMatrix);
                     GLES20.glEnable(GLES20.GL_DEPTH_TEST);

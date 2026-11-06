@@ -177,6 +177,8 @@ public:
     // 局部建图使用的变量
     long unsigned int mnBALocalForKF;
     long unsigned int mnFuseCandidateForKF;
+    // 点云写入去重标记（只由帧处理线程的 writePointCloudToSharedMemory 读写）
+    uint32_t mnRenderedForSeq = 0;
 
     // 回环闭合使用的变量
     long unsigned int mnLoopPointForKF;

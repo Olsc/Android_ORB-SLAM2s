@@ -362,10 +362,15 @@ public class OrientationSensor implements SensorEventListener {
             return;
         }
 
-        // 小角度近似：角增量矢量 = 角速度 * dt
-        gyroDeltaVector[0] = event.values[0] * dt;
-        gyroDeltaVector[1] = event.values[1] * dt;
-        gyroDeltaVector[2] = event.values[2] * dt;
+        // getRotationMatrixFromVector 的输入是单位四元数的向量部 axis·sin(θ/2)，不是旋转向量 ω·dt：
+        // 直接传 ω·dt 会得到约 2θ 的旋转（基准 §7：×2.000/×2.0003/×2.0048）。这里按定义构造
+        final float wx = event.values[0], wy = event.values[1], wz = event.values[2];
+        final float wn = (float) Math.sqrt(wx * wx + wy * wy + wz * wz);
+        final float theta = wn * dt;
+        final float k = wn > 0f ? (float) (Math.sin(0.5 * theta) / wn) : 0f;
+        gyroDeltaVector[0] = wx * k;
+        gyroDeltaVector[1] = wy * k;
+        gyroDeltaVector[2] = wz * k;
         SensorManager.getRotationMatrixFromVector(gyroDeltaMatrix, gyroDeltaVector);
 
         // R = R * deltaR (机体系右乘)
@@ -375,8 +380,9 @@ public class OrientationSensor implements SensorEventListener {
         System.arraycopy(relTempMatrix, 0, relRotationMatrix, 0, 16);
         relSampleReady = true;
 
-        // 定期 Gram-Schmidt 正交规范化，抑制数值漂移
+        // 定期 Gram-Schmidt 正交规范化，抑制数值漂移（相对姿态同样会累积漂移，原先只校正 raw）
         orthonormalize(rawRotationMatrix);
+        orthonormalize(relRotationMatrix);
 
         markReady();
     }

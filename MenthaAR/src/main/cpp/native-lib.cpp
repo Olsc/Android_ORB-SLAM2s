@@ -793,7 +793,22 @@ Java_com_orb_slam2s_slamar_NativeHelper_isPointCloudDisplayEnabled(JNIEnv *env, 
 #define SH_OFF_POINTCLOUD_BYTES 32
 #define SH_OFF_ACTIVE_MAP_ID 36
 #define SH_OFF_MVP 40
+// MVP seqlock 序号（奇数=正在写）；点云序号（每次重写点云区时 +1，App 端只在变化时重新上传 VBO）
+#define SH_OFF_MVP_SEQ 232
+#define SH_OFF_POINTCLOUD_SEQ 236
 #define SH_POINTCLOUD_MAX_BYTES (96 * 1024)
+
+// Java 侧注册的 direct ByteBuffer（NativeHelper.POSE_BUF_FLOATS 个 float），只在帧处理线程上读写：
+//  [0..47]   原始 Model/View/Proj（native 每帧写入）
+//  [48..50]  跟踪状态 / 绘制标志 / 地图 id（以 int32 存放）
+//  [51..98]  融合后的 Model/View/Proj（Java 写入，nativePublishArPose 读取）
+// 用它代替每帧 2 次 Set*ArrayRegion + 3 次 GetFloatArrayRegion 的 JNI 数组传输。
+#define POSE_BUF_RAW 0
+#define POSE_BUF_INFO 48
+#define POSE_BUF_FUSED 51
+#define POSE_BUF_FLOATS 99
+static float* gPoseBuf = nullptr;
+static int32_t gPendingDoneSeq = 0; // 本帧处理完成后待发布的序号，由 nativePublishArPose 写入 SLAM_DONE_SEQ
 
 static void* gSharedFramePtr = nullptr;
 static int gSharedFrameSize = 0;
@@ -814,57 +829,73 @@ static inline int shPointCloudOffset() {
     return SH_HEADER_SIZE + 2 * (gSharedW * gSharedH);
 }
 
-// 读取当前帧原始 AR 位姿与状态，供 SDK 内层融合使用
+// 注册 Java 侧的 direct ByteBuffer（只调用一次，Java 持有其强引用）
 JNIEXPORT jboolean JNICALL
-Java_com_orb_slam2s_slamar_NativeHelper_nativeGetArPose(
-    JNIEnv* env, jobject instance, jfloatArray out48, jintArray outInfo)
+Java_com_orb_slam2s_slamar_NativeHelper_nativeRegisterPoseBuffer(JNIEnv* env, jobject instance, jobject buffer)
 {
-    if (!out48 || !outInfo) return JNI_FALSE;
-    if (env->GetArrayLength(out48) < 48 || env->GetArrayLength(outInfo) < 3) return JNI_FALSE;
-
-    float pose[48];
-    {
-        std::lock_guard<std::mutex> lock(gMapDataMutex);
-        memcpy(pose, gCurrentModelMatrix, 16 * sizeof(float));
-        memcpy(pose + 16, gCurrentViewMatrix, 16 * sizeof(float));
-    }
-    memcpy(pose + 32, gRawProjectionMatrix, 16 * sizeof(float));
-    const jint info[3] = {
-        gRawTrackingState.load(std::memory_order_relaxed),
-        gRawDrawFlag.load(std::memory_order_relaxed),
-        gRawActiveMapId.load(std::memory_order_relaxed)
-    };
-    env->SetFloatArrayRegion(out48, 0, 48, pose);
-    env->SetIntArrayRegion(outInfo, 0, 3, info);
+    if (!buffer) { gPoseBuf = nullptr; return JNI_FALSE; }
+    void* addr = env->GetDirectBufferAddress(buffer);
+    const jlong cap = env->GetDirectBufferCapacity(buffer);
+    if (!addr || cap < (jlong)(POSE_BUF_FLOATS * sizeof(float))) { gPoseBuf = nullptr; return JNI_FALSE; }
+    gPoseBuf = static_cast<float*>(addr);
     return JNI_TRUE;
 }
 
-// 回写融合后的 AR 位姿：Model/View/Proj 与绘制标志
+// 把本帧的原始位姿与状态写进已注册的缓冲（帧处理线程调用）
+static void writeRawPoseToPoseBuffer()
+{
+    if (!gPoseBuf) return;
+    {
+        std::lock_guard<std::mutex> lock(gMapDataMutex);
+        memcpy(gPoseBuf + POSE_BUF_RAW, gCurrentModelMatrix, 16 * sizeof(float));
+        memcpy(gPoseBuf + POSE_BUF_RAW + 16, gCurrentViewMatrix, 16 * sizeof(float));
+    }
+    memcpy(gPoseBuf + POSE_BUF_RAW + 32, gRawProjectionMatrix, 16 * sizeof(float));
+    int32_t* info = reinterpret_cast<int32_t*>(gPoseBuf + POSE_BUF_INFO);
+    info[0] = gRawTrackingState.load(std::memory_order_relaxed);
+    info[1] = gRawDrawFlag.load(std::memory_order_relaxed);
+    info[2] = gRawActiveMapId.load(std::memory_order_relaxed);
+}
+
+// 发布本帧最终的 AR 位姿（每帧只写一次 MVP，seqlock 包裹），然后推进 SLAM_DONE_SEQ。
+// useRaw=true 时直接发布原始位姿（融合关闭或失败），否则发布 Java 写在缓冲 [51..98] 的融合结果。
 JNIEXPORT void JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_nativePublishArPose(
-    JNIEnv* env, jobject instance, jfloatArray model, jfloatArray view, jfloatArray projection, jboolean draw)
+    JNIEnv* env, jobject instance, jboolean draw, jboolean useRaw)
 {
-    if (!gSharedFramePtr || !model || !view || !projection) return;
-    if (env->GetArrayLength(model) < 16 || env->GetArrayLength(view) < 16
-            || env->GetArrayLength(projection) < 16) {
-        return;
-    }
-
-    float m[16], v[16], p[16];
-    env->GetFloatArrayRegion(model, 0, 16, m);
-    env->GetFloatArrayRegion(view, 0, 16, v);
-    env->GetFloatArrayRegion(projection, 0, 16, p);
-
     // attach（Binder 线程重映射）与 detach（onDestroy）会 munmap 旧映射，写映射必须持同一把锁
     std::lock_guard<std::mutex> lock(gSharedFrameLock);
     if (!gSharedFramePtr) return;
 
-    // 只覆盖共享内存中的对外结果，native 内部缓存的原始位姿保持不变
+    const float* src = nullptr;
+    float rawFallback[48];
+    if (gPoseBuf) {
+        src = gPoseBuf + (useRaw ? POSE_BUF_RAW : POSE_BUF_FUSED);
+    } else {
+        {
+            std::lock_guard<std::mutex> dataLock(gMapDataMutex);
+            memcpy(rawFallback, gCurrentModelMatrix, 16 * sizeof(float));
+            memcpy(rawFallback + 16, gCurrentViewMatrix, 16 * sizeof(float));
+        }
+        memcpy(rawFallback + 32, gRawProjectionMatrix, 16 * sizeof(float));
+        src = rawFallback;
+    }
+
+    // seqlock：序号为奇数表示正在写；读端读到奇数或前后序号不同就重读。
+    // 原先原始 MVP 与融合 MVP 分两次写入且无同步，GL 线程可能读到撕裂数据，或在两次写入之间读到原始位姿而闪烁
+    volatile int32_t* mvpSeq = shIntPtr(SH_OFF_MVP_SEQ);
+    const int32_t s = *mvpSeq;
+    *mvpSeq = s + 1;
+    std::atomic_thread_fence(std::memory_order_release);
     float* mvp = shFloatPtr(SH_OFF_MVP);
-    memcpy(mvp, m, sizeof(m));
-    memcpy(mvp + 16, v, sizeof(v));
-    memcpy(mvp + 32, p, sizeof(p));
-    *shIntPtr(SH_OFF_DRAW_FLAG) = draw ? 1 : 0;
+    memcpy(mvp, src, 48 * sizeof(float));
+    const bool drawFinal = useRaw ? (gRawDrawFlag.load(std::memory_order_relaxed) != 0) : (draw != JNI_FALSE);
+    *shIntPtr(SH_OFF_DRAW_FLAG) = drawFinal ? 1 : 0;
+    std::atomic_thread_fence(std::memory_order_release);
+    *mvpSeq = s + 2;
+
+    std::atomic_thread_fence(std::memory_order_release);
+    *reinterpret_cast<volatile int32_t*>(shIntPtr(SH_OFF_SLAM_DONE_SEQ)) = gPendingDoneSeq;
 }
 
 JNIEXPORT jboolean JNICALL
@@ -908,30 +939,24 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeDetachFrameBuffer(JNIEnv* env, job
     }
 }
 
+// 写回本帧的状态字段并缓存原始位姿。MVP 与 SLAM_DONE_SEQ 不在这里写：
+// 由 Java 侧（融合或直接）调用 nativePublishArPose 一次性发布最终位姿，再推进序号
 static void writeResultToSharedMemory(int seq, int tracking, bool draw, int w, int h) {
     if (!gSharedFramePtr) return;
     *shIntPtr(SH_OFF_TRACKING_STATE) = tracking;
-    *shIntPtr(SH_OFF_DRAW_FLAG) = draw ? 1 : 0;
     *shIntPtr(SH_OFF_ACTIVE_MAP_ID) = gActiveMapId;
 
-    float* mvp = shFloatPtr(SH_OFF_MVP);
-    {
-        std::lock_guard<std::mutex> lock(gMapDataMutex);
-        memcpy(mvp,      gCurrentModelMatrix, 16 * sizeof(float));
-        memcpy(mvp + 16, gCurrentViewMatrix,  16 * sizeof(float));
-    }
     const int projW = static_cast<int>(std::lround((float)w / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR));
     const int projH = static_cast<int>(std::lround((float)h / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR));
     frustumM_RUB(projW, projH, fx, fy, cx, cy,
-                 ORB_SLAM2::PROJECTION_ZNEAR, ORB_SLAM2::PROJECTION_ZFAR, mvp + 32);
+                 ORB_SLAM2::PROJECTION_ZNEAR, ORB_SLAM2::PROJECTION_ZFAR, gRawProjectionMatrix);
 
-    // 同步一份原始快照，供 SDK 内层融合使用
-    memcpy(gRawProjectionMatrix, mvp + 32, 16 * sizeof(float));
     gRawTrackingState.store(tracking, std::memory_order_relaxed);
     gRawDrawFlag.store(draw ? 1 : 0, std::memory_order_relaxed);
     gRawActiveMapId.store(gActiveMapId, std::memory_order_relaxed);
+    gPendingDoneSeq = seq;
 
-    *shIntPtr(SH_OFF_SLAM_DONE_SEQ) = seq;
+    writeRawPoseToPoseBuffer();
 }
 
 static void writePointCloudToSharedMemory() {
@@ -948,26 +973,30 @@ static void writePointCloudToSharedMemory() {
     float* dst = shFloatPtr(shPointCloudOffset());
     int n = 0;
 
-    std::vector<ORB_SLAM2::MapPoint*> localMPs;
+    // 跟踪点列表复用线程局部缓冲（本函数只在帧处理线程上运行），不再每帧分配
+    static thread_local std::vector<ORB_SLAM2::MapPoint*> localMPs;
     {
         std::lock_guard<std::mutex> lock(gMapPointsMutex);
         localMPs = vMPs;
     }
 
-    cv::Mat curTcw;
+    // 位姿只拷贝 12 个 float，不 clone 整个 cv::Mat
+    float Tcw12[12];
+    cv::Mat curTcw; // 对齐路径需要 cv::Mat 形式
     {
         std::lock_guard<std::mutex> tcwLock(gTcwLock);
-        curTcw = gCachedTcw.clone();
-    }
-    if (curTcw.empty() || curTcw.rows < 3 || curTcw.cols < 4) {
-        *shIntPtr(SH_OFF_POINTCLOUD_BYTES) = 0;
-        return;
+        if (gCachedTcw.empty() || gCachedTcw.rows < 3 || gCachedTcw.cols < 4) {
+            *shIntPtr(SH_OFF_POINTCLOUD_BYTES) = 0;
+            return;
+        }
+        for (int r = 0; r < 3; ++r) for (int c = 0; c < 4; ++c) Tcw12[r*4+c] = gCachedTcw.at<float>(r,c);
+        curTcw = gCachedTcw; // 浅拷贝（引用计数），仅用于 GetMapAlignedPose
     }
 
     // 提取当前相机的本地位姿 (SLAM 坐标系)
-    const float Rs00 = curTcw.at<float>(0,0), Rs01 = curTcw.at<float>(0,1), Rs02 = curTcw.at<float>(0,2), ts0 = curTcw.at<float>(0,3);
-    const float Rs10 = curTcw.at<float>(1,0), Rs11 = curTcw.at<float>(1,1), Rs12 = curTcw.at<float>(1,2), ts1 = curTcw.at<float>(1,3);
-    const float Rs20 = curTcw.at<float>(2,0), Rs21 = curTcw.at<float>(2,1), Rs22 = curTcw.at<float>(2,2), ts2 = curTcw.at<float>(2,3);
+    const float Rs00 = Tcw12[0], Rs01 = Tcw12[1], Rs02 = Tcw12[2],  ts0 = Tcw12[3];
+    const float Rs10 = Tcw12[4], Rs11 = Tcw12[5], Rs12 = Tcw12[6],  ts1 = Tcw12[7];
+    const float Rs20 = Tcw12[8], Rs21 = Tcw12[9], Rs22 = Tcw12[10], ts2 = Tcw12[11];
 
     // 检查是否有地图对齐位姿
     bool hasAlign = false;
@@ -983,8 +1012,9 @@ static void writePointCloudToSharedMemory() {
     const float Rm10 = hasAlign ? mapTcw.at<float>(1,0) : 0, Rm11 = hasAlign ? mapTcw.at<float>(1,1) : 0, Rm12 = hasAlign ? mapTcw.at<float>(1,2) : 0, tm1 = hasAlign ? mapTcw.at<float>(1,3) : 0;
     const float Rm20 = hasAlign ? mapTcw.at<float>(2,0) : 0, Rm21 = hasAlign ? mapTcw.at<float>(2,1) : 0, Rm22 = hasAlign ? mapTcw.at<float>(2,2) : 0, tm2 = hasAlign ? mapTcw.at<float>(2,3) : 0;
 
-    std::unordered_set<ORB_SLAM2::MapPoint*> renderedMPs;
-    renderedMPs.reserve(localMPs.size() + 1024);
+    // 用地图点上的渲染序号代替 unordered_set（原先每帧构造并 reserve(N+1024)）：只有加载点需要在第二遍中去重
+    static uint32_t sRenderSeq = 0;
+    const uint32_t renderSeq = ++sRenderSeq;
 
     // 1. 优先渲染当前帧直接跟踪到的特征点(高亮清晰)
     const size_t NMPs = localMPs.size();
@@ -1025,7 +1055,7 @@ static void writePointCloudToSharedMemory() {
             dst[n*7+5] = ORB_SLAM2::POINTCLOUD_COLOR_CYAN_B;
             dst[n*7+6] = ORB_SLAM2::POINTCLOUD_POINT_SIZE_TRACKED;
         }
-        renderedMPs.insert(pMP);
+        if (pMP->mbFromLoadedMap) pMP->mnRenderedForSeq = renderSeq;
         n++;
     }
 
@@ -1037,7 +1067,7 @@ static void writePointCloudToSharedMemory() {
         const int maxDrawPoints = ORB_SLAM2::POINTCLOUD_MAX_DRAW_LOADED;
         for (auto pMP : allMPs) {
             if (!pMP || pMP->isBad() || !pMP->mbFromLoadedMap) continue;
-            if (renderedMPs.count(pMP)) continue;
+            if (pMP->mnRenderedForSeq == renderSeq) continue;
 
             cv::Point3f Pw;
             pMP->GetWorldPos(Pw);
@@ -1064,23 +1094,21 @@ static void writePointCloudToSharedMemory() {
     }
 
     *shIntPtr(SH_OFF_POINTCLOUD_BYTES) = n * 7 * (int)sizeof(float);
+    // 点云序号：App 端只在序号变化时重新读取与上传 VBO（原先每个 GL 帧都拷贝 ≤96 KB 并上传）
+    std::atomic_thread_fence(std::memory_order_release);
+    *shIntPtr(SH_OFF_POINTCLOUD_SEQ) = *shIntPtr(SH_OFF_POINTCLOUD_SEQ) + 1;
 }
 
 JNIEXPORT void JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_nativeProcessFrameSharedMem(
-    JNIEnv* env, jobject instance, jint bufIndex, jint seq, jint width, jint height, jintArray statusBuf_)
+    JNIEnv* env, jobject instance, jint bufIndex, jint seq, jint width, jint height)
 {
     // 帧入口全程耗时(含共享内存锁与 gSlamPtrLock 等待、结果写回)，与 processImage 相减即预处理开销
     VT_PROFILE_SCOPE("JNI_FrameProcess");
     if (width <= 0 || height <= 0) return;
-    jint* statusBuf = env->GetIntArrayElements(statusBuf_, nullptr);
-    if (!statusBuf) return;
 
     std::lock_guard<std::mutex> lock(gSharedFrameLock);
     if (!gSharedFramePtr) {
-        statusBuf[0] = 0;
-        statusBuf[1] = 0;
-        env->ReleaseIntArrayElements(statusBuf_, statusBuf, 0);
         return;
     }
 
@@ -1091,9 +1119,6 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeProcessFrameSharedMem(
     const int frameBytes = width * height;
     if (gSharedFrameSize < yOff + frameBytes) {
         LOGE("nativeProcessFrameSharedMem: 共享内存尺寸不足");
-        statusBuf[0] = 0;
-        statusBuf[1] = 0;
-        env->ReleaseIntArrayElements(statusBuf_, statusBuf, 0);
         return;
     }
 
@@ -1123,13 +1148,9 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeProcessFrameSharedMem(
     int tmpStatus[3] = {0};
     const int trackingResult = processImage(mGr, dummyOut, tmpStatus);
     const bool draw = gShouldDrawArObject;
-    statusBuf[0] = trackingResult;
-    statusBuf[1] = draw ? 1 : 0;
 
     writePointCloudToSharedMemory();
     writeResultToSharedMemory(seq, trackingResult, draw, width, height);
-
-    env->ReleaseIntArrayElements(statusBuf_, statusBuf, 0);
 }
 
 // 关停并释放 SLAM 系统：等待帧处理归零后 join 全部工作线程再 delete
