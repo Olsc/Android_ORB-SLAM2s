@@ -378,8 +378,26 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
         if(p->mbFromLoadedMap) hasLoaded = true;
         candidates.push_back(p);
     }
-    if(hasLoaded) {
-        // 存在加载点时仅缓存加载点
+    if(!hasLoaded) {
+        // 没有加载地图：参考缓存必须为空。原先把当前 SLAM 地图自己的点全部缓存起来，
+        // 后台线程随后每帧都对自己的地图做 HBST 匹配 + EPnP RANSAC（设备上约占 12% CPU），且 HasLoadedMapData() 误报为 true
+        auto pEmptySnaps = std::make_shared<const std::vector<RefMPSnapshot>>();
+        auto pEmptyIdx = std::make_shared<const std::vector<MapPoint*>>();
+        {
+            std::unique_lock<std::mutex> lk(mMutexReloc);
+            mRefDesc.release();
+            mpRefIdxToMP = pEmptyIdx;
+            mpRefSnapshots = pEmptySnaps;
+            mpRefTree.reset();
+            mRefCachedMPCount = 0;
+            mRefGrid = LoadedMapGrid();
+            mbRefCacheNoLoaded = true;
+        }
+        mRefBuilding.store(false);
+        return;
+    }
+    // 存在加载点时仅缓存加载点
+    {
         size_t kept = 0;
         for(MapPoint* p : candidates) {
             if(p->mbFromLoadedMap) candidates[kept++] = p;
@@ -459,11 +477,11 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
         mRefLastBuildMPCount = (long long)allMPs.size();
         mRefLastBuildKFCount = mpMap->KeyFramesInMap();
         mRefGrid = std::move(newGrid); // 一并原子更新网格
+        mbRefCacheNoLoaded = false;
     }
 
-    // 通知后台线程参考缓存已就绪
-    mSnapSeqProduced++;
-    mCvReloc.notify_all();
+    // 不再自增 mSnapSeqProduced：构建发生在后台线程处理某个快照的过程中，构建完成后该次迭代会继续匹配；
+    // 原先的自增会让同一快照被再处理一遍（EMA 权重与冷却计数也被重复推进）
     mRefBuilding.store(false);
 }
 
@@ -714,7 +732,8 @@ void Tracking::GlobalRelocLoop(int sessionId)
             if(!mLastTcwSlam.empty()) TcwSlam = mLastTcwSlam.clone();
 
             // 若缓存被主线程标记失效（跟踪丢失/加载地图/重置），或尚未构建，在后台线程构建。
-            if(mRefCacheDirty.exchange(false) || mRefDesc.empty() ||
+            // 缓存为空且上次构建已确认没有加载点时不重复扫描全图；加载地图时 InvalidateRefCache 会置脏标志触发重建
+            if(mRefCacheDirty.exchange(false) || (mRefDesc.empty() && !mbRefCacheNoLoaded) ||
                !mpRefSnapshots || mRefDesc.rows != (int)mpRefSnapshots->size()) {
                 lk.unlock();
                 BuildLoadedRefCache();

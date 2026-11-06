@@ -31,8 +31,12 @@ public class NativeHelper {
         // CPU 亲和性，libomp 初始化时 sched_setaffinity 失败会直接 abort（引擎进程一启动即崩溃）
         try {
             android.system.Os.setenv("KMP_AFFINITY", "disabled", true);
+            // libomp 默认在并行区结束后自旋 200 ms 再休眠：30 fps 下工作线程几乎永不休眠，占满一个核并与建图/闭环线程抢核。
+            // 设备实测（slam_bench，1017 帧）：0 ms 会让工作线程所在核降频/迁核，跟踪均值 13.6→19.7 ms；
+            // 30 ms 跟踪耗时不变，后端耗时 −4%，且空闲时自旋有界
+            android.system.Os.setenv("KMP_BLOCKTIME", "30", true);
         } catch (Throwable t) {
-            Log.w(TAG, "设置 KMP_AFFINITY 失败", t);
+            Log.w(TAG, "设置 KMP 环境变量失败", t);
         }
         try {
             System.loadLibrary("Mentha_Profiler");

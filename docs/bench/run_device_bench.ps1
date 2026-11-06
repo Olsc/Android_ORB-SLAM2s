@@ -80,7 +80,8 @@ if (-not $SkipPush) {
 }
 
 for ($r = 1; $r -le $Runs; $r++) {
-    $line = & $Adb shell "cd $DeviceDir && LD_LIBRARY_PATH=. ./slam_bench frames.raw 1280 720 out.txt $MaxFrames $Sync 1"
+    # KMP_BLOCKTIME 与 NativeHelper 中 App 的设置一致
+    $line = & $Adb shell "cd $DeviceDir && KMP_BLOCKTIME=30 LD_LIBRARY_PATH=. ./slam_bench frames.raw 1280 720 out.txt $MaxFrames $Sync 1"
     Write-Host "[$Tag run $r] $line"
 }
 & $Adb pull "$DeviceDir/out.txt" (Join-Path $resDir "$Tag.txt") | Out-Null

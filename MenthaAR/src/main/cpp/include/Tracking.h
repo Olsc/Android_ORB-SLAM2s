@@ -301,6 +301,8 @@ protected:
     std::atomic<bool> mRefBuilding{false};
     // 缓存失效请求标志：主线程置位，后台重定位线程消费并重建
     std::atomic<bool> mRefCacheDirty{false};
+    // 上次构建参考缓存时地图中没有加载点（缓存为空是正确状态，不需要每帧重建）；由 mMutexReloc 保护
+    bool mbRefCacheNoLoaded = false;
     // HBST树：用于代替词袋倒排索引加速背景重定位匹配
     std::shared_ptr<HBSTTree> mpRefTree;
     // 加载地图点的不可变快照以避免竞争
