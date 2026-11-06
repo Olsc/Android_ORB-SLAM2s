@@ -875,6 +875,16 @@ public class CameraPreviewView extends AspectGLSurfaceView {
             GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT | GLES20.GL_COLOR_BUFFER_BIT);
 
+            // surfaceDestroyed 销毁了 GL 对象而 EGL 上下文被保留时，onSurfaceCreated 不会重新调用：在这里按需重建
+            if (!mPassThroughRenderer.isReady()) {
+                mPassThroughRenderer.init();
+            }
+            if (mPointCloudRenderer == null) {
+                mPointCloudRenderer = new GLPointCloudRenderer();
+                mPointCloudRenderer.init();
+                mPointCloudSeq = -1;
+            }
+
             mPassThroughRenderer.onDrawFrame(mImageTextureId);
 
             if (mSlamIPCClient != null && mSlamIPCClient.isConnected() && mPointCloudRenderer != null) {

@@ -959,13 +959,21 @@ static void writeResultToSharedMemory(int seq, int tracking, bool draw, int w, i
     writeRawPoseToPoseBuffer();
 }
 
+// 写点云字节数并递增点云序号：App 端只在序号变化时重新读取，所以任何改写（包括清零）都必须递增，
+// 否则跟踪丢失后屏幕上的旧点会一直停留到下一次有点云为止
+static inline void publishPointCloudBytes(int bytes) {
+    *shIntPtr(SH_OFF_POINTCLOUD_BYTES) = bytes;
+    std::atomic_thread_fence(std::memory_order_release);
+    *shIntPtr(SH_OFF_POINTCLOUD_SEQ) = *shIntPtr(SH_OFF_POINTCLOUD_SEQ) + 1;
+}
+
 static void writePointCloudToSharedMemory() {
     if (!gSharedFramePtr || !slamSys) {
-        if (gSharedFramePtr) *shIntPtr(SH_OFF_POINTCLOUD_BYTES) = 0;
+        if (gSharedFramePtr) publishPointCloudBytes(0);
         return;
     }
     if (!gEnablePointCloudDisplay) {
-        *shIntPtr(SH_OFF_POINTCLOUD_BYTES) = 0;
+        publishPointCloudBytes(0);
         return;
     }
 
@@ -986,7 +994,7 @@ static void writePointCloudToSharedMemory() {
     {
         std::lock_guard<std::mutex> tcwLock(gTcwLock);
         if (gCachedTcw.empty() || gCachedTcw.rows < 3 || gCachedTcw.cols < 4) {
-            *shIntPtr(SH_OFF_POINTCLOUD_BYTES) = 0;
+            publishPointCloudBytes(0); // 跟踪丢失：立即清空点云
             return;
         }
         for (int r = 0; r < 3; ++r) for (int c = 0; c < 4; ++c) Tcw12[r*4+c] = gCachedTcw.at<float>(r,c);
@@ -1093,10 +1101,7 @@ static void writePointCloudToSharedMemory() {
         }
     }
 
-    *shIntPtr(SH_OFF_POINTCLOUD_BYTES) = n * 7 * (int)sizeof(float);
-    // 点云序号：App 端只在序号变化时重新读取与上传 VBO（原先每个 GL 帧都拷贝 ≤96 KB 并上传）
-    std::atomic_thread_fence(std::memory_order_release);
-    *shIntPtr(SH_OFF_POINTCLOUD_SEQ) = *shIntPtr(SH_OFF_POINTCLOUD_SEQ) + 1;
+    publishPointCloudBytes(n * 7 * (int)sizeof(float));
 }
 
 JNIEXPORT void JNICALL
