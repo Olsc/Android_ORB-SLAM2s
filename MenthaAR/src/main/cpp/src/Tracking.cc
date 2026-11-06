@@ -1164,6 +1164,7 @@ void Tracking::Track()
         }
 
         mCurrentFrame.mpReferenceKF = mpReferenceKF;
+        const bool bInitialPoseOK = bOK; // 诊断：区分初始位姿估计失败与局部地图跟踪失败
 
         // 如果我们有相机位姿和匹配的初始估计值，则跟踪局部地图。
         if(!mbOnlyTracking)
@@ -1189,6 +1190,11 @@ void Tracking::Track()
         }
         else {
             if(mState == OK) {
+                // 只在 OK→LOST 切换时打印一次：失败阶段、内点数与地图规模，用于定位实机丢失原因
+                LOGD("跟踪丢失: 阶段=%s 内点=%d(其中加载点%d) 地图=%d KF=%lu MP=%lu 局部KF=%zu 局部MP=%zu",
+                     bInitialPoseOK ? "TrackLocalMap" : "MotionModel/RefKF",
+                     mnMatchesInliers, mnLoadedMapInliers, mnCurrentMapId.load(),
+                     mpMap->KeyFramesInMap(), mpMap->MapPointsInMap(), mvpLocalKeyFrames.size(), mvpLocalMapPoints.size());
                 InvalidateRefCache(); // 避免主线程同步构建造成掉帧
             }
             mState=LOST;

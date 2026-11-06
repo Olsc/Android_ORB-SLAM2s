@@ -66,6 +66,21 @@ int main(int argc, char** argv)
     slam.UpdateCalibration(ORB_SLAM2::CAMERA_FX * sx, ORB_SLAM2::CAMERA_FY * sy,
                            ORB_SLAM2::CAMERA_CX * sx, ORB_SLAM2::CAMERA_CY * sy);
 
+    // 环境变量：SLAM_LOAD_MAP=<file> 回放前加载地图（复刻 App 的"加载地图后继续扫描"路径）；
+    //           SLAM_SAVE_MAP=<file> 回放结束后保存地图，用于生成上述场景的输入
+    // SLAM_LOAD_MAP_AT=<frameIdx>：在第 frameIdx 帧之前加载（默认 0，即回放开始前），用于复刻"先扫描再加载"
+    const char* loadMapPath = std::getenv("SLAM_LOAD_MAP");
+    const char* saveMapPath = std::getenv("SLAM_SAVE_MAP");
+    const char* loadAtStr = std::getenv("SLAM_LOAD_MAP_AT");
+    const long loadAt = loadAtStr ? std::atol(loadAtStr) : 0;
+    auto doLoadMap = [&]() {
+        slam.LoadMap(loadMapPath, 0, false);
+        slam.WaitForBackendIdle(20000);
+        std::fprintf(fout, "# loaded_map=%s at_frame=%ld keyframes=%d mappoints=%d\n", loadMapPath, loadAt,
+                     slam.GetNumKeyFrames(), slam.GetNumMapPoints());
+    };
+    if (loadMapPath && loadMapPath[0] && loadAt <= 0) doLoadMap();
+
     cv::Mat imgSmall;
     double timeStamp = 0.0;
     std::vector<double> msTrack;
@@ -81,6 +96,7 @@ int main(int argc, char** argv)
         std::fseek(fin, 0, SEEK_SET);
         for (long i = 0; i < nFrames; ++i) {
             if (std::fread(buf.data(), 1, frameBytes, fin) != frameBytes) break;
+            if (loadMapPath && loadMapPath[0] && loadAt > 0 && frameIdx == loadAt) doLoadMap();
             cv::Mat gray(H, W, CV_8UC1, buf.data());
             timeStamp += 1.0 / ORB_SLAM2::SYSTEM_FPS;
 
@@ -122,6 +138,10 @@ int main(int argc, char** argv)
     // 等后端把最后的关键帧处理完再统计
     slam.WaitForBackendIdle(20000);
     const auto tAll1 = std::chrono::steady_clock::now();
+    if (saveMapPath && saveMapPath[0]) {
+        slam.SaveMap(saveMapPath);
+        std::fprintf(fout, "# saved_map=%s\n", saveMapPath);
+    }
 
     const int nKF = slam.GetNumKeyFrames();
     const int nMP = slam.GetNumMapPoints();
