@@ -423,17 +423,21 @@ void System::CreateNewMap()
     }
 
     // 5. 创建新 Map 并切换
+    // 已加载地图点可能位于任一子地图（切图后不再跟随 mpMap），需从全部子地图收集并迁出
     std::vector<MapPoint*> savedLoadedMPs;
     {
-        std::vector<MapPoint*> allMPs = mpMap->GetAllMapPoints();
-        for(MapPoint* p : allMPs) {
-            if(p && !p->isBad() && p->mbFromLoadedMap) {
-                savedLoadedMPs.push_back(p);
-                mpMap->EraseMapPoint(p, false);
+        for(Map* pMap : mvpMaps) {
+            if(!pMap) continue;
+            std::vector<MapPoint*> allMPs = pMap->GetAllMapPoints();
+            for(MapPoint* p : allMPs) {
+                if(p && !p->isBad() && p->mbFromLoadedMap) {
+                    savedLoadedMPs.push_back(p);
+                    pMap->EraseMapPoint(p, false);
+                }
             }
         }
         if(!savedLoadedMPs.empty()) {
-            LOGD("System::CreateNewMap 从旧地图移出 %d 个已加载地图点（待迁移到新地图）",
+            LOGD("System::CreateNewMap 从子地图移出 %d 个已加载地图点（待迁移到新地图）",
                  (int)savedLoadedMPs.size());
         }
     }
@@ -507,6 +511,9 @@ void System::CreateNewMap()
 
 void System::SwitchToMap(Map* pMap)
 {
+    // 切图前先把已加载地图点带到目标地图：重定位缓存与投影绑定都只读取当前地图的点集
+    MigrateLoadedMapPoints(pMap);
+
     mpMap = pMap;
     if(mpTracker) {
         mpTracker->SetMap(pMap);
@@ -515,6 +522,29 @@ void System::SwitchToMap(Map* pMap)
     if(mpLocalMapper) mpLocalMapper->SetMap(pMap);
     if(mpLoopCloser) mpLoopCloser->SetMap(pMap);
     if(mpFrameDrawer) mpFrameDrawer->SetMap(pMap);
+}
+
+void System::MigrateLoadedMapPoints(Map* pTarget)
+{
+    if(!pTarget) return;
+
+    std::vector<std::pair<Map*, MapPoint*>> toMove;
+    for(Map* pMap : mvpMaps) {
+        if(!pMap || pMap == pTarget) continue;
+        std::vector<MapPoint*> vpMPs = pMap->GetAllMapPoints();
+        for(MapPoint* p : vpMPs) {
+            if(p && !p->isBad() && p->mbFromLoadedMap) toMove.emplace_back(pMap, p);
+        }
+    }
+    if(toMove.empty()) return;
+
+    for(auto& item : toMove) {
+        item.first->EraseMapPoint(item.second, false);
+        pTarget->AddMapPoint(item.second);
+    }
+    LOGD("System::MigrateLoadedMapPoints 迁移 %d 个已加载地图点到地图 ID=%lu",
+         (int)toMove.size(), pTarget->mnId);
+    if(mpTracker) mpTracker->InvalidateRefCache();
 }
 
 cv::Mat System::GetMapAlignedPose(const cv::Mat &TcwSlam)

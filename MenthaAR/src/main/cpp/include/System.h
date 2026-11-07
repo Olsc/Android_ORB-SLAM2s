@@ -148,6 +148,9 @@ public:
     // 切换到指定地图
     void SwitchToMap(Map* pMap);
 
+    // 将所有子地图中的已加载地图点迁移到 pTarget（加载地图需始终跟随当前激活子地图）
+    void MigrateLoadedMapPoints(Map* pTarget);
+
 //public:
 private:
     // 多地图容器
