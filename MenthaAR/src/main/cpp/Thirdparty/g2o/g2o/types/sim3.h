@@ -166,8 +166,7 @@ public:
       Matrix3d I = Matrix3d::Identity();
 
       // deltaR(R) = (R32-R23, R13-R31, R21-R12) = 2 sinθ · axis，所以 |deltaR|/2 = sinθ，d = cosθ。
-      // θ = atan2(sinθ, cosθ) 在整个 [0, π) 上都良态；原来的 acos(d) 在 θ→0 时条件数发散
-      // （docs/bench/algo_bench.py §3：ω 最大相对误差 3.3e-6 → 2.2e-16）。
+      // θ = atan2(sinθ, cosθ) 在整个 [0, π) 上都良态
       const Vector3d dR = deltaR(R);
       const double sinTheta = 0.5*dR.norm();
       const double theta = atan2(sinTheta, d);
@@ -184,17 +183,16 @@ public:
       double A,B,C;
       if (fabs(sigma)<eps)
       {
-        // (e^σ - 1)/σ = 1 + σ/2 + σ²/6 + …（原来直接取 1）
+        // (e^σ - 1)/σ = 1 + σ/2 + σ²/6 + …
         C = 1.0 + 0.5*sigma + sigma*sigma/6.0;
         if (smallTheta)
         {
-          // 原来取 θ→0 的极限 1/2、1/6，相对误差 ≈ θ²/12、θ²/20；级数到 θ⁴ 项后误差 ~θ⁶
           A = 0.5 - theta2/24.0 + theta2*theta2/720.0;
           B = 1.0/6.0 - theta2/120.0 + theta2*theta2/5040.0;
         }
         else
         {
-          // 1 - cosθ = 2 sin²(θ/2)，避免直接相减的相消
+          // 1 - cosθ = 2 sin²(θ/2)
           const double sh = sin(0.5*theta);
           A = 2.0*sh*sh/theta2;
           B = (theta-sin(theta))/(theta2*theta);
@@ -202,7 +200,7 @@ public:
       }
       else
       {
-        C = expm1(sigma)/sigma; // 与 (s-1)/σ 恒等，σ 小时无相消
+        C = expm1(sigma)/sigma;
         if (smallTheta)
         {
           double sigma2 = sigma*sigma;

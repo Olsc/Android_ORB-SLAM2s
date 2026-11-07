@@ -161,7 +161,7 @@ void PnPsolver::SetRansacParameters(double probability, int minInliers, int maxI
     if(mRansacMinInliers==N)
         nIterations=1;
     else
-        nIterations = ceil(log(1-mRansacProb)/log(1-pow(mRansacEpsilon,mRansacMinSet))); // 指数必须等于最小样本数（原先固定为 3，而最小集为 4）
+        nIterations = ceil(log(1-mRansacProb)/log(1-pow(mRansacEpsilon,mRansacMinSet))); // 指数必须等于最小样本数
 
     mRansacMaxIts = max(1,min(nIterations,mRansacMaxIts));
     mnAdaptiveMaxIts = mRansacMaxIts;
@@ -196,15 +196,14 @@ cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInlie
         vector<bool> vUsed(N, false);
 
         int nCurrentIterations = 0;
-        // 自适应 RANSAC 提前终止：上限保存在成员 mnAdaptiveMaxIts 中并跨调用生效。
-        // 原先上限是每次调用都重置的局部变量，且循环条件用 ||，早停从未真正起作用
+        // 自适应 RANSAC 提前终止：上限保存在成员 mnAdaptiveMaxIts 中并跨调用生效
         while(mnIterations<mnAdaptiveMaxIts && nCurrentIterations<nIterations)
         {
             nCurrentIterations++;
             mnIterations++;
             reset_correspondences();
 
-            // 获取最小点集（拒绝采样去重；迭代末只清本轮置位的 mRansacMinSet 个标志，而不是整份 fill(N)）
+            // 获取最小点集
             int picked[16];
             for(short i = 0; i < mRansacMinSet; ++i)
             {
@@ -979,8 +978,7 @@ void PnPsolver::qr_solve(CvMat * A, CvMat * b, CvMat * X)
     }
 
     if (eta == 0) {
-      // 退化列：原实现直接返回而不写 X，调用方随后把未初始化的增量加到 beta 上。
-      // 这里把增量置零（本次高斯牛顿步不更新），结果有定义且与"奇异系统无解"一致
+      // 退化列：把增量置零（本次高斯牛顿步不更新），结果有定义且与"奇异系统无解"一致
       A1[k] = A2[k] = 0.0;
       double * pX = X->data.db;
       for(int i = 0; i < nc; i++) pX[i] = 0.0;

@@ -204,7 +204,7 @@ void KeyFrame::UpdateBestCovisibles()
     for(KeyFrameMap<int>::const_iterator mit=mConnectedKeyFrameWeights.begin(), mend=mConnectedKeyFrameWeights.end(); mit!=mend; ++mit)
        vPairs.push_back(std::make_pair(mit->second,mit->first));
 
-    // 权重降序，权重相同按 id 升序（原先按指针地址打破平局，跨运行不可复现）
+    // 权重降序，权重相同按 id 升序
     std::sort(vPairs.begin(), vPairs.end(), WeightDescIdAsc);
 
     mvpOrderedConnectedKeyFrames.resize(vPairs.size());

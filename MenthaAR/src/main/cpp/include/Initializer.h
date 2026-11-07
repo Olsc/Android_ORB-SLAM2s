@@ -68,7 +68,7 @@ private:
     cv::Mat ComputeH21(const vector<cv::Point2f> &vP1, const vector<cv::Point2f> &vP2);
     cv::Mat ComputeF21(const vector<cv::Point2f> &vP1, const vector<cv::Point2f> &vP2);
 
-    // nInliers 顺带返回内点数，避免得分提升时再数一遍
+    // nInliers 顺带返回内点数
     float CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vector<bool> &vbMatchesInliers, float sigma, int &nInliers);
 
     float CheckFundamental(const cv::Mat &F21, vector<bool> &vbMatchesInliers, float sigma, int &nInliers);

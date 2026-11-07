@@ -462,8 +462,7 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
         mRefGrid = std::move(newGrid); // 一并原子更新网格
     }
 
-    // 不再自增 mSnapSeqProduced：构建发生在后台线程处理某个快照的过程中，构建完成后该次迭代会继续匹配；
-    // 原先的自增会让同一快照被再处理一遍（EMA 权重与冷却计数也被重复推进）
+    // 不再自增 mSnapSeqProduced：构建发生在后台线程处理某个快照的过程中，构建完成后该次迭代会继续匹配
     mRefBuilding.store(false);
 }
 
@@ -2850,8 +2849,7 @@ bool Tracking::Relocalization()
             }
             else if(pTargetMap)
             {
-                // 同一子地图内重定位不改变当前地图标识：此处若赋 Map::mnId，会与加载点的地图 id 不一致，
-                // 使投影绑定与本图加载点统计失效；当前地图 id 交由对齐结果维护
+                // 同一子地图内重定位不改变当前地图标识：此处若赋 Map::mnId，会与加载点的地图 id 不一致，使投影绑定与本图加载点统计失效；当前地图 id 交由对齐结果维护
             }
         }
         return true;

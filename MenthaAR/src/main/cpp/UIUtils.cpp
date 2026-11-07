@@ -71,8 +71,7 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
     vector<float> vDistances(N);
     vector<float> vSorted(N);
 
-    // RANSAC 迭代：寻找最佳平面模型。随机源用与引擎相同的 LCG（rand() 是全局状态且非线程安全）；
-    // 抽样用交换-恢复，不再每轮拷贝整份下标数组
+    // RANSAC 迭代：寻找最佳平面模型。随机源用与引擎相同的 LCG（rand() 是全局状态且非线程安全）
     ORB_SLAM2::LCG lcg(0);
     for(int n=0; n<iterations; n++)
     {

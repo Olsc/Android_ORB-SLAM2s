@@ -67,7 +67,6 @@ public:
     static std::vector<float> toQuaternion(const cv::Mat &M);
 
     // 空间射线公垂线中点闭式解：s=((O2-O1)x r2)·n/(n·n)，t=((O2-O1)x r1)·n/(n·n)，n=r1x r2
-    // 射线无需归一化且不含 1-cos^2 相消，内部 double 计算，接口保持 float
     static inline bool TriangulateMidpoint(const float O1[3], const float r1f[3],
                                            const float O2[3], const float r2f[3],
                                            float out3D[3])
@@ -106,7 +105,6 @@ public:
     }
 
     // DLT 三角化（法方程 + 克莱姆法则），结果写入调用方栈数组
-    // 法方程条件数为 κ(A)^2，内部全程 double 以抑制病态误差，运算次数与 float 版本相同
     static bool TriangulateWithCenters(const cv::Mat &P1, const cv::Mat &P2,
                                        const float[3], const float[3],
                                        float x1f, float y1f, float x2f, float y2f,

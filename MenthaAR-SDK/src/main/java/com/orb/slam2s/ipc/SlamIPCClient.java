@@ -177,8 +177,7 @@ public class SlamIPCClient {
         }
     }
 
-    // 获取下一帧的共享内存槽位（含重建/attach/背压检查），让调用方的转换代码直接把灰度写进共享内存，
-    // 省去 byte[] → 共享内存的一次整帧拷贝。背压丢帧或没有直接映射（API<27）时返回 null
+    // 获取下一帧的共享内存槽位（含重建/attach/背压检查），让调用方的转换代码直接把灰度写进共享内存
     public FrameSlot acquireFrameSlot(int width, int height) {
         if (slamService == null || width <= 0 || height <= 0) return null;
         synchronized (sendLock) {

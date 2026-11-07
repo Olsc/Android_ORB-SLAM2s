@@ -145,8 +145,6 @@ void BaseBinaryEdge<D, E, VertexXiType, VertexXjType>::linearizeOplus()
 #endif
 
   // 中心差分的总误差 ≈ ε/h（舍入）+ h²·f'''/6（截断），最优 h ≈ ∛(3ε) ≈ 6e-6。
-  // 原值 1e-9 由舍入误差主导：最大相对误差 1.05e-7，改为 6e-6 后为 5.1e-11（docs/bench/algo_bench.py §2）。
-  // 只影响没有解析雅可比的边（EdgeSim3、EdgeSim3ProjectXYZ、EdgeInverseSim3ProjectXYZ）
   const double delta = 6e-6;
   const double scalar = 1.0 / (2*delta);
   ErrorVector errorBak;

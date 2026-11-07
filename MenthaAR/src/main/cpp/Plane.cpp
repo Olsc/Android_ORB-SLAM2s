@@ -158,7 +158,7 @@ void Plane::Recompute()
     // 收集有效点并单次遍历计算质心
     std::vector<cv::Point3f> validPoints;
     validPoints.reserve(N);
-    // 质心与协方差在 double 中累加：N 项 float 求和的误差按 O(N·ε) 增长（精度提升，运算次数不变）
+    // 质心与协方差在 double 中累加：N 项 float 求和的误差按 O(N·ε) 增长
     double sumX = 0.0, sumY = 0.0, sumZ = 0.0;
 
     for (int i = 0; i < N; i++)

@@ -42,7 +42,6 @@ private:
 };
 
 // 无放回抽取 m 个下标（RANSAC 最小集）：在活动区内交换-恢复，单次写入 O(m)
-// 活动前缀与逐次拷贝的实现完全一致，同一随机源下样本序列不变，vIndices 调用前后内容不变
 template<class Rng>
 inline void SampleWithoutReplacement(Rng& rng, std::vector<size_t>& vIndices, const int m, size_t* out)
 {

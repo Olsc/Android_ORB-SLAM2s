@@ -199,7 +199,7 @@ void Initializer::FindHomography(vector<bool> &vbMatchesInliers, float &score, c
 
 void Initializer::FindFundamental(vector<bool> &vbMatchesInliers, float &score, cv::Mat &F21)
 {
-    // 传入的 vbMatchesInliers 是空向量：原先取它的 size 得到 N=0，nInlierBest 恒为 0，自适应早停从不触发
+    // 传入的 vbMatchesInliers 是空向量
     const int N = mvMatches12.size();
 
     // 归一化坐标（Initialize 中已算好，两线程共享只读）
@@ -390,8 +390,7 @@ float Initializer::CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vecto
 
         // x2in1 = H12*x2
         const float w2in1 = h31inv*u2 + h32inv*v2 + h33inv;
-        // 只排除无穷远点（w=0）。SVD 零空间向量的符号是任意的：取到 -H 时所有 w 都为负，
-        // 按 w<=0 拒绝会让约一半的假设得 0 分；下方的平方判据本身与符号无关，正深度检查在 CheckRT 中完成
+        // 只排除无穷远点（w=0）。SVD 零空间向量的符号是任意的：取到 -H 时所有 w 都为负，按 w<=0 拒绝会让约一半的假设得 0 分；下方的平方判据本身与符号无关，正深度检查在 CheckRT 中完成
         if (w2in1 == 0.0f)
         {
             vbMatchesInliers[i] = false;
@@ -896,7 +895,7 @@ int Initializer::CheckRT(const cv::Mat &R, const cv::Mat &t, const vector<cv::Ke
     const float Q2[3] = {O2.at<float>(0), O2.at<float>(1), O2.at<float>(2)};
     const double O2x = Q2[0], O2y = Q2[1], O2z = Q2[2];
 
-    // R、t 取成 double 标量：每个点的变换与重投影不再构造 cv::Mat 临时对象（原先每点 4 个），并在 double 中计算
+    // R、t 取成 double 标量
     const double r00 = R.at<float>(0,0), r01 = R.at<float>(0,1), r02 = R.at<float>(0,2), t0 = t.at<float>(0);
     const double r10 = R.at<float>(1,0), r11 = R.at<float>(1,1), r12 = R.at<float>(1,2), t1 = t.at<float>(1);
     const double r20 = R.at<float>(2,0), r21 = R.at<float>(2,1), r22 = R.at<float>(2,2), t2 = t.at<float>(2);

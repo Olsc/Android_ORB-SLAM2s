@@ -1,15 +1,37 @@
+/**
+* This file is part of ORB-SLAM2.
+*
+* Copyright (C) 2014-2016 Raúl Mur-Artal <raulmur at unizar dot es> (University of Zaragoza)
+* For more information see <https://github.com/raulmur/ORB_SLAM2>
+*
+* ORB-SLAM2 is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* ORB-SLAM2 is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
+*/
+
 /*
- * 按对象 id 排序的关联容器。
+ * This project is based on ORB-SLAM2.
  *
- * 原代码中的 std::set<KeyFrame *> / std::map<KeyFrame *,...> 按指针地址排序，
- * 而 Android 的 scudo 分配器会随机化地址，于是每次运行时这些容器的遍历顺序都不同：
- * 浮点求和次序、g2o 边的插入次序、描述子中值的平局、共视权重相同时的排序都随之改变，
- * 导致同一段输入在两次运行中得到不同的关键帧数和轨迹。
+ * The ORB-SLAM2 project was ported to the Android platform by Ads
+ * under the GitHub account Martin20150405 in 2017.
  *
- * mnId 由进程内单调递增的静态计数器分配（KeyFrame.cc / MapPoint.cc，从不重置），
- * 对加载地图的对象同样如此，因此在进程生命周期内唯一，可作为全序键。
- * 比较器把 nullptr 视为最小元素，兼容原先把空指针放进集合的用法。
+ * Starting from August 25, 2025, Olsc began modifying this project.
+ * On the basis of the original project, functions such as map saving,
+ * map loading, and relocalization were added.
+ *
+ * This project is distributed under the GNU General Public License
+ * version 3, together with ORB-SLAM2.
  */
+
 #ifndef IDORDER_H
 #define IDORDER_H
 

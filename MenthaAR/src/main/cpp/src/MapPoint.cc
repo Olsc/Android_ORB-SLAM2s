@@ -569,7 +569,7 @@ int MapPoint::PredictScale(const float &currentDist, Frame* pF)
 
 void MapPoint::GetTrackingSnapshot(cv::Point3f& pos, cv::Point3f& normal, float& maxDistance)
 {
-    // isInFrustum 需要位置、法向和 mfMaxDistance：一次加锁取出，原先要取三次 mMutexPos
+    // isInFrustum 需要位置、法向和 mfMaxDistance：一次加锁取出
     std::unique_lock<std::mutex> lock(mMutexPos);
     pos.x = mWorldPos.at<float>(0);
     pos.y = mWorldPos.at<float>(1);

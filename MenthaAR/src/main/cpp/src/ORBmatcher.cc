@@ -211,7 +211,7 @@ int ORBmatcher::SearchByHBST(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoi
         rotHistInit = true;
     }
     for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].clear();
-    const float factor = 1.0f/HISTO_LENGTH; // 与上游一致：实际箱宽 30°，ComputeThreeMaxima 保留 90° 跨度；改为 12° 箱后实机重定位/回环匹配明显变少（见文档 D-4）
+    const float factor = 1.0f/HISTO_LENGTH; // 与上游一致：实际箱宽 30°，ComputeThreeMaxima 保留 90° 跨度；改为 12° 箱后实机重定位/回环匹配明显变少
 
     if(pKF->mDescriptors.empty() || F.mDescriptors.empty())
         return 0;
@@ -484,7 +484,7 @@ int ORBmatcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f
         rotHistInit = true;
     }
     for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].clear();
-    const float factor = 1.0f/HISTO_LENGTH; // 与上游一致：实际箱宽 30°，ComputeThreeMaxima 保留 90° 跨度；改为 12° 箱后实机重定位/回环匹配明显变少（见文档 D-4）
+    const float factor = 1.0f/HISTO_LENGTH; // 与上游一致：实际箱宽 30°，ComputeThreeMaxima 保留 90° 跨度；改为 12° 箱后实机重定位/回环匹配明显变少
 
     vector<int> vMatchedDistance(F2.mvKeysUn.size(),INT_MAX);
     vector<int> vnMatches21(F2.mvKeysUn.size(),-1);
@@ -777,8 +777,7 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
         return 0;
     const auto& matchables2 = tree2->matchables();
 
-    // 两帧的地图点关联各取一次快照：原先每个候选都调用加锁的 GetMapPoint（每个关键帧约 10^5~10^6 次锁操作，
-    // simpleperf 中 pthread_mutex 的 16 位原子操作占建图线程约 20%）
+    // 两帧的地图点关联各取一次快照
     const vector<MapPoint*> vpMapPoints1 = pKF1->GetMapPointMatches();
     const vector<MapPoint*> vpMapPoints2 = pKF2->GetMapPointMatches();
 
@@ -819,7 +818,7 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
     }
     for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].clear();
 
-    const float factor = 1.0f/HISTO_LENGTH; // 与上游一致：实际箱宽 30°，ComputeThreeMaxima 保留 90° 跨度；改为 12° 箱后实机重定位/回环匹配明显变少（见文档 D-4）
+    const float factor = 1.0f/HISTO_LENGTH; // 与上游一致：实际箱宽 30°，ComputeThreeMaxima 保留 90° 跨度；改为 12° 箱后实机重定位/回环匹配明显变少
 
     // F12 对整个搜索恒定：九元素一次取出
     const float f00=F12.at<float>(0,0), f01=F12.at<float>(0,1), f02=F12.at<float>(0,2);
@@ -1610,7 +1609,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
         rotHistInit = true;
     }
     for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].clear();
-    const float factor = 1.0f/HISTO_LENGTH; // 与上游一致：实际箱宽 30°，ComputeThreeMaxima 保留 90° 跨度；改为 12° 箱后实机重定位/回环匹配明显变少（见文档 D-4）
+    const float factor = 1.0f/HISTO_LENGTH; // 与上游一致：实际箱宽 30°，ComputeThreeMaxima 保留 90° 跨度；改为 12° 箱后实机重定位/回环匹配明显变少
 
     const cv::Mat Rcw = CurrentFrame.mTcw.rowRange(0,3).colRange(0,3);
     const cv::Mat tcw = CurrentFrame.mTcw.rowRange(0,3).col(3);
@@ -1689,8 +1688,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
                 {
                     const size_t i2 = *vit;
 
-                    // 已被前面的地图点匹配上的关键点跳过（与上游一致）：否则后来的点覆盖先前匹配、nmatches 重复计数，
-                    // 同一个 bestIdx2 被压入两次旋转直方图
+                    // 已被前面的地图点匹配上的关键点跳过（与上游一致）：否则后来的点覆盖先前匹配、nmatches 重复计数，同一个 bestIdx2 被压入两次旋转直方图
                     if(CurrentFrame.mvpMapPoints[i2])
                         if(CurrentFrame.mvpMapPoints[i2]->Observations()>0)
                             continue;
@@ -1772,7 +1770,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const Map
         rotHistInit = true;
     }
     for(int i=0;i<HISTO_LENGTH;i++) rotHist[i].clear();
-    const float factor = 1.0f/HISTO_LENGTH; // 与上游一致：实际箱宽 30°，ComputeThreeMaxima 保留 90° 跨度；改为 12° 箱后实机重定位/回环匹配明显变少（见文档 D-4）
+    const float factor = 1.0f/HISTO_LENGTH; // 与上游一致：实际箱宽 30°，ComputeThreeMaxima 保留 90° 跨度；改为 12° 箱后实机重定位/回环匹配明显变少
 
     const vector<MapPoint*> vpMPs = pKF->GetMapPointMatches();
 

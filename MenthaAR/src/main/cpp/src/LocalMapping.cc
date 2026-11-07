@@ -452,15 +452,14 @@ void LocalMapping::CreateNewMapPoints()
             if(dotProduct * dotProduct >= s_parallaxThSq * (norm1Sq * norm2Sq))
                 continue; // 视差过小，短路跳过
 
-            // 叉积形式的公垂线中点解不需要归一化射线（省去 2 次 sqrt + 2 次除法）
+            // 叉积形式的公垂线中点解不需要归一化射线
             const float d1[3] = {r1x, r1y, r1z};
             const float d2[3] = {r2x, r2y, r2z};
 
             float x3D_buf[3];
             if (!Converter::TriangulateMidpoint(c1, d1, c2, d2, x3D_buf))
             {
-                // 中点解只在最近点落在某相机后方（s<=0 或 t<=0）时失败；回退到 double 法方程解，
-                // 这样的点随后几乎一定被下面的深度检查拒绝
+                // 中点解只在最近点落在某相机后方（s<=0 或 t<=0）时失败；回退到 double 法方程解，这样的点随后几乎一定被下面的深度检查拒绝
                 if (!Converter::TriangulateWithCenters(Tcw1, Tcw2, c1, c2, xn1x, xn1y, xn2x, xn2y, x3D_buf))
                     continue;
             }
@@ -509,8 +508,7 @@ void LocalMapping::CreateNewMapPoints()
             if(dist1Sq < 1e-12f || dist2Sq < 1e-12f)
                 continue;
 
-            // 尺度一致性判据（d2/d1 与 s1/s2 比较）平方后交叉相乘实现，省去 sqrt 与除法：
-            // 需满足 d2^2*s2^2 >= s1^2*d1^2 且 d2^2*rf^2*s2^2 <= s1^2*d1^2
+            // 尺度一致性判据（d2/d1 与 s1/s2 比较）平方后交叉相乘实现：需满足 d2^2*s2^2 >= s1^2*d1^2 且 d2^2*rf^2*s2^2 <= s1^2*d1^2
             const float sig2_1 = mpCurrentKeyFrame->mvLevelSigma2[kp1.octave];
             const float sig2_2 = pKF2->mvLevelSigma2[kp2.octave];
             const float lhs1 = dist2Sq*sig2_2;
@@ -772,7 +770,6 @@ cv::Mat LocalMapping::ComputeF12(KeyFrame *&pKF1, KeyFrame *&pKF2)
 }
 
 // 停止请求采用计数：每个 RequestStop 必须配对一个 Release/CancelStopRequest
-// 仅靠布尔标志会被重复 Release 撤销他人的请求，导致 GBA 线程在 WaitForStopped 中永久等待
 void LocalMapping::RequestStop()
 {
     {

@@ -64,7 +64,7 @@ Frame::Frame(const Frame &frame)
      mTimeStamp(frame.mTimeStamp), mK(frame.mK.clone()), mDistCoef(frame.mDistCoef.clone()),
      mbf(frame.mbf), mb(frame.mb), N(frame.N), mvKeys(frame.mvKeys),
      mvKeysUn(frame.mvKeysUn),
-     mDescriptors(frame.mDescriptors), // 描述子提取后只读，共享缓冲（引用计数）即可，不必深拷贝 N×32 字节
+     mDescriptors(frame.mDescriptors), // 描述子提取后只读，共享缓冲（引用计数）即可
      mvpMapPoints(frame.mvpMapPoints), mvbOutlier(frame.mvbOutlier), mnId(frame.mnId),
      mpReferenceKF(frame.mpReferenceKF), mnScaleLevels(frame.mnScaleLevels),
      mfScaleFactor(frame.mfScaleFactor), mfLogScaleFactor(frame.mfLogScaleFactor),

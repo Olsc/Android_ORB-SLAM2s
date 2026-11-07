@@ -146,7 +146,6 @@ namespace srrg_hbst {
 
       // 按 64 位字构造：位 i 对应第 i/8 个字节的第 i%8 位（低位在前），
       // 正好等于按小端拼接 8 个字节得到的 64 位整数。bitset(uint64) 置低 64 位，再整体左移到位。
-      // 原实现逐位写 256 次 bitset::operator[]（每个代理对象一次读改写）。
       for (uint32_t word_index = 0; word_index * 8 < raw_descriptor_size_bytes; ++word_index) {
         const uint32_t byte0 = word_index * 8;
         const uint32_t nbytes = (raw_descriptor_size_bytes - byte0 < 8) ? (raw_descriptor_size_bytes - byte0) : 8;

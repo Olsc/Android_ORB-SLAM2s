@@ -878,8 +878,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativePublishArPose(
         src = rawFallback;
     }
 
-    // seqlock：序号为奇数表示正在写；读端读到奇数或前后序号不同就重读。
-    // 原先原始 MVP 与融合 MVP 分两次写入且无同步，GL 线程可能读到撕裂数据，或在两次写入之间读到原始位姿而闪烁
+    // seqlock：序号为奇数表示正在写；读端读到奇数或前后序号不同就重读
     volatile int32_t* mvpSeq = shIntPtr(SH_OFF_MVP_SEQ);
     const int32_t s = *mvpSeq;
     *mvpSeq = s + 1;
@@ -956,8 +955,7 @@ static void writeResultToSharedMemory(int seq, int tracking, bool draw, int w, i
     writeRawPoseToPoseBuffer();
 }
 
-// 写点云字节数并递增点云序号：App 端只在序号变化时重新读取，所以任何改写（包括清零）都必须递增，
-// 否则跟踪丢失后屏幕上的旧点会一直停留到下一次有点云为止
+// 写点云字节数并递增点云序号：App 端只在序号变化时重新读取，所以任何改写（包括清零）都必须递增，否则跟踪丢失后屏幕上的旧点会一直停留到下一次有点云为止
 static inline void publishPointCloudBytes(int bytes) {
     *shIntPtr(SH_OFF_POINTCLOUD_BYTES) = bytes;
     std::atomic_thread_fence(std::memory_order_release);
@@ -978,14 +976,14 @@ static void writePointCloudToSharedMemory() {
     float* dst = shFloatPtr(shPointCloudOffset());
     int n = 0;
 
-    // 跟踪点列表复用线程局部缓冲（本函数只在帧处理线程上运行），不再每帧分配
+    // 跟踪点列表复用线程局部缓冲
     static thread_local std::vector<ORB_SLAM2::MapPoint*> localMPs;
     {
         std::lock_guard<std::mutex> lock(gMapPointsMutex);
         localMPs = vMPs;
     }
 
-    // 位姿只拷贝 12 个 float，不 clone 整个 cv::Mat
+    // 位姿只拷贝 12 个 float
     float Tcw12[12];
     cv::Mat curTcw; // 对齐路径需要 cv::Mat 形式
     {
@@ -1017,7 +1015,7 @@ static void writePointCloudToSharedMemory() {
     const float Rm10 = hasAlign ? mapTcw.at<float>(1,0) : 0, Rm11 = hasAlign ? mapTcw.at<float>(1,1) : 0, Rm12 = hasAlign ? mapTcw.at<float>(1,2) : 0, tm1 = hasAlign ? mapTcw.at<float>(1,3) : 0;
     const float Rm20 = hasAlign ? mapTcw.at<float>(2,0) : 0, Rm21 = hasAlign ? mapTcw.at<float>(2,1) : 0, Rm22 = hasAlign ? mapTcw.at<float>(2,2) : 0, tm2 = hasAlign ? mapTcw.at<float>(2,3) : 0;
 
-    // 用地图点上的渲染序号代替 unordered_set（原先每帧构造并 reserve(N+1024)）：只有加载点需要在第二遍中去重
+    // 用地图点上的渲染序号代替 unordered_set：只有加载点需要在第二遍中去重
     static uint32_t sRenderSeq = 0;
     const uint32_t renderSeq = ++sRenderSeq;
 

@@ -84,8 +84,7 @@ public:
     // 检查地图是否发生重大变化（闭环或全局BA）
     bool MapChanged();
 
-    // 等待局部建图与闭环线程都空闲（队列为空、不在处理、GBA 未运行）。
-    // 供离线回放基准的同步模式使用，使结果与线程调度无关。超时返回 false。
+    // 等待局部建图与闭环线程都空闲（队列为空、不在处理、GBA 未运行）
     bool WaitForBackendIdle(int timeoutMs);
 
     // 重置SLAM系统，bKeepMap为true时保留地图仅清跟踪状态

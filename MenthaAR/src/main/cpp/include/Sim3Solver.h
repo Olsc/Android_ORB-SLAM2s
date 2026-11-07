@@ -63,7 +63,7 @@ public:
 
 protected:
 
-    // Horn 闭式解，输入为 3 个对应点（每列一个点），全部在 double 中计算
+    // Horn 闭式解，输入为 3 个对应点（每列一个点）
     void ComputeSim3(const double P1[3][SIM3_RANSAC_MIN_SET], const double P2[3][SIM3_RANSAC_MIN_SET]);
 
     void CheckInliers();
@@ -87,7 +87,7 @@ protected:
     std::vector<size_t> mvnIndices1;
     std::vector<size_t> mvSigmaSquare1;
     std::vector<size_t> mvSigmaSquare2;
-    // 卡方阈值 9.210*σ²：必须是浮点，原先存成 size_t 会被截断（第 0 层 9.21→9，收紧 2.3%）
+    // 卡方阈值 9.210*σ²：必须是浮点
     std::vector<float> mvnMaxError1;
     std::vector<float> mvnMaxError2;
 
@@ -120,7 +120,7 @@ protected:
     // 随机选择的索引
     std::vector<size_t> mvAllIndices;
 
-    // 投影（mvP2im1/mvP1im2 为 CheckInliers 复用的缓冲，不再每次迭代分配）
+    // 投影（mvP2im1/mvP1im2 为 CheckInliers 复用的缓冲）
     std::vector<cv::Point2f> mvP1im1;
     std::vector<cv::Point2f> mvP2im2;
     std::vector<cv::Point2f> mvP2im1;
