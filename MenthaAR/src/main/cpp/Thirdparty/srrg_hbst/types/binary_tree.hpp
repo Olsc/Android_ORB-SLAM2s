@@ -616,16 +616,27 @@ namespace srrg_hbst {
             // 与 _matchExhaustive 相同：同一查询对同一参考 id 只计一次
             seen.clear();
             for (const Matchable* matchable_reference : node_current->matchables) {
-              if (matchable_query->distance(matchable_reference) < maximum_distance_matching_) {
-                for (const ObjectMapElement& object : matchable_reference->objects) {
-                  const uint64_t id = object.first;
-                  bool already = false;
-                  for (uint64_t s : seen) { if (s == id) { already = true; break; } }
-                  if (already) continue;
-                  seen.push_back(id);
-                  if (id <= max_id) ++dense[id];
-                }
+              if (matchable_query->distance(matchable_reference) >= maximum_distance_matching_)
+                continue;
+#ifdef SRRG_MERGE_DESCRIPTORS
+              // 合并模式下对象映射里含所有同描述子的图像标识
+              for (const ObjectMapElement& object : matchable_reference->objects) {
+                const uint64_t id = object.first;
+                bool already = false;
+                for (uint64_t s : seen) { if (s == id) { already = true; break; } }
+                if (already) continue;
+                seen.push_back(id);
+                if (id <= max_id) ++dense[id];
               }
+#else
+              // 未启用合并时 objects 为空，标识只内联在 _image_identifier（与 _matchExhaustive 一致）
+              const uint64_t id = matchable_reference->_image_identifier;
+              bool already = false;
+              for (uint64_t s : seen) { if (s == id) { already = true; break; } }
+              if (already) continue;
+              seen.push_back(id);
+              if (id <= max_id) ++dense[id];
+#endif
             }
             break;
           }
