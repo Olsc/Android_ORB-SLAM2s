@@ -622,7 +622,6 @@ const int TRIANGULATION_DEPTH_PERCENTILE = 2;
 const int MAPPOINT_CULL_KF_GAP_CHECK = 2;
 const int MAPPOINT_CULL_KF_GAP_REMOVE = 3;
 
-
 // PoseOptimization 每轮 g2o 迭代次数与优化轮数
 const int POSE_OPT_PASS_ITERS = 5;
 const int POSE_OPT_PASSES = 4;
@@ -715,7 +714,6 @@ const int SIM3_RANSAC_MIN_SET = 3;
 
 // PnP Gauss-Newton 迭代次数
 const int PNP_GN_ITERS = 5;
-
 
 // 关键帧数据库
 

@@ -1061,7 +1061,6 @@ void Tracking::Track()
         // 仅支持单目初始化
         MonocularInitialization();
 
-
         if (mState != OK)
             return;
     }
@@ -1600,7 +1599,6 @@ void Tracking::CreateInitialMapMonocular()
 
     mLastFrame = Frame(mCurrentFrame);
 
-
     //mpMapDrawer->SetCurrentCameraPose(pKFcur->GetPose());
 
     pKFini->SetOrigin(true);
@@ -2030,7 +2028,6 @@ bool Tracking::TrackLocalMap()
 
         }
     }
-
 
     if(mbHaveMapAlign){
         if(mnLoadedMapInliersCurMap < RELOC_KEEP_ALIGN_MIN_CURMAP_INLIERS) {
@@ -2695,7 +2692,6 @@ bool Tracking::Relocalization()
         }
     }
     }
-
 
     // 清理 PnP 求解器
     for(int i=0; i<nKFs; i++)
