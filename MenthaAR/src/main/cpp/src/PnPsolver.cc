@@ -228,7 +228,7 @@ cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInlie
 
             if(mnInliersi>=mRansacMinInliers)
             {
-                // 如果是目前的最佳解，保存它
+                // 记录当前最优解
                 if(mnInliersi>mnBestInliers)
                 {
                     mvbBestInliers.swap(mvbInliersi); // CheckInliers 每轮整份重写 mvbInliersi，交换即可
@@ -358,9 +358,8 @@ void PnPsolver::CheckInliers()
 {
     mnInliersi=0;
 
-    // mRi/mti 本来就是 double：整个判据在 double 中计算，不再把 Xc/Yc/Zc 先舍入到 float。
-    // 免除法判据：|u - (uc + fu*Xc/Zc)|² + |v - (vc + fv*Yc/Zc)|² < e²
-    //   ⇔ ((u-uc)*Zc - fu*Xc)² + ((v-vc)*Zc - fv*Yc)² < e²·Zc²   （Zc>0）
+    // 判据在 double 中计算，Zc<=0 直接判为外点
+    // 免除法形式：((u-uc)*Zc-fu*Xc)^2 + ((v-vc)*Zc-fv*Yc)^2 < e^2*Zc^2
     for(int i=0; i<N; i++)
     {
         const cv::Point3f &P3Dw = mvP3Dw[i];
@@ -503,15 +502,15 @@ void PnPsolver::compute_barycentric_coordinates(void)
 
     for(int j = 0; j < 3; j++)
       a[1 + j] =
-	ci[3 * j    ] * (pi[0] - cws[0][0]) +
-	ci[3 * j + 1] * (pi[1] - cws[0][1]) +
-	ci[3 * j + 2] * (pi[2] - cws[0][2]);
+    ci[3 * j    ] * (pi[0] - cws[0][0]) +
+    ci[3 * j + 1] * (pi[1] - cws[0][1]) +
+    ci[3 * j + 2] * (pi[2] - cws[0][2]);
     a[0] = 1.0f - a[1] - a[2] - a[3];
   }
 }
 
 void PnPsolver::fill_M(CvMat * M,
-		  const int row, const double * as, const double u, const double v)
+          const int row, const double * as, const double u, const double v)
 {
   double * M1 = M->data.db + row * 12;
   double * M2 = M1 + 12;
@@ -536,7 +535,7 @@ void PnPsolver::compute_ccs(const double * betas, const double * ut)
     const double * v = ut + 12 * (11 - i);
     for(int j = 0; j < 4; j++)
       for(int k = 0; k < 3; k++)
-	ccs[j][k] += betas[i] * v[3 * j + k];
+    ccs[j][k] += betas[i] * v[3 * j + k];
   }
 }
 
@@ -631,7 +630,7 @@ double PnPsolver::compute_pose(double R[3][3], double t[3])
 }
 
 void PnPsolver::copy_R_and_t(const double R_src[3][3], const double t_src[3],
-			double R_dst[3][3], double t_dst[3])
+            double R_dst[3][3], double t_dst[3])
 {
   for(int i = 0; i < 3; i++) {
     for(int j = 0; j < 3; j++)
@@ -737,7 +736,7 @@ void PnPsolver::solve_for_sign(void)
   if (pcs[2] < 0.0) {
     for(int i = 0; i < 4; i++)
       for(int j = 0; j < 3; j++)
-	ccs[i][j] = -ccs[i][j];
+    ccs[i][j] = -ccs[i][j];
 
     for(int i = 0; i < number_of_correspondences; i++) {
       pcs[3 * i    ] = -pcs[3 * i];
@@ -748,7 +747,7 @@ void PnPsolver::solve_for_sign(void)
 }
 
 double PnPsolver::compute_R_and_t(const double * ut, const double * betas,
-			     double R[3][3], double t[3])
+                 double R[3][3], double t[3])
 {
   compute_ccs(betas, ut);
   compute_pcs();
@@ -764,7 +763,7 @@ double PnPsolver::compute_R_and_t(const double * ut, const double * betas,
 // betas_approx_1 = [B11 B12     B13         B14]
 
 void PnPsolver::find_betas_approx_1(const CvMat * L_6x10, const CvMat * Rho,
-			       double * betas)
+                   double * betas)
 {
   double l_6x4[6 * 4], b4[4];
   CvMat L_6x4 = cvMat(6, 4, CV_64F, l_6x4);
@@ -796,7 +795,7 @@ void PnPsolver::find_betas_approx_1(const CvMat * L_6x10, const CvMat * Rho,
 // betas_approx_2 = [B11 B12 B22                            ]
 
 void PnPsolver::find_betas_approx_2(const CvMat * L_6x10, const CvMat * Rho,
-			       double * betas)
+                   double * betas)
 {
   double l_6x3[6 * 3], b3[3];
   CvMat L_6x3  = cvMat(6, 3, CV_64F, l_6x3);
@@ -828,7 +827,7 @@ void PnPsolver::find_betas_approx_2(const CvMat * L_6x10, const CvMat * Rho,
 // betas_approx_3 = [B11 B12 B22 B13 B23                    ]
 
 void PnPsolver::find_betas_approx_3(const CvMat * L_6x10, const CvMat * Rho,
-			       double * betas)
+                   double * betas)
 {
   double l_6x5[6 * 5], b5[5];
   CvMat L_6x5 = cvMat(6, 5, CV_64F, l_6x5);
@@ -876,8 +875,8 @@ void PnPsolver::compute_L_6x10(const double * ut, double * l_6x10)
 
       b++;
       if (b > 3) {
-	a++;
-	b = a + 1;
+    a++;
+    b = a + 1;
       }
     }
   }
@@ -909,7 +908,7 @@ void PnPsolver::compute_rho(double * rho)
 }
 
 void PnPsolver::compute_A_and_b_gauss_newton(const double * l_6x10, const double * rho,
-					double betas[4], CvMat * A, CvMat * b)
+                    double betas[4], CvMat * A, CvMat * b)
 {
   // 预计算10个beta乘积
   const double b00 = betas[0]*betas[0], b01 = betas[0]*betas[1];
@@ -928,23 +927,23 @@ void PnPsolver::compute_A_and_b_gauss_newton(const double * l_6x10, const double
     rowA[3] =     rowL[6] * betas[0] +     rowL[7] * betas[1] +     rowL[8] * betas[2] + 2 * rowL[9] * betas[3];
 
     cvmSet(b, i, 0, rho[i] -
-	   (
-	    rowL[0] * b00 +
-	    rowL[1] * b01 +
-	    rowL[2] * b11 +
-	    rowL[3] * b02 +
-	    rowL[4] * b12 +
-	    rowL[5] * b22 +
-	    rowL[6] * b03 +
-	    rowL[7] * b13 +
-	    rowL[8] * b23 +
-	    rowL[9] * b33
-	    ));
+       (
+        rowL[0] * b00 +
+        rowL[1] * b01 +
+        rowL[2] * b11 +
+        rowL[3] * b02 +
+        rowL[4] * b12 +
+        rowL[5] * b22 +
+        rowL[6] * b03 +
+        rowL[7] * b13 +
+        rowL[8] * b23 +
+        rowL[9] * b33
+        ));
   }
 }
 
 void PnPsolver::gauss_newton(const CvMat * L_6x10, const CvMat * Rho,
-			double betas[4])
+            double betas[4])
 {
   const int iterations_number = PNP_GN_ITERS;
 
@@ -955,7 +954,7 @@ void PnPsolver::gauss_newton(const CvMat * L_6x10, const CvMat * Rho,
 
   for(int k = 0; k < iterations_number; k++) {
     compute_A_and_b_gauss_newton(L_6x10->data.db, Rho->data.db,
-				 betas, &A, &B);
+                 betas, &A, &B);
     qr_solve(&A, &B, &X);
 
     for(int i = 0; i < 4; i++)
@@ -989,28 +988,28 @@ void PnPsolver::qr_solve(CvMat * A, CvMat * b, CvMat * X)
     } else {
       double * ppAik = ppAkk, sum = 0.0, inv_eta = 1. / eta;
       for(int i = k; i < nr; i++) {
-	*ppAik *= inv_eta;
-	sum += *ppAik * *ppAik;
-	ppAik += nc;
+    *ppAik *= inv_eta;
+    sum += *ppAik * *ppAik;
+    ppAik += nc;
       }
       double sigma = sqrt(sum);
       if (*ppAkk < 0)
-	sigma = -sigma;
+    sigma = -sigma;
       *ppAkk += sigma;
       A1[k] = sigma * *ppAkk;
       A2[k] = -eta * sigma;
       for(int j = k + 1; j < nc; j++) {
-	double * ppAik = ppAkk, sum = 0;
-	for(int i = k; i < nr; i++) {
-	  sum += *ppAik * ppAik[j - k];
-	  ppAik += nc;
-	}
-	double tau = sum / A1[k];
-	ppAik = ppAkk;
-	for(int i = k; i < nr; i++) {
-	  ppAik[j - k] -= tau * *ppAik;
-	  ppAik += nc;
-	}
+    double * ppAik = ppAkk, sum = 0;
+    for(int i = k; i < nr; i++) {
+      sum += *ppAik * ppAik[j - k];
+      ppAik += nc;
+    }
+    double tau = sum / A1[k];
+    ppAik = ppAkk;
+    for(int i = k; i < nr; i++) {
+      ppAik[j - k] -= tau * *ppAik;
+      ppAik += nc;
+    }
       }
     }
     ppAkk += nc + 1;
@@ -1020,7 +1019,7 @@ void PnPsolver::qr_solve(CvMat * A, CvMat * b, CvMat * X)
   double * ppAjj = pA, * pb = b->data.db;
   for(int j = 0; j < nc; j++) {
     double * ppAij = ppAjj, tau = 0;
-    for(int i = j; i < nr; i++)	{
+    for(int i = j; i < nr; i++)    {
       tau += *ppAij * pb[i];
       ppAij += nc;
     }
@@ -1048,8 +1047,8 @@ void PnPsolver::qr_solve(CvMat * A, CvMat * b, CvMat * X)
 }
 
 void PnPsolver::relative_error(double & rot_err, double & transl_err,
-			  const double Rtrue[3][3], const double ttrue[3],
-			  const double Rest[3][3],  const double test[3])
+              const double Rtrue[3][3], const double ttrue[3],
+              const double Rest[3][3],  const double test[3])
 {
   double qtrue[4], qest[4];
 

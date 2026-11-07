@@ -1248,7 +1248,7 @@ int ORBmatcher::Fuse(KeyFrame *pKF, cv::Mat Scw, const vector<MapPoint *> &vpPoi
         cv::Point3f Pn;
         pMP->GetNormal(Pn);
         const float dotVal = POx*Pn.x + POy*Pn.y + POz*Pn.z;
-        
+
         // 此处写死 0.25，与 MATCH_VIEW_COS_SQ_TH 同值但未用常量，待统一
         if(dotVal < 0.0f || dotVal*dotVal < 0.25f*dist3DSq)
             continue;
