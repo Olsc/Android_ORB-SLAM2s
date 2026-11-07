@@ -330,7 +330,7 @@ void System::RetireSubmap(Map* pOldMap)
             if (!pForeign || spOwnMPs.count(pForeign) || pForeign->GetMap() == pOldMap || !spForeignSeen.insert(pForeign).second)
                 continue;
 
-            // 预先存在的坏点不碰不删，只回收因本次剥离而退役的对象
+            // 预先存在的坏点不碰不删，只回收剥离过程中退役的对象
             const bool bWasBad = pForeign->isBad();
             if (bWasBad)
                 continue;
@@ -722,7 +722,7 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
     }
 
     // 注意：不完全清空KeyFrameDatabase，保留当前扫描建立的关键帧
-    // mpKeyFrameDatabase->clear(); // 暂时注释，避免影响当前跟踪
+    // mpKeyFrameDatabase->clear(); // 清空会丢失当前扫描建立的关键帧，故保留
 
     // 调整重定位配置以提高加载地图后的跟踪稳定性
     mpTracker->SetRelocConfig(SYSTEM_RELOC_CONFIG_TOP_K, SYSTEM_RELOC_CONFIG_MAX_CANDIDATES, SYSTEM_RELOC_CONFIG_MATCH_CHUNK, SYSTEM_RELOC_CONFIG_BG_SLEEP_US, SYSTEM_RELOC_CONFIG_MAX_BIND_INLIERS, SYSTEM_RELOC_CONFIG_MAX_PROJ_BINDS);

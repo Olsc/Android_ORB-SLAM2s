@@ -378,9 +378,8 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
         if(p->mbFromLoadedMap) hasLoaded = true;
         candidates.push_back(p);
     }
-    // 存在加载点时仅缓存加载点；没有加载地图时缓存当前地图自己的点：
-    // 这份缓存是 Relocalization() 中 KFDB 候选失败后的降级重定位、以及对齐后投影绑定的数据来源，
-    // 不能为了省后台 CPU 而置空（曾尝试过，实机表现为跟踪丢失后极难恢复）
+    // 存在加载点时仅缓存加载点，否则缓存当前地图自身的点
+    // 该缓存是 KFDB 候选失败后的降级重定位与对齐后投影绑定的数据来源，置空会导致跟踪丢失后难以恢复
     if(hasLoaded) {
         size_t kept = 0;
         for(MapPoint* p : candidates) {
@@ -2855,9 +2854,8 @@ bool Tracking::Relocalization()
             }
             else if(pTargetMap)
             {
-                // 同一子地图内的重定位不改变当前地图标识：mnCurrentMapId 属于“加载地图文件 id”+
-                // 子地图 id 两套语义之一，这里赋 Map::mnId 会把加载点的 MapPoint::mnMapId 隐去，
-                // 导致绑定与“本图加载点内点”统计全部为 0。当前地图 id 交由对齐结果（mapId）维护
+                // 同一子地图内重定位不改变当前地图标识：此处若赋 Map::mnId，会与加载点的地图 id 不一致，
+                // 使投影绑定与本图加载点统计失效；当前地图 id 交由对齐结果维护
             }
         }
         return true;

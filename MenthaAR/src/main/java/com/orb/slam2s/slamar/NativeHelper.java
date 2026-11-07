@@ -31,10 +31,8 @@ public class NativeHelper {
         // CPU 亲和性，libomp 初始化时 sched_setaffinity 失败会直接 abort（引擎进程一启动即崩溃）
         try {
             android.system.Os.setenv("KMP_AFFINITY", "disabled", true);
-            // libomp 默认在并行区结束后自旋 200 ms 再休眠。设备实测（slam_bench，1017 帧，同步回放）：
-            // 0 ms 时工作线程所在核降频/迁核，跟踪均值 13.6→19.7 ms；30/50 ms 时紧跟关键帧之后的帧慢约 6 ms（p90 27→33）；
-            // ≥100 ms 与默认一致。相机 30 fps 时两次提取之间的间隔约 25 ms，60 ms 足以让工作线程在帧间保持唤醒，
-            // 同时在暂停/低帧率时把空转限制在 60 ms 内
+            // libomp 并行区结束后默认自旋再休眠，过短会导致工作线程迁核/降频，过长会在低帧率时空转
+            // 取 60 ms：覆盖相机帧间隔，同时把空转限制在有限时间内
             android.system.Os.setenv("KMP_BLOCKTIME", "60", true);
         } catch (Throwable t) {
             Log.w(TAG, "设置 KMP 环境变量失败", t);
@@ -49,9 +47,8 @@ public class NativeHelper {
 
     private final int[] statusBuf = new int[3];
 
-    // 与 native 共享的 direct 缓冲（布局见 native-lib.cpp POSE_BUF_*）：
-    //  float[0..47] 原始 M/V/P；int[48..50] 跟踪状态/绘制标志/地图 id；float[51..98] 融合后的 M/V/P。
-    // native 通过 GetDirectBufferAddress 只在注册时取一次地址，此后每帧零 JNI 数组传输
+    // 与 native 共享的 direct 缓冲，布局见 native-lib.cpp 的 POSE_BUF_*
+    // float[0..47] 原始 M/V/P，int[48..50] 跟踪状态/绘制标志/地图 id，float[51..98] 融合后的 M/V/P
     public static final int POSE_BUF_FLOATS = 99;
     private static final int POSE_RAW = 0;
     private static final int POSE_INFO = 48;
@@ -78,9 +75,8 @@ public class NativeHelper {
     public native boolean nativeAttachFrameBuffer(int fd, int size);
     public native void nativeDetachFrameBuffer();
 
-    // 处理持久映射缓冲中的帧(双缓冲 bufIndex 0/1，每帧只传序号与宽高)
-    // native 处理完成后写回 tracking/点云，并把原始位姿写进已注册的 poseBuf；
-    // MVP 与 slamDoneSeq 由随后的 publishArPose/publishRawArPose 一次性发布
+    // 处理持久映射缓冲中的帧，每帧只传槽位号、序号与宽高
+    // native 写回跟踪状态与点云后，由 publishArPose/publishRawArPose 一次性发布 MVP 与完成序号
     public native void nativeProcessFrameSharedMem(int bufIndex, int seq, int width, int height);
     private native boolean nativeRegisterPoseBuffer(java.nio.ByteBuffer buffer);
 

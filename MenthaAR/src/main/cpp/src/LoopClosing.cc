@@ -742,9 +742,8 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
         }
         Optimizer::GlobalBundleAdjustemnt(mpMap,GBA_ITERATIONS,&mbStopGBA,nLoopKF,false);
 
-        // 全局BA未覆盖新关键帧，需通过生成树传播校正。
-        // 只在校验 idx / 读标志时持 mMutexGBA；等待建图线程停止与整段传播都在锁外进行，
-        // 否则 RequestStopGBA / isRunningGBA 会被阻塞数秒，且等待若落空会永久持锁。
+        // 全局BA未覆盖新关键帧时通过生成树传播校正
+        // 仅在读写 idx 与标志时持有 mMutexGBA，等待建图线程停止与传播过程都在锁外
         bool bAborted;
         {
             unique_lock<mutex> lock(mMutexGBA);

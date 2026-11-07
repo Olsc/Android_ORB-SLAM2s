@@ -819,7 +819,7 @@ public class MainActivity extends ComponentActivity
                 .getBoolean(PREF_SENSOR_REVERSE, true);
     }
 
-    // 开关按钮文案：开启时加 ✓ 前缀，与点云按钮的激活反馈保持一致
+    // 开关按钮文案：开启时加对勾前缀，与点云按钮的激活反馈保持一致
     private void updateToggleButton(Button button, int labelRes, boolean enabled) {
         if (button == null) return;
         String label = getString(labelRes);

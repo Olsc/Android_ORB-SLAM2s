@@ -1,7 +1,4 @@
-//
 // Created by Ads on 2017/1/6.
-//
-
 /*
  * This project is based on ORB-SLAM2.
  *

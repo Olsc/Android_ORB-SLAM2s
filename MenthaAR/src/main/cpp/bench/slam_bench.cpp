@@ -66,10 +66,8 @@ int main(int argc, char** argv)
     slam.UpdateCalibration(ORB_SLAM2::CAMERA_FX * sx, ORB_SLAM2::CAMERA_FY * sy,
                            ORB_SLAM2::CAMERA_CX * sx, ORB_SLAM2::CAMERA_CY * sy);
 
-    // 环境变量：SLAM_LOAD_MAP=<file> 回放前加载地图（复刻 App 的"加载地图后继续扫描"路径）；
-    //           SLAM_SAVE_MAP=<file> 回放结束后保存地图，用于生成上述场景的输入
-    // SLAM_LOAD_MAP_AT=<frameIdx>：在第 frameIdx 帧之前加载（默认 0，即回放开始前），用于复刻"先扫描再加载"
-    // SLAM_LOAD_MAP_ID=<id>：复刻 App 的 loadMapWithId(path, mapId, ...)（默认 0）；非 0 时加载点的 mnMapId 与 Map::mnId 不同
+    // 环境变量：SLAM_LOAD_MAP 回放前加载地图，SLAM_SAVE_MAP 回放后保存地图，
+    // SLAM_LOAD_MAP_AT 指定加载帧号（默认 0），SLAM_LOAD_MAP_ID 指定加载地图 id（默认 0）
     const char* loadMapPath = std::getenv("SLAM_LOAD_MAP");
     const char* saveMapPath = std::getenv("SLAM_SAVE_MAP");
     const char* loadAtStr = std::getenv("SLAM_LOAD_MAP_AT");

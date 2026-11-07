@@ -73,7 +73,7 @@ const int ORB_DESC_COLS = 32;
 // 最大关键帧数
 const int MAX_KEYFRAMES = 2000;
 
-// 最大地图点数。设小则稀疏精度下降，设大则增加内存和优化耗时
+// 最大地图点数。设小则稀疏精度下降，设大则增加内存与求解耗时
 const int MAX_MAPPOINTS = 10000;
 
 // 单次剔除操作的移除数量
@@ -360,12 +360,8 @@ const int LOCAL_MAPPING_SECOND_NEIGHBOR_KFS = 3;
 const int LOCAL_MAPPING_CULL_PROTECT_FRAMES = 5;
 const int LOCAL_MAPPING_MAX_QUEUED_KFS = 5;
 
-// 本质图BA优化参数
-
 // 构建 Essential Graph 时两KF间最少共视图点数
 const int OPTIMIZER_ESSENTIAL_GRAPH_MIN_FEAT = 100;
-
-// 重定位优化
 
 // 重定位最大候选帧数
 const int RELOC_MAX_CANDIDATES = 20;
@@ -494,8 +490,7 @@ const float RELOC_STRONG_BIND_CONFIDENCE = 0.9f;
 // 保持对齐的最小当前图加载点内点数
 const int RELOC_KEEP_ALIGN_MIN_CURMAP_INLIERS = 5;
 // 加载点内点低于上述阈值时允许的连续宽限帧数（0 表示立即清除对齐）
-// 相机短暂转出加载地图覆盖区（甩镜头）时不应立刻丢弃对齐：否则本帧无法投影绑定加载点，
-// 下一帧内点更少，形成“清对齐 → 不能绑定 → 内点仍为 0 → 再清对齐”的自我强化循环
+// 避免相机短暂离开加载地图覆盖区时立即丢弃对齐，使投影绑定与对齐状态相互清除
 const int RELOC_KEEP_ALIGN_GRACE_FRAMES = 10;
 
 // 新地图（关键帧极少）阶段的特殊阈值
@@ -627,7 +622,6 @@ const int TRIANGULATION_DEPTH_PERCENTILE = 2;
 const int MAPPOINT_CULL_KF_GAP_CHECK = 2;
 const int MAPPOINT_CULL_KF_GAP_REMOVE = 3;
 
-// 位姿优化 / BA
 
 // PoseOptimization 每轮 g2o 迭代次数与优化轮数
 const int POSE_OPT_PASS_ITERS = 5;

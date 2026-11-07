@@ -560,9 +560,8 @@ static void LocalBundleAdjustmentImpl(KeyFrame *pKF, const StopFlagT* pbStopFlag
     g2o::SparseOptimizer& optimizer = cache.optimizer;
     optimizer.clear();
 
-    // 两个阶段各只调用一次 optimize(N)：g2o 的 optimize() 每次调用都执行 _algorithm->init()，LM 在 iteration==0 时重建稀疏块结构并重置 λ；
-    // 原来写成 for(it<5){ optimize(1); 早停判断 } 使每轮都重建结构（成本与边数线性）。早停与外部中止放到 post-iteration 回调中，
-    // 通过 g2o 的 forceStopFlag 在下一轮开始前终止；λ 在迭代间延续（基准 §10：与每轮重置的 χ² 轨迹几乎相同）
+    // 每阶段只调用一次 optimize(N)：g2o 在 iteration==0 时重建稀疏块结构并重置 λ，多次调用会重复该开销
+    // 早停与外部中止放到 post-iteration 回调，通过 forceStopFlag 在下一轮开始前终止，λ 在迭代间延续
     bool bForceStop = false;
     optimizer.setForceStopFlag(&bForceStop);
     struct EarlyStopAction : public g2o::HyperGraphAction {
@@ -1200,7 +1199,6 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
         }
     }
 
-    // 优化
     optimizer.initializeOptimization();
     if(optimizer.activeVertices().empty())
         return;
@@ -1464,7 +1462,6 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
         vnIndexEdge.push_back(i);
     }
 
-    // 优化
     optimizer.initializeOptimization();
     if(optimizer.activeVertices().empty())
         return 0;

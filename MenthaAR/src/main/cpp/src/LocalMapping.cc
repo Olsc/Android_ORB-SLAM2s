@@ -509,10 +509,8 @@ void LocalMapping::CreateNewMapPoints()
             if(dist1Sq < 1e-12f || dist2Sq < 1e-12f)
                 continue;
 
-            // 尺度一致性：原判据 ratioDist*rf < ratioOctave || ratioDist > ratioOctave*rf，
-            // 其中 ratioDist = d2/d1，ratioOctave = s1/s2。所有量为正，两边平方并交叉相乘后恒等于
-            //   d2²·rf²·s2² < s1²·d1²   ||   d2²·s2² > s1²·rf²·d1²
-            // s1² = mvLevelSigma2[kp1.octave]、s2² = mvLevelSigma2[kp2.octave] 已在内存中：省去 2 次 sqrt、2 次除法
+            // 尺度一致性判据（d2/d1 与 s1/s2 比较）平方后交叉相乘实现，省去 sqrt 与除法：
+            // 需满足 d2^2*s2^2 >= s1^2*d1^2 且 d2^2*rf^2*s2^2 <= s1^2*d1^2
             const float sig2_1 = mpCurrentKeyFrame->mvLevelSigma2[kp1.octave];
             const float sig2_2 = pKF2->mvLevelSigma2[kp2.octave];
             const float lhs1 = dist2Sq*sig2_2;
@@ -773,9 +771,8 @@ cv::Mat LocalMapping::ComputeF12(KeyFrame *&pKF1, KeyFrame *&pKF2)
     return F;
 }
 
-// 停止请求采用计数：每个 RequestStop 必须配对一个 Release/CancelStopRequest。
-// 原先任一方的 Release 都会清掉所有人的请求：CorrectLoop 的显式 Release 加上 stopScope 析构的二次 Release，
-// 会撤销 GBA 线程刚发出的请求，GBA 线程在 WaitForStopped 中永久等待并一直持有 mMutexGBA，整个系统卡死。
+// 停止请求采用计数：每个 RequestStop 必须配对一个 Release/CancelStopRequest
+// 仅靠布尔标志会被重复 Release 撤销他人的请求，导致 GBA 线程在 WaitForStopped 中永久等待
 void LocalMapping::RequestStop()
 {
     {

@@ -565,7 +565,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_initSLAM(JNIEnv* env, jobject instance, 
 
     VT_PROFILE_INITIALIZE(modelPath + "/mentha_profile.bin");
     LOGD("Create SLAM System...");
-    // 进程亲和性诊断：SLAM 独立进程(:slam_process)可能被分配受限 cpuset，启动时打印可用核数便于排查调度受限问题
+    // 记录进程 cpuset：SLAM 独立进程可能被分配到受限核集，便于排查调度受限
     {
         char cpuset[128] = {0};
         FILE* f = fopen("/proc/self/cpuset", "r");
@@ -798,11 +798,8 @@ Java_com_orb_slam2s_slamar_NativeHelper_isPointCloudDisplayEnabled(JNIEnv *env, 
 #define SH_OFF_POINTCLOUD_SEQ 236
 #define SH_POINTCLOUD_MAX_BYTES (96 * 1024)
 
-// Java 侧注册的 direct ByteBuffer（NativeHelper.POSE_BUF_FLOATS 个 float），只在帧处理线程上读写：
-//  [0..47]   原始 Model/View/Proj（native 每帧写入）
-//  [48..50]  跟踪状态 / 绘制标志 / 地图 id（以 int32 存放）
-//  [51..98]  融合后的 Model/View/Proj（Java 写入，nativePublishArPose 读取）
-// 用它代替每帧 2 次 Set*ArrayRegion + 3 次 GetFloatArrayRegion 的 JNI 数组传输。
+// Java 侧注册的 direct ByteBuffer（NativeHelper.POSE_BUF_FLOATS 个 float），只在帧处理线程读写：
+// [0..47] 原始 M/V/P，[48..50] 跟踪状态/绘制标志/地图 id（int32），[51..98] 融合后的 M/V/P
 #define POSE_BUF_RAW 0
 #define POSE_BUF_INFO 48
 #define POSE_BUF_FUSED 51

@@ -61,9 +61,8 @@ public:
     // 复制构造函数。
     Frame(const Frame &frame);
 
-    // 显式声明拷贝构造会抑制隐式移动；补上默认移动操作后，
-    // mCurrentFrame = Frame(...) 与 mLastFrame = Frame(mCurrentFrame) 的临时对象直接被移走，
-    // 省去每帧一次 3072 个网格 vector + 关键点/地图点向量的深拷贝。拷贝赋值保持原有的逐成员语义
+    // 显式声明拷贝构造会抑制隐式移动，此处补默认移动操作，避免临时 Frame 的网格与向量深拷贝
+    // 拷贝赋值保持原有的逐成员语义
     Frame(Frame &&frame) = default;
     Frame& operator=(Frame &&frame) = default;
     Frame& operator=(const Frame &frame) = default;

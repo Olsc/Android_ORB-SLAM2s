@@ -66,13 +66,8 @@ public:
 
     static std::vector<float> toQuaternion(const cv::Mat &M);
 
-    // 空间射线公垂线中点闭式解（叉积形式）。
-    // 两条射线 O1 + s·r1、O2 + t·r2 的最近点满足 (P - Q) ∥ n，n = r1 × r2：
-    //   s = ((O2-O1) × r2)·n / (n·n)，t = ((O2-O1) × r1)·n / (n·n)
-    // 与原来的 det = 1 - (d1·d2)² 形式在实数域恒等，但：
-    //   (1) 射线不需要归一化（省去调用方的 2 次 sqrt + 2 次除法）；
-    //   (2) 没有 1 - cos² 的灾难性相消（docs/bench/algo_bench.py §1：视差 1° 时中位相对误差 4.0e-4 → 1.1e-6）。
-    // 内部用 double 计算，输入/输出保持 float 接口。
+    // 空间射线公垂线中点闭式解：s=((O2-O1)x r2)·n/(n·n)，t=((O2-O1)x r1)·n/(n·n)，n=r1x r2
+    // 射线无需归一化且不含 1-cos^2 相消，内部 double 计算，接口保持 float
     static inline bool TriangulateMidpoint(const float O1[3], const float r1f[3],
                                            const float O2[3], const float r2f[3],
                                            float out3D[3])
@@ -110,9 +105,8 @@ public:
         return true;
     }
 
-    // 输出到栈数组的 DLT 三角化（法方程 + 克莱姆法则）。
-    // 法方程 M = AᵀA 的条件数是 κ(A)²，float 下视差 0.5° 时中位相对误差 2.3e-4、最大 6e-2（基准 §1），
-    // 全部改为 double 后为 2.2e-6 / 2.3e-5；运算次数不变。
+    // DLT 三角化（法方程 + 克莱姆法则），结果写入调用方栈数组
+    // 法方程条件数为 κ(A)^2，内部全程 double 以抑制病态误差，运算次数与 float 版本相同
     static bool TriangulateWithCenters(const cv::Mat &P1, const cv::Mat &P2,
                                        const float[3], const float[3],
                                        float x1f, float y1f, float x2f, float y2f,

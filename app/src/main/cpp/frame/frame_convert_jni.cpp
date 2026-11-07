@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 
-// 相机帧单次遍历转换：直接读 CameraX 的 RGBA 平面（direct ByteBuffer），
-//   - 灰度 (77R+150G+29B)>>8 写进 SLAM 共享内存的目标槽位（与原 Java 实现同一整数公式，逐位一致）；
-//   - ARGB 按显示矫正后的目标下标直接写进预览 Bitmap 的像素（AndroidBitmap_lockPixels）。
-// 取代原来的 buf.get(rgbaBuf) 整帧拷贝 → Java 双路循环写 yBuf/int[] → setPixels → writeFrame 四次中间拷贝
-// （每帧 CPU 写出 16.6 MB → 8.3 MB）。
+// 相机帧单次遍历转换：灰度 (77R+150G+29B)>>8 写入 SLAM 共享内存槽位，
+// ARGB 经显示矫正后直接写入预览 Bitmap，省去 Java 侧的整帧拷贝与中间数组
 #include <jni.h>
 #include <android/bitmap.h>
 #include <cstdint>

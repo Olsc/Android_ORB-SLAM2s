@@ -41,11 +41,8 @@ private:
     unsigned int mRandState;
 };
 
-// 无放回抽取 m 个下标（RANSAC 最小集）。
-// 原实现每次迭代先整份拷贝可用下标数组，再“v[randi]=v.back(); v.pop_back()”：写入 O(N)。
-// 这里在同一数组上把选中元素换到活动区末尾，抽完后按相反顺序换回：活动前缀与原实现逐步完全相同，
-// 因此在同一随机源下产生逐位相同的样本序列（docs/bench/algo_bench.py §6），而写入只有 O(m)。
-// vIndices 调用前后内容不变。
+// 无放回抽取 m 个下标（RANSAC 最小集）：在活动区内交换-恢复，单次写入 O(m)
+// 活动前缀与逐次拷贝的实现完全一致，同一随机源下样本序列不变，vIndices 调用前后内容不变
 template<class Rng>
 inline void SampleWithoutReplacement(Rng& rng, std::vector<size_t>& vIndices, const int m, size_t* out)
 {
