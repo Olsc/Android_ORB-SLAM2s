@@ -493,6 +493,10 @@ const float RELOC_STRONG_BIND_CONFIDENCE = 0.9f;
 
 // 保持对齐的最小当前图加载点内点数
 const int RELOC_KEEP_ALIGN_MIN_CURMAP_INLIERS = 5;
+// 加载点内点低于上述阈值时允许的连续宽限帧数（0 表示立即清除对齐）
+// 相机短暂转出加载地图覆盖区（甩镜头）时不应立刻丢弃对齐：否则本帧无法投影绑定加载点，
+// 下一帧内点更少，形成“清对齐 → 不能绑定 → 内点仍为 0 → 再清对齐”的自我强化循环
+const int RELOC_KEEP_ALIGN_GRACE_FRAMES = 10;
 
 // 新地图（关键帧极少）阶段的特殊阈值
 const int NEW_MAP_KF_COUNT = 2;

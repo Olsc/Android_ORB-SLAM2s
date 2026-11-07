@@ -58,11 +58,22 @@
 #include <unistd.h>
 #endif
 #include <future>
+#include <cstdlib>
 #include <unordered_map>
 #include <numeric>
 #include <thread>
 #include <chrono>
 #include "MenthaProfiler.h"
+
+// 诊断开关：SLAM_DBG_RELOC=1 时向 logcat 输出加载地图/对齐/重定位诊断（默认关闭）
+static bool DbgReloc()
+{
+    static const bool on = [](){
+        const char *v = std::getenv("SLAM_DBG_RELOC");
+        return v && v[0] && v[0] != '0';
+    }();
+    return on;
+}
 
 // 轻量级投影工具
 static inline void ProjectPwWithRTK(const float R[9], const float t[3],
@@ -260,6 +271,9 @@ void ORB_SLAM2::Tracking::BindLoadedMapPointsUsingSnapshots()
 
     const size_t totalPoints = useGrid ? gridCandidates.size() : refSnaps->size();
 
+    // 诊断：统计被 mapId 过滤掉的参考点（用于验证 mnCurrentMapId 与 MapPoint::mnMapId 语义是否错位）
+    size_t dbgSkippedByMapId = 0;
+
     // 进一步限制处理数量
     int stride = 1;
     if(totalPoints > TRACKING_CANDIDATE_STRIDE_THRESHOLD) stride = (int)(totalPoints / TRACKING_CANDIDATE_STRIDE_THRESHOLD) + 1;
@@ -272,7 +286,7 @@ void ORB_SLAM2::Tracking::BindLoadedMapPointsUsingSnapshots()
         const RefMPSnapshot &s = (*refSnaps)[i];
 
         // 只投影当前激活地图的点
-        if(s.mapId != curMapId && curMapId != -1) continue;
+        if(s.mapId != curMapId && curMapId != -1) { dbgSkippedByMapId++; continue; }
 
         float u=0.f,v=0.f,Z=0.f;
         ProjectPwWithRTK(Rcw, tcw, s.Pw, fx, fy, cx, cy, u, v, Z);
@@ -336,6 +350,14 @@ void ORB_SLAM2::Tracking::BindLoadedMapPointsUsingSnapshots()
             mCurrentFrame.mvpMapPoints[c.frameIdx] = pMP;
             frameUsed[c.frameIdx] = true;
             projBinds++;
+        }
+    }
+    if(DbgReloc() && (dbgSkippedByMapId > 0)){
+        static std::atomic<int> s_dbgBindSkipLog{0};
+        if(s_dbgBindSkipLog.fetch_add(1) < 40){
+            int firstSnapMapId = refSnaps->empty() ? -999 : (*refSnaps)[0].mapId;
+            LOGD("DBG绑定: 帧=%lu 对齐=%d 当前地图id=%d 快照mapId=%d 参考点=%zu 被mapId跳过=%zu 绑定=%d 本帧内点=%d",
+                 (unsigned long)mCurrentFrame.mnId, (int)haveAlign, curMapId, firstSnapMapId, totalPoints, dbgSkippedByMapId, projBinds, mnMatchesInliers);
         }
     }
 }
@@ -461,6 +483,15 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
         mRefLastBuildMPCount = (long long)allMPs.size();
         mRefLastBuildKFCount = mpMap->KeyFramesInMap();
         mRefGrid = std::move(newGrid); // 一并原子更新网格
+    }
+    if(DbgReloc()){
+        int nLoaded=0, nScan=0;
+        for(size_t ci=0; ci<candidates.size(); ++ci){
+            const MapPoint* p = candidates[ci];
+            if(p && p->mbFromLoadedMap) nLoaded++; else nScan++;
+        }
+        LOGD("DBG参考缓存: 地图点=%zu 加载点=%d 扫描点=%d hasLoaded=%d 入选=%d 上限=%d",
+             allMPs.size(), nLoaded, nScan, (int)hasLoaded, rowIdx, (int)TRACKING_REF_CACHE_LIMIT);
     }
 
     // 不再自增 mSnapSeqProduced：构建发生在后台线程处理某个快照的过程中，构建完成后该次迭代会继续匹配；
@@ -1877,6 +1908,11 @@ bool Tracking::TrackLocalMap()
                     mAlignConfidence = a.confidence;
                     mLastAlignTs = a.ts;
                     mnCurrentMapId = a.mapId;
+                    if(DbgReloc()){
+                        LOGD("DBG接受对齐: 帧=%lu 对齐mapId=%d 原当前地图id=%d Map::id=%lu 内点=%d 置信度=%.2f",
+                             (unsigned long)mCurrentFrame.mnId, a.mapId, curMapId, (unsigned long)(mpMap ? mpMap->mnId : 0),
+                             a.inliers, a.confidence);
+                    }
                     mLastAcceptedAlignInliers = a.inliers;
                     mPendingMapId = -1;
                     mPendingMapCount = 0;
@@ -2041,7 +2077,15 @@ bool Tracking::TrackLocalMap()
 
     if(mbHaveMapAlign){
         if(mnLoadedMapInliersCurMap < RELOC_KEEP_ALIGN_MIN_CURMAP_INLIERS) {
-            ClearMapAlignment();
+            // 连续低于阈值超过宽限帧数才丢弃对齐；单帧转出覆盖区不清对齐
+            if(++mNoCurMapLoadedInliersFrames > RELOC_KEEP_ALIGN_GRACE_FRAMES) {
+                if(DbgReloc()){
+                    LOGD("DBG清除对齐: 帧=%lu 连续=%d 当前地图id=%d Map::id=%lu 加载点内点=%d 本图加载点内点=%d 全部内点=%d 局部加载点内点=%d",
+                         (unsigned long)mCurrentFrame.mnId, mNoCurMapLoadedInliersFrames, mnCurrentMapId.load(), (unsigned long)(mpMap ? mpMap->mnId : 0),
+                         mnLoadedMapInliers, mnLoadedMapInliersCurMap, mnMatchesInliers, mnLocalMatchesInliers);
+                }
+                ClearMapAlignment();
+            }
         } else {
             mNoCurMapLoadedInliersFrames = 0;
         }
@@ -2589,6 +2633,14 @@ bool Tracking::Relocalization()
     for(int i=0; i<nKFs; i++) {
         if(!vbDiscarded[i]) nCandidates++;
     }
+    if(DbgReloc()){
+        static std::atomic<int> s_dbgRelocLog{0};
+        if(s_dbgRelocLog.fetch_add(1) < 60){
+            LOGD("DBG重定位尝试: 帧=%lu KFDB候选=%d 有效候选(匹配数>=%d)=%d 连续丢失=%d 对齐=%d 当前地图id=%d KF=%lu MP=%lu",
+                 (unsigned long)mCurrentFrame.mnId, nKFs, TRACKING_REFKF_MIN_MATCHES, nCandidates, mConsecutiveLostFrames,
+                 (int)mbHaveMapAlign, mnCurrentMapId.load(), (unsigned long)mpMap->KeyFramesInMap(), (unsigned long)mpMap->MapPointsInMap());
+        }
+    }
 
     // 执行 PnP RANSAC 迭代求解有效位姿，各候选解迭代有界以保证收敛，复用外层 bMatch 状态，避免变量遮蔽导致重定位成功路径失效
     ORBmatcher matcher2(ORB_MATCHER_NNRATIO_MOTION,true);
@@ -2650,6 +2702,13 @@ bool Tracking::Relocalization()
                     VT_PROFILE_SCOPE("Reloc_PoseOpt");
                     nGood = Optimizer::PoseOptimization(&mCurrentFrame);
                 }
+                if(DbgReloc()){
+                    static std::atomic<int> s_dbgKfdb1{0};
+                    if(s_dbgKfdb1.fetch_add(1) < 80){
+                        LOGD("DBG KFDB候选: 帧=%lu KF=%lu 匹配=%d PnP内点=%d 优化后=%d 阈值(成功>=%d)",
+                             (unsigned long)mCurrentFrame.mnId, (unsigned long)vpCandidateKFs[i]->mnId, vvpMapPointMatches[i].size(), nInliers, nGood, RELOC_SUCCESS_INLIERS);
+                    }
+                }
 
                 if(nGood<TRACKING_POSE_OPT_MIN_INLIERS)
                     continue;
@@ -2700,6 +2759,13 @@ bool Tracking::Relocalization()
     }
     }
 
+    if(DbgReloc()){
+        static std::atomic<int> s_dbgRelocLog2{0};
+        if(s_dbgRelocLog2.fetch_add(1) < 60){
+            LOGD("DBG重定位结果: 帧=%lu KFDB成功=%d 候选=%d 内点=%d", (unsigned long)mCurrentFrame.mnId, (int)bMatch, nKFs, mnMatchesInliers);
+        }
+    }
+
     // 清理 PnP 求解器
     for(int i=0; i<nKFs; i++)
     {
@@ -2737,6 +2803,12 @@ bool Tracking::Relocalization()
 
             HBSTTree::MatchVector treeMatches;
             pTree->match(treeFrame->matchables(), treeMatches, HBST_MATCH_MAX_DIST);
+            if(DbgReloc()){
+                static std::atomic<int> s_dbgRelocLog3{0};
+                if(s_dbgRelocLog3.fetch_add(1) < 60){
+                    LOGD("DBG降级匹配: 帧=%lu 参考点=%zu HBST匹配=%zu 阈值=%d", (unsigned long)mCurrentFrame.mnId, refSnaps->size(), treeMatches.size(), HBST_RELOC_MIN_MATCHES);
+                }
+            }
 
             if(treeMatches.size() >= HBST_RELOC_MIN_MATCHES) {
                 // 收集2D-3D点对应关系
@@ -2772,6 +2844,12 @@ bool Tracking::Relocalization()
                         std::vector<int> inliers;
                         bool ok = SolvePnPSafe(f3d, f2d, K, distCoeffs, rvec, tvec, inliers);
 
+                        if(DbgReloc()){
+                            static std::atomic<int> s_dbgFb{0};
+                            if(s_dbgFb.fetch_add(1) < 80){
+                                LOGD("DBG降级PnP: 帧=%lu 3D点数=%zu ok=%d 内点=%zu 阈值(内点>=%d)", (unsigned long)mCurrentFrame.mnId, f3d.size(), (int)ok, inliers.size(), RELOC_MIN_INLIERS_FOR_ALIGN);
+                            }
+                        }
                         if(ok && inliers.size() >= RELOC_MIN_INLIERS_FOR_ALIGN) {
                             cv::Mat R;
                             cv::Rodrigues(rvec, R);
@@ -2802,6 +2880,12 @@ bool Tracking::Relocalization()
                             mCurrentFrame.mvbOutlier = std::vector<bool>(mCurrentFrame.N, false);
 
                             int nGood = Optimizer::PoseOptimization(&mCurrentFrame);
+                            if(DbgReloc()){
+                                static std::atomic<int> s_dbgFb2{0};
+                                if(s_dbgFb2.fetch_add(1) < 80){
+                                    LOGD("DBG降级优化: 帧=%lu 优化后内点=%d 阈值(成功>=%d)", (unsigned long)mCurrentFrame.mnId, nGood, TRACKING_POSE_OPT_MIN_INLIERS);
+                                }
+                            }
 
                             if(nGood >= TRACKING_POSE_OPT_MIN_INLIERS) {
                                 for(int io=0; io<mCurrentFrame.N; io++) {
@@ -2821,6 +2905,15 @@ bool Tracking::Relocalization()
                                 }
 
                                 LOGD("基于缓存的降级重定位成功！内点数 = %d, 优化后内点数 = %d", (int)inliers.size(), nGood);
+                                if(DbgReloc()){
+                                    int nLoaded=0, nScan=0;
+                                    for(size_t ri=0; refMPs && ri<refMPs->size() && ri<refSnaps->size(); ++ri) {
+                                        const MapPoint* p = (*refMPs)[ri];
+                                        if(p && p->mbFromLoadedMap) nLoaded++; else nScan++;
+                                    }
+                                    LOGD("DBG降级重定位: 帧=%lu 参考点=%zu(加载=%d 非加载=%d) 匹配对=%zu PnP内点=%zu 优化后=%d 当前地图id=%d",
+                                         (unsigned long)mCurrentFrame.mnId, refSnaps->size(), nLoaded, nScan, pts3d.size(), inliers.size(), nGood, mnCurrentMapId.load());
+                                }
                                 mnLastRelocFrameId = mCurrentFrame.mnId;
                                 return true;
                             }
@@ -2840,6 +2933,11 @@ bool Tracking::Relocalization()
             mpReferenceKF = pMatchedKF;
             mCurrentFrame.mpReferenceKF = pMatchedKF;
             Map* pTargetMap = pMatchedKF->GetMap();
+            if(DbgReloc()){
+                LOGD("DBG KFDB重定位成功: 帧=%lu 匹配KF=%lu 当前地图id=%d Map::id=%lu 目标Map=%lu 内点=%d",
+                     (unsigned long)mCurrentFrame.mnId, (unsigned long)pMatchedKF->mnId, mnCurrentMapId.load(),
+                     (unsigned long)(mpMap ? mpMap->mnId : 0), (unsigned long)(pTargetMap ? pTargetMap->mnId : 0), mnMatchesInliers);
+            }
             if(pTargetMap && pTargetMap != mpMap)
             {
                 LOGD("重定位成功并切换子地图: ID %lu -> %lu", mpMap ? mpMap->mnId : 0, pTargetMap->mnId);
@@ -2857,7 +2955,13 @@ bool Tracking::Relocalization()
             }
             else if(pTargetMap)
             {
-                mnCurrentMapId = (int)pTargetMap->mnId;
+                // 同一子地图内的重定位不改变当前地图标识：mnCurrentMapId 属于“加载地图文件 id”+
+                // 子地图 id 两套语义之一，这里赋 Map::mnId 会把加载点的 MapPoint::mnMapId 隐去，
+                // 导致绑定与“本图加载点内点”统计全部为 0。当前地图 id 交由对齐结果（mapId）维护
+                if(DbgReloc() && mnCurrentMapId.load() != (int)pTargetMap->mnId){
+                    LOGD("DBG KFDB重定位保持当前地图id: 帧=%lu 当前=%d Map::id=%lu（不做覆盖）",
+                         (unsigned long)mCurrentFrame.mnId, mnCurrentMapId.load(), (unsigned long)pTargetMap->mnId);
+                }
             }
         }
         return true;
