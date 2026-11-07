@@ -104,3 +104,6 @@ MenthaAR/src/main/cpp/Thirdparty_Platforms/test.mp4
 
 应用质量指南.md
 构建规则与知识库.md
+
+# 本地 git worktree 目录
+.worktrees/

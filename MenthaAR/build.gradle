@@ -19,10 +19,6 @@ android {
                 arguments "-DANDROID_ARM_NEON=TRUE",
                         "-DANDROID_TOOLCHAIN=clang",
                         "-DANDROID_STL=c++_static"
-                // gradle -PmenthaBench 时额外构建离线回放基准可执行文件 slam_bench
-                if (project.hasProperty('menthaBench')) {
-                    arguments "-DMENTHA_BUILD_BENCH=ON"
-                }
                 abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
             }
         }
