@@ -33,6 +33,8 @@ import android.os.ParcelFileDescriptor;
 import android.os.RemoteException;
 import android.util.Log;
 
+import java.nio.ByteBuffer;
+
 // MenthaAR 定位 SDK 对外接口：控制指令经 AIDL 下发，位姿与点云经共享内存读取。
 public class SlamIPCClient {
     private static final String TAG = "SlamIPCClient";
@@ -57,7 +59,9 @@ public class SlamIPCClient {
     private final Object sendLock = new Object();
     private int lastSeq = 0;  // 已投递的帧序号
 
-    private String pendingResDir;
+    // 资源目录在首次 initSLAM 时记录，之后每次 onServiceConnected 都重新下发：
+    // onPause 解绑后服务进程被系统销毁，onResume 重新绑定得到的是全新进程，必须再初始化一次（服务端 initSLAM 幂等）
+    private String resDir;
 
     private final ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
@@ -66,13 +70,12 @@ public class SlamIPCClient {
             isBound = true;
             Log.d(TAG, "成功绑定到 MenthaAR SlamService 进程");
             try {
-                if (pendingResDir != null) {
-                    Log.d(TAG, "自动执行挂起的 SLAM 初始化: " + pendingResDir);
-                    slamService.initSLAM(pendingResDir);
-                    pendingResDir = null;
+                if (resDir != null) {
+                    Log.d(TAG, "服务已连接，下发 SLAM 初始化: " + resDir);
+                    slamService.initSLAM(resDir);
                 }
             } catch (RemoteException e) {
-                Log.e(TAG, "延迟初始化异常: " + e.getMessage());
+                Log.e(TAG, "初始化异常: " + e.getMessage());
             }
             final ConnectionListener listener = connectionListener;
             if (listener != null) {
@@ -112,9 +115,12 @@ public class SlamIPCClient {
             context.unbindService(serviceConnection);
             isBound = false;
         }
-        if (sharedMemoryBuffer != null) {
-            sharedMemoryBuffer.close();
-            sharedMemoryBuffer = null;
+        // 发送线程可能正在 sendFrameData 内写共享内存（持 sendLock）；SharedMemory.unmap 之后再访问会直接崩溃
+        synchronized (sendLock) {
+            if (sharedMemoryBuffer != null) {
+                sharedMemoryBuffer.close();
+                sharedMemoryBuffer = null;
+            }
         }
     }
 
@@ -122,13 +128,12 @@ public class SlamIPCClient {
         return isBound && slamService != null;
     }
 
-    // 初始化引擎，未连接时自动挂起，连接后执行
+    // 初始化引擎，未连接时在连接后执行；资源目录会保留，重连后自动重新初始化
     public void initSLAM(String resDir) {
-        this.pendingResDir = resDir;
+        this.resDir = resDir;
         if (slamService != null) {
             try {
                 slamService.initSLAM(resDir);
-                pendingResDir = null;
             } catch (RemoteException e) {
                 Log.e(TAG, "initSLAM 异常: " + e.getMessage());
             }
@@ -144,45 +149,101 @@ public class SlamIPCClient {
         if (width <= 0 || height <= 0) return;
 
         synchronized (sendLock) {
-            // 尺寸变化或缓冲不足时，重建共享内存并重新 attach
-            int requiredSize = SharedMemoryBuffer.requiredSize(width, height);
-            if (sharedMemoryBuffer == null
-                    || sharedMemoryBuffer.getBufferSize() < requiredSize
-                    || sharedMemoryBuffer.getFrameW() != width
-                    || sharedMemoryBuffer.getFrameH() != height) {
-                if (sharedMemoryBuffer != null) {
-                    sharedMemoryBuffer.close();
-                }
-                sharedMemoryBuffer = new SharedMemoryBuffer(
-                        "MenthaSlamFrameBuffer", requiredSize);
-                if (!sharedMemoryBuffer.initHeader(width, height)) {
-                    sharedMemoryBuffer = null;
-                    return;
-                }
-                attachFrameBuffer();
-                lastSeq = 0;
-            }
-            if (sharedMemoryBuffer == null) return;
-
-            int seq = lastSeq + 1;
-            int bufIndex = seq & 1;
-
-            // 背压：目标缓冲(seq模2)必须空闲，即 SLAM 已完成 seq-2
-            if (sharedMemoryBuffer.readSlamDoneSeq() < seq - 2) {
-                // SLAM 处理落后于发送，丢帧(不覆盖正在处理的缓冲)
-                return;
-            }
+            final int seq = prepareFrameSlotLocked(width, height);
+            if (seq <= 0) return;
+            final int bufIndex = seq & 1;
 
             if (!sharedMemoryBuffer.writeFrame(frameData, bufIndex, width, height)) {
                 return;
             }
-            sharedMemoryBuffer.writeUiWriteSeq(seq);
-            lastSeq = seq;
-            try {
-                slamService.processFrame(seq, bufIndex, width, height);  // oneway
-            } catch (RemoteException e) {
-                Log.e(TAG, "processFrame 异常: " + e.getMessage());
+            commitFrameLocked(seq, bufIndex, width, height);
+        }
+    }
+
+    // 已获取的帧槽位：gray 是共享内存中目标 Y 缓冲的 direct 切片，调用方写满后 commitFrame
+    public static final class FrameSlot {
+        public final ByteBuffer gray;
+        public final int seq;
+        final int bufIndex;
+        final int width;
+        final int height;
+
+        FrameSlot(ByteBuffer gray, int seq, int bufIndex, int width, int height) {
+            this.gray = gray;
+            this.seq = seq;
+            this.bufIndex = bufIndex;
+            this.width = width;
+            this.height = height;
+        }
+    }
+
+    // 获取下一帧的共享内存槽位（含重建/attach/背压检查），让调用方的转换代码直接把灰度写进共享内存
+    public FrameSlot acquireFrameSlot(int width, int height) {
+        if (slamService == null || width <= 0 || height <= 0) return null;
+        synchronized (sendLock) {
+            final int seq = prepareFrameSlotLocked(width, height);
+            if (seq <= 0) return null;
+            final int bufIndex = seq & 1;
+            final ByteBuffer slice = sharedMemoryBuffer.sliceFrame(bufIndex, width, height);
+            if (slice == null) return null;
+            return new FrameSlot(slice, seq, bufIndex, width, height);
+        }
+    }
+
+    // 灰度已写入槽位后投递给 SLAM 进程。期间若共享内存被重建（尺寸变化），该槽位作废
+    public void commitFrame(FrameSlot slot) {
+        if (slot == null) return;
+        synchronized (sendLock) {
+            if (sharedMemoryBuffer == null || slamService == null) return;
+            if (slot.seq != lastSeq + 1
+                    || sharedMemoryBuffer.getFrameW() != slot.width
+                    || sharedMemoryBuffer.getFrameH() != slot.height) {
+                return;
             }
+            commitFrameLocked(slot.seq, slot.bufIndex, slot.width, slot.height);
+        }
+    }
+
+    // 持 sendLock：按需重建共享内存并 attach，做背压检查；返回下一帧序号，0 表示本帧应丢弃
+    private int prepareFrameSlotLocked(int width, int height) {
+        // 尺寸变化或缓冲不足时，重建共享内存并重新 attach
+        int requiredSize = SharedMemoryBuffer.requiredSize(width, height);
+        if (sharedMemoryBuffer == null
+                || sharedMemoryBuffer.getBufferSize() < requiredSize
+                || sharedMemoryBuffer.getFrameW() != width
+                || sharedMemoryBuffer.getFrameH() != height) {
+            if (sharedMemoryBuffer != null) {
+                sharedMemoryBuffer.close();
+            }
+            sharedMemoryBuffer = new SharedMemoryBuffer(
+                    "MenthaSlamFrameBuffer", requiredSize);
+            if (!sharedMemoryBuffer.initHeader(width, height)) {
+                sharedMemoryBuffer = null;
+                return 0;
+            }
+            attachFrameBuffer();
+            lastSeq = 0;
+        }
+        if (sharedMemoryBuffer == null) return 0;
+
+        int seq = lastSeq + 1;
+
+        // 背压：目标缓冲(seq模2)必须空闲，即 SLAM 已完成 seq-2
+        if (sharedMemoryBuffer.readSlamDoneSeq() < seq - 2) {
+            // SLAM 处理落后于发送，丢帧(不覆盖正在处理的缓冲)
+            return 0;
+        }
+        return seq;
+    }
+
+    // 持 sendLock：写序号并 oneway 投递
+    private void commitFrameLocked(int seq, int bufIndex, int width, int height) {
+        sharedMemoryBuffer.writeUiWriteSeq(seq);
+        lastSeq = seq;
+        try {
+            slamService.processFrame(seq, bufIndex, width, height);  // oneway
+        } catch (RemoteException e) {
+            Log.e(TAG, "processFrame 异常: " + e.getMessage());
         }
     }
 
@@ -211,6 +272,16 @@ public class SlamIPCClient {
     // 读取点云(每点 7 floats)，返回点数，0 表示无点云
     public int readPointCloud(float[] out, int maxFloats) {
         return sharedMemoryBuffer != null ? sharedMemoryBuffer.readPointCloud(out, maxFloats) : 0;
+    }
+
+    // 点云序号：服务端每次重写点云区 +1，渲染端只在变化时重新读取与上传
+    public int readPointCloudSeq() {
+        return sharedMemoryBuffer != null ? sharedMemoryBuffer.readPointCloudSeq() : 0;
+    }
+
+    // SLAM 已处理完成的帧序号（每处理完一帧 +1），渲染端用它判断是否有新结果
+    public int readSlamDoneSeq() {
+        return sharedMemoryBuffer != null ? sharedMemoryBuffer.readSlamDoneSeq() : 0;
     }
 
     // 姿态辅助开关：融合在 SDK 进程内执行，App 只需下发开关

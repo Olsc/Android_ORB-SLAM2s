@@ -275,12 +275,12 @@ g2o 所需（见下文）。下载和安装说明可在以下网址找到：http
 
 除 Android 端外，本项目在 `MenthaAR/src/main/cpp/Thirdparty_Platforms/` 提供了桌面与掌机平台的独立 SLAM 演示与基准测试实现，共用同一套核心 SLAM 算法：
 
-| 平台 | 目录 | 说明 |
-| :--- | :--- | :--- |
-| **Windows** | [`windows/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/windows/Readme.md) | 支持 MSVC/MinGW，启用 AVX2 指令集加速，支持摄像头实时 SLAM 与离线视频评测 |
-| **Ubuntu / Linux** | [`ubuntu/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/ubuntu/Readme.md) | 支持 x86_64、aarch64 以及国产龙芯 **LoongArch64** 架构 |
-| **macOS** | [`mac/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/mac/Readme.md) | 原生适配 Apple Silicon (arm64, NEON) 与 Intel (x86_64, AVX2)，集成 AVFoundation 与 Cocoa GUI |
-| **PlayStation Vita** | [`psvita/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/psvita/Readme.md) | 基于 VitaSDK 的掌机实验版单目 SLAM，支持前后置摄像头实时跟踪、点云绘制与二进制地图存取 |
+| 平台                 | 目录                                                                          | 说明                                                                                         |
+| :------------------- | :---------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------- |
+| **Windows**          | [`windows/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/windows/Readme.md) | 支持 MSVC/MinGW，启用 AVX2 指令集加速，支持摄像头实时 SLAM 与离线视频评测                    |
+| **Ubuntu / Linux**   | [`ubuntu/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/ubuntu/Readme.md)   | 支持 x86_64、aarch64 以及国产龙芯 **LoongArch64** 架构                                       |
+| **macOS**            | [`mac/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/mac/Readme.md)         | 原生适配 Apple Silicon (arm64, NEON) 与 Intel (x86_64, AVX2)，集成 AVFoundation 与 Cocoa GUI |
+| **PlayStation Vita** | [`psvita/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/psvita/Readme.md)   | 基于 VitaSDK 的掌机实验版单目 SLAM，支持前后置摄像头实时跟踪、点云绘制与二进制地图存取       |
 
 ---
 

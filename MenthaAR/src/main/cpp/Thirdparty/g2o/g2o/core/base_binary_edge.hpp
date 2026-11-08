@@ -144,7 +144,8 @@ void BaseBinaryEdge<D, E, VertexXiType, VertexXjType>::linearizeOplus()
   vj->lockQuadraticForm();
 #endif
 
-  const double delta = 1e-9;
+  // 中心差分的总误差 ≈ ε/h（舍入）+ h²·f'''/6（截断），最优 h ≈ ∛(3ε) ≈ 6e-6。
+  const double delta = 6e-6;
   const double scalar = 1.0 / (2*delta);
   ErrorVector errorBak;
   ErrorVector errorBeforeNumeric = _error;

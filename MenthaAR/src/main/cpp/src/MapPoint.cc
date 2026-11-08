@@ -203,16 +203,16 @@ void MapPoint::EraseObservation(KeyFrame* pKF)
         SetBadFlag();
 }
 
-map<KeyFrame*, size_t> MapPoint::GetObservations()
+KeyFrameMap<size_t> MapPoint::GetObservations()
 {
     unique_lock<mutex> lock(mMutexFeatures);
     return mObservations;
 }
 
-void MapPoint::ShareObservations(std::unordered_map<KeyFrame*, int>& counter, unsigned long excludeId)
+void MapPoint::ShareObservations(KeyFrameMap<int>& counter, unsigned long excludeId)
 {
     unique_lock<mutex> lock(mMutexFeatures);
-    for(std::map<KeyFrame*, size_t>::const_iterator mit=mObservations.begin(), mend=mObservations.end(); mit!=mend; mit++)
+    for(KeyFrameMap<size_t>::const_iterator mit=mObservations.begin(), mend=mObservations.end(); mit!=mend; mit++)
     {
         KeyFrame* pKF = mit->first;
         if(pKF->mnId == excludeId || pKF->isBad())
@@ -228,7 +228,7 @@ int MapPoint::GetRedundantObservationsCount(KeyFrame* pKF, int scaleLevel)
 
     unique_lock<mutex> lock(mMutexFeatures);
     int count = 0;
-    for(std::map<KeyFrame*, size_t>::const_iterator mit=mObservations.begin(), mend=mObservations.end(); mit!=mend; mit++)
+    for(KeyFrameMap<size_t>::const_iterator mit=mObservations.begin(), mend=mObservations.end(); mit!=mend; mit++)
     {
         KeyFrame* pKFi = mit->first;
         if(pKFi==pKF || pKFi->isBad())
@@ -251,7 +251,7 @@ int MapPoint::Observations() const
 
 void MapPoint::SetBadFlag()
 {
-    map<KeyFrame*,size_t> obs;
+    KeyFrameMap<size_t> obs;
     {
         unique_lock<mutex> lock1(mMutexFeatures);
         unique_lock<mutex> lock2(mMutexPos);
@@ -259,7 +259,7 @@ void MapPoint::SetBadFlag()
         obs = mObservations;
         mObservations.clear();
     }
-    for(map<KeyFrame*,size_t>::iterator mit=obs.begin(), mend=obs.end(); mit!=mend; mit++)
+    for(KeyFrameMap<size_t>::iterator mit=obs.begin(), mend=obs.end(); mit!=mend; mit++)
     {
         KeyFrame* pKF = mit->first;
         pKF->EraseMapPointMatch(mit->second);
@@ -284,7 +284,7 @@ void MapPoint::Replace(MapPoint* pMP)
         return;
 
     int nvisible, nfound;
-    map<KeyFrame*,size_t> obs;
+    KeyFrameMap<size_t> obs;
     {
         unique_lock<mutex> lock1(mMutexFeatures);
         unique_lock<mutex> lock2(mMutexPos);
@@ -296,7 +296,7 @@ void MapPoint::Replace(MapPoint* pMP)
         mpReplaced = pMP;
     }
 
-    for(map<KeyFrame*,size_t>::iterator mit=obs.begin(), mend=obs.end(); mit!=mend; mit++)
+    for(KeyFrameMap<size_t>::iterator mit=obs.begin(), mend=obs.end(); mit!=mend; mit++)
     {
         // 替换关键帧中的测量值
         KeyFrame* pKF = mit->first;
@@ -532,6 +532,21 @@ float MapPoint::GetMaxDistanceInvariance()
     return mfMaxDistInvariance.load(std::memory_order_relaxed);
 }
 
+// 两个 PredictScale 重载的公共实现：第一个满足 maxDistance <= currentDist * s[level] 的层
+int MapPoint::PredictScaleFromMaxDist(const float maxDistance, const float currentDist,
+                                      const std::vector<float>& vScaleFactors, const int nLevels)
+{
+    int nScale = 0;
+    for (; nScale < nLevels; ++nScale)
+    {
+        if (maxDistance <= currentDist * vScaleFactors[nScale])
+            break;
+    }
+    if (nScale >= nLevels)
+        nScale = nLevels - 1;
+    return nScale;
+}
+
 int MapPoint::PredictScale(const float &currentDist, KeyFrame* pKF)
 {
     float maxDistance;
@@ -539,19 +554,7 @@ int MapPoint::PredictScale(const float &currentDist, KeyFrame* pKF)
         unique_lock<mutex> lock(mMutexPos);
         maxDistance = mfMaxDistance;
     }
-
-    int nScale = 0;
-    const std::vector<float>& mvScaleFactors = pKF->mvScaleFactors;
-    const int nLevels = pKF->mnScaleLevels;
-    for (; nScale < nLevels; ++nScale)
-    {
-        if (maxDistance <= currentDist * mvScaleFactors[nScale])
-            break;
-    }
-    if (nScale >= nLevels)
-        nScale = nLevels - 1;
-
-    return nScale;
+    return PredictScaleFromMaxDist(maxDistance, currentDist, pKF->mvScaleFactors, pKF->mnScaleLevels);
 }
 
 int MapPoint::PredictScale(const float &currentDist, Frame* pF)
@@ -561,19 +564,20 @@ int MapPoint::PredictScale(const float &currentDist, Frame* pF)
         unique_lock<mutex> lock(mMutexPos);
         maxDistance = mfMaxDistance;
     }
+    return PredictScaleFromMaxDist(maxDistance, currentDist, pF->mvScaleFactors, pF->mnScaleLevels);
+}
 
-    int nScale = 0;
-    const std::vector<float>& mvScaleFactors = pF->mvScaleFactors;
-    const int nLevels = pF->mnScaleLevels;
-    for (; nScale < nLevels; ++nScale)
-    {
-        if (maxDistance <= currentDist * mvScaleFactors[nScale])
-            break;
-    }
-    if (nScale >= nLevels)
-        nScale = nLevels - 1;
-
-    return nScale;
+void MapPoint::GetTrackingSnapshot(cv::Point3f& pos, cv::Point3f& normal, float& maxDistance)
+{
+    // isInFrustum 需要位置、法向和 mfMaxDistance：一次加锁取出
+    std::unique_lock<std::mutex> lock(mMutexPos);
+    pos.x = mWorldPos.at<float>(0);
+    pos.y = mWorldPos.at<float>(1);
+    pos.z = mWorldPos.at<float>(2);
+    normal.x = mNormalVector.at<float>(0);
+    normal.y = mNormalVector.at<float>(1);
+    normal.z = mNormalVector.at<float>(2);
+    maxDistance = mfMaxDistance;
 }
 
 void MapPoint::SetMapId(int id)

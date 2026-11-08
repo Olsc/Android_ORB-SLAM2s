@@ -275,12 +275,12 @@ g2o에 필요합니다(아래 참조). 다운로드 및 설치 지침은 다음�
 
 Android 기기 외에도, 본 프로젝트는 동일한 핵심 SLAM 알고리즘을 공유하는 데스크톱 및 휴대용 기기를 위한 독립형 SLAM 데모와 오프라인 벤치마크 도구를 `MenthaAR/src/main/cpp/Thirdparty_Platforms/`에서 제공합니다:
 
-| 플랫폼 | 디렉터리 | 설명 |
-| :--- | :--- | :--- |
-| **Windows** | [`windows/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/windows/Readme.md) | MSVC/MinGW 지원, AVX2 SIMD 가속 활성화, 실시간 카메라 SLAM 및 오프라인 비디오 벤치마크 지원 |
-| **Ubuntu / Linux** | [`ubuntu/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/ubuntu/Readme.md) | x86_64, aarch64 및 중국산 룽신 **LoongArch64** 아키텍처 지원 |
-| **macOS** | [`mac/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/mac/Readme.md) | Apple Silicon(arm64, NEON) 및 Intel(x86_64, AVX2) 네이티브 지원, AVFoundation 및 Cocoa GUI 통합 |
-| **PlayStation Vita** | [`psvita/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/psvita/Readme.md) | VitaSDK 기반 휴대용 콘솔용 실험적 단안 SLAM, 전후면 카메라 실시간 트래킹, 포인트 클라우드 렌더링 및 바이너리 지도 저장 지원 |
+| 플랫폼               | 디렉터리                                                                      | 설명                                                                                                                        |
+| :------------------- | :---------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------- |
+| **Windows**          | [`windows/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/windows/Readme.md) | MSVC/MinGW 지원, AVX2 SIMD 가속 활성화, 실시간 카메라 SLAM 및 오프라인 비디오 벤치마크 지원                                 |
+| **Ubuntu / Linux**   | [`ubuntu/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/ubuntu/Readme.md)   | x86_64, aarch64 및 중국산 룽신 **LoongArch64** 아키텍처 지원                                                                |
+| **macOS**            | [`mac/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/mac/Readme.md)         | Apple Silicon(arm64, NEON) 및 Intel(x86_64, AVX2) 네이티브 지원, AVFoundation 및 Cocoa GUI 통합                             |
+| **PlayStation Vita** | [`psvita/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/psvita/Readme.md)   | VitaSDK 기반 휴대용 콘솔용 실험적 단안 SLAM, 전후면 카메라 실시간 트래킹, 포인트 클라우드 렌더링 및 바이너리 지도 저장 지원 |
 
 ---
 

@@ -6,7 +6,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# ---- 可覆盖参数 -------------------------------------------------------------
+# 可覆盖参数
 TOOLCHAIN_ROOT="${TOOLCHAIN_ROOT:-/opt/x-tools/loongarch64-unknown-linux-gnu}"
 LOONGARCH_MARCH="${LOONGARCH_MARCH:-loongarch64}"   # loongarch64|la464|la664|la64v1.0|la64v1.1
 BUILD_TYPE="${BUILD_TYPE:-Release}"
@@ -17,7 +17,7 @@ if [ "$STATIC" = "1" ]; then STATIC_SUFFIX="-static"; else STATIC_SUFFIX=""; fi
 # 构建目录默认落在本脚本同级目录
 BUILD_DIR="${BUILD_DIR:-${SCRIPT_DIR}/build-loongarch64-${LOONGARCH_MARCH}${STATIC_SUFFIX}}"
 
-# ---- 工具链自检 -------------------------------------------------------------
+# 工具链自检
 TRIPLE=loongarch64-unknown-linux-gnu
 if [ ! -x "${TOOLCHAIN_ROOT}/bin/${TRIPLE}-gcc" ]; then
     echo "错误: 未找到交叉编译器 ${TOOLCHAIN_ROOT}/bin/${TRIPLE}-gcc" >&2
@@ -30,7 +30,7 @@ echo "==> 目标架构:   ${TRIPLE}  (-march=${LOONGARCH_MARCH} -mabi=lp64d)"
 echo "==> 静态链接:   $([ "$STATIC" = "1" ] && echo ON || echo OFF)"
 echo "==> 构建目录:   ${BUILD_DIR}"
 
-# ---- 配置 & 构建 ------------------------------------------------------------
+# 配置 & 构建
 mkdir -p "${BUILD_DIR}"
 cd "${BUILD_DIR}"
 

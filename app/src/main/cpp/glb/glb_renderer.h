@@ -28,6 +28,10 @@ public:
     // 初始化 OpenGL ES 着色器程序及渲染状态
     bool initGL();
 
+    // EGL Context 重建后旧 GL 名称（program/attrib/uniform location）全部失效。
+    // 只清空本地状态，不对失效对象发任何 GL 调用，否则会得到 GL_INVALID_OPERATION。
+    void onContextLost();
+
     // 视口尺寸调整
     void onResize(int width, int height);
 

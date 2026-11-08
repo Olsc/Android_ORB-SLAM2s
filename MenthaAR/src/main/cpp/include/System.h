@@ -84,6 +84,9 @@ public:
     // 检查地图是否发生重大变化（闭环或全局BA）
     bool MapChanged();
 
+    // 等待局部建图与闭环线程都空闲（队列为空、不在处理、GBA 未运行）
+    bool WaitForBackendIdle(int timeoutMs);
+
     // 重置SLAM系统，bKeepMap为true时保留地图仅清跟踪状态
     void Reset(bool bKeepMap = false);
 
@@ -143,6 +146,9 @@ public:
 
     // 切换到指定地图
     void SwitchToMap(Map* pMap);
+
+    // 将所有子地图中的已加载地图点迁移到 pTarget（加载地图需始终跟随当前激活子地图）
+    void MigrateLoadedMapPoints(Map* pTarget);
 
 //public:
 private:

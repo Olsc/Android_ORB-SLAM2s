@@ -126,6 +126,7 @@ public class GLPassThroughRenderer {
             }
         }
 
+        boolean isCreated() { return mProgramId != 0; }
         int getPositionHandle() { return mPositionHandle; }
         int getTextureHandle() { return mTextureHandle; }
         int getMVPMatrixHandle() { return mMVPMatrixHandle; }
@@ -146,6 +147,12 @@ public class GLPassThroughRenderer {
 
     public void init() {
         mProgram.create();
+    }
+
+    // 着色器程序是否存在：surfaceDestroyed 会在 GL 线程上销毁程序，而 EGL 上下文被保留时 onSurfaceCreated 不会再次调用，
+    // 绘制前需按此判断重新创建（否则 glUseProgram 报 GL_INVALID_OPERATION）
+    public boolean isReady() {
+        return mProgram.isCreated();
     }
 
     public void destroy() {

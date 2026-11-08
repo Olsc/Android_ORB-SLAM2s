@@ -74,6 +74,8 @@ import java.util.List;
 import java.util.Locale;
 
 // SLAM AR 主控制 Activity(调度相机、3D 模型渲染、3DOF 追踪、地图管理与交互控制)
+// 由 AndroidManifest.xml 注册并在运行时通过 Intent 启动
+@SuppressWarnings("unused")
 public class MainActivity extends ComponentActivity
         implements CameraPreviewView.FrameListener, CameraPreviewView.DisplayCorrectionListener {
 
@@ -220,6 +222,11 @@ public class MainActivity extends ComponentActivity
         mCameraPreviewView.setFrameListener(this);
         mCameraPreviewView.setDisplayCorrectionListener(this);
         mCameraPreviewView.setSlamIPCClient(mSlamIPCClient);
+        // SLAM 每产出一帧结果，AR 物体视图重绘一次（两个 GL 视图都是按需渲染）
+        mCameraPreviewView.setSlamResultListener(() -> {
+            final GlbModelRenderer renderer = mModelRenderer;
+            if (renderer != null) renderer.requestRender();
+        });
         mCameraPreviewView.init();
 
         mIsInitFinished = false;
@@ -814,7 +821,7 @@ public class MainActivity extends ComponentActivity
                 .getBoolean(PREF_SENSOR_REVERSE, true);
     }
 
-    // 开关按钮文案：开启时加 ✓ 前缀，与点云按钮的激活反馈保持一致
+    // 开关按钮文案：开启时加对勾前缀，与点云按钮的激活反馈保持一致
     private void updateToggleButton(Button button, int labelRes, boolean enabled) {
         if (button == null) return;
         String label = getString(labelRes);
@@ -973,6 +980,11 @@ public class MainActivity extends ComponentActivity
         mSlamIPCClient.set3DofAssistEnabled(mIs3DofMode);
         mSlamIPCClient.setSensorReverse(isSensorReverseEnabled());
         updateToggleButton(mBtnReverseSensor, R.string.btn_reverse_sensor, isSensorReverseEnabled());
+        // 重连后服务进程可能是全新实例，点云按钮文案与服务端实际状态同步
+        if (mBtnTogglePointCloud != null) {
+            mBtnTogglePointCloud.setText(getString(mSlamIPCClient.isPointCloudDisplayEnabled()
+                    ? R.string.btn_pointcloud_enabled : R.string.btn_pointcloud_disabled));
+        }
     }
 
     private void toggle3DofMode() {

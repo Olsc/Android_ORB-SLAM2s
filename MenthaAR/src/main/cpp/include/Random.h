@@ -21,6 +21,9 @@
 #define VTONAX_RANDOM_H
 
 #include <cstdint>
+#include <cstddef>
+#include <vector>
+#include <utility>
 
 namespace ORB_SLAM2 {
 
@@ -37,6 +40,26 @@ public:
 private:
     unsigned int mRandState;
 };
+
+// 无放回抽取 m 个下标（RANSAC 最小集）：在活动区内交换-恢复，单次写入 O(m)
+template<class Rng>
+inline void SampleWithoutReplacement(Rng& rng, std::vector<size_t>& vIndices, const int m, size_t* out)
+{
+    int randi[16];
+    size_t n = vIndices.size();
+    for(int j=0; j<m; ++j)
+    {
+        randi[j] = rng.randomInt(0, (int)n - 1);
+        out[j] = vIndices[randi[j]];
+        std::swap(vIndices[randi[j]], vIndices[n-1]);
+        --n;
+    }
+    for(int j=m-1; j>=0; --j)
+    {
+        ++n;
+        std::swap(vIndices[randi[j]], vIndices[n-1]);
+    }
+}
 
 } // namespace ORB_SLAM2
 

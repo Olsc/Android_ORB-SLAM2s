@@ -103,7 +103,7 @@ def analyze(events, sort_by='total', limit=30):
         total = sum(durs)
         pct = (total / total_program_time * 100.0) if total_program_time > 0 else 0.0
         print(f"{name:<55} {len(durs):>8} {avg:>10.1f} {med:>10.1f} {mn:>10.1f} {mx:>10.1f} {total:>12.1f} {pct:>7.1f}%")
-        
+
         shown_count += 1
         if limit != -1 and shown_count >= limit:
             break
@@ -200,7 +200,6 @@ def analyze(events, sort_by='total', limit=30):
     for d, name, i in single_ops[:10]:
         print(f"  {d/1000:>8.1f}ms  {name}")
 
-
 def find_fps_problems(events):
     """分析帧率不稳定问题"""
     # 提取 processImage 的 B/E 时间戳
@@ -245,7 +244,6 @@ def find_fps_problems(events):
             freeze = [i for i in intervals_ms if i > 200]  # >200ms 视为卡死
             if freeze:
                 print(f"  卡顿 (>200ms 间隔): {len(freeze)}/{len(intervals_ms)} = {len(freeze)/len(intervals_ms)*100:.1f}%")
-
 
 def detect_deadlock(events):
     """检测卡死模式：未闭合函数、线程永久等待、BA过长"""
@@ -293,7 +291,7 @@ def detect_deadlock(events):
                 continue
             if ev['ph'] == 'B':
                 in_stopped = True
-                closed_stopped_cnt += 1  # count each begin as one occurrence
+                closed_stopped_cnt += 1  # 每个 begin 计为一次出现
             elif ev['ph'] == 'E':
                 in_stopped = False
         if in_stopped:
@@ -436,7 +434,6 @@ def detect_deadlock(events):
     else:
         print("  - 未检测到异常")
 
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="分析 profile_trace.json 中的 SLAM 各阶段耗时分布，找出性能瓶颈")
     parser.add_argument("trace_file", nargs="?", default=TRACE_FILE, help="Trace JSON 文件路径 (默认: profile_trace.json)")
@@ -453,7 +450,7 @@ if __name__ == '__main__':
     except FileNotFoundError:
         print(f"错误: 找不到文件 {args.trace_file}")
         sys.exit(1)
-        
+
     analyze(events, sort_by=args.sort, limit=args.limit)
     find_fps_problems(events)
     detect_deadlock(events)

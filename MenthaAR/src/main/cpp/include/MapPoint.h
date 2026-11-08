@@ -35,6 +35,8 @@
 #ifndef MAPPOINT_H
 #define MAPPOINT_H
 
+#include"IdOrder.h"
+#include"IdOrder.h"
 #include"KeyFrame.h"
 #include"Frame.h"
 #include"Map.h"
@@ -71,7 +73,7 @@ public:
     void GetNormal(cv::Point3f& out);
     KeyFrame* GetReferenceKeyFrame();
 
-    std::map<KeyFrame*,size_t> GetObservations();
+    KeyFrameMap<size_t> GetObservations();
     template<typename F>
     void ForEachObservation(F&& func) {
         std::unique_lock<std::mutex> lock(mMutexFeatures);
@@ -80,7 +82,7 @@ public:
         }
     }
 
-    void ShareObservations(std::unordered_map<KeyFrame*, int>& counter, unsigned long excludeId = -1);
+    void ShareObservations(KeyFrameMap<int>& counter, unsigned long excludeId = -1);
     int GetRedundantObservationsCount(KeyFrame* pKF, int scaleLevel);
     int Observations() const;
 
@@ -113,6 +115,7 @@ public:
         if(d && !d->empty()) {
             const size_t n = (d->cols < 32) ? static_cast<size_t>(d->cols) : 32u;
             memcpy(out, d->ptr<uint8_t>(0), n);
+            if(n < 32) memset(out + n, 0, 32 - n); // 短描述子时尾部必须有定义
             return true;
         }
         memset(out, 0, 32);
@@ -131,6 +134,10 @@ public:
     float GetMaxDistanceInvariance();
     int PredictScale(const float &currentDist, KeyFrame*pKF);
     int PredictScale(const float &currentDist, Frame* pF);
+    static int PredictScaleFromMaxDist(const float maxDistance, const float currentDist,
+                                       const std::vector<float>& vScaleFactors, const int nLevels);
+    // 一次加锁取出位置、法向与最大距离（isInFrustum 用）
+    void GetTrackingSnapshot(cv::Point3f& pos, cv::Point3f& normal, float& maxDistance);
     inline void SetNormalAndDepth(const cv::Mat &normal, float minD, float maxD){
         std::lock_guard<std::mutex> lock(mMutexFeatures);
         mNormalVector = normal.clone();
@@ -156,7 +163,6 @@ public:
     // 标记从持久化地图加载的点用于可视化
     bool mbFromLoadedMap = false;
     // 标记在当前帧中的匹配点状态
-    bool mbMatchedInCurrentFrame = false;
 
     // 跟踪使用的变量
     float mTrackProjX;
@@ -171,6 +177,8 @@ public:
     // 局部建图使用的变量
     long unsigned int mnBALocalForKF;
     long unsigned int mnFuseCandidateForKF;
+    // 点云写入去重标记（只由帧处理线程的 writePointCloudToSharedMemory 读写）
+    uint32_t mnRenderedForSeq = 0;
 
     // 回环闭合使用的变量
     long unsigned int mnLoopPointForKF;
@@ -185,7 +193,7 @@ protected:
      cv::Mat mWorldPos;
 
      // 观测该点的关键帧及在关键帧中的索引
-     std::map<KeyFrame*,size_t> mObservations;
+     KeyFrameMap<size_t> mObservations;
 
      // 平均观测方向
      cv::Mat mNormalVector;

@@ -324,7 +324,6 @@ void GlbModel::uploadGL(const std::function<int(const uint8_t*, size_t)>& textur
 
 void GlbModel::destroyGL() {
     if (!mIsGPUUploaded) return;
-
     for (auto& prim : mPrimitives) {
         if (prim.vbo) {
             glDeleteBuffers(1, &prim.vbo);
@@ -344,5 +343,16 @@ void GlbModel::destroyGL() {
     }
     mImageToTextureMap.clear();
 
+    mIsGPUUploaded = false;
+}
+
+void GlbModel::onContextLost() {
+    // EGL Context 重建后旧 VBO/IBO/纹理名全部失效：只丢弃本地记录，不做 GL 调用。
+    // 下一次 uploadGL() 会重新创建并上传。
+    for (auto& prim : mPrimitives) {
+        prim.vbo = 0;
+        prim.ibo = 0;
+    }
+    mImageToTextureMap.clear();
     mIsGPUUploaded = false;
 }

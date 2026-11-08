@@ -61,6 +61,11 @@ public:
     // 复制构造函数。
     Frame(const Frame &frame);
 
+    // 显式声明拷贝构造会抑制隐式移动，此处补默认移动操作，避免临时 Frame 的网格与向量深拷贝
+    Frame(Frame &&frame) = default;
+    Frame& operator=(Frame &&frame) = default;
+    Frame& operator=(const Frame &frame) = default;
+
     // 单目相机的构造函数。
     Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extractor, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth = 0.0f);
 

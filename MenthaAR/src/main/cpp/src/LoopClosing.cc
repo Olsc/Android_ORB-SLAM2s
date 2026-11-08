@@ -50,13 +50,14 @@
 #include<cstring>
 
 namespace {
+// RAII：发出一份停止请求并等待建图线程停下；release()/析构只撤销自己这一份请求（停止请求按计数配对）
 class LocalMappingStopScope {
 public:
-    explicit LocalMappingStopScope(ORB_SLAM2::LocalMapping* pLM) : mpLM(pLM), mbActive(false) {
+    LocalMappingStopScope(ORB_SLAM2::LocalMapping* pLM, int timeoutMs) : mpLM(pLM), mbRequested(false), mbActive(false) {
         if(mpLM) {
             mpLM->RequestStop();
-            mpLM->WaitForStopped();
-            mbActive = mpLM->isStopped();
+            mbRequested = true;
+            mbActive = mpLM->WaitForStopped(timeoutMs);
         }
     }
     ~LocalMappingStopScope() {
@@ -64,17 +65,15 @@ public:
     }
     bool isStopped() const { return mbActive; }
     void release() {
-        if(mpLM) {
-            if(mbActive) {
-                mpLM->Release();
-                mbActive = false;
-            } else {
-                mpLM->CancelStopRequest();
-            }
+        if(mpLM && mbRequested) {
+            mpLM->Release();
+            mbRequested = false;
+            mbActive = false;
         }
     }
 private:
     ORB_SLAM2::LocalMapping* mpLM;
+    bool mbRequested;
     bool mbActive;
 };
 }
@@ -130,6 +129,7 @@ void LoopClosing::Run()
         // 检查队列中是否有关键帧
         if(CheckNewKeyFrames())
         {
+            mbProcessing.store(true, std::memory_order_release);
             // 检测闭环候选并检查共视一致性
             if(DetectLoop())
             {
@@ -141,6 +141,7 @@ void LoopClosing::Run()
                    CorrectLoop();
                }
             }
+            mbProcessing.store(false, std::memory_order_release);
         }
 
         ResetIfRequested();
@@ -219,17 +220,17 @@ bool LoopClosing::DetectLoop()
     {
         KeyFrame* pCandidateKF = vpCandidateKFs[i];
 
-        set<KeyFrame*> spCandidateGroup = pCandidateKF->GetConnectedKeyFrames();
+        KeyFrameSet spCandidateGroup = pCandidateKF->GetConnectedKeyFrames();
         spCandidateGroup.insert(pCandidateKF);
 
         bool bEnoughConsistent = false;
         bool bConsistentForSomeGroup = false;
         for(size_t iG=0, iendG=mvConsistentGroups.size(); iG<iendG; iG++)
         {
-            set<KeyFrame*> sPreviousGroup = mvConsistentGroups[iG].first;
+            KeyFrameSet sPreviousGroup = mvConsistentGroups[iG].first;
 
             bool bConsistent = false;
-            for(set<KeyFrame*>::iterator sit=spCandidateGroup.begin(), send=spCandidateGroup.end(); sit!=send;sit++)
+            for(KeyFrameSet::iterator sit=spCandidateGroup.begin(), send=spCandidateGroup.end(); sit!=send;sit++)
             {
                 if(sPreviousGroup.count(*sit))
                 {
@@ -465,9 +466,10 @@ void LoopClosing::CorrectLoop()
     RequestStopGBA();
 
     // RAII 保护：确保任何分支或异常退出都能释放局部建图线程
-    LocalMappingStopScope stopScope(mpLocalMapper);
+    LocalMappingStopScope stopScope(mpLocalMapper, LOOP_LM_STOP_TIMEOUT_MS);
     if(!stopScope.isStopped())
     {
+        LOGE("CorrectLoop: 局部建图线程 %d ms 内未停止，放弃本次闭环校正", LOOP_LM_STOP_TIMEOUT_MS);
         mpCurrentKF->SetErase();
         return;
     }
@@ -513,7 +515,7 @@ void LoopClosing::CorrectLoop()
     }
 
     // 2. 锁外预计算 SE3 矩阵
-    std::map<KeyFrame*, cv::Mat> mapCorrectedPoses;
+    KeyFrameMap<cv::Mat> mapCorrectedPoses;
     for(vector<KeyFrame*>::iterator vit=mvpCurrentConnectedKFs.begin(), vend=mvpCurrentConnectedKFs.end(); vit!=vend; vit++)
     {
         KeyFrame* pKFi = *vit;
@@ -584,7 +586,7 @@ void LoopClosing::CorrectLoop()
     SearchAndFuse(CorrectedSim3);
 
     // 地图点融合后，会在共视图中出现连接闭环两侧的新链接
-    map<KeyFrame*, set<KeyFrame*> > LoopConnections;
+    KeyFrameMap<KeyFrameSet> LoopConnections;
 
     for(vector<KeyFrame*>::iterator vit=mvpCurrentConnectedKFs.begin(), vend=mvpCurrentConnectedKFs.end(); vit!=vend; vit++)
     {
@@ -613,14 +615,17 @@ void LoopClosing::CorrectLoop()
     mpMatchedKF->AddLoopEdge(mpCurrentKF);
     mpCurrentKF->AddLoopEdge(mpMatchedKF);
 
-    // 启动新线程执行全局光束法调整
-    mbRunningGBA = true;
-    mbFinishedGBA = false;
-    mbStopGBA = false;
-    mpThreadGBA = new thread(&LoopClosing::RunGlobalBundleAdjustment,this,mpCurrentKF->mnId);
+    // 启动新线程执行全局光束法调整（标志与线程对象都在 mMutexGBA 下写，RequestStopGBA/isRunningGBA 在同一把锁下读）
+    {
+        unique_lock<mutex> lock(mMutexGBA);
+        mbRunningGBA = true;
+        mbFinishedGBA = false;
+        mbStopGBA = false;
+        mpThreadGBA = new thread(&LoopClosing::RunGlobalBundleAdjustment,this,mpCurrentKF->mnId);
+    }
 
-    // 闭环完成，释放局部建图线程
-    mpLocalMapper->Release();
+    // 闭环完成，释放局部建图线程（只释放本函数这一份停止请求；析构时不会再次释放）
+    stopScope.release();
 
     mLastLoopKFid = mpCurrentKF->mnId;
     mpCurrentKF->SetErase(); // 闭环完成，平衡最初的 SetNotErase()
@@ -678,7 +683,7 @@ void LoopClosing::ResetIfRequested()
     unique_lock<mutex> lock(mMutexReset);
     if(mbResetRequested.load())
     {
-        mlpLoopKeyFrameQueue.clear();
+        ClearQueue(); // 插入端（LocalMapping）持 mMutexLoopQueue，清空必须持同一把锁
         mLastLoopKFid=0;
         mbResetRequested=false;
         {
@@ -730,30 +735,36 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
     try
     {
 
-        int idx =  mnFullBAIdx;
-        Optimizer::GlobalBundleAdjustemnt(mpMap,GBA_ITERATIONS,&mbStopGBA,nLoopKF,false);
-
-        // 全局BA未覆盖新关键帧，需通过生成树传播校正
+        int idx;
         {
             unique_lock<mutex> lock(mMutexGBA);
-            if(idx!=mnFullBAIdx)
+            idx = mnFullBAIdx;
+        }
+        Optimizer::GlobalBundleAdjustemnt(mpMap,GBA_ITERATIONS,&mbStopGBA,nLoopKF,false);
+
+        // 全局BA未覆盖新关键帧时通过生成树传播校正
+        // 仅在读写 idx 与标志时持有 mMutexGBA，等待建图线程停止与传播过程都在锁外
+        bool bAborted;
+        {
+            unique_lock<mutex> lock(mMutexGBA);
+            bAborted = (idx != mnFullBAIdx) || mbStopGBA;
+        }
+
+        if(!bAborted)
+        {
+            LocalMappingStopScope stopScope(mpLocalMapper, GBA_LM_STOP_TIMEOUT_MS);
+            bool bProceed = stopScope.isStopped();
+            if(bProceed)
             {
-                // 被新闭环中止的 GBA 也必须复位标志，否则 isRunningGBA() 将永远为 true。线程对象已由中止方（CorrectLoop）清理。
-                mbFinishedGBA = true;
-                mbRunningGBA = false;
-                return;
+                unique_lock<mutex> lock(mMutexGBA);
+                bProceed = (idx == mnFullBAIdx) && !mbStopGBA;
             }
-
-            if(!mbStopGBA)
+            if(!bProceed)
             {
-                LocalMappingStopScope stopScope(mpLocalMapper);
-                if(idx != mnFullBAIdx || !stopScope.isStopped())
-                {
-                    mbFinishedGBA = true;
-                    mbRunningGBA = false;
-                    return;
-                }
-
+                LOGE("GBA 传播被跳过：建图线程未停止或 GBA 已被中止");
+            }
+            else
+            {
                 unique_lock<mutex> mapLock(mpMap->mMutexMapUpdate);
 
                 // 从地图的原点关键帧开始校正关键帧
@@ -808,9 +819,9 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
                         pKF->mnBAGlobalForKF = nLoopKF;
                     }
 
-                    const set<KeyFrame*> sChilds = pKF->GetChilds();
+                    const KeyFrameSet sChilds = pKF->GetChilds();
                     cv::Mat Twc = pKF->GetPoseInverse();
-                    for(set<KeyFrame*>::const_iterator sit=sChilds.begin();sit!=sChilds.end();sit++)
+                    for(KeyFrameSet::const_iterator sit=sChilds.begin();sit!=sChilds.end();sit++)
                     {
                         KeyFrame* pChild = *sit;
                         if(!pChild || pChild->isBad())
@@ -886,10 +897,14 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
                     if(pMP && !pMP->isBad())
                         pMP->UpdateNormalAndDepth();
                 }
-
-                stopScope.release();
             }
+            stopScope.release();
+        }
 
+        {
+            unique_lock<mutex> lock(mMutexGBA);
+            // 被新闭环中止的 GBA 也必须复位标志，否则 isRunningGBA() 将永远为 true。
+            // 若被中止，线程对象已由中止方（RequestStopGBA）接管并 join，此处 mpThreadGBA 为空。
             mbFinishedGBA = true;
             mbRunningGBA = false;
             if(mpThreadGBA)

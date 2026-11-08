@@ -148,7 +148,8 @@ void LocalMapping::Run()
 
             const bool bQueueEmpty = !CheckNewKeyFrames();
 
-            if((bQueueEmpty || bForceCull) && !stopRequested())
+            // 有待处理的 Reset 时跳过 BA：上方已将 mbAbortBA 清零，否则 Reset 前到达的中断请求会丢失
+            if((bQueueEmpty || bForceCull) && !stopRequested() && !mbResetRequested.load())
             {
                 // 仅在队列为空且非强制跳过时执行局部 BA；队列有堆积时优先消化新关键帧
                 if(bQueueEmpty && mpMap->KeyFramesInMap()>=LOCAL_BA_MIN_KEYFRAMES)
@@ -339,6 +340,7 @@ void LocalMapping::CreateNewMapPoints()
     const float &invfy1 = mpCurrentKeyFrame->invfy;
 
     const float ratioFactor = LOCAL_MAPPING_TRIANGULATION_RATIO_FACTOR*mpCurrentKeyFrame->mfScaleFactor;
+    const float ratioFactorSq = ratioFactor*ratioFactor;
 
     int nnew=0;
 
@@ -450,16 +452,14 @@ void LocalMapping::CreateNewMapPoints()
             if(dotProduct * dotProduct >= s_parallaxThSq * (norm1Sq * norm2Sq))
                 continue; // 视差过小，短路跳过
 
-            // 仅对通过视差判定的有效候选点执行开方归一化与公垂线中点解算
-            const float invNorm1 = 1.0f / std::sqrt(norm1Sq);
-            const float invNorm2 = 1.0f / std::sqrt(norm2Sq);
-            const float d1[3] = {r1x * invNorm1, r1y * invNorm1, r1z * invNorm1};
-            const float d2[3] = {r2x * invNorm2, r2y * invNorm2, r2z * invNorm2};
+            // 叉积形式的公垂线中点解不需要归一化射线
+            const float d1[3] = {r1x, r1y, r1z};
+            const float d2[3] = {r2x, r2y, r2z};
 
             float x3D_buf[3];
             if (!Converter::TriangulateMidpoint(c1, d1, c2, d2, x3D_buf))
             {
-                // 若中点解由于平行退化，回退至法方程解法
+                // 中点解只在最近点落在某相机后方（s<=0 或 t<=0）时失败；回退到 double 法方程解，这样的点随后几乎一定被下面的深度检查拒绝
                 if (!Converter::TriangulateWithCenters(Tcw1, Tcw2, c1, c2, xn1x, xn1y, xn2x, xn2y, x3D_buf))
                     continue;
             }
@@ -508,14 +508,11 @@ void LocalMapping::CreateNewMapPoints()
             if(dist1Sq < 1e-12f || dist2Sq < 1e-12f)
                 continue;
 
-            // 只在需要时计算实际距离
-            float dist1 = sqrt(dist1Sq);
-            float dist2 = sqrt(dist2Sq);
-
-            const float ratioDist = dist2/dist1;
-            const float ratioOctave = mpCurrentKeyFrame->mvScaleFactors[kp1.octave]/pKF2->mvScaleFactors[kp2.octave];
-
-            if(ratioDist*ratioFactor<ratioOctave || ratioDist>ratioOctave*ratioFactor)
+            // 尺度一致性判据（d2/d1 与 s1/s2 比较）平方后交叉相乘实现：需满足 d2^2*s2^2 >= s1^2*d1^2 且 d2^2*rf^2*s2^2 <= s1^2*d1^2
+            const float sig2_1 = mpCurrentKeyFrame->mvLevelSigma2[kp1.octave];
+            const float sig2_2 = pKF2->mvLevelSigma2[kp2.octave];
+            const float lhs1 = dist2Sq*sig2_2;
+            if(lhs1*ratioFactorSq < sig2_1*dist1Sq || lhs1 > sig2_1*ratioFactorSq*dist1Sq)
                 continue;
 
             // 三角化成功，构造 MapPoint
@@ -694,7 +691,7 @@ void LocalMapping::SearchInNeighbors()
     // 增量脏标记更新：仅对本轮发生融合或新观测改变的地图点更新代表性描述子与法向
     if(!vModifiedMPs.empty())
     {
-        std::sort(vModifiedMPs.begin(), vModifiedMPs.end());
+        std::sort(vModifiedMPs.begin(), vModifiedMPs.end(), IdLess<MapPoint>());
         vModifiedMPs.erase(std::unique(vModifiedMPs.begin(), vModifiedMPs.end()), vModifiedMPs.end());
 
         for(size_t i=0, iend=vModifiedMPs.size(); i<iend; i++)
@@ -772,10 +769,12 @@ cv::Mat LocalMapping::ComputeF12(KeyFrame *&pKF1, KeyFrame *&pKF2)
     return F;
 }
 
+// 停止请求采用计数：每个 RequestStop 必须配对一个 Release/CancelStopRequest
 void LocalMapping::RequestStop()
 {
     {
         unique_lock<mutex> lock(mMutexStop);
+        ++mnStopRequests;
         mbStopRequested.store(true);
     }
     mbAbortBA.store(true);
@@ -784,12 +783,22 @@ void LocalMapping::RequestStop()
 
 void LocalMapping::CancelStopRequest()
 {
+    // 请求方放弃等待：与 Release 相同，只撤销自己那一份请求
+    Release();
+}
+
+void LocalMapping::ReleaseAll()
+{
+    // 强制清除所有停止请求（仅用于 Reset / Shutdown 等需要无条件唤醒建图线程的路径）
     {
         unique_lock<mutex> lock(mMutexStop);
-        mbStopRequested.store(false);
+        unique_lock<mutex> lock2(mMutexFinish);
+        if(mbFinished)
+            return;
+        mnStopRequests = 0;
         mbStopped.store(false);
+        mbStopRequested.store(false);
     }
-    // 若 LM 已陷入 Stopped 态的 cv 等待，需唤醒它以观察取消后的状态
     NotifyEvent();
 }
 
@@ -818,14 +827,18 @@ bool LocalMapping::isStopped()
     return mbStopped.load();
 }
 
-bool LocalMapping::WaitForStopped()
+bool LocalMapping::WaitForStopped(int timeoutMs)
 {
     if (isStopped()) return true;
     std::unique_lock<std::mutex> lock(mMutexEvent);
-    mCvEvent.wait(lock, [this]{
+    auto pred = [this]{
         return mbStopped.load(std::memory_order_acquire) ||
                mbFinishRequested.load(std::memory_order_acquire);
-    });
+    };
+    if(timeoutMs < 0)
+        mCvEvent.wait(lock, pred);
+    else
+        mCvEvent.wait_for(lock, std::chrono::milliseconds(timeoutMs), pred);
     return isStopped();
 }
 
@@ -842,8 +855,13 @@ void LocalMapping::Release()
         unique_lock<mutex> lock2(mMutexFinish);
         if(mbFinished)
             return;
-        mbStopped.store(false);
-        mbStopRequested.store(false);
+        if(mnStopRequests > 0)
+            --mnStopRequests;
+        if(mnStopRequests == 0)
+        {
+            mbStopped.store(false);
+            mbStopRequested.store(false);
+        }
     }
     // 事件通知在两把锁释放后进行（mMutexEvent 下 notify，确保可见性与不丢唤醒）
     NotifyEvent();
@@ -1000,7 +1018,11 @@ void LocalMapping::ResetIfRequested()
     unique_lock<mutex> lock(mMutexReset);
     if(mbResetRequested.load())
     {
-        mlNewKeyFrames.clear();
+        {
+            // 跟踪线程在 mMutexNewKFs 下 push_back，清空必须持同一把锁。锁序 mMutexReset -> mMutexNewKFs，无反向嵌套
+            unique_lock<mutex> lockQ(mMutexNewKFs);
+            mlNewKeyFrames.clear();
+        }
         mlpRecentAddedMapPoints.clear();
         mbResetRequested=false;
         {
@@ -1011,11 +1033,12 @@ void LocalMapping::ResetIfRequested()
     }
 }
 
-void LocalMapping::WaitForResetComplete()
+bool LocalMapping::WaitForResetComplete()
 {
     unique_lock<mutex> lock(mMutexResetComplete);
-    mCvResetComplete.wait_for(lock, std::chrono::milliseconds(ORB_SLAM2::RESET_COMPLETE_TIMEOUT_MS), [this]{ return mbResetComplete; });
+    const bool bDone = mCvResetComplete.wait_for(lock, std::chrono::milliseconds(ORB_SLAM2::RESET_COMPLETE_TIMEOUT_MS), [this]{ return mbResetComplete; });
     mbResetComplete = false;
+    return bDone;
 }
 
 void LocalMapping::RequestFinish()
@@ -1064,7 +1087,7 @@ void LocalMapping::CheckLimits()
         int nErased = 0;
 
         // 获取局部关键帧（当前的邻居）以保护它们
-        set<KeyFrame*> spLocalKFs;
+        KeyFrameSet spLocalKFs;
         vector<KeyFrame*> vpLocalKFs = mpCurrentKeyFrame->GetVectorCovisibleKeyFrames();
         for(size_t i=0; i<vpLocalKFs.size(); i++) spLocalKFs.insert(vpLocalKFs[i]);
         spLocalKFs.insert(mpCurrentKeyFrame);
@@ -1102,7 +1125,7 @@ void LocalMapping::CheckLimits()
         int nErasedMP = 0;
 
         // 获取当前帧观测到的地图点以保护它们
-        set<MapPoint*> spLocalMPs;
+        MapPointSet spLocalMPs;
         if(mpCurrentKeyFrame) {
              vector<MapPoint*> currentMPs = mpCurrentKeyFrame->GetMapPointMatches();
              for(auto mp : currentMPs) if(mp) spLocalMPs.insert(mp);

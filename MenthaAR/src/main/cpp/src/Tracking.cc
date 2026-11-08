@@ -334,7 +334,6 @@ void ORB_SLAM2::Tracking::BindLoadedMapPointsUsingSnapshots()
         MapPoint* pMP = (*refMPs)[c.refIdx];
         if(pMP && !pMP->isBad()){
             mCurrentFrame.mvpMapPoints[c.frameIdx] = pMP;
-            pMP->mbMatchedInCurrentFrame = true;
             frameUsed[c.frameIdx] = true;
             projBinds++;
         }
@@ -379,8 +378,9 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
         if(p->mbFromLoadedMap) hasLoaded = true;
         candidates.push_back(p);
     }
+    // 存在加载点时仅缓存加载点，否则缓存当前地图自身的点
+    // 该缓存是 KFDB 候选失败后的降级重定位与对齐后投影绑定的数据来源，置空会导致跟踪丢失后难以恢复
     if(hasLoaded) {
-        // 存在加载点时仅缓存加载点
         size_t kept = 0;
         for(MapPoint* p : candidates) {
             if(p->mbFromLoadedMap) candidates[kept++] = p;
@@ -462,9 +462,7 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
         mRefGrid = std::move(newGrid); // 一并原子更新网格
     }
 
-    // 通知后台线程参考缓存已就绪
-    mSnapSeqProduced++;
-    mCvReloc.notify_all();
+    // 不再自增 mSnapSeqProduced：构建发生在后台线程处理某个快照的过程中，构建完成后该次迭代会继续匹配
     mRefBuilding.store(false);
 }
 
@@ -1062,8 +1060,6 @@ void Tracking::Track()
         // 仅支持单目初始化
         MonocularInitialization();
 
-        mpFrameDrawer->Update(this);
-
         if (mState != OK)
             return;
     }
@@ -1199,7 +1195,6 @@ void Tracking::Track()
         }
 
         // 更新绘制器
-        mpFrameDrawer->Update(this);
 
         // 如果跟踪良好，检查是否插入关键帧
         if(bOK)
@@ -1603,8 +1598,6 @@ void Tracking::CreateInitialMapMonocular()
 
     mLastFrame = Frame(mCurrentFrame);
 
-    mpMap->SetReferenceMapPoints(mvpLocalMapPoints);
-
     //mpMapDrawer->SetCurrentCameraPose(pKFcur->GetPose());
 
     pKFini->SetOrigin(true);
@@ -1786,8 +1779,6 @@ bool Tracking::TrackWithMotionModel()
 bool Tracking::TrackLocalMap()
 {
     UpdateLocalMap();
-    // 在新匹配前清除匹配标志
-    for(MapPoint* p : mvpLocalMapPoints){ if(p) p->mbMatchedInCurrentFrame = false; }
 
     // 等待SLAM建立一定规模的新地图（稳定）后，再尝试混合已加载的地图点。
     if((int)mvpLocalMapPoints.size()<LOCAL_MAP_SUPPLEMENT_TRIGGER)
@@ -1947,7 +1938,6 @@ bool Tracking::TrackLocalMap()
                                 if(refMPsStrong && i < refMPsStrong->size()) pBind = (*refMPsStrong)[i];
                                 if(pBind && !pBind->isBad()){
                                     mCurrentFrame.mvpMapPoints[bestIdx] = pBind;
-                                    pBind->mbMatchedInCurrentFrame = true;
                                     strongBinds++;
                                     if(strongBinds >= mCfgMaxProjBinds) break;
                                 }
@@ -2017,7 +2007,6 @@ bool Tracking::TrackLocalMap()
             if(!mCurrentFrame.mvbOutlier[i])
             {
                 mCurrentFrame.mvpMapPoints[i]->IncreaseFound();
-                mCurrentFrame.mvpMapPoints[i]->mbMatchedInCurrentFrame = true;
                 if(mCurrentFrame.mvpMapPoints[i]->mbFromLoadedMap){
                     mnLoadedMapInliers++;
                     if(mCurrentFrame.mvpMapPoints[i]->mnMapId == curMapIdForCount)
@@ -2039,18 +2028,12 @@ bool Tracking::TrackLocalMap()
         }
     }
 
-    // 进一步确保：当前帧中来自已加载地图且非外点的匹配，统一标记为本帧已匹配
-    for(int i=0; i<mCurrentFrame.N; ++i)
-    {
-        MapPoint* p = mCurrentFrame.mvpMapPoints[i];
-        if(!p) continue;
-        if(mCurrentFrame.mvbOutlier[i]) continue;
-        if(p->mbFromLoadedMap) p->mbMatchedInCurrentFrame = true;
-    }
-
     if(mbHaveMapAlign){
         if(mnLoadedMapInliersCurMap < RELOC_KEEP_ALIGN_MIN_CURMAP_INLIERS) {
-            ClearMapAlignment();
+            // 连续低于阈值超过宽限帧数才丢弃对齐；单帧转出覆盖区不清对齐
+            if(++mNoCurMapLoadedInliersFrames > RELOC_KEEP_ALIGN_GRACE_FRAMES) {
+                ClearMapAlignment();
+            }
         } else {
             mNoCurMapLoadedInliersFrames = 0;
         }
@@ -2359,7 +2342,6 @@ void Tracking::SearchLocalPoints()
 void Tracking::UpdateLocalMap()
 {
     // 这是为了可视化
-    mpMap->SetReferenceMapPoints(mvpLocalMapPoints);
 
     // 更新
     UpdateLocalKeyFrames();
@@ -2418,8 +2400,7 @@ void Tracking::UpdateLocalPoints()
 void Tracking::UpdateLocalKeyFrames()
 {
     // 每个地图点都会投票给观察到它的关键帧
-    unordered_map<KeyFrame*,int> keyframeCounter;
-    keyframeCounter.reserve(256);
+    KeyFrameMap<int> keyframeCounter;
     for(int i=0; i<mCurrentFrame.N; i++)
     {
         if(mCurrentFrame.mvpMapPoints[i])
@@ -2641,7 +2622,7 @@ bool Tracking::Relocalization()
             {
                 Tcw.copyTo(mCurrentFrame.mTcw);
 
-                set<MapPoint*> sFound;
+                MapPointSet sFound;
 
                 const int np = vbInliers.size();
 
@@ -2744,7 +2725,7 @@ bool Tracking::Relocalization()
             // matchables 由树持有，不可 delete
             std::shared_ptr<HBSTTree> treeFrame = mCurrentFrame.GetHBSTTree();
             if(!treeFrame)
-                return false; // 不可达：上方已确认 mCurrentFrame.mDescriptors 非空
+                return false; // 不可达：上方已保证 mCurrentFrame.mDescriptors 非空
 
             HBSTTree::MatchVector treeMatches;
             pTree->match(treeFrame->matchables(), treeMatches, HBST_MATCH_MAX_DIST);
@@ -2804,7 +2785,6 @@ bool Tracking::Relocalization()
                                         MapPoint* pMP = (*refMPs)[r];
                                         if(pMP && !pMP->isBad()) {
                                             mCurrentFrame.mvpMapPoints[q] = pMP;
-                                            pMP->mbMatchedInCurrentFrame = true;
                                         }
                                     }
                                 }
@@ -2869,7 +2849,7 @@ bool Tracking::Relocalization()
             }
             else if(pTargetMap)
             {
-                mnCurrentMapId = (int)pTargetMap->mnId;
+                // 同一子地图内重定位不改变当前地图标识：此处若赋 Map::mnId，会与加载点的地图 id 不一致，使投影绑定与本图加载点统计失效；当前地图 id 交由对齐结果维护
             }
         }
         return true;

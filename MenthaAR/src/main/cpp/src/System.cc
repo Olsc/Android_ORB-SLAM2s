@@ -127,7 +127,7 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
         {
             // 如果 LM 正处于 Stopped 状态等待 Release，需要先唤醒它，否则 RequestReset 设置的标志永远不会被 LM 读取到。
             if (mpLocalMapper) {
-                mpLocalMapper->Release();
+                mpLocalMapper->ReleaseAll();
             }
 
             if(mbResetKeepMap) {
@@ -150,6 +150,24 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
     mTrackedKeyPointsUn = mpTracker->mCurrentFrame.mvKeysUn;
 #endif
     return Tcw;
+}
+
+bool System::WaitForBackendIdle(int timeoutMs)
+{
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeoutMs);
+    for(;;)
+    {
+        // 两个线程都空闲后再确认一次，避免 LM 刚把关键帧投递给 LC 的瞬间被误判为空闲
+        if(mpLocalMapper->IsIdle() && mpLoopCloser->IsIdle())
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            if(mpLocalMapper->IsIdle() && mpLoopCloser->IsIdle())
+                return true;
+        }
+        if(std::chrono::steady_clock::now() > deadline)
+            return false;
+        std::this_thread::sleep_for(std::chrono::microseconds(200));
+    }
 }
 
 bool System::MapChanged()
@@ -297,11 +315,11 @@ void System::RetireSubmap(Map* pOldMap)
     const vector<MapPoint*> vpOwnMPs = pOldMap->GetAllMapPoints();
 
     // 归属判定用容器成员关系及 GetMap() 双重校验（点/帧是否属于本图）
-    std::set<KeyFrame*> spDyingKFs(vpKFs.begin(), vpKFs.end());
-    std::set<MapPoint*> spOwnMPs(vpOwnMPs.begin(), vpOwnMPs.end());
+    KeyFrameSet spDyingKFs(vpKFs.begin(), vpKFs.end());
+    MapPointSet spOwnMPs(vpOwnMPs.begin(), vpOwnMPs.end());
 
     // 先剥离存活地图点对本图 KF 的观测（迁移点、跨图回环融合产物），否则先删 KF 会留下悬挂观测指针，后续法线/坏点判定将解引用已释放内存
-    std::set<MapPoint*> spForeignSeen;
+    MapPointSet spForeignSeen;
     for (size_t i = 0; i < vpKFs.size(); ++i) {
         KeyFrame* pKF = vpKFs[i];
         if (!pKF) continue;
@@ -312,15 +330,15 @@ void System::RetireSubmap(Map* pOldMap)
             if (!pForeign || spOwnMPs.count(pForeign) || pForeign->GetMap() == pOldMap || !spForeignSeen.insert(pForeign).second)
                 continue;
 
-            // 预先存在的坏点不碰不删，只回收因本次剥离而退役的对象
+            // 预先存在的坏点不碰不删，只回收剥离过程中退役的对象
             const bool bWasBad = pForeign->isBad();
             if (bWasBad)
                 continue;
 
             // 预收集该点在本图 KF 上的全部观测（GetObservations 返回值拷贝，之后不再遍历其内部状态，规避摘除过程中的对象状态变化）
             vector<KeyFrame*> vObsToErase;
-            const map<KeyFrame*, size_t> obs = pForeign->GetObservations();
-            for (map<KeyFrame*, size_t>::const_iterator it = obs.begin(); it != obs.end(); ++it) {
+            const KeyFrameMap<size_t> obs = pForeign->GetObservations();
+            for (KeyFrameMap<size_t>::const_iterator it = obs.begin(); it != obs.end(); ++it) {
                 if (spDyingKFs.count(it->first))
                     vObsToErase.push_back(it->first);
             }
@@ -332,7 +350,7 @@ void System::RetireSubmap(Map* pOldMap)
     }
 
     // 再置空存活 KF 匹配数组中对本图点的残留引用（NULL 为数组合法状态），被改动的 KF 记录下来，最后重算共视连接
-    std::set<KeyFrame*> spTouchedSurvivorKFs;
+    KeyFrameSet spTouchedSurvivorKFs;
     for (size_t m = 0; m < mvpMaps.size(); ++m) {
         Map* pMap = mvpMaps[m];
         if (!pMap || pMap == pOldMap)
@@ -362,7 +380,7 @@ void System::RetireSubmap(Map* pOldMap)
     pOldMap->clear();
 
     // 重算被改动幸存 KF 的共视连接，剔除指向已删除对象的死边
-    for (std::set<KeyFrame*>::iterator it = spTouchedSurvivorKFs.begin();
+    for (KeyFrameSet::iterator it = spTouchedSurvivorKFs.begin();
          it != spTouchedSurvivorKFs.end(); ++it) {
         (*it)->UpdateConnections();
     }
@@ -380,7 +398,7 @@ void System::CreateNewMap()
         mpLocalMapper->InterruptBA();
         mpLocalMapper->ClearQueues();
         // 释放 LM 线程
-        mpLocalMapper->Release();
+        mpLocalMapper->ReleaseAll();
     }
 
     // 清空 LoopClosing 的回环关键帧队列（旧 Map 的 KF），避免对新空 Map 做 CorrectLoop。
@@ -405,25 +423,38 @@ void System::CreateNewMap()
     }
 
     // 5. 创建新 Map 并切换
+    // 已加载地图点可能位于任一子地图（切图后不再跟随 mpMap），需从全部子地图收集并迁出
     std::vector<MapPoint*> savedLoadedMPs;
     {
-        std::vector<MapPoint*> allMPs = mpMap->GetAllMapPoints();
-        for(MapPoint* p : allMPs) {
-            if(p && !p->isBad() && p->mbFromLoadedMap) {
-                savedLoadedMPs.push_back(p);
-                mpMap->EraseMapPoint(p, false);
+        for(Map* pMap : mvpMaps) {
+            if(!pMap) continue;
+            std::vector<MapPoint*> allMPs = pMap->GetAllMapPoints();
+            for(MapPoint* p : allMPs) {
+                if(p && !p->isBad() && p->mbFromLoadedMap) {
+                    savedLoadedMPs.push_back(p);
+                    pMap->EraseMapPoint(p, false);
+                }
             }
         }
         if(!savedLoadedMPs.empty()) {
-            LOGD("System::CreateNewMap 从旧地图移出 %d 个已加载地图点（待迁移到新地图）",
+            LOGD("System::CreateNewMap 从子地图移出 %d 个已加载地图点（待迁移到新地图）",
                  (int)savedLoadedMPs.size());
         }
     }
 
     // 限制子地图总数，超出时删除最旧的地图（id=0 的初始地图不删）
     if ((int)mvpMaps.size() >= MAX_SUBMAP_COUNT) {
+        // 逐出前必须确认 LM 已完全退出当前 LocalBundleAdjustment：
+        // SetAcceptKeyFrames/InterruptBA/ClearQueues 只置标志与清队列，不保证 BA 已返回
+        bool bLmIdle = true;
+        if (mpLocalMapper) {
+            mpLocalMapper->RequestReset();
+            bLmIdle = mpLocalMapper->WaitForResetComplete();
+            if (!bLmIdle)
+                LOGD("System::CreateNewMap 等待 LM 退出 BA 超时，本轮跳过子地图逐出");
+        }
         // 找出最旧的非 id=0 地图并完整拆除
-        for (size_t i = 1; i < mvpMaps.size(); ++i) {
+        for (size_t i = 1; bLmIdle && i < mvpMaps.size(); ++i) {
             if (mvpMaps[i] && mvpMaps[i] != mpMap) {
                 LOGD("System::CreateNewMap 子地图数=%zu 达上限=%d，完整拆除旧地图 id=%lu",
                      mvpMaps.size(), MAX_SUBMAP_COUNT, mvpMaps[i]->mnId);
@@ -480,6 +511,9 @@ void System::CreateNewMap()
 
 void System::SwitchToMap(Map* pMap)
 {
+    // 切图前先把已加载地图点带到目标地图：重定位缓存与投影绑定都只读取当前地图的点集
+    MigrateLoadedMapPoints(pMap);
+
     mpMap = pMap;
     if(mpTracker) {
         mpTracker->SetMap(pMap);
@@ -488,6 +522,29 @@ void System::SwitchToMap(Map* pMap)
     if(mpLocalMapper) mpLocalMapper->SetMap(pMap);
     if(mpLoopCloser) mpLoopCloser->SetMap(pMap);
     if(mpFrameDrawer) mpFrameDrawer->SetMap(pMap);
+}
+
+void System::MigrateLoadedMapPoints(Map* pTarget)
+{
+    if(!pTarget) return;
+
+    std::vector<std::pair<Map*, MapPoint*>> toMove;
+    for(Map* pMap : mvpMaps) {
+        if(!pMap || pMap == pTarget) continue;
+        std::vector<MapPoint*> vpMPs = pMap->GetAllMapPoints();
+        for(MapPoint* p : vpMPs) {
+            if(p && !p->isBad() && p->mbFromLoadedMap) toMove.emplace_back(pMap, p);
+        }
+    }
+    if(toMove.empty()) return;
+
+    for(auto& item : toMove) {
+        item.first->EraseMapPoint(item.second, false);
+        pTarget->AddMapPoint(item.second);
+    }
+    LOGD("System::MigrateLoadedMapPoints 迁移 %d 个已加载地图点到地图 ID=%lu",
+         (int)toMove.size(), pTarget->mnId);
+    if(mpTracker) mpTracker->InvalidateRefCache();
 }
 
 cv::Mat System::GetMapAlignedPose(const cv::Mat &TcwSlam)
@@ -695,7 +752,7 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
     }
 
     // 注意：不完全清空KeyFrameDatabase，保留当前扫描建立的关键帧
-    // mpKeyFrameDatabase->clear(); // 暂时注释，避免影响当前跟踪
+    // mpKeyFrameDatabase->clear(); // 清空会丢失当前扫描建立的关键帧，故保留
 
     // 调整重定位配置以提高加载地图后的跟踪稳定性
     mpTracker->SetRelocConfig(SYSTEM_RELOC_CONFIG_TOP_K, SYSTEM_RELOC_CONFIG_MAX_CANDIDATES, SYSTEM_RELOC_CONFIG_MATCH_CHUNK, SYSTEM_RELOC_CONFIG_BG_SLEEP_US, SYSTEM_RELOC_CONFIG_MAX_BIND_INLIERS, SYSTEM_RELOC_CONFIG_MAX_PROJ_BINDS);
@@ -769,7 +826,7 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
 
     // 确保仍处于SLAM建图模式（不是仅定位），继续正常扫描与建图
     if(mpTracker) mpTracker->InformOnlyTracking(false);
-    if(mpLocalMapper) mpLocalMapper->Release();
+    if(mpLocalMapper) mpLocalMapper->ReleaseAll();
 
     LOGD("加载地图: 完成 KF=%lu MP=%lu",
          mpMap->KeyFramesInMap(), mpMap->MapPointsInMap());

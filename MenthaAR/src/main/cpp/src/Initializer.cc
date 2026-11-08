@@ -86,34 +86,23 @@ bool Initializer::Initialize(const Frame &CurrentFrame, const vector<int> &vMatc
     // 最小集选择的索引
     vector<size_t> vAllIndices;
     vAllIndices.reserve(N);
-    vector<size_t> vAvailableIndices;
 
     for(int i=0; i<N; i++)
     {
         vAllIndices.push_back(i);
     }
 
-    // 生成每次迭代的最小样本集
+    // 生成每次迭代的最小样本集（交换-恢复抽样，与逐次拷贝数组的实现产生相同样本）
     mvSets = vector< vector<size_t> >(mMaxIterations,vector<size_t>(INITIALIZER_RANSAC_MIN_SET,0));
 
     LCG lcg(0);
 
     for(int it=0; it<mMaxIterations; it++)
-    {
-        vAvailableIndices = vAllIndices;
+        SampleWithoutReplacement(lcg, vAllIndices, INITIALIZER_RANSAC_MIN_SET, mvSets[it].data());
 
-        // 选择最小集
-        for(size_t j=0; j<INITIALIZER_RANSAC_MIN_SET; j++)
-        {
-            int randi = lcg.randomInt(0, vAvailableIndices.size()-1);
-            int idx = vAvailableIndices[randi];
-
-            mvSets[it][j] = idx;
-
-            vAvailableIndices[randi] = vAvailableIndices.back();
-            vAvailableIndices.pop_back();
-        }
-    }
+    // 两个线程都要用同一组归一化坐标：在这里算一次，FindHomography/FindFundamental 只读
+    Normalize(mvKeys1, mvPn1, mT1);
+    Normalize(mvKeys2, mvPn2, mT2);
 
     // 启动线程并行计算基础矩阵和单应性矩阵
     vector<bool> vbMatchesInliersH, vbMatchesInliersF;
@@ -143,12 +132,11 @@ void Initializer::FindHomography(vector<bool> &vbMatchesInliers, float &score, c
 {
     const int N = mvMatches12.size();
 
-    // 归一化坐标
-    vector<cv::Point2f> vPn1, vPn2;
-    cv::Mat T1, T2;
-    Normalize(mvKeys1,vPn1, T1);
-    Normalize(mvKeys2,vPn2, T2);
-    cv::Mat T2inv = T2.inv();
+    // 归一化坐标（Initialize 中已算好，两线程共享只读）
+    const vector<cv::Point2f>& vPn1 = mvPn1;
+    const vector<cv::Point2f>& vPn2 = mvPn2;
+    const cv::Mat& T1 = mT1;
+    cv::Mat T2inv = mT2.inv();
 
     // 最佳结果变量
     score = 0.0;
@@ -182,15 +170,15 @@ void Initializer::FindHomography(vector<bool> &vbMatchesInliers, float &score, c
         H21i = T2inv*Hn*T1;
         H12i = H21i.inv();
 
-        currentScore = CheckHomography(H21i, H12i, vbCurrentInliers, mSigma);
+        int nCurrentInliers = 0;
+        currentScore = CheckHomography(H21i, H12i, vbCurrentInliers, mSigma, nCurrentInliers);
 
         if(currentScore>score)
         {
             H21 = H21i.clone();
-            vbMatchesInliers = vbCurrentInliers;
+            vbMatchesInliers.swap(vbCurrentInliers); // 下一轮 Check* 会整份重写 vbCurrentInliers
             score = currentScore;
-            nInlierBest = 0;
-            for(int i=0; i<N; ++i) if(vbMatchesInliers[i]) nInlierBest++;
+            nInlierBest = nCurrentInliers;
         }
 
         // 自适应提前终止：内点率足够高时按标准公式估算剩余需求
@@ -211,14 +199,14 @@ void Initializer::FindHomography(vector<bool> &vbMatchesInliers, float &score, c
 
 void Initializer::FindFundamental(vector<bool> &vbMatchesInliers, float &score, cv::Mat &F21)
 {
-    const int N = vbMatchesInliers.size();
+    // 传入的 vbMatchesInliers 是空向量
+    const int N = mvMatches12.size();
 
-    // 归一化坐标
-    vector<cv::Point2f> vPn1, vPn2;
-    cv::Mat T1, T2;
-    Normalize(mvKeys1,vPn1, T1);
-    Normalize(mvKeys2,vPn2, T2);
-    cv::Mat T2t = T2.t();
+    // 归一化坐标（Initialize 中已算好，两线程共享只读）
+    const vector<cv::Point2f>& vPn1 = mvPn1;
+    const vector<cv::Point2f>& vPn2 = mvPn2;
+    const cv::Mat& T1 = mT1;
+    cv::Mat T2t = mT2.t();
 
     // 最佳结果变量
     score = 0.0;
@@ -252,15 +240,15 @@ void Initializer::FindFundamental(vector<bool> &vbMatchesInliers, float &score, 
 
         F21i = T2t*Fn*T1;
 
-        currentScore = CheckFundamental(F21i, vbCurrentInliers, mSigma);
+        int nCurrentInliers = 0;
+        currentScore = CheckFundamental(F21i, vbCurrentInliers, mSigma, nCurrentInliers);
 
         if(currentScore>score)
         {
             F21 = F21i.clone();
-            vbMatchesInliers = vbCurrentInliers;
+            vbMatchesInliers.swap(vbCurrentInliers);
             score = currentScore;
-            nInlierBest = 0;
-            for(int i=0; i<N; ++i) if(vbMatchesInliers[i]) nInlierBest++;
+            nInlierBest = nCurrentInliers;
         }
 
         if(it >= INITIALIZER_ADAPTIVE_START_ITER && nInlierBest > 0)
@@ -355,9 +343,10 @@ cv::Mat Initializer::ComputeF21(const vector<cv::Point2f> &vP1,const vector<cv::
     return u * cv::Mat::diag(w) * vt;
 }
 
-float Initializer::CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vector<bool> &vbMatchesInliers, float sigma)
+float Initializer::CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vector<bool> &vbMatchesInliers, float sigma, int &nInliers)
 {
     const int N = mvMatches12.size();
+    nInliers = 0;
 
     const float h11 = H21.at<float>(0,0);
     const float h12 = H21.at<float>(0,1);
@@ -401,8 +390,8 @@ float Initializer::CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vecto
 
         // x2in1 = H12*x2
         const float w2in1 = h31inv*u2 + h32inv*v2 + h33inv;
-        // 正深度判定：退化/无穷远点直接拒绝
-        if (w2in1 <= 0.0f)
+        // 只排除无穷远点（w=0）。SVD 零空间向量的符号是任意的：取到 -H 时所有 w 都为负，按 w<=0 拒绝会让约一半的假设得 0 分；下方的平方判据本身与符号无关，正深度检查在 CheckRT 中完成
+        if (w2in1 == 0.0f)
         {
             vbMatchesInliers[i] = false;
             continue;
@@ -423,7 +412,7 @@ float Initializer::CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vecto
 
         // x1in2 = H21*x1
         const float w1in2 = h31*u1 + h32*v1 + h33;
-        if (w1in2 <= 0.0f)
+        if (w1in2 == 0.0f)
         {
             vbMatchesInliers[i] = false;
             continue;
@@ -448,14 +437,16 @@ float Initializer::CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vecto
         const float squareDist2 = squareDist2_w2 * (inv_w1in2 * inv_w1in2);
         score += th * 2.0f - (squareDist1 + squareDist2) * invSigmaSquare;
         vbMatchesInliers[i] = true;
+        nInliers++;
     }
 
     return score;
 }
 
-float Initializer::CheckFundamental(const cv::Mat &F21, vector<bool> &vbMatchesInliers, float sigma)
+float Initializer::CheckFundamental(const cv::Mat &F21, vector<bool> &vbMatchesInliers, float sigma, int &nInliers)
 {
     const int N = mvMatches12.size();
+    nInliers = 0;
 
     const float f11 = F21.at<float>(0,0);
     const float f12 = F21.at<float>(0,1);
@@ -533,6 +524,7 @@ float Initializer::CheckFundamental(const cv::Mat &F21, vector<bool> &vbMatchesI
         const float squareDist2 = num1_sq / den1;
         score += thScore * 2.0f - (squareDist1 + squareDist2) * invSigmaSquare;
         vbMatchesInliers[i] = true;
+        nInliers++;
     }
 
     return score;
@@ -892,8 +884,6 @@ int Initializer::CheckRT(const cv::Mat &R, const cv::Mat &t, const vector<cv::Ke
     cv::Mat P1(3,4,CV_32F,cv::Scalar(0));
     K.copyTo(P1.rowRange(0,3).colRange(0,3));
 
-    cv::Mat O1 = cv::Mat::zeros(3,1,CV_32F);
-
     // 相机2投影矩阵K[R|t]
     cv::Mat P2(3,4,CV_32F);
     R.copyTo(P2.rowRange(0,3).colRange(0,3));
@@ -903,6 +893,12 @@ int Initializer::CheckRT(const cv::Mat &R, const cv::Mat &t, const vector<cv::Ke
     cv::Mat O2 = -R.t()*t;
     const float Q1[3] = {0.0f, 0.0f, 0.0f};
     const float Q2[3] = {O2.at<float>(0), O2.at<float>(1), O2.at<float>(2)};
+    const double O2x = Q2[0], O2y = Q2[1], O2z = Q2[2];
+
+    // R、t 取成 double 标量
+    const double r00 = R.at<float>(0,0), r01 = R.at<float>(0,1), r02 = R.at<float>(0,2), t0 = t.at<float>(0);
+    const double r10 = R.at<float>(1,0), r11 = R.at<float>(1,1), r12 = R.at<float>(1,2), t1 = t.at<float>(1);
+    const double r20 = R.at<float>(2,0), r21 = R.at<float>(2,1), r22 = R.at<float>(2,2), t2 = t.at<float>(2);
 
     int nGood=0;
 
@@ -913,68 +909,65 @@ int Initializer::CheckRT(const cv::Mat &R, const cv::Mat &t, const vector<cv::Ke
 
         const cv::KeyPoint &kp1 = vKeys1[vMatches12[i].first];
         const cv::KeyPoint &kp2 = vKeys2[vMatches12[i].second];
-        cv::Mat p3dC1;
+        float p3dC1[3];
 
-        // 闭式三角化：复用外层预计算的相机光心
+        // 闭式三角化（double 法方程）：复用外层预计算的相机光心
         if (!Converter::TriangulateWithCenters(P1, P2, Q1, Q2, kp1.pt.x, kp1.pt.y, kp2.pt.x, kp2.pt.y, p3dC1))
         {
             vbGood[vMatches12[i].first]=false;
             continue;
         }
 
-        if(!isfinite(p3dC1.at<float>(0)) || !isfinite(p3dC1.at<float>(1)) || !isfinite(p3dC1.at<float>(2)))
+        if(!isfinite(p3dC1[0]) || !isfinite(p3dC1[1]) || !isfinite(p3dC1[2]))
         {
             vbGood[vMatches12[i].first]=false;
             continue;
         }
 
-        // 检查视差
-        cv::Mat normal1 = p3dC1 - O1;
-        cv::Mat normal2 = p3dC1 - O2;
-        // 内联计算向量范数和点积
-        const float n1x = normal1.at<float>(0), n1y = normal1.at<float>(1), n1z = normal1.at<float>(2);
-        const float n2x = normal2.at<float>(0), n2y = normal2.at<float>(1), n2z = normal2.at<float>(2);
-        const float dist1Sq = n1x*n1x + n1y*n1y + n1z*n1z;
-        const float dist2Sq = n2x*n2x + n2y*n2y + n2z*n2z;
-        const float dotProd = n1x*n2x + n1y*n2y + n1z*n2z;
+        const double X = p3dC1[0], Y = p3dC1[1], Z = p3dC1[2];
 
-        float cosParallax = dotProd / sqrt(dist1Sq * dist2Sq);
-        float dist1 = sqrt(dist1Sq);
+        // 检查视差：相机 1 光心在原点，normal1 = X；normal2 = X - O2
+        const double n2x = X - O2x, n2y = Y - O2y, n2z = Z - O2z;
+        const double dist1Sq = X*X + Y*Y + Z*Z;
+        const double dist2Sq = n2x*n2x + n2y*n2y + n2z*n2z;
+        const double dotProd = X*n2x + Y*n2y + Z*n2z;
+
+        const float cosParallax = (float)(dotProd / std::sqrt(dist1Sq * dist2Sq));
 
         // 检查第一个相机前方的深度（仅当有足够的视差时，因为"无限远"点容易变为负深度）
-        if(p3dC1.at<float>(2)<=0 && cosParallax<INITIALIZER_PARALLAX_COS_TH)
+        if(Z<=0 && cosParallax<INITIALIZER_PARALLAX_COS_TH)
             continue;
 
-        // 检查第二个相机前方的深度（仅当有足够的视差时，因为"无限远"点容易变为负深度）
-        cv::Mat p3dC2 = R*p3dC1+t;
+        // 检查第二个相机前方的深度
+        const double X2 = r00*X + r01*Y + r02*Z + t0;
+        const double Y2 = r10*X + r11*Y + r12*Z + t1;
+        const double Z2 = r20*X + r21*Y + r22*Z + t2;
 
-        if(p3dC2.at<float>(2)<=0 && cosParallax<INITIALIZER_PARALLAX_COS_TH)
+        if(Z2<=0 && cosParallax<INITIALIZER_PARALLAX_COS_TH)
             continue;
 
         // 检查第一幅图像中的重投影误差
-        float im1x, im1y;
-        float invZ1 = 1.0/p3dC1.at<float>(2);
-        im1x = fx*p3dC1.at<float>(0)*invZ1+cx;
-        im1y = fy*p3dC1.at<float>(1)*invZ1+cy;
+        const double invZ1 = 1.0/Z;
+        const double im1x = fx*X*invZ1+cx;
+        const double im1y = fy*Y*invZ1+cy;
 
-        float squareError1 = (im1x-kp1.pt.x)*(im1x-kp1.pt.x)+(im1y-kp1.pt.y)*(im1y-kp1.pt.y);
+        const double squareError1 = (im1x-kp1.pt.x)*(im1x-kp1.pt.x)+(im1y-kp1.pt.y)*(im1y-kp1.pt.y);
 
         if(squareError1>th2)
             continue;
 
         // 检查第二幅图像中的重投影误差
-        float im2x, im2y;
-        float invZ2 = 1.0/p3dC2.at<float>(2);
-        im2x = fx*p3dC2.at<float>(0)*invZ2+cx;
-        im2y = fy*p3dC2.at<float>(1)*invZ2+cy;
+        const double invZ2 = 1.0/Z2;
+        const double im2x = fx*X2*invZ2+cx;
+        const double im2y = fy*Y2*invZ2+cy;
 
-        float squareError2 = (im2x-kp2.pt.x)*(im2x-kp2.pt.x)+(im2y-kp2.pt.y)*(im2y-kp2.pt.y);
+        const double squareError2 = (im2x-kp2.pt.x)*(im2x-kp2.pt.x)+(im2y-kp2.pt.y)*(im2y-kp2.pt.y);
 
         if(squareError2>th2)
             continue;
 
         vCosParallax.push_back(cosParallax);
-        vP3D[vMatches12[i].first] = cv::Point3f(p3dC1.at<float>(0),p3dC1.at<float>(1),p3dC1.at<float>(2));
+        vP3D[vMatches12[i].first] = cv::Point3f(p3dC1[0],p3dC1[1],p3dC1[2]);
         nGood++;
 
         if(cosParallax<INITIALIZER_PARALLAX_COS_TH)

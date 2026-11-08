@@ -64,7 +64,7 @@ Frame::Frame(const Frame &frame)
      mTimeStamp(frame.mTimeStamp), mK(frame.mK.clone()), mDistCoef(frame.mDistCoef.clone()),
      mbf(frame.mbf), mb(frame.mb), N(frame.N), mvKeys(frame.mvKeys),
      mvKeysUn(frame.mvKeysUn),
-     mDescriptors(frame.mDescriptors.clone()),
+     mDescriptors(frame.mDescriptors), // 描述子提取后只读，共享缓冲（引用计数）即可
      mvpMapPoints(frame.mvpMapPoints), mvbOutlier(frame.mvbOutlier), mnId(frame.mnId),
      mpReferenceKF(frame.mpReferenceKF), mnScaleLevels(frame.mnScaleLevels),
      mfScaleFactor(frame.mfScaleFactor), mfLogScaleFactor(frame.mfLogScaleFactor),
@@ -218,9 +218,10 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
 {
     pMP->mbTrackInView = false;
 
-    // 3D 绝对坐标
-    cv::Point3f p3f;
-    pMP->GetWorldPos(p3f);
+    // 位置、法向、最大距离一次加锁取出（常规点三者都要用；加载点只用位置）
+    cv::Point3f p3f, normal;
+    float maxDistance;
+    pMP->GetTrackingSnapshot(p3f, normal, maxDistance);
 
     // 优先计算相机坐标系中的深度 PcZ
     const float PcZ = mRcw_arr[6]*p3f.x + mRcw_arr[7]*p3f.y + mRcw_arr[8]*p3f.z + mtcw_arr[2];
@@ -254,15 +255,13 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
     int nPredictedLevel = 0;
     if(!pMP->mbFromLoadedMap)
     {
-        const float maxDistance = pMP->GetMaxDistanceInvariance();
-        const float minDistance = pMP->GetMinDistanceInvariance();
+        const float maxDistanceInv = pMP->GetMaxDistanceInvariance();
+        const float minDistanceInv = pMP->GetMinDistanceInvariance();
         // 先用距离平方判定
-        if(distSq < minDistance*minDistance || distSq > maxDistance*maxDistance)
+        if(distSq < minDistanceInv*minDistanceInv || distSq > maxDistanceInv*maxDistanceInv)
             return false;
 
         // 视角检查用平方乘积判定
-        cv::Point3f normal;
-        pMP->GetNormal(normal);
         const float dotVal = POx*normal.x + POy*normal.y + POz*normal.z;
         if(dotVal < 0.0f || dotVal*dotVal < viewingCosLimit*viewingCosLimit*distSq)
             return false;
@@ -270,8 +269,8 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
         const float dist = std::sqrt(distSq);
         viewCos = dotVal / dist;
 
-        // 预测图像中的尺度
-        nPredictedLevel = pMP->PredictScale(dist,this);
+        // 预测图像中的尺度（与 PredictScale(dist,this) 相同的公式，用快照中的 mfMaxDistance）
+        nPredictedLevel = MapPoint::PredictScaleFromMaxDist(maxDistance, dist, mvScaleFactors, mnScaleLevels);
     }
     else
     {

@@ -30,6 +30,8 @@ import com.orb.slam2s.slamar.NativeHelper;
 
 // SLAM 独立后台服务：在独立高优先级线程中执行单目特征提取与位姿跟踪
 // 姿态辅助融合也在本进程完成，App 只通过共享内存读取最终 AR 位姿
+// 由 AndroidManifest.xml 注册、系统在独立进程创建，IDE 无法识别该入口点
+@SuppressWarnings("unused")
 public class SlamService extends Service {
     private static final String TAG = "SlamService";
 
@@ -53,7 +55,6 @@ public class SlamService extends Service {
 
     // 帧共享内存(仅持有 fd，native 层 mmap 后直接读写 header/帧/点云)
     private ParcelFileDescriptor framePfd;
-    private final int[] frameStatus = new int[2];  // [0]=tracking, [1]=shouldDraw
 
     private final ISlamService.Stub binder = new ISlamService.Stub() {
         @Override
@@ -252,9 +253,18 @@ public class SlamService extends Service {
             queueLock.notifyAll();
         }
         if (slamThread != null) {
-            try {
-                slamThread.join(500);
-            } catch (InterruptedException ignored) {}
+            // 必须等处理线程真正退出：随后的 shutdownSLAM/detachFrameBuffer 会释放它正在使用的引擎与映射。
+            // 单帧处理是有界的（最多一帧跟踪 + 结果写回），不会无限等待
+            boolean interrupted = false;
+            while (true) {
+                try {
+                    slamThread.join();
+                    break;
+                } catch (InterruptedException e) {
+                    interrupted = true;
+                }
+            }
+            if (interrupted) Thread.currentThread().interrupt();
             slamThread = null;
         }
         synchronized (queueLock) {
@@ -263,21 +273,26 @@ public class SlamService extends Service {
     }
 
     private void processFrameInternal(int seq, int bufIndex, int w, int h) {
+        boolean processed = false;
         try {
-            // native 处理共享内存中的帧，并把 tracking/draw/MVP/点云/slamDoneSeq 写回共享内存
-            nativeHelper.processFrameSharedMem(bufIndex, seq, w, h, frameStatus);
+            // native 处理共享内存中的帧，把 tracking/点云写回共享内存、原始位姿写进共享缓冲；
+            // MVP 与 slamDoneSeq 由下面的发布一次性写出（App 端只会看到最终结果，不会先看到原始位姿再看到融合位姿）
+            nativeHelper.processFrameSharedMem(bufIndex, seq, w, h);
+            processed = true;
             publishArPose();
         } catch (Exception e) {
             Log.e(TAG, "处理共享内存帧异常: " + e.getMessage());
+            // 发布失败时仍要推进序号，否则 App 端背压会在两帧后永久停发
+            if (processed) {
+                try { nativeHelper.publishRawArPose(); } catch (Exception ignored) {}
+            }
         }
     }
 
-    // 读取原始位姿并融合后回写，App 端只会看到最终结果
+    // 读取原始位姿并融合后发布；融合关闭或不可用时直接发布原始位姿
     private void publishArPose() {
-        if (!poseFusion.isEnabled() || nativeHelper == null) {
-            return;
-        }
-        if (!nativeHelper.getArPose(rawPose, poseInfo)) {
+        if (!poseFusion.isEnabled() || nativeHelper == null || !nativeHelper.getArPose(rawPose, poseInfo)) {
+            if (nativeHelper != null) nativeHelper.publishRawArPose();
             return;
         }
         final boolean sensorReady = orientationSensor != null && orientationSensor.isReady();

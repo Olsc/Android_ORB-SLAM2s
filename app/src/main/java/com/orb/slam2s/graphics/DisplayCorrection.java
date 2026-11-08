@@ -128,6 +128,14 @@ public final class DisplayCorrection {
         return bx * displayWidth + ax;
     }
 
+    // 线性映射系数（供 native 帧转换按同一公式写预览位图）
+    public int ax() { return ax; }
+    public int ay() { return ay; }
+    public int cx() { return cx; }
+    public int bx() { return bx; }
+    public int by() { return by; }
+    public int cy() { return cy; }
+
     public static int normalizeRotation(int degrees) {
         int r = degrees % 360;
         if (r < 0) r += 360;

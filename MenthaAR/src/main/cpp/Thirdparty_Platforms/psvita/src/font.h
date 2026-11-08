@@ -15,4 +15,4 @@ typedef struct PsvDebugScreenFont {
 
 extern PsvDebugScreenFont psvDebugScreenFont;
 
-#endif /* MENTHAAR_PSVITA_FONT_H */
+#endif // MENTHAAR_PSVITA_FONT_H

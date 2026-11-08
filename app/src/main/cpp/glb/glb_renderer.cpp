@@ -161,8 +161,7 @@ GLuint compileShader(GLenum type, const char* source) {
     }
     return shader;
 }
-
-} // anonymous namespace
+} // 匿名命名空间
 
 GlbRenderer::GlbRenderer() = default;
 
@@ -438,4 +437,26 @@ void GlbRenderer::destroyGL() {
         mProgram = 0;
     }
     mIsGLReady = false;
+}
+
+void GlbRenderer::onContextLost() {
+    // 不可调用 glDeleteProgram：旧上下文已不存在，旧名称也不再有意义
+    mProgram = 0;
+    mIsGLReady = false;
+    mLocPosition = -1;
+    mLocNormal = -1;
+    mLocTexCoord = -1;
+    mLocMVPMatrix = -1;
+    mLocModelMatrix = -1;
+    mLocNormalMatrix = -1;
+    mLocTexture = -1;
+    mLocHasTexture = -1;
+    mLocBaseColor = -1;
+    mLocLightDir = -1;
+    mLocShadowTint = -1;
+    mLocRimColor = -1;
+    mLocCameraPos = -1;
+    if (mModel) {
+        mModel->onContextLost();
+    }
 }

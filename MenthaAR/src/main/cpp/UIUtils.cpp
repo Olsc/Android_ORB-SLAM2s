@@ -26,6 +26,7 @@
 #include "UIUtils.h"
 #include "Matrix.h"
 #include "include/Config.h"
+#include "include/Random.h"
 
 // 使用 RANSAC 从 3D 地图点中检测平面，选择中值距离最小的模型
 Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &vMPs, const int iterations)
@@ -59,7 +60,6 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
     // 准备 RANSAC 所需的索引数组
     vector<size_t> vAllIndices;
     vAllIndices.reserve(N);
-    vector<size_t> vAvailableIndices;
 
     for(int i=0; i<N; i++)
     {
@@ -71,22 +71,13 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
     vector<float> vDistances(N);
     vector<float> vSorted(N);
 
-    // RANSAC 迭代：寻找最佳平面模型
+    // RANSAC 迭代：寻找最佳平面模型。随机源用与引擎相同的 LCG（rand() 是全局状态且非线程安全）
+    ORB_SLAM2::LCG lcg(0);
     for(int n=0; n<iterations; n++)
     {
-        vAvailableIndices = vAllIndices;
-
         // 随机选择 3 个点拟合平面
-        int idx[3];
-        for(short i = 0; i < 3; ++i)
-        {
-            int randi = rand() % vAvailableIndices.size();
-            idx[i] = vAvailableIndices[randi];
-
-            // 移除已选点，避免重复
-            vAvailableIndices[randi] = vAvailableIndices.back();
-            vAvailableIndices.pop_back();
-        }
+        size_t idx[3];
+        ORB_SLAM2::SampleWithoutReplacement(lcg, vAllIndices, 3, idx);
 
         // 三点定面闭式解，共线退化时范数趋零直接拒绝
         const cv::Point3f &p1 = vPoints[idx[0]];
@@ -117,13 +108,18 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
         std::nth_element(vSorted.begin(), vSorted.begin() + nth, vSorted.end());
         const float medianDist = vSorted[nth];
 
-        // 保存中值距离最小的模型
+        // 保存中值距离最小的模型（交换缓冲；下一轮会整份重写 vDistances）
         if(medianDist<bestDist)
         {
             bestDist = medianDist;
-            bestvDist = vDistances;
+            bestvDist.swap(vDistances);
+            if((int)vDistances.size()!=N) vDistances.resize(N);
         }
     }
+
+    // 所有采样都因三点共线被跳过时没有任何模型，下面的 bestvDist[i] 会越界
+    if(bestvDist.empty())
+        return nullptr;
 
     // 内点阈值 = 最佳中值距离 * PLANE_INLIER_TH_RATIO
     const float th = ORB_SLAM2::PLANE_INLIER_TH_RATIO*bestDist;

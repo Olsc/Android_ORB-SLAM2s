@@ -30,12 +30,15 @@ add_library(glb_renderer SHARED
     src/main/cpp/glb/glb_model.cpp
     src/main/cpp/glb/glb_renderer.cpp
     src/main/cpp/glb/glb_jni.cpp
+    # 相机帧单次遍历转换（灰度 → 共享内存，ARGB → 预览位图）
+    src/main/cpp/frame/frame_convert_jni.cpp
 )
 
 target_link_libraries(glb_renderer
     GLESv2
     EGL
     android
+    jnigraphics
     log
     m
 )

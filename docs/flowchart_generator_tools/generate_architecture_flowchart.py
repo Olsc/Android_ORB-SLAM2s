@@ -9,23 +9,21 @@ if os.path.isdir(_env_bin):
     os.environ['PATH'] = _env_bin + os.pathsep + os.environ.get('PATH', '')
 
 def generate_flowchart(lang='en'):
-    """
-    生成指定语言（'en' 或 'zh'）的流程图。
-    """
-    
+    """生成指定语言的流程图（'en' 或 'zh'）。"""
+
     # 本地化字符串辅助函数
     def t(en_text, zh_text):
         return zh_text if lang == 'zh' else en_text
 
     filename = f'aesthetic_visual_causal_flow_{lang}'
-    
+
     # 创建有向图
     dot = graphviz.Digraph(
-        'ORB_SLAM2s_Architecture', 
+        'ORB_SLAM2s_Architecture',
         comment=t('High-Fidelity Visual Causal Flow of Android_ORB-SLAM2s', 'Android_ORB-SLAM2s 高保真视觉因果流程图'),
         format='svg'
     )
-    
+
     # 全局图表属性
     dot.attr(rankdir='TB') # 从上到下的流程
     dot.attr(compound='true') # 允许子图之间的连线
@@ -34,12 +32,12 @@ def generate_flowchart(lang='en'):
     dot.attr(nodesep='0.2', ranksep='0.3') # 减少间距
     dot.attr(newrank='true') # 等级对齐
     dot.attr(concentrate='true') # 合并连线
-    
+
     # 字体设置
     # 中文和英文使用支持度最广的字体列表，确保在 Windows (微软雅黑) 和 Linux (文泉驿微米黑) 均能完美渲染
     font_name = 'Microsoft YaHei, SimHei, WenQuanYi Micro Hei, Noto Sans CJK SC, sans-serif' if lang == 'zh' else 'Helvetica, Arial, sans-serif'
     dot.attr(fontname=font_name, fontsize='12')
-    
+
     # 默认节点样式
     dot.attr('node', shape='record', style='filled', fontname=font_name, fontsize='10', penwidth='0.5', margin='0.05,0.05')
     dot.attr('edge', fontname=font_name, fontsize='9', color='#444444', penwidth='0.8', arrowsize='0.7')
@@ -53,11 +51,11 @@ def generate_flowchart(lang='en'):
     COLOR_DATA = '#F3E5F5'       # 浅紫
     COLOR_IO = '#ECEFF1'         # 浅灰
 
-    # ==================== Android Java 层 ====================
+    # Android Java 层
     with dot.subgraph(name='cluster_0_Android') as android:
-        android.attr(label=t('Android Application Layer (Java)', 'Android 应用层 (Java)'), 
+        android.attr(label=t('Android Application Layer (Java)', 'Android 应用层 (Java)'),
                      color='#0277BD', style='rounded', bgcolor=COLOR_ANDROID)
-        
+
         # 节点: UI Activity
         ui_label_title = "ArCamUIActivity"
         ui_label_body = t(
@@ -68,7 +66,7 @@ def generate_flowchart(lang='en'):
             <tr><td bgcolor="#0288D1"><font color="white"><b>{ui_label_title}</b></font></td></tr>
             <tr><td align="left">{ui_label_body}</td></tr>
         </table>>''', shape='plain')
-        
+
         # 节点: CameraX 相机管道
         cam_title = t("Camera Pipeline", "相机管道")
         cam_body = t(
@@ -119,11 +117,11 @@ def generate_flowchart(lang='en'):
         android.edge('Sensor_IMU', 'UI_Activity', t('Sensor Data', '传感器数据'))
         android.edge('UI_Activity', 'Web_Server', t('Manual Start/Stop', '手动启停'), style='dashed')
 
-    # ==================== JNI 桥接层 ====================
+    # JNI 桥接层
     with dot.subgraph(name='cluster_1_JNI') as jni:
-        jni.attr(label=t('JNI Bridge (C++)', 'JNI 桥接层 (C++)'), 
+        jni.attr(label=t('JNI Bridge (C++)', 'JNI 桥接层 (C++)'),
                  color='#EF6C00', style='rounded', bgcolor=COLOR_JNI)
-        
+
         # 节点: JNI 处理程序
         jni_process_body = t(
             "• Preprocess Image<br/>• Check SLAM Status<br/>• Manage Thread Locks",
@@ -167,21 +165,21 @@ def generate_flowchart(lang='en'):
         jni.edge('JNI_Process', 'Global_State', t('Update Pose/MapPoints', '更新位姿/地图点'))
         jni.edge('JNI_Detect', 'Global_State', t('Update pPlane', '更新平面'), penwidth='2.0')
 
-    # ==================== ORB-SLAM2 系统层 ====================
+    # ORB-SLAM2 系统层
     with dot.subgraph(name='cluster_2_ORBSLAM') as system:
-        system.attr(label=t('ORB-SLAM2 System Core', 'ORB-SLAM2 系统核心'), 
+        system.attr(label=t('ORB-SLAM2 System Core', 'ORB-SLAM2 系统核心'),
                     color='#2E7D32', style='rounded', bgcolor='#FAFAFA')
 
         # 跟踪线程 (Tracking Thread)
         with dot.subgraph(name='cluster_2a_Tracking') as track:
-            track.attr(label=t('Thread: Tracking', '线程: 跟踪 (Tracking)'), 
+            track.attr(label=t('Thread: Tracking', '线程: 跟踪 (Tracking)'),
                        color='#43A047', bgcolor=COLOR_SLAM_TRACK)
-            
+
             track.node('System_Track', f'''<<table border="0" cellborder="1" cellspacing="0" cellpadding="4">
                 <tr><td bgcolor="#43A047"><font color="white"><b>TrackMonocular()</b></font></td></tr>
                 <tr><td align="left">{t("Orchestrates Tracking", "协调跟踪过程")}</td></tr>
             </table>>''', shape='plain')
-            
+
             track.node('ORB_Extract', 'ORBextractor::operator()', shape='box')
             track.node('Pose_Opt', 'Optimizer::PoseOptimization\n(G2O / BA)', shape='box')
             track.node('Track_Ref', 'TrackReferenceKeyFrame', shape='box')
@@ -198,9 +196,9 @@ def generate_flowchart(lang='en'):
 
         # 局部建图线程 (Local Mapping Thread)
         with dot.subgraph(name='cluster_2b_Mapping') as mapping:
-            mapping.attr(label=t('Thread: Local Mapping', '线程: 局部建图 (Local Mapping)'), 
+            mapping.attr(label=t('Thread: Local Mapping', '线程: 局部建图 (Local Mapping)'),
                          color='#43A047', bgcolor=COLOR_SLAM_MAP)
-            
+
             lm_body = t(
                 "1. ProcessNewKeyFrame<br/>2. MapPointCulling<br/>3. CreateNewMapPoints<br/>4. LocalBundleAdjustment",
                 "1. ProcessNewKeyFrame (处理关键帧)<br/>2. MapPointCulling (剔除地图点)<br/>3. CreateNewMapPoints (创建地图点)<br/>4. LocalBundleAdjustment (局部BA)"
@@ -212,9 +210,9 @@ def generate_flowchart(lang='en'):
 
         # 回环检测线程 (Loop Closing Thread)
         with dot.subgraph(name='cluster_2c_Loop') as loop:
-            loop.attr(label=t('Thread: Loop Closing', '线程: 回环检测 (Loop Closing)'), 
+            loop.attr(label=t('Thread: Loop Closing', '线程: 回环检测 (Loop Closing)'),
                          color='#43A047', bgcolor=COLOR_SLAM_LOOP)
-            
+
             lc_body = t(
                 "1. DetectLoop (BoW)<br/>2. ComputeSim3<br/>3. CorrectLoop (PoseGraph)",
                 "1. DetectLoop (BoW检测)<br/>2. ComputeSim3 (计算Sim3)<br/>3. CorrectLoop (图优化矫正)"
@@ -255,7 +253,7 @@ def generate_flowchart(lang='en'):
 
         system.edge('Persistence', 'Map_Atlas', t('Serialize/Deserialize', '序列化/反序列化'), dir='both')
 
-    # ==================== 跨层级连接 ====================
+    # 跨层级连接
     dot.edge('UI_Activity', 'JNI_Process', t('1. processCameraFrame()', '1. processCameraFrame()'), penwidth='2.0', color='#01579B')
     dot.edge('JNI_Process', 'System_Track', '2. TrackMonocular()', penwidth='2.0', color='#E65100')
     dot.edge('JNI_3DOF', 'Global_State', t('Writes MVP', '写入 MVP'))
@@ -280,9 +278,9 @@ if __name__ == "__main__":
     # 生成英文版本
     print("正在生成英文流程图...")
     generate_flowchart('en')
-    
+
     print("-" * 30)
-    
+
     # 生成中文版本
     print("正在生成中文流程图...")
     generate_flowchart('zh')

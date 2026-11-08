@@ -153,10 +153,10 @@ long unsigned int Map::GetMaxKFid()
 void Map::clear()
 {
     // 先把数据移到锁外再删除
-    std::set<MapPoint*> spMP;
-    std::set<KeyFrame*> spKF;
-    std::set<MapPoint*> spMPTrash;
-    std::set<KeyFrame*> spKFTrash;
+    MapPointSet spMP;
+    KeyFrameSet spKF;
+    MapPointSet spMPTrash;
+    KeyFrameSet spKFTrash;
 
     {
         unique_lock<mutex> lock(mMutexMap);
@@ -195,8 +195,8 @@ void Map::clear()
     {
         LOGD("地图清理: 检测到使用中的关键帧，本轮对象延后释放");
         unique_lock<mutex> lock(mMutexMap);
+        // spMPTrash 中的对象已在上方释放，不能再放回回收站（否则下一次 clear() 或析构会二次 delete）
         mspMapPointsTrash.insert(spMP.begin(), spMP.end());
-        mspMapPointsTrash.insert(spMPTrash.begin(), spMPTrash.end());
         mspKeyFramesTrash.insert(spKF.begin(), spKF.end());
         mspKeyFramesTrash.insert(spKFTrash.begin(), spKFTrash.end());
         return;
@@ -214,7 +214,7 @@ long unsigned int ORB_SLAM2::Map::GetLoadedMapMPCount()
 {
     unique_lock<mutex> lock(mMutexMap);
     long unsigned int count = 0;
-    for(set<MapPoint*>::iterator sit=mspMapPoints.begin(), send=mspMapPoints.end(); sit!=send; sit++)
+    for(MapPointSet::iterator sit=mspMapPoints.begin(), send=mspMapPoints.end(); sit!=send; sit++)
     {
         MapPoint* pMP = *sit;
         // pMP 可能为空或者 bad

@@ -4,13 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Git 变更交互式仪表盘生成器 (Git Diff Interactive Dashboard Generator)
-功能：
-1. 对比指定提交(或首次提交)到最新提交的变更。
-2. 自动识别新增、删除、修改、重命名/移动的文件。
-3. 整合未修改的文件，还原项目完整目录树结构。
-4. 抓取每个变更文件在对比区间内的详细 Git 提交历史。
-5. 生成包含树状图、分类过滤、实时搜索、点击弹窗查看修改历史的单文件 HTML 交互网页。
+Git 变更交互式仪表盘生成器：对比提交区间，识别变更文件并生成可搜索、可过滤的单文件 HTML 页面。
 """
 
 import os
@@ -21,9 +15,7 @@ import argparse
 import html
 from typing import Dict, Any, List, Tuple
 
-# ==========================================
 # 1. GIT 数据提取模块
-# ==========================================
 
 def run_command(cmd: List[str]) -> str:
     """运行系统命令并返回输出字符"""
@@ -94,11 +86,8 @@ def get_file_diff(filepath: str, start_commit: str, status: str = "modified", ol
         lines.append({"type": "hunk", "content": f"... 差异过大，仅显示前 {MAX_DIFF_LINES} 行 ..."})
     return lines
 
-
 def get_git_changes(start_commit_arg: str = None) -> Tuple[List[Dict[str, Any]], bool, str]:
-    """
-    分析 Git 变更，返回变更文件列表、是否为真实 Git 以及对比起点 Commit Hash
-    """
+    """分析 Git 变更，返回变更文件列表、是否为真实 Git 及对比起点 Commit Hash。"""
     # 检查当前目录是否在 git 仓库中
     is_git = run_command(["git", "rev-parse", "--is-inside-work-tree"])
     if is_git != "true":
@@ -129,10 +118,10 @@ def get_git_changes(start_commit_arg: str = None) -> Tuple[List[Dict[str, Any]],
 
     # 1. 采用 -M 参数启用重命名检测获取变更状态
     diff_status = run_command(["git", "diff", "--name-status", "-M", start_commit, "HEAD"])
-    
+
     # 2. 获取原始行数统计数据（无需在 numstat 中启用重命名检测，以便分别计算旧文件删除和新文件新增的行数）
     diff_numstat = run_command(["git", "diff", "--numstat", start_commit, "HEAD"])
-    
+
     # 3. 列出当前最新提交的所有文件（未修改文件基础）
     all_tracked_files = run_command(["git", "ls-files"])
 
@@ -154,25 +143,25 @@ def get_git_changes(start_commit_arg: str = None) -> Tuple[List[Dict[str, Any]],
     # 收集已变更的文件
     changed_paths = set()
     changes = []
-    
+
     # 解析状态信息
     for line in diff_status.strip().split('\n'):
         if not line: continue
         parts = line.split('\t')
         if len(parts) < 2: continue
-        
+
         status_code = parts[0]
-        
+
         if status_code.startswith('R'): # 重命名 / 移动
             old_path = parts[1]
             new_path = parts[2]
-            
+
             # 重命名文件的行数变化：新路径对应新增行数，旧路径对应删除行数
             added = numstat_map.get(new_path, (0, 0))[0]
             deleted = numstat_map.get(old_path, (0, 0))[1]
-            
+
             print(f"[日志] 发现移动文件: {old_path} -> {new_path}")
-            
+
             changes.append({
                 "path": new_path,
                 "status": "renamed",
@@ -184,7 +173,7 @@ def get_git_changes(start_commit_arg: str = None) -> Tuple[List[Dict[str, Any]],
             })
             changed_paths.add(new_path)
             changed_paths.add(old_path)
-            
+
         elif status_code.startswith('A'): # 新增
             filepath = parts[1]
             added, deleted = numstat_map.get(filepath, (0, 0))
@@ -212,7 +201,7 @@ def get_git_changes(start_commit_arg: str = None) -> Tuple[List[Dict[str, Any]],
                 "diff": []
             })
             changed_paths.add(filepath)
-            
+
         else: # 修改 M 或者其他
             filepath = parts[1]
             added, deleted = numstat_map.get(filepath, (0, 0))
@@ -410,9 +399,7 @@ def get_mock_changes() -> List[Dict[str, Any]]:
         }
     ]
 
-# ==========================================
 # 2. HTML + JS 交互界面模板
-# ==========================================
 
 HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="zh-CN" class="dark">
@@ -1249,9 +1236,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 </html>
 """
 
-# ==========================================
 # 3. 主流程与写出控制
-# ==========================================
 
 def calculate_summary(changes: List[Dict[str, Any]]) -> Dict[str, Any]:
     """汇总各个文件的变更统计指标"""
@@ -1264,7 +1249,7 @@ def calculate_summary(changes: List[Dict[str, Any]]) -> Dict[str, Any]:
         "total_added": 0,
         "total_deleted": 0
     }
-    
+
     for item in changes:
         status = item["status"]
         if status == "added":
@@ -1277,39 +1262,39 @@ def calculate_summary(changes: List[Dict[str, Any]]) -> Dict[str, Any]:
             summary["files_renamed"] += 1
         elif status == "unchanged":
             summary["files_unchanged"] += 1
-            
+
         summary["total_added"] += item["added"]
         summary["total_deleted"] += item["deleted"]
-        
+
     return summary
 
 def main():
     print("=" * 60)
     print("      Git 变更交互式文件树 & 仪表盘生成器")
     print("=" * 60)
-    
+
     # 解析命令行参数
     parser = argparse.ArgumentParser(description="分析 Git 提交变更并渲染为交互式网页。")
     parser.add_argument(
-        "-s", "--start", 
-        type=str, 
-        default=None, 
+        "-s", "--start",
+        type=str,
+        default=None,
         help="指定开始对比的 Commit Hash、分支名（如 main）或 Tag。若不提供，默认从首次提交开始对比。"
     )
     parser.add_argument(
-        "-o", "--output", 
-        type=str, 
-        default="git_diff_tree.html", 
+        "-o", "--output",
+        type=str,
+        default="git_diff_tree.html",
         help="指定生成的 HTML 仪表盘文件的路径及名称 (默认: git_diff_tree.html)"
     )
     args = parser.parse_args()
-    
+
     # 1. 提取所有变更数据（含未修改文件和文件详细 commit 日志）
     changes, is_real_git, start_commit = get_git_changes(args.start)
-    
+
     # 2. 统计计算总体概览
     total_summary = calculate_summary(changes)
-    
+
     # 3. 组装 JSON 负载
     payload = {
         "start_commit": start_commit,
@@ -1318,12 +1303,12 @@ def main():
         "summary": total_summary,
         "files": changes
     }
-    
+
     json_data = json.dumps(payload, ensure_ascii=False, indent=2).replace("<", "\\u003c")
-    
+
     # 4. 替换 HTML 模板中的占位符
     html_content = HTML_TEMPLATE.replace("__GIT_DATA_JSON__", json_data)
-    
+
     # 5. 写出交互网页
     try:
         with open(args.output, "w", encoding="utf-8") as f:
@@ -1332,7 +1317,7 @@ def main():
         print(f"[提示] 请直接双击或在浏览器中打开 [{args.output}] 查看极致的树状交互效果！")
     except Exception as e:
         print(f"[错误] 保存 HTML 失败: {e}", file=sys.stderr)
-        
+
     print("=" * 60)
 
 if __name__ == "__main__":

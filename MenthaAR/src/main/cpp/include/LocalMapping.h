@@ -68,15 +68,18 @@ public:
 
     void InsertKeyFrame(KeyFrame* pKF);
 
-    // 线程同步
+    // 线程同步（停止请求按计数配对：每个 RequestStop 对应一个 Release / CancelStopRequest）
     void RequestStop();
     void CancelStopRequest();
+    // 无条件清除全部停止请求，仅供 Reset / Shutdown 路径使用
+    void ReleaseAll();
 
-    // 等待 LM 真正进入 Stopped 状态
-    bool WaitForStopped();
+    // 等待 LM 真正进入 Stopped 状态；timeoutMs<0 表示无限等待。返回是否已停止
+    bool WaitForStopped(int timeoutMs = -1);
 
     void RequestReset();
-    void WaitForResetComplete();
+    // 等待 LM 处理完 Reset（已离开 BA 且队列已清空）；true=已完成，false=超时
+    bool WaitForResetComplete();
     bool Stop();
     void Release();
     bool isStopped();
@@ -93,6 +96,12 @@ public:
     int KeyframesInQueue(){
         std::unique_lock<std::mutex> lock(mMutexNewKFs);
         return mlNewKeyFrames.size();
+    }
+
+    // 队列为空且当前没有在处理关键帧（供离线回放的同步模式使用）。
+    // 注意 AcceptKeyFrames() 在忙碌但队列较短时也返回 true，这里必须读原始忙标志。
+    bool IsIdle(){
+        return mbAcceptKeyFrames.load(std::memory_order_acquire) && KeyframesInQueue()==0;
     }
 
 protected:
@@ -150,6 +159,8 @@ protected:
     std::atomic<bool> mbStopRequested;
     std::atomic<bool> mbNotStop;
     std::mutex mMutexStop;
+    // 未配对释放的停止请求数（由 mMutexStop 保护）
+    int mnStopRequests = 0;
 
     std::atomic<bool> mbAcceptKeyFrames;
     std::mutex mMutexAccept;

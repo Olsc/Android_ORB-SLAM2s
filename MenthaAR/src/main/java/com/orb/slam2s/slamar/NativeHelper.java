@@ -27,6 +27,16 @@ public class NativeHelper {
 
     // 加载必要的本地库
     static {
+        // 必须在 dlopen 前关闭 libomp 的亲和性绑定：部分 ROM（MIUI 等）限制了应用进程的
+        // CPU 亲和性，libomp 初始化时 sched_setaffinity 失败会直接 abort（引擎进程一启动即崩溃）
+        try {
+            android.system.Os.setenv("KMP_AFFINITY", "disabled", true);
+            // libomp 并行区结束后默认自旋再休眠，过短会导致工作线程迁核/降频，过长会在低帧率时空转
+            // 取 60 ms：覆盖相机帧间隔，同时把空转限制在有限时间内
+            android.system.Os.setenv("KMP_BLOCKTIME", "60", true);
+        } catch (Throwable t) {
+            Log.w(TAG, "设置 KMP 环境变量失败", t);
+        }
         try {
             System.loadLibrary("Mentha_Profiler");
         } catch (UnsatisfiedLinkError e) {
@@ -37,7 +47,23 @@ public class NativeHelper {
 
     private final int[] statusBuf = new int[3];
 
+    // 与 native 共享的 direct 缓冲，布局见 native-lib.cpp 的 POSE_BUF_*
+    // float[0..47] 原始 M/V/P，int[48..50] 跟踪状态/绘制标志/地图 id，float[51..98] 融合后的 M/V/P
+    public static final int POSE_BUF_FLOATS = 99;
+    private static final int POSE_RAW = 0;
+    private static final int POSE_INFO = 48;
+    private static final int POSE_FUSED = 51;
+    private final java.nio.ByteBuffer poseBuf =
+            java.nio.ByteBuffer.allocateDirect(POSE_BUF_FLOATS * 4).order(java.nio.ByteOrder.nativeOrder());
+    private final java.nio.FloatBuffer poseFloats = poseBuf.asFloatBuffer();
+    private final java.nio.IntBuffer poseInts = poseBuf.asIntBuffer();
+    private final boolean poseBufRegistered;
+
     public NativeHelper() {
+        poseBufRegistered = nativeRegisterPoseBuffer(poseBuf);
+        if (!poseBufRegistered) {
+            Log.w(TAG, "注册位姿缓冲失败，回退到 native 内部原始位姿");
+        }
     }
 
     // 在 SLAM 处理线程内检测平面，MVP 结果由 native 写回共享内存
@@ -49,9 +75,10 @@ public class NativeHelper {
     public native boolean nativeAttachFrameBuffer(int fd, int size);
     public native void nativeDetachFrameBuffer();
 
-    // 处理持久映射缓冲中的帧(双缓冲 bufIndex 0/1，每帧只传序号与宽高)
-    // native 处理完成后将 tracking/draw/MVP/点云/slamDoneSeq 写回共享内存 header
-    public native void nativeProcessFrameSharedMem(int bufIndex, int seq, int width, int height, int[] statusBuf);
+    // 处理持久映射缓冲中的帧，每帧只传槽位号、序号与宽高
+    // native 写回跟踪状态与点云后，由 publishArPose/publishRawArPose 一次性发布 MVP 与完成序号
+    public native void nativeProcessFrameSharedMem(int bufIndex, int seq, int width, int height);
+    private native boolean nativeRegisterPoseBuffer(java.nio.ByteBuffer buffer);
 
     public boolean attachFrameBuffer(int fd, int size) {
         return nativeAttachFrameBuffer(fd, size);
@@ -61,8 +88,8 @@ public class NativeHelper {
         nativeDetachFrameBuffer();
     }
 
-    public void processFrameSharedMem(int bufIndex, int seq, int width, int height, int[] statusBuf) {
-        nativeProcessFrameSharedMem(bufIndex, seq, width, height, statusBuf);
+    public void processFrameSharedMem(int bufIndex, int seq, int width, int height) {
+        nativeProcessFrameSharedMem(bufIndex, seq, width, height);
     }
 
     // 执行平面检测
@@ -100,18 +127,36 @@ public class NativeHelper {
     public native void setPointCloudDisplay(boolean enable);
     public native boolean isPointCloudDisplayEnabled();
 
-    // 读取当前帧原始 AR 位姿：out48 = Model/View/Proj，outInfo = [跟踪状态, 绘制标志, 地图ID]
-    public native boolean nativeGetArPose(float[] out48, int[] outInfo);
+    // 发布最终 AR 位姿（每帧只写一次 MVP，seqlock 包裹）并推进 slamDoneSeq。useRaw 时直接发布原始位姿
+    private native void nativePublishArPose(boolean draw, boolean useRaw);
 
-    // 回写融合后的 AR 位姿到共享内存，App 端只读结果
-    public native void nativePublishArPose(float[] model, float[] view, float[] projection, boolean draw);
-
+    // 读取当前帧原始 AR 位姿：out48 = Model/View/Proj，outInfo = [跟踪状态, 绘制标志, 地图ID]（直接读共享缓冲，无 JNI）
     public boolean getArPose(float[] out48, int[] outInfo) {
-        return nativeGetArPose(out48, outInfo);
+        if (!poseBufRegistered) return false;
+        poseFloats.position(POSE_RAW);
+        poseFloats.get(out48, 0, 48);
+        outInfo[0] = poseInts.get(POSE_INFO);
+        outInfo[1] = poseInts.get(POSE_INFO + 1);
+        outInfo[2] = poseInts.get(POSE_INFO + 2);
+        return true;
     }
 
+    // 把融合结果写进共享缓冲后发布
     public void publishArPose(float[] model, float[] view, float[] projection, boolean draw) {
-        nativePublishArPose(model, view, projection, draw);
+        if (!poseBufRegistered) {
+            nativePublishArPose(draw, true);
+            return;
+        }
+        poseFloats.position(POSE_FUSED);
+        poseFloats.put(model, 0, 16);
+        poseFloats.put(view, 0, 16);
+        poseFloats.put(projection, 0, 16);
+        nativePublishArPose(draw, false);
+    }
+
+    // 融合关闭或失败时直接发布原始位姿（绘制标志由 native 取原始值）
+    public void publishRawArPose() {
+        nativePublishArPose(false, true);
     }
 
     // AR对象缩放

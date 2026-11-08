@@ -17,8 +17,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// MenthaAR SLAM
-
 #include <iostream>
 #include <vector>
 #include <string>

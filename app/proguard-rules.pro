@@ -1,4 +1,3 @@
-
 -keep class cn.pedant.SweetAlert.** { *;}
 
 -keepclasseswithmembernames,includedescriptorclasses class * {

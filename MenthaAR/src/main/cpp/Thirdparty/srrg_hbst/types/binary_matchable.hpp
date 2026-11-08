@@ -140,23 +140,22 @@ namespace srrg_hbst {
     //! @brief 描述子转换：将 OpenCV 描述子转为 HBST 格式
     //! @param[in] descriptor_cv_ 要转换的 OpenCV 描述子
     static inline Descriptor getDescriptor(const cv::Mat& descriptor_cv_) {
-      Descriptor binary_descriptor(descriptor_size_bits_);
+      Descriptor binary_descriptor;
 
       const uchar* p = descriptor_cv_.ptr<uchar>(0);
 
-      // 完全展开：逐字节拷贝8个比特，避免循环计数分支以提升效率
-      for (uint32_t byte_index = 0; byte_index < raw_descriptor_size_bytes; ++byte_index) {
-        const uint32_t bit_index_start = byte_index * 8;
-        const uchar b = p[byte_index];
-
-        binary_descriptor[bit_index_start + 0] = b & 1;
-        binary_descriptor[bit_index_start + 1] = (b >> 1) & 1;
-        binary_descriptor[bit_index_start + 2] = (b >> 2) & 1;
-        binary_descriptor[bit_index_start + 3] = (b >> 3) & 1;
-        binary_descriptor[bit_index_start + 4] = (b >> 4) & 1;
-        binary_descriptor[bit_index_start + 5] = (b >> 5) & 1;
-        binary_descriptor[bit_index_start + 6] = (b >> 6) & 1;
-        binary_descriptor[bit_index_start + 7] = (b >> 7) & 1;
+      // 按 64 位字构造：位 i 对应第 i/8 个字节的第 i%8 位（低位在前），
+      // 正好等于按小端拼接 8 个字节得到的 64 位整数。bitset(uint64) 置低 64 位，再整体左移到位。
+      for (uint32_t word_index = 0; word_index * 8 < raw_descriptor_size_bytes; ++word_index) {
+        const uint32_t byte0 = word_index * 8;
+        const uint32_t nbytes = (raw_descriptor_size_bytes - byte0 < 8) ? (raw_descriptor_size_bytes - byte0) : 8;
+        unsigned long long w = 0;
+        for (uint32_t j = 0; j < nbytes; ++j) {
+          w |= static_cast<unsigned long long>(p[byte0 + j]) << (8 * j);
+        }
+        Descriptor part(w);
+        if (byte0 > 0) part <<= (byte0 * 8);
+        binary_descriptor |= part;
       }
 
       // 处理剩余零散位

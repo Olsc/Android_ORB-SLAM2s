@@ -275,12 +275,12 @@ ORB-SLAM2 основная библиотека выпущена под [GPLv3 �
 
 Помимо Android, в каталоге `MenthaAR/src/main/cpp/Thirdparty_Platforms/` представлены автономные реализации SLAM и инструменты офлайн-тестирования для настольных ПК и портативных консолей, использующие единый алгоритмический стек SLAM:
 
-| Платформа | Каталог | Описание |
-| :--- | :--- | :--- |
-| **Windows** | [`windows/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/windows/Readme.md) | Поддержка MSVC/MinGW, ускорение AVX2 SIMD, SLAM в реальном времени с веб-камеры и видео-бенчмарки |
-| **Ubuntu / Linux** | [`ubuntu/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/ubuntu/Readme.md) | Поддержка архитектур x86_64, aarch64 и китайской **LoongArch64** |
-| **macOS** | [`mac/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/mac/Readme.md) | Нативная поддержка Apple Silicon (arm64, NEON) и Intel (x86_64, AVX2) с AVFoundation и Cocoa GUI |
-| **PlayStation Vita** | [`psvita/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/psvita/Readme.md) | Экспериментальный монокулярный SLAM на базе VitaSDK для консоли, поддержка передней/задней камер, рендеринг точечных облаков и сохранение бинарных карт |
+| Платформа            | Каталог                                                                       | Описание                                                                                                                                                |
+| :------------------- | :---------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Windows**          | [`windows/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/windows/Readme.md) | Поддержка MSVC/MinGW, ускорение AVX2 SIMD, SLAM в реальном времени с веб-камеры и видео-бенчмарки                                                       |
+| **Ubuntu / Linux**   | [`ubuntu/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/ubuntu/Readme.md)   | Поддержка архитектур x86_64, aarch64 и китайской **LoongArch64**                                                                                        |
+| **macOS**            | [`mac/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/mac/Readme.md)         | Нативная поддержка Apple Silicon (arm64, NEON) и Intel (x86_64, AVX2) с AVFoundation и Cocoa GUI                                                        |
+| **PlayStation Vita** | [`psvita/`](../MenthaAR/src/main/cpp/Thirdparty_Platforms/psvita/Readme.md)   | Экспериментальный монокулярный SLAM на базе VitaSDK для консоли, поддержка передней/задней камер, рендеринг точечных облаков и сохранение бинарных карт |
 
 ---
 

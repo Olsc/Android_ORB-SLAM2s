@@ -8,13 +8,13 @@ MenthaAR 的单目视觉 SLAM 桌面版本（Windows / Visual Studio 2022），�
 
 ## 📦 环境要求
 
-| 组件 | 要求 |
-|------|------|
-| 操作系统 | Windows 10 / 11 (x64) |
+| 组件         | 要求                                                        |
+| ------------ | ----------------------------------------------------------- |
+| 操作系统     | Windows 10 / 11 (x64)                                       |
 | IDE / 工具链 | **Visual Studio 2022**（勾选"使用 C++ 的桌面开发"工作负载） |
-| 编译器 | MSVC v143（VS2022 自带） |
-| CMake | VS2022 自带（或任意 ≥ 3.10 版本） |
-| Windows SDK | VS2022 安装时默认包含 |
+| 编译器       | MSVC v143（VS2022 自带）                                    |
+| CMake        | VS2022 自带（或任意 ≥ 3.10 版本）                           |
+| Windows SDK  | VS2022 安装时默认包含                                       |
 
 无需手动安装 OpenCV/Eigen/g2o —— 工程使用内置源码（`Thirdparty/`），CMake 会自动以静态库方式编译。
 OpenCV 的相机采集走内置 MSMF/DirectShow 后端，GUI 走内置 Win32 UI 后端；本机装有 FFmpeg 时 videoio 会自动探测并启用。
@@ -35,10 +35,10 @@ cmake --build build_vs --config Release --parallel %NUMBER_OF_PROCESSORS%
 
 编译完成后，产物位于 `build_vs/bin/Release/` 目录：
 
-| 目标 | 文件 | 用途 |
-|------|------|------|
-| **MenthaAR_Windows** | `MenthaAR_Windows.exe` | 实时 SLAM 演示 (相机/视频 + 交互式 GUI) |
-| **MenthaAR_Benchmark** | `MenthaAR_Benchmark.exe` | 视频评测工具 (输出性能报告) |
+| 目标                   | 文件                     | 用途                                    |
+| ---------------------- | ------------------------ | --------------------------------------- |
+| **MenthaAR_Windows**   | `MenthaAR_Windows.exe`   | 实时 SLAM 演示 (相机/视频 + 交互式 GUI) |
+| **MenthaAR_Benchmark** | `MenthaAR_Benchmark.exe` | 视频评测工具 (输出性能报告)             |
 
 > Debug 构建：`cmake --build build_vs --config Debug`，产物位于 `build_vs/bin/Debug/`。
 
@@ -69,10 +69,10 @@ MenthaAR_Windows.exe 1
 
 鼠标移入窗口右缘热区展开控制抽屉：
 
-| 分组 | 功能 |
-|------|------|
+| 分组               | 功能                                 |
+| ------------------ | ------------------------------------ |
 | **地图持久化操作** | 保存/加载 SLAM 地图 (mentha_map.bin) |
-| **可视化显示设置** | 切换点云显示 |
+| **可视化显示设置** | 切换点云显示                         |
 
 ### 键盘
 
@@ -101,14 +101,14 @@ MenthaAR_Benchmark.exe D:\videos\test.mp4 [output_report_name] [--loops N]
 
 ## 🛠️ 平台适配要点（相对 Ubuntu/GCC 版本的差异）
 
-| 项目 | Ubuntu (GCC) | Windows (MSVC) |
-|------|-------------|----------------|
-| 优化参数 | `-O3 -march=native -flto` | `/O2 /Oi /Zc:__cplusplus` |
-| 编码统一 | — | `/utf-8`（全部源码为 UTF-8） |
-| 并行加速 | TBB | Concurrency（OpenCV 内置并行框架） |
-| 相机/GUI 后端 | V4L2 / GTK | MSMF+DShow / Win32 UI |
-| g2o 兼容宏 | UNIX | 定义 `WINDOWS`/`_WINDOWS` 激活其自带 gettimeofday/vasprintf 实现 |
-| 词库资源嵌入 | GCC 汇编 `.incbin` | 本测试版未使用嵌入资源，逻辑自动跳过 |
+| 项目          | Ubuntu (GCC)              | Windows (MSVC)                                                   |
+| ------------- | ------------------------- | ---------------------------------------------------------------- |
+| 优化参数      | `-O3 -march=native -flto` | `/O2 /Oi /Zc:__cplusplus`                                        |
+| 编码统一      | —                         | `/utf-8`（全部源码为 UTF-8）                                     |
+| 并行加速      | TBB                       | Concurrency（OpenCV 内置并行框架）                               |
+| 相机/GUI 后端 | V4L2 / GTK                | MSMF+DShow / Win32 UI                                            |
+| g2o 兼容宏    | UNIX                      | 定义 `WINDOWS`/`_WINDOWS` 激活其自带 gettimeofday/vasprintf 实现 |
+| 词库资源嵌入  | GCC 汇编 `.incbin`        | 本测试版未使用嵌入资源，逻辑自动跳过                             |
 
 常见问题：
 - 若提示找不到 `cmake`，请改用 "x64 Native Tools Command Prompt for VS 2022"，或将 `%VS_INSTALL%\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin` 加入 PATH；

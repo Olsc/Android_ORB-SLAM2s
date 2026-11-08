@@ -14,7 +14,7 @@
 #   --filter <list>      仅更新列表中的子模块，逗号/空格分隔。
 #                        可以填子模块路径、名称或目录名；留空或 "all" 表示全部。
 #   --depth <n>          fetch/克隆的深度。默认不限制（完整历史）；
-#                        传 1 可浅克隆，节省磁盘与时间（CI 中推荐）。
+#                        传 1 使用浅克隆（CI 中推荐）。
 #   --summary-file <f>   把适合作为 PR 描述的 Markdown 汇总写入文件 <f>。
 #   --paths-file <f>     把发生变化的子模块路径（每行一个）写入文件 <f>。
 #   --github-output <f>  向 GitHub Actions 的 $GITHUB_OUTPUT 文件追加
@@ -57,9 +57,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# ---------------------------------------------------------------------------
 # 收集子模块: path -> name 映射（name 即 .gitmodules 中的 submodule key）
-# ---------------------------------------------------------------------------
 declare -a ALL_PATHS=()
 declare -A NAME_BY_PATH=()
 
@@ -109,9 +107,7 @@ to_web_url() {
     esac
 }
 
-# ---------------------------------------------------------------------------
 # 主循环
-# ---------------------------------------------------------------------------
 # 禁用自动 GC 和后台维护任务，防止浅克隆（--depth）下后台 gc 与前台 fetch
 # 并发修改 .git/shallow 引发 "fatal: shallow file has changed since we read it"
 export GIT_CONFIG_COUNT=3
@@ -231,9 +227,7 @@ for path in "${ALL_PATHS[@]}"; do
     fi
 done
 
-# ---------------------------------------------------------------------------
 # 生成 PR 描述
-# ---------------------------------------------------------------------------
 if [[ -n "$SUMMARY_FILE" && ${#CHANGED[@]} -gt 0 ]]; then
     server="${GITHUB_SERVER_URL:-https://github.com}"
     repo="${GITHUB_REPOSITORY:-}"
@@ -264,9 +258,7 @@ if [[ -n "$SUMMARY_FILE" && ${#CHANGED[@]} -gt 0 ]]; then
     } > "$SUMMARY_FILE"
 fi
 
-# ---------------------------------------------------------------------------
 # 输出结果
-# ---------------------------------------------------------------------------
 changed="false"
 if [[ ${#CHANGED[@]} -gt 0 ]]; then
     changed="true"

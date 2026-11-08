@@ -36,6 +36,9 @@ public:
     // 释放 GPU 缓冲与纹理
     void destroyGL();
 
+    // EGL Context 重建：丢弃本地 GPU 资源记录（不做 GL 调用），下次 uploadGL 会重新上传
+    void onContextLost();
+
     const GlbBounds& getBounds() const { return mBounds; }
     const std::vector<GlbPrimitive>& getPrimitives() const { return mPrimitives; }
     bool isLoaded() const { return mIsLoaded; }
