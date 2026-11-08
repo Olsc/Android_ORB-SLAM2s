@@ -20,7 +20,6 @@
 #ifndef MENTHAAR_PSVITA_VASPRINTF_COMPAT_H
 #define MENTHAAR_PSVITA_VASPRINTF_COMPAT_H
 
-
 #include <stdarg.h>
 
 #ifdef __cplusplus

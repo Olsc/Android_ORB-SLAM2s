@@ -110,10 +110,10 @@ struct MemoryInfo {
 struct ScoreCard {
     double overallScore = 0.0;
     std::string grade = "D";
-    double trackingScore = 0.0;  // 40%
-    double latencyScore = 0.0;   // 30%
-    double stabilityScore = 0.0; // 20%
-    double memoryScore = 0.0;    // 10%
+    double trackingScore = 0.0;  // 权重 0.4
+    double latencyScore = 0.0;   // 权重 0.3
+    double stabilityScore = 0.0; // 权重 0.2
+    double memoryScore = 0.0;    // 权重 0.1
     int totalFrames = 0;
     int okFrames = 0;
     int lostFrames = 0;
@@ -424,10 +424,10 @@ ScoreCard calculateScoreCard(const std::vector<FrameRecord>& records, int totalF
     for (const auto& r : records) if (r.rssMB > peak) peak = r.rssMB;
     card.peakRssMB = peak;
 
-    // 1. 跟踪得分 (40%)
+    // 1. 跟踪得分（权重 0.4）
     card.trackingScore = card.okRatio;
 
-    // 2. 实时性延迟得分 (30%) - 目标 33.3ms (30 FPS)
+    // 2. 实时性延迟得分（权重 0.3），目标 33.3ms（30 FPS）
     const double targetMs = 33.33;
     if (card.meanMs <= targetMs) {
         card.latencyScore = 100.0;
@@ -435,13 +435,13 @@ ScoreCard calculateScoreCard(const std::vector<FrameRecord>& records, int totalF
         card.latencyScore = std::max(0.0, 100.0 - (card.meanMs - targetMs) * 2.5);
     }
 
-    // 3. 地图稳定性得分 (20%)
+    // 3. 地图稳定性得分（权重 0.2）
     double contRatio = (double)maxOk / totalFrames;
     double density = (double)card.finalMPs / (card.finalKFs + 1);
     double densityScore = std::min(100.0, density * 0.2 * 100.0);
     card.stabilityScore = std::min(100.0, 0.6 * (contRatio * 100.0) + 0.4 * densityScore);
 
-    // 4. 内存健康度得分 (10%)
+    // 4. 内存健康度得分（权重 0.1）
     card.memoryScore = std::max(0.0, 100.0 - std::min(50.0, card.peakRssMB / 10.0));
 
     // 综合加权总分

@@ -44,9 +44,8 @@ import com.orb.slam2s.ui.MainActivity;
 import com.orb.slam2s.ui.MapManageActivity;
 import com.orb.slam2s.util.IconManager;
 
-// SplashActivity：启动权限检查与主界面分发
-// 该 Activity 承担权限检查与分发逻辑（非纯启动图），不采用 Android 12+ SplashScreen API
-// 入口是 AndroidManifest.xml 中的 activity-alias（桌面图标切换），IDE 无法识别该间接引用
+// SplashActivity：启动权限检查与主界面分发，入口为 AndroidManifest 中的 activity-alias
+// 承担权限检查与分发逻辑，不采用 Android 12+ SplashScreen API
 @SuppressLint("CustomSplashScreen")
 @SuppressWarnings("unused")
 public class SplashActivity extends Activity {

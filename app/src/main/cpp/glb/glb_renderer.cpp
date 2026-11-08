@@ -161,7 +161,7 @@ GLuint compileShader(GLenum type, const char* source) {
     }
     return shader;
 }
-} // anonymous namespace
+} // 匿名命名空间
 
 GlbRenderer::GlbRenderer() = default;
 

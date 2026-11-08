@@ -2,16 +2,8 @@
 # Copyright (C) 2026 Olsc <OlscStudio@outlook.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# ============================================================================
-# MenthaAR macOS 打包脚本
-# 将编译好的两个可执行文件打包成 zip，方便拷贝到其他 Apple Silicon (arm64) Mac 运行。
-#
-# 适用目标：任意 Apple Silicon Mac（M1/M2/M3/M4...），macOS 11.0 及以上（含 macOS 27）
-#
-# 用法：
-#   ./package.sh            # 打包 build/bin 下已编译的产物
-#   ./package.sh -u         # 打包前先编译通用二进制 (arm64 + x86_64，需 -DMENTHA_UNIVERSAL=ON)
-# ============================================================================
+# MenthaAR macOS 打包脚本：将 build/bin 产物打包为 zip，适用于 Apple Silicon Mac
+# 用法：./package.sh 打包已编译产物；./package.sh -u 先编译通用二进制（arm64 + x86_64）
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

@@ -2725,7 +2725,7 @@ bool Tracking::Relocalization()
             // matchables 由树持有，不可 delete
             std::shared_ptr<HBSTTree> treeFrame = mCurrentFrame.GetHBSTTree();
             if(!treeFrame)
-                return false; // 不可达：上方已确认 mCurrentFrame.mDescriptors 非空
+                return false; // 不可达：上方已保证 mCurrentFrame.mDescriptors 非空
 
             HBSTTree::MatchVector treeMatches;
             pTree->match(treeFrame->matchables(), treeMatches, HBST_MATCH_MAX_DIST);

@@ -4,11 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Visual SLAM Theoretical Workload Benchmark & Stress Testing Engine for Git Commits
-测算每次 Git Commit 代码在不同场景/视频规格下的理论计算量（FLOPs / Ops），支持多线程并行分析与交互式数据看板生成。
-
-环境要求:
-    须安装 matplotlib: pip install matplotlib
+SLAM Git 提交理论计算量基准与压力测试工具：测算各次 Commit 的计算量，支持并行分析与看板生成。
+环境要求：安装 matplotlib（pip install matplotlib）。
 """
 
 import os
@@ -47,9 +44,7 @@ try:
 except ImportError:
     HAS_MATPLOTLIB = False
 
-# ==============================================================================
-# 1. 压力测试基准预设场景 (Workload Profiles & Presets)
-# ==============================================================================
+# 1. 压力测试基准预设场景
 WORKLOAD_PRESETS = {
     "mobile_low": {
         "name": "低功耗移动端 (QVGA 30FPS / 500特征)",
@@ -133,15 +128,9 @@ KEY_FILE_PATTERNS = {
     "native-lib": ["*native-lib.cpp", "native-lib.cpp"]
 }
 
-
-# ==============================================================================
-# 2. 理论计算量评估核心模型 (Theoretical Workload Analyzer)
-# ==============================================================================
+# 2. 理论计算量评估核心模型
 class SLAMWorkloadModel:
-    """
-    视觉 SLAM 理论计算量与压力测试评估模型
-    根据视频分辨率、帧率、特征点数、关键帧比例和算法静态特征估算理论计算量 (Operations / FLOPs)。
-    """
+    """视觉 SLAM 理论计算量与压力测试评估模型，按分辨率、帧率、特征点等估算计算量。"""
 
     def __init__(self,
                  duration_sec: int = DEFAULT_DURATION_SEC,
@@ -159,15 +148,13 @@ class SLAMWorkloadModel:
         self.n_features = n_features
         self.keyframe_ratio = keyframe_ratio
         self.loop_freq = loop_freq
-        
+
         self.total_pixels_per_frame = width * height
         self.total_keyframes = int(self.total_frames * keyframe_ratio)
         self.total_loop_checks = int(duration_sec * loop_freq)
 
     def analyze_commit_code(self, module_sources: Dict[str, str]) -> Dict[str, Any]:
-        """
-        对提取到的单次 Commit 的 C++ 源码进行静态特征提取和理论计算量仿真
-        """
+        """对单次 Commit 的 C++ 源码做静态特征提取与理论计算量仿真。"""
         orb_ext_src = module_sources.get("ORBextractor", "")
         orb_match_src = module_sources.get("ORBmatcher", "")
         tracking_src = module_sources.get("Tracking", "")
@@ -193,9 +180,7 @@ class SLAMWorkloadModel:
                 "is_valid_slam": False
             }
 
-        # ----------------------------------------------------------------------
-        # 静态优化特征检测 (Optimization Signatures)
-        # ----------------------------------------------------------------------
+        # 静态优化特征检测
         optimizations_detected = []
 
         # (1) 描述子基表 LUT (消除 sin/cos 浮点运算与动态旋转乘法)
@@ -221,7 +206,7 @@ class SLAMWorkloadModel:
         elif has_popcount_opt:
             optimizations_detected.append("Hardware Popcount Matching")
 
-        # (5) 锁优化与内存复用 (Lock Splitting, Buffer Reuse, Thread-Local Safety)
+        # (5) 锁优化与内存复用
         has_lock_opt = bool(re.search(r"锁优化|内存复用|unique_lock|shared_mutex|thread_local|buffer_pool|cachedStep|mMutexBitmaps|mMutexPose", all_code, re.I))
         if has_lock_opt:
             optimizations_detected.append("Lock Optimization & Memory Reuse")
@@ -236,14 +221,12 @@ class SLAMWorkloadModel:
         if has_parallel_opt:
             optimizations_detected.append("Multithreading Acceleration")
 
-        # ----------------------------------------------------------------------
         # 算力模型：子模块理论计算量测算
-        # ----------------------------------------------------------------------
-        # 1. 特征提取模块 (ORB Feature Extraction)
+        # 1. 特征提取模块
         pyr_pixel_multiplier = 1.6
         total_pyr_pixels_per_frame = self.total_pixels_per_frame * pyr_pixel_multiplier
 
-        # 模糊与滤波 (空层跳过减少约 15% 无效高斯模糊)
+        # 模糊与滤波（空层跳过，避免无效高斯模糊）
         blur_ops_per_pixel = 10.0
         blur_factor = 0.75 if ("cv::GaussianBlur" in orb_ext_src or "filter2D" in orb_ext_src) else 1.0
         if has_layer_pruning:
@@ -275,7 +258,7 @@ class SLAMWorkloadModel:
 
         feature_extraction_ops = blur_total_ops + fast_total_ops + ic_angle_total_ops + brief_total_ops
 
-        # 2. 特征匹配模块 (Feature Matching)
+        # 2. 特征匹配模块
         matching_pairs_per_frame = self.n_features * 60
         if has_neon_simd:
             hamming_ops_per_pair = 8.0   # NEON / 64位向量化指令
@@ -289,15 +272,15 @@ class SLAMWorkloadModel:
 
         feature_matching_ops = self.total_frames * (matching_pairs_per_frame * hamming_ops_per_pair)
 
-        # 3. 追踪与位姿优化模块 (Tracking & Pose Optimization)
+        # 3. 追踪与位姿优化模块
         pose_opt_ops_per_iter = (self.n_features / 1000.0 * 300) * (30 + 36 + 6) + 216
         pose_opt_ops_per_frame = 4 * pose_opt_ops_per_iter
         tracking_logic_ops_per_frame = 150000.0
-        
+
         matrix_multiplier = 0.7 if has_matrix_opt else 1.2
         tracking_optimization_ops = self.total_frames * (pose_opt_ops_per_frame + tracking_logic_ops_per_frame) * matrix_multiplier
 
-        # 4. 局部建图与回环检测 (Local Mapping & Loop Closing)
+        # 4. 局部建图与回环检测
         local_ba_ops_per_kf = 6500000.0 * (self.n_features / 1000.0)
         local_mapping_ops = self.total_keyframes * local_ba_ops_per_kf
 
@@ -305,13 +288,13 @@ class SLAMWorkloadModel:
         loop_closing_ops = self.total_loop_checks * loop_check_ops_per_event
         mapping_loop_ops = local_mapping_ops + loop_closing_ops
 
-        # 5. 系统级架构与开销因子 (System Overhead)
+        # 5. 系统级架构与开销因子
         overhead_multiplier = 1.0
         if not has_lock_opt:
             overhead_multiplier += 0.18
         if not has_parallel_opt and not has_neon_simd:
             overhead_multiplier += 0.05
-        
+
         total_code_lines = sum(len(src.splitlines()) for src in module_sources.values())
         misc_overhead_ops = (feature_extraction_ops + feature_matching_ops + tracking_optimization_ops) * (overhead_multiplier - 1.0)
 
@@ -332,7 +315,6 @@ class SLAMWorkloadModel:
             "complexity_score": round(total_ops / 1e9, 4), # G-Ops
             "is_valid_slam": True
         }
-
 
 def find_git_repo_root(start_dir: Optional[str] = None) -> str:
     """自动查找并返回包含当前目录或脚本所在目录的 Git 仓库根目录路径。"""
@@ -362,10 +344,7 @@ def find_git_repo_root(start_dir: Optional[str] = None) -> str:
 
     return os.path.abspath(search_path)
 
-
-# ==============================================================================
-# 3. Git Commit 历史提取引擎 (Git History Engine)
-# ==============================================================================
+# 3. Git Commit 历史提取引擎
 class GitCommitEngine:
     """高效提取 Git 仓库历史 Commit 信息及源码，支持多线程并行拉取"""
 
@@ -428,10 +407,7 @@ class GitCommitEngine:
 
         return module_sources
 
-
-# ==============================================================================
-# 4. 可视化与排版优化报告生成器 (Visualizer & Modern Dashboard)
-# ==============================================================================
+# 4. 可视化与报告生成器
 class BenchmarkVisualizer:
     """生成精致排版 Matplotlib 矢量/高清图表与现代科技风交互式 HTML 仪表盘"""
 
@@ -506,17 +482,17 @@ class BenchmarkVisualizer:
                      fontsize=10.5, fontweight='bold', color='#0f172a',
                      bbox=dict(boxstyle="round,pad=0.5,rounding_size=0.3", fc="#f8fafc", ec="#cbd5e1", lw=1.2),
                      y=0.996)
-        
+
         # 1. 总计算量趋势
         ax1 = axes[0]
         ax1.plot(indices, total_ops_g, color='#2563EB', linewidth=2.5, label='Total Workload (G-Ops)')
         ax1.fill_between(indices, 0, total_ops_g, color='#3B82F6', alpha=0.15)
-        
-        ax1.scatter([max_orig_idx], [max_ops_g], color='#EF4444', s=80, zorder=6, 
+
+        ax1.scatter([max_orig_idx], [max_ops_g], color='#EF4444', s=80, zorder=6,
                     label=f'Peak: {BenchmarkVisualizer.format_ops_human(max_ops_g * 1e9)} (#{max_orig_idx} {benchmark_results[max_orig_idx-1]["short_hash"]})')
-        ax1.scatter([min_orig_idx], [min_ops_g], color='#10B981', s=80, zorder=6, 
+        ax1.scatter([min_orig_idx], [min_ops_g], color='#10B981', s=80, zorder=6,
                     label=f'Best: {BenchmarkVisualizer.format_ops_human(min_ops_g * 1e9)} (#{min_orig_idx} {benchmark_results[min_orig_idx-1]["short_hash"]})')
-        ax1.scatter([latest_orig_idx], [latest_ops/1e9], color='#8B5CF6', s=80, zorder=6, 
+        ax1.scatter([latest_orig_idx], [latest_ops/1e9], color='#8B5CF6', s=80, zorder=6,
                     label=f'Latest: {BenchmarkVisualizer.format_ops_human(latest_ops)} (#{latest_orig_idx} {benchmark_results[-1]["short_hash"]})')
 
         ax1.set_ylim(0, max_ops_g * 1.30)
@@ -590,7 +566,7 @@ class BenchmarkVisualizer:
 
             stress_colors = ['#0EA5E9', '#3B82F6', '#8B5CF6', '#EC4899', '#EF4444']
             bars4 = ax4.bar(preset_names, stress_ops_g, color=stress_colors[:len(preset_keys)], width=0.45, edgecolor='#1e293b', linewidth=0.9)
-            
+
             max_stress_g = max(stress_ops_g) if stress_ops_g else 1.0
             ax4.set_ylim(0, max_stress_g * 1.35)
 
@@ -612,7 +588,7 @@ class BenchmarkVisualizer:
         if output_png:
             plt.savefig(output_png, dpi=200, bbox_inches='tight')
             print(f"[+] 高清 PNG 图表已保存至: {output_png}")
-        
+
         if output_svg:
             plt.savefig(output_svg, bbox_inches='tight')
             print(f"[+] 矢量 SVG 图表已保存至: {output_svg}")
@@ -634,7 +610,7 @@ class BenchmarkVisualizer:
 
         first_res = valid_results[0]
         latest_res = benchmark_results[-1]
-        
+
         first_ops = first_res["total_ops"]
         latest_ops = latest_res["total_ops"]
         max_res = max(valid_results, key=lambda x: x["total_ops"])
@@ -643,7 +619,7 @@ class BenchmarkVisualizer:
         reduction_pct = ((peak_ops - latest_ops) / peak_ops * 100) if peak_ops > 0 else 0
         speedup_ratio = (peak_ops / latest_ops) if latest_ops > 0 else 1.0
 
-        # 提取历史 Top 优化 Commit
+        # 提取历史中的优化类 Commit
         opt_diffs = []
         for i in range(1, len(benchmark_results)):
             prev = benchmark_results[i - 1]["total_ops"]
@@ -699,7 +675,7 @@ class BenchmarkVisualizer:
             opts_badges = "".join([f'<span class="badge {BenchmarkVisualizer.get_badge_class(opt)}">{opt}</span>' for opt in r.get("optimizations_detected", [])])
             if not opts_badges:
                 opts_badges = '<span class="badge badge-none">Baseline</span>' if r['total_ops'] > 0 else '<span class="badge badge-none">Non-Code</span>'
-            
+
             table_rows_html += f"""
             <tr data-index="{idx}" data-hash="{r['short_hash']}" data-subject="{r['subject']}" data-author="{r['author']}" data-ops="{r['total_ops']}">
                 <td class="font-mono text-gray-500">#{idx}</td>
@@ -1084,10 +1060,7 @@ class BenchmarkVisualizer:
             f.write(html_content)
         print(f"[+] 现代科技风交互式 HTML 报告已保存至: {output_html}")
 
-
-# ==============================================================================
-# 5. 主程序与命令行调度入口 (Main Orchestrator)
-# ==============================================================================
+# 5. 主程序与命令行调度入口
 def main():
     parser = argparse.ArgumentParser(
         description="SLAM Git 提交历史理论计算量 Benchmark 与压力测试工具"
@@ -1095,12 +1068,12 @@ def main():
     parser.add_argument("--repo", type=str, default=None, help="Git 仓库或其子目录路径 (默认自动寻找上级 Git 根目录)")
     parser.add_argument("--recent", type=int, default=None, help="仅测算最近 N 个 Commit")
     parser.add_argument("--range", type=str, default=None, help="指定 Commit 范围 (例如 HEAD~30..HEAD)")
-    
+
     # 压力测试与场景预设
     parser.add_argument("--preset", type=str, choices=list(WORKLOAD_PRESETS.keys()), default=DEFAULT_PRESET,
                         help="场景压力测试预设: mobile_low, standard, hd_1080p, extreme_4k, heavy_loop")
     parser.add_argument("--stress-matrix", action="store_true", help="开启多场景联合压力测试矩阵测算")
-    
+
     # 自定义维度参数
     parser.add_argument("--duration", type=int, default=None, help="视频基准时长 (秒)")
     parser.add_argument("--fps", type=int, default=None, help="视频基准帧率 (FPS)")
@@ -1114,7 +1087,7 @@ def main():
     parser.add_argument("--jobs", "-j", type=int, default=8, help="并行 Git 提取线程数 (默认 8)")
     parser.add_argument("--cache-file", type=str, default=".benchmark_cache.json", help="增量缓存文件路径")
     parser.add_argument("--no-cache", action="store_true", help="禁用缓存，全量重新计算")
-    
+
     # 输出
     parser.add_argument("--output-png", type=str, default="benchmark_workload.png", help="PNG 图表输出文件名")
     parser.add_argument("--output-svg", type=str, default=None, help="SVG 矢量图表输出文件名 (默认按 PNG 自动导出同名 .svg)")
@@ -1140,7 +1113,7 @@ def main():
     git_engine = GitCommitEngine(repo_dir=args.repo)
 
     print("=" * 70)
-    print("🚀 SLAM Git 提交历史理论计算量 Benchmark 与压力测试 (仿真版)")
+    print("SLAM Git 提交历史理论计算量 Benchmark 与压力测试 (仿真版)")
     print("=" * 70)
     print(f"[*] 定位 Git 仓库目录: {git_engine.repo_dir}")
     print(f"[*] 预设场景模式: {preset_config['name']}")
@@ -1232,7 +1205,7 @@ def main():
         latest_c_hash = results[-1]["hash"]
         latest_m_sources = git_engine.get_commit_modules(latest_c_hash)
         stress_matrix_data = {}
-        
+
         print("\n[*] 正在运行场景压力测试矩阵 (Stress Matrix)...")
         for p_key, p_cfg in WORKLOAD_PRESETS.items():
             s_model = SLAMWorkloadModel(
@@ -1279,7 +1252,7 @@ def main():
         diff_pct = (diff_ops / peak_ops * 100) if peak_ops > 0 else 0
 
         print("\n" + "=" * 70)
-        print("📌 BENCHMARK & 压力测试 总结摘要")
+        print("BENCHMARK & 压力测试 总结摘要")
         print("=" * 70)
         print(f"• 代码基线提交 ({first_r['short_hash']} - {first_r['date']}): {BenchmarkVisualizer.format_ops_human(first_r['total_ops'])}")
         print(f"• 历史峰值负载 ({max_r['short_hash']} - {max_r['date']}): {BenchmarkVisualizer.format_ops_human(peak_ops)}")
@@ -1293,7 +1266,6 @@ def main():
         if out_svg_path:
             print(f"    - 矢量 SVG 图表: {os.path.abspath(out_svg_path)}")
         print("=" * 70)
-
 
 if __name__ == "__main__":
     main()
