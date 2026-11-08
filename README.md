@@ -275,12 +275,12 @@ We use modified versions of the [DBoW2](https://github.com/dorian3d/DBoW2) libra
 
 Beyond Android, this project provides standalone SLAM implementations and offline benchmark tools for desktop and handheld platforms under `MenthaAR/src/main/cpp/Thirdparty_Platforms/`, sharing the identical core SLAM algorithm:
 
-| Platform | Directory | Description |
-| :--- | :--- | :--- |
-| **Windows** | [`windows/`](MenthaAR/src/main/cpp/Thirdparty_Platforms/windows/Readme.md) | Supports MSVC/MinGW, AVX2 SIMD acceleration, live camera SLAM, and offline video benchmarks |
-| **Ubuntu / Linux** | [`ubuntu/`](MenthaAR/src/main/cpp/Thirdparty_Platforms/ubuntu/Readme.md) | Supports x86_64, aarch64, and Chinese domestic **LoongArch64** architectures |
-| **macOS** | [`mac/`](MenthaAR/src/main/cpp/Thirdparty_Platforms/mac/Readme.md) | Native support for Apple Silicon (arm64, NEON) and Intel (x86_64, AVX2), with AVFoundation and Cocoa GUI |
-| **PlayStation Vita** | [`psvita/`](MenthaAR/src/main/cpp/Thirdparty_Platforms/psvita/Readme.md) | Experimental homebrew monocular SLAM using VitaSDK, supporting front/rear cameras, point cloud rendering, and binary map persistence |
+| Platform             | Directory                                                                  | Description                                                                                                                          |
+| :------------------- | :------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------- |
+| **Windows**          | [`windows/`](MenthaAR/src/main/cpp/Thirdparty_Platforms/windows/Readme.md) | Supports MSVC/MinGW, AVX2 SIMD acceleration, live camera SLAM, and offline video benchmarks                                          |
+| **Ubuntu / Linux**   | [`ubuntu/`](MenthaAR/src/main/cpp/Thirdparty_Platforms/ubuntu/Readme.md)   | Supports x86_64, aarch64, and Chinese domestic **LoongArch64** architectures                                                         |
+| **macOS**            | [`mac/`](MenthaAR/src/main/cpp/Thirdparty_Platforms/mac/Readme.md)         | Native support for Apple Silicon (arm64, NEON) and Intel (x86_64, AVX2), with AVFoundation and Cocoa GUI                             |
+| **PlayStation Vita** | [`psvita/`](MenthaAR/src/main/cpp/Thirdparty_Platforms/psvita/Readme.md)   | Experimental homebrew monocular SLAM using VitaSDK, supporting front/rear cameras, point cloud rendering, and binary map persistence |
 
 ---
 

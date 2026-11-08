@@ -6,28 +6,28 @@ MenthaAR 的 PlayStation Vita 版本（实验性）。
 
 ## ✨ 功能
 
-| 功能 | 说明 |
-|------|------|
-| 单目 SLAM | 完整 ORB-SLAM2：ORB 特征、地图初始化、跟踪、局部建图、回环（HBST）、g2o 优化 |
-| 实时相机 | 后置 / 前置相机，640×360 ABGR，30 FPS |
-| 点云显示 | 将 `GetAllMapPoints()` 按 `Tcw` 投影绘制；青色=新建点，绿色=已加载点 |
-| 特征点 | `GetTrackedKeyPointsUn()` 跟踪特征点叠加显示 |
-| 地图持久化 | `SaveMap` / `LoadMap`，二进制地图 `ux0:data/MenthaAR/mentha_map.bin` |
-| HUD | 跟踪状态、FPS、关键帧数、地图点数、跟踪点数 |
+| 功能       | 说明                                                                         |
+| ---------- | ---------------------------------------------------------------------------- |
+| 单目 SLAM  | 完整 ORB-SLAM2：ORB 特征、地图初始化、跟踪、局部建图、回环（HBST）、g2o 优化 |
+| 实时相机   | 后置 / 前置相机，640×360 ABGR，30 FPS                                        |
+| 点云显示   | 将 `GetAllMapPoints()` 按 `Tcw` 投影绘制；青色=新建点，绿色=已加载点         |
+| 特征点     | `GetTrackedKeyPointsUn()` 跟踪特征点叠加显示                                 |
+| 地图持久化 | `SaveMap` / `LoadMap`，二进制地图 `ux0:data/MenthaAR/mentha_map.bin`         |
+| HUD        | 跟踪状态、FPS、关键帧数、地图点数、跟踪点数                                  |
 
 ---
 
 ## 🎮 操作
 
-| 按键 | 功能 |
-|------|------|
-| **O** | 保存地图到 `ux0:data/MenthaAR/mentha_map.bin` |
-| **□** | 从该路径读取地图 |
-| **△** | 重置 SLAM（清空当前地图） |
-| **L1** | 显示 / 隐藏点云 |
-| **R1** | 在“全部地图点” / “仅已加载地图点”之间切换 |
-| **SELECT** | 切换前 / 后相机 |
-| **START** | 退出（会先安全关闭 SLAM 线程） |
+| 按键       | 功能                                          |
+| ---------- | --------------------------------------------- |
+| **O**      | 保存地图到 `ux0:data/MenthaAR/mentha_map.bin` |
+| **□**      | 从该路径读取地图                              |
+| **△**      | 重置 SLAM（清空当前地图）                     |
+| **L1**     | 显示 / 隐藏点云                               |
+| **R1**     | 在“全部地图点” / “仅已加载地图点”之间切换     |
+| **SELECT** | 切换前 / 后相机                               |
+| **START**  | 退出（会先安全关闭 SLAM 线程）                |
 
 > 使用方式与桌面版一致：启动后**缓慢平移/旋转相机**让系统完成初始化，HUD 显示
 > `TRACKING OK` 后即可到处扫描；移动过快会显示 `TRACKING LOST`。
@@ -60,11 +60,11 @@ make -j$(nproc)
 
 产物：
 
-| 文件 | 说明 |
-|------|------|
-| `MenthaAR_PSVita.vpk` | 可安装到 Vita / VitaShell / Vita3K 的安装包 |
-| `MenthaAR_PSVita.self` | 压缩后的 SELF |
-| `MenthaAR_PSVita.velf` | 中间 ELF（未压缩，可 `nm` 查看符号） |
+| 文件                   | 说明                                        |
+| ---------------------- | ------------------------------------------- |
+| `MenthaAR_PSVita.vpk`  | 可安装到 Vita / VitaShell / Vita3K 的安装包 |
+| `MenthaAR_PSVita.self` | 压缩后的 SELF                               |
+| `MenthaAR_PSVita.velf` | 中间 ELF（未压缩，可 `nm` 查看符号）        |
 
 ---
 

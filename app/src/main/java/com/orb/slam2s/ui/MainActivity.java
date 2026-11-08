@@ -74,6 +74,8 @@ import java.util.List;
 import java.util.Locale;
 
 // SLAM AR 主控制 Activity(调度相机、3D 模型渲染、3DOF 追踪、地图管理与交互控制)
+// 由 AndroidManifest.xml 注册并在运行时通过 Intent 启动
+@SuppressWarnings("unused")
 public class MainActivity extends ComponentActivity
         implements CameraPreviewView.FrameListener, CameraPreviewView.DisplayCorrectionListener {
 

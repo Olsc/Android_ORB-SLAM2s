@@ -60,7 +60,6 @@ typedef std::set<KeyFrame*, IdLess<KeyFrame> > KeyFrameSet;
 typedef std::set<MapPoint*, IdLess<MapPoint> > MapPointSet;
 
 template<class V> using KeyFrameMap = std::map<KeyFrame*, V, IdLess<KeyFrame> >;
-template<class V> using MapPointMap = std::map<MapPoint*, V, IdLess<MapPoint> >;
 
 } // namespace ORB_SLAM2
 

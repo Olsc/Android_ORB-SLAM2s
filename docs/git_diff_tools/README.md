@@ -30,7 +30,7 @@ python docs/git_diff_tools/generate_git_diff_dashboard.py -s main -o diff_report
 ```
 
 #### 📋 参数说明
-| 参数 | 长参数 | 默认值 | 描述 |
-| :--- | :--- | :--- | :--- |
-| `-s` | `--start` | `None` (首次 Commit) | 指定对比起点的 Commit Hash、分支名或 Tag |
-| `-o` | `--output` | `git_diff_tree.html` | 指定生成的 HTML 仪表盘文件路径及名称 |
+| 参数 | 长参数     | 默认值               | 描述                                     |
+| :--- | :--------- | :------------------- | :--------------------------------------- |
+| `-s` | `--start`  | `None` (首次 Commit) | 指定对比起点的 Commit Hash、分支名或 Tag |
+| `-o` | `--output` | `git_diff_tree.html` | 指定生成的 HTML 仪表盘文件路径及名称     |

@@ -20,6 +20,8 @@ import android.opengl.GLSurfaceView;
 import android.util.AttributeSet;
 
 // 宽高比自适应 GLSurfaceView（专供 OpenGL 预览与渲染）
+// 由布局 XML 反射实例化，构造函数不会在源码中直接调用
+@SuppressWarnings("unused")
 public class AspectGLSurfaceView extends GLSurfaceView {
     private int surfaceWidth;
     private int surfaceHeight;

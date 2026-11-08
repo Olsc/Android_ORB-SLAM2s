@@ -27,6 +27,8 @@ import android.view.View;
 import androidx.annotation.NonNull;
 
 // 虚拟摇杆控件：控制 AR 物体旋转角度与力度
+// 由布局 XML 反射实例化，构造函数不会在源码中直接调用
+@SuppressWarnings("unused")
 public class VirtualJoystickView extends View {
 
     private final Paint mBgPaint;

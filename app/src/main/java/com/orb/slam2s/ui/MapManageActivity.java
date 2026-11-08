@@ -49,6 +49,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+// 地图管理 Activity：列出、删除本地地图并显示存储占用
+// 由 AndroidManifest.xml 注册并在运行时通过 Intent 启动
+@SuppressWarnings("unused")
 public class MapManageActivity extends ComponentActivity {
 
     private MapManager mMapManager;

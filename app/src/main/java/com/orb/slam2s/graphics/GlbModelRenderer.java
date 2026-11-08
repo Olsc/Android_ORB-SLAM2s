@@ -140,6 +140,15 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
         }
     }
 
+    // 工作线程请求重绘：GLSurfaceView.requestRender 的线程约束是主线程，
+    // 模型解析线程不能直接调用，post 回 View 队列后再请求
+    private void requestRenderFromWorkerThread() {
+        final AspectGLSurfaceView view = arObjectView;
+        if (view != null && rendererAttached) {
+            view.post(this::requestRender);
+        }
+    }
+
     public GlbModelRenderer init(TouchGestureHelper touchHelper) {
         if (arObjectView == null) {
             Log.e(TAG, "ArObjectView 为空，无法初始化");
@@ -196,7 +205,7 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
                     nativeGetBounds(nativeHandle, bounds);
                     autoScaleFactor = bounds[7];
                     isModelLoaded = true;
-                    requestRender();
+                    requestRenderFromWorkerThread();
                     Log.i(TAG, "GLB 模型异步解析完成: 自动缩放系数=" + autoScaleFactor);
                 } else {
                     Log.e(TAG, "原生 cgltf 加载 GLB 失败: " + modelPath);
@@ -270,7 +279,9 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
         }
     }
 
+    // 由 native (glb_jni.cpp) 通过 JNI 回调，IDE 无法识别该调用点
     @Keep
+    @SuppressWarnings("unused")
     public int onLoadTextureFromBytes(byte[] imageBytes) {
         if (imageBytes == null || imageBytes.length == 0) return 0;
         try {

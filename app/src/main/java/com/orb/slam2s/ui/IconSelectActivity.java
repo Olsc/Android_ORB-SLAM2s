@@ -40,6 +40,8 @@ import java.util.List;
 
 // 桌面图标选择 Activity：根据 IconManager 中登记的图标选项动态生成切换卡片，
 // 新增图标无需修改本类，只需在 IconManager.OPTIONS 中追加配置即可。
+// 由 AndroidManifest.xml 注册并在运行时通过 Intent 启动
+@SuppressWarnings("unused")
 public class IconSelectActivity extends ComponentActivity {
 
     // 单个图标选项对应的视图引用

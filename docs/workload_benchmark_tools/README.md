@@ -36,9 +36,9 @@ python docs/workload_benchmark_tools/run_workload_benchmark.py --start-commit 35
 ```
 
 #### 📋 参数说明
-| 参数 | 长参数 | 默认值 | 描述 |
-| :--- | :--- | :--- | :--- |
-| `-s` | `--start-commit` | `None` | 指定评测起始 Commit Hash |
-| `-e` | `--end-commit` | `HEAD` | 指定评测结束 Commit Hash |
-| `-o` | `--output-png` | `benchmark_workload.png` | 指定输出 PNG 图表路径及文件名 |
-| `-t` | `--threads` | `4` | 指定多线程分析并发数 |
+| 参数 | 长参数           | 默认值                   | 描述                          |
+| :--- | :--------------- | :----------------------- | :---------------------------- |
+| `-s` | `--start-commit` | `None`                   | 指定评测起始 Commit Hash      |
+| `-e` | `--end-commit`   | `HEAD`                   | 指定评测结束 Commit Hash      |
+| `-o` | `--output-png`   | `benchmark_workload.png` | 指定输出 PNG 图表路径及文件名 |
+| `-t` | `--threads`      | `4`                      | 指定多线程分析并发数          |

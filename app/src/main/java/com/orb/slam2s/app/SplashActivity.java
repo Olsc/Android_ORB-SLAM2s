@@ -46,7 +46,9 @@ import com.orb.slam2s.util.IconManager;
 
 // SplashActivity：启动权限检查与主界面分发
 // 该 Activity 承担权限检查与分发逻辑（非纯启动图），不采用 Android 12+ SplashScreen API
+// 入口是 AndroidManifest.xml 中的 activity-alias（桌面图标切换），IDE 无法识别该间接引用
 @SuppressLint("CustomSplashScreen")
+@SuppressWarnings("unused")
 public class SplashActivity extends Activity {
     private static final String TAG = "SplashActivity";
     private static final int REQUEST_PERMISSION = 233;

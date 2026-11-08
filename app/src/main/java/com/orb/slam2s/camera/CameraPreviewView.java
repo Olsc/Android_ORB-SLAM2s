@@ -69,6 +69,8 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 // 相机预览与图像流摄取视图(基于 CameraX 采集、双缓冲灰度转换、IPC 帧推送与 OpenGL 视图呈现)
+// 由布局 XML 反射实例化，构造函数不会在源码中直接调用
+@SuppressWarnings("unused")
 public class CameraPreviewView extends AspectGLSurfaceView {
 
     private static final String TAG = "CameraPreviewView";

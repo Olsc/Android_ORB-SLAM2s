@@ -192,11 +192,7 @@ public class SharedMemoryBuffer {
 
     public int readSlamDoneSeq() { return readInt(OFF_SLAM_DONE_SEQ); }
 
-    public int readTrackingState() { return readInt(OFF_TRACKING_STATE); }
-
     public int readDrawFlag() { return readInt(OFF_DRAW_FLAG); }
-
-    public int readActiveMapId() { return readInt(OFF_ACTIVE_MAP_ID); }
 
     public int readPointCloudSeq() { return readInt(OFF_POINTCLOUD_SEQ); }
 

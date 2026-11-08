@@ -8,12 +8,12 @@ MenthaAR 的单目视觉 SLAM 桌面版本（macOS / Apple Silicon 或 Intel）�
 
 ## 📦 环境要求
 
-| 组件 | 要求 |
-|------|------|
-| 操作系统 | macOS 11+（Apple Silicon 或 Intel x64） |
-| 编译器 | Apple Clang（随 **Xcode Command Line Tools** 提供） |
-| 构建工具 | CMake ≥ 3.10（`brew install cmake`） |
-| Make | 系统自带（或 `brew install ninja` 使用 Ninja 加速） |
+| 组件     | 要求                                                |
+| -------- | --------------------------------------------------- |
+| 操作系统 | macOS 11+（Apple Silicon 或 Intel x64）             |
+| 编译器   | Apple Clang（随 **Xcode Command Line Tools** 提供） |
+| 构建工具 | CMake ≥ 3.10（`brew install cmake`）                |
+| Make     | 系统自带（或 `brew install ninja` 使用 Ninja 加速） |
 
 无需手动安装 OpenCV/Eigen/g2o —— 工程使用内置源码（`Thirdparty/`），CMake 会自动以静态库方式编译。
 OpenCV 的相机采集走内置 **AVFoundation** 后端，GUI 走内置 **Cocoa** 后端；本机装有 FFmpeg 时 videoio 会自动探测并启用。
@@ -40,10 +40,10 @@ cmake --build . -j$(sysctl -n hw.ncpu)
 
 编译完成后，产物在 `build/bin/` 目录下：
 
-| 目标 | 文件 | 用途 |
-|------|------|------|
-| **MenthaAR_macOS** | `build/bin/MenthaAR_macOS` | 实时 SLAM 演示 (相机/视频 + 交互式 GUI) |
-| **MenthaAR_Benchmark** | `build/bin/MenthaAR_Benchmark` | 离线视频评测 (输出性能报告) |
+| 目标                   | 文件                           | 用途                                    |
+| ---------------------- | ------------------------------ | --------------------------------------- |
+| **MenthaAR_macOS**     | `build/bin/MenthaAR_macOS`     | 实时 SLAM 演示 (相机/视频 + 交互式 GUI) |
+| **MenthaAR_Benchmark** | `build/bin/MenthaAR_Benchmark` | 离线视频评测 (输出性能报告)             |
 
 > 构建脚本会自动探测目标架构：
 > - **Apple Silicon (arm64)**：NEON/ASIMD 是 ABI 基线，默认即启用，无需额外标志
@@ -76,10 +76,10 @@ cmake --build . -j$(sysctl -n hw.ncpu)
 
 鼠标移入窗口右缘热区展开控制抽屉：
 
-| 分组 | 功能 |
-|------|------|
+| 分组               | 功能                                 |
+| ------------------ | ------------------------------------ |
 | **地图持久化操作** | 保存/加载 SLAM 地图 (mentha_map.bin) |
-| **可视化显示设置** | 切换点云显示 |
+| **可视化显示设置** | 切换点云显示                         |
 
 ### 键盘
 
