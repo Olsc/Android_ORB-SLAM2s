@@ -93,6 +93,19 @@ public class SlamIPCClient {
                 listener.onServiceDisconnected();
             }
         }
+
+        // 服务返回空 binder / 进程死亡：部分 ROM(如 MIUI)在子进程频繁崩溃后会拒绝再拉起，
+        // bindService 不抛异常也不回调 onServiceConnected，这里显式打日志便于定位
+        @Override
+        public void onNullBinding(ComponentName name) {
+            isBound = false;
+            Log.e(TAG, "SlamService 返回空 binder，服务未能启动: " + name);
+        }
+
+        @Override
+        public void onBindingDied(ComponentName name) {
+            Log.e(TAG, "SlamService 绑定失效(进程死亡): " + name);
+        }
     };
 
     public SlamIPCClient(Context context) {
@@ -107,7 +120,9 @@ public class SlamIPCClient {
     public void bindService() {
         Intent intent = new Intent();
         intent.setComponent(new ComponentName(context.getPackageName(), SERVICE_CLASS));
-        context.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
+        if (!context.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)) {
+            Log.e(TAG, "bindService 失败: 服务未声明或被系统限制");
+        }
     }
 
     public void unbindService() {

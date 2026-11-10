@@ -72,6 +72,7 @@
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <vector>
+#include <algorithm>
 #include <thread>
 #include <atomic>
 #include <mutex>
@@ -739,7 +740,7 @@ vector<cv::KeyPoint> ORBextractor::DistributeOctTree(const vector<cv::KeyPoint>&
                                        const int &maxX, const int &minY, const int &maxY, const int &N, const int &level)
 {
     // 计算初始节点数量
-    const int nIni = round(static_cast<float>(maxX-minX)/(maxY-minY));
+    const int nIni = std::max(1, (int)std::lround(static_cast<float>(maxX-minX)/(maxY-minY)));
 
     const float hX = static_cast<float>(maxX-minX)/nIni;
 
@@ -979,14 +980,20 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
         const int maxBorderX = mvImagePyramid[level].cols-ORB_EDGE_THRESHOLD+ORB_FAST_BORDER_MARGIN;
         const int maxBorderY = mvImagePyramid[level].rows-ORB_EDGE_THRESHOLD+3;
 
-        vector<cv::KeyPoint> vToDistributeKeys;
-        vToDistributeKeys.reserve(nfeatures*ORB_CANDIDATE_RESERVE_FACTOR);
-
         const float width = (maxBorderX-minBorderX);
         const float height = (maxBorderY-minBorderY);
 
-        const int nCols = width/W;
-        const int nRows = height/W;
+        // 高金字塔层在竖屏帧下可能退化到没有有效边界：跳过该层
+        if (width <= 0 || height <= 0) {
+            allKeypoints[level].clear();
+            continue;
+        }
+
+        vector<cv::KeyPoint> vToDistributeKeys;
+        vToDistributeKeys.reserve(nfeatures*ORB_CANDIDATE_RESERVE_FACTOR);
+
+        const int nCols = std::max(1, (int)(width/W));
+        const int nRows = std::max(1, (int)(height/W));
         const int wCell = ceil(width/nCols);
         const int hCell = ceil(height/nRows);
 

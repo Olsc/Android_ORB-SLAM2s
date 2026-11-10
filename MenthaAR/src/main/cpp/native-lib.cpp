@@ -59,6 +59,7 @@ ORB_SLAM2::System* slamSys;
 float fx, fy, cx, cy;
 float gBaseFx, gBaseFy, gBaseCx, gBaseCy; // 基准内参 (640x360校准值)
 float gScaledFx, gScaledFy, gScaledCx, gScaledCy; // 缩放后的内参
+int gLastCameraW = 0, gLastCameraH = 0; // 最近一次相机帧尺寸，进程内重建 SLAM 时用于恢复内参
 double timeStamp;
 bool slamInitialized = false;
 
@@ -400,6 +401,9 @@ void LoadPlaneAndArInfo(const std::string& filename, int mapId)
     AR_OnMapDataLoaded(mapId, std::move(loaded));
 }
 
+// 按实际相机帧尺寸重算 SLAM 内参(兼容横/竖屏输入)，定义见下方 initSLAM 之后
+void updateScaledIntrinsics(int cameraWidth, int cameraHeight);
+
 int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
 {
     VT_PROFILE_FUNCTION();
@@ -420,13 +424,7 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
     // 确保内参与实际 SLAM 分辨率匹配
     static int sLastSlamW = 0, sLastSlamH = 0;
     if (imgSmall.cols != sLastSlamW || imgSmall.rows != sLastSlamH) {
-        const float calScaleX = (float)imgSmall.cols / ORB_SLAM2::BASE_SLAM_WIDTH;
-        const float calScaleY = (float)imgSmall.rows / ORB_SLAM2::BASE_SLAM_HEIGHT;
-        gScaledFx = gBaseFx * calScaleX;
-        gScaledFy = gBaseFy * calScaleY;
-        gScaledCx = gBaseCx * calScaleX;
-        gScaledCy = gBaseCy * calScaleY;
-        fx = gScaledFx; fy = gScaledFy; cx = gScaledCx; cy = gScaledCy;
+        updateScaledIntrinsics(image.cols, image.rows);
         if (slamSys) {
             slamSys->UpdateCalibration(fx, fy, cx, cy);
         }
@@ -561,6 +559,13 @@ Java_com_orb_slam2s_slamar_NativeHelper_initSLAM(JNIEnv* env, jobject instance, 
     gScaledCx = cx;
     gScaledCy = cy;
 
+    // 同一进程内服务被销毁后重建(如切后台再回前台)时还没有新帧，先按上次相机尺寸恢复内参
+    if (gLastCameraW > 0 && gLastCameraH > 0) {
+        updateScaledIntrinsics(gLastCameraW, gLastCameraH);
+        LOGD("SLAM 内参恢复: 相机=%dx%d fx=%.1f fy=%.1f cx=%.1f cy=%.1f",
+             gLastCameraW, gLastCameraH, fx, fy, cx, cy);
+    }
+
     timeStamp = 0.0;
 
     VT_PROFILE_INITIALIZE(modelPath + "/mentha_profile.bin");
@@ -596,18 +601,30 @@ Java_com_orb_slam2s_slamar_NativeHelper_initSLAM(JNIEnv* env, jobject instance, 
 void updateScaledIntrinsics(int cameraWidth, int cameraHeight) {
     if (cameraWidth <= 0 || cameraHeight <= 0) return;
 
+    gLastCameraW = cameraWidth;
+    gLastCameraH = cameraHeight;
+
     int slamWidth = static_cast<int>(std::lround((float)cameraWidth / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR));
     int slamHeight = static_cast<int>(std::lround((float)cameraHeight / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR));
     if (slamWidth < 1) slamWidth = 1;
     if (slamHeight < 1) slamHeight = 1;
 
-    float scaleX = (float)slamWidth / ORB_SLAM2::BASE_SLAM_WIDTH;
-    float scaleY = (float)slamHeight / ORB_SLAM2::BASE_SLAM_HEIGHT;
-
-    gScaledFx = gBaseFx * scaleX;
-    gScaledFy = gBaseFy * scaleY;
-    gScaledCx = gBaseCx * scaleX;
-    gScaledCy = gBaseCy * scaleY;
+    if (slamWidth < slamHeight) {
+        // 竖向帧：基准标定(横向 640x360)顺时针旋转 90° 得到 360x640 (fx=fy=640, cx=180, cy=320)后再缩放
+        const float scaleX = (float)slamWidth / ORB_SLAM2::BASE_SLAM_HEIGHT;
+        const float scaleY = (float)slamHeight / ORB_SLAM2::BASE_SLAM_WIDTH;
+        gScaledFx = gBaseFy * scaleX;
+        gScaledFy = gBaseFx * scaleY;
+        gScaledCx = (ORB_SLAM2::BASE_SLAM_HEIGHT - gBaseCy) * scaleX;
+        gScaledCy = gBaseCx * scaleY;
+    } else {
+        const float scaleX = (float)slamWidth / ORB_SLAM2::BASE_SLAM_WIDTH;
+        const float scaleY = (float)slamHeight / ORB_SLAM2::BASE_SLAM_HEIGHT;
+        gScaledFx = gBaseFx * scaleX;
+        gScaledFy = gBaseFy * scaleY;
+        gScaledCx = gBaseCx * scaleX;
+        gScaledCy = gBaseCy * scaleY;
+    }
 
     fx = gScaledFx;
     fy = gScaledFy;
