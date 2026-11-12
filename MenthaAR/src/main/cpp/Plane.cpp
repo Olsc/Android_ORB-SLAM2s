@@ -47,7 +47,7 @@ static cv::Mat Mat33Mul(const cv::Mat& A, const cv::Mat& B)
     return C;
 }
 
-// SO(3) 李代数指数映射：用闭式 Rodrigues 公式直接填充 3x3 矩阵，避免开辟堆内存临时对象
+// SO(3) 李代数指数映射：闭式 Rodrigues 公式直接填充 3x3 矩阵，不分配堆对象
 // exp(skew(w)) = I*cos(theta) + (1-cos(theta))*k*k^T + skew(k)*sin(theta)，其中 theta=||w||、k=w/theta
 cv::Mat Plane::ExpSO3(const float& x, const float& y, const float& z)
 {

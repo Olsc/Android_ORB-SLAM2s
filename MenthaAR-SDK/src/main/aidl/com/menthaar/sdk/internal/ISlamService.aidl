@@ -28,7 +28,7 @@ import android.os.ParcelFileDescriptor;
 
 // SDK 内部协议：App 与 SLAM 服务进程之间的控制通道，帧数据与结果走共享内存。
 interface ISlamService {
-    // 低频/耗时操作：oneway 避免占用 binder 线程
+    // 低频耗时操作，oneway 调用不占用调用方 binder 线程
     oneway void initSLAM(String resDir);
 
     // 共享内存 attach：低频（仅创建缓冲/分辨率变化时），保持同步以便确认映射成功

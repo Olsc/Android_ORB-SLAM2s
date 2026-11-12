@@ -9,6 +9,7 @@
     <string name="loading_slam_init">جارٍ تهيئة نظام SLAM…</string>
     <string name="loading_slam_wait">يرجى الانتظار، قد يستغرق هذا بعض الوقت</string>
     <string name="slam_init_complete">تمت تهيئة نظام SLAM</string>
+    <string name="slam_connection_lost">انقطع اتصال خدمة SLAM. أعد فتح التطبيق لإعادة الاتصال.</string>
     <string name="slam_init_failed">فشل تهيئة SLAM: %1$s</string>
     <string name="hint_request_sent">تم إرسال الطلب</string>
     <string name="hint_pointcloud_enabled">السحابة النقطية مُفعَّلة</string>

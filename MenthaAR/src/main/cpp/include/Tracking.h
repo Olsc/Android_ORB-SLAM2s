@@ -168,7 +168,7 @@ public:
     // 创建新子地图前仅清除跟踪线程内部运行时状态
     void PrepareForNewMap();
 
-    // 切换地图前清空旧地图的重定位/对齐缓存，需在StopGlobalRelocThread之后、SwitchToMap之前调用。
+    // 切换地图时清空旧地图的重定位与对齐缓存，调用点位于 StopGlobalRelocThread 与 SwitchToMap 之间。
     void ClearRelocCacheForMapSwitch();
 
 protected:
@@ -303,7 +303,7 @@ protected:
     std::atomic<bool> mRefCacheDirty{false};
     // HBST树：用于代替词袋倒排索引加速背景重定位匹配
     std::shared_ptr<HBSTTree> mpRefTree;
-    // 加载地图点的不可变快照以避免竞争
+    // 加载地图点的不可变快照，跨线程读取不加锁
     struct RefMPSnapshot {
         cv::Point3f Pw;
         float minD;
@@ -358,7 +358,7 @@ protected:
     int mCfgMatchChunk = SYSTEM_RELOC_CONFIG_MATCH_CHUNK;
     int mCfgMaxBindInliers = SYSTEM_RELOC_CONFIG_MAX_BIND_INLIERS;
     int mCfgMaxProjBinds = SYSTEM_RELOC_CONFIG_MAX_PROJ_BINDS;
-    // 重定位冷却以避免在明显不匹配时进行重型PnP
+    // 重定位冷却，明显不匹配时跳过重型 PnP
     int mRelocCooldownFrames = 0;
 
     int mPendingMapId = -1;

@@ -9,6 +9,7 @@
     <string name="loading_slam_init">SLAM 시스템 초기화 중…</string>
     <string name="loading_slam_wait">잠시 기다려 주세요, 시간이 걸릴 수 있습니다</string>
     <string name="slam_init_complete">SLAM 시스템 초기화 완료</string>
+    <string name="slam_connection_lost">SLAM 서비스 연결이 끊어졌습니다. 다시 연결하려면 앱을 다시 여세요.</string>
     <string name="slam_init_failed">SLAM 초기화 실패: %1$s</string>
     <string name="hint_request_sent">요청 전송됨</string>
     <string name="hint_pointcloud_enabled">포인트 클라우드 활성화됨</string>

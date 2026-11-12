@@ -78,7 +78,7 @@ final class SharedMemoryBuffer {
     private FloatBuffer mappedFloatView;        // mappedBuffer 的 float 视图
     private ParcelFileDescriptor pfd;           // 传递给 SLAM 进程的 fd
 
-    // mappedFloatView 的 position 非线程安全，用它串行化所有读取与关闭
+    // 读映射与关闭共用这把锁，close() 会 munmap，锁外访问 mappedBuffer 即 use-after-unmap。
     private final Object readLock = new Object();
 
     // seqlock 读端全屏障：一次 volatile 写接一次 volatile 读构成 StoreLoad 屏障，保证序号与数据的读取不被重排（ART 对 volatile 生成 ldar/stlr/dmb）
@@ -89,8 +89,9 @@ final class SharedMemoryBuffer {
         if (v != 0) fence = v;
     }
 
-    private int frameW;
-    private int frameH;
+    // 帧尺寸由写线程（sliceFrame/writeFrame）与读线程（pointCloudOffset/yOffset）共享，volatile 保证可见性。
+    private volatile int frameW;
+    private volatile int frameH;
 
     @SuppressWarnings("JavaReflectionMemberAccess")
     SharedMemoryBuffer(String name, int size) {
@@ -180,15 +181,15 @@ final class SharedMemoryBuffer {
         writeInt(OFF_UI_WRITE_SEQ, seq);
     }
 
+    // 主线程每个 vsync 都会调用：必须与 close() 互斥，否则可能读到已 munmap 的映射
     int readSlamDoneSeq() {
-        return readInt(OFF_SLAM_DONE_SEQ);
+        synchronized (readLock) {
+            return readInt(OFF_SLAM_DONE_SEQ);
+        }
     }
 
-    int readPointCloudBytes() {
-        return readInt(OFF_POINTCLOUD_BYTES);
-    }
-
-    // 一次 seqlock 读窗口内读取 48 个矩阵 float 与状态字段；false 表示暂无数据。
+    // 一次 seqlock 读窗口内读取 48 个矩阵 float，窗口内只做数据拷贝，失败返回 false。
+    // 状态字段在序号校验通过后补读，不参与一致性判定。
     boolean readResult(float[] outMvp, int[] outStatus) {
         if (outMvp == null || outMvp.length < 48 || outStatus == null || outStatus.length < STATUS_LENGTH) {
             return false;
@@ -201,13 +202,10 @@ final class SharedMemoryBuffer {
                     fullFence();
                     mappedFloatView.position(OFF_MVP / 4);
                     mappedFloatView.get(outMvp, 0, 48);
-                    outStatus[STATUS_TRACKING] = mappedBuffer.getInt(OFF_TRACKING_STATE);
-                    outStatus[STATUS_DRAWABLE] = mappedBuffer.getInt(OFF_DRAW_FLAG);
-                    outStatus[STATUS_MAP_ID] = mappedBuffer.getInt(OFF_ACTIVE_MAP_ID);
-                    outStatus[STATUS_POINTCLOUD_SEQ] = mappedBuffer.getInt(OFF_POINTCLOUD_SEQ);
-                    outStatus[STATUS_FRAME_ID] = mappedBuffer.getInt(OFF_SLAM_DONE_SEQ);
                     fullFence();
-                    if (s1 == mappedBuffer.getInt(OFF_MVP_SEQ)) return true;
+                    if (s1 != mappedBuffer.getInt(OFF_MVP_SEQ)) continue;
+                    readStatus(outStatus);
+                    return true;
                 }
                 return false;
             }
@@ -219,11 +217,7 @@ final class SharedMemoryBuffer {
                     for (int i = 0; i < 48; i++) {
                         outMvp[i] = bb.getFloat(i * 4);
                     }
-                    outStatus[STATUS_TRACKING] = readInt(OFF_TRACKING_STATE);
-                    outStatus[STATUS_DRAWABLE] = readInt(OFF_DRAW_FLAG);
-                    outStatus[STATUS_MAP_ID] = readInt(OFF_ACTIVE_MAP_ID);
-                    outStatus[STATUS_POINTCLOUD_SEQ] = readInt(OFF_POINTCLOUD_SEQ);
-                    outStatus[STATUS_FRAME_ID] = readInt(OFF_SLAM_DONE_SEQ);
+                    readStatus(outStatus);
                     return true;
                 } catch (Exception e) {
                     Log.e(TAG, "读取追踪结果失败: " + e.getMessage());
@@ -234,33 +228,51 @@ final class SharedMemoryBuffer {
     }
 
     // 读取点云（每点 7 floats: x, y, z, r, g, b, size），返回 float 个数。
+    // 点云区无服务端 seqlock，用前后序号做乐观校验，序号变化则重试一次，两侧不一致返回 0。
     int readPointCloud(float[] out, int maxFloats) {
-        int bytes = readPointCloudBytes();
-        if (bytes <= 0 || bytes > POINTCLOUD_MAX_BYTES || out == null) return 0;
-        int floats = Math.min(bytes / 4, Math.min(maxFloats, out.length));
-        if (floats <= 0) return 0;
-
+        if (out == null || out.length <= 0) return 0;
         synchronized (readLock) {
-            if (mappedFloatView != null) {
-                mappedFloatView.position(pointCloudOffset() / 4);
-                mappedFloatView.get(out, 0, floats);
-                return floats;
-            }
-            if (memoryFile != null) {
-                try {
-                    byte[] bytesBuf = new byte[floats * 4];
-                    memoryFile.readBytes(bytesBuf, pointCloudOffset(), 0, bytesBuf.length);
-                    ByteBuffer bb = ByteBuffer.wrap(bytesBuf).order(ByteOrder.LITTLE_ENDIAN);
-                    for (int i = 0; i < floats; i++) {
-                        out[i] = bb.getFloat(i * 4);
+            final boolean mapped = mappedFloatView != null;
+            if (!mapped && memoryFile == null) return 0;
+            for (int attempt = 0; attempt < 2; attempt++) {
+                final int seq1 = readInt(OFF_POINTCLOUD_SEQ);
+                final int bytes = readInt(OFF_POINTCLOUD_BYTES);
+                if (bytes <= 0 || bytes > POINTCLOUD_MAX_BYTES) return 0;
+                final int floats = Math.min(bytes / 4, Math.min(maxFloats, out.length));
+                if (floats <= 0) return 0;
+
+                if (mapped) {
+                    mappedFloatView.position(pointCloudOffset() / 4);
+                    mappedFloatView.get(out, 0, floats);
+                } else {
+                    try {
+                        byte[] bytesBuf = new byte[floats * 4];
+                        memoryFile.readBytes(bytesBuf, pointCloudOffset(), 0, bytesBuf.length);
+                        ByteBuffer bb = ByteBuffer.wrap(bytesBuf).order(ByteOrder.LITTLE_ENDIAN);
+                        for (int i = 0; i < floats; i++) {
+                            out[i] = bb.getFloat(i * 4);
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "读取点云失败: " + e.getMessage());
+                        return 0;
                     }
-                    return floats;
-                } catch (Exception e) {
-                    Log.e(TAG, "读取点云失败: " + e.getMessage());
                 }
+                fullFence();
+                if (seq1 == readInt(OFF_POINTCLOUD_SEQ)) return floats;
             }
+            // 连续两次都被服务端重写打断：本帧放弃，等下一次点云序号变化再读
             return 0;
         }
+    }
+
+    // 读状态字段（调用方已持有 readLock，且位姿快照已校验通过）。
+    // frameId 取 SLAM_DONE_SEQ：它由服务端在发布完 MVP 之后才推进，因此可能比快照领先一帧。
+    private void readStatus(int[] outStatus) {
+        outStatus[STATUS_TRACKING] = readInt(OFF_TRACKING_STATE);
+        outStatus[STATUS_DRAWABLE] = readInt(OFF_DRAW_FLAG);
+        outStatus[STATUS_MAP_ID] = readInt(OFF_ACTIVE_MAP_ID);
+        outStatus[STATUS_POINTCLOUD_SEQ] = readInt(OFF_POINTCLOUD_SEQ);
+        outStatus[STATUS_FRAME_ID] = readInt(OFF_SLAM_DONE_SEQ);
     }
 
     // 返回 Y 缓冲的直接切片供零拷贝写入；API 27 以下无映射时返回 null。

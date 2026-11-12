@@ -81,7 +81,7 @@ public:
     // 动态更新相机内参，当分辨率改变时由JNI层调用
     void UpdateCalibration(float fx, float fy, float cx, float cy);
 
-    // 检查地图是否发生重大变化（闭环或全局BA）
+    // 检查地图结构是否发生变化（闭环或全局 BA）
     bool MapChanged();
 
     // 等待局部建图与闭环线程都空闲（队列为空、不在处理、GBA 未运行）
@@ -154,7 +154,7 @@ public:
 private:
     // 多地图容器
     std::vector<Map*> mvpMaps;
-    // 子地图 ID 单调计数器（初始地图 mnId=0，此后递增分配，避免逐出旧地图后 mvpMaps.size() 变小导致新地图 ID 与现存地图重复）
+    // 子地图 ID 单调计数器，逐出旧地图后仍不复用 ID（初始地图为 0）
     unsigned long mnNextMapId = 1;
 
     // 传感器配置

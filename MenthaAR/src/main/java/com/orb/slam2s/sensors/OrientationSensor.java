@@ -228,7 +228,7 @@ public class OrientationSensor implements SensorEventListener {
         return ready;
     }
 
-    // 回调与快照拷贝共用同一锁，避免跨线程读到撕裂的旋转矩阵
+    // 回调与快照拷贝共用同一锁，保证旋转矩阵读写一致
     @Override
     public synchronized void onSensorChanged(SensorEvent event) {
         if (event == null || event.values == null) {
@@ -362,8 +362,8 @@ public class OrientationSensor implements SensorEventListener {
             return;
         }
 
-        // getRotationMatrixFromVector 的输入是单位四元数的向量部 axis·sin(θ/2)，不是旋转向量 ω·dt：
-        // 直接传 ω·dt 会得到约 2θ 的旋转（基准 §7：×2.000/×2.0003/×2.0048）。这里按定义构造
+        // getRotationMatrixFromVector 输入是单位四元数的向量部 axis*sin(θ/2)，不是旋转向量 ω*dt。
+        // 直接传 ω*dt 会得到约 2θ 的旋转（实测比例 2.000/2.0003/2.0048），此处按定义构造。
         final float wx = event.values[0], wy = event.values[1], wz = event.values[2];
         final float wn = (float) Math.sqrt(wx * wx + wy * wy + wz * wz);
         final float theta = wn * dt;
@@ -435,7 +435,7 @@ public class OrientationSensor implements SensorEventListener {
         final float uy = (relRotationMatrix[1] * gx + relRotationMatrix[5] * gy + relRotationMatrix[9] * gz) / norm;
         final float uz = (relRotationMatrix[2] * gx + relRotationMatrix[6] * gy + relRotationMatrix[10] * gz) / norm;
 
-        // 误差轴 = u × 世界竖直轴
+        // 误差轴由 u 与世界竖直轴叉乘得到
         relTiltAxis[0] = -uy;
         relTiltAxis[1] = ux;
         relTiltAxis[2] = 0.0f;

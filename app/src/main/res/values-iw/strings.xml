@@ -9,6 +9,7 @@
     <string name="loading_slam_init">מאתחל את מערכת SLAM…</string>
     <string name="loading_slam_wait">אנא המתן, זה עשוי לקחת זמן מה</string>
     <string name="slam_init_complete">מערכת SLAM אותחלה</string>
+    <string name="slam_connection_lost">החיבור לשירות SLAM נותק. פתחו שוב את האפליקציה כדי להתחבר מחדש.</string>
     <string name="slam_init_failed">אתחול SLAM נכשל: %1$s</string>
     <string name="hint_request_sent">הבקשה נשלחה</string>
     <string name="hint_pointcloud_enabled">ענן נקודות הופעל</string>

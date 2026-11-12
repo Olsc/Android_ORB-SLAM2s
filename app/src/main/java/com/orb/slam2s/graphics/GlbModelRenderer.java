@@ -132,7 +132,7 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
         return this;
     }
 
-    // 请求重绘一帧（任意线程可调用；setRenderer 之前 GLSurfaceView 还没有 GL 线程，不能调用）
+    // 请求重绘一帧，任意线程可调用；setRenderer 完成前尚无 GL 线程，不可调用。
     private volatile boolean rendererAttached = false;
     public void requestRender() {
         if (arObjectView != null && rendererAttached) {
@@ -239,7 +239,7 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
 
-        if (menthaAR != null && menthaAR.isRunning()) {
+        if (menthaAR != null && menthaAR.isConnected()) {
             // 位姿与绘制决策均由 SDK 给出，App 侧只搬运矩阵（复用 Result，无每帧分配）
             boolean effectiveDraw = false;
             if (menthaAR.readResult(resultSnapshot)) {

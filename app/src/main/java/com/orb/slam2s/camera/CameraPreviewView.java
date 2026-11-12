@@ -429,8 +429,9 @@ public class CameraPreviewView extends AspectGLSurfaceView {
                                     postDisplayCorrection(correction);
                                 }
 
-                                // 先申请帧槽位（同时完成连接与背压检查）：只有被接收的帧才需要计算灰度
-                                final boolean ipcReady = mMenthaAR != null && mMenthaAR.isRunning();
+                                // 先申请帧槽位，连接状态、配置下发与背压检查在此完成，只有被接收的帧才需要计算灰度。
+                                // 用 isConnected() 判断：未连上服务时拿不到槽位。
+                                final boolean ipcReady = mMenthaAR != null && mMenthaAR.isConnected();
                                 MenthaAR.Frame frame = null;
                                 boolean ipcTaken = false;
                                 if (ipcReady && FrameConverter.isAvailable() && mIsIpcProcessing.compareAndSet(false, true)) {
@@ -846,14 +847,18 @@ public class CameraPreviewView extends AspectGLSurfaceView {
 
             mPassThroughRenderer.onDrawFrame(mImageTextureId);
 
-            if (mMenthaAR != null && mMenthaAR.isRunning() && mPointCloudRenderer != null) {
+            if (mMenthaAR != null && mMenthaAR.isConnected() && mPointCloudRenderer != null) {
                 // 一次读取位姿 + 状态快照（复用对象，无分配）；只在 SDK 点云版本号变化时才重新读取并上传 VBO
                 final boolean hasResult = mMenthaAR.readResult(mSlamResult);
                 final MenthaAR.Result result = mSlamResult;
                 final boolean pcChanged = hasResult && result.pointCloudId != mPointCloudSeq;
                 if (hasResult && pcChanged) {
-                    mPointCloudSeq = result.pointCloudId;
-                    mPointCloudPoints = mMenthaAR.readPointCloud(mPointCloudBuffer);
+                    final int points = mMenthaAR.readPointCloud(mPointCloudBuffer);
+                    mPointCloudPoints = points;
+                    // 读到数据才推进版本号，读取被服务端重写打断时下一帧重试，不会丢一整帧点云。
+                    if (points > 0) {
+                        mPointCloudSeq = result.pointCloudId;
+                    }
                 }
                 final int points = mPointCloudPoints;
                 if (hasResult && points > 0) {

@@ -9,6 +9,7 @@
     <string name="loading_slam_init">正在初始化SLAM系统…</string>
     <string name="loading_slam_wait">请稍候，这可能需要一些时间</string>
     <string name="slam_init_complete">SLAM系统初始化完成</string>
+    <string name="slam_connection_lost">SLAM 服务连接已断开，请重新打开应用以重新连接</string>
     <string name="slam_init_failed">SLAM初始化失败: %1$s</string>
     <string name="hint_request_sent">请求已发送</string>
     <string name="hint_pointcloud_enabled">点云已显示</string>

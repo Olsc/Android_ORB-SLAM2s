@@ -9,6 +9,7 @@
     <string name="loading_slam_init">Иницијализација SLAM система…</string>
     <string name="loading_slam_wait">Сачекајте тренутак</string>
     <string name="slam_init_complete">SLAM систем иницијализован</string>
+    <string name="slam_connection_lost">Врската со SLAM услугата е прекината. Отворете ја апликацијата повторно за да се поврзете.</string>
     <string name="slam_init_failed">Inicializácia SLAM zlyhala: %1$s</string>
     <string name="hint_request_sent">Požiadavka odoslaná</string>
     <string name="hint_pointcloud_enabled">Bodový oblak povolený</string>

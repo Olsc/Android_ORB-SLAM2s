@@ -9,6 +9,7 @@
     <string name="loading_slam_init">Initialiserer SLAM-system…</string>
     <string name="loading_slam_wait">Vent venligst, dette kan tage et øjeblik</string>
     <string name="slam_init_complete">SLAM-system initialiseret</string>
+    <string name="slam_connection_lost">Forbindelsen til SLAM-tjenesten blev afbrudt. Genåbn appen for at oprette forbindelse igen.</string>
     <string name="slam_init_failed">SLAM-initialisering mislykkedes: %1$s</string>
     <string name="hint_request_sent">Anmodning sendt</string>
     <string name="hint_pointcloud_enabled">Punktsky aktiveret</string>

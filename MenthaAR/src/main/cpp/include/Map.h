@@ -84,7 +84,7 @@ public:
 
     std::mutex mMutexMapUpdate;
 
-    // 避免在不同线程中同时创建两个点（ID冲突）
+    // 串行化点的创建，防止多线程并发分配重复 ID
     std::mutex mMutexPointCreation;
 
 protected:
@@ -99,7 +99,7 @@ protected:
 
     long unsigned int mnMaxKFid;
 
-    // 与地图重大变化相关的索引（闭环、全局BA）
+    // 地图结构变化相关的索引（闭环、全局 BA）
     int mnBigChangeIdx;
 
     std::mutex mMutexMap;

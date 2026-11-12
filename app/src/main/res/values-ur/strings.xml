@@ -9,6 +9,7 @@
     <string name="loading_slam_init">SLAM سسٹم شروع ہو رہا ہے…</string>
     <string name="loading_slam_wait">برائے کرم انتظار کریں، اس میں کچھ وقت لگ سکتا ہے</string>
     <string name="slam_init_complete">SLAM سسٹم شروع ہو گیا</string>
+    <string name="slam_connection_lost">SLAM سروس کا کنکشن منقطع ہو گیا۔ دوبارہ جڑنے کے لیے ایپ دوبارہ کھولیں۔</string>
     <string name="slam_init_failed">SLAM شروع کرنے میں ناکامی: %1$s</string>
     <string name="hint_request_sent">درخواست بھیج دی گئی</string>
     <string name="hint_pointcloud_enabled">پوائنٹ کلاؤڈ فعال</string>

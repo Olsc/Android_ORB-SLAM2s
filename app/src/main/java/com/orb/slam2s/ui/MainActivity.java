@@ -104,11 +104,12 @@ public class MainActivity extends ComponentActivity
     private final Handler mUiHandler = new Handler(Looper.getMainLooper());
     private boolean mInitToastShown = false;
 
-    // 地图统计轮询(1Hz)：仅在 onResume~onPause 之间运行，避免后台无谓唤醒与 IPC 占用
+    // 地图统计轮询（1 Hz），只在 onResume 与 onPause 之间运行。
     private final Runnable mMapStatsUpdater = new Runnable() {
         @Override
         public void run() {
-            if (mMenthaAR != null && mTextMapStats != null) {
+            // 未连接时保留上次文案，不把界面刷成 0
+            if (mMenthaAR != null && mMenthaAR.isConnected() && mTextMapStats != null) {
                 MenthaAR.MapStats stats = mMenthaAR.getMapStats();
                 final String statsText = getString(R.string.map_stats_format,
                         stats.keyFrames, stats.mapPoints, stats.hasPlane
@@ -124,7 +125,7 @@ public class MainActivity extends ComponentActivity
 
     // 3DOF 传感器方向反向的持久化配置
     private static final String PREFS_3DOF = "camera_3dof_settings";
-    // 键名带版本，避免历史保存的关闭状态覆盖新默认值
+    // 键名带版本，历史保存的关闭状态不会覆盖新默认值
     private static final String PREF_SENSOR_REVERSE = "sensor_reverse_default_on";
     // 点云显示开关持久化：下次启动自动恢复
     private static final String PREF_POINT_CLOUD = "point_cloud_visible";
@@ -213,6 +214,8 @@ public class MainActivity extends ComponentActivity
         setupWindowInsets();
 
         mMenthaAR = new MenthaAR(this);
+        // 引擎资源目录沿用 App 自己的 SLAM 目录（与地图/备份规则一致）
+        mMenthaAR.setResourceDirectory(getSlamDir());
         // 先把持久化的点云开关写入 SDK 缓存，连接时随其它配置一次性下发
         mMenthaAR.setPointCloudVisible(isPointCloudVisibleEnabled());
         mMapManager = new MapManager(this);
@@ -223,9 +226,25 @@ public class MainActivity extends ComponentActivity
             public void onReady() {
                 runOnUiThread(() -> {
                     applyPoseAssistConfig();
+                    // 服务重启/重连后按钮文案与 SDK 实际下发的状态对齐
+                    if (mMenthaAR != null) {
+                        updatePointCloudButton(mMenthaAR.isPointCloudVisible());
+                    }
                     if (!mInitToastShown) {
                         mInitToastShown = true;
                         showToast(getString(R.string.slam_init_complete));
+                    }
+                });
+            }
+
+            @Override
+            public void onDisconnected() {
+                // 服务进程被杀或绑定被拒绝时提示用户，防止出现摄像头正常而 AR 不动的无声失败
+                Log.w(TAG, "SLAM 服务连接断开");
+                if (isFinishing() || isDestroyed()) return;
+                mUiHandler.post(() -> {
+                    if (!isFinishing() && !isDestroyed()) {
+                        showToast(getString(R.string.slam_connection_lost));
                     }
                 });
             }
@@ -535,7 +554,7 @@ public class MainActivity extends ComponentActivity
                 }))
                 .init(mTouchHelper);
 
-        // 若首帧之前已得到矫正，先同步给 AR 层
+        // 首帧尚未到达时先同步已有的显示矫正给 AR 层
         applyDisplayCorrection(mCameraPreviewView != null ? mCameraPreviewView.getDisplayCorrection() : null);
     }
 
@@ -625,6 +644,8 @@ public class MainActivity extends ComponentActivity
         mUiHandler.removeCallbacksAndMessages(null);
 
         if (mMenthaAR != null) {
+            // 先摘回调再解绑，断开通知不会在 Activity 销毁后弹出
+            mMenthaAR.setListener(null);
             mMenthaAR.stop();
         }
     }

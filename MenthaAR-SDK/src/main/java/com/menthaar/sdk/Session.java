@@ -61,6 +61,8 @@ final class Session {
     private volatile Observer observer;
 
     private volatile SharedMemoryBuffer frameBuffer;
+    // 引擎初始化且调用方配置下发完成后才接受帧，防止未 initSLAM 的服务进程消耗帧序号。
+    private volatile boolean framesAllowed;
     private final Object frameLock = new Object();
     private int lastSeq;
     private boolean attachPending;      // 重连后需要把已有共享内存重新交给新服务进程
@@ -71,18 +73,21 @@ final class Session {
         @Override
         public void onServiceConnected(ComponentName name, IBinder binder) {
             if (!bindRequested) return;
-            service = ISlamService.Stub.asInterface(binder);
+            final ISlamService s = ISlamService.Stub.asInterface(binder);
             Log.i(TAG, "SLAM 服务已连接");
             // 每次（重）连接都重新初始化引擎：服务进程可能是被系统重建的全新实例。
             // 服务端 initSLAM 幂等，重复下发是安全的。
             final String dir = workingDir;
             if (dir != null) {
                 try {
-                    service.initSLAM(dir);
+                    s.initSLAM(dir);
                 } catch (RemoteException e) {
                     Log.e(TAG, "初始化 SLAM 失败: " + e.getMessage());
                 }
             }
+            // 初始化指令下发之后才发布 service：帧提交一定排在 initSLAM 之后
+            service = s;
+            framesAllowed = false;
             // 新服务进程没有旧的共享内存映射：标记待重连，下一帧提交时重新交出 fd（不在主线程做 Binder 调用）
             synchronized (frameLock) {
                 if (frameBuffer != null) {
@@ -96,6 +101,7 @@ final class Session {
         @Override
         public void onServiceDisconnected(ComponentName name) {
             service = null;
+            framesAllowed = false;
             Log.w(TAG, "SLAM 服务已断开");
             final Observer o = observer;
             if (o != null) o.onDisconnected();
@@ -139,6 +145,11 @@ final class Session {
         return service != null;
     }
 
+    // 由调用方在引擎初始化 + 配置下发完成后开启送帧
+    void setFramesAllowed(boolean allowed) {
+        framesAllowed = allowed;
+    }
+
     // 是否已发起绑定（绑定中或已连接）。
     boolean isBinding() {
         return bindRequested;
@@ -162,6 +173,7 @@ final class Session {
     void unbind() {
         synchronized (this) {
             service = null;
+            framesAllowed = false;
             if (bindRequested) {
                 bindRequested = false;
                 try {
@@ -363,7 +375,7 @@ final class Session {
 
     // 持 frameLock 创建/挂接共享内存并做背压检查，返回帧序号，0 表示丢弃。
     private int prepareFrameLocked(int width, int height) {
-        if (service == null) return 0;
+        if (service == null || !framesAllowed) return 0;
 
         // 服务进程重建后，先把已有缓冲重新交给它
         if (attachPending) {
@@ -424,7 +436,7 @@ final class Session {
                 Log.e(TAG, "SLAM 进程映射共享内存失败，将在下一帧重试");
             }
         } catch (RemoteException e) {
-            Log.e(TAG, "共享共享内存失败: " + e.getMessage());
+            Log.e(TAG, "映射共享内存失败: " + e.getMessage());
         }
     }
 }

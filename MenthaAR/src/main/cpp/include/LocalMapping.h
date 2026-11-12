@@ -99,7 +99,7 @@ public:
     }
 
     // 队列为空且当前没有在处理关键帧。
-    // 注意 AcceptKeyFrames() 在忙碌但队列较短时也返回 true，这里必须读原始忙标志。
+    // AcceptKeyFrames() 在队列较短时也返回 true，此处读取原始忙标志。
     bool IsIdle(){
         return mbAcceptKeyFrames.load(std::memory_order_acquire) && KeyframesInQueue()==0;
     }

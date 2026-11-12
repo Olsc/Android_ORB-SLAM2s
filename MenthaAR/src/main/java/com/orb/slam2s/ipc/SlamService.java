@@ -99,7 +99,7 @@ public class SlamService extends Service {
 
         @Override
         public void detectPlane() {
-            // 作为任务入队：与帧处理在同一处理线程串行执行(避免并发调用 native)
+            // 入队到处理线程，与帧处理串行执行（native 调用不可并发）。
             postTask(SlamService.this::doDetectPlane);
         }
 
@@ -117,7 +117,7 @@ public class SlamService extends Service {
 
         @Override
         public void saveMap(final String mapPath) {
-            // 与帧处理同一处理线程串行执行：避免保存过程中与帧/建图线程并发遍历并改写地图(native 侧 SaveMap 会读取全部 KF/MP，并可能补齐描述子)
+            // 与帧处理串行执行，SaveMap 会遍历全部 KF/MP 并可能补齐描述子，不可与跟踪并发。
             postTask(() -> {
                 if (nativeHelper != null) {
                     nativeHelper.saveMap(mapPath);
@@ -127,7 +127,7 @@ public class SlamService extends Service {
 
         @Override
         public void loadMapWithId(final String mapPath, final int mapId, final boolean append) {
-            // 与帧处理同一处理线程串行执行：加载会重建当前地图内容，必须与帧处理互斥(native 侧另有 gProcessingFrames 等待作为双重保障)
+            // 与帧处理串行执行，加载会重建当前地图；native 侧 gProcessingFrames 提供第二重互斥。
             postTask(() -> {
                 if (nativeHelper != null) {
                     nativeHelper.loadMapWithId(mapPath, mapId, append);
@@ -137,7 +137,12 @@ public class SlamService extends Service {
 
         @Override
         public int[] getMapStats() {
-            return nativeHelper != null ? nativeHelper.getMapStats() : new int[0];
+            // GetMapStats 会遍历关键帧与地图点，不能与 slamThread 并发，也不能在 shutdown 期间执行。
+            // 这里返回上次快照并在处理线程异步刷新，1 Hz 轮询下次取到新值。
+            requestMapStatsRefresh();
+            synchronized (statsLock) {
+                return cachedMapStats.clone();
+            }
         }
 
         @Override
@@ -168,6 +173,39 @@ public class SlamService extends Service {
             return sensor != null ? sensor.getRotationDof() : 0;
         }
     };
+
+    // 地图规模快照：只在 SLAM 处理线程上写，binder 线程只读
+    private final Object statsLock = new Object();
+    private final int[] cachedMapStats = new int[3];
+    private boolean statsRefreshPending;
+
+    private void requestMapStatsRefresh() {
+        synchronized (statsLock) {
+            if (statsRefreshPending) return;
+            statsRefreshPending = true;
+        }
+        final boolean queued = postTask(() -> {
+            try {
+                final int[] stats = nativeHelper != null ? nativeHelper.getMapStats() : null;
+                if (stats != null && stats.length >= 3) {
+                    synchronized (statsLock) {
+                        System.arraycopy(stats, 0, cachedMapStats, 0, 3);
+                    }
+                }
+            } catch (Throwable t) {
+                Log.w(TAG, "刷新地图统计失败: " + t.getMessage());
+            } finally {
+                synchronized (statsLock) {
+                    statsRefreshPending = false;
+                }
+            }
+        });
+        if (!queued) {
+            synchronized (statsLock) {
+                statsRefreshPending = false;
+            }
+        }
+    }
 
     // 开启与关闭姿态辅助：开关传感器监听并同步融合器状态
     private void apply3DofEnabled(boolean enabled) {
@@ -205,11 +243,12 @@ public class SlamService extends Service {
         return orientationSensor.getRotationDof() > 0 ? orientationSensor : null;
     }
 
-    private void postTask(Runnable r) {
+    private boolean postTask(Runnable r) {
         synchronized (queueLock) {
-            if (!running) return;
+            if (!running) return false;
             taskQueue.add(r);
             queueLock.notifyAll();
+            return true;
         }
     }
 
@@ -221,7 +260,7 @@ public class SlamService extends Service {
         if (running) return;
         running = true;
         slamThread = new Thread(() -> {
-            // 高优先级：SLAM 跟踪对实时性敏感，避免独立进程被调度器降频/降优先
+            // 提高线程优先级，降低独立进程被调度器降频的概率。
             android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_URGENT_AUDIO);
             while (running) {
                 Runnable r;
@@ -297,8 +336,7 @@ public class SlamService extends Service {
         }
         final boolean sensorReady = orientationSensor != null && orientationSensor.isReady();
         if (sensorReady) {
-            // 保持态只需要相对最后一次视觉帧的旋转，优先用陀螺积分 + 重力校倾的相对姿态：
-            // 该来源不含磁力计航向，避免磁干扰或航向偏差导致方向漂移甚至翻转
+            // 保持态只需相对最后一帧视觉的旋转，取陀螺积分加重力校倾的相对姿态，不含磁力计航向。
             if (!orientationSensor.copyRelativeRotationMatrix(sensorRotation)) {
                 orientationSensor.copyRotationMatrix(sensorRotation);
             }
@@ -342,8 +380,7 @@ public class SlamService extends Service {
             orientationSensor.stop();
             orientationSensor = null;
         }
-        // 服务进程销毁时依次执行：停帧处理、shutdownSLAM(join 工作线程)、detach 共享内存，
-        // 确保三条常驻线程(LM/LC/GlobalReloc)全部释放，避免内存泄漏与 mmap 残留
+        // 服务销毁依次执行停帧处理、shutdownSLAM、detach 共享内存，确保常驻线程全部释放。
         if (nativeHelper != null) {
             nativeHelper.shutdownSLAM();
             nativeHelper.detachFrameBuffer();

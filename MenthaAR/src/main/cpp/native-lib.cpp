@@ -103,7 +103,7 @@ static std::atomic<float> gArObjectScale{ORB_SLAM2::AR_OBJECT_SCALE_DEFAULT}; //
 float gCurrentModelMatrix[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
 float gCurrentViewMatrix[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
 
-// 原始位姿快照：与共享内存中的对外结果分离，避免融合结果被当作下一帧输入
+// 原始位姿快照，与共享内存对外结果分离，融合结果不会回流成下一帧输入
 static float gRawProjectionMatrix[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
 static std::atomic<int> gRawTrackingState{0};
 static std::atomic<int> gRawDrawFlag{0};
@@ -221,7 +221,7 @@ static bool AR_RenderFrame(const cv::Mat& localTcw, bool trackingOk) {
         getRUBViewMatrixFromRDF(tmp, view);
     }
 
-    // 3) Model + 绘制门控：锚点必须属于当前地图，避免跨帧坐标系混用
+    // 3) Model 与绘制门控：锚点必须属于当前地图，防止跨帧坐标系混用
     float model[16];
     setIdentityM(model);
     bool draw = trackingOk && gAnchor.valid && gAnchor.plane
@@ -358,7 +358,7 @@ void LoadPlaneAndArInfo(const std::string& filename, int mapId)
         ifs.read(reinterpret_cast<char*>(n3), sizeof(n3));
         ifs.read(reinterpret_cast<char*>(&rang), sizeof(rang));
 
-        // 验证数据有效性
+        // 校验数据有效性
         bool dataValid = true;
         for(int i=0; i<3; i++) {
             if(std::isnan(o3[i]) || std::isinf(o3[i]) || std::isnan(n3[i]) || std::isinf(n3[i])) {
@@ -455,7 +455,7 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
         }
     } frameRefGuard(bHoldsFrameRef);
 
-    // 使用线程局部 Tcw，避免全局 Tcw 的数据竞争
+    // 使用线程局部 Tcw，全局 Tcw 只作只读快照
     cv::Mat localTcw;
     if(currentSlamSys) {
         localTcw = currentSlamSys->TrackMonocular(imgSmall, timeStamp);
@@ -610,7 +610,7 @@ void updateScaledIntrinsics(int cameraWidth, int cameraHeight) {
     if (slamHeight < 1) slamHeight = 1;
 
     if (slamWidth < slamHeight) {
-        // 竖向帧：基准标定(横向 640x360)顺时针旋转 90° 得到 360x640 (fx=fy=640, cx=180, cy=320)后再缩放
+        // 竖向帧：横向基准标定 640x360 顺时针旋转 90 度得到 360x640 (fx=fy=640, cx=180, cy=320)，再按实际尺寸缩放
         const float scaleX = (float)slamWidth / ORB_SLAM2::BASE_SLAM_HEIGHT;
         const float scaleY = (float)slamHeight / ORB_SLAM2::BASE_SLAM_WIDTH;
         gScaledFx = gBaseFy * scaleX;
@@ -755,7 +755,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_detect(JNIEnv *env, jobject instance,
 
         if(detected) {
             dataLock.unlock();
-            // 使用锁内快照 sys，避免裸读全局 slamSys
+            // 使用锁内快照 sys，不裸读全局 slamSys
             AR_OnArPlaced(detected, sys->HasMapAlignment());
         }
     }
@@ -895,7 +895,8 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativePublishArPose(
         src = rawFallback;
     }
 
-    // seqlock：序号为奇数表示正在写；读端读到奇数或前后序号不同就重读
+    // seqlock：序号为奇数表示正在写，读端遇到奇数或前后序号不同就重读。
+    // 跟踪状态、绘制标志、地图 id 与 MVP 在同一窗口内发布，读到的是同帧状态与位姿。
     volatile int32_t* mvpSeq = shIntPtr(SH_OFF_MVP_SEQ);
     const int32_t s = *mvpSeq;
     *mvpSeq = s + 1;
@@ -903,10 +904,13 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativePublishArPose(
     float* mvp = shFloatPtr(SH_OFF_MVP);
     memcpy(mvp, src, 48 * sizeof(float));
     const bool drawFinal = useRaw ? (gRawDrawFlag.load(std::memory_order_relaxed) != 0) : (draw != JNI_FALSE);
+    *shIntPtr(SH_OFF_TRACKING_STATE) = gRawTrackingState.load(std::memory_order_relaxed);
     *shIntPtr(SH_OFF_DRAW_FLAG) = drawFinal ? 1 : 0;
+    *shIntPtr(SH_OFF_ACTIVE_MAP_ID) = gRawActiveMapId.load(std::memory_order_relaxed);
     std::atomic_thread_fence(std::memory_order_release);
     *mvpSeq = s + 2;
 
+    // SLAM_DONE_SEQ 在窗口之后推进，读端拿到的 frameId 可能比矩阵快照领先一帧。
     std::atomic_thread_fence(std::memory_order_release);
     *reinterpret_cast<volatile int32_t*>(shIntPtr(SH_OFF_SLAM_DONE_SEQ)) = gPendingDoneSeq;
 }
@@ -952,12 +956,10 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeDetachFrameBuffer(JNIEnv* env, job
     }
 }
 
-// 写回本帧的状态字段并缓存原始位姿。MVP 与 SLAM_DONE_SEQ 不在这里写：
-// 由 Java 侧（融合或直接）调用 nativePublishArPose 一次性发布最终位姿，再推进序号
+// 缓存本帧状态与原始位姿；TRACKING_STATE/ACTIVE_MAP_ID 不在此写，
+// 由 nativePublishArPose 与 MVP 在同一次 seqlock 内发布，保证状态与位姿属于同一帧。
 static void writeResultToSharedMemory(int seq, int tracking, bool draw, int w, int h) {
     if (!gSharedFramePtr) return;
-    *shIntPtr(SH_OFF_TRACKING_STATE) = tracking;
-    *shIntPtr(SH_OFF_ACTIVE_MAP_ID) = gActiveMapId;
 
     const int projW = static_cast<int>(std::lround((float)w / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR));
     const int projH = static_cast<int>(std::lround((float)h / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR));

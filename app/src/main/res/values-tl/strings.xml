@@ -9,6 +9,7 @@
     <string name="loading_slam_init">Sinisimulan ang SLAM system…</string>
     <string name="loading_slam_wait">Mangyaring maghintay, maaaring tumagal ito ng ilang sandali</string>
     <string name="slam_init_complete">Nasimulan na ang SLAM system</string>
+    <string name="slam_connection_lost">Nawala ang koneksyon sa serbisyo ng SLAM. Buksan muli ang app para muling kumonekta.</string>
     <string name="slam_init_failed">Nabigo ang pagsisimula ng SLAM: %1$s</string>
     <string name="hint_request_sent">Naipadala ang kahilingan</string>
     <string name="hint_pointcloud_enabled">Point cloud pinagana</string>

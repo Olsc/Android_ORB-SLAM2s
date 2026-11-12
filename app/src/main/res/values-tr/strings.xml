@@ -9,6 +9,7 @@
     <string name="loading_slam_init">SLAM sistemi başlatılıyor…</string>
     <string name="loading_slam_wait">Lütfen bekleyin, bu biraz zaman alabilir</string>
     <string name="slam_init_complete">SLAM sistemi başlatıldı</string>
+    <string name="slam_connection_lost">SLAM hizmeti bağlantısı kesildi. Yeniden bağlanmak için uygulamayı tekrar açın.</string>
     <string name="slam_init_failed">SLAM başlatma başarısız: %1$s</string>
     <string name="hint_request_sent">İstek gönderildi</string>
     <string name="hint_pointcloud_enabled">Nokta bulutu etkinleştirildi</string>

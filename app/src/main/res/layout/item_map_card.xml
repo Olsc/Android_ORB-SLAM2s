@@ -27,7 +27,7 @@
             android:textSize="17sp"
             android:textStyle="bold"
             android:ellipsize="middle"
-            android:singleLine="true" />
+            android:maxLines="1" />
 
         <TextView
             android:id="@+id/tv_map_size"

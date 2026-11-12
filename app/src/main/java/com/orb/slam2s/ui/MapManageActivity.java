@@ -15,9 +15,10 @@
  */
 package com.orb.slam2s.ui;
 
-import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.format.Formatter;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -48,9 +49,10 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-// 地图管理 Activity：列出、删除本地地图并显示存储占用
-// 由 AndroidManifest.xml 注册并在运行时通过 Intent 启动
+// 地图管理 Activity，列出、删除本地地图并显示存储占用，由 AndroidManifest.xml 注册启动
 @SuppressWarnings("unused")
 public class MapManageActivity extends ComponentActivity {
 
@@ -62,6 +64,12 @@ public class MapManageActivity extends ComponentActivity {
     private MapAdapter mAdapter;
     private final List<MapManager.MapInfo> mMapList = new ArrayList<>();
     private final SimpleDateFormat mDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+
+    // 地图目录扫描要 stat 每个 .bin 并读元数据与文件头，放到后台线程执行
+    private final ExecutorService mLoadExecutor = Executors.newSingleThreadExecutor();
+    private final Handler mUiHandler = new Handler(Looper.getMainLooper());
+    private View mProgressView;
+    private volatile boolean mDestroyed;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -75,6 +83,14 @@ public class MapManageActivity extends ComponentActivity {
 
         initViews();
         loadMaps();
+    }
+
+    @Override
+    protected void onDestroy() {
+        mDestroyed = true;
+        mUiHandler.removeCallbacksAndMessages(null);
+        mLoadExecutor.shutdownNow();
+        super.onDestroy();
     }
 
     private void setupWindowInsets() {
@@ -96,6 +112,7 @@ public class MapManageActivity extends ComponentActivity {
         mTvStorageStats = findViewById(R.id.tv_storage_stats);
         mTvStoragePath = findViewById(R.id.tv_storage_path);
         mEmptyLayout = findViewById(R.id.layout_empty);
+        mProgressView = findViewById(R.id.progress_loading);
         mRecyclerView = findViewById(R.id.rv_map_list);
 
         btnBack.setOnClickListener(v -> finish());
@@ -114,17 +131,36 @@ public class MapManageActivity extends ComponentActivity {
         }
     }
 
-    @SuppressLint("NotifyDataSetChanged")
     private void loadMaps() {
+        if (mDestroyed) return;
+        setLoading(true);
+        mLoadExecutor.execute(() -> {
+            final ArrayList<MapManager.MapInfo> maps = mMapManager.getAllMaps();
+            final long[] totalSize = new long[1];
+            if (maps != null) {
+                for (MapManager.MapInfo info : maps) {
+                    totalSize[0] += info.fileSize;
+                }
+            }
+            mUiHandler.post(() -> {
+                if (mDestroyed) return;
+                setLoading(false);
+                applyMapList(maps, totalSize[0]);
+            });
+        });
+    }
+
+    private void setLoading(boolean busy) {
+        if (mProgressView != null) {
+            mProgressView.setVisibility(busy ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    // 主线程：更新存储统计、空态与列表
+    private void applyMapList(ArrayList<MapManager.MapInfo> maps, long totalSize) {
         mMapList.clear();
-        ArrayList<MapManager.MapInfo> maps = mMapManager.getAllMaps();
         if (maps != null) {
             mMapList.addAll(maps);
-        }
-
-        long totalSize = 0;
-        for (MapManager.MapInfo info : mMapList) {
-            totalSize += info.fileSize;
         }
 
         String formattedSize = Formatter.formatFileSize(this, totalSize);

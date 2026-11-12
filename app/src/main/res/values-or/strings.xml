@@ -9,6 +9,7 @@
     <string name="loading_slam_init">SLAM ସିଷ୍ଟମ୍ ଆରମ୍ଭ ହେଉଛି…</string>
     <string name="loading_slam_wait">Күте тұрыңыз</string>
     <string name="slam_init_complete">SLAM жүйесі дайын</string>
+    <string name="slam_connection_lost">SLAM ସେବା ସହିତ ସଂଯୋଗ ବିଚ୍ଛିନ୍ନ ହୋଇଛି। ପୁନଃ ସଂଯୋଗ ପାଇଁ ଆପ୍ ପୁନଃ ଖୋଲନ୍ତୁ।</string>
     <string name="slam_init_failed">Inicializácia SLAM zlyhala: %1$s</string>
     <string name="hint_request_sent">Požiadavka odoslaná</string>
     <string name="hint_pointcloud_enabled">Bodový oblak povolený</string>

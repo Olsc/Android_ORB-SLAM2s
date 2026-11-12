@@ -57,7 +57,7 @@ public class SplashActivity extends Activity {
         super.onCreate(savedInstanceState);
         enableStrictModeForDebug();
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
-        // 启动时自检桌面图标组件状态，避免出现"桌面上找不到图标"的情况
+        // 启动时自检桌面图标组件状态，桌面图标缺少时自动补齐
         IconManager.ensureLauncherIcon(this);
         setupDynamicShortcuts();
         if (checkPermission()) {
@@ -130,7 +130,7 @@ public class SplashActivity extends Activity {
         }
 
         if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)) {
-            // 用户此前拒绝过：先说明用途，再重新请求，避免直接退出导致无法再次授权
+            // 用户此前的拒绝记录仍有效：先说明用途再重新请求授权
             showPermissionRationaleDialog();
         } else {
             ActivityCompat.requestPermissions(this,

@@ -9,6 +9,7 @@
     <string name="loading_slam_init">Đang khởi tạo hệ thống SLAM…</string>
     <string name="loading_slam_wait">Vui lòng chờ, quá trình này có thể mất một lúc</string>
     <string name="slam_init_complete">Hệ thống SLAM đã sẵn sàng</string>
+    <string name="slam_connection_lost">Kết nối với dịch vụ SLAM đã bị ngắt. Mở lại ứng dụng để kết nối lại.</string>
     <string name="slam_init_failed">Khởi tạo SLAM thất bại: %1$s</string>
     <string name="hint_request_sent">Yêu cầu đã gửi</string>
     <string name="hint_pointcloud_enabled">Đám mây điểm đã bật</string>

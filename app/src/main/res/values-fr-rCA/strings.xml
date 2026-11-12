@@ -9,6 +9,7 @@
     <string name="loading_slam_init">Initialisation du système SLAM…</string>
     <string name="loading_slam_wait">Veuillez patienter, cela peut prendre un moment</string>
     <string name="slam_init_complete">Système SLAM initialisé</string>
+    <string name="slam_connection_lost">La connexion au service SLAM a été perdue. Rouvrez l’application pour vous reconnecter.</string>
     <string name="slam_init_failed">Échec de l\'initialisation SLAM : %1$s</string>
     <string name="hint_request_sent">Requête envoyée</string>
     <string name="hint_pointcloud_enabled">Nuage de points activé</string>

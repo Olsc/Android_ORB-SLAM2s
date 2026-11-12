@@ -9,6 +9,7 @@
     <string name="loading_slam_init">Alustetaan SLAM-järjestelmää…</string>
     <string name="loading_slam_wait">Odota hetki, tämä voi viedä hetken</string>
     <string name="slam_init_complete">SLAM-järjestelmä alustettu</string>
+    <string name="slam_connection_lost">Yhteys SLAM-palveluun katkesi. Avaa sovellus uudelleen yhdistääksesi.</string>
     <string name="slam_init_failed">SLAM-alustus epäonnistui: %1$s</string>
     <string name="hint_request_sent">Pyyntö lähetetty</string>
     <string name="hint_pointcloud_enabled">Pistepilvi käytössä</string>

@@ -9,6 +9,7 @@
     <string name="loading_slam_init">SLAM प्रणाली सुरू होत आहे…</string>
     <string name="loading_slam_wait">कृपया प्रतीक्षा करा, यास थोडा वेळ लागू शकतो</string>
     <string name="slam_init_complete">SLAM प्रणाली सुरू झाली</string>
+    <string name="slam_connection_lost">SLAM सेवेशी कनेक्शन तुटले आहे. पुन्हा कनेक्ट होण्यासाठी ॲप पुन्हा उघडा.</string>
     <string name="slam_init_failed">SLAM प्रारंभ अयशस्वी: %1$s</string>
     <string name="hint_request_sent">विनंती पाठवली</string>
     <string name="hint_pointcloud_enabled">बिंदू ढग सक्रिय</string>

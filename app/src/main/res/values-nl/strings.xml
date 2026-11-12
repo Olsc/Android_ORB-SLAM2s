@@ -9,6 +9,7 @@
     <string name="loading_slam_init">SLAM-systeem initialiseren…</string>
     <string name="loading_slam_wait">Even geduld, dit kan even duren</string>
     <string name="slam_init_complete">SLAM-systeem geïnitialiseerd</string>
+    <string name="slam_connection_lost">De verbinding met de SLAM-service is verbroken. Open de app opnieuw om opnieuw te verbinden.</string>
     <string name="slam_init_failed">SLAM-initialisatie mislukt: %1$s</string>
     <string name="hint_request_sent">Verzoek verzonden</string>
     <string name="hint_pointcloud_enabled">Puntenwolk ingeschakeld</string>

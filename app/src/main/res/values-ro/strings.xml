@@ -9,6 +9,7 @@
     <string name="loading_slam_init">Se inițializează sistemul SLAM…</string>
     <string name="loading_slam_wait">Vă rugăm așteptați, poate dura câteva momente</string>
     <string name="slam_init_complete">Sistemul SLAM inițializat</string>
+    <string name="slam_connection_lost">Conexiunea la serviciul SLAM a fost întreruptă. Redeschide aplicația pentru a te reconecta.</string>
     <string name="slam_init_failed">Inițializare SLAM eșuată: %1$s</string>
     <string name="hint_request_sent">Cerere trimisă</string>
     <string name="hint_pointcloud_enabled">Nor de puncte activat</string>

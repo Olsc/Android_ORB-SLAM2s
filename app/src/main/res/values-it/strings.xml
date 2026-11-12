@@ -9,6 +9,7 @@
     <string name="loading_slam_init">Inizializzazione sistema SLAM…</string>
     <string name="loading_slam_wait">Attendere, potrebbe volerci un momento</string>
     <string name="slam_init_complete">Sistema SLAM inizializzato</string>
+    <string name="slam_connection_lost">La connessione al servizio SLAM è stata interrotta. Riapri l’app per riconnetterti.</string>
     <string name="slam_init_failed">Inizializzazione SLAM fallita: %1$s</string>
     <string name="hint_request_sent">Richiesta inviata</string>
     <string name="hint_pointcloud_enabled">Nuvola di punti attivata</string>

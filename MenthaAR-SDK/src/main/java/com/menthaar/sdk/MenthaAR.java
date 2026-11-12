@@ -75,7 +75,7 @@ public final class MenthaAR {
         }
     }
 
-    // 追踪结果快照：位姿与状态同帧读取；复用实例可做到每帧零分配。
+    // 追踪结果快照，位姿与状态取自同一次发布；复用实例可做到每帧零分配。
     public static final class Result {
         public static final int TRACKING_NOT_READY = -1;
         public static final int TRACKING_NO_IMAGE = 0;
@@ -96,12 +96,12 @@ public final class MenthaAR {
         public int trackingState;
         // 当前激活的地图 ID。
         public int mapId;
-        // SLAM 已完成的最新帧序号，单调递增。
+        // SLAM 已完成的最新帧序号，单调递增；序号在矩阵发布之后才推进，可能领先快照一帧。
         public int frameId;
-        // 点云版本号，变化时才需要重新 readPointCloud 读取。
+        // 点云版本号，变化时才需要重新 readPointCloud 读取；点云区无 seqlock，可能与矩阵相差一帧。
         public int pointCloudId;
 
-        // 内部复用缓冲：避免每帧读取结果时分配临时数组
+        // 内部复用缓冲，读取结果时不再分配临时数组
         final float[] rawMatrices = new float[48];
         final int[] rawStatus = new int[SharedMemoryBuffer.STATUS_LENGTH];
 
@@ -140,8 +140,11 @@ public final class MenthaAR {
     private volatile boolean running;
 
     // 结果轮询：每个显示帧读一次 4 字节完成序号，变化时回调 onTrackingResult
-    private boolean polling;
+    private volatile boolean polling;
     private int lastFrameId = -1;
+    // start/stop 快速交替时用代次号作废尚未执行的启动任务，stop 后不会残留回调链
+    private final java.util.concurrent.atomic.AtomicInteger pollGeneration =
+            new java.util.concurrent.atomic.AtomicInteger();
     private final Choreographer.FrameCallback frameCallback = new Choreographer.FrameCallback() {
         @Override
         public void doFrame(long frameTimeNanos) {
@@ -158,6 +161,9 @@ public final class MenthaAR {
         }
     };
 
+    // 引擎资源目录；null 表示使用 SDK 自己的默认目录（<externalFilesDir>/MenthaAR）
+    private volatile File resourceDirectory;
+
     // 仅持有 application context
     public MenthaAR(Context context) {
         if (context == null) {
@@ -168,7 +174,9 @@ public final class MenthaAR {
         session.setObserver(new Session.Observer() {
             @Override
             public void onConnected() {
+                // 先下发配置再放行送帧：保证服务端处理的第一帧就带着调用方的开关/旋转角
                 applySettings();
+                session.setFramesAllowed(true);
                 startResultPolling();
                 final Listener l = listener;
                 if (l != null) l.onReady();
@@ -176,6 +184,7 @@ public final class MenthaAR {
 
             @Override
             public void onDisconnected() {
+                session.setFramesAllowed(false);
                 stopResultPolling();
                 final Listener l = listener;
                 if (l != null) l.onDisconnected();
@@ -208,6 +217,11 @@ public final class MenthaAR {
     // 是否已启动；引擎是否就绪以 Listener.onReady 回调为准。
     public boolean isRunning() {
         return running;
+    }
+
+    // 服务是否已连接；引擎是否就绪仍以 Listener.onReady 回调为准。
+    public boolean isConnected() {
+        return session.isConnected();
     }
 
     // 设置事件回调；在主线程回调。传入 null 可取消。
@@ -343,7 +357,7 @@ public final class MenthaAR {
         return new MapStats(raw[0], raw[1], raw[2] != 0);
     }
 
-    // 连接（含重连）后统一下发缓存的配置，避免调用方手工重放。
+    // 连接（含重连）后统一下发缓存配置；在 onConnected（主线程）内调用，均为常数级 Binder 调用。
     private void applySettings() {
         session.setCameraRotation(cameraRotation);
         session.setPoseAssistReversed(poseAssistReversed);
@@ -352,7 +366,9 @@ public final class MenthaAR {
     }
 
     private void startResultPolling() {
+        final int generation = pollGeneration.incrementAndGet();
         mainHandler.post(() -> {
+            if (generation != pollGeneration.get()) return;
             if (polling) return;
             polling = true;
             lastFrameId = -1;
@@ -361,17 +377,24 @@ public final class MenthaAR {
     }
 
     private void stopResultPolling() {
-        mainHandler.post(() -> {
-            if (!polling) return;
-            polling = false;
-            Choreographer.getInstance().removeFrameCallback(frameCallback);
-        });
+        // 立即生效（不依赖主线程队列）：doFrame 不会再重排自己
+        pollGeneration.incrementAndGet();
+        polling = false;
+        mainHandler.post(() -> Choreographer.getInstance().removeFrameCallback(frameCallback));
+    }
+
+    // 引擎资源目录（如 <externalFilesDir>/SLAM）；未设置时用 SDK 默认目录，需在 start() 前调用。
+    public void setResourceDirectory(File directory) {
+        this.resourceDirectory = directory;
     }
 
     private File workingDirectory() {
-        File dir = appContext.getExternalFilesDir("MenthaAR");
+        File dir = resourceDirectory;
         if (dir == null) {
-            dir = new File(appContext.getFilesDir(), "MenthaAR");
+            dir = appContext.getExternalFilesDir("MenthaAR");
+            if (dir == null) {
+                dir = new File(appContext.getFilesDir(), "MenthaAR");
+            }
         }
         if (!dir.exists() && !dir.mkdirs()) {
             Log.w(TAG, "无法创建 SDK 工作目录: " + dir.getAbsolutePath());
