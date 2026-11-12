@@ -108,7 +108,7 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 | 高通 骁龙 6s Gen 2      | Redmi Pad 2 SE 4G     | 30 FPS          |
 | 高通 骁龙 765G 5G       | vivo iQOO Z1x         | 30 FPS          |
 | 高通 骁龙 835           | 小米 6                | 20-30 FPS       |
-| 高通 骁龙 AR1 Gen 1     | Rokid Glass3          | 30 FPS          |
+| 高通 骁龙 AR1 Gen 1     | Rokid Glass3 企业版   | 30 FPS          |
 | 联发科 天玑 6300        | 联想小新平板11        | 20-30 FPS       |
 | 紫光展锐 W527           | 超戴 CD12MAX (手表)   | 10 FPS (锁帧)   |
 

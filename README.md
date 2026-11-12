@@ -108,7 +108,7 @@ Currently tested primarily on Qualcomm Snapdragon platform CPUs:
 | Snapdragon 6s Gen 2      | Redmi Pad 2 SE 4G        | 30 FPS           |
 | Snapdragon 765G 5G       | vivo iQOO Z1x            | 30 FPS           |
 | Snapdragon 835           | Xiaomi 6                 | 20-30 FPS        |
-| Snapdragon AR1 Gen 1     | Rokid Glass3             | 30 FPS           |
+| Snapdragon AR1 Gen 1     | Rokid Glass3 ENTERPRISE  | 30 FPS           |
 | MediaTek Dimensity 6300  | Lenovo Xiaoxin Pad 11    | 20-30 FPS        |
 | UNISOC W527              | Chaodai CD12MAX (Watch)  | 10 FPS (Locked)  |
 
