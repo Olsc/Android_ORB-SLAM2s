@@ -22,22 +22,22 @@
  *   (at your option) any later version.
  *   See <https://www.gnu.org/licenses/> for details.
  */
-package com.orb.slam2s.ipc;
+package com.menthaar.sdk.internal;
 
 import android.os.ParcelFileDescriptor;
 
+// SDK 内部协议：App 与 SLAM 服务进程之间的控制通道，帧数据与结果走共享内存。
 interface ISlamService {
     // 低频/耗时操作：oneway 避免占用 binder 线程
     oneway void initSLAM(String resDir);
 
-    // 共享内存 attach：低频(仅缓冲创建/尺寸变化时)，保持同步以便确认成功
+    // 共享内存 attach：低频（仅创建缓冲/分辨率变化时），保持同步以便确认映射成功
     boolean attachFrameBuffer(in ParcelFileDescriptor pfd, int size);
 
     // 每帧路径：oneway 投递帧序号，SLAM 进程内部专用线程处理，binder 线程不被占用
     oneway void processFrame(int seq, int bufIndex, int width, int height);
 
     oneway void detectPlane();
-    void updateResolution(int width, int height);
     void setPointCloudDisplay(boolean enable);
     boolean isPointCloudDisplayEnabled();
     void saveMap(String mapPath);
@@ -45,7 +45,7 @@ interface ISlamService {
     int[] getMapStats();
     void updateArObjectScale(float scaleFactor);
 
-    // 姿态辅助(3DOF)开关与方向反向，由 App 作为配置下发
+    // 姿态辅助（3DOF）开关与方向反向，由 App 作为配置下发
     void set3DofAssistEnabled(boolean enable);
     void setSensorReverse(boolean reversed);
     oneway void setCameraImageRotation(int degrees);

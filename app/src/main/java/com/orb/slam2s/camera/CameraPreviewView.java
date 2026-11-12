@@ -49,13 +49,12 @@ import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LifecycleOwner;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.menthaar.sdk.MenthaAR;
 import com.orb.slam2s.graphics.AspectGLSurfaceView;
 import com.orb.slam2s.graphics.DisplayCorrection;
 import com.orb.slam2s.graphics.GLPassThroughRenderer;
 import com.orb.slam2s.graphics.GLPointCloudRenderer;
 import com.orb.slam2s.graphics.GLUtils;
-import com.orb.slam2s.ipc.SharedMemoryBuffer;
-import com.orb.slam2s.ipc.SlamIPCClient;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -121,39 +120,16 @@ public class CameraPreviewView extends AspectGLSurfaceView {
     private GLPassThroughRenderer mPassThroughRenderer;
     private GLPointCloudRenderer mPointCloudRenderer;
 
-    // 点云读取缓冲；mPointCloudFloats/mPointCloudSeq 为上一次上传到 VBO 的点云（只在服务端点云序号变化时重新读取与上传）
-    private final float[] mPointCloudBuffer = new float[SharedMemoryBuffer.POINTCLOUD_MAX_BYTES / 4];
-    private int mPointCloudFloats = 0;
+    // 点云读取缓冲；mPointCloudPoints/mPointCloudSeq 为上一次上传到 VBO 的点云（只在 SDK 点云版本号变化时重新读取与上传）
+    private final float[] mPointCloudBuffer = new float[MenthaAR.pointCloudCapacity()];
+    private int mPointCloudPoints = 0;
     private int mPointCloudSeq = -1;
-    private final float[] mTempMvp = new float[48];
-
-    // SLAM 结果轮询：AIDL 没有服务到 App 的回调，主线程每个 vsync 只读共享内存头部的 SLAM_DONE_SEQ（4 字节），
-    // 变化时才请求两个 GL 视图重绘。两个视图均为 RENDERMODE_WHEN_DIRTY
-    private int mLastSlamDoneSeq = -1;
-    private boolean mSlamPollActive = false;
-    private Runnable mSlamResultListener;
-    private final android.view.Choreographer.FrameCallback mSlamPollCallback = new android.view.Choreographer.FrameCallback() {
-        @Override
-        public void doFrame(long frameTimeNanos) {
-            if (!mSlamPollActive) return;
-            final SlamIPCClient client = mSlamIPCClient;
-            if (client != null && client.isConnected()) {
-                final int seq = client.readSlamDoneSeq();
-                if (seq != mLastSlamDoneSeq) {
-                    mLastSlamDoneSeq = seq;
-                    requestRender();
-                    final Runnable l = mSlamResultListener;
-                    if (l != null) l.run();
-                }
-            }
-            android.view.Choreographer.getInstance().postFrameCallback(this);
-        }
-    };
+    private final MenthaAR.Result mSlamResult = new MenthaAR.Result();
     private final float[] mVPMatrix = new float[16];
     private final float[] mDisplayVPMatrix = new float[16];
 
     private final Context mContext;
-    private SlamIPCClient mSlamIPCClient;
+    private MenthaAR mMenthaAR;
     private volatile boolean mPendingDetectPlane;
     private final AtomicBoolean mIsIpcProcessing = new AtomicBoolean(false);
 
@@ -204,8 +180,8 @@ public class CameraPreviewView extends AspectGLSurfaceView {
         mMirrorHorizontal = prefs.getBoolean(PREF_MIRROR_HORIZONTAL, false);
     }
 
-    public void setSlamIPCClient(SlamIPCClient client) {
-        this.mSlamIPCClient = client;
+    public void setMenthaAR(MenthaAR client) {
+        this.mMenthaAR = client;
     }
 
     public void setDisplayCorrectionListener(DisplayCorrectionListener listener) {
@@ -221,26 +197,10 @@ public class CameraPreviewView extends AspectGLSurfaceView {
         this.mFrameListener = listener;
     }
 
-    // SLAM 新结果到达（SLAM_DONE_SEQ 变化）时在主线程回调，供 AR 物体视图请求重绘
+    // 新相机帧或 SLAM 新结果到达时请求重绘（两个 GL 视图均为 RENDERMODE_WHEN_DIRTY）
     @Override
     public void requestRender() {
         if (mRendererSet) super.requestRender();
-    }
-
-    public void setSlamResultListener(Runnable listener) {
-        this.mSlamResultListener = listener;
-    }
-
-    private void startSlamPoll() {
-        if (mSlamPollActive) return;
-        mSlamPollActive = true;
-        mLastSlamDoneSeq = -1;
-        android.view.Choreographer.getInstance().postFrameCallback(mSlamPollCallback);
-    }
-
-    private void stopSlamPoll() {
-        mSlamPollActive = false;
-        android.view.Choreographer.getInstance().removeFrameCallback(mSlamPollCallback);
     }
 
     // 设置上下镜像，下一帧生效并持久化；只影响显示端，不改变 SLAM 输入
@@ -319,12 +279,10 @@ public class CameraPreviewView extends AspectGLSurfaceView {
             mEnabled = true;
             checkCurrentState();
         }
-        post(this::startSlamPoll);
         requestRender();
     }
 
     public void disableView() {
-        post(this::stopSlamPoll);
         synchronized (mSyncLock) {
             mEnabled = false;
             checkCurrentState();
@@ -471,16 +429,15 @@ public class CameraPreviewView extends AspectGLSurfaceView {
                                     postDisplayCorrection(correction);
                                 }
 
-                                // 先决定本帧是否送 SLAM（CAS + 背压 + 取槽位），灰度只在真正发送时才计算；
-                                // 原先每帧都先算灰度，再因忙碌/背压丢弃
-                                final boolean ipcReady = mSlamIPCClient != null && mSlamIPCClient.isConnected();
-                                SlamIPCClient.FrameSlot slot = null;
+                                // 先申请帧槽位（同时完成连接与背压检查）：只有被接收的帧才需要计算灰度
+                                final boolean ipcReady = mMenthaAR != null && mMenthaAR.isRunning();
+                                MenthaAR.Frame frame = null;
                                 boolean ipcTaken = false;
                                 if (ipcReady && FrameConverter.isAvailable() && mIsIpcProcessing.compareAndSet(false, true)) {
                                     ipcTaken = true;
-                                    slot = mSlamIPCClient.acquireFrameSlot(w, h);
-                                    if (slot == null) {
-                                        // 背压丢帧或无直接映射：本帧不送 SLAM
+                                    frame = mMenthaAR.beginFrame(w, h);
+                                    if (frame == null) {
+                                        // SLAM 处理落后：本帧只更新预览，不送 SLAM
                                         mIsIpcProcessing.set(false);
                                         ipcTaken = false;
                                     }
@@ -493,7 +450,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
                                         ensureCacheBitmap(correction.displayWidth, correction.displayHeight);
                                         final boolean previewVisible = mCacheBitmap != null && !mCacheBitmap.isRecycled();
                                         converted = FrameConverter.convert(buf, rowStride, w, h,
-                                                slot != null ? slot.gray : null,
+                                                frame != null ? frame.gray : null,
                                                 previewVisible ? mCacheBitmap : null, correction);
                                         if (converted && previewVisible) {
                                             queueEvent(() -> {
@@ -511,18 +468,18 @@ public class CameraPreviewView extends AspectGLSurfaceView {
                                 }
 
                                 if (converted) {
-                                    if (slot != null) {
-                                        final SlamIPCClient.FrameSlot committed = slot;
+                                    if (frame != null) {
+                                        final MenthaAR.Frame pending = frame;
                                         if (mIpcSendExecutor != null && !mIpcSendExecutor.isShutdown()) {
                                             mIpcSendExecutor.execute(() -> {
                                                 try {
-                                                    mSlamIPCClient.commitFrame(committed);
+                                                    mMenthaAR.submitFrame(pending);
                                                     if (mPendingDetectPlane) {
                                                         mPendingDetectPlane = false;
-                                                        mSlamIPCClient.detectPlane();
+                                                        mMenthaAR.detectPlane();
                                                     }
                                                 } catch (Exception e) {
-                                                    Log.e(TAG, "异步 IPC 投递帧异常: " + e.getMessage());
+                                                    Log.e(TAG, "异步投递帧异常: " + e.getMessage());
                                                 } finally {
                                                     mIsIpcProcessing.set(false);
                                                 }
@@ -727,7 +684,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
     }
 
     // GL 线程：把预览位图上传到纹理。位图尺寸随显示方向变化（90/270 时长宽互换），
-    // 与纹理尺寸不一致时重建纹理（原先纹理固定为启动分辨率，texSubImage2D 会失败）
+    // 纹理尺寸与当前帧不一致时重建，否则 texSubImage2D 会失败
     private void uploadPreviewTexture(Bitmap bitmap) {
         if (mImageTextureId != 0 && (bitmap.getWidth() != mImageTextureW || bitmap.getHeight() != mImageTextureH)) {
             GLES20.glDeleteTextures(1, new int[]{mImageTextureId}, 0);
@@ -828,10 +785,10 @@ public class CameraPreviewView extends AspectGLSurfaceView {
                 if (mIpcSendExecutor != null && !mIpcSendExecutor.isShutdown()) {
                     mIpcSendExecutor.execute(() -> {
                         try {
-                            mSlamIPCClient.sendFrameData(sendBuffer, frameW, frameH);
+                            mMenthaAR.submitFrame(sendBuffer, frameW, frameH);
                             if (mPendingDetectPlane) {
                                 mPendingDetectPlane = false;
-                                mSlamIPCClient.detectPlane();
+                                mMenthaAR.detectPlane();
                             }
                         } catch (Exception e) {
                             Log.e(TAG, "异步 IPC 发送帧异常: " + e.getMessage());
@@ -889,18 +846,20 @@ public class CameraPreviewView extends AspectGLSurfaceView {
 
             mPassThroughRenderer.onDrawFrame(mImageTextureId);
 
-            if (mSlamIPCClient != null && mSlamIPCClient.isConnected() && mPointCloudRenderer != null) {
-                // 只在服务端重写了点云区时才重新读取（≤96 KB 拷贝）并上传 VBO
-                final int pcSeq = mSlamIPCClient.readPointCloudSeq();
-                final boolean pcChanged = (pcSeq != mPointCloudSeq);
-                if (pcChanged) {
-                    mPointCloudSeq = pcSeq;
-                    mPointCloudFloats = mSlamIPCClient.readPointCloud(mPointCloudBuffer, mPointCloudBuffer.length);
+            if (mMenthaAR != null && mMenthaAR.isRunning() && mPointCloudRenderer != null) {
+                // 一次读取位姿 + 状态快照（复用对象，无分配）；只在 SDK 点云版本号变化时才重新读取并上传 VBO
+                final boolean hasResult = mMenthaAR.readResult(mSlamResult);
+                final MenthaAR.Result result = mSlamResult;
+                final boolean pcChanged = hasResult && result.pointCloudId != mPointCloudSeq;
+                if (hasResult && pcChanged) {
+                    mPointCloudSeq = result.pointCloudId;
+                    mPointCloudPoints = mMenthaAR.readPointCloud(mPointCloudBuffer);
                 }
-                final int floats = mPointCloudFloats;
-                if (floats > 0 && mSlamIPCClient.readMvp(mTempMvp)) {
+                final int points = mPointCloudPoints;
+                if (hasResult && points > 0) {
+                    final int floats = points * MenthaAR.POINT_CLOUD_FLOATS_PER_POINT;
                     // 点云在相机坐标系 (RDF)，右乘对角阵 diag(1,-1,-1,1) 数学上恒等于将第1列与第2列取反
-                    System.arraycopy(mTempMvp, 32, mVPMatrix, 0, 16);
+                    System.arraycopy(result.projection, 0, mVPMatrix, 0, 16);
                     mVPMatrix[4] = -mVPMatrix[4];
                     mVPMatrix[5] = -mVPMatrix[5];
                     mVPMatrix[6] = -mVPMatrix[6];

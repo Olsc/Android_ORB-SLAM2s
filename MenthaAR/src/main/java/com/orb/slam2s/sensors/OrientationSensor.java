@@ -380,7 +380,7 @@ public class OrientationSensor implements SensorEventListener {
         System.arraycopy(relTempMatrix, 0, relRotationMatrix, 0, 16);
         relSampleReady = true;
 
-        // 定期 Gram-Schmidt 正交规范化，抑制数值漂移（相对姿态同样会累积漂移，原先只校正 raw）
+        // 定期 Gram-Schmidt 正交规范化，抑制绝对姿态与相对姿态的数值漂移
         orthonormalize(rawRotationMatrix);
         orthonormalize(relRotationMatrix);
 

@@ -24,6 +24,7 @@ import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
 
+import com.menthaar.sdk.internal.ISlamService;
 import com.orb.slam2s.sensors.OrientationSensor;
 import com.orb.slam2s.sensors.PoseFusion;
 import com.orb.slam2s.slamar.NativeHelper;
@@ -39,6 +40,7 @@ public class SlamService extends Service {
     // 姿态辅助：传感器读取与位姿融合均在 SDK 进程内完成
     private final PoseFusion poseFusion = new PoseFusion();
     private OrientationSensor orientationSensor;
+    private volatile boolean assistEnabled;
     private final float[] rawPose = new float[48];
     private final int[] poseInfo = new int[3];
     private final float[] sensorRotation = new float[16];
@@ -99,16 +101,6 @@ public class SlamService extends Service {
         public void detectPlane() {
             // 作为任务入队：与帧处理在同一处理线程串行执行(避免并发调用 native)
             postTask(SlamService.this::doDetectPlane);
-        }
-
-        @Override
-        public void updateResolution(int width, int height) {
-            // 并入处理线程：避免 binder 线程与 slamThread 并发修改 native 全局内参
-            postTask(() -> {
-                if (nativeHelper != null) {
-                    nativeHelper.updateResolution(width, height);
-                }
-            });
         }
 
         @Override
@@ -179,23 +171,32 @@ public class SlamService extends Service {
 
     // 开启与关闭姿态辅助：开关传感器监听并同步融合器状态
     private void apply3DofEnabled(boolean enabled) {
-        poseFusion.setEnabled(enabled);
+        // 幂等：重连/重复下发配置时不重复重启传感器（重启会重置姿态基准）
+        if (assistEnabled == enabled) return;
+
         if (enabled) {
             final OrientationSensor sensor = ensureSensor();
             if (sensor == null) {
                 Log.w(TAG, "无可用姿态传感器，姿态辅助不可用");
+                poseFusion.setEnabled(false);
                 return;
             }
+            assistEnabled = true;
+            poseFusion.setEnabled(true);
             sensor.start(this);
             // 传感器重启会重置姿态基准，旧冻结偏移必须丢弃，否则首帧会大幅偏移
             poseFusion.resetAlignment();
-        } else if (orientationSensor != null) {
-            orientationSensor.stop();
+        } else {
+            assistEnabled = false;
+            poseFusion.setEnabled(false);
+            if (orientationSensor != null) {
+                orientationSensor.stop();
+            }
         }
     }
 
-    // 懒创建传感器，首次调用时探测可用姿态来源
-    private OrientationSensor ensureSensor() {
+    // 懒创建传感器，首次调用时探测可用姿态来源；binder 线程与处理线程都可能进来，必须串行化
+    private synchronized OrientationSensor ensureSensor() {
         if (orientationSensor == null) {
             orientationSensor = new OrientationSensor();
             final OrientationSensor.Mode mode = orientationSensor.detectMode(this);

@@ -27,7 +27,7 @@ import android.util.Log;
 
 import androidx.annotation.Keep;
 
-import com.orb.slam2s.ipc.SlamIPCClient;
+import com.menthaar.sdk.MenthaAR;
 import com.orb.slam2s.util.TouchGestureHelper;
 
 import java.io.ByteArrayOutputStream;
@@ -47,7 +47,7 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
 
     private AspectGLSurfaceView arObjectView;
     private Context context;
-    private SlamIPCClient slamIPCClient;
+    private MenthaAR menthaAR;
 
     private String modelPath;
     private float initSize = 1.0f;
@@ -59,7 +59,7 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
     private final float[] modelMatrix = new float[16];
     private final float[] viewMatrix = new float[16];
     private final float[] projectionMatrix = new float[16];
-    private final float[] tempMvp = new float[48];
+    private final MenthaAR.Result resultSnapshot = new MenthaAR.Result();
     private boolean matricesReady = false;
 
     private float autoScaleFactor = 1.0f;
@@ -100,8 +100,8 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
         return this;
     }
 
-    public GlbModelRenderer setSlamIPCClient(SlamIPCClient client) {
-        this.slamIPCClient = client;
+    public GlbModelRenderer setMenthaAR(MenthaAR client) {
+        this.menthaAR = client;
         return this;
     }
 
@@ -125,8 +125,8 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
     // 相机图像旋转角同时下发给 SDK，供姿态辅助换算安装夹角
     public GlbModelRenderer setDisplayCorrection(DisplayCorrection correction) {
         this.displayCorrection = correction;
-        if (correction != null && slamIPCClient != null) {
-            slamIPCClient.setCameraImageRotation(correction.rotationDegrees);
+        if (correction != null && menthaAR != null) {
+            menthaAR.setCameraRotation(correction.rotationDegrees);
         }
         requestRender();
         return this;
@@ -160,8 +160,8 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
         arObjectView.getHolder().setFormat(PixelFormat.TRANSLUCENT);
         arObjectView.setZOrderOnTop(true);
         arObjectView.setRenderer(this);
-        // 按需渲染：画面只随 SLAM 结果（CameraPreviewView 轮询 SLAM_DONE_SEQ 后调用 requestRender）、
-        // 手势缩放/旋转、模型加载完成、显示矫正变化而变化；模型本身无动画。原先按 60~120 Hz 持续重绘并重复读取 MVP
+        // 按需渲染：画面只随 SDK 的 onTrackingResult 回调（MainActivity 请求重绘）、
+        // 手势缩放/旋转、模型加载完成、显示矫正变化而变化；模型本身无动画
         arObjectView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
         rendererAttached = true;
 
@@ -174,8 +174,8 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
                     } else if (currentScaleFactor > MAX_SCALE) {
                         currentScaleFactor = MAX_SCALE;
                     }
-                    if (slamIPCClient != null) {
-                        slamIPCClient.updateArObjectScale(scaleFactor);
+                    if (menthaAR != null) {
+                        menthaAR.setArObjectScale(scaleFactor);
                     }
                     requestRender();
                 }
@@ -239,15 +239,15 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
 
-        if (slamIPCClient != null && slamIPCClient.isConnected()) {
-            // 位姿与绘制决策均由 SDK 给出，App 侧只搬运矩阵
+        if (menthaAR != null && menthaAR.isRunning()) {
+            // 位姿与绘制决策均由 SDK 给出，App 侧只搬运矩阵（复用 Result，无每帧分配）
             boolean effectiveDraw = false;
-            if (slamIPCClient.readMvp(tempMvp)) {
-                effectiveDraw = slamIPCClient.readDrawFlag();
+            if (menthaAR.readResult(resultSnapshot)) {
+                effectiveDraw = resultSnapshot.drawable;
                 if (effectiveDraw) {
-                    System.arraycopy(tempMvp, 0, modelMatrix, 0, 16);
-                    System.arraycopy(tempMvp, 16, viewMatrix, 0, 16);
-                    System.arraycopy(tempMvp, 32, projectionMatrix, 0, 16);
+                    System.arraycopy(resultSnapshot.model, 0, modelMatrix, 0, 16);
+                    System.arraycopy(resultSnapshot.view, 0, viewMatrix, 0, 16);
+                    System.arraycopy(resultSnapshot.projection, 0, projectionMatrix, 0, 16);
                 }
             }
 

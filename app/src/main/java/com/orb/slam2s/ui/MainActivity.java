@@ -32,8 +32,6 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -51,13 +49,13 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 
+import com.menthaar.sdk.MenthaAR;
 import com.orb.slam2s.R;
 import com.orb.slam2s.camera.CameraPreviewView;
 import com.orb.slam2s.camera.CameraResolution;
 import com.orb.slam2s.graphics.AspectGLSurfaceView;
 import com.orb.slam2s.graphics.DisplayCorrection;
 import com.orb.slam2s.graphics.GlbModelRenderer;
-import com.orb.slam2s.ipc.SlamIPCClient;
 import com.orb.slam2s.util.FpsCalculator;
 import com.orb.slam2s.util.MapManager;
 import com.orb.slam2s.util.TouchGestureHelper;
@@ -83,9 +81,8 @@ public class MainActivity extends ComponentActivity
 
     private CameraPreviewView mCameraPreviewView;
     private AspectGLSurfaceView mArObjectView;
-    private boolean mIsInitFinished = false;
 
-    private SlamIPCClient mSlamIPCClient;
+    private MenthaAR mMenthaAR;
     private MapManager mMapManager;
     private TouchGestureHelper mTouchHelper;
     private GlbModelRenderer mModelRenderer;
@@ -105,20 +102,19 @@ public class MainActivity extends ComponentActivity
     private Button mBtn3DofCube;
 
     private final Handler mUiHandler = new Handler(Looper.getMainLooper());
-    private AlertDialog mLoadingDialog;
+    private boolean mInitToastShown = false;
 
     // 地图统计轮询(1Hz)：仅在 onResume~onPause 之间运行，避免后台无谓唤醒与 IPC 占用
     private final Runnable mMapStatsUpdater = new Runnable() {
         @Override
         public void run() {
-            if (mSlamIPCClient != null && mTextMapStats != null) {
-                int[] stats = mSlamIPCClient.getMapStats();
-                if (stats != null && stats.length == 3) {
-                    final String statsText = getString(R.string.map_stats_format,
-                            stats[0], stats[1], stats[2] > 0 ? getString(R.string.map_stats_plane_yes)
-                                    : getString(R.string.map_stats_plane_no));
-                    runOnUiThread(() -> mTextMapStats.setText(statsText));
-                }
+            if (mMenthaAR != null && mTextMapStats != null) {
+                MenthaAR.MapStats stats = mMenthaAR.getMapStats();
+                final String statsText = getString(R.string.map_stats_format,
+                        stats.keyFrames, stats.mapPoints, stats.hasPlane
+                                ? getString(R.string.map_stats_plane_yes)
+                                : getString(R.string.map_stats_plane_no));
+                runOnUiThread(() -> mTextMapStats.setText(statsText));
             }
             mUiHandler.postDelayed(this, 1000);
         }
@@ -128,15 +124,17 @@ public class MainActivity extends ComponentActivity
 
     // 3DOF 传感器方向反向的持久化配置
     private static final String PREFS_3DOF = "camera_3dof_settings";
-    // 键名带版本：默认值改为开启后，避免历史保存的关闭状态覆盖新默认
+    // 键名带版本，避免历史保存的关闭状态覆盖新默认值
     private static final String PREF_SENSOR_REVERSE = "sensor_reverse_default_on";
+    // 点云显示开关持久化：下次启动自动恢复
+    private static final String PREF_POINT_CLOUD = "point_cloud_visible";
 
     // 虚拟摇杆
     private VirtualJoystickView mJoystickView;
 
     // 辅助定位状态(传感器与融合均由 SDK 持有，这里只保存 UI 开关)
     private boolean mIs3DofMode = true;
-    private int mSensorDof = 0;
+    private boolean mPoseAssistAvailable = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -214,22 +212,39 @@ public class MainActivity extends ComponentActivity
 
         setupWindowInsets();
 
-        mSlamIPCClient = new SlamIPCClient(this);
+        mMenthaAR = new MenthaAR(this);
+        // 先把持久化的点云开关写入 SDK 缓存，连接时随其它配置一次性下发
+        mMenthaAR.setPointCloudVisible(isPointCloudVisibleEnabled());
         mMapManager = new MapManager(this);
+
+        // SDK 回调：连接就绪后同步配置；每产出一帧结果就让两个按需渲染的 GL 视图重绘一次
+        mMenthaAR.setListener(new MenthaAR.Listener() {
+            @Override
+            public void onReady() {
+                runOnUiThread(() -> {
+                    applyPoseAssistConfig();
+                    if (!mInitToastShown) {
+                        mInitToastShown = true;
+                        showToast(getString(R.string.slam_init_complete));
+                    }
+                });
+            }
+
+            @Override
+            public void onTrackingResult() {
+                if (mCameraPreviewView != null) mCameraPreviewView.requestRender();
+                final GlbModelRenderer renderer = mModelRenderer;
+                if (renderer != null) renderer.requestRender();
+            }
+        });
 
         mCameraPreviewView = findViewById(R.id.my_fake_glsurface_view);
         mCameraPreviewView.setVisibility(View.VISIBLE);
         mCameraPreviewView.setFrameListener(this);
         mCameraPreviewView.setDisplayCorrectionListener(this);
-        mCameraPreviewView.setSlamIPCClient(mSlamIPCClient);
-        // SLAM 每产出一帧结果，AR 物体视图重绘一次（两个 GL 视图都是按需渲染）
-        mCameraPreviewView.setSlamResultListener(() -> {
-            final GlbModelRenderer renderer = mModelRenderer;
-            if (renderer != null) renderer.requestRender();
-        });
+        mCameraPreviewView.setMenthaAR(mMenthaAR);
         mCameraPreviewView.init();
 
-        mIsInitFinished = false;
         mTouchHelper = new TouchGestureHelper(this);
 
         mBtn3DofCube = findViewById(R.id.btn_3dof_cube);
@@ -286,6 +301,7 @@ public class MainActivity extends ComponentActivity
         mBtnTogglePointCloud = findViewById(R.id.btn_toggle_pointcloud);
         if (mBtnTogglePointCloud != null) {
             mBtnTogglePointCloud.setOnClickListener(v -> togglePointCloudDisplay());
+            updatePointCloudButton(isPointCloudVisibleEnabled());
         }
 
         mBtnSwitchCamera = findViewById(R.id.btn_switch_camera);
@@ -391,8 +407,8 @@ public class MainActivity extends ComponentActivity
                     if (mapName.isEmpty()) mapName = defaultName;
 
                     final String resDir = getSlamDir().getAbsolutePath() + "/maps/" + mapName + ".bin";
-                    if (mSlamIPCClient != null) {
-                        mSlamIPCClient.saveMap(resDir);
+                    if (mMenthaAR != null) {
+                        mMenthaAR.saveMap(resDir);
                     }
                     showToast(getString(R.string.hint_map_saved, mapName));
                 })
@@ -420,18 +436,15 @@ public class MainActivity extends ComponentActivity
                     .setTitle(getString(R.string.dialog_select_map))
                     .setMultiChoiceItems(mapNames, checkedItems, (dialog, which, isChecked) -> checkedItems[which] = isChecked)
                     .setPositiveButton(getString(R.string.action_load), (dialog, which) -> {
-                        int loadedCount = 0;
+                        final List<String> paths = new ArrayList<>();
                         for (int i = 0; i < maps.size(); i++) {
                             if (checkedItems[i]) {
-                                boolean append = (loadedCount > 0);
-                                final String resDir = getSlamDir().getAbsolutePath() + "/maps/" + maps.get(i).name + ".bin";
-                                if (mSlamIPCClient != null) {
-                                    mSlamIPCClient.loadMapWithId(resDir, loadedCount, append);
-                                }
-                                loadedCount++;
+                                paths.add(getSlamDir().getAbsolutePath() + "/maps/" + maps.get(i).name + ".bin");
                             }
                         }
-                        if (loadedCount > 0) {
+                        if (!paths.isEmpty()) {
+                            if (mMenthaAR != null) mMenthaAR.loadMaps(paths);
+                            final int loadedCount = paths.size();
                             showToast(getResources().getQuantityString(R.plurals.hint_maps_loaded, loadedCount, loadedCount));
                         }
                     })
@@ -457,10 +470,8 @@ public class MainActivity extends ComponentActivity
                 .setItems(options, (dialog, which) -> {
                     switch (which) {
                         case 0:
-                            final String resDir = getSlamDir().getAbsolutePath() + "/maps/" + mapInfo.name + ".bin";
-                            if (mSlamIPCClient != null) {
-                                mSlamIPCClient.loadMapWithId(resDir, 0, false);
-                            }
+                            final String mapPath = getSlamDir().getAbsolutePath() + "/maps/" + mapInfo.name + ".bin";
+                            if (mMenthaAR != null) mMenthaAR.loadMap(mapPath);
                             showToast(getString(R.string.hint_map_loaded, mapInfo.name));
                             break;
                         case 1:
@@ -513,7 +524,7 @@ public class MainActivity extends ComponentActivity
 
         mModelRenderer = GlbModelRenderer.newInstance()
                 .setArObjectView(glRootView)
-                .setSlamIPCClient(mSlamIPCClient)
+                .setMenthaAR(mMenthaAR)
                 .setContext(this)
                 .setModelPath("model.glb")
                 .setInitSize(0.20f)
@@ -553,16 +564,13 @@ public class MainActivity extends ComponentActivity
             mCameraPreviewView.disableView();
         }
 
-        if (mIs3DofMode) {
-            mSlamIPCClient.set3DofAssistEnabled(false);
-        }
-
         if (mModelRenderer != null) {
             mModelRenderer.onPause();
         }
 
-        if (mSlamIPCClient != null) {
-            mSlamIPCClient.unbindService();
+        // 停止定位：内部解绑服务并释放共享内存，配置会在下次启动时自动重新下发
+        if (mMenthaAR != null) {
+            mMenthaAR.stop();
         }
     }
 
@@ -575,20 +583,10 @@ public class MainActivity extends ComponentActivity
             mModelRenderer.onResume();
         }
 
-        if (mSlamIPCClient != null) {
-            mSlamIPCClient.bindService();
+        if (mMenthaAR != null) {
+            mMenthaAR.start();
         }
-
-        if (!mIsInitFinished) {
-            mIsInitFinished = true;
-            initSLAMAsync();
-        } else {
-            mCameraPreviewView.enableView();
-        }
-
-        if (mIs3DofMode) {
-            mSlamIPCClient.set3DofAssistEnabled(true);
-        }
+        mCameraPreviewView.enableView();
 
         startMapStatsUpdater();
     }
@@ -610,77 +608,6 @@ public class MainActivity extends ComponentActivity
         }
     }
 
-    private void initSLAMAsync() {
-        showLoadingDialog(getString(R.string.loading_slam_init), getString(R.string.loading_slam_wait));
-
-        new Thread(() -> {
-            try {
-                final String resDir = getSlamDir().getAbsolutePath() + "/";
-
-                if (mSlamIPCClient != null) {
-                    mSlamIPCClient.bindService();
-                    mSlamIPCClient.initSLAM(resDir);
-                }
-
-                runOnUiThread(() -> {
-                    dismissLoadingDialog();
-                    showToast(getString(R.string.slam_init_complete));
-                    mCameraPreviewView.enableView();
-                });
-
-            } catch (final Exception e) {
-                Log.e(TAG, "SLAM 初始化失败: " + e.getMessage(), e);
-                runOnUiThread(() -> {
-                    dismissLoadingDialog();
-                    showToast(getString(R.string.slam_init_failed, e.getMessage()));
-                });
-            }
-        }).start();
-    }
-
-    private void showLoadingDialog(String title, String message) {
-        runOnUiThread(() -> {
-            if (mLoadingDialog != null && mLoadingDialog.isShowing()) {
-                mLoadingDialog.dismiss();
-            }
-
-            LinearLayout container = new LinearLayout(MainActivity.this);
-            container.setOrientation(LinearLayout.HORIZONTAL);
-            int padding = (int) (16 * getResources().getDisplayMetrics().density);
-            container.setPadding(padding, padding, padding, padding);
-
-            ProgressBar progressBar = new ProgressBar(MainActivity.this);
-            progressBar.setIndeterminate(true);
-
-            TextView msgView = new TextView(MainActivity.this);
-            msgView.setText(message);
-            msgView.setTextColor(0xFF000000);
-            msgView.setTextSize(16);
-            LinearLayout.LayoutParams textLp = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT);
-            textLp.leftMargin = padding / 2;
-            container.addView(progressBar);
-            container.addView(msgView, textLp);
-
-            mLoadingDialog = new AlertDialog.Builder(MainActivity.this)
-                    .setTitle(title)
-                    .setView(container)
-                    .setCancelable(false)
-                    .create();
-            mLoadingDialog.show();
-        });
-    }
-
-    private void dismissLoadingDialog() {
-        runOnUiThread(() -> {
-            if (mLoadingDialog != null && mLoadingDialog.isShowing()) {
-                mLoadingDialog.dismiss();
-                mLoadingDialog = null;
-            }
-        });
-    }
-
     @Override
     protected void onDestroy() {
         Log.d(TAG, "onDestroy: 释放资源");
@@ -697,19 +624,14 @@ public class MainActivity extends ComponentActivity
 
         mUiHandler.removeCallbacksAndMessages(null);
 
-        if (mSlamIPCClient != null) {
-            mSlamIPCClient.unbindService();
+        if (mMenthaAR != null) {
+            mMenthaAR.stop();
         }
-
-        dismissLoadingDialog();
     }
 
     @Override
     public void onCameraStarted(int width, int height) {
         Log.d(TAG, "onCameraStarted: 摄像头视图启动，宽度=" + width + " 高度=" + height);
-        if (mSlamIPCClient != null) {
-            mSlamIPCClient.updateResolution(width, height);
-        }
     }
 
     @Override
@@ -808,8 +730,8 @@ public class MainActivity extends ComponentActivity
 
     // 设置传感器方向反向：下发给 SDK 融合层并持久化，用于纠正 3DOF 方向
     private void setSensorReverse(boolean enabled) {
-        if (mSlamIPCClient != null) {
-            mSlamIPCClient.setSensorReverse(enabled);
+        if (mMenthaAR != null) {
+            mMenthaAR.setPoseAssistReversed(enabled);
         }
         getSharedPreferences(PREFS_3DOF, MODE_PRIVATE)
                 .edit().putBoolean(PREF_SENSOR_REVERSE, enabled).apply();
@@ -829,22 +751,34 @@ public class MainActivity extends ComponentActivity
     }
 
     private void togglePointCloudDisplay() {
-        if (mSlamIPCClient != null && mBtnTogglePointCloud != null) {
-            boolean currentState = mSlamIPCClient.isPointCloudDisplayEnabled();
-            boolean newState = !currentState;
-            mSlamIPCClient.setPointCloudDisplay(newState);
+        if (mMenthaAR == null || mBtnTogglePointCloud == null) {
+            Log.e(TAG, "无法切换点云显示：SDK 未就绪");
+            return;
+        }
+        setPointCloudVisible(!isPointCloudVisibleEnabled());
+    }
 
-            if (newState) {
-                mBtnTogglePointCloud.setText(getString(R.string.btn_pointcloud_enabled));
-                showToast(getString(R.string.hint_pointcloud_enabled));
-                Log.d(TAG, "点云显示已启用");
-            } else {
-                mBtnTogglePointCloud.setText(getString(R.string.btn_pointcloud_disabled));
-                showToast(getString(R.string.hint_pointcloud_disabled));
-                Log.d(TAG, "点云显示已禁用");
-            }
-        } else {
-            Log.e(TAG, "无法切换点云显示：SlamIPCClient 未连接");
+    // 点云显示开关：下发 SDK 并持久化，下次启动自动恢复
+    private void setPointCloudVisible(boolean visible) {
+        if (mMenthaAR != null) {
+            mMenthaAR.setPointCloudVisible(visible);
+        }
+        getSharedPreferences(PREFS_3DOF, MODE_PRIVATE)
+                .edit().putBoolean(PREF_POINT_CLOUD, visible).apply();
+        updatePointCloudButton(visible);
+        showToast(getString(visible ? R.string.hint_pointcloud_enabled : R.string.hint_pointcloud_disabled));
+        Log.d(TAG, visible ? "点云显示已启用" : "点云显示已禁用");
+    }
+
+    private boolean isPointCloudVisibleEnabled() {
+        return getSharedPreferences(PREFS_3DOF, MODE_PRIVATE)
+                .getBoolean(PREF_POINT_CLOUD, false);
+    }
+
+    private void updatePointCloudButton(boolean visible) {
+        if (mBtnTogglePointCloud != null) {
+            mBtnTogglePointCloud.setText(getString(visible
+                    ? R.string.btn_pointcloud_enabled : R.string.btn_pointcloud_disabled));
         }
     }
 
@@ -936,30 +870,17 @@ public class MainActivity extends ComponentActivity
         if (mBtnReverseSensor == null) {
             mBtnReverseSensor = findViewById(R.id.btn_reverse_sensor);
         }
-        if (mSlamIPCClient != null) {
-            mSlamIPCClient.setConnectionListener(new SlamIPCClient.ConnectionListener() {
-                @Override
-                public void onServiceConnected() {
-                    runOnUiThread(MainActivity.this::apply3DofConfig);
-                }
-
-                @Override
-                public void onServiceDisconnected() {
-                    // 重连成功后由 onServiceConnected 重新下发配置
-                }
-            });
-        }
     }
 
-    // SDK 连接后同步：能力探测、开关与反向状态
-    private void apply3DofConfig() {
-        if (mSlamIPCClient == null) return;
-        mSensorDof = mSlamIPCClient.getSensorDof();
-        Log.d(TAG, "SDK 姿态自由度: " + mSensorDof);
+    // SDK 连接就绪后同步：能力探测与开关状态
+    private void applyPoseAssistConfig() {
+        if (mMenthaAR == null) return;
+        mPoseAssistAvailable = mMenthaAR.isPoseAssistAvailable();
+        Log.d(TAG, "姿态辅助可用: " + mPoseAssistAvailable);
 
-        if (mSensorDof <= 0) {
+        if (!mPoseAssistAvailable) {
             mIs3DofMode = false;
-            mSlamIPCClient.set3DofAssistEnabled(false);
+            mMenthaAR.setPoseAssistEnabled(false);
             if (mBtn3DofCube != null) {
                 mBtn3DofCube.setVisibility(View.GONE);
             }
@@ -977,14 +898,9 @@ public class MainActivity extends ComponentActivity
         if (mBtnReverseSensor != null) {
             mBtnReverseSensor.setVisibility(View.VISIBLE);
         }
-        mSlamIPCClient.set3DofAssistEnabled(mIs3DofMode);
-        mSlamIPCClient.setSensorReverse(isSensorReverseEnabled());
+        mMenthaAR.setPoseAssistEnabled(mIs3DofMode);
+        mMenthaAR.setPoseAssistReversed(isSensorReverseEnabled());
         updateToggleButton(mBtnReverseSensor, R.string.btn_reverse_sensor, isSensorReverseEnabled());
-        // 重连后服务进程可能是全新实例，点云按钮文案与服务端实际状态同步
-        if (mBtnTogglePointCloud != null) {
-            mBtnTogglePointCloud.setText(getString(mSlamIPCClient.isPointCloudDisplayEnabled()
-                    ? R.string.btn_pointcloud_enabled : R.string.btn_pointcloud_disabled));
-        }
     }
 
     private void toggle3DofMode() {
@@ -992,7 +908,7 @@ public class MainActivity extends ComponentActivity
     }
 
     private void set3DofMode(boolean enabled, boolean showToast) {
-        if (mSlamIPCClient == null || mSensorDof <= 0) {
+        if (mMenthaAR == null || !mPoseAssistAvailable) {
             if (showToast) {
                 showToast(getString(R.string.hint_3dof_unavailable));
             }
@@ -1006,7 +922,7 @@ public class MainActivity extends ComponentActivity
         }
 
         mIs3DofMode = enabled;
-        mSlamIPCClient.set3DofAssistEnabled(enabled);
+        mMenthaAR.setPoseAssistEnabled(enabled);
         if (mBtn3DofCube != null) {
             mBtn3DofCube.setText(getString(enabled
                     ? R.string.btn_3dof_on : R.string.btn_3dof_off));
