@@ -134,7 +134,7 @@ public final class MenthaAR {
     private volatile int cameraRotation;
     private volatile boolean poseAssistEnabled;
     private volatile boolean poseAssistReversed;
-    private volatile boolean pointCloudVisible;
+    private volatile boolean pointCloudVisible = true;
 
     private final Object lifecycleLock = new Object();
     private volatile boolean running;
@@ -306,7 +306,7 @@ public final class MenthaAR {
         session.detectPlane();
     }
 
-    // 是否输出点云（关闭后不再产生点云数据），默认关闭。
+    // 是否输出点云（关闭后不再产生点云数据），默认开启，与服务端默认值一致。
     public void setPointCloudVisible(boolean visible) {
         pointCloudVisible = visible;
         session.setPointCloudVisible(visible);

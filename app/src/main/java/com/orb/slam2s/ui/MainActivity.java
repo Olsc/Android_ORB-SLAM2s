@@ -127,8 +127,8 @@ public class MainActivity extends ComponentActivity
     private static final String PREFS_3DOF = "camera_3dof_settings";
     // 键名带版本，历史保存的关闭状态不会覆盖新默认值
     private static final String PREF_SENSOR_REVERSE = "sensor_reverse_default_on";
-    // 点云显示开关持久化：下次启动自动恢复
-    private static final String PREF_POINT_CLOUD = "point_cloud_visible";
+    // 点云显示默认开启；键名带版本，历史保存的状态不覆盖新默认值
+    private static final String PREF_POINT_CLOUD = "point_cloud_visible_default_on";
 
     // 虚拟摇杆
     private VirtualJoystickView mJoystickView;
@@ -793,7 +793,7 @@ public class MainActivity extends ComponentActivity
 
     private boolean isPointCloudVisibleEnabled() {
         return getSharedPreferences(PREFS_3DOF, MODE_PRIVATE)
-                .getBoolean(PREF_POINT_CLOUD, false);
+                .getBoolean(PREF_POINT_CLOUD, true);
     }
 
     private void updatePointCloudButton(boolean visible) {
