@@ -30,7 +30,6 @@ import com.orb.slam2s.slamar.NativeHelper;
 
 // SLAM 独立后台服务：在独立高优先级线程中执行单目特征提取与位姿跟踪
 // 姿态辅助融合也在本进程完成，App 只通过共享内存读取最终 AR 位姿
-// 由 AndroidManifest.xml 注册、系统在独立进程创建，IDE 无法识别该入口点
 @SuppressWarnings("unused")
 public class SlamService extends Service {
     private static final String TAG = "SlamService";

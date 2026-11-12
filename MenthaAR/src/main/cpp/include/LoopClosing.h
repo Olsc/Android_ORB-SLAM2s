@@ -103,7 +103,7 @@ public:
         return mbFinishedGBA;
     }
 
-    // 队列为空、未在处理关键帧、GBA 未运行（供离线回放的同步模式使用）
+    // 队列为空、未在处理关键帧、GBA 未运行
     bool IsIdle(){
         if(mbProcessing.load(std::memory_order_acquire)) return false;
         {

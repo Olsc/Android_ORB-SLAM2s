@@ -98,7 +98,7 @@ public:
         return mlNewKeyFrames.size();
     }
 
-    // 队列为空且当前没有在处理关键帧（供离线回放的同步模式使用）。
+    // 队列为空且当前没有在处理关键帧。
     // 注意 AcceptKeyFrames() 在忙碌但队列较短时也返回 true，这里必须读原始忙标志。
     bool IsIdle(){
         return mbAcceptKeyFrames.load(std::memory_order_acquire) && KeyframesInQueue()==0;

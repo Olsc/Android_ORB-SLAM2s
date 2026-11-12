@@ -2341,8 +2341,6 @@ void Tracking::SearchLocalPoints()
 
 void Tracking::UpdateLocalMap()
 {
-    // 这是为了可视化
-
     // 更新
     UpdateLocalKeyFrames();
     UpdateLocalPoints();

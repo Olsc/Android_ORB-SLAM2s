@@ -358,7 +358,7 @@ void PnPsolver::CheckInliers()
     mnInliersi=0;
 
     // 判据在 double 中计算，Zc<=0 直接判为外点
-    // 免除法形式：((u-uc)*Zc-fu*Xc)^2 + ((v-vc)*Zc-fv*Yc)^2 < e^2*Zc^2
+    // ((u-uc)*Zc-fu*Xc)^2 + ((v-vc)*Zc-fv*Yc)^2 < e^2*Zc^2
     for(int i=0; i<N; i++)
     {
         const cv::Point3f &P3Dw = mvP3Dw[i];

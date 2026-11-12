@@ -92,7 +92,7 @@ bool Initializer::Initialize(const Frame &CurrentFrame, const vector<int> &vMatc
         vAllIndices.push_back(i);
     }
 
-    // 生成每次迭代的最小样本集（交换-恢复抽样，与逐次拷贝数组的实现产生相同样本）
+    // 生成每次迭代的最小样本集（交换-恢复抽样）
     mvSets = vector< vector<size_t> >(mMaxIterations,vector<size_t>(INITIALIZER_RANSAC_MIN_SET,0));
 
     LCG lcg(0);
@@ -176,7 +176,7 @@ void Initializer::FindHomography(vector<bool> &vbMatchesInliers, float &score, c
         if(currentScore>score)
         {
             H21 = H21i.clone();
-            vbMatchesInliers.swap(vbCurrentInliers); // 下一轮 Check* 会整份重写 vbCurrentInliers
+            vbMatchesInliers.swap(vbCurrentInliers);
             score = currentScore;
             nInlierBest = nCurrentInliers;
         }
@@ -403,7 +403,6 @@ float Initializer::CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vecto
         const float dv1 = v1*w2in1 - v2in1_w;
         const float squareDist1_w2 = du1*du1 + dv1*dv1;
 
-        // 避免除法的平方判据
         if (squareDist1_w2 > thSigma2 * (w2in1 * w2in1))
         {
             vbMatchesInliers[i] = false;
@@ -491,7 +490,6 @@ float Initializer::CheckFundamental(const cv::Mat &F21, vector<bool> &vbMatchesI
             continue;
         }
 
-        // 避免除法的平方判据
         const float num2_sq = num2 * num2;
         if (num2_sq > thSigma2 * den2)
         {

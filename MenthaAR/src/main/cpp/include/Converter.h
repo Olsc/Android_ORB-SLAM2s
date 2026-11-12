@@ -144,7 +144,7 @@ public:
         const double c02 = m01*m12 - m02*m11;
 
         const double det = m00*c00 + m01*c01 + m02*c02;
-        if(std::fabs(det) < 1e-12) // 与原 float 实现相同的退化门限
+        if(std::fabs(det) < 1e-12)
             return false;
 
         const double invDet = 1.0 / det;

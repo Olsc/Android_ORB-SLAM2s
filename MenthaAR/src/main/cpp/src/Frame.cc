@@ -230,7 +230,7 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
     if(PcZ <= 0.0f)
         return false;
 
-    // 仅在正深度时计算 PcX 与 PcY，并以无除法形式裁剪到视锥边界
+    // 仅在正深度时计算 PcX 与 PcY，并裁剪到视锥边界
     const float PcX = mRcw_arr[0]*p3f.x + mRcw_arr[1]*p3f.y + mRcw_arr[2]*p3f.z + mtcw_arr[0];
     const float u_num = fx*PcX + cx*PcZ;
     if(u_num < mnMinX*PcZ || u_num > mnMaxX*PcZ)
@@ -326,7 +326,7 @@ void Frame::GetFeaturesInArea(const float &x, const float &y, const float &r,
     {
         for(int iy = nMinCellY; iy<=nMaxCellY; iy++)
         {
-            // 使用 const 引用，避免逐 cell 深拷贝
+            // 使用 const 引用
             const std::vector<size_t>& vCell = mGrid[ix][iy];
             if(vCell.empty())
                 continue;
