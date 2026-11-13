@@ -9,6 +9,7 @@
     <string name="loading_slam_init">Inicializace systému SLAM…</string>
     <string name="loading_slam_wait">Prosím čekejte, může to chvíli trvat</string>
     <string name="slam_init_complete">Systém SLAM inicializován</string>
+    <string name="slam_connection_lost">Připojení ke službě SLAM bylo přerušeno. Znovu otevřete aplikaci pro opětovné připojení.</string>
     <string name="slam_init_failed">Inicializace SLAM selhala: %1$s</string>
     <string name="hint_request_sent">Požadavek odeslán</string>
     <string name="hint_pointcloud_enabled">Mrak bodů aktivován</string>

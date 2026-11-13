@@ -76,7 +76,7 @@ public:
     void SetLocalMapper(LocalMapping* pLocalMapper);
     void SetMap(Map* pMap);
 
-    // 主函数
+    // 主循环：取出关键帧并执行闭环检测与校正
     void Run();
 
     void InsertKeyFrame(KeyFrame *pKF);
@@ -87,7 +87,7 @@ public:
     // 清空回环关键帧队列，用于 CreateNewMap 流程。
     void ClearQueue();
 
-    // 此函数将在单独的线程中运行
+    // 在独立线程中执行全局 BA
     void RunGlobalBundleAdjustment(unsigned long nLoopKF);
 
     // 中止正在运行的 GBA 并 join 其线程。
@@ -103,7 +103,7 @@ public:
         return mbFinishedGBA;
     }
 
-    // 队列为空、未在处理关键帧、GBA 未运行（供离线回放的同步模式使用）
+    // 队列为空、未在处理关键帧、GBA 未运行
     bool IsIdle(){
         if(mbProcessing.load(std::memory_order_acquire)) return false;
         {
@@ -191,6 +191,6 @@ protected:
     int mnFullBAIdx;
 };
 
-} //namespace ORB_SLAM2
+} // namespace ORB_SLAM2
 
 #endif // LOOPCLOSING_H

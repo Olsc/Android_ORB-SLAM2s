@@ -9,6 +9,7 @@
     <string name="loading_slam_init">SLAM ਸਿਸਟਮ ਸ਼ੁਰੂ ਹੋ ਰਿਹਾ ਹੈ…</string>
     <string name="loading_slam_wait">ਕਿਰਪਾ ਕਰਕੇ ਉਡੀਕ ਕਰੋ, ਇਸ ਵਿੱਚ ਕੁਝ ਸਮਾਂ ਲੱਗ ਸਕਦਾ ਹੈ</string>
     <string name="slam_init_complete">SLAM ਸਿਸਟਮ ਸ਼ੁਰੂ ਹੋ ਗਿਆ</string>
+    <string name="slam_connection_lost">SLAM ਸੇਵਾ ਨਾਲ ਕਨੈਕਸ਼ਨ ਟੁੱਟ ਗਿਆ। ਦੁਬਾਰਾ ਜੁੜਨ ਲਈ ਐਪ ਦੁਬਾਰਾ ਖੋਲ੍ਹੋ।</string>
     <string name="slam_init_failed">SLAM ਸ਼ੁਰੂ ਕਰਨਾ ਅਸਫਲ ਰਿਹਾ: %1$s</string>
     <string name="hint_request_sent">ਬੇਨਤੀ ਭੇਜੀ ਗਈ</string>
     <string name="hint_pointcloud_enabled">ਪੁਆਇੰਟ ਕਲਾਊਡ ਸਮਰੱਥ ਹੈ</string>

@@ -83,7 +83,7 @@ public:
     // 焦距应相似，否则投影尺度预测会失败；PredictScale 需考虑焦距差异
     void UpdateCalibration(float fx, float fy, float cx, float cy);
 
-    // 如果您已停用局部建图并且只想定位相机，请使用此函数。
+    // 仅定位不建图时启用
     void InformOnlyTracking(const bool &flag);
 
     // 后台全局重定位线程控制
@@ -156,7 +156,7 @@ public:
     list<double> mlFrameTimes;
     list<bool> mlbLost;
 
-    // 如果局部建图被停用并且我们仅执行定位，则为true
+    // 局部建图停用且仅执行定位时为 true
     bool mbOnlyTracking;
 
     // 重置函数
@@ -168,7 +168,7 @@ public:
     // 创建新子地图前仅清除跟踪线程内部运行时状态
     void PrepareForNewMap();
 
-    // 切换地图前清空旧地图的重定位/对齐缓存，需在StopGlobalRelocThread之后、SwitchToMap之前调用。
+    // 切换地图时清空旧地图的重定位与对齐缓存，调用点位于 StopGlobalRelocThread 与 SwitchToMap 之间。
     void ClearRelocCacheForMapSwitch();
 
 protected:
@@ -266,7 +266,7 @@ protected:
     std::atomic<bool> mbRelocThreadStop{false};
     std::atomic<int> mRelocThreadSessionId{0};
     mutable std::mutex mMutexReloc;
-    std::condition_variable mCvReloc; // 生命周期事件驱动的唤醒，避免使用延时
+    std::condition_variable mCvReloc; // 重定位唤醒条件变量，由生命周期事件触发
     cv::Mat mLastDesc; // 描述符快照
     std::vector<cv::KeyPoint> mLastKeysUn; // 关键点快照
     int mLastN = 0;
@@ -303,7 +303,7 @@ protected:
     std::atomic<bool> mRefCacheDirty{false};
     // HBST树：用于代替词袋倒排索引加速背景重定位匹配
     std::shared_ptr<HBSTTree> mpRefTree;
-    // 加载地图点的不可变快照以避免竞争
+    // 加载地图点的不可变快照，跨线程读取不加锁
     struct RefMPSnapshot {
         cv::Point3f Pw;
         float minD;
@@ -358,7 +358,7 @@ protected:
     int mCfgMatchChunk = SYSTEM_RELOC_CONFIG_MATCH_CHUNK;
     int mCfgMaxBindInliers = SYSTEM_RELOC_CONFIG_MAX_BIND_INLIERS;
     int mCfgMaxProjBinds = SYSTEM_RELOC_CONFIG_MAX_PROJ_BINDS;
-    // 重定位冷却以避免在明显不匹配时进行重型PnP
+    // 重定位冷却，明显不匹配时跳过重型 PnP
     int mRelocCooldownFrames = 0;
 
     int mPendingMapId = -1;
@@ -385,6 +385,6 @@ protected:
     float mDynamicSearchTh = TRACKING_LOCAL_SEARCH_TH;
 };
 
-} //namespace ORB_SLAM2
+} // namespace ORB_SLAM2
 
 #endif // TRACKING_H

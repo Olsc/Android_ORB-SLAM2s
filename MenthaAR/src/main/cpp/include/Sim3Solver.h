@@ -68,7 +68,7 @@ protected:
 
     void CheckInliers();
 
-    // Xc' = s*R*Xc + t 后投影；Zc<=0 的点写 NaN（比较恒为假 → 外点）
+    // Xc' = s*R*Xc + t 后投影，Zc<=0 的点写 NaN，比较恒为假即判为外点
     static void Project(const std::vector<cv::Point3f> &vP3Dc, std::vector<cv::Point2f> &vP2D,
                         const double R[3][3], const double s, const double t[3], const cv::Mat &K);
     static void FromCameraToImage(const std::vector<cv::Point3f> &vP3Dc, std::vector<cv::Point2f> &vP2D, const cv::Mat &K);
@@ -147,6 +147,6 @@ protected:
     LCG mLcg;
 };
 
-} //namespace ORB_SLAM2
+} // namespace ORB_SLAM2
 
 #endif // SIM3SOLVER_H

@@ -144,7 +144,7 @@ public:
         const double c02 = m01*m12 - m02*m11;
 
         const double det = m00*c00 + m01*c01 + m02*c02;
-        if(std::fabs(det) < 1e-12) // 与原 float 实现相同的退化门限
+        if(std::fabs(det) < 1e-12)
             return false;
 
         const double invDet = 1.0 / det;
@@ -174,7 +174,7 @@ public:
         return true;
     }
 
-// 由投影矩阵解算相机光心
+    // 由投影矩阵解算相机光心
     static bool ComputeCameraCenter(const cv::Mat &Pm, float out[3]) {
         const float a11=Pm.at<float>(0,0), a12=Pm.at<float>(0,1), a13=Pm.at<float>(0,2);
         const float a21=Pm.at<float>(1,0), a22=Pm.at<float>(1,1), a23=Pm.at<float>(1,2);

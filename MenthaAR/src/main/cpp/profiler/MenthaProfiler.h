@@ -86,7 +86,7 @@ private:
 
 #else
 
-// 非开发模式下宏定义为空语句，避免产生悬空分号（EmptyDeclOrStmt 警告）
+// 非开发模式下宏展开为空语句，不产生悬空分号（EmptyDeclOrStmt 警告）
 #define VT_PROFILE_INITIALIZE(path) ((void)0)
 #define VT_PROFILE_SHUTDOWN() ((void)0)
 #define VT_PROFILE_BEGIN(name) ((void)0)

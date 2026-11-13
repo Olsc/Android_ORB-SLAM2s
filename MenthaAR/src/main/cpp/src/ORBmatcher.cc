@@ -370,7 +370,7 @@ int ORBmatcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapP
     {
         MapPoint* pMP = vpPoints[iMP];
 
-        // 舍弃坏的地图点 and 已找到的点
+        // 跳过坏的地图点与已匹配的点
         if(pMP->isBad() || spAlreadyFound.count(pMP))
             continue;
 
@@ -589,7 +589,7 @@ int ORBmatcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f
 
     }
 
-    // 更新之前的匹配
+    // 用本轮匹配结果更新上一帧特征点位置
     for(size_t i1=0, iend1=vnMatches12.size(); i1<iend1; i1++)
         if(vnMatches12[i1]>=0)
             vbPrevMatched[i1]=F2.mvKeysUn[vnMatches12[i1]].pt;
@@ -1248,7 +1248,7 @@ int ORBmatcher::Fuse(KeyFrame *pKF, cv::Mat Scw, const vector<MapPoint *> &vpPoi
         pMP->GetNormal(Pn);
         const float dotVal = POx*Pn.x + POy*Pn.y + POz*Pn.z;
 
-        // 此处写死 0.25，与 MATCH_VIEW_COS_SQ_TH 同值但未用常量，待统一
+        // 观察角阈值 0.25，与 MATCH_VIEW_COS_SQ_TH 同值
         if(dotVal < 0.0f || dotVal*dotVal < 0.25f*dist3DSq)
             continue;
 
@@ -1964,4 +1964,4 @@ int ORBmatcher::DescriptorDistance(const uint8_t* pa, const uint8_t* pb)
            PopCount64(a64[3] ^ b64[3]);
 }
 
-} //namespace ORB_SLAM2
+} // namespace ORB_SLAM2

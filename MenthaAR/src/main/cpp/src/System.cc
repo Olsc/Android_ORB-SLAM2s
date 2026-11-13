@@ -71,30 +71,30 @@ System::System(const std::string &strSettingsFile, const eSensor sensor):mSensor
     // 初始化 ORB 查找表 (自动在内存中生成)
     ORBextractor::InitLUT();
 
-    //创建关键帧数据库
+    // 创建关键帧数据库
     mpKeyFrameDatabase = new KeyFrameDatabase();
 
-    //创建地图
+    // 创建地图
     mpMap = new Map();
     mpMap->mnId = 0;
     mvpMaps.push_back(mpMap);
 
-    //创建绘制器。这些由Viewer使用
+    // 创建帧绘制器，保存跟踪状态快照
     mpFrameDrawer = new FrameDrawer(mpMap);
 
-    //初始化跟踪线程
+    // 初始化跟踪线程
     mpTracker = new Tracking(this, mpFrameDrawer,
                              mpMap, mpKeyFrameDatabase, strSettingsFile, mSensor);
 
-    //初始化局部建图线程并启动
+    // 初始化局部建图线程并启动
     mpLocalMapper = new LocalMapping(mpMap);
     mptLocalMapping = new std::thread(&ORB_SLAM2::LocalMapping::Run,mpLocalMapper);
 
-    //初始化回环闭合线程并启动
+    // 初始化回环闭合线程并启动
     mpLoopCloser = new LoopClosing(mpMap, mpKeyFrameDatabase);
     mptLoopClosing = new std::thread(&ORB_SLAM2::LoopClosing::Run, mpLoopCloser);
 
-    //设置线程间的指针
+    // 设置线程间的指针
     mpTracker->SetLocalMapper(mpLocalMapper);
     mpTracker->SetLoopClosing(mpLoopCloser);
 
@@ -157,7 +157,7 @@ bool System::WaitForBackendIdle(int timeoutMs)
     const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeoutMs);
     for(;;)
     {
-        // 两个线程都空闲后再确认一次，避免 LM 刚把关键帧投递给 LC 的瞬间被误判为空闲
+        // 两线程均空闲后再确认一次，LM 向 LC 投递关键帧期间不算空闲
         if(mpLocalMapper->IsIdle() && mpLoopCloser->IsIdle())
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -219,7 +219,8 @@ void System::Shutdown()
 System::~System()
 {
     Shutdown();
-    // Shutdown 后 LM/LC/GlobalReloc 线程均已 join；按依赖序释放子模块后已无任何持有者，可安全释放子地图中的全部 KeyFrame/MapPoint。注意 Map 析构不能调 clear()：CreateNewMap 的子地图逐出路径中 KFD/回环队列仍持旧地图 KF 指针，须在此显式 clear() 后再 delete。
+    // Shutdown 后各线程均已 join，按依赖序释放子模块
+    // Map 析构不调用 clear()，需在此显式 clear() 后再 delete
     delete mpTracker; // Tracking 析构不再有线程成员（后台线程已停）
     delete mpLocalMapper;
     delete mpLoopCloser;
@@ -343,7 +344,8 @@ void System::RetireSubmap(Map* pOldMap)
                     vObsToErase.push_back(it->first);
             }
 
-            // EraseObservation 在 nObs<=阈值时触发 SetBadFlag：全程只摘引用并移入外点所属 Map 的 Trash，绝不下场 delete 外点对象（外点内存由外点自己的 Map 声明周期管控，在此 delete 会引发 Destroyed Mutex/UAF 崩溃）
+            // EraseObservation 在 nObs<=阈值时触发 SetBadFlag：只摘引用并移入外点所属 Map 的 Trash，不直接 delete 外点对象
+            // 外点内存由所属 Map 的生命周期管理，在此 delete 会引发 Destroyed Mutex/UAF 崩溃
             for (size_t k = 0; k < vObsToErase.size(); ++k)
                 pForeign->EraseObservation(vObsToErase[k]);
         }
@@ -401,7 +403,7 @@ void System::CreateNewMap()
         mpLocalMapper->ReleaseAll();
     }
 
-    // 清空 LoopClosing 的回环关键帧队列（旧 Map 的 KF），避免对新空 Map 做 CorrectLoop。
+    // 清空回环队列中的旧地图关键帧，防止其进入新地图的 CorrectLoop
     if (mpLoopCloser) {
         mpLoopCloser->ClearQueue();
     }
@@ -418,7 +420,7 @@ void System::CreateNewMap()
     }
 
     if (mpTracker) {
-        // 确保新地图上正常建图（无操作时也无害）
+        // 4. 确保新地图上正常建图（无操作时也无害）
         mpTracker->InformOnlyTracking(false);
     }
 
@@ -467,7 +469,7 @@ void System::CreateNewMap()
     }
 
     Map* pNewMap = new Map();
-    pNewMap->mnId = mnNextMapId++; // 单调递增，避免逐出旧地图后 ID 复用冲突
+    pNewMap->mnId = mnNextMapId++; // 单调递增，逐出旧地图后 ID 不复用
     mvpMaps.push_back(pNewMap);
 
     LOGD("System::CreateNewMap 新地图 ID=%lu (旧地图保留为子地图，共 %zu 个)",
@@ -727,11 +729,9 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
         // 但仍尝试加载，只是警告
     }
 
-    // 只清除之前加载的地图点，保留当前扫描的点，保持跟踪状态连续，新点直接添加到现有地图
-
     if(!bAppend)
     {
-        // 只清除之前加载的地图点，保留当前扫描建立的点
+        // 仅清除已加载地图点，保留当前扫描建立的点
         std::vector<MapPoint*> vpMPs = mpMap->GetAllMapPoints();
         int removedLoadedMPs = 0;
         for(MapPoint* pMP : vpMPs) {
@@ -751,7 +751,7 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
         }
     }
 
-    // 注意：不完全清空KeyFrameDatabase，保留当前扫描建立的关键帧
+    // 不完全清空 KeyFrameDatabase，保留当前扫描建立的关键帧
     // mpKeyFrameDatabase->clear(); // 清空会丢失当前扫描建立的关键帧，故保留
 
     // 调整重定位配置以提高加载地图后的跟踪稳定性
@@ -786,7 +786,7 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
         cv::Mat nrm = (cv::Mat_<float>(3,1) << n3[0], n3[1], n3[2]);
         pMP->SetNormalAndDepth(nrm, mind, maxd);
 
-        // 初始化可见性统计，保持 Found/Visible 比例为 1.0 以避免被 MapPointCulling 删除，同时增加 Found 和 Visible，让 GetFoundRatio() 远大于剔除阈值
+        // 可见性与发现次数按 1:1 初始化，使已加载点不被 MapPointCulling 剔除
         if(!pMP->GetDescriptor().empty()) {
             pMP->IncreaseVisible(LOADED_MP_INIT_VISIBLE); // 有描述子的点
             pMP->IncreaseFound(LOADED_MP_INIT_VISIBLE); // 保持比例=1.0
@@ -836,4 +836,4 @@ int System::GetCurrentMapId() {
     return mpTracker ? mpTracker->GetCurrentMapId() : 0;
 }
 
-} //namespace ORB_SLAM2
+} // namespace ORB_SLAM2

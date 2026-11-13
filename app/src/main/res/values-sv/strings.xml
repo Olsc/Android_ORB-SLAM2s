@@ -9,6 +9,7 @@
     <string name="loading_slam_init">Initierar SLAM-system…</string>
     <string name="loading_slam_wait">Vänta, detta kan ta en stund</string>
     <string name="slam_init_complete">SLAM-system initierat</string>
+    <string name="slam_connection_lost">Anslutningen till SLAM-tjänsten bröts. Öppna appen igen för att återansluta.</string>
     <string name="slam_init_failed">SLAM-initiering misslyckades: %1$s</string>
     <string name="hint_request_sent">Begäran skickad</string>
     <string name="hint_pointcloud_enabled">Punktmoln aktiverat</string>

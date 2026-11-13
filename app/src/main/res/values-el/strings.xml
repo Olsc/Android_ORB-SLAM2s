@@ -9,6 +9,7 @@
     <string name="loading_slam_init">Αρχικοποίηση συστήματος SLAM…</string>
     <string name="loading_slam_wait">Παρακαλώ περιμένετε, αυτό μπορεί να πάρει λίγο χρόνο</string>
     <string name="slam_init_complete">Το σύστημα SLAM αρχικοποιήθηκε</string>
+    <string name="slam_connection_lost">Η σύνδεση με την υπηρεσία SLAM διακόπηκε. Ανοίξτε ξανά την εφαρμογή για επανασύνδεση.</string>
     <string name="slam_init_failed">Αποτυχία αρχικοποίησης SLAM: %1$s</string>
     <string name="hint_request_sent">Αίτημα εστάλη</string>
     <string name="hint_pointcloud_enabled">Νέφος σημείων ενεργοποιήθηκε</string>

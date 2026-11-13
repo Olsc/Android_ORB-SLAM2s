@@ -108,7 +108,7 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
         std::nth_element(vSorted.begin(), vSorted.begin() + nth, vSorted.end());
         const float medianDist = vSorted[nth];
 
-        // 保存中值距离最小的模型（交换缓冲；下一轮会整份重写 vDistances）
+        // 保存中值距离最小的模型
         if(medianDist<bestDist)
         {
             bestDist = medianDist;
@@ -117,7 +117,7 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
         }
     }
 
-    // 所有采样都因三点共线被跳过时没有任何模型，下面的 bestvDist[i] 会越界
+    // 无有效模型时直接返回
     if(bestvDist.empty())
         return nullptr;
 

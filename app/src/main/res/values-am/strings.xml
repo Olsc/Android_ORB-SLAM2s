@@ -9,6 +9,7 @@
     <string name="loading_slam_init">SLAM እየጀመረ ነው…</string>
     <string name="loading_slam_wait">Wag asseblief</string>
     <string name="slam_init_complete">SLAM-stelsel geïnisialiseer</string>
+    <string name="slam_connection_lost">የSLAM አገልግሎት ግንኙነት ተቋርጧል። እንደገና ለማገናኘት መተግበሪያውን እንደገና ይክፈቱ።</string>
     <string name="slam_init_failed">Inicializácia SLAM zlyhala: %1$s</string>
     <string name="hint_request_sent">Požiadavka odoslaná</string>
     <string name="hint_pointcloud_enabled">Bodový oblak povolený</string>

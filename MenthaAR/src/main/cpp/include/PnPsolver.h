@@ -191,6 +191,6 @@ class PnPsolver {
   LCG mLcg;
 };
 
-} //namespace ORB_SLAM2
+} // namespace ORB_SLAM2
 
-#endif //PNPSOLVER_H
+#endif // PNPSOLVER_H

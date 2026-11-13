@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 云备份不含 external/SLAM，地图体积超配额会使备份失败；换机迁移保留地图。 -->
 <data-extraction-rules>
     <cloud-backup>
         <include domain="file" path="." />
         <include domain="sharedpref" path="." />
         <include domain="database" path="." />
-        <include domain="external" path="SLAM" />
     </cloud-backup>
     <device-transfer>
         <include domain="file" path="." />

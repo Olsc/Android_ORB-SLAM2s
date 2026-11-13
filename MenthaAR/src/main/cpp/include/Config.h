@@ -162,7 +162,7 @@ const float TRACKING_KF_REF_RATIO = 0.75f;
 const float TRACKING_KF_NEWMAP_RATIO = 0.4f;
 const float TRACKING_KF_MONO_RATIO = 0.80f;
 
-// 单目模式下关键帧插入最小间隔帧数（避免相邻帧密集无基线插入）
+// 单目模式下关键帧插入的最小间隔帧数，控制相邻帧的基线与密度
 const int TRACKING_MIN_FRAMES_MONO = 3;
 // 单目模式关键帧位姿相对运动平移门槛（相对中位深度的比例，防止零位移密集插帧）
 const float TRACKING_KF_MIN_TRANS_RATIO = 0.015f;
@@ -217,7 +217,7 @@ const int INITIALIZER_MIN_TRACKED_POINTS = 100;
 const int ORB_PATCH_SIZE = 31;
 const int ORB_HALF_PATCH_SIZE = 15;
 
-// 关键点检测图像边缘阈值，避免提取无效边界特征
+// 关键点检测的图像边缘阈值，过滤落在图像边界上的无效特征
 const int ORB_EDGE_THRESHOLD = 19;
 
 // 闭环检测参数
@@ -404,10 +404,10 @@ const float ALIGN_EMA_MIN_ALPHA = 0.1f;
 
 // 安全 PnP 求解
 
-// >=6 点走 RANSAC（避免 OpenCV 内部 DLT 断言）
+// 6 点及以上走 RANSAC（OpenCV 内部 DLT 对点数有断言）
 const int PNP_MIN_SAMPLES_RANSAC = 6;
 
-// 4-5 点走 P3P/EPNP 并做重投影验证
+// 4-5 点走 P3P/EPNP 并做重投影误差校验
 const int PNP_MIN_SAMPLES_P3P = 4;
 
 // 4-5 点 PnP 重投影误差阈值（像素）
@@ -449,8 +449,7 @@ const int INITIALIZER_SEARCH_WINDOW = 100;
 // 初始化提取器特征数相对正常提取器的倍数
 const int INITIALIZER_FEATURE_MULTIPLIER = 2;
 
-// 初始化器自适应提前终止（与 PnPsolver 同款策略）：
-// 置信概率 p、至少迭代次数、安全系数（理论需求 * 系数后提前终止）
+// 初始化器自适应提前终止：置信概率 p、最少迭代次数、安全系数
 const double INITIALIZER_RANSAC_PROB = 0.99;
 const int INITIALIZER_ADAPTIVE_START_ITER = 30;
 const float INITIALIZER_ADAPTIVE_SAFETY_FACTOR = 1.5f;
@@ -490,7 +489,7 @@ const float RELOC_STRONG_BIND_CONFIDENCE = 0.9f;
 // 保持对齐的最小当前图加载点内点数
 const int RELOC_KEEP_ALIGN_MIN_CURMAP_INLIERS = 5;
 // 加载点内点低于上述阈值时允许的连续宽限帧数（0 表示立即清除对齐）
-// 避免相机短暂离开加载地图覆盖区时立即丢弃对齐，使投影绑定与对齐状态相互清除
+// 相机短暂离开加载地图覆盖区时保留对齐，投影绑定与对齐状态一同清除
 const int RELOC_KEEP_ALIGN_GRACE_FRAMES = 10;
 
 // 新地图（关键帧极少）阶段的特殊阈值

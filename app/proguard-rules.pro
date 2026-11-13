@@ -9,15 +9,14 @@
 }
 -keep class com.orb.slam2s.graphics.GlbModelRenderer { *; }
 
--keep interface com.orb.slam2s.ipc.ISlamService { *; }
--keep class com.orb.slam2s.ipc.ISlamService { *; }
--keep class com.orb.slam2s.ipc.ISlamService$Stub { *; }
+-keep class com.orb.slam2s.ipc.SlamService { *; }
+-keep interface com.menthaar.sdk.internal.ISlamService { *; }
+-keep class com.menthaar.sdk.internal.ISlamService$Stub { *; }
 
 -keep class com.orb.slam2s.app.SplashActivity { *; }
 -keep class com.orb.slam2s.ui.MainActivity { *; }
 -keep class com.orb.slam2s.ui.MapManageActivity { *; }
 -keep class com.orb.slam2s.ui.IconSelectActivity { *; }
--keep class com.orb.slam2s.ipc.SharedMemoryBuffer { *; }
 -keep class com.orb.slam2s.util.MapManager** { *; }
 
 -keepclasseswithmembers class * {

@@ -208,7 +208,7 @@ void Map::clear()
     for(auto p : spKFTrash) delete p;
 }
 
-} //namespace ORB_SLAM2
+} // namespace ORB_SLAM2
 
 long unsigned int ORB_SLAM2::Map::GetLoadedMapMPCount()
 {

@@ -9,6 +9,7 @@
     <string name="loading_slam_init">Memulakan sistem SLAM…</string>
     <string name="loading_slam_wait">Sila tunggu, ini mungkin mengambil masa sebentar</string>
     <string name="slam_init_complete">Sistem SLAM dimulakan</string>
+    <string name="slam_connection_lost">Sambungan ke perkhidmatan SLAM terputus. Buka semula aplikasi untuk menyambung semula.</string>
     <string name="slam_init_failed">Permulaan SLAM gagal: %1$s</string>
     <string name="hint_request_sent">Permintaan dihantar</string>
     <string name="hint_pointcloud_enabled">Awan titik diaktifkan</string>

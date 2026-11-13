@@ -9,6 +9,7 @@
     <string name="loading_slam_init">Po inicializohet SLAM…</string>
     <string name="loading_slam_wait">Čakajte prosím, môže to chvíľu trvať</string>
     <string name="slam_init_complete">Systém SLAM inicializovaný</string>
+    <string name="slam_connection_lost">Lidhja me shërbimin SLAM u ndërpre. Ripërtëri aplikacionin për t’u rilidhur.</string>
     <string name="slam_init_failed">Inicializácia SLAM zlyhala: %1$s</string>
     <string name="hint_request_sent">Požiadavka odoslaná</string>
     <string name="hint_pointcloud_enabled">Bodový oblak povolený</string>

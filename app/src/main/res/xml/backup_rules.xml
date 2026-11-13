@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 及以下的备份规则，只含配置数据，地图通过地图管理迁移。 -->
 <full-backup-content>
     <include domain="file" path="." />
     <include domain="sharedpref" path="." />
     <include domain="database" path="." />
-    <include domain="external" path="SLAM" />
 </full-backup-content>

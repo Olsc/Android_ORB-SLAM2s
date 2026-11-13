@@ -53,7 +53,7 @@ void KeyFrameDatabase::add(KeyFrame *pKF)
 {
     unique_lock<mutex> lock(mMutex);
 
-    // N 与描述子行数不一致时，按下标展开会越界读取
+    // 描述子为空或行数不足时跳过，保证下标不越界
     if (pKF->mDescriptors.empty() || pKF->N <= 0 || pKF->N > pKF->mDescriptors.rows) return;
 
     std::vector<size_t> objects(pKF->N);
@@ -326,4 +326,4 @@ void KeyFrameDatabase::rebuild()
     delete pOldTree;
 }
 
-} //namespace ORB_SLAM2
+} // namespace ORB_SLAM2

@@ -92,7 +92,7 @@ bool Initializer::Initialize(const Frame &CurrentFrame, const vector<int> &vMatc
         vAllIndices.push_back(i);
     }
 
-    // 生成每次迭代的最小样本集（交换-恢复抽样，与逐次拷贝数组的实现产生相同样本）
+    // 生成每次迭代的最小样本集（交换-恢复抽样）
     mvSets = vector< vector<size_t> >(mMaxIterations,vector<size_t>(INITIALIZER_RANSAC_MIN_SET,0));
 
     LCG lcg(0);
@@ -100,7 +100,7 @@ bool Initializer::Initialize(const Frame &CurrentFrame, const vector<int> &vMatc
     for(int it=0; it<mMaxIterations; it++)
         SampleWithoutReplacement(lcg, vAllIndices, INITIALIZER_RANSAC_MIN_SET, mvSets[it].data());
 
-    // 两个线程都要用同一组归一化坐标：在这里算一次，FindHomography/FindFundamental 只读
+    // 预计算两帧归一化坐标，供单应与基础矩阵并行求解读取
     Normalize(mvKeys1, mvPn1, mT1);
     Normalize(mvKeys2, mvPn2, mT2);
 
@@ -176,7 +176,7 @@ void Initializer::FindHomography(vector<bool> &vbMatchesInliers, float &score, c
         if(currentScore>score)
         {
             H21 = H21i.clone();
-            vbMatchesInliers.swap(vbCurrentInliers); // 下一轮 Check* 会整份重写 vbCurrentInliers
+            vbMatchesInliers.swap(vbCurrentInliers);
             score = currentScore;
             nInlierBest = nCurrentInliers;
         }
@@ -403,7 +403,6 @@ float Initializer::CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vecto
         const float dv1 = v1*w2in1 - v2in1_w;
         const float squareDist1_w2 = du1*du1 + dv1*dv1;
 
-        // 避免除法的平方判据
         if (squareDist1_w2 > thSigma2 * (w2in1 * w2in1))
         {
             vbMatchesInliers[i] = false;
@@ -491,7 +490,6 @@ float Initializer::CheckFundamental(const cv::Mat &F21, vector<bool> &vbMatchesI
             continue;
         }
 
-        // 避免除法的平方判据
         const float num2_sq = num2 * num2;
         if (num2_sq > thSigma2 * den2)
         {
@@ -677,13 +675,13 @@ bool Initializer::ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv:
     vt.reserve(8);
     vn.reserve(8);
 
-    //n'=[x1 0 x3] 4种可能性 e1=e3=1, e1=1 e3=-1, e1=-1 e3=1, e1=e3=-1
+    // n'=[x1 0 x3] 4种可能性 e1=e3=1, e1=1 e3=-1, e1=-1 e3=1, e1=e3=-1
     float aux1 = sqrt((d1sq-d2sq)/d1sq_m_d3sq);
     float aux3 = sqrt((d2sq-d3sq)/d1sq_m_d3sq);
     float x1[] = {aux1,aux1,-aux1,-aux1};
     float x3[] = {aux3,-aux3,aux3,-aux3};
 
-    //情况 d'=d2
+    // 情况 d'=d2
     float aux_stheta = sqrt((d1sq-d2sq)*(d2sq-d3sq))/((d1+d3)*d2);
 
     float ctheta = (d2sq+d1*d3)/((d1+d3)*d2);
@@ -720,7 +718,7 @@ bool Initializer::ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv:
         vn.push_back(n);
     }
 
-    //情况 d'=-d2
+    // 情况 d'=-d2
     float aux_sphi = sqrt((d1sq-d2sq)*(d2sq-d3sq))/((d1-d3)*d2);
 
     float cphi = (d1*d3-d2sq)/((d1-d3)*d2);
@@ -765,7 +763,7 @@ bool Initializer::ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv:
     vector<cv::Point3f> bestP3D;
     vector<bool> bestTriangulated;
 
-    // 我们重构所有假设并通过三角测量点和视差进行检查，而不是应用Faugeras论文中提出的可见性约束（对于低视差点可能失败）
+    // 通过三角化点与视差校验全部假设，不采用 Faugeras 论文的可见性约束
     for(size_t i=0; i<8; i++)
     {
         float parallaxi;
@@ -1009,4 +1007,4 @@ void Initializer::DecomposeE(const cv::Mat &E, cv::Mat &R1, cv::Mat &R2, cv::Mat
         R2=-R2;
 }
 
-} //namespace ORB_SLAM2
+} // namespace ORB_SLAM2

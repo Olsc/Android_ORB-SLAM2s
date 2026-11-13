@@ -9,6 +9,7 @@
     <string name="loading_slam_init">Kuanzisha mfumo wa SLAM…</string>
     <string name="loading_slam_wait">Tafadhali subiri, hii inaweza kuchukua muda</string>
     <string name="slam_init_complete">Mfumo wa SLAM umeanzishwa</string>
+    <string name="slam_connection_lost">Muunganisho wa huduma ya SLAM umekatika. Fungua programu tena ili kuunganisha upya.</string>
     <string name="slam_init_failed">Kuanzisha SLAM kumeshindwa: %1$s</string>
     <string name="hint_request_sent">Ombi limetumwa</string>
     <string name="hint_pointcloud_enabled">Wingu la pointi limewezeshwa</string>

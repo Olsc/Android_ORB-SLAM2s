@@ -9,6 +9,7 @@
     <string name="loading_slam_init">กำลังเริ่มต้นระบบ SLAM…</string>
     <string name="loading_slam_wait">กรุณารอ อาจใช้เวลาสักครู่</string>
     <string name="slam_init_complete">ระบบ SLAM พร้อมใช้งาน</string>
+    <string name="slam_connection_lost">การเชื่อมต่อกับบริการ SLAM ขาดหายแล้ว เปิดแอปอีกครั้งเพื่อเชื่อมต่อใหม่</string>
     <string name="slam_init_failed">การเริ่มต้น SLAM ล้มเหลว: %1$s</string>
     <string name="hint_request_sent">ส่งคำขอแล้ว</string>
     <string name="hint_pointcloud_enabled">เปิดใช้งานกลุ่มจุดแล้ว</string>

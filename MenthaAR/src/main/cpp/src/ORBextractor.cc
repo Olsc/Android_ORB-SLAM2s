@@ -884,8 +884,8 @@ vector<cv::KeyPoint> ORBextractor::DistributeOctTree(const vector<cv::KeyPoint>&
                 vector<pair<int,ExtractorNode*> > vPrevSizeAndPointerToNode = vSizeAndPointerToNode;
                 vSizeAndPointerToNode.clear();
 
-                // 只按点数排序并保持稳定：原先 pair 的第二分量是节点地址，点数相同时的分裂顺序随内存地址变化。
-                // 先反转再稳定排序，使点数相同的节点按“先生成者先分裂”处理（下方循环从尾部向前遍历）
+                // 只按点数稳定排序：点数相同的节点按生成顺序分裂，结果与内存地址无关
+                // 先反转再稳定排序，下方循环从尾部向前遍历
                 std::reverse(vPrevSizeAndPointerToNode.begin(),vPrevSizeAndPointerToNode.end());
                 stable_sort(vPrevSizeAndPointerToNode.begin(),vPrevSizeAndPointerToNode.end(),
                             [](const pair<int,ExtractorNode*>& a, const pair<int,ExtractorNode*>& b){ return a.first < b.first; });
@@ -1130,8 +1130,7 @@ void parallelForLevels(int nlevels, Fn&& fn) {
         for (int i = 0; i < nlevels; ++i) fn(i);
         return;
     }
-    // 限制OpenMP并行线程数为2，避免低能效小核导致同步屏障耗时剧增
-    // 确保金字塔各层特征提取在移动端异构核心间保持高能效比与确定性时延
+    // 限制并行线程数为 2，兼顾异构核心能效与金字塔提取时延
     const int hwThreads = (int)std::thread::hardware_concurrency();
     const int nThreads = (hwThreads <= 2) ? 1 : 2;
 
@@ -1539,4 +1538,4 @@ void ORBextractor::ComputePyramid(cv::Mat image)
 
 }
 
-} //namespace ORB_SLAM2
+} // namespace ORB_SLAM2

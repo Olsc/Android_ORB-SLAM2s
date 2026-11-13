@@ -100,7 +100,7 @@ cv::Mat Converter::toCvMat(const Eigen::Matrix<double,3,1> &m)
 cv::Mat Converter::toCvSE3(const Eigen::Matrix<double,3,3> &R, const Eigen::Matrix<double,3,1> &t)
 {
     cv::Mat cvMat = cv::Mat::eye(4,4,CV_32F);
-    // 注意: cv::Mat 4x4 的 step 是 4*sizeof(float)，需要逐行写入
+    // cv::Mat 4x4 的 step 为 4*sizeof(float)，需逐行写入
     for(int i=0;i<3;i++)
     {
         float* row = cvMat.ptr<float>(i);
@@ -154,4 +154,4 @@ std::vector<float> Converter::toQuaternion(const cv::Mat &M)
     return v;
 }
 
-} //namespace ORB_SLAM2
+} // namespace ORB_SLAM2

@@ -74,6 +74,6 @@ protected:
     std::mutex mMutex;
 };
 
-} //namespace ORB_SLAM2
+} // namespace ORB_SLAM2
 
 #endif // FRAMEDRAWER_H

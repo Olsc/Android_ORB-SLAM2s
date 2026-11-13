@@ -54,7 +54,7 @@ public final class PoseFusion {
     private boolean mHoldUnavailableLogged = false;
     private long mLastVisionOkNanos = 0L;
 
-    // 矩阵运算复用缓存，避免每帧产生 GC
+    // 矩阵运算复用缓存，每帧不产生临时对象
     private final float[] mTempSensorTrans = new float[16];
     private final float[] mTempSensorView = new float[16];
     private final float[] mTempOffsetInst = new float[16];

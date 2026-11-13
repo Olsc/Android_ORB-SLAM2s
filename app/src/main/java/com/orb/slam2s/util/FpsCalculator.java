@@ -17,7 +17,7 @@ package com.orb.slam2s.util;
 
 import java.text.DecimalFormat;
 
-// 帧率与性能计算器
+// 帧率计算器
 public class FpsCalculator {
     private static final int STEP = 20;
     private static final DecimalFormat FPS_FORMAT = new DecimalFormat("0.00");

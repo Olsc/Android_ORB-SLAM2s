@@ -132,6 +132,6 @@ protected:
     std::vector<float> mvInvLevelSigma2;
 };
 
-} //namespace ORB_SLAM2
+} // namespace ORB_SLAM2
 
 #endif

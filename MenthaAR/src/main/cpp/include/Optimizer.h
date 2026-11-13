@@ -62,17 +62,17 @@ public:
     void static LocalBundleAdjustment(KeyFrame* pKF, const std::atomic<bool> *pbStopFlag, Map *pMap);
     int static PoseOptimization(Frame* pFrame);
 
-    // 优化Sim3（单目）
+    // 本质图优化：修正回环两侧位姿并更新地图
     void static OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* pCurKF,
                                        const LoopClosing::KeyFrameAndPose &NonCorrectedSim3,
                                        const LoopClosing::KeyFrameAndPose &CorrectedSim3,
                                        const KeyFrameMap<KeyFrameSet> &LoopConnections);
 
-    // 优化Sim3（单目）
+    // 优化 Sim3（单目）
     static int OptimizeSim3(KeyFrame* pKF1, KeyFrame* pKF2, std::vector<MapPoint *> &vpMatches1,
                             g2o::Sim3 &g2oS12, const float th2);
 };
 
-} //namespace ORB_SLAM2
+} // namespace ORB_SLAM2
 
 #endif // OPTIMIZER_H

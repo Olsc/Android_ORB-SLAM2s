@@ -9,6 +9,7 @@
     <string name="loading_slam_init">Инициализация системы SLAM…</string>
     <string name="loading_slam_wait">Пожалуйста, подождите, это может занять некоторое время</string>
     <string name="slam_init_complete">Система SLAM инициализирована</string>
+    <string name="slam_connection_lost">Соединение со службой SLAM прервано. Откройте приложение заново для повторного подключения.</string>
     <string name="slam_init_failed">Ошибка инициализации SLAM: %1$s</string>
     <string name="hint_request_sent">Запрос отправлен</string>
     <string name="hint_pointcloud_enabled">Облако точек включено</string>

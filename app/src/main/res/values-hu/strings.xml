@@ -9,6 +9,7 @@
     <string name="loading_slam_init">SLAM rendszer inicializálása…</string>
     <string name="loading_slam_wait">Kérjük, várjon, ez egy pillanatot vehet igénybe</string>
     <string name="slam_init_complete">SLAM rendszer inicializálva</string>
+    <string name="slam_connection_lost">A SLAM szolgáltatás kapcsolata megszakadt. Nyisd meg újra az alkalmazást az újracsatlakozáshoz.</string>
     <string name="slam_init_failed">SLAM inicializálás sikertelen: %1$s</string>
     <string name="hint_request_sent">Kérelem elküldve</string>
     <string name="hint_pointcloud_enabled">Pontfelhő engedélyezve</string>

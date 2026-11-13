@@ -9,6 +9,7 @@
     <string name="loading_slam_init">SLAM-System wird initialisiert…</string>
     <string name="loading_slam_wait">Bitte warten, das kann einen Moment dauern</string>
     <string name="slam_init_complete">SLAM-System initialisiert</string>
+    <string name="slam_connection_lost">Die Verbindung zum SLAM-Dienst wurde getrennt. Öffne die App erneut, um die Verbindung wiederherzustellen.</string>
     <string name="slam_init_failed">SLAM-Initialisierung fehlgeschlagen: %1$s</string>
     <string name="hint_request_sent">Anfrage gesendet</string>
     <string name="hint_pointcloud_enabled">Punktwolke aktiviert</string>

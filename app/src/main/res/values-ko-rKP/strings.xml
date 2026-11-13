@@ -9,6 +9,7 @@
     <string name="loading_slam_init">SLAM체계 초기화 중…</string>
     <string name="loading_slam_wait">잠깐 기다려 주십시오</string>
     <string name="slam_init_complete">SLAM체계 초기화 완료</string>
+    <string name="slam_connection_lost">SLAM 서비스와의 연결이 끊어졌습니다. 다시 연결하려면 앱을 다시 여십시오.</string>
     <string name="slam_init_failed">SLAM 초기화 실패: %1$s</string>
     <string name="hint_request_sent">요청 전달됨</string>
     <string name="hint_pointcloud_enabled">점구름 활성화됨</string>

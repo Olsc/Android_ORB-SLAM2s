@@ -69,7 +69,7 @@ public:
 
 public:
 
-    // 构造函数：初始化SLAM系统，启动局部建图、闭环检测与可视化线程
+    // 构造函数：初始化 SLAM 系统，启动局部建图与闭环检测线程
     System(const string &strSettingsFile, const eSensor sensor);
 
     // 析构函数：确保所有线程被 join、子模块与地图被释放（Shutdown 未被调用时兜底）
@@ -81,7 +81,7 @@ public:
     // 动态更新相机内参，当分辨率改变时由JNI层调用
     void UpdateCalibration(float fx, float fy, float cx, float cy);
 
-    // 检查地图是否发生重大变化（闭环或全局BA）
+    // 检查地图结构是否发生变化（闭环或全局 BA）
     bool MapChanged();
 
     // 等待局部建图与闭环线程都空闲（队列为空、不在处理、GBA 未运行）
@@ -154,7 +154,7 @@ public:
 private:
     // 多地图容器
     std::vector<Map*> mvpMaps;
-    // 子地图 ID 单调计数器（初始地图 mnId=0，此后递增分配，避免逐出旧地图后 mvpMaps.size() 变小导致新地图 ID 与现存地图重复）
+    // 子地图 ID 单调计数器，逐出旧地图后仍不复用 ID（初始地图为 0）
     unsigned long mnNextMapId = 1;
 
     // 传感器配置
@@ -169,16 +169,16 @@ private:
     // 跟踪器：接收帧并计算相机位姿，决定何时插入关键帧、创建地图点，丢失时执行重定位。
     Tracking* mpTracker;
 
-    // 局部建图器。它管理局部地图并执行局部束调整。
+    // 局部建图器：维护局部地图并执行局部 BA
     LocalMapping* mpLocalMapper;
 
-    // 回环闭合器。它搜索每个新关键帧的回环。如果存在回环，它会执行位姿图优化，然后执行完整的束调整（在新线程中）。
+    // 回环闭合器：检测闭环并执行位姿图优化与全局 BA
     LoopClosing* mpLoopCloser;
 
     FrameDrawer* mpFrameDrawer;
 
-    // 系统线程：局部建图、回环闭合、可视化。
-    // 跟踪线程"生活"在创建System对象的主执行线程中。
+    // 系统线程：局部建图与回环闭合
+    // 跟踪线程运行在创建 System 对象的主线程中
     std::thread* mptLocalMapping;
     std::thread* mptLoopClosing;
 

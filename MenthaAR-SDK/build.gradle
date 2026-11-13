@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace 'com.orb.slam2s.ipc.sdk'
+    namespace 'com.menthaar.sdk'
     compileSdk 37
     buildToolsVersion '37.0.0'
 

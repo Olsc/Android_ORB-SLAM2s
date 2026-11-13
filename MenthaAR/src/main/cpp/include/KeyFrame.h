@@ -147,7 +147,7 @@ public:
         return pKF1->mnId<pKF2->mnId;
     }
 
-    // 以下变量仅由一个线程访问或从不更改。
+// 以下变量仅由一个线程访问或从不更改。
 public:
 
     static long unsigned int nNextId;
@@ -256,6 +256,6 @@ protected:
     std::mutex mMutexFeatures;
 };
 
-} //namespace ORB_SLAM2
+} // namespace ORB_SLAM2
 
 #endif // KEYFRAME_H

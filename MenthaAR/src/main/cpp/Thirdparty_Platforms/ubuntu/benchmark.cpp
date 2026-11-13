@@ -369,7 +369,7 @@ ScoreCard calculateScoreCard(const std::vector<FrameRecord>& records, int totalF
     // 1. 跟踪得分（权重 0.4）
     card.trackingScore = card.okRatio;
 
-    // 2. 实时性延迟得分（权重 0.3），目标 33.3ms（30 FPS）
+    // 2. 实时性延迟得分（权重 0.3）
     const double targetMs = 33.33;
     if (card.meanMs <= targetMs) {
         card.latencyScore = 100.0;
