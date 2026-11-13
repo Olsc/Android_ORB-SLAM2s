@@ -94,7 +94,7 @@ bool LocalMapping::HasPendingEvent()
 
 void LocalMapping::NotifyEvent()
 {
-    // 必须在 mMutexEvent 下 notify：与 wait 的谓词检查互斥，消除"谓词判定为假之后、真正阻塞之前"的丢失唤醒窗口
+    // 持锁通知，与 wait 的谓词检查保持互斥
     std::unique_lock<std::mutex> evLock(mMutexEvent);
     mCvEvent.notify_all();
 }
@@ -109,7 +109,7 @@ void LocalMapping::Run()
         // 检查队列中是否有关键帧
         if(CheckNewKeyFrames())
         {
-            // 忙标志仅在真正处理关键帧期间为 false
+            // 处理关键帧期间暂停接收新关键帧
             SetAcceptKeyFrames(false);
 
             {
@@ -1151,4 +1151,4 @@ void LocalMapping::CheckLimits()
     }
 }
 
-} //namespace ORB_SLAM2
+} // namespace ORB_SLAM2

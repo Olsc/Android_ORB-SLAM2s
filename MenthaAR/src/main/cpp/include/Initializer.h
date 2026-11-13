@@ -45,7 +45,7 @@ using namespace std;
 namespace ORB_SLAM2
 {
 
-// 这是单目SLAM的初始化器。在双目或RGBD情况下不使用。
+// 单目 SLAM 初始化器，双目与 RGB-D 模式不使用
 class Initializer
 {
     typedef pair<int,int> Match;
@@ -116,6 +116,6 @@ private:
     cv::Mat mT1, mT2;
 };
 
-} //namespace ORB_SLAM2
+} // namespace ORB_SLAM2
 
 #endif // INITIALIZER_H

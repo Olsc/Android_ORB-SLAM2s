@@ -101,7 +101,7 @@ public final class MenthaAR {
         // 点云版本号，变化时才需要重新 readPointCloud 读取；点云区无 seqlock，可能与矩阵相差一帧。
         public int pointCloudId;
 
-        // 内部复用缓冲，读取结果时不再分配临时数组
+        // 内部复用缓冲，读取结果时无临时数组分配
         final float[] rawMatrices = new float[48];
         final int[] rawStatus = new int[SharedMemoryBuffer.STATUS_LENGTH];
 

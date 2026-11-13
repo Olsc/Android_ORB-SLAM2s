@@ -160,10 +160,8 @@ public:
     void SetMapId(int id);
     int GetMapId();
     Map* GetMap() const { return mpMap; }
-    // 标记从持久化地图加载的点用于可视化
+    // 标记从持久化地图加载的点
     bool mbFromLoadedMap = false;
-    // 标记在当前帧中的匹配点状态
-
     // 跟踪使用的变量
     float mTrackProjX;
     float mTrackProjY;
@@ -189,41 +187,41 @@ public:
 
 protected:
 
-     // 绝对坐标位置
-     cv::Mat mWorldPos;
+    // 绝对坐标位置
+    cv::Mat mWorldPos;
 
-     // 观测该点的关键帧及在关键帧中的索引
-     KeyFrameMap<size_t> mObservations;
+    // 观测该点的关键帧及在关键帧中的索引
+    KeyFrameMap<size_t> mObservations;
 
-     // 平均观测方向
-     cv::Mat mNormalVector;
+    // 平均观测方向
+    cv::Mat mNormalVector;
 
-     // 用于快速匹配的最佳描述子
-     std::shared_ptr<const cv::Mat> mDescriptor;
+    // 用于快速匹配的最佳描述子
+    std::shared_ptr<const cv::Mat> mDescriptor;
 
-     // 参考关键帧
-     KeyFrame* mpRefKF;
+    // 参考关键帧
+    KeyFrame* mpRefKF;
 
-     // 跟踪计数器
-     std::atomic<int> mnVisible;
-     std::atomic<int> mnFound;
+    // 跟踪计数器
+    std::atomic<int> mnVisible;
+    std::atomic<int> mnFound;
 
-     // 坏点标志
+    // 坏点标志
     std::atomic<bool> mbBad;
     MapPoint* mpReplaced;
 
-     // 尺度不变性距离（原始值）与其预计算不变性边界
-     float mfMinDistance;
-     float mfMaxDistance;
-     std::atomic<float> mfMinDistInvariance{0.0f};
-     std::atomic<float> mfMaxDistInvariance{0.0f};
+    // 尺度不变性距离（原始值）与其预计算不变性边界
+    float mfMinDistance;
+    float mfMaxDistance;
+    std::atomic<float> mfMinDistInvariance{0.0f};
+    std::atomic<float> mfMaxDistInvariance{0.0f};
 
-     Map* mpMap;
+    Map* mpMap;
 
-     mutable std::mutex mMutexPos;
-     mutable std::mutex mMutexFeatures;
+    mutable std::mutex mMutexPos;
+    mutable std::mutex mMutexFeatures;
 };
 
-} //namespace ORB_SLAM2
+} // namespace ORB_SLAM2
 
 #endif // MAPPOINT_H

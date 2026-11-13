@@ -102,7 +102,7 @@ MapPoint::MapPoint(const cv::Mat &Pos, Map* pMap):
     mnFound(1), mbBad(false), mpReplaced(nullptr), mpMap(pMap), mnMapId(-1)
 {
     Pos.copyTo(mWorldPos);
-    // 初始化一个默认法向，避免视锥角度检查失败
+    // 默认法向，供视锥角度检查使用
     mNormalVector = (cv::Mat_<float>(3,1) << 0,0,1);
     // 给予宽松的尺度范围，保证视野检查可通过
     mfMinDistance = MAPPOINT_DEFAULT_MIN_DIST;
@@ -592,4 +592,4 @@ int MapPoint::GetMapId()
     return mnMapId;
 }
 
-} //namespace ORB_SLAM2
+} // namespace ORB_SLAM2

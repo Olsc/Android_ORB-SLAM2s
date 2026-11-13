@@ -83,7 +83,7 @@ public:
     // 焦距应相似，否则投影尺度预测会失败；PredictScale 需考虑焦距差异
     void UpdateCalibration(float fx, float fy, float cx, float cy);
 
-    // 如果您已停用局部建图并且只想定位相机，请使用此函数。
+    // 仅定位不建图时启用
     void InformOnlyTracking(const bool &flag);
 
     // 后台全局重定位线程控制
@@ -156,7 +156,7 @@ public:
     list<double> mlFrameTimes;
     list<bool> mlbLost;
 
-    // 如果局部建图被停用并且我们仅执行定位，则为true
+    // 局部建图停用且仅执行定位时为 true
     bool mbOnlyTracking;
 
     // 重置函数
@@ -266,7 +266,7 @@ protected:
     std::atomic<bool> mbRelocThreadStop{false};
     std::atomic<int> mRelocThreadSessionId{0};
     mutable std::mutex mMutexReloc;
-    std::condition_variable mCvReloc; // 生命周期事件驱动的唤醒，避免使用延时
+    std::condition_variable mCvReloc; // 重定位唤醒条件变量，由生命周期事件触发
     cv::Mat mLastDesc; // 描述符快照
     std::vector<cv::KeyPoint> mLastKeysUn; // 关键点快照
     int mLastN = 0;
@@ -385,6 +385,6 @@ protected:
     float mDynamicSearchTh = TRACKING_LOCAL_SEARCH_TH;
 };
 
-} //namespace ORB_SLAM2
+} // namespace ORB_SLAM2
 
 #endif // TRACKING_H

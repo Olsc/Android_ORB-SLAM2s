@@ -449,8 +449,7 @@ const int INITIALIZER_SEARCH_WINDOW = 100;
 // 初始化提取器特征数相对正常提取器的倍数
 const int INITIALIZER_FEATURE_MULTIPLIER = 2;
 
-// 初始化器自适应提前终止（与 PnPsolver 同款策略）：
-// 置信概率 p、至少迭代次数、安全系数（理论需求 * 系数后提前终止）
+// 初始化器自适应提前终止：置信概率 p、最少迭代次数、安全系数
 const double INITIALIZER_RANSAC_PROB = 0.99;
 const int INITIALIZER_ADAPTIVE_START_ITER = 30;
 const float INITIALIZER_ADAPTIVE_SAFETY_FACTOR = 1.5f;

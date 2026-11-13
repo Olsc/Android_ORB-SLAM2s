@@ -100,7 +100,7 @@ bool Initializer::Initialize(const Frame &CurrentFrame, const vector<int> &vMatc
     for(int it=0; it<mMaxIterations; it++)
         SampleWithoutReplacement(lcg, vAllIndices, INITIALIZER_RANSAC_MIN_SET, mvSets[it].data());
 
-    // 两个线程都要用同一组归一化坐标：在这里算一次，FindHomography/FindFundamental 只读
+    // 预计算两帧归一化坐标，供单应与基础矩阵并行求解读取
     Normalize(mvKeys1, mvPn1, mT1);
     Normalize(mvKeys2, mvPn2, mT2);
 
@@ -675,13 +675,13 @@ bool Initializer::ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv:
     vt.reserve(8);
     vn.reserve(8);
 
-    //n'=[x1 0 x3] 4种可能性 e1=e3=1, e1=1 e3=-1, e1=-1 e3=1, e1=e3=-1
+    // n'=[x1 0 x3] 4种可能性 e1=e3=1, e1=1 e3=-1, e1=-1 e3=1, e1=e3=-1
     float aux1 = sqrt((d1sq-d2sq)/d1sq_m_d3sq);
     float aux3 = sqrt((d2sq-d3sq)/d1sq_m_d3sq);
     float x1[] = {aux1,aux1,-aux1,-aux1};
     float x3[] = {aux3,-aux3,aux3,-aux3};
 
-    //情况 d'=d2
+    // 情况 d'=d2
     float aux_stheta = sqrt((d1sq-d2sq)*(d2sq-d3sq))/((d1+d3)*d2);
 
     float ctheta = (d2sq+d1*d3)/((d1+d3)*d2);
@@ -718,7 +718,7 @@ bool Initializer::ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv:
         vn.push_back(n);
     }
 
-    //情况 d'=-d2
+    // 情况 d'=-d2
     float aux_sphi = sqrt((d1sq-d2sq)*(d2sq-d3sq))/((d1-d3)*d2);
 
     float cphi = (d1*d3-d2sq)/((d1-d3)*d2);
@@ -763,7 +763,7 @@ bool Initializer::ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv:
     vector<cv::Point3f> bestP3D;
     vector<bool> bestTriangulated;
 
-    // 我们重构所有假设并通过三角测量点和视差进行检查，而不是应用Faugeras论文中提出的可见性约束（对于低视差点可能失败）
+    // 通过三角化点与视差校验全部假设，不采用 Faugeras 论文的可见性约束
     for(size_t i=0; i<8; i++)
     {
         float parallaxi;
@@ -1007,4 +1007,4 @@ void Initializer::DecomposeE(const cv::Mat &E, cv::Mat &R1, cv::Mat &R2, cv::Mat
         R2=-R2;
 }
 
-} //namespace ORB_SLAM2
+} // namespace ORB_SLAM2

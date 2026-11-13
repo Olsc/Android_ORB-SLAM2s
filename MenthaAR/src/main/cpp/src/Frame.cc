@@ -72,7 +72,7 @@ Frame::Frame(const Frame &frame)
      mvLevelSigma2(frame.mvLevelSigma2), mvInvLevelSigma2(frame.mvInvLevelSigma2),
      mpTree(frame.mpTree)
 {
-    // 拷贝构造的初始化列表不含紧凑缓存数组；若 frame.mTcw 为空则下面的 SetPose 不会被调用，因此必须显式初始化，避免 isInFrustum 读取未初始化值
+    // 紧凑位姿缓存不在初始化列表中，先清零供未调用 SetPose 的帧使用
     std::memset(mRcw_arr, 0, sizeof(mRcw_arr));
     std::memset(mtcw_arr, 0, sizeof(mtcw_arr));
     std::memset(mOw_arr, 0, sizeof(mOw_arr));
@@ -104,7 +104,6 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
     // ORB提取
     ExtractORB(0,imGray);
 
-    // logTime();
     N = mvKeys.size();
 
     if(mvKeys.empty())
@@ -184,7 +183,7 @@ void Frame::AssignFeaturesToGrid()
 void Frame::ExtractORB(int flag, const cv::Mat &im)
 {
     // 单目模式只使用左图像提取器
-        (*mpORBextractorLeft)(im,cv::Mat(),mvKeys,mDescriptors);
+    (*mpORBextractorLeft)(im,cv::Mat(),mvKeys,mDescriptors);
 }
 
 void Frame::SetPose(cv::Mat Tcw)
@@ -414,4 +413,4 @@ std::shared_ptr<HBSTTree> Frame::GetHBSTTree() {
     return mpTree;
 }
 
-} //namespace ORB_SLAM2
+} // namespace ORB_SLAM2

@@ -99,7 +99,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
     private List<CameraInfo> mAvailableCameraInfos = new ArrayList<>();
     private int mCurrentCameraIndex = -1;
 
-    private byte[][] mYuvSendBuffers; // 灰度帧发送双缓冲(复用避免 GC)
+    private byte[][] mYuvSendBuffers; // 灰度帧发送双缓冲
     private byte[][] mRgbaBuffers;    // 相机 RGBA 帧双缓冲
     private int mSendPing;            // 当前发送缓冲索引 (0/1)
     private int[] mCachePixels;       // 预览位图像素数组
@@ -835,7 +835,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
             GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT | GLES20.GL_COLOR_BUFFER_BIT);
 
-            // surfaceDestroyed 销毁了 GL 对象而 EGL 上下文被保留时，onSurfaceCreated 不会重新调用：在这里按需重建
+            // EGL 上下文保留而 GL 对象已销毁时 onSurfaceCreated 不会重入，需在此重建
             if (!mPassThroughRenderer.isReady()) {
                 mPassThroughRenderer.init();
             }

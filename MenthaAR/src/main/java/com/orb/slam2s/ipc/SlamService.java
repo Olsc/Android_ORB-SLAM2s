@@ -137,8 +137,7 @@ public class SlamService extends Service {
 
         @Override
         public int[] getMapStats() {
-            // GetMapStats 会遍历关键帧与地图点，不能与 slamThread 并发，也不能在 shutdown 期间执行。
-            // 这里返回上次快照并在处理线程异步刷新，1 Hz 轮询下次取到新值。
+            // 遍历关键帧与地图点耗时，返回缓存快照并由处理线程异步刷新
             requestMapStatsRefresh();
             synchronized (statsLock) {
                 return cachedMapStats.clone();

@@ -363,7 +363,7 @@ public class OrientationSensor implements SensorEventListener {
         }
 
         // getRotationMatrixFromVector 输入是单位四元数的向量部 axis*sin(θ/2)，不是旋转向量 ω*dt。
-        // 直接传 ω*dt 会得到约 2θ 的旋转（实测比例 2.000/2.0003/2.0048），此处按定义构造。
+        // 直接传 ω*dt 会得到约 2θ 的旋转，改按四元数向量定义构造
         final float wx = event.values[0], wy = event.values[1], wz = event.values[2];
         final float wn = (float) Math.sqrt(wx * wx + wy * wy + wz * wz);
         final float theta = wn * dt;
@@ -430,7 +430,7 @@ public class OrientationSensor implements SensorEventListener {
         if (norm < GRAVITY_MIN_NORM) {
             return;
         }
-    // 设备系下重力方向(单位化)，旋转到世界系后应与世界竖直轴一致
+        // 设备系下重力方向(单位化)，旋转到世界系后应与世界竖直轴一致
         final float ux = (relRotationMatrix[0] * gx + relRotationMatrix[4] * gy + relRotationMatrix[8] * gz) / norm;
         final float uy = (relRotationMatrix[1] * gx + relRotationMatrix[5] * gy + relRotationMatrix[9] * gz) / norm;
         final float uz = (relRotationMatrix[2] * gx + relRotationMatrix[6] * gy + relRotationMatrix[10] * gz) / norm;

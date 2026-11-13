@@ -107,8 +107,8 @@ Java_com_orb_slam2s_graphics_GlbModelRenderer_nativeInitGL(
         return JNI_FALSE;
     }
 
-    // 若模型已经在 GL 上下文就绪前加载完成（小模型常见），在这里补上传
-    // 尚未加载完成的，交由 nativeRender 在加载结束后补做
+    // GL 上下文就绪前已完成加载的模型立即上传
+    // 未加载完成的由 nativeRender 在加载结束后补做
     ctx->model->uploadGL([&](const uint8_t* imgBytes, size_t imgSize) -> int {
         return loadTextureFromJava(env, thiz, imgBytes, imgSize);
     });
@@ -133,8 +133,8 @@ Java_com_orb_slam2s_graphics_GlbModelRenderer_nativeRender(
     auto* ctx = reinterpret_cast<GlbContext*>(handle);
     if (!ctx) return;
 
-    // 异步加载可能晚于 onSurfaceCreated 完成：这里补做 GPU 上传
-    // uploadGL 内部对"已上传"和"尚无图元"都会立刻返回，逐帧调用开销可忽略
+    // 异步加载晚于 onSurfaceCreated 时在此补做 GPU 上传
+    // 已上传或无图元时 uploadGL 立即返回，逐帧调用开销可忽略
     if (ctx->model->isLoaded() && !ctx->model->isGPUUploaded()) {
         ctx->model->uploadGL([&](const uint8_t* imgBytes, size_t imgSize) -> int {
             return loadTextureFromJava(env, thiz, imgBytes, imgSize);

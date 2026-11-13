@@ -133,7 +133,7 @@ public class MainActivity extends ComponentActivity
     // 虚拟摇杆
     private VirtualJoystickView mJoystickView;
 
-    // 辅助定位状态(传感器与融合均由 SDK 持有，这里只保存 UI 开关)
+    // 辅助定位状态（传感器与融合由 SDK 持有，本类仅保存 UI 开关）
     private boolean mIs3DofMode = true;
     private boolean mPoseAssistAvailable = false;
 
@@ -710,7 +710,7 @@ public class MainActivity extends ComponentActivity
         }
     }
 
-    // 画面镜像与传感器方向控制：开关状态均持久化，这里负责同步按钮文案与下发
+    // 镜像与传感器方向控制：同步开关状态、按钮文案与下发
     private void initMirrorControls() {
         mBtnMirrorVertical = findViewById(R.id.btn_mirror_vertical);
         mBtnMirrorHorizontal = findViewById(R.id.btn_mirror_horizontal);
@@ -880,7 +880,7 @@ public class MainActivity extends ComponentActivity
                 .show();
     }
 
-    // 姿态辅助控制：传感器与融合均由 SDK 进程持有，此处只下发开关并同步 UI
+    // 姿态辅助控制：传感器与融合均由 SDK 进程持有，仅下发开关并同步 UI
     private void init3DofControls() {
         if (mBtn3DofCube == null) {
             mBtn3DofCube = findViewById(R.id.btn_3dof_cube);

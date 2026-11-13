@@ -43,4 +43,4 @@
 #include <unistd.h>
 #endif
 
-#endif //ORB_SLAM2_AR_COMMON_H
+#endif // ORB_SLAM2_AR_COMMON_H

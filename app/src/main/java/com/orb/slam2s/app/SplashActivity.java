@@ -130,7 +130,7 @@ public class SplashActivity extends Activity {
         }
 
         if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)) {
-            // 用户此前的拒绝记录仍有效：先说明用途再重新请求授权
+            // 已有拒绝记录：先说明用途再重新请求授权
             showPermissionRationaleDialog();
         } else {
             ActivityCompat.requestPermissions(this,

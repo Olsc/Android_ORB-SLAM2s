@@ -123,7 +123,7 @@ static void AR_OnArPlaced(Plane* detected, bool whileAligned) {
     gAnchor.isFromLoadedMap = false;
     gAnchor.mapId = gActiveMapId;
     gAnchor.valid = true;
-    AR_ResetAlignHold(); // 新锚点必须重新按当前帧渲染，避免冻结旧锚点的 lastGood
+    AR_ResetAlignHold(); // 新锚点按当前帧重新对齐渲染
     if (gAnchor.plane) {
         getRUBModelMatrixFromRDF(gAnchor.plane->glTpw, gCurrentModelMatrix);
         AR::ArObject obj;
@@ -736,7 +736,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_detect(JNIEnv *env, jobject instance,
         return;
     }
     if(!currentTcw.empty()){
-        // vMPs 写入侧由 gMapPointsMutex 保护，先持锁拷贝快照再做无锁使用，         锁序与全局一致(gMapDataMutex -> gMapPointsMutex)
+        // vMPs 写入侧由 gMapPointsMutex 保护，先持锁拷贝快照再做无锁使用，锁序与全局一致(gMapDataMutex -> gMapPointsMutex)
         std::vector<ORB_SLAM2::MapPoint*> localMPs;
         {
             std::lock_guard<std::mutex> _mpLock(gMapPointsMutex);

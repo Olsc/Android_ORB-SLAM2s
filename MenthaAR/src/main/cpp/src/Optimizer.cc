@@ -394,8 +394,8 @@ int Optimizer::PoseOptimization(Frame *pFrame)
         return 0;
     }
 
-    // 执行 4 次优化，每次后将观测分类为内点/外点
-    // 在下一次优化中，不包括外点，但在最后它们可以再次被分类为内点。不设墙钟超时：迭代次数本身有界（POSE_OPT_PASSES*POSE_OPT_PASS_ITERS），时间截断会使慢设备上的位姿停在未收敛状态
+    // 分 4 轮优化，每轮后将观测重新划分为内点与外点
+    // 外点不参与下一轮，末轮可重新判定为内点
     const float chi2Mono[4]={OPTIMIZER_CHI2_TH_2D,OPTIMIZER_CHI2_TH_2D,OPTIMIZER_CHI2_TH_2D,OPTIMIZER_CHI2_TH_2D};
     const int its[POSE_OPT_PASSES]={POSE_OPT_PASS_ITERS,POSE_OPT_PASS_ITERS,POSE_OPT_PASS_ITERS,POSE_OPT_PASS_ITERS};
 
@@ -543,7 +543,7 @@ static void LocalBundleAdjustmentImpl(KeyFrame *pKF, const StopFlagT* pbStopFlag
         }
     }
 
-    // 线程局部缓存：避免每次 new/delete 求解器对象
+    // 线程局部求解器缓存，复用 g2o 对象以降低分配开销
     thread_local struct {
         g2o::SparseOptimizer optimizer;
         g2o::BlockSolver_6_3::LinearSolverType* linearSolver = nullptr;
@@ -600,8 +600,7 @@ static void LocalBundleAdjustmentImpl(KeyFrame *pKF, const StopFlagT* pbStopFlag
     for(size_t k=0; k<vFixedCameras.size(); k++)
         if(vFixedCameras[k]->mnId>maxKFid) maxKFid=vFixedCameras[k]->mnId;
 
-    // 关键帧顶点按 mnId 索引（只覆盖窗口内的 id 范围）；地图点顶点与 vLocalMapPoints 平行存放。
-    // 原先用一个按全图最大地图点 id 扩容的数组（十万级点时约 800 KB 清零），写回时再做哈希查找
+    // 关键帧顶点按 mnId 索引，地图点顶点与 vLocalMapPoints 平行存放
     std::vector<g2o::VertexSE3Expmap*> vKFVertices(maxKFid + 1, nullptr);
 
     // 设置局部关键帧顶点
@@ -936,7 +935,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
     for(KeyFrameMap<KeyFrameSet>::const_iterator mit = LoopConnections.begin(), mend=LoopConnections.end(); mit!=mend; mit++)
     {
         KeyFrame* pKF = mit->first;
-        // 添加空指针和isBad检查，防止访问已删除的KeyFrame
+        // 空指针与 isBad 检查，防止访问已删除的 KeyFrame
         if(!pKF || pKF->isBad())
             continue;
 
@@ -961,7 +960,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
 
             const long unsigned int nIDj = pKFj->mnId;
 
-            //  使用 pKFj 代替 *sit
+            // 使用 pKFj 代替 *sit
             if((nIDi!=pCurKF->mnId || nIDj!=pLoopKF->mnId) && pKF->GetWeight(pKFj)<minFeat)
                 continue;
 
@@ -978,7 +977,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
             g2o::OptimizableGraph::Vertex* vj = vpVertices[nIDj];
             g2o::OptimizableGraph::Vertex* vi = vpVertices[nIDi];
 
-            //  只有当两个顶点都存在时才创建 Edge
+            // 只有当两个顶点都存在时才创建 Edge
             if(!vj || !vi)
             {
                 continue;
@@ -1011,7 +1010,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
     for(size_t i=0, iend=vpKFs.size(); i<iend; i++)
     {
         KeyFrame* pKF = vpKFs[i];
-        // 添加空指针和isBad检查，防止访问已删除的KeyFrame
+        // 空指针与 isBad 检查，防止访问已删除的 KeyFrame
         if(!pKF || pKF->isBad())
             continue;
 
@@ -1089,7 +1088,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
         for(KeyFrameSet::const_iterator sit=sLoopEdges.begin(), send=sLoopEdges.end(); sit!=send; sit++)
         {
             KeyFrame* pLKF = *sit;
-            // 添加空指针和isBad检查，防止访问已删除的KeyFrame
+            // 空指针与 isBad 检查，防止访问已删除的 KeyFrame
             if(!pLKF || pLKF->isBad())
                 continue;
 
@@ -1527,4 +1526,4 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
     return nIn;
 }
 
-} //namespace ORB_SLAM2
+} // namespace ORB_SLAM2

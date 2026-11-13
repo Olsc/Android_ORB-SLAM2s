@@ -63,7 +63,7 @@ public:
     void SetMap(Map* pMap);
     void ClearQueues();
 
-    // 主函数
+    // 主循环：处理关键帧、剔除地图点并执行局部 BA
     void Run();
 
     void InsertKeyFrame(KeyFrame* pKF);
@@ -98,8 +98,7 @@ public:
         return mlNewKeyFrames.size();
     }
 
-    // 队列为空且当前没有在处理关键帧。
-    // AcceptKeyFrames() 在队列较短时也返回 true，此处读取原始忙标志。
+    // 队列为空且未在处理关键帧；AcceptKeyFrames() 允许缓冲队列，直接读原始标志
     bool IsIdle(){
         return mbAcceptKeyFrames.load(std::memory_order_acquire) && KeyframesInQueue()==0;
     }
@@ -170,6 +169,6 @@ protected:
     std::condition_variable mCvEvent;
 };
 
-} //namespace ORB_SLAM2
+} // namespace ORB_SLAM2
 
 #endif // LOCALMAPPING_H

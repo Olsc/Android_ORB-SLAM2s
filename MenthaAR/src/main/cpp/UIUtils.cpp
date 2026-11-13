@@ -117,7 +117,7 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
         }
     }
 
-    // 所有采样都因三点共线被跳过时没有任何模型，下面的 bestvDist[i] 会越界
+    // 无有效模型时直接返回
     if(bestvDist.empty())
         return nullptr;
 

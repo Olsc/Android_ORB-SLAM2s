@@ -147,6 +147,6 @@ protected:
     LCG mLcg;
 };
 
-} //namespace ORB_SLAM2
+} // namespace ORB_SLAM2
 
 #endif // SIM3SOLVER_H

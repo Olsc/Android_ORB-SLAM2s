@@ -110,7 +110,7 @@ static void FilterPnPInputsSync(const std::vector<cv::Point3f> &in3d,
     }
 }
 
-// OpenCV错误回调：将断言转为返回错误，避免进程中止
+// OpenCV 错误回调：将断言转为错误返回，阻止进程中止
 static int SeeCvErrorCallback(int status, const char* func_name, const char* err_msg,
                            const char* file_name, int line, void* userdata)
 {
@@ -137,7 +137,7 @@ static bool SolvePnPSafe(const std::vector<cv::Point3f>& pts3d,
 {
     EnsureCvErrorRedirect();
 
-    // 严格检查点数：为避免OpenCV内部DLT断言，统一要求至少6点
+    // 点数校验：OpenCV DLT 要求至少 6 点
     if (pts3d.size() < ORB_SLAM2::PNP_MIN_SAMPLES_RANSAC || pts2d.size() < ORB_SLAM2::PNP_MIN_SAMPLES_RANSAC || pts3d.size() != pts2d.size())
     {
         LOGE("安全PnP求解: 点数不足或数量不匹配 3D=%d 2D=%d", (int)pts3d.size(), (int)pts2d.size());
@@ -157,7 +157,7 @@ static bool SolvePnPSafe(const std::vector<cv::Point3f>& pts3d,
     cv::Mat Dd; dist32.convertTo(Dd, CV_64F);
 
     try{
-        // 6个点或更多时，使用RANSAC（EPNP最小样本为4，避免内部走DLT 6点断言）
+        // 6 点及以上使用 RANSAC，EPNP 最小样本为 4，可绕开 DLT 断言
         bool ok = cv::solvePnPRansac(pts3d, pts2d, Kd, Dd, rvec, tvec, false, ORB_SLAM2::PNP_RANSAC_ITERATIONS, ORB_SLAM2::PNP_RANSAC_ERROR, ORB_SLAM2::PNP_RANSAC_CONFIDENCE, inliers, cv::SOLVEPNP_EPNP);
         if(ok) {
             // 验证结果的有效性
@@ -341,7 +341,7 @@ void ORB_SLAM2::Tracking::BindLoadedMapPointsUsingSnapshots()
 }
 void ORB_SLAM2::Tracking::BuildLoadedRefCache()
 {
-    // 并发保护：避免多次重入导致refDesc与索引不同步
+    // 构建保护：重入时直接返回，保证描述符与索引同步
     bool expected=false; if(!mRefBuilding.compare_exchange_strong(expected, true)) return;
 
     // 节流：增量驱动
@@ -529,11 +529,11 @@ void ORB_SLAM2::Tracking::UpdateAlignmentSmooth(const cv::Mat &T_new, int inlier
     float alpha = std::min(ALIGN_EMA_MAX_ALPHA, confidence * qualityScore / ALIGN_QUALITY_SCORE_CAP);
     alpha = std::max(ALIGN_EMA_MIN_ALPHA, alpha);
 
-    // 直接在原矩阵上更新，避免克隆
+    // 直接在原矩阵上更新
     cv::Mat& smoothed = mSmoothedT_map_from_slam;
 
     // smoothed = (1-alpha)*smoothed + alpha*T_new
-    // 只更新旋转和平移部分（前3行4列），避免处理底部的[0 0 0 1]
+    // 仅更新旋转与平移部分（前 3 行 4 列）
     float oneMinusAlpha = 1.0f - alpha;
     for(int i = 0; i < 3; i++) {
         float* smoothRow = smoothed.ptr<float>(i);
@@ -699,7 +699,7 @@ void Tracking::GlobalRelocLoop(int sessionId)
 
             // 状态检查：系统未初始化或地图无点时跳过，等待下一次快照事件
             if(mState == NO_IMAGES_YET || mState == NOT_INITIALIZED || mpMap->MapPointsInMap() == 0) {
-                // 即使地图无点，也先消费缓存失效请求（避免标志残留）
+                // 地图无点时也消费缓存失效请求
                 mRefCacheDirty.store(false);
                 continue;
             }
@@ -829,7 +829,7 @@ void Tracking::GlobalRelocLoop(int sessionId)
                 ok = SolvePnPSafe(f3d, f2d, K, distCoeffs, rvec, tvec, inliers);
                 inliersCnt = (int)inliers.size();
             } else {
-                // 4-5点：使用P3P/EPNP直接求解，随后做重投影误差验证，避免RANSAC的DLT断言
+                // 4-5 点使用 P3P/EPNP 直接求解，随后校验重投影误差
                 try{
                     cv::Mat Kd; K.convertTo(Kd, CV_64F);
                     cv::Mat Dd; distCoeffs.convertTo(Dd, CV_64F);
@@ -864,8 +864,8 @@ void Tracking::GlobalRelocLoop(int sessionId)
                     }
                 }catch(const cv::Exception& e){ LOGE("RelocBG: PnP异常: %s", e.what()); ok=false; inliers.clear(); }
             }
-            // 提高对齐阈值，要求至少30个inliers且置信度>=0.5，避免错误匹配
-            // Reset后如果立即匹配到少量点（比如10-20个），很可能是错误匹配，不应该接受
+            // 对齐需至少 30 个内点且置信度不低于 0.5
+            // Reset 后出现的少量匹配视为误匹配
             if(ok && inliersCnt>=TRACKING_RELOC_PNP_MIN_INLIERS){
                 cv::Mat R;
                 try { cv::Rodrigues(rvec, R); } catch(const cv::Exception& e){ LOGE("RelocBG: Rodrigues异常: %s", e.what()); mRelocCooldownFrames=TRACKING_RELOC_COOLDOWN_FRAMES; continue; }
@@ -1065,7 +1065,7 @@ void Tracking::Track()
     }
     else
     {
-        // 系统已初始化。跟踪帧。
+        // 已初始化：跟踪当前帧
         bool bOK;
 
         // 使用运动模型或重定位进行初始相机位姿估计（如果跟踪丢失）
@@ -1106,7 +1106,7 @@ void Tracking::Track()
             {
                 if(!mbVO)
                 {
-                    // 在上一帧中，我们在地图中跟踪了足够的地图点
+                    // 上一帧在地图中跟踪到足够的地图点
                     bOK = TrackWithMotionModel();
                     if(!bOK)
                     {
@@ -1162,7 +1162,7 @@ void Tracking::Track()
 
         mCurrentFrame.mpReferenceKF = mpReferenceKF;
 
-        // 如果我们有相机位姿和匹配的初始估计值，则跟踪局部地图。
+        // 已有相机位姿与初始匹配估计时，执行局部地图跟踪
         if(!mbOnlyTracking)
         {
             if(bOK)
@@ -1173,7 +1173,7 @@ void Tracking::Track()
         }
         else
         {
-            // mbVO 为 true 表示地图中很少有与地图点匹配的点。我们无法检索局部地图，因此不执行 TrackLocalMap()。一旦系统重新定位相机，我们将再次使用局部地图。
+            // mbVO 为 true 时地图点匹配稀少，跳过 TrackLocalMap；重定位成功后恢复
             if(bOK && !mbVO)
             {
                 VT_PROFILE_SCOPE("Tracking::TrackLocalMap_VO");
@@ -1186,10 +1186,10 @@ void Tracking::Track()
         }
         else {
             if(mState == OK) {
-                InvalidateRefCache(); // 避免主线程同步构建造成掉帧
+                InvalidateRefCache(); // 异步失效引用缓存
             }
             mState=LOST;
-            // 丢失态即将转入重定位，及时中止局部 BA 避免两路重负载互相拖慢；被中止的 BA 无精度损失，下一关键帧会重新发起完整 BA
+            // 进入丢失态，中止局部 BA 以让出算力，下一关键帧会重新发起
             if(mpLocalMapper)
                 mpLocalMapper->InterruptBA();
         }
@@ -1280,7 +1280,7 @@ void Tracking::Track()
                         mConsecutiveLostFrames = 0;
                         return;
                     }
-                    // 冷却期内等待重定位，避免向已初始化地图中混入不同坐标系的新初始化点
+                    // 冷却期内只等待重定位，不初始化新地图点
                     return;
                 }
                 else
@@ -1332,7 +1332,7 @@ void Tracking::Track()
     if(!mCurrentFrame.mTcw.empty())
     {
         if(mCurrentFrame.mpReferenceKF){
-            // 在访问 KeyFrame 方法之前检查其有效性
+            // 使用前校验参考关键帧有效性
             KeyFrame* pRefKF = mCurrentFrame.mpReferenceKF;
             if(!pRefKF || pRefKF->isBad())
             {
@@ -1521,7 +1521,7 @@ void Tracking::CreateInitialMapMonocular()
             if(mvIniMatches[i]<0)
                 continue;
 
-            //创建地图点。
+            // 创建地图点
             cv::Mat worldPos(mvIniP3D[i]);
 
             MapPoint* pMP = new MapPoint(worldPos,pKFcur,mpMap);
@@ -1535,11 +1535,11 @@ void Tracking::CreateInitialMapMonocular()
             pMP->ComputeDistinctiveDescriptors();
             pMP->UpdateNormalAndDepth();
 
-            //填充当前帧结构
+            // 填充当前帧结构
             mCurrentFrame.mvpMapPoints[mvIniMatches[i]] = pMP;
             mCurrentFrame.mvbOutlier[mvIniMatches[i]] = false;
 
-            //添加到地图
+            // 添加到地图
             mpMap->AddMapPoint(pMP);
         }
     }
@@ -1632,8 +1632,8 @@ bool Tracking::TrackReferenceKeyFrame()
     // 计算词袋向量
     // mCurrentFrame.ComputeBoW();
 
-    // 首先对参考关键帧进行ORB匹配
-    // 如果找到足够多的匹配点，我们就设置PnP求解器
+    // 对参考关键帧做 ORB 匹配
+    // 匹配数足够时初始化 PnP 求解器
     ORBmatcher matcher(ORB_MATCHER_NNRATIO_REFKF,true);
     vector<MapPoint*> vpMapPointMatches;
 
@@ -1663,7 +1663,7 @@ bool Tracking::TrackReferenceKeyFrame()
                 pMP->mnLastFrameSeen = mCurrentFrame.mnId;
                 nmatches--;
             }
-            //  加载的地图点没有Observations，但仍应计入匹配数
+            // 加载的地图点没有 Observations，但仍应计入匹配数
             else if(mCurrentFrame.mvpMapPoints[i]->mbFromLoadedMap ||
                     mCurrentFrame.mvpMapPoints[i]->Observations()>0)
                 nmatchesMap++;
@@ -1760,7 +1760,7 @@ bool Tracking::TrackWithMotionModel()
                 pMP->mnLastFrameSeen = mCurrentFrame.mnId;
                 nmatches--;
             }
-            //  加载的地图点没有Observations，但仍应计入匹配数
+            // 加载的地图点没有 Observations，但仍应计入匹配数
             else if(mCurrentFrame.mvpMapPoints[i]->mbFromLoadedMap ||
                     mCurrentFrame.mvpMapPoints[i]->Observations()>0)
                 nmatchesMap++;
@@ -2084,13 +2084,13 @@ bool Tracking::NeedNewKeyFrame()
     if(mpReferenceKF==nullptr) return false;
     int nRefMatches = mpReferenceKF->TrackedMapPoints(nMinObs);
 
-    // 局部建图接受关键帧吗？
+    // 局部建图是否可接收关键帧
     bool bLocalMappingIdle = mpLocalMapper->AcceptKeyFrames();
 
     // 单目模式不需要检查近距离点
     bool bNeedToInsertClose = false;
 
-    // 阈值
+    // 参考关键帧跟踪的匹配比率阈值
     float thRefRatio = TRACKING_KF_REF_RATIO;
     if(nKFs<2)
         thRefRatio = TRACKING_KF_NEWMAP_RATIO;
@@ -2279,7 +2279,7 @@ void Tracking::SearchLocalPoints()
         // 先进行常规描述子匹配
         matcher.SearchByProjection(mCurrentFrame,mvpLocalMapPoints,th);
 
-        // 对从已加载地图来的、无描述子的点，基于投影位置进行近邻特征匹配，但避免与已有描述子匹配冲突
+        // 对已加载地图中无描述子的点按投影位置补充匹配
         const int totalKeys = mCurrentFrame.N;
         int additionalMatches = 0;
         // 额外匹配上限，让已加载地图点更充分地参与跟踪
@@ -2341,7 +2341,7 @@ void Tracking::SearchLocalPoints()
 
 void Tracking::UpdateLocalMap()
 {
-    // 更新
+    // 刷新局部关键帧与局部地图点
     UpdateLocalKeyFrames();
     UpdateLocalPoints();
 }
@@ -2519,8 +2519,8 @@ bool Tracking::Relocalization()
     {
         int nKFs = vpCandidateKFs.size();
 
-        // 我们首先对每个候选帧进行ORB匹配
-        // 如果找到足够多的匹配点，我们就设置PnP求解器
+        // 先对每个候选帧做 ORB 匹配
+        // 匹配数足够时初始化 PnP 求解器
         ORBmatcher matcher(ORB_MATCHER_NNRATIO_RELOC,true);
 
         vector<PnPsolver*> vpPnPsolvers;
@@ -2580,7 +2580,7 @@ bool Tracking::Relocalization()
         if(!vbDiscarded[i]) nCandidates++;
     }
 
-    // 执行 PnP RANSAC 迭代求解有效位姿，各候选解迭代有界以保证收敛，复用外层 bMatch 状态，避免变量遮蔽导致重定位成功路径失效
+    // 用 PnP RANSAC 求解候选位姿，各候选迭代次数有界
     ORBmatcher matcher2(ORB_MATCHER_NNRATIO_MOTION,true);
 
     {
@@ -2715,7 +2715,7 @@ bool Tracking::Relocalization()
             refSnaps = mpRefSnapshots;
         }
 
-        // 连续丢失多帧时降频执行重度 HBST Fallback，避免主线程在丢帧时被暴力匹配长时间阻塞
+        // 连续丢失时降频执行 HBST 兜底匹配
         const bool bRunFallback = (mConsecutiveLostFrames <= 2) || ((mCurrentFrame.mnId % 4) == 0);
         if (bRunFallback && pTree && !mCurrentFrame.mDescriptors.empty() && refDesc.rows > 0 && refSnaps && refDesc.rows == (int)refSnaps->size()) {
             VT_PROFILE_SCOPE("Reloc_Fallback");
@@ -2847,7 +2847,7 @@ bool Tracking::Relocalization()
             }
             else if(pTargetMap)
             {
-                // 同一子地图内重定位不改变当前地图标识：此处若赋 Map::mnId，会与加载点的地图 id 不一致，使投影绑定与本图加载点统计失效；当前地图 id 交由对齐结果维护
+                // 同一子地图内重定位不改变地图标识：直接赋 Map::mnId 会与加载点 id 不一致，当前地图 id 交由对齐结果维护
             }
         }
         return true;
@@ -2868,7 +2868,7 @@ void Tracking::Reset()
 
     mpKeyFrameDB->clear();
 
-    // 在清除地图之前停止后台重定位线程
+    // 清除地图前先停止后台重定位线程
     StopGlobalRelocThread();
 
     // 完全清空重定位缓存和对齐状态，确保Reset后不会残留旧状态
@@ -2922,8 +2922,8 @@ void Tracking::Reset()
 
     // 重置匹配分数
     mRelocMatchScore.store(0.0f);
-    // Reset后设置cooldown期，等待足够的新扫描点积累后再开始重定位，避免Reset后立即匹配到错误区域
-    mRelocCooldownFrames = RESET_COOLDOWN_FRAMES; // 冷却帧数
+    // Reset 后进入冷却期，待新扫描点积累后再重定位
+    mRelocCooldownFrames = RESET_COOLDOWN_FRAMES;
     mConsecutiveFail = 0;
 
     // 清除地图前，先将已加载的地图点从地图中移出（仅移出，不 delete）
@@ -2966,7 +2966,7 @@ void Tracking::Reset()
     }
     mLastInitAttemptTime = 0.0;
 
-    // 先启动后台重定位线程，确保 BuildLoadedRefCache 运行标志有效，避免因未启动线程导致缓存构建提前截断
+    // 启动后台重定位线程，使缓存构建标志生效
     StartGlobalRelocThread();
     LOGD("跟踪::重置结束");
 
@@ -3120,14 +3120,14 @@ void Tracking::PrepareForNewMap()
     mTrackingOK.store(false);
     mLastTrackingInliers.store(0);
     mRelocMatchScore.store(0.0f);
-    mRelocCooldownFrames = RESET_COOLDOWN_FRAMES; // 给一段冷却，避免立即触发重定位匹配到错误区域
+    mRelocCooldownFrames = RESET_COOLDOWN_FRAMES; // 重置冷却帧数
     mRefCacheRetryCount = 0;
 }
 
 void Tracking::ClearRelocCacheForMapSwitch()
 {
     // 仅清空加载/旧地图的重定位缓存与对齐状态（不释放Map或停后台线程）
-    // 调用顺序：StopGlobalRelocThread -> ClearRelocCacheForMapSwitch -> SwitchToMap -> PrepareForNewMap + StartGlobalRelocThread
+    // 切换顺序：停后台线程与清缓存，SwitchToMap，最后 PrepareForNewMap 并重启线程
     LOGD("跟踪::ClearRelocCacheForMapSwitch (仅清重定位缓存)");
 
     {
@@ -3277,7 +3277,7 @@ void Tracking::LoadedMapGrid::Build(const std::vector<RefMPSnapshot>& snaps, flo
         if(s.Pw.z > maxZ) maxZ = s.Pw.z;
     }
 
-    // 稍微扩大边界以避免边界问题
+    // 外扩一格以包含边界点
     minX -= cellSize; maxX += cellSize;
     minY -= cellSize; maxY += cellSize;
     minZ -= cellSize; maxZ += cellSize;
@@ -3390,4 +3390,4 @@ void Tracking::LoadedMapGrid::GetCandidatesInSphere(const cv::Point3f& center, f
     }
 }
 
-} //namespace ORB_SLAM2
+} // namespace ORB_SLAM2

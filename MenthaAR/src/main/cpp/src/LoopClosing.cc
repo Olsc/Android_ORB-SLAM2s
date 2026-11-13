@@ -184,7 +184,7 @@ bool LoopClosing::DetectLoop()
         unique_lock<mutex> lock(mMutexLoopQueue);
         mpCurrentKF = mlpLoopKeyFrameQueue.front();
         mlpLoopKeyFrameQueue.pop_front();
-        // 避免关键帧在被此线程处理时被擦除
+        // 标记当前关键帧在处理期间不可被擦除
         mpCurrentKF->SetNotErase();
     }
 
@@ -248,12 +248,12 @@ bool LoopClosing::DetectLoop()
                 {
                     ConsistentGroup cg = make_pair(spCandidateGroup,nCurrentConsistency);
                     vCurrentConsistentGroups.push_back(cg);
-                    vbConsistentGroup[iG]=true; // 避免多次包含同一组
+                    vbConsistentGroup[iG]=true; // 同一一致性组只记录一次
                 }
                 if(nCurrentConsistency>=mnCovisibilityConsistencyTh && !bEnoughConsistent)
                 {
                     mvpEnoughConsistentCandidates.push_back(pCandidateKF);
-                    bEnoughConsistent=true; // 避免多次插入相同候选
+                    bEnoughConsistent=true; // 一致候选只加入一次
                 }
             }
         }
@@ -316,7 +316,7 @@ bool LoopClosing::ComputeSim3()
     {
         KeyFrame* pKF = mvpEnoughConsistentCandidates[i];
 
-        // 避免在局部建图线程处理时被删除
+        // 标记候选关键帧在处理期间不可被删除
         pKF->SetNotErase();
 
         if(pKF->isBad())
@@ -861,7 +861,7 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
 
                     if(pMP->mnBAGlobalForKF==nLoopKF)
                     {
-                        // 如果通过全局BA优化，则直接更新
+                        // 已参与全局 BA 的点直接采用 BA 结果
                         if(!pMP->mPosGBA.empty())
                             pMP->SetWorldPos(pMP->mPosGBA);
                     }
@@ -904,7 +904,7 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
         {
             unique_lock<mutex> lock(mMutexGBA);
             // 被新闭环中止的 GBA 也必须复位标志，否则 isRunningGBA() 将永远为 true。
-            // 若被中止，线程对象已由中止方（RequestStopGBA）接管并 join，此处 mpThreadGBA 为空。
+            // 若被中止，线程对象已由中止方（RequestStopGBA）接管并 join，mpThreadGBA 为空。
             mbFinishedGBA = true;
             mbRunningGBA = false;
             if(mpThreadGBA)
@@ -974,4 +974,4 @@ bool LoopClosing::isFinished()
     return mbFinished;
 }
 
-} //namespace ORB_SLAM2
+} // namespace ORB_SLAM2

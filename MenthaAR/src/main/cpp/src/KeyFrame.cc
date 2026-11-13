@@ -88,11 +88,9 @@ void KeyFrame::SetPose(const cv::Mat &Tcw_)
 {
     std::unique_lock<std::mutex> lock(mMutexPose);
 
-    // 验证输入位姿的有效性，防止崩溃
+    // 位姿缺失或尺寸无效时回退为单位矩阵
     if(Tcw_.empty() || Tcw_.rows < 4 || Tcw_.cols < 4){
-        // 位姿无效时设为单位矩阵避免崩溃
         Tcw = cv::Mat::eye(4,4,CV_32F);
-        // 继续后续处理，使用单位矩阵
     } else {
         Tcw_.copyTo(Tcw);
     }
@@ -282,7 +280,7 @@ void KeyFrame::EraseMapPointMatch(const size_t &idx)
 
 void KeyFrame::EraseMapPointMatch(MapPoint* pMP)
 {
-    // 必须持 mMutexFeatures：此函数被 MapPoint::SetBadFlag/Replace 在回环/融合线程调用，与 LocalMapping/LoopClosing 持锁读取 mvpMapPoints 并发
+    // 必须持 mMutexFeatures：MapPoint::SetBadFlag/Replace 会在回环/融合线程调用本函数，与持锁读取 mvpMapPoints 的线程并发
     int idx = pMP->GetIndexInKeyFrame(this);
     unique_lock<mutex> lock(mMutexFeatures);
     if(idx>=0 && static_cast<size_t>(idx)<mvpMapPoints.size())
@@ -757,7 +755,7 @@ float KeyFrame::ComputeSceneMedianDepth(const int q)
         std::unique_lock<std::mutex> lock(mMutexFeatures, std::defer_lock);
         std::unique_lock<std::mutex> lock2(mMutexPose, std::defer_lock);
 
-        // 同时锁定以避免死锁
+        // 同时锁定特征与位姿互斥量
         std::lock(lock, lock2);
 
         vpMapPoints = mvpMapPoints;
@@ -803,4 +801,4 @@ std::shared_ptr<HBSTTree> KeyFrame::GetHBSTTree() {
     return mpTree;
 }
 
-} //namespace ORB_SLAM2
+} // namespace ORB_SLAM2
