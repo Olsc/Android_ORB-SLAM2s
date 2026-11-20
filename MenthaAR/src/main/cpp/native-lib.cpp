@@ -406,7 +406,7 @@ void LoadPlaneAndArInfo(const std::string& filename, int mapId)
     AR_OnMapDataLoaded(mapId, std::move(loaded));
 }
 
-// 按实际相机帧尺寸重算 SLAM 内参(兼容横/竖屏输入)，定义见下方 initSLAM 之后
+// 按实际相机帧尺寸重算 SLAM 内参(兼容横/竖屏输入)，定义见后文 initSLAM
 void updateScaledIntrinsics(int cameraWidth, int cameraHeight);
 
 int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
@@ -812,7 +812,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_detect(JNIEnv *env, jobject instance,
         }
         if (!detected) {
             detected = detectPlane(TcwForPlane, localMPs, ORB_SLAM2::PLANE_DETECT_RANSAC_ITERS);
-            // 纯视觉平面若接近水平(25°内)，吸附到重力方向，避免地面上的物体带着视觉拟合的倾斜放置
+            // 纯视觉平面若接近水平(25°内)，吸附到重力方向，防止地面物体带视觉拟合的倾斜
             if (detected && !upWorldHint.empty()) {
                 float tiltDeg = 0.0f;
                 const bool snapped = detected->SnapToGravity(upWorldHint, 25.0f, &tiltDeg);
@@ -980,7 +980,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativePublishArPose(
     std::atomic_thread_fence(std::memory_order_release);
     *mvpSeq = s + 2;
 
-    // SLAM_DONE_SEQ 在窗口之后推进，读端拿到的 frameId 可能比矩阵快照领先一帧。
+    // SLAM_DONE_SEQ 在窗口后推进，读端拿到的 frameId 可能比矩阵快照领先一帧。
     std::atomic_thread_fence(std::memory_order_release);
     *reinterpret_cast<volatile int32_t*>(shIntPtr(SH_OFF_SLAM_DONE_SEQ)) = gPendingDoneSeq;
 }

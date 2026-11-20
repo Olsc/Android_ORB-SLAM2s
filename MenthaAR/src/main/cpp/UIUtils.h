@@ -43,6 +43,6 @@ Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &v
 Plane* detectHorizontalPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &vMPs, const cv::Mat &upWorld);
 
 // 将OpenCV的Mat矩阵转换为OpenGL的列主序矩阵
-void getColMajorMatrixFromMat(float M[],cv::Mat &img);
+void getColMajorMatrixFromMat(float M[], cv::Mat &img);
 
 #endif // UTILS_H

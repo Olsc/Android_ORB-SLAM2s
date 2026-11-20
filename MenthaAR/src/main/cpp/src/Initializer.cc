@@ -577,7 +577,7 @@ bool Initializer::ReconstructF(vector<bool> &vbMatchesInliers, cv::Mat &F21, cv:
     if(nGood4>INITIALIZER_NGOOD_SIMILAR_RATIO*maxGood)
         nsimilar++;
 
-    // 如果没有明显的优胜者或三角测量点不足，则拒绝初始化
+    // 无明确优胜者或三角测量点不足时拒绝初始化
     if(maxGood<nMinGood || nsimilar>1)
     {
         return false;

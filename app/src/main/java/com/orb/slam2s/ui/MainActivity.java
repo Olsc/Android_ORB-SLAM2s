@@ -678,7 +678,7 @@ public class MainActivity extends ComponentActivity
         mLastFrameWidth = width;
         mLastFrameHeight = height;
         if (width >= height) {
-            // 恢复为横向帧(正常竖屏使用)，之后再次出现竖向帧时可重新提示
+            // 横向帧重置提示标记，后续竖向帧可重新提示
             mOrientationHintShown = false;
         } else if (!mOrientationHintShown) {
             mUiHandler.postDelayed(mCheckPortraitFrameRunnable, 1500);

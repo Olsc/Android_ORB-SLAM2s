@@ -294,7 +294,7 @@ void Plane::Recompute()
         R1 = cv::Mat::eye(3, 3, CV_32F);
     }
     else
-    {  // 法向量与 up 反向：绕 X 轴转 180 度，Y 轴翻到 -Y，避免物体倒置
+    {  // 法向量与 up 反向：绕 X 轴转 180 度，Y 轴翻到 -Y，使物体保持正立
         R1 = cv::Mat::eye(3, 3, CV_32F);
         R1.at<float>(1, 1) = -1.0f;
         R1.at<float>(2, 2) = -1.0f;
@@ -332,7 +332,7 @@ void Plane::Recompute()
     setIdentityM(glTpw);
     getColMajorMatrixFromMat(glTpw, Tpw);
 }
-// 把近似水平的平面吸附到重力方向：纯视觉拟合的倾斜误差在这里被消除
+// 把近似水平的平面吸附到重力方向：消除纯视觉拟合的倾斜误差
 bool Plane::SnapToGravity(const cv::Mat& upWorld, float maxAngleDeg, float* outAngleDeg)
 {
     if (upWorld.empty() || n.empty()) return false;

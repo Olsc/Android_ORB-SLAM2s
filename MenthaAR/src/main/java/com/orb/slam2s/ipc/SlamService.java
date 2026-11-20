@@ -224,7 +224,7 @@ public class SlamService extends Service {
             assistEnabled = true;
             poseFusion.setEnabled(true);
             sensor.start(this);
-            // 传感器重启会重置姿态基准，旧冻结偏移必须丢弃，否则首帧会大幅偏移
+            // 传感器重启会重置姿态基准，旧冻结偏移必须丢弃，否则首帧会出现可见偏移
             poseFusion.resetAlignment();
         } else {
             assistEnabled = false;

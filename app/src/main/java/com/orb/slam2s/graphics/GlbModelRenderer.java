@@ -346,7 +346,7 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
         requestRender();
     }
 
-    // 加载新地图前清空登记，避免沿用旧地图的状态
+    // 加载新地图前清空登记，防止沿用旧地图的状态
     public synchronized void clearObjectStates() {
         mapObjectStates.clear();
     }

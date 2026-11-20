@@ -33,7 +33,7 @@ public final class PoseFusion {
     // 视觉失效后沿用冻结位姿的宽限时间，仅用于平滑切换
     private static final long LOST_GRACE_NANOS = 250_000_000L;
 
-    // 切入保持态与视觉恢复时的过渡时长：避免位姿瞬时跳变
+    // 切入保持态与视觉恢复时的过渡时长：抑制位姿瞬时跳变
     private static final long ENTER_BLEND_NANOS = 200_000_000L;
     private static final long RECOVER_BLEND_NANOS = 300_000_000L;
 

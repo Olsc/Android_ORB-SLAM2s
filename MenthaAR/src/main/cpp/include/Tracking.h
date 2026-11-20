@@ -358,7 +358,7 @@ protected:
     int mCfgMatchChunk = SYSTEM_RELOC_CONFIG_MATCH_CHUNK;
     int mCfgMaxBindInliers = SYSTEM_RELOC_CONFIG_MAX_BIND_INLIERS;
     int mCfgMaxProjBinds = SYSTEM_RELOC_CONFIG_MAX_PROJ_BINDS;
-    // 重定位冷却，明显不匹配时跳过重型 PnP
+    // 重定位冷却，匹配度低时跳过完整 PnP
     int mRelocCooldownFrames = 0;
 
     int mPendingMapId = -1;

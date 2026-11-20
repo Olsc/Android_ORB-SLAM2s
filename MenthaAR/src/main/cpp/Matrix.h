@@ -38,15 +38,15 @@ void frustumM(float m[], int offset,
               float nearZ, float farZ);
 
 // 创建RUB坐标系的透视投影矩阵，RUB为OpenGL标准的右-上-后坐标系
-void frustumM_RUB(int w, int h, double fu, double fv, double u0, double v0, double zNear, double zFar ,float projectionMatrix[]);
+void frustumM_RUB(int w, int h, double fu, double fv, double u0, double v0, double zNear, double zFar, float projectionMatrix[]);
 
 // 设置为单位矩阵
 void setIdentityM(float m[]);
 
 // 将RDF坐标系矩阵转换为RUB坐标系视图矩阵，RDF为SLAM常用的右-下-前坐标系
-void getRUBViewMatrixFromRDF(float inM[],float outM[]);
+void getRUBViewMatrixFromRDF(float inM[], float outM[]);
 
 // 将RDF坐标系矩阵转换为RUB坐标系模型矩阵
-void getRUBModelMatrixFromRDF(float inM[],float outM[]);
+void getRUBModelMatrixFromRDF(float inM[], float outM[]);
 
 #endif // ORB_SLAM2_AR_MATRIX_H

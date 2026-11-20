@@ -269,7 +269,7 @@ cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInlie
                     if (wPow < 1.0) {
                         double n_needed = log(1.0 - mRansacProb) / log(1.0 - wPow);
                         n_needed = max(1.0, n_needed) * PNP_ADAPTIVE_SAFETY_FACTOR;
-                        // 已达到置信度所需的迭代数 → 收紧总上限，本次与后续调用都不再迭代
+                        // 已达到置信度所需的迭代数时收紧总上限，本次与后续调用都不再迭代
                         if ((double)mnIterations >= n_needed && mnIterations < mnAdaptiveMaxIts)
                             mnAdaptiveMaxIts = mnIterations;
                     }

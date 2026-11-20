@@ -266,7 +266,7 @@ final class SharedMemoryBuffer {
     }
 
     // 读状态字段（调用方已持有 readLock，且位姿快照已校验通过）。
-    // frameId 取 SLAM_DONE_SEQ：它由服务端在发布完 MVP 之后才推进，因此可能比快照领先一帧。
+    // frameId 取 SLAM_DONE_SEQ：它由服务端在发布完 MVP 后才推进，因此可能比快照领先一帧。
     private void readStatus(int[] outStatus) {
         outStatus[STATUS_TRACKING] = readInt(OFF_TRACKING_STATE);
         outStatus[STATUS_DRAWABLE] = readInt(OFF_DRAW_FLAG);

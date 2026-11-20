@@ -86,7 +86,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
     private int mFrameHeight;
     private Bitmap mCacheBitmap;
     private int mImageTextureId;
-    private volatile boolean mRendererSet = false; // setRenderer 之后才能 requestRender
+    private volatile boolean mRendererSet = false; // setRenderer 后才能 requestRender
     private int mImageTextureW, mImageTextureH; // 当前纹理尺寸，与预览位图不一致时重建
 
     private ProcessCameraProvider mCameraProvider;

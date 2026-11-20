@@ -89,7 +89,7 @@ public class OrientationSensor implements SensorEventListener {
     // 仅在合加速度接近 1g 时信任重力方向，排除手部线加速度造成的污染
     private static final float GRAVITY_NORM = 9.81f;
     private static final float GRAVITY_NORM_TOLERANCE = 1.5f;
-    // 相对姿态是否已完成首次校倾：首个有效重力样本直接对齐，之后才进入缓慢纠偏
+    // 相对姿态是否已完成首次校倾：首个有效重力样本直接对齐，随后进入缓慢纠偏
     private boolean relTiltInitialized = false;
 
     // 最新的设备系"上"方向(重力读数方向，已低通)，供平面检测使用，与姿态来源模式无关
@@ -465,7 +465,7 @@ public class OrientationSensor implements SensorEventListener {
         if (axisLen < 1e-6f) {
             return;
         }
-        // 首个有效样本一次对齐，消除初始姿态与重力不一致造成的世界系旋转；之后按小比例缓慢纠偏
+        // 首个有效样本一次对齐，消除初始姿态与重力不一致造成的世界系旋转；随后按小比例缓慢纠偏
         final float ratio = relTiltInitialized ? TILT_CORRECT_RATIO : 1.0f;
         relTiltInitialized = true;
         final float angle = (float) Math.atan2(axisLen, uz) * ratio;

@@ -85,7 +85,7 @@ final class Session {
                     Log.e(TAG, "初始化 SLAM 失败: " + e.getMessage());
                 }
             }
-            // 初始化指令下发之后才发布 service：帧提交一定排在 initSLAM 之后
+            // service 在初始化指令下发后才发布：帧提交一定排在 initSLAM 后
             service = s;
             framesAllowed = false;
             // 新服务进程没有旧的共享内存映射：标记待重连，下一帧提交时重新交出 fd（不在主线程做 Binder 调用）

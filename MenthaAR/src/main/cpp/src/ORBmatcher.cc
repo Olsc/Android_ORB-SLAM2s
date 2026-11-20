@@ -1004,7 +1004,7 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
 
     const int nMPs = vpMapPoints.size();
 
-    // 预快照：每点仅加锁读一次位置/法向/描述子，之后视为常量；isBad 仍在主循环内重检（原子读）
+    // 预快照：每点仅加锁读一次位置/法向/描述子并视为常量；isBad 仍在主循环内重检（原子读）
     static thread_local std::vector<FuseItem> s_items;
     s_items.clear();
     s_items.reserve(nMPs);

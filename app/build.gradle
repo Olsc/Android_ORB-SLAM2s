@@ -128,9 +128,9 @@ dependencies {
     implementation project(':MenthaAR-SDK')
     runtimeOnly project(':MenthaAR')
 
-    implementation 'androidx.camera:camera-core:1.6.2'
-    implementation 'androidx.camera:camera-camera2:1.6.2'
-    implementation 'androidx.camera:camera-lifecycle:1.6.2'
+    implementation 'androidx.camera:camera-core:1.7.0'
+    implementation 'androidx.camera:camera-camera2:1.7.0'
+    implementation 'androidx.camera:camera-lifecycle:1.7.0'
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
 }
 

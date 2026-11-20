@@ -96,7 +96,7 @@ public final class MenthaAR {
         public int trackingState;
         // 当前激活的地图 ID。
         public int mapId;
-        // SLAM 已完成的最新帧序号，单调递增；序号在矩阵发布之后才推进，可能领先快照一帧。
+        // SLAM 已完成的最新帧序号，单调递增；序号在矩阵发布后才推进，可能领先快照一帧。
         public int frameId;
         // 点云版本号，变化时才需要重新 readPointCloud 读取；点云区无 seqlock，可能与矩阵相差一帧。
         public int pointCloudId;
@@ -204,7 +204,7 @@ public final class MenthaAR {
         session.bind(workingDirectory().getAbsolutePath());
     }
 
-    // 停止定位：解绑服务并释放共享内存，之后可再次调用 start。
+    // 停止定位：解绑服务并释放共享内存，随后可再次调用 start。
     public void stop() {
         synchronized (lifecycleLock) {
             if (!running) return;
