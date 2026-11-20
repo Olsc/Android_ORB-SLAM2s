@@ -675,7 +675,27 @@ public class MainActivity extends ComponentActivity
     @Override
     public void onCameraStarted(int width, int height) {
         Log.d(TAG, "onCameraStarted: 摄像头视图启动，宽度=" + width + " 高度=" + height);
+        mLastFrameWidth = width;
+        mLastFrameHeight = height;
+        if (width >= height) {
+            // 恢复为横向帧(正常竖屏使用)，之后再次出现竖向帧时可重新提示
+            mOrientationHintShown = false;
+        } else if (!mOrientationHintShown) {
+            mUiHandler.postDelayed(mCheckPortraitFrameRunnable, 1500);
+        }
     }
+
+    private int mLastFrameWidth = 0;
+    private int mLastFrameHeight = 0;
+    private boolean mOrientationHintShown = false;
+    private final Runnable mCheckPortraitFrameRunnable = () -> {
+        if (!mOrientationHintShown && mLastFrameWidth > 0 && mLastFrameWidth < mLastFrameHeight) {
+            mOrientationHintShown = true;
+            Log.i(TAG, "相机帧为竖向缓冲(" + mLastFrameWidth + "x" + mLastFrameHeight
+                    + ")，疑似被锁横屏，提示用户改用竖屏");
+            showToast(getString(R.string.hint_landscape_lock_tilt));
+        }
+    };
 
     @Override
     public void onCameraStopped() {

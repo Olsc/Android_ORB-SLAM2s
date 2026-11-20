@@ -63,6 +63,7 @@
     <string name="btn_3dof_off">Jutiklis: IŠJ</string>
     <string name="btn_3dof_on">Jutiklis: ĮJ</string>
     <string name="hint_3dof_unavailable">Jutiklis nepasiekiamas</string>
+    <string name="hint_landscape_lock_tilt">Užfiksuokite įrenginį stačiu režimu</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 

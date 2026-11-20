@@ -61,6 +61,7 @@
     <string name="btn_3dof_off">Sensor: DESACTIVADO</string>
     <string name="btn_3dof_on">Sensor: ACTIVADO</string>
     <string name="hint_3dof_unavailable">Sensor non dispoñible</string>
+    <string name="hint_landscape_lock_tilt">Bloquea o dispositivo en vertical</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 

@@ -61,6 +61,7 @@
     <string name="btn_3dof_off">Սենսոր՝ ԱՆՋԱՏՎԱԾ</string>
     <string name="btn_3dof_on">Սենսոր՝ ՄԻԱՑՎԱԾ</string>
     <string name="hint_3dof_unavailable">Սենսորը հասանելի չէ</string>
+    <string name="hint_landscape_lock_tilt">Խնդրում ենք սարքը կողպել ուղղահայաց դիրքով</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 

@@ -60,6 +60,7 @@
     <string name="btn_3dof_off">센서: 꺼짐</string>
     <string name="btn_3dof_on">센서: 켜짐</string>
     <string name="hint_3dof_unavailable">센서를 사용할 수 없습니다</string>
+    <string name="hint_landscape_lock_tilt">기기를 세로 방향으로 고정해 주세요</string>
 
     <string name="hint_no_camera">사용 가능한 카메라가 감지되지 않았습니다 (검은 화면 모드)</string>
 

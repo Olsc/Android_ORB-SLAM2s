@@ -61,6 +61,7 @@
     <string name="btn_3dof_off">حسگر: خاموش</string>
     <string name="btn_3dof_on">حسگر: روشن</string>
     <string name="hint_3dof_unavailable">حسگر در دسترس نیست</string>
+    <string name="hint_landscape_lock_tilt">لطفاً دستگاه را روی حالت عمودی قفل کنید</string>
 
     <string name="hint_no_camera">دوربینی پیدا نشد (حالت صفحه سیاه)</string>
 

@@ -62,6 +62,7 @@
     <string name="btn_3dof_off">Сензор: ИСКЉ</string>
     <string name="btn_3dof_on">Сензор: УКЉ</string>
     <string name="hint_3dof_unavailable">Сензор није доступан</string>
+    <string name="hint_landscape_lock_tilt">Закључајте уређај у усправном (портретном) режиму</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 

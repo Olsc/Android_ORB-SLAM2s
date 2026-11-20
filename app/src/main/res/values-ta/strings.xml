@@ -61,6 +61,7 @@
     <string name="btn_3dof_off">சென்சார்: ஆஃப்</string>
     <string name="btn_3dof_on">சென்சார்: ஆன்</string>
     <string name="hint_3dof_unavailable">சென்சார் கிடைக்கவில்லை</string>
+    <string name="hint_landscape_lock_tilt">சாதனத்தை நிமிர்ந்த நிலையில் பூட்டவும்</string>
 
     <string name="hint_no_camera">கேமரா எதுவும் கண்டறியப்படவில்லை (கருப்புத் திரை பயன்முறை)</string>
 

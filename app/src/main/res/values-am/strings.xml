@@ -61,6 +61,7 @@
     <string name="btn_3dof_off">ሴንሰር፦ ጠፍቷል</string>
     <string name="btn_3dof_on">ሴንሰር፦ በርቷል</string>
     <string name="hint_3dof_unavailable">ሴንሰር አይገኝም</string>
+    <string name="hint_landscape_lock_tilt">እባክዎ መሣሪያውን በቁመት ያቆልፉ</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 

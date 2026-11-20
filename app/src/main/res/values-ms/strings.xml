@@ -60,6 +60,7 @@
     <string name="btn_3dof_off">Sensor: MATI</string>
     <string name="btn_3dof_on">Sensor: HIDUP</string>
     <string name="hint_3dof_unavailable">Sensor tidak tersedia</string>
+    <string name="hint_landscape_lock_tilt">Sila kunci peranti dalam mod potret</string>
 
     <string name="hint_no_camera">Tiada kamera dikesan (mod skrin hitam)</string>
 

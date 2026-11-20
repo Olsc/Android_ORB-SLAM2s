@@ -61,6 +61,7 @@
     <string name="btn_3dof_off">Sensori: JOAKTIV</string>
     <string name="btn_3dof_on">Sensori: AKTIV</string>
     <string name="hint_3dof_unavailable">Sensori nuk është i disponueshëm</string>
+    <string name="hint_landscape_lock_tilt">Kyçeni pajisjen në pozicion vertikal</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 

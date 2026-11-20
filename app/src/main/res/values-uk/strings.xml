@@ -63,6 +63,7 @@
     <string name="btn_3dof_off">Датчик: ВИКЛ</string>
     <string name="btn_3dof_on">Датчик: УВІМК</string>
     <string name="hint_3dof_unavailable">Датчик недоступний</string>
+    <string name="hint_landscape_lock_tilt">Заблокуйте пристрій у вертикальній орієнтації</string>
 
     <string name="hint_no_camera">Камеру не виявлено (режим чорного екрана)</string>
 

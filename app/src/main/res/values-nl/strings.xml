@@ -61,6 +61,7 @@
     <string name="btn_3dof_off">Sensor: UIT</string>
     <string name="btn_3dof_on">Sensor: AAN</string>
     <string name="hint_3dof_unavailable">Sensor niet beschikbaar</string>
+    <string name="hint_landscape_lock_tilt">Vergrendel het apparaat in staande stand</string>
 
     <string name="hint_no_camera">Geen camera gedetecteerd (zwart scherm-modus)</string>
 

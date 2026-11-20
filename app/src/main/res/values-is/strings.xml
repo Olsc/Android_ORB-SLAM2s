@@ -61,6 +61,7 @@
     <string name="btn_3dof_off">Skynjari: AF</string>
     <string name="btn_3dof_on">Skynjari: Á</string>
     <string name="hint_3dof_unavailable">Skynjari ekki í boði</string>
+    <string name="hint_landscape_lock_tilt">Læstu tækinu í lóðréttri stöðu</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 

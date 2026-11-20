@@ -65,6 +65,7 @@
     <string name="btn_3dof_off">المستشعر: إيقاف</string>
     <string name="btn_3dof_on">المستشعر: تشغيل</string>
     <string name="hint_3dof_unavailable">المستشعر غير متوفر</string>
+    <string name="hint_landscape_lock_tilt">يُرجى قفل الجهاز على الوضع الرأسي</string>
 
     <string name="hint_no_camera">لم يتم اكتشاف كاميرا (وضع الشاشة السوداء)</string>
 

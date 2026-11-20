@@ -61,6 +61,7 @@
     <string name="btn_3dof_off">Мэдрэгч: УНТРААСАН</string>
     <string name="btn_3dof_on">Мэдрэгч: АСААЛТТАЙ</string>
     <string name="hint_3dof_unavailable">Мэдрэгч боломжгүй</string>
+    <string name="hint_landscape_lock_tilt">Төхөөрөмжийг босоо чиглэлд түгжинэ үү</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 

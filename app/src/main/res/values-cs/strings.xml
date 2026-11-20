@@ -63,6 +63,7 @@
     <string name="btn_3dof_off">Senzor: VYP</string>
     <string name="btn_3dof_on">Senzor: ZAP</string>
     <string name="hint_3dof_unavailable">Senzor není k dispozici</string>
+    <string name="hint_landscape_lock_tilt">Zamkněte zařízení na výšku</string>
 
     <string name="hint_no_camera">Nebyla detekována žádná kamera (režim černé obrazovky)</string>
 

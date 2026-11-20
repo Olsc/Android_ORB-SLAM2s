@@ -61,6 +61,7 @@
     <string name="btn_3dof_off">Inzwa: CISHIWE</string>
     <string name="btn_3dof_on">Inzwa: CULISIWE</string>
     <string name="hint_3dof_unavailable">Inzwa ayitholakali</string>
+    <string name="hint_landscape_lock_tilt">Sicela ukhiye idivayisi iqonde nje</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 

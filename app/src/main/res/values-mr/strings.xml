@@ -61,6 +61,7 @@
     <string name="btn_3dof_off">सेन्सर: बंद</string>
     <string name="btn_3dof_on">सेन्सर: चालू</string>
     <string name="hint_3dof_unavailable">सेन्सर उपलब्ध नाही</string>
+    <string name="hint_landscape_lock_tilt">कृपया डिव्हाइस पोर्ट्रेटमध्ये लॉक करा</string>
 
     <string name="hint_no_camera">कोणताही कॅमेरा आढळला नाही (काळा स्क्रीन मोड)</string>
 

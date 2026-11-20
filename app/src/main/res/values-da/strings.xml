@@ -61,6 +61,7 @@
     <string name="btn_3dof_off">Sensor: FRA</string>
     <string name="btn_3dof_on">Sensor: TIL</string>
     <string name="hint_3dof_unavailable">Sensor ikke tilgængelig</string>
+    <string name="hint_landscape_lock_tilt">Lås enheden i stående format</string>
 
     <string name="hint_no_camera">Intet kamera fundet (sort skærm-tilstand)</string>
 

@@ -60,6 +60,7 @@
     <string name="btn_3dof_off">Sensor: NONAKTIF</string>
     <string name="btn_3dof_on">Sensor: AKTIF</string>
     <string name="hint_3dof_unavailable">Sensor tidak tersedia</string>
+    <string name="hint_landscape_lock_tilt">Harap kunci perangkat dalam mode potret</string>
 
     <string name="hint_no_camera">Tidak ada kamera terdeteksi (mode layar hitam)</string>
 

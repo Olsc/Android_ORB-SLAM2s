@@ -61,6 +61,7 @@
     <string name="btn_3dof_off">Sensor: SÖNÜLÜ</string>
     <string name="btn_3dof_on">Sensor: AKTİV</string>
     <string name="hint_3dof_unavailable">Sensor əlçatan deyil</string>
+    <string name="hint_landscape_lock_tilt">Zəhmət olmasa cihazı portret rejiminə kilidləyin</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 

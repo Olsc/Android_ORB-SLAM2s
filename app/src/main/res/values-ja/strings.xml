@@ -60,6 +60,7 @@
     <string name="btn_3dof_off">センサー: オフ</string>
     <string name="btn_3dof_on">センサー: オン</string>
     <string name="hint_3dof_unavailable">センサーを利用できません</string>
+    <string name="hint_landscape_lock_tilt">端末を縦向きに固定してください</string>
 
     <string name="hint_no_camera">利用可能なカメラが検出されませんでした（黒画面モード）</string>
 

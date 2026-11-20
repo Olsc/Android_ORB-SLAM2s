@@ -61,6 +61,7 @@
     <string name="btn_3dof_off">Érzékelő: KI</string>
     <string name="btn_3dof_on">Érzékelő: BE</string>
     <string name="hint_3dof_unavailable">Az érzékelő nem érhető el</string>
+    <string name="hint_landscape_lock_tilt">Zárolja a készüléket álló tájolásra</string>
 
     <string name="hint_no_camera">Nem található kamera (fekete képernyő mód)</string>
 

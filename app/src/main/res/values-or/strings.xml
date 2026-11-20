@@ -61,6 +61,7 @@
     <string name="btn_3dof_off">ସେନ୍ସର: ବନ୍ଦ</string>
     <string name="btn_3dof_on">ସେନ୍ସର: ଚାଲୁ</string>
     <string name="hint_3dof_unavailable">ସେନ୍ସର ଉପଲବ୍ଧ ନାହିଁ</string>
+    <string name="hint_landscape_lock_tilt">ଦୟାକରି ଡିଭାଇସ୍‌କୁ ପୋର୍ଟ୍ରେଟ୍‌ରେ ଲକ୍ କରନ୍ତୁ</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 
