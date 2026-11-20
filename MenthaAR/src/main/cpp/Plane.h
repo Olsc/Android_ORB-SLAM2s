@@ -38,6 +38,10 @@ public:
     // 从地图点集合构造平面，用 PCA（协方差矩阵最小特征向量）拟合
     Plane(const std::vector<ORB_SLAM2::MapPoint*> &vMPs, const cv::Mat &Tcw);
 
+    // 带重力先验的构造：upWorld 为 SLAM 世界系下指向天空的单位向量(3x1 float)，
+    // 平面法向直接取 upWorld，点云只用于确定平面位置，不再由 PCA 决定倾角
+    Plane(const std::vector<ORB_SLAM2::MapPoint*> &vMPs, const cv::Mat &Tcw, const cv::Mat &upWorld);
+
     // 从法向量和原点构造平面
     Plane(const float &nx, const float &ny, const float &nz,
           const float &ox, const float &oy, const float &oz,
@@ -52,14 +56,21 @@ public:
     // 根据地图点重新计算平面参数，用 PCA 更新法向量和原点
     void Recompute();
 
+    // 法向与重力(正或反方向)夹角不超过 maxAngleDeg 时，把法向吸附到重力方向并重算；返回是否吸附。
+    // outAngleDeg 返回吸附前法向与竖直轴的夹角(0~90)，用于日志诊断
+    bool SnapToGravity(const cv::Mat &upWorld, float maxAngleDeg, float *outAngleDeg = nullptr);
+
     // 平面法向量（3x1矩阵）
     cv::Mat n;
 
     // 平面原点（3x1矩阵）
     cv::Mat o;
 
-    // 平面绕法向量的任意旋转角度
+    // 平面绕法向量的旋转角度(物体水平朝向)；首次计算时取"正面朝向相机"，之后保持不变
     float rang;
+
+    // 水平朝向是否已确定(从文件加载的平面已带有保存的 rang)
+    bool mYawInitialized = false;
 
     // 从世界坐标系到平面坐标系的变换矩阵（4x4）
     cv::Mat Tpw;
@@ -75,6 +86,12 @@ public:
 
     // 从相机中心指向平面原点的向量
     cv::Mat XC;
+
+    // 重力先验：世界系下指向天空的单位向量，空表示纯视觉拟合
+    cv::Mat gUp;
+
+    // 诊断：点云 PCA 法向与重力竖直轴的夹角(0~90 度)，仅在使用重力先验时有效，否则为 -1
+    float pcaGravityAngleDeg = -1.0f;
 };
 
 #endif // ORB_SLAM2_AR_PLANE_H

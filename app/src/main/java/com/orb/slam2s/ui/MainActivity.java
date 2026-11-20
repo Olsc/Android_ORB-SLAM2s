@@ -435,11 +435,24 @@ public class MainActivity extends ComponentActivity
                     final String resDir = getSlamDir().getAbsolutePath() + "/maps/" + mapName + ".bin";
                     if (mMenthaAR != null) {
                         mMenthaAR.saveMap(resDir);
+                        // 缩放与方向由渲染层持有，随地图一并保存，读取后才能还原
+                        if (mModelRenderer != null) {
+                            MapManager.writeArObjectState(resDir, mModelRenderer.getObjectState());
+                        }
                     }
                     showToast(getString(R.string.hint_map_saved, mapName));
                 })
                 .setNegativeButton(getString(R.string.button_cancel), null)
                 .show();
+    }
+
+    // 按 loadMaps 分配地图 ID 的顺序(0,1,2...)还原每张地图保存的 AR 物体缩放与方向
+    private void restoreArObjectStates(List<String> paths) {
+        if (mModelRenderer == null) return;
+        mModelRenderer.clearObjectStates();
+        for (int i = 0; i < paths.size(); i++) {
+            mModelRenderer.setObjectStateForMap(i, MapManager.readArObjectState(paths.get(i)));
+        }
     }
 
     private void showMapListDialog(final boolean showManage) {
@@ -470,6 +483,7 @@ public class MainActivity extends ComponentActivity
                         }
                         if (!paths.isEmpty()) {
                             if (mMenthaAR != null) mMenthaAR.loadMaps(paths);
+                            restoreArObjectStates(paths);
                             final int loadedCount = paths.size();
                             showToast(getResources().getQuantityString(R.plurals.hint_maps_loaded, loadedCount, loadedCount));
                         }
@@ -498,6 +512,7 @@ public class MainActivity extends ComponentActivity
                         case 0:
                             final String mapPath = getSlamDir().getAbsolutePath() + "/maps/" + mapInfo.name + ".bin";
                             if (mMenthaAR != null) mMenthaAR.loadMap(mapPath);
+                            restoreArObjectStates(java.util.Collections.singletonList(mapPath));
                             showToast(getString(R.string.hint_map_loaded, mapInfo.name));
                             break;
                         case 1:

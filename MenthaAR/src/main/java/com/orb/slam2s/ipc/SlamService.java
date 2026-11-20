@@ -44,6 +44,9 @@ public class SlamService extends Service {
     private final float[] rawPose = new float[48];
     private final int[] poseInfo = new int[3];
     private final float[] sensorRotation = new float[16];
+    // 平面检测的重力方向缓存(设备系与相机系)，仅在 SLAM 处理线程使用
+    private final float[] gravityUpDevice = new float[3];
+    private final float[] gravityUpCamera = new float[3];
     private final float[] fusedModel = new float[16];
     private final float[] fusedView = new float[16];
     private final float[] fusedProj = new float[16];
@@ -349,6 +352,16 @@ public class SlamService extends Service {
     private void doDetectPlane() {
         if (nativeHelper == null) return;
         try {
+            // 把设备重力方向换算到相机系后下发，让平面检测按水平面优先；传感器未开启或无读数时回退纯视觉
+            final float[] up = gravityUpDevice;
+            final float[] upCam = gravityUpCamera;
+            boolean hasUp = false;
+            final OrientationSensor sensor = orientationSensor;
+            if (assistEnabled && sensor != null && sensor.copyGravityUp(up)) {
+                poseFusion.deviceToCamera(up, upCam);
+                hasUp = true;
+            }
+            nativeHelper.setGravityHint(upCam[0], upCam[1], upCam[2], hasUp);
             // MVP 由 native 写回共享内存，UI 渲染线程直接读取，无需 binder 推送
             nativeHelper.detectPlane();
         } catch (Exception e) {

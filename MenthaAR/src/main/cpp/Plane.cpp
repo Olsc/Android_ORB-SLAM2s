@@ -110,6 +110,17 @@ Plane::Plane(const std::vector<ORB_SLAM2::MapPoint*>& vMPs, const cv::Mat& Tcw) 
     Recompute(); // 计算平面参数
 }
 
+// 带重力先验构造：法向固定为重力反方向
+Plane::Plane(const std::vector<ORB_SLAM2::MapPoint*>& vMPs, const cv::Mat& Tcw, const cv::Mat& upWorld) :
+    mvMPs(vMPs), mTcw(Tcw.clone()), gUp(upWorld.clone())
+{
+    rang = -3.14159265358979323846f / 2 +
+           static_cast<float>(static_cast<double>(rand()) / static_cast<double>(RAND_MAX)) *
+           3.14159265358979323846f;
+
+    Recompute();
+}
+
 // 从法向量和原点直接构造平面，无需重新计算
 Plane::Plane(const float& nx, const float& ny, const float& nz,
              const float& ox, const float& oy, const float& oz,
@@ -119,6 +130,7 @@ Plane::Plane(const float& nx, const float& ny, const float& nz,
     n = (cv::Mat_<float>(3, 1) << nx, ny, nz);
     o = (cv::Mat_<float>(3, 1) << ox, oy, oz);
     rang = rang_;
+    mYawInitialized = true;
 
     // 计算从世界坐标系到平面坐标系的变换矩阵，使平面 Y 轴与 up=[0,1,0]^T 对齐
     // v = up.cross(n) = [nz, 0, -nx]^T
@@ -211,6 +223,23 @@ void Plane::Recompute()
     float b = (float)evec.at<double>(2, 1);
     float c = (float)evec.at<double>(2, 2);
 
+    // 有重力先验时法向直接取天空方向：平面必为水平面，PCA 在点数少或点分布窄时的倾斜误差被完全消除
+    const bool useGravity = !gUp.empty();
+    if (useGravity)
+    {
+        // 约定：法向 n 指向"背离相机/地面内部"，渲染器对模型再做一次 Rx(180)，模型的"上"= -n。
+        // gUp 是天空方向，所以 n = -gUp，物体才会正立在地面上
+        {
+            // 诊断：内点自身的平面法向(PCA)与重力方向应近似平行，夹角大说明重力换算有误
+            const float pn = std::sqrt(a * a + b * b + c * c);
+            const float d = (a * gUp.at<float>(0) + b * gUp.at<float>(1) + c * gUp.at<float>(2)) / (pn > 0 ? pn : 1.0f);
+            pcaGravityAngleDeg = std::acos(std::min(1.0f, std::fabs(d))) * 180.0f / 3.14159265358979323846f;
+        }
+        a = -gUp.at<float>(0);
+        b = -gUp.at<float>(1);
+        c = -gUp.at<float>(2);
+    }
+
     const float f = 1.0f / std::sqrt(a * a + b * b + c * c);
 
     // 首次计算时，计算从相机中心指向平面原点的向量
@@ -230,7 +259,7 @@ void Plane::Recompute()
     }
 
     // 确保法向量指向相机侧（点积>0则反向）
-    if ((XC.at<float>(0) * a + XC.at<float>(1) * b + XC.at<float>(2) * c) > 0)
+    if (!useGravity && (XC.at<float>(0) * a + XC.at<float>(1) * b + XC.at<float>(2) * c) > 0)
     {
         a = -a;
         b = -b;
@@ -253,21 +282,70 @@ void Plane::Recompute()
 
     Tpw = cv::Mat::eye(4, 4, CV_32F);
 
-    // 组合旋转：先将法向量旋转到up方向，再绕法向量旋转
+    // 组合旋转：先把局部 Y 轴转到法向量 n(物体"上"方向垂直于平面)，再绕法向量旋转 rang
+    cv::Mat R1;
     if (sa > 1e-6f)
     {  // 法向量不平行于up向量
         const float factor = ang / sa;
-        cv::Mat R1 = ExpSO3(vx * factor, vy * factor, vz * factor);
-        cv::Mat R2 = ExpSO3(0.0f, rang, 0.0f);
-        Mat33Mul(R1, R2).copyTo(Tpw.rowRange(0, 3).colRange(0, 3)); // 对子矩阵头赋值只会替换临时头，必须 copyTo 才写进 Tpw
+        R1 = ExpSO3(vx * factor, vy * factor, vz * factor);
+    }
+    else if (ny >= 0.0f)
+    {  // 法向量与 up 同向，无需旋转
+        R1 = cv::Mat::eye(3, 3, CV_32F);
     }
     else
-    {  // 法向量平行于up向量（如水平地面），绕up旋转rang角度
-        ExpSO3(0.0f, rang, 0.0f).copyTo(Tpw.rowRange(0, 3).colRange(0, 3));
+    {  // 法向量与 up 反向：绕 X 轴转 180 度，Y 轴翻到 -Y，避免物体倒置
+        R1 = cv::Mat::eye(3, 3, CV_32F);
+        R1.at<float>(1, 1) = -1.0f;
+        R1.at<float>(2, 2) = -1.0f;
     }
+
+    // 首次计算时让物体正面(局部 +Z)朝向相机：把相机方向投影到平面内，换算到 R1 局部系后取方位角。
+    // 不再随机，物体始终竖直立在平面上并面向使用者
+    if (!mYawInitialized && !mTcw.empty())
+    {
+        const float* tc = mTcw.ptr<float>();
+        const int st = static_cast<int>(mTcw.step / sizeof(float));
+        const float t0 = tc[0 * st + 3], t1 = tc[1 * st + 3], t2 = tc[2 * st + 3];
+        const float camX = -(tc[0 * st + 0] * t0 + tc[1 * st + 0] * t1 + tc[2 * st + 0] * t2);
+        const float camY = -(tc[0 * st + 1] * t0 + tc[1 * st + 1] * t1 + tc[2 * st + 1] * t2);
+        const float camZ = -(tc[0 * st + 2] * t0 + tc[1 * st + 2] * t1 + tc[2 * st + 2] * t2);
+        float dx = camX - meanX, dy = camY - meanY, dz = camZ - meanZ;
+        const float along = dx * nx + dy * ny + dz * nz;
+        dx -= along * nx; dy -= along * ny; dz -= along * nz; // 去掉沿法向的分量，只保留平面内方向
+        const float* r1 = R1.ptr<float>();
+        const float lx = r1[0] * dx + r1[3] * dy + r1[6] * dz; // R1^T * d 的 x 分量
+        const float lz = r1[2] * dx + r1[5] * dy + r1[8] * dz; // R1^T * d 的 z 分量
+        if (lx * lx + lz * lz > 1e-10f)
+        {
+            // 渲染器对模型做了 Rx(180)，模型 +Z 在平面局部系中对应 -Z，所以朝向角要再加 π，正面才朝向相机
+            rang = std::atan2(lx, lz) + 3.14159265358979323846f;
+        }
+        mYawInitialized = true;
+    }
+
+    cv::Mat R2 = ExpSO3(0.0f, rang, 0.0f);
+    Mat33Mul(R1, R2).copyTo(Tpw.rowRange(0, 3).colRange(0, 3)); // 对子矩阵头赋值只会替换临时头，必须 copyTo 才写进 Tpw
     o.copyTo(Tpw.col(3).rowRange(0, 3)); // 设置平移部分
 
     // 转换为OpenGL格式
     setIdentityM(glTpw);
     getColMajorMatrixFromMat(glTpw, Tpw);
+}
+// 把近似水平的平面吸附到重力方向：纯视觉拟合的倾斜误差在这里被消除
+bool Plane::SnapToGravity(const cv::Mat& upWorld, float maxAngleDeg, float* outAngleDeg)
+{
+    if (upWorld.empty() || n.empty()) return false;
+
+    const float dot = n.at<float>(0) * upWorld.at<float>(0) +
+                      n.at<float>(1) * upWorld.at<float>(1) +
+                      n.at<float>(2) * upWorld.at<float>(2);
+    const float angle = std::acos(std::min(1.0f, std::fabs(dot))) * 180.0f / 3.14159265358979323846f;
+    if (outAngleDeg) *outAngleDeg = angle;
+    if (angle > maxAngleDeg) return false;
+
+    // gUp 记录天空方向，Recompute 内部取 n = -gUp，使物体在地面/桌面一类水平面上正立
+    gUp = upWorld.clone();
+    Recompute();
+    return true;
 }

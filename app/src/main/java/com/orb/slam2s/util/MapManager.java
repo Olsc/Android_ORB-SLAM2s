@@ -34,6 +34,8 @@ public class MapManager {
     private static final String TAG = "MapManager";
     private static final String MAP_DIR_NAME = "SLAM/maps";
     private static final String MAP_METADATA_EXT = ".json";
+    // AR 物体用户状态(缩放、水平旋转、俯仰)的配套文件，紧随地图文件 *.bin 保存
+    public static final String AR_OBJECT_STATE_EXT = ".arobj";
 
     private final File mMapDirectory;
 
@@ -47,11 +49,41 @@ public class MapManager {
         }
     }
 
+    // 写入 AR 物体用户状态：state = {缩放系数, 水平旋转角, 俯仰角}
+    public static void writeArObjectState(String mapBinPath, float[] state) {
+        try (FileWriter w = new FileWriter(mapBinPath + AR_OBJECT_STATE_EXT, false)) {
+            w.write("1 " + state[0] + " " + state[1] + " " + state[2]);
+        } catch (Exception e) {
+            Log.w(TAG, "保存 AR 物体状态失败: " + e.getMessage());
+        }
+    }
+
+    // 读取 AR 物体用户状态，文件不存在或损坏时返回 null
+    public static float[] readArObjectState(String mapBinPath) {
+        File f = new File(mapBinPath + AR_OBJECT_STATE_EXT);
+        if (!f.exists()) return null;
+        try (FileInputStream fis = new FileInputStream(f)) {
+            byte[] buf = new byte[(int) Math.min(f.length(), 256)];
+            int n = fis.read(buf);
+            String[] t = new String(buf, 0, Math.max(n, 0), StandardCharsets.UTF_8).trim().split("\\s+");
+            if (t.length < 4 || !"1".equals(t[0])) return null;
+            float[] out = {Float.parseFloat(t[1]), Float.parseFloat(t[2]), Float.parseFloat(t[3])};
+            for (float v : out) {
+                if (Float.isNaN(v) || Float.isInfinite(v)) return null;
+            }
+            return out;
+        } catch (Exception e) {
+            Log.w(TAG, "读取 AR 物体状态失败: " + e.getMessage());
+            return null;
+        }
+    }
+
     public boolean deleteMap(String mapName) {
         try {
             File mapFile = new File(mMapDirectory, mapName + ".bin");
             File arInfoFile = new File(mMapDirectory, mapName + ".bin.arinfo");
             File metaFile = new File(mMapDirectory, mapName + MAP_METADATA_EXT);
+            File arObjFile = new File(mMapDirectory, mapName + ".bin" + AR_OBJECT_STATE_EXT);
 
             boolean success = true;
             if (mapFile.exists()) {
@@ -62,6 +94,9 @@ public class MapManager {
             }
             if (metaFile.exists()) {
                 success &= metaFile.delete();
+            }
+            if (arObjFile.exists()) {
+                success &= arObjFile.delete();
             }
 
             if (success) {
