@@ -41,6 +41,7 @@ import java.nio.FloatBuffer;
 // 共享内存布局：256 字节头部 + Y 灰度双缓冲 + 点云区，常量与 native 的 SH_* 一致。
 final class SharedMemoryBuffer {
     private static final String TAG = "MenthaAR";
+    private static final String SHARED_MEMORY_NAME = "MenthaARFrameBuffer";
 
     private static final int HEADER_SIZE = 256;
 
@@ -53,32 +54,32 @@ final class SharedMemoryBuffer {
     private static final int OFF_SLAM_DONE_SEQ = 20;
     private static final int OFF_TRACKING_STATE = 24;
     private static final int OFF_DRAW_FLAG = 28;
-    private static final int OFF_POINTCLOUD_BYTES = 32;
+    private static final int OFF_POINT_CLOUD_BYTES = 32;
     private static final int OFF_ACTIVE_MAP_ID = 36;
     private static final int OFF_MVP = 40;          // 48 floats = M[16] + V[16] + P[16]
     private static final int OFF_MVP_SEQ = 232;     // seqlock，奇数表示服务端正在写
-    private static final int OFF_POINTCLOUD_SEQ = 236;
+    private static final int OFF_POINT_CLOUD_SEQ = 236;
 
     // 点云上限：3000 点 * 7 floats * 4B，取 96 KB 对齐
-    static final int POINTCLOUD_MAX_BYTES = 96 * 1024;
+    static final int POINT_CLOUD_MAX_BYTES = 96 * 1024;
 
     // readResult 输出数组的下标。
     static final int STATUS_TRACKING = 0;
     static final int STATUS_DRAWABLE = 1;
     static final int STATUS_MAP_ID = 2;
-    static final int STATUS_POINTCLOUD_SEQ = 3;
+    static final int STATUS_POINT_CLOUD_SEQ = 3;
     static final int STATUS_FRAME_ID = 4;
     static final int STATUS_LENGTH = 5;
 
     private final int bufferSize;
 
     private SharedMemory sharedMemory;          // API 27+ 共享内存
-    private MemoryFile memoryFile;              // API < 27 匿名内存文件 (ashmem)
+    private MemoryFile memoryFile;              // API < 27 匿名内存文件
     private ByteBuffer mappedBuffer;            // API 27+ 本进程映射的直接内存
     private FloatBuffer mappedFloatView;        // mappedBuffer 的 float 视图
     private ParcelFileDescriptor pfd;           // 传递给 SLAM 进程的 fd
 
-    // 读映射与关闭共用这把锁，close() 会 munmap，锁外访问 mappedBuffer 即 use-after-unmap。
+    // 读映射与关闭共用这把锁，close() 会解除映射，锁外访问 mappedBuffer 即访问已失效内存。
     private final Object readLock = new Object();
 
     // seqlock 读端全屏障：一次 volatile 写接一次 volatile 读构成 StoreLoad 屏障，保证序号与数据的读取不被重排（ART 对 volatile 生成 ldar/stlr/dmb）
@@ -94,11 +95,11 @@ final class SharedMemoryBuffer {
     private volatile int frameH;
 
     @SuppressWarnings("JavaReflectionMemberAccess")
-    SharedMemoryBuffer(String name, int size) {
+    SharedMemoryBuffer(int size) {
         this.bufferSize = size;
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-                sharedMemory = SharedMemory.create(name, size);
+                sharedMemory = SharedMemory.create(SHARED_MEMORY_NAME, size);
                 mappedBuffer = sharedMemory.mapReadWrite();
                 mappedBuffer.order(ByteOrder.LITTLE_ENDIAN);
                 mappedFloatView = mappedBuffer.asFloatBuffer();
@@ -116,8 +117,8 @@ final class SharedMemoryBuffer {
                     throw new IllegalStateException("无法从 SharedMemory 获取 ParcelFileDescriptor");
                 }
             } else {
-                // API 23~26: 使用系统 MemoryFile (ashmem 纯内存)
-                memoryFile = new MemoryFile(name, size);
+                // API 23~26: 使用系统 MemoryFile（纯内存匿名文件）
+                memoryFile = new MemoryFile(SHARED_MEMORY_NAME, size);
                 @SuppressLint("DiscouragedPrivateApi")
                 Method getFdMethod = MemoryFile.class.getDeclaredMethod("getFileDescriptor");
                 getFdMethod.setAccessible(true);
@@ -135,19 +136,19 @@ final class SharedMemoryBuffer {
     }
 
     static int requiredSize(int width, int height) {
-        return HEADER_SIZE + 2 * width * height + POINTCLOUD_MAX_BYTES;
+        return HEADER_SIZE + 2 * width * height + POINT_CLOUD_MAX_BYTES;
     }
 
     static int pointCloudCapacity() {
-        return POINTCLOUD_MAX_BYTES / 4;
+        return POINT_CLOUD_MAX_BYTES / 4;
     }
 
-    boolean isAvailable() {
-        return mappedBuffer != null || memoryFile != null;
+    boolean isUnavailable() {
+        return mappedBuffer == null && memoryFile == null;
     }
 
     boolean initHeader(int width, int height) {
-        if (!isAvailable()) return false;
+        if (isUnavailable()) return false;
         frameW = width;
         frameH = height;
         writeInt(0, HEADER_MAGIC);
@@ -157,7 +158,7 @@ final class SharedMemoryBuffer {
         writeInt(OFF_UI_WRITE_SEQ, 0);
         writeInt(OFF_SLAM_DONE_SEQ, 0);
         writeInt(OFF_MVP_SEQ, 0);
-        writeInt(OFF_POINTCLOUD_SEQ, 0);
+        writeInt(OFF_POINT_CLOUD_SEQ, 0);
         return true;
     }
 
@@ -181,7 +182,7 @@ final class SharedMemoryBuffer {
         writeInt(OFF_UI_WRITE_SEQ, seq);
     }
 
-    // 主线程每个 vsync 都会调用：必须与 close() 互斥，否则可能读到已 munmap 的映射
+    // 主线程每个 vsync 都会调用：必须与 close() 互斥，否则可能读到已解除映射的内存
     int readSlamDoneSeq() {
         synchronized (readLock) {
             return readInt(OFF_SLAM_DONE_SEQ);
@@ -189,7 +190,7 @@ final class SharedMemoryBuffer {
     }
 
     // 一次 seqlock 读窗口内读取 48 个矩阵 float，窗口内只做数据拷贝，失败返回 false。
-    // 状态字段在序号校验通过后补读，不参与一致性判定。
+    // 状态字段在序号校验通过后再读取，不参与一致性判定。
     boolean readResult(float[] outMvp, int[] outStatus) {
         if (outMvp == null || outMvp.length < 48 || outStatus == null || outStatus.length < STATUS_LENGTH) {
             return false;
@@ -230,14 +231,14 @@ final class SharedMemoryBuffer {
     // 读取点云（每点 7 floats: x, y, z, r, g, b, size），返回 float 个数。
     // 点云区无服务端 seqlock，用前后序号做乐观校验，序号变化则重试一次，两侧不一致返回 0。
     int readPointCloud(float[] out, int maxFloats) {
-        if (out == null || out.length <= 0) return 0;
+        if (out == null || out.length == 0) return 0;
         synchronized (readLock) {
             final boolean mapped = mappedFloatView != null;
             if (!mapped && memoryFile == null) return 0;
             for (int attempt = 0; attempt < 2; attempt++) {
-                final int seq1 = readInt(OFF_POINTCLOUD_SEQ);
-                final int bytes = readInt(OFF_POINTCLOUD_BYTES);
-                if (bytes <= 0 || bytes > POINTCLOUD_MAX_BYTES) return 0;
+                final int seq1 = readInt(OFF_POINT_CLOUD_SEQ);
+                final int bytes = readInt(OFF_POINT_CLOUD_BYTES);
+                if (bytes <= 0 || bytes > POINT_CLOUD_MAX_BYTES) return 0;
                 final int floats = Math.min(bytes / 4, Math.min(maxFloats, out.length));
                 if (floats <= 0) return 0;
 
@@ -258,7 +259,7 @@ final class SharedMemoryBuffer {
                     }
                 }
                 fullFence();
-                if (seq1 == readInt(OFF_POINTCLOUD_SEQ)) return floats;
+                if (seq1 == readInt(OFF_POINT_CLOUD_SEQ)) return floats;
             }
             // 连续两次都被服务端重写打断：本帧放弃，等下一次点云序号变化再读
             return 0;
@@ -271,7 +272,7 @@ final class SharedMemoryBuffer {
         outStatus[STATUS_TRACKING] = readInt(OFF_TRACKING_STATE);
         outStatus[STATUS_DRAWABLE] = readInt(OFF_DRAW_FLAG);
         outStatus[STATUS_MAP_ID] = readInt(OFF_ACTIVE_MAP_ID);
-        outStatus[STATUS_POINTCLOUD_SEQ] = readInt(OFF_POINTCLOUD_SEQ);
+        outStatus[STATUS_POINT_CLOUD_SEQ] = readInt(OFF_POINT_CLOUD_SEQ);
         outStatus[STATUS_FRAME_ID] = readInt(OFF_SLAM_DONE_SEQ);
     }
 
@@ -290,8 +291,9 @@ final class SharedMemoryBuffer {
     }
 
     // 把一帧灰度拷入第 bufIndex 个 Y 缓冲。
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     boolean writeFrame(byte[] gray, int bufIndex, int width, int height) {
-        if (!isAvailable() || gray == null) return false;
+        if (isUnavailable() || gray == null) return false;
         frameW = width;
         frameH = height;
         final int count = Math.min(width * height, gray.length);

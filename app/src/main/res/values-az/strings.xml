@@ -6,11 +6,8 @@
     <string name="btn_load">Yüklə</string>
     <string name="btn_map">Xəritə</string>
     <string name="btn_point_cloud">✓Nöqtə buludu</string>
-    <string name="loading_slam_init">SLAM sistemi işə salınır…</string>
-    <string name="loading_slam_wait">Күте тұрыңыз</string>
     <string name="slam_init_complete">SLAM жүйесі дайын</string>
     <string name="slam_connection_lost">SLAM xidmətinin bağlantısı kəsildi. Yenidən qoşulmaq üçün tətbiqi yenidən açın.</string>
-    <string name="slam_init_failed">Inicializácia SLAM zlyhala: %1$s</string>
     <string name="hint_request_sent">Požiadavka odoslaná</string>
     <string name="hint_pointcloud_enabled">Bodový oblak povolený</string>
     <string name="hint_pointcloud_disabled">Bodový oblak zakázaný</string>

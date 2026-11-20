@@ -6,11 +6,8 @@
     <string name="btn_load">Laai</string>
     <string name="btn_map">Kaart</string>
     <string name="btn_point_cloud">✓Puntwolk</string>
-    <string name="loading_slam_init">Inisialiseer SLAM-stelsel…</string>
-    <string name="loading_slam_wait">Wag asseblief</string>
     <string name="slam_init_complete">SLAM-stelsel geïnisialiseer</string>
     <string name="slam_connection_lost">SLAM-diens het ontkoppel. Heropen die program om weer te koppel.</string>
-    <string name="slam_init_failed">Inicializácia SLAM zlyhala: %1$s</string>
     <string name="hint_request_sent">Požiadavka odoslaná</string>
     <string name="hint_pointcloud_enabled">Bodový oblak povolený</string>
     <string name="hint_pointcloud_disabled">Bodový oblak zakázaný</string>

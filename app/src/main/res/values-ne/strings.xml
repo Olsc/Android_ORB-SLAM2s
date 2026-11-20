@@ -6,11 +6,8 @@
     <string name="btn_load">लोड गर्नुहोस्</string>
     <string name="btn_map">नक्सा</string>
     <string name="btn_point_cloud">✓पोइन्ट क्लाउड</string>
-    <string name="loading_slam_init">SLAM प्रणाली प्रारम्भ गरिँदैछ…</string>
-    <string name="loading_slam_wait">Күте тұрыңыз</string>
     <string name="slam_init_complete">SLAM жүйесі дайын</string>
     <string name="slam_connection_lost">SLAM सेवासँगको जडान टुट्यो। पुनः जडान गर्न एप फेरि खोल्नुहोस्।</string>
-    <string name="slam_init_failed">Inicializácia SLAM zlyhala: %1$s</string>
     <string name="hint_request_sent">Požiadavka odoslaná</string>
     <string name="hint_pointcloud_enabled">Bodový oblak povolený</string>
     <string name="hint_pointcloud_disabled">Bodový oblak zakázaný</string>

@@ -6,11 +6,8 @@
     <string name="btn_load">بارگذاری</string>
     <string name="btn_map">نقشه</string>
     <string name="btn_point_cloud">✓ابر نقطه</string>
-    <string name="loading_slam_init">در حال راه‌اندازی سیستم SLAM…</string>
-    <string name="loading_slam_wait">لطفاً صبر کنید، این ممکن است کمی طول بکشد</string>
     <string name="slam_init_complete">سیستم SLAM راه‌اندازی شد</string>
     <string name="slam_connection_lost">اتصال سرویس SLAM قطع شد. برای اتصال دوباره، برنامه را باز کنید.</string>
-    <string name="slam_init_failed">راه‌اندازی SLAM ناموفق بود: %1$s</string>
     <string name="hint_request_sent">درخواست ارسال شد</string>
     <string name="hint_pointcloud_enabled">ابر نقطه فعال شد</string>
     <string name="hint_pointcloud_disabled">ابر نقطه غیرفعال شد</string>

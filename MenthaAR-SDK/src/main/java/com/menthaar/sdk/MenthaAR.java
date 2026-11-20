@@ -76,6 +76,8 @@ public final class MenthaAR {
     }
 
     // 追踪结果快照，位姿与状态取自同一次发布；复用实例可做到每帧零分配。
+    // TRACKING_* 与 frameId 是供调用方判断状态的公开字段，SDK 内部不读取。
+    @SuppressWarnings("unused")
     public static final class Result {
         public static final int TRACKING_NOT_READY = -1;
         public static final int TRACKING_NO_IMAGE = 0;
@@ -215,6 +217,7 @@ public final class MenthaAR {
     }
 
     // 是否已启动；引擎是否就绪以 Listener.onReady 回调为准。
+    @SuppressWarnings("unused")
     public boolean isRunning() {
         return running;
     }
@@ -230,6 +233,7 @@ public final class MenthaAR {
     }
 
     // 提交一帧灰度图，长度至少 width*height；false 表示未就绪或背压丢帧。
+    @SuppressWarnings("UnusedReturnValue")
     public boolean submitFrame(byte[] gray, int width, int height) {
         return session.submitFrame(gray, width, height);
     }
@@ -240,11 +244,13 @@ public final class MenthaAR {
     }
 
     // 提交 beginFrame 得到的帧。
+    @SuppressWarnings("UnusedReturnValue")
     public boolean submitFrame(Frame frame) {
         return session.submitFrame(frame);
     }
 
     // 读取结果快照并返回新对象；高频路径请改用 readResult(Result)。
+    @SuppressWarnings("unused")
     public Result readResult() {
         final Result result = new Result();
         return readResult(result) ? result : null;
@@ -262,7 +268,7 @@ public final class MenthaAR {
         out.trackingState = out.rawStatus[SharedMemoryBuffer.STATUS_TRACKING];
         out.mapId = out.rawStatus[SharedMemoryBuffer.STATUS_MAP_ID];
         out.frameId = out.rawStatus[SharedMemoryBuffer.STATUS_FRAME_ID];
-        out.pointCloudId = out.rawStatus[SharedMemoryBuffer.STATUS_POINTCLOUD_SEQ];
+        out.pointCloudId = out.rawStatus[SharedMemoryBuffer.STATUS_POINT_CLOUD_SEQ];
         return true;
     }
 
@@ -317,7 +323,7 @@ public final class MenthaAR {
         return pointCloudVisible;
     }
 
-    // 调整 AR 物体缩放：参数为手势缩放步进，1.0 表示不变。
+    // 调整 AR 物体缩放：参数为手势缩放的相对倍率，1.0 表示不变。
     public void setArObjectScale(float scaleStep) {
         session.setArObjectScale(scaleStep);
     }

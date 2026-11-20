@@ -6,11 +6,8 @@
     <string name="btn_load">Muat</string>
     <string name="btn_map">Peta</string>
     <string name="btn_point_cloud">✓Awan Titik</string>
-    <string name="loading_slam_init">Menginisialisasi sistem SLAM…</string>
-    <string name="loading_slam_wait">Harap tunggu, ini mungkin memerlukan waktu</string>
     <string name="slam_init_complete">Sistem SLAM diinisialisasi</string>
     <string name="slam_connection_lost">Koneksi ke layanan SLAM terputus. Buka kembali aplikasi untuk menyambung ulang.</string>
-    <string name="slam_init_failed">Inisialisasi SLAM gagal: %1$s</string>
     <string name="hint_request_sent">Permintaan terkirim</string>
     <string name="hint_pointcloud_enabled">Awan titik diaktifkan</string>
     <string name="hint_pointcloud_disabled">Awan titik dinonaktifkan</string>

@@ -6,11 +6,8 @@
     <string name="btn_load">ໂຫຼດ</string>
     <string name="btn_map">ແຜນທີ່</string>
     <string name="btn_point_cloud">✓ກຸ່ມເມກຈຸດ</string>
-    <string name="loading_slam_init">ກຳລັງເລີ່ມ SLAM…</string>
-    <string name="loading_slam_wait">Күте тұрыңыз</string>
     <string name="slam_init_complete">SLAM жүйесі дайын</string>
     <string name="slam_connection_lost">ການເຊື່ອມຕໍ່ກັບບໍລິການ SLAM ຂາດຂອດແລ້ວ. ເປີດແອັບອີກຄັ້ງເພື່ອເຊື່ອມຕໍ່ຄືນ.</string>
-    <string name="slam_init_failed">Inicializácia SLAM zlyhala: %1$s</string>
     <string name="hint_request_sent">Požiadavka odoslaná</string>
     <string name="hint_pointcloud_enabled">Bodový oblak povolený</string>
     <string name="hint_pointcloud_disabled">Bodový oblak zakázaný</string>

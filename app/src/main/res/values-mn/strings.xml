@@ -6,11 +6,8 @@
     <string name="btn_load">Ачаалах</string>
     <string name="btn_map">Газрын зураг</string>
     <string name="btn_point_cloud">✓Цэгэн үүл</string>
-    <string name="loading_slam_init">SLAM системийг эхлүүлж байна…</string>
-    <string name="loading_slam_wait">Күте тұрыңыз</string>
     <string name="slam_init_complete">SLAM жүйесі дайын</string>
     <string name="slam_connection_lost">SLAM үйлчилгээний холболт тасарлаа. Дахин холбогдохын тулд аппыг дахин нээнэ үү.</string>
-    <string name="slam_init_failed">Inicializácia SLAM zlyhala: %1$s</string>
     <string name="hint_request_sent">Požiadavka odoslaná</string>
     <string name="hint_pointcloud_enabled">Bodový oblak povolený</string>
     <string name="hint_pointcloud_disabled">Bodový oblak zakázaný</string>
