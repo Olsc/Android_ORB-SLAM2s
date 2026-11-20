@@ -32,7 +32,7 @@ namespace AR {
 
 // 锚点所在坐标系的唯一表达
 enum class AnchorFrame {
-    kSlam,   // 坐标在"实时 SLAM 世界帧"(手动检测的本地平面)
+    kSlam, // 坐标在"实时 SLAM 世界帧"(手动检测的本地平面)
     kMap, // 坐标在(对齐后的)地图帧：来自地图文件的平面，或对齐状态下手动检测的平面
 };
 

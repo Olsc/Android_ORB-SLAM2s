@@ -6,11 +6,8 @@
     <string name="btn_load">تحميل</string>
     <string name="btn_map">خريطة</string>
     <string name="btn_point_cloud">✓سحابة نقطية</string>
-    <string name="loading_slam_init">جارٍ تهيئة نظام SLAM…</string>
-    <string name="loading_slam_wait">يرجى الانتظار، قد يستغرق هذا بعض الوقت</string>
     <string name="slam_init_complete">تمت تهيئة نظام SLAM</string>
     <string name="slam_connection_lost">انقطع اتصال خدمة SLAM. أعد فتح التطبيق لإعادة الاتصال.</string>
-    <string name="slam_init_failed">فشل تهيئة SLAM: %1$s</string>
     <string name="hint_request_sent">تم إرسال الطلب</string>
     <string name="hint_pointcloud_enabled">السحابة النقطية مُفعَّلة</string>
     <string name="hint_pointcloud_disabled">السحابة النقطية مُعطَّلة</string>
@@ -65,6 +62,7 @@
     <string name="btn_3dof_off">المستشعر: إيقاف</string>
     <string name="btn_3dof_on">المستشعر: تشغيل</string>
     <string name="hint_3dof_unavailable">المستشعر غير متوفر</string>
+    <string name="hint_landscape_lock_tilt">يُرجى قفل الجهاز على الوضع الرأسي</string>
 
     <string name="hint_no_camera">لم يتم اكتشاف كاميرا (وضع الشاشة السوداء)</string>
 
@@ -108,5 +106,9 @@
     <string name="camera_facing_front">الكاميرا الأمامية (%1$s)</string>
     <string name="camera_facing_other">الكاميرا %1$s</string>
     <string name="dialog_select_camera">تحديد الكاميرا</string>
+    <string name="btn_camera_preview_enabled">✓الكاميرا</string>
+    <string name="btn_camera_preview_disabled">الكاميرا</string>
+    <string name="hint_camera_preview_enabled">تم تفعيل عرض الكاميرا</string>
+    <string name="hint_camera_preview_disabled">تم إيقاف عرض الكاميرا</string>
 
 </resources>

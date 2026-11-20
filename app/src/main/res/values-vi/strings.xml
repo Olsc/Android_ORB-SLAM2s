@@ -6,11 +6,8 @@
     <string name="btn_load">Tải</string>
     <string name="btn_map">Bản đồ</string>
     <string name="btn_point_cloud">✓Đám mây điểm</string>
-    <string name="loading_slam_init">Đang khởi tạo hệ thống SLAM…</string>
-    <string name="loading_slam_wait">Vui lòng chờ, quá trình này có thể mất một lúc</string>
     <string name="slam_init_complete">Hệ thống SLAM đã sẵn sàng</string>
     <string name="slam_connection_lost">Kết nối với dịch vụ SLAM đã bị ngắt. Mở lại ứng dụng để kết nối lại.</string>
-    <string name="slam_init_failed">Khởi tạo SLAM thất bại: %1$s</string>
     <string name="hint_request_sent">Yêu cầu đã gửi</string>
     <string name="hint_pointcloud_enabled">Đám mây điểm đã bật</string>
     <string name="hint_pointcloud_disabled">Đám mây điểm đã tắt</string>
@@ -60,6 +57,7 @@
     <string name="btn_3dof_off">Cảm biến: TẮT</string>
     <string name="btn_3dof_on">Cảm biến: BẬT</string>
     <string name="hint_3dof_unavailable">Cảm biến không khả dụng</string>
+    <string name="hint_landscape_lock_tilt">Vui lòng khóa thiết bị ở chế độ dọc</string>
 
     <string name="hint_no_camera">Không tìm thấy camera (chế độ màn hình đen)</string>
 
@@ -98,5 +96,9 @@
     <string name="camera_facing_front">Camera trước (%1$s)</string>
     <string name="camera_facing_other">Camera %1$s</string>
     <string name="dialog_select_camera">Chọn camera</string>
+    <string name="btn_camera_preview_enabled">✓Camera</string>
+    <string name="btn_camera_preview_disabled">Camera</string>
+    <string name="hint_camera_preview_enabled">Đã bật hình ảnh camera</string>
+    <string name="hint_camera_preview_disabled">Đã tắt hình ảnh camera</string>
 
 </resources>

@@ -354,7 +354,7 @@ void GlbRenderer::render(const float* slamModelMatrix,
         matrixRotate(userTransform, userRotationX, 1.0f, 0.0f, 0.0f);
     }
 
-    // 将用户变换叠加在 SLAM ModelMatrix 之后：M_slam * M_user
+    // 将用户变换叠加在 SLAM ModelMatrix 后：M_slam * M_user
     float baseWorldMatrix[16];
     matrixMultiply(baseWorldMatrix, slamModelMatrix, userTransform);
 

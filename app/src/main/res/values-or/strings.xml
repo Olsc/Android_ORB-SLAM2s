@@ -6,11 +6,8 @@
     <string name="btn_load">ଲୋଡ୍ କରନ୍ତୁ</string>
     <string name="btn_map">ମାନଚିତ୍ର</string>
     <string name="btn_point_cloud">✓Point Cloud</string>
-    <string name="loading_slam_init">SLAM ସିଷ୍ଟମ୍ ଆରମ୍ଭ ହେଉଛି…</string>
-    <string name="loading_slam_wait">Күте тұрыңыз</string>
     <string name="slam_init_complete">SLAM жүйесі дайын</string>
     <string name="slam_connection_lost">SLAM ସେବା ସହିତ ସଂଯୋଗ ବିଚ୍ଛିନ୍ନ ହୋଇଛି। ପୁନଃ ସଂଯୋଗ ପାଇଁ ଆପ୍ ପୁନଃ ଖୋଲନ୍ତୁ।</string>
-    <string name="slam_init_failed">Inicializácia SLAM zlyhala: %1$s</string>
     <string name="hint_request_sent">Požiadavka odoslaná</string>
     <string name="hint_pointcloud_enabled">Bodový oblak povolený</string>
     <string name="hint_pointcloud_disabled">Bodový oblak zakázaný</string>
@@ -61,6 +58,7 @@
     <string name="btn_3dof_off">ସେନ୍ସର: ବନ୍ଦ</string>
     <string name="btn_3dof_on">ସେନ୍ସର: ଚାଲୁ</string>
     <string name="hint_3dof_unavailable">ସେନ୍ସର ଉପଲବ୍ଧ ନାହିଁ</string>
+    <string name="hint_landscape_lock_tilt">ଦୟାକରି ଡିଭାଇସ୍‌କୁ ପୋର୍ଟ୍ରେଟ୍‌ରେ ଲକ୍ କରନ୍ତୁ</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 
@@ -100,5 +98,9 @@
     <string name="camera_facing_front">ଆଗ କ୍ୟାମେରା (%1$s)</string>
     <string name="camera_facing_other">କ୍ୟାମେରା %1$s</string>
     <string name="dialog_select_camera">କ୍ୟାମେରା ଚୟନ କରନ୍ତୁ</string>
+    <string name="btn_camera_preview_enabled">✓କ୍ୟାମେରା</string>
+    <string name="btn_camera_preview_disabled">କ୍ୟାମେରା</string>
+    <string name="hint_camera_preview_enabled">କ୍ୟାମେରା ଦୃଶ୍ୟ ସକ୍ଷମ ଅଛି</string>
+    <string name="hint_camera_preview_disabled">କ୍ୟାମେରା ଦୃଶ୍ୟ ଅକ୍ଷମ ଅଛି</string>
 
 </resources>

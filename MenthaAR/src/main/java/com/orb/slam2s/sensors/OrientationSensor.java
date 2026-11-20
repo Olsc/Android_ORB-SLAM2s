@@ -84,9 +84,18 @@ public class OrientationSensor implements SensorEventListener {
     private final float[] relComposed = new float[16];
     private boolean hasGyroRelative = false;
     private volatile boolean relSampleReady = false;
-    // 每次重力样本的校倾比例，越小越平滑但纠偏越慢
-    private static final float TILT_CORRECT_RATIO = 0.02f;
-    private static final float GRAVITY_MIN_NORM = 6.0f;
+    // 每次重力样本修正的误差角比例(真实角度比例，已按四元数半角换算)，越小越平滑但纠偏越慢
+    private static final float TILT_CORRECT_RATIO = 0.01f;
+    // 仅在合加速度接近 1g 时信任重力方向，排除手部线加速度造成的污染
+    private static final float GRAVITY_NORM = 9.81f;
+    private static final float GRAVITY_NORM_TOLERANCE = 1.5f;
+    // 相对姿态是否已完成首次校倾：首个有效重力样本直接对齐，随后进入缓慢纠偏
+    private boolean relTiltInitialized = false;
+
+    // 最新的设备系"上"方向(重力读数方向，已低通)，供平面检测使用，与姿态来源模式无关
+    private final float[] latestUp = new float[3];
+    private boolean hasLatestUp = false;
+    private static final float UP_LOWPASS_ALPHA = 0.9f;
 
     // 传感器是否已产生第一个有效读数(跨线程读取保持可见性)
     private volatile boolean ready = false;
@@ -160,6 +169,8 @@ public class OrientationSensor implements SensorEventListener {
         hasGravity = false;
         hasGeomagnetic = false;
         hasFilteredGravity = false;
+        hasLatestUp = false;
+        relTiltInitialized = false;
         lastGyroTimestamp = 0L;
         Matrix.setIdentityM(rawRotationMatrix, 0);
         Matrix.setIdentityM(relRotationMatrix, 0);
@@ -246,6 +257,10 @@ public class OrientationSensor implements SensorEventListener {
                 if (mode == Mode.ACCEL_ONLY) {
                     // 单加速度计模式，先滤出重力方向再解算倾斜
                     lowPassGravity(event.values);
+                    if (gravitySensor == null) {
+                        updateLatestUpLowPass(event.values);
+                        correctRelativeTilt(event.values);
+                    }
                     if (updateRotationMatrixFromGravity(filteredGravity)) {
                         markReady();
                     }
@@ -253,13 +268,19 @@ public class OrientationSensor implements SensorEventListener {
                 }
                 System.arraycopy(event.values, 0, gravity, 0, 3);
                 hasGravity = true;
-                correctRelativeTilt(event.values);
+                if (gravitySensor == null) {
+                    // 无独立重力传感器时由加速度计低通得到"上"方向，合加速度近 1g 才采纳
+                    updateLatestUpLowPass(event.values);
+                    correctRelativeTilt(event.values);
+                }
                 updateRotationMatrixFromAccelMag();
                 break;
 
             case Sensor.TYPE_GRAVITY:
-                // 系统已融合的重力矢量，直接解算倾斜，并校正相对姿态的倾角
-                if (updateRotationMatrixFromGravity(event.values)) {
+                // 系统已融合的重力矢量：校正相对姿态的倾角并记录"上"方向。
+                // 只有 ACCEL_ONLY 模式才用它解算绝对姿态，否则会覆盖旋转矢量或陀螺积分得到的 rawRotationMatrix
+                updateLatestUpLowPass(event.values);
+                if (mode == Mode.ACCEL_ONLY && updateRotationMatrixFromGravity(event.values)) {
                     markReady();
                 }
                 correctRelativeTilt(event.values);
@@ -336,14 +357,15 @@ public class OrientationSensor implements SensorEventListener {
 
         // 分母趋零的情况已在上面排除
         float inv = 1f / (1f + nz);
+        // 与旋转矢量同一约定：R 为设备到世界，满足 R * n = (0,0,1)，即第三行为 n（列主序下 [2][6][10]）
         rawRotationMatrix[0] = nz + ny * ny * inv;
         rawRotationMatrix[1] = -nx * ny * inv;
-        rawRotationMatrix[2] = -nx;
+        rawRotationMatrix[2] = nx;
         rawRotationMatrix[4] = -nx * ny * inv;
         rawRotationMatrix[5] = nz + nx * nx * inv;
-        rawRotationMatrix[6] = -ny;
-        rawRotationMatrix[8] = nx;
-        rawRotationMatrix[9] = ny;
+        rawRotationMatrix[6] = ny;
+        rawRotationMatrix[8] = -nx;
+        rawRotationMatrix[9] = -ny;
         rawRotationMatrix[10] = nz;
         return true;
     }
@@ -427,7 +449,7 @@ public class OrientationSensor implements SensorEventListener {
     private void correctRelativeTilt(float[] gravityVector) {
         final float gx = gravityVector[0], gy = gravityVector[1], gz = gravityVector[2];
         final float norm = (float) Math.sqrt(gx * gx + gy * gy + gz * gz);
-        if (norm < GRAVITY_MIN_NORM) {
+        if (Math.abs(norm - GRAVITY_NORM) > GRAVITY_NORM_TOLERANCE) {
             return;
         }
         // 设备系下重力方向(单位化)，旋转到世界系后应与世界竖直轴一致
@@ -435,22 +457,63 @@ public class OrientationSensor implements SensorEventListener {
         final float uy = (relRotationMatrix[1] * gx + relRotationMatrix[5] * gy + relRotationMatrix[9] * gz) / norm;
         final float uz = (relRotationMatrix[2] * gx + relRotationMatrix[6] * gy + relRotationMatrix[10] * gz) / norm;
 
-        // 误差轴由 u 与世界竖直轴叉乘得到
-        relTiltAxis[0] = -uy;
-        relTiltAxis[1] = ux;
+        // 把 u 转向世界竖直轴 z 的旋转轴为 u × z = (uy, -ux, 0)
+        relTiltAxis[0] = uy;
+        relTiltAxis[1] = -ux;
         relTiltAxis[2] = 0.0f;
         final float axisLen = (float) Math.sqrt(relTiltAxis[0] * relTiltAxis[0] + relTiltAxis[1] * relTiltAxis[1]);
         if (axisLen < 1e-6f) {
             return;
         }
-        final float angle = (float) Math.atan2(axisLen, uz) * TILT_CORRECT_RATIO;
-        relTiltVector[0] = relTiltAxis[0] / axisLen * angle;
-        relTiltVector[1] = relTiltAxis[1] / axisLen * angle;
-        relTiltVector[2] = relTiltAxis[2] / axisLen * angle;
+        // 首个有效样本一次对齐，消除初始姿态与重力不一致造成的世界系旋转；随后按小比例缓慢纠偏
+        final float ratio = relTiltInitialized ? TILT_CORRECT_RATIO : 1.0f;
+        relTiltInitialized = true;
+        final float angle = (float) Math.atan2(axisLen, uz) * ratio;
+        // getRotationMatrixFromVector 的输入是单位四元数向量部 axis*sin(θ/2)，不是旋转向量
+        final float k = (float) Math.sin(0.5 * angle) / axisLen;
+        relTiltVector[0] = relTiltAxis[0] * k;
+        relTiltVector[1] = relTiltAxis[1] * k;
+        relTiltVector[2] = relTiltAxis[2] * k;
         SensorManager.getRotationMatrixFromVector(relTempMatrix, relTiltVector);
         // 世界系先乘：R = deltaR * R
         Matrix.multiplyMM(relComposed, 0, relTempMatrix, 0, relRotationMatrix, 0);
         System.arraycopy(relComposed, 0, relRotationMatrix, 0, 16);
+    }
+
+    // 记录设备系"上"方向(低通)，合加速度偏离 1g 过多的样本丢弃
+    private void updateLatestUpLowPass(float[] v) {
+        final float norm = (float) Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+        if (Math.abs(norm - GRAVITY_NORM) > GRAVITY_NORM_TOLERANCE) {
+            return;
+        }
+        final float ux = v[0] / norm, uy = v[1] / norm, uz = v[2] / norm;
+        if (!hasLatestUp) {
+            latestUp[0] = ux;
+            latestUp[1] = uy;
+            latestUp[2] = uz;
+            hasLatestUp = true;
+            return;
+        }
+        final float a = UP_LOWPASS_ALPHA;
+        final float x = a * latestUp[0] + (1f - a) * ux;
+        final float y = a * latestUp[1] + (1f - a) * uy;
+        final float z = a * latestUp[2] + (1f - a) * uz;
+        final float n = (float) Math.sqrt(x * x + y * y + z * z);
+        if (n < 1e-6f) {
+            return;
+        }
+        latestUp[0] = x / n;
+        latestUp[1] = y / n;
+        latestUp[2] = z / n;
+    }
+
+    // 复制设备系"上"方向(单位向量)，无有效重力读数时返回 false
+    public synchronized boolean copyGravityUp(float[] out) {
+        if (out == null || out.length < 3 || !hasLatestUp) {
+            return false;
+        }
+        System.arraycopy(latestUp, 0, out, 0, 3);
+        return true;
     }
 
     // 复制当前旋转矩阵快照，供帧处理线程安全读取

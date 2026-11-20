@@ -6,11 +6,8 @@
     <string name="btn_load">Жүктөө</string>
     <string name="btn_map">Карта</string>
     <string name="btn_point_cloud">✓Нүктелер бұлты</string>
-    <string name="loading_slam_init">SLAM жүйесі іске қосылуда…</string>
-    <string name="loading_slam_wait">Күте тұрыңыз</string>
     <string name="slam_init_complete">SLAM жүйесі дайын</string>
     <string name="slam_connection_lost">SLAM кызматы менен байланыш үзүлдү. Кайра туташуу үчүн колдонмону кайра ачыңыз.</string>
-    <string name="slam_init_failed">Inicializácia SLAM zlyhala: %1$s</string>
     <string name="hint_request_sent">Požiadavka odoslaná</string>
     <string name="hint_pointcloud_enabled">Bodový oblak povolený</string>
     <string name="hint_pointcloud_disabled">Bodový oblak zakázaný</string>
@@ -61,6 +58,7 @@
     <string name="btn_3dof_off">Сенсор: ӨЧҮК</string>
     <string name="btn_3dof_on">Сенсор: КҮЙҮК</string>
     <string name="hint_3dof_unavailable">Сенсор жеткиликсиз</string>
+    <string name="hint_landscape_lock_tilt">Түзмөктү тик абалда бекитиңиз</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 
@@ -100,5 +98,9 @@
     <string name="camera_facing_front">Алдыңкы камера (%1$s)</string>
     <string name="camera_facing_other">Камера %1$s</string>
     <string name="dialog_select_camera">Камераны тандоо</string>
+    <string name="btn_camera_preview_enabled">✓Камера</string>
+    <string name="btn_camera_preview_disabled">Камера</string>
+    <string name="hint_camera_preview_enabled">Камера көрүнүшү күйгүзүлдү</string>
+    <string name="hint_camera_preview_disabled">Камера көрүнүшү өчүрүлдү</string>
 
 </resources>

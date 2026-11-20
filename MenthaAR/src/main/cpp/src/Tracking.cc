@@ -1328,7 +1328,7 @@ void Tracking::Track()
         while(mlbLost.size() > kMaxTrajectory) mlbLost.pop_front();
     };
 
-    // 存储帧位姿信息以便之后检索完整的相机轨迹。
+    // 存储帧位姿信息以便检索完整的相机轨迹。
     if(!mCurrentFrame.mTcw.empty())
     {
         if(mCurrentFrame.mpReferenceKF){
@@ -2975,7 +2975,7 @@ void Tracking::Reset()
     mlFrameTimes.clear();
     mlbLost.clear();
 
-    // 若恢复了已加载地图点，在后台线程启动后重建重定位缓存，必须在 StartGlobalRelocThread 之后（mbRelocThreadStop 已重置为 false）
+    // 若恢复了已加载地图点，在后台线程启动后重建重定位缓存，必须在 StartGlobalRelocThread 后（mbRelocThreadStop 已重置为 false）
     if(!savedLoadedMPs.empty()) {
         ClearMapAlignment();
         // 有已加载地图时无需等待冷却，重置后立即可基于已加载点重定位

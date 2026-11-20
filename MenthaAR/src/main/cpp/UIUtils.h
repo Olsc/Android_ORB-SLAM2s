@@ -38,7 +38,11 @@
 // 使用RANSAC算法检测平面，失败返回NULL
 Plane* detectPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &vMPs, const int iterations);
 
+// 带重力先验的水平面检测：upWorld 为 SLAM 世界系下指向天空的单位向量(3x1 float)。
+// 按沿重力方向的高度聚类，选取点数足够且最低的一簇作为地面；条件不满足时返回 nullptr，由调用方回退到纯视觉 RANSAC
+Plane* detectHorizontalPlane(const cv::Mat Tcw, const std::vector<ORB_SLAM2::MapPoint*> &vMPs, const cv::Mat &upWorld);
+
 // 将OpenCV的Mat矩阵转换为OpenGL的列主序矩阵
-void getColMajorMatrixFromMat(float M[],cv::Mat &img);
+void getColMajorMatrixFromMat(float M[], cv::Mat &img);
 
 #endif // UTILS_H

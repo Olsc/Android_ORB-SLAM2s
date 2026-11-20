@@ -6,11 +6,8 @@
     <string name="btn_load">Wczytaj</string>
     <string name="btn_map">Mapa</string>
     <string name="btn_point_cloud">✓Chmura punktów</string>
-    <string name="loading_slam_init">Inicjalizacja systemu SLAM…</string>
-    <string name="loading_slam_wait">Proszę czekać, może to chwilę potrwać</string>
     <string name="slam_init_complete">System SLAM zainicjalizowany</string>
     <string name="slam_connection_lost">Połączenie z usługą SLAM zostało przerwane. Otwórz aplikację ponownie, aby połączyć się na nowo.</string>
-    <string name="slam_init_failed">Inicjalizacja SLAM nie powiodła się: %1$s</string>
     <string name="hint_request_sent">Żądanie wysłane</string>
     <string name="hint_pointcloud_enabled">Chmura punktów włączona</string>
     <string name="hint_pointcloud_disabled">Chmura punktów wyłączona</string>
@@ -63,6 +60,7 @@
     <string name="btn_3dof_off">Czujnik: WYŁ</string>
     <string name="btn_3dof_on">Czujnik: WŁ</string>
     <string name="hint_3dof_unavailable">Czujnik niedostępny</string>
+    <string name="hint_landscape_lock_tilt">Zablokuj urządzenie w orientacji pionowej</string>
 
     <string name="hint_no_camera">Nie wykryto kamery (tryb czarnego ekranu)</string>
 
@@ -104,5 +102,9 @@
     <string name="camera_facing_front">Aparat przedni (%1$s)</string>
     <string name="camera_facing_other">Aparat %1$s</string>
     <string name="dialog_select_camera">Wybierz aparat</string>
+    <string name="btn_camera_preview_enabled">✓Kamera</string>
+    <string name="btn_camera_preview_disabled">Kamera</string>
+    <string name="hint_camera_preview_enabled">Podgląd kamery włączony</string>
+    <string name="hint_camera_preview_disabled">Podgląd kamery wyłączony</string>
 
 </resources>

@@ -849,7 +849,7 @@ bool LocalMapping::stopRequested()
 
 void LocalMapping::Release()
 {
-    // 锁顺序 mMutexStop -> mMutexFinish: 与 Stopped 循环的 isStopped(mMutexStop) → CheckFinish(mMutexFinish) 保持一致
+    // 锁顺序 mMutexStop -> mMutexFinish: 与 Stopped 循环中 isStopped(mMutexStop) 调用 CheckFinish(mMutexFinish) 的顺序一致
     {
         unique_lock<mutex> lock(mMutexStop);
         unique_lock<mutex> lock2(mMutexFinish);

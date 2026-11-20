@@ -6,11 +6,8 @@
     <string name="btn_load">Cargar</string>
     <string name="btn_map">Mapa</string>
     <string name="btn_point_cloud">✓Nube de puntos</string>
-    <string name="loading_slam_init">Inicializando sistema SLAM…</string>
-    <string name="loading_slam_wait">Por favor espere, esto puede tardar un momento</string>
     <string name="slam_init_complete">Sistema SLAM inicializado</string>
     <string name="slam_connection_lost">Se perdió la conexión con el servicio SLAM. Vuelve a abrir la aplicación para reconectar.</string>
-    <string name="slam_init_failed">Error al inicializar SLAM: %1$s</string>
     <string name="hint_request_sent">Solicitud enviada</string>
     <string name="hint_pointcloud_enabled">Nube de puntos activada</string>
     <string name="hint_pointcloud_disabled">Nube de puntos desactivada</string>
@@ -62,6 +59,7 @@
     <string name="btn_3dof_off">Sensor: DES</string>
     <string name="btn_3dof_on">Sensor: ACT</string>
     <string name="hint_3dof_unavailable">Sensor no disponible</string>
+    <string name="hint_landscape_lock_tilt">Bloquea el dispositivo en vertical</string>
 
     <string name="hint_no_camera">No se detectó ninguna cámara (modo pantalla negra)</string>
 
@@ -102,5 +100,9 @@
     <string name="camera_facing_front">Cámara frontal (%1$s)</string>
     <string name="camera_facing_other">Cámara %1$s</string>
     <string name="dialog_select_camera">Seleccionar cámara</string>
+    <string name="btn_camera_preview_enabled">✓Cámara</string>
+    <string name="btn_camera_preview_disabled">Cámara</string>
+    <string name="hint_camera_preview_enabled">Vista de la cámara activada</string>
+    <string name="hint_camera_preview_disabled">Vista de la cámara desactivada</string>
 
 </resources>

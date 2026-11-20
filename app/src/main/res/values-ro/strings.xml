@@ -6,11 +6,8 @@
     <string name="btn_load">Încărcare</string>
     <string name="btn_map">Hartă</string>
     <string name="btn_point_cloud">✓Nor de puncte</string>
-    <string name="loading_slam_init">Se inițializează sistemul SLAM…</string>
-    <string name="loading_slam_wait">Vă rugăm așteptați, poate dura câteva momente</string>
     <string name="slam_init_complete">Sistemul SLAM inițializat</string>
     <string name="slam_connection_lost">Conexiunea la serviciul SLAM a fost întreruptă. Redeschide aplicația pentru a te reconecta.</string>
-    <string name="slam_init_failed">Inițializare SLAM eșuată: %1$s</string>
     <string name="hint_request_sent">Cerere trimisă</string>
     <string name="hint_pointcloud_enabled">Nor de puncte activat</string>
     <string name="hint_pointcloud_disabled">Nor de puncte dezactivat</string>
@@ -62,6 +59,7 @@
     <string name="btn_3dof_off">Senzor: OPRIT</string>
     <string name="btn_3dof_on">Senzor: PORNIT</string>
     <string name="hint_3dof_unavailable">Senzorul nu este disponibil</string>
+    <string name="hint_landscape_lock_tilt">Blocați dispozitivul în orientare portret</string>
 
     <string name="hint_no_camera">Nicio cameră detectată (mod ecran negru)</string>
 
@@ -102,5 +100,9 @@
     <string name="camera_facing_front">Cameră frontală (%1$s)</string>
     <string name="camera_facing_other">Cameră %1$s</string>
     <string name="dialog_select_camera">Selectează camera</string>
+    <string name="btn_camera_preview_enabled">✓Cameră</string>
+    <string name="btn_camera_preview_disabled">Cameră</string>
+    <string name="hint_camera_preview_enabled">Vizualizare cameră activată</string>
+    <string name="hint_camera_preview_disabled">Vizualizare cameră dezactivată</string>
 
 </resources>

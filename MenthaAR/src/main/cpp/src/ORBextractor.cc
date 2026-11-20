@@ -1308,7 +1308,7 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
     _descriptors.create(nkeypoints, ORB_DESC_COLS, CV_8U);
     Mat descriptors = _descriptors.getMat();
 
-    // 顺序地将结果收集到连续数组，并建立 level → 描述子行号的偏移映射
+    // 顺序地将结果收集到连续数组，并建立 level 到描述子行号的偏移映射
     _keypoints.resize(nkeypoints);
     vector<int> levelDescOffset(nlevels + 1, 0);
     int offset = 0;

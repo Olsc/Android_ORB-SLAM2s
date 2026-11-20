@@ -6,11 +6,8 @@
     <string name="btn_load">Layisha</string>
     <string name="btn_map">Imephu</string>
     <string name="btn_point_cloud">✓Ifu Lamaphuzu</string>
-    <string name="loading_slam_init">Iqalisa i-SLAM…</string>
-    <string name="loading_slam_wait">Wag asseblief</string>
     <string name="slam_init_complete">SLAM-stelsel geïnisialiseer</string>
     <string name="slam_connection_lost">Ukuxhumana nesevisi ye-SLAM kunqanyuliwe. Vula uhlelo lokusebenza futhi ukuze uxhume kabusha.</string>
-    <string name="slam_init_failed">Inicializácia SLAM zlyhala: %1$s</string>
     <string name="hint_request_sent">Požiadavka odoslaná</string>
     <string name="hint_pointcloud_enabled">Bodový oblak povolený</string>
     <string name="hint_pointcloud_disabled">Bodový oblak zakázaný</string>
@@ -61,6 +58,7 @@
     <string name="btn_3dof_off">Inzwa: CISHIWE</string>
     <string name="btn_3dof_on">Inzwa: CULISIWE</string>
     <string name="hint_3dof_unavailable">Inzwa ayitholakali</string>
+    <string name="hint_landscape_lock_tilt">Sicela ukhiye idivayisi iqonde nje</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 
@@ -100,5 +98,9 @@
     <string name="camera_facing_front">Ikhamera Yangaphambili (%1$s)</string>
     <string name="camera_facing_other">Ikhamera %1$s</string>
     <string name="dialog_select_camera">Khetha Ikhamera</string>
+    <string name="btn_camera_preview_enabled">✓Ikhamera</string>
+    <string name="btn_camera_preview_disabled">Ikhamera</string>
+    <string name="hint_camera_preview_enabled">Ukubuka kwekhamera kuvuliwe</string>
+    <string name="hint_camera_preview_disabled">Ukubuka kwekhamera kuvaliwe</string>
 
 </resources>

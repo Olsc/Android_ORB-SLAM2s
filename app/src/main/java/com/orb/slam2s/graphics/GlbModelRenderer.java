@@ -70,6 +70,11 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
     private float userRotationY = 0.0f;
     private float userRotationX = 0.0f;
 
+    // 每张地图各自的 AR 物体用户状态{缩放, 水平旋转, 俯仰}，按地图 ID 保存；
+    // 跟踪结果里的地图 ID 变化时自动切换，保存/加载地图时由宿主读写
+    private final java.util.HashMap<Integer, float[]> mapObjectStates = new java.util.HashMap<>();
+    private int stateMapId = -1;
+
     // 显示层几何矫正(相机画面方向 + 用户镜像)：只作用于绘制，不影响 SLAM 输出
     private volatile DisplayCorrection displayCorrection;
     private final float[] correctedProjection = new float[16];
@@ -168,11 +173,13 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
         if (touchHelper != null) {
             touchHelper.addScalingCallback(scaleFactor -> {
                 if (shouldDraw) {
-                    currentScaleFactor *= scaleFactor;
-                    if (currentScaleFactor < MIN_SCALE) {
-                        currentScaleFactor = MIN_SCALE;
-                    } else if (currentScaleFactor > MAX_SCALE) {
-                        currentScaleFactor = MAX_SCALE;
+                    synchronized (GlbModelRenderer.this) {
+                        currentScaleFactor *= scaleFactor;
+                        if (currentScaleFactor < MIN_SCALE) {
+                            currentScaleFactor = MIN_SCALE;
+                        } else if (currentScaleFactor > MAX_SCALE) {
+                            currentScaleFactor = MAX_SCALE;
+                        }
                     }
                     if (menthaAR != null) {
                         menthaAR.setArObjectScale(scaleFactor);
@@ -251,6 +258,10 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
                 }
             }
 
+            if (resultSnapshot.mapId != stateMapId) {
+                switchObjectStateMap(resultSnapshot.mapId);
+            }
+
             if (effectiveDraw != shouldDraw) {
                 shouldDraw = effectiveDraw;
                 if (drawStateListener != null) {
@@ -261,7 +272,13 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
         }
 
         if (shouldDraw && matricesReady && isModelLoaded && nativeHandle != 0) {
-            float finalScale = initSize * currentScaleFactor * autoScaleFactor;
+            final float scaleNow, rotX, rotY;
+            synchronized (this) {
+                scaleNow = currentScaleFactor;
+                rotX = userRotationX;
+                rotY = userRotationY;
+            }
+            float finalScale = initSize * scaleNow * autoScaleFactor;
 
             // 将显示层矫正(旋转与镜像)左乘到投影矩阵，与预览位图、点云使用同一变换以保证对齐；
             // 含奇数次反射时三角形绕序翻转，同时交换正反面剔除。
@@ -275,7 +292,7 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
             }
 
             nativeRender(nativeHandle, modelMatrix, viewMatrix, proj,
-                    finalScale, userRotationX, userRotationY, flipWinding);
+                    finalScale, rotX, rotY, flipWinding);
         }
     }
 
@@ -313,7 +330,46 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
         }
     }
 
-    public void addUserRotation(float yawDelta, float pitchDelta) {
+    // 当前地图的 AR 物体用户状态 {缩放系数, 水平旋转角, 俯仰角}，供保存地图时写盘
+    public synchronized float[] getObjectState() {
+        return new float[]{currentScaleFactor, userRotationY, userRotationX};
+    }
+
+    // 登记某张地图的物体状态(加载地图时调用)；若该地图正是当前地图则立即生效，state 为 null 表示恢复默认
+    public synchronized void setObjectStateForMap(int mapId, float[] state) {
+        final float[] s = state != null ? state.clone() : new float[]{1.0f, 0.0f, 0.0f};
+        mapObjectStates.put(mapId, s);
+        if (stateMapId < 0 || mapId == stateMapId) {
+            applyObjectState(s);
+            if (stateMapId < 0) stateMapId = mapId;
+        }
+        requestRender();
+    }
+
+    // 加载新地图前清空登记，防止沿用旧地图的状态
+    public synchronized void clearObjectStates() {
+        mapObjectStates.clear();
+    }
+
+    private void applyObjectState(float[] s) {
+        currentScaleFactor = Math.max(MIN_SCALE, Math.min(MAX_SCALE, s[0]));
+        userRotationY = ((s[1] % 360.0f) + 360.0f) % 360.0f;
+        userRotationX = ((s[2] % 360.0f) + 360.0f) % 360.0f;
+    }
+
+    // 活动地图变化：旧地图当前状态存档，新地图有登记则切换过去，没有则沿用当前状态
+    private synchronized void switchObjectStateMap(int newMapId) {
+        if (stateMapId >= 0) {
+            mapObjectStates.put(stateMapId, new float[]{currentScaleFactor, userRotationY, userRotationX});
+        }
+        stateMapId = newMapId;
+        final float[] s = mapObjectStates.get(newMapId);
+        if (s != null) {
+            applyObjectState(s);
+        }
+    }
+
+    public synchronized void addUserRotation(float yawDelta, float pitchDelta) {
         userRotationY += yawDelta;
         userRotationY = userRotationY % 360.0f;
         if (userRotationY < 0) userRotationY += 360.0f;

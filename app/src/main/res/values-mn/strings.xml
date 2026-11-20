@@ -6,11 +6,8 @@
     <string name="btn_load">Ачаалах</string>
     <string name="btn_map">Газрын зураг</string>
     <string name="btn_point_cloud">✓Цэгэн үүл</string>
-    <string name="loading_slam_init">SLAM системийг эхлүүлж байна…</string>
-    <string name="loading_slam_wait">Күте тұрыңыз</string>
     <string name="slam_init_complete">SLAM жүйесі дайын</string>
     <string name="slam_connection_lost">SLAM үйлчилгээний холболт тасарлаа. Дахин холбогдохын тулд аппыг дахин нээнэ үү.</string>
-    <string name="slam_init_failed">Inicializácia SLAM zlyhala: %1$s</string>
     <string name="hint_request_sent">Požiadavka odoslaná</string>
     <string name="hint_pointcloud_enabled">Bodový oblak povolený</string>
     <string name="hint_pointcloud_disabled">Bodový oblak zakázaný</string>
@@ -61,6 +58,7 @@
     <string name="btn_3dof_off">Мэдрэгч: УНТРААСАН</string>
     <string name="btn_3dof_on">Мэдрэгч: АСААЛТТАЙ</string>
     <string name="hint_3dof_unavailable">Мэдрэгч боломжгүй</string>
+    <string name="hint_landscape_lock_tilt">Төхөөрөмжийг босоо чиглэлд түгжинэ үү</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 
@@ -100,5 +98,9 @@
     <string name="camera_facing_front">Урд талын камер (%1$s)</string>
     <string name="camera_facing_other">Камер %1$s</string>
     <string name="dialog_select_camera">Камер сонгох</string>
+    <string name="btn_camera_preview_enabled">✓Камер</string>
+    <string name="btn_camera_preview_disabled">Камер</string>
+    <string name="hint_camera_preview_enabled">Камерын дүрс асаалттай</string>
+    <string name="hint_camera_preview_disabled">Камерын дүрс унтраалттай</string>
 
 </resources>

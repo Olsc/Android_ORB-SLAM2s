@@ -71,6 +71,12 @@ public class NativeHelper {
         detect(statusBuf);
     }
 
+    // 下发重力先验：OpenGL 相机系(RUB)下指向天空的向量，valid=false 时平面检测回退纯视觉
+    public void setGravityHint(float x, float y, float z, boolean valid) {
+        nativeSetGravityHint(x, y, z, valid);
+    }
+    private native void nativeSetGravityHint(float x, float y, float z, boolean valid);
+
     // 持久映射共享内存帧缓冲(仅在创建或尺寸变化时调用)
     public native boolean nativeAttachFrameBuffer(int fd, int size);
     public native void nativeDetachFrameBuffer();
@@ -111,12 +117,6 @@ public class NativeHelper {
 
     // 更新相机分辨率并重新计算内参
     public native void nativeUpdateResolution(int cameraWidth, int cameraHeight);
-
-    public void updateResolution(int width, int height) {
-        if (width > 0 && height > 0) {
-            nativeUpdateResolution(width, height);
-        }
-    }
 
     // 保存与加载地图
     public native void saveMap(String path);

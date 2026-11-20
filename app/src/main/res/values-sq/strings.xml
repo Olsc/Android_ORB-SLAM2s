@@ -6,11 +6,8 @@
     <string name="btn_load">Ngarko</string>
     <string name="btn_map">Harta</string>
     <string name="btn_point_cloud">✓Reja e pikave</string>
-    <string name="loading_slam_init">Po inicializohet SLAM…</string>
-    <string name="loading_slam_wait">Čakajte prosím, môže to chvíľu trvať</string>
     <string name="slam_init_complete">Systém SLAM inicializovaný</string>
     <string name="slam_connection_lost">Lidhja me shërbimin SLAM u ndërpre. Ripërtëri aplikacionin për t’u rilidhur.</string>
-    <string name="slam_init_failed">Inicializácia SLAM zlyhala: %1$s</string>
     <string name="hint_request_sent">Požiadavka odoslaná</string>
     <string name="hint_pointcloud_enabled">Bodový oblak povolený</string>
     <string name="hint_pointcloud_disabled">Bodový oblak zakázaný</string>
@@ -61,6 +58,7 @@
     <string name="btn_3dof_off">Sensori: JOAKTIV</string>
     <string name="btn_3dof_on">Sensori: AKTIV</string>
     <string name="hint_3dof_unavailable">Sensori nuk është i disponueshëm</string>
+    <string name="hint_landscape_lock_tilt">Kyçeni pajisjen në pozicion vertikal</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 
@@ -100,5 +98,9 @@
     <string name="camera_facing_front">Kamera e përparme (%1$s)</string>
     <string name="camera_facing_other">Kamera %1$s</string>
     <string name="dialog_select_camera">Zgjidh kamerën</string>
+    <string name="btn_camera_preview_enabled">✓Kamera</string>
+    <string name="btn_camera_preview_disabled">Kamera</string>
+    <string name="hint_camera_preview_enabled">Pamja e kamerës u aktivizua</string>
+    <string name="hint_camera_preview_disabled">Pamja e kamerës u çaktivizua</string>
 
 </resources>

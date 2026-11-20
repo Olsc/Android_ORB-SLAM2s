@@ -6,11 +6,8 @@
     <string name="btn_load">Učitaj</string>
     <string name="btn_map">Karta</string>
     <string name="btn_point_cloud">✓Oblak točaka</string>
-    <string name="loading_slam_init">Inicijalizacija SLAM sustava…</string>
-    <string name="loading_slam_wait">Pričekajte trenutak</string>
     <string name="slam_init_complete">SLAM sustav inicijaliziran</string>
     <string name="slam_connection_lost">Veza sa SLAM uslugom je prekinuta. Ponovno otvorite aplikaciju za ponovno povezivanje.</string>
-    <string name="slam_init_failed">Inicializácia SLAM zlyhala: %1$s</string>
     <string name="hint_request_sent">Požiadavka odoslaná</string>
     <string name="hint_pointcloud_enabled">Bodový oblak povolený</string>
     <string name="hint_pointcloud_disabled">Bodový oblak zakázaný</string>
@@ -62,6 +59,7 @@
     <string name="btn_3dof_off">Senzor: ISKLJ</string>
     <string name="btn_3dof_on">Senzor: UKLJ</string>
     <string name="hint_3dof_unavailable">Senzor nije dostupan</string>
+    <string name="hint_landscape_lock_tilt">Zaključajte uređaj u uspravnom (portretnom) načinu</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 
@@ -102,5 +100,9 @@
     <string name="camera_facing_front">Prednja kamera (%1$s)</string>
     <string name="camera_facing_other">Kamera %1$s</string>
     <string name="dialog_select_camera">Odaberite kameru</string>
+    <string name="btn_camera_preview_enabled">✓Kamera</string>
+    <string name="btn_camera_preview_disabled">Kamera</string>
+    <string name="hint_camera_preview_enabled">Prikaz kamere omogućen</string>
+    <string name="hint_camera_preview_disabled">Prikaz kamere onemogućen</string>
 
 </resources>

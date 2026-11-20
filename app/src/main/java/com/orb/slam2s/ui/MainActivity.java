@@ -95,6 +95,7 @@ public class MainActivity extends ComponentActivity
     private Button mBtnLoadMap;
     private Button mBtnMapList;
     private Button mBtnTogglePointCloud;
+    private Button mBtnToggleCameraPreview;
     private Button mBtnSwitchCamera;
     private Button mBtnMirrorVertical;
     private Button mBtnMirrorHorizontal;
@@ -323,6 +324,12 @@ public class MainActivity extends ComponentActivity
             updatePointCloudButton(isPointCloudVisibleEnabled());
         }
 
+        mBtnToggleCameraPreview = findViewById(R.id.btn_toggle_camera_preview);
+        if (mBtnToggleCameraPreview != null) {
+            mBtnToggleCameraPreview.setOnClickListener(v -> toggleCameraPreview());
+            updateCameraPreviewButton(mCameraPreviewView == null || mCameraPreviewView.isCameraPreviewEnabled());
+        }
+
         mBtnSwitchCamera = findViewById(R.id.btn_switch_camera);
         if (mBtnSwitchCamera != null) {
             mBtnSwitchCamera.setOnClickListener(v -> switchCamera());
@@ -428,11 +435,24 @@ public class MainActivity extends ComponentActivity
                     final String resDir = getSlamDir().getAbsolutePath() + "/maps/" + mapName + ".bin";
                     if (mMenthaAR != null) {
                         mMenthaAR.saveMap(resDir);
+                        // 缩放与方向由渲染层持有，随地图一并保存，读取后才能还原
+                        if (mModelRenderer != null) {
+                            MapManager.writeArObjectState(resDir, mModelRenderer.getObjectState());
+                        }
                     }
                     showToast(getString(R.string.hint_map_saved, mapName));
                 })
                 .setNegativeButton(getString(R.string.button_cancel), null)
                 .show();
+    }
+
+    // 按 loadMaps 分配地图 ID 的顺序(0,1,2...)还原每张地图保存的 AR 物体缩放与方向
+    private void restoreArObjectStates(List<String> paths) {
+        if (mModelRenderer == null) return;
+        mModelRenderer.clearObjectStates();
+        for (int i = 0; i < paths.size(); i++) {
+            mModelRenderer.setObjectStateForMap(i, MapManager.readArObjectState(paths.get(i)));
+        }
     }
 
     private void showMapListDialog(final boolean showManage) {
@@ -463,6 +483,7 @@ public class MainActivity extends ComponentActivity
                         }
                         if (!paths.isEmpty()) {
                             if (mMenthaAR != null) mMenthaAR.loadMaps(paths);
+                            restoreArObjectStates(paths);
                             final int loadedCount = paths.size();
                             showToast(getResources().getQuantityString(R.plurals.hint_maps_loaded, loadedCount, loadedCount));
                         }
@@ -491,6 +512,7 @@ public class MainActivity extends ComponentActivity
                         case 0:
                             final String mapPath = getSlamDir().getAbsolutePath() + "/maps/" + mapInfo.name + ".bin";
                             if (mMenthaAR != null) mMenthaAR.loadMap(mapPath);
+                            restoreArObjectStates(java.util.Collections.singletonList(mapPath));
                             showToast(getString(R.string.hint_map_loaded, mapInfo.name));
                             break;
                         case 1:
@@ -653,7 +675,27 @@ public class MainActivity extends ComponentActivity
     @Override
     public void onCameraStarted(int width, int height) {
         Log.d(TAG, "onCameraStarted: 摄像头视图启动，宽度=" + width + " 高度=" + height);
+        mLastFrameWidth = width;
+        mLastFrameHeight = height;
+        if (width >= height) {
+            // 横向帧重置提示标记，后续竖向帧可重新提示
+            mOrientationHintShown = false;
+        } else if (!mOrientationHintShown) {
+            mUiHandler.postDelayed(mCheckPortraitFrameRunnable, 1500);
+        }
     }
+
+    private int mLastFrameWidth = 0;
+    private int mLastFrameHeight = 0;
+    private boolean mOrientationHintShown = false;
+    private final Runnable mCheckPortraitFrameRunnable = () -> {
+        if (!mOrientationHintShown && mLastFrameWidth > 0 && mLastFrameWidth < mLastFrameHeight) {
+            mOrientationHintShown = true;
+            Log.i(TAG, "相机帧为竖向缓冲(" + mLastFrameWidth + "x" + mLastFrameHeight
+                    + ")，疑似被锁横屏，提示用户改用竖屏");
+            showToast(getString(R.string.hint_landscape_lock_tilt));
+        }
+    };
 
     @Override
     public void onCameraStopped() {
@@ -800,6 +842,32 @@ public class MainActivity extends ComponentActivity
         if (mBtnTogglePointCloud != null) {
             mBtnTogglePointCloud.setText(getString(visible
                     ? R.string.btn_pointcloud_enabled : R.string.btn_pointcloud_disabled));
+        }
+    }
+
+    private void toggleCameraPreview() {
+        if (mCameraPreviewView == null) {
+            Log.e(TAG, "无法切换相机画面：预览视图未就绪");
+            return;
+        }
+        setCameraPreviewEnabled(!mCameraPreviewView.isCameraPreviewEnabled());
+    }
+
+    // 相机画面开关：只影响预览绘制，SLAM 采集继续运行；状态由预览视图持久化
+    private void setCameraPreviewEnabled(boolean enabled) {
+        if (mCameraPreviewView != null) {
+            mCameraPreviewView.setCameraPreviewEnabled(enabled);
+        }
+        updateCameraPreviewButton(enabled);
+        showToast(getString(enabled
+                ? R.string.hint_camera_preview_enabled : R.string.hint_camera_preview_disabled));
+        Log.d(TAG, enabled ? "相机画面已开启" : "相机画面已关闭");
+    }
+
+    private void updateCameraPreviewButton(boolean enabled) {
+        if (mBtnToggleCameraPreview != null) {
+            mBtnToggleCameraPreview.setText(getString(enabled
+                    ? R.string.btn_camera_preview_enabled : R.string.btn_camera_preview_disabled));
         }
     }
 

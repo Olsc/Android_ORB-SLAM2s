@@ -170,7 +170,7 @@ const float TRACKING_KF_MIN_TRANS_RATIO = 0.015f;
 const float TRACKING_KF_MIN_ROT_RAD = 0.0436f;
 // 单目场景中位深度保护底限（米）
 const float TRACKING_MIN_SCENE_DEPTH = 0.1f;
-// SearchLocalPoints 投影搜索半径（像素）。建议快速运动时增大
+// SearchLocalPoints 投影搜索半径（像素），快速运动时可增大
 const int TRACKING_LOCAL_SEARCH_TH = 4;
 
 // 跟踪丢失状态搜索半径（更大=更高找回概率）
@@ -277,7 +277,7 @@ const float PNP_RANSAC_EPSILON = 0.5f;
 const float PNP_RANSAC_TH2 = 5.991f;
 
 // 自适应RANSAC提前终止参数
-const int PNP_ADAPTIVE_START_ITER = 30; // 起始迭代数，之后才开始检查提前终止
+const int PNP_ADAPTIVE_START_ITER = 30; // 起始迭代数，达到该值后检查提前终止
 const float PNP_ADAPTIVE_MIN_RATIO = 0.3f; // 内点率过低时不触发提前终止
 const float PNP_ADAPTIVE_SAFETY_FACTOR = 1.5f; // 提前终止所用的安全裕度系数
 

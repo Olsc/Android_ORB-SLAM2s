@@ -6,11 +6,8 @@
     <string name="btn_load">ஏற்றவும்</string>
     <string name="btn_map">வரைபடம்</string>
     <string name="btn_point_cloud">✓புள்ளி மேகம்</string>
-    <string name="loading_slam_init">SLAM அமைப்பை துவக்குகிறது…</string>
-    <string name="loading_slam_wait">தயவுசெய்து காத்திருங்கள், இது சிறிது நேரம் எடுக்கலாம்</string>
     <string name="slam_init_complete">SLAM அமைப்பு துவக்கப்பட்டது</string>
     <string name="slam_connection_lost">SLAM சேவையுடனான இணைப்பு துண்டிக்கப்பட்டது. மீண்டும் இணைக்க பயன்பாட்டை மீண்டும் திறக்கவும்.</string>
-    <string name="slam_init_failed">SLAM துவக்கம் தோல்வி: %1$s</string>
     <string name="hint_request_sent">கோரிக்கை அனுப்பப்பட்டது</string>
     <string name="hint_pointcloud_enabled">புள்ளி மேகம் இயக்கப்பட்டது</string>
     <string name="hint_pointcloud_disabled">புள்ளி மேகம் முடக்கப்பட்டது</string>
@@ -61,6 +58,7 @@
     <string name="btn_3dof_off">சென்சார்: ஆஃப்</string>
     <string name="btn_3dof_on">சென்சார்: ஆன்</string>
     <string name="hint_3dof_unavailable">சென்சார் கிடைக்கவில்லை</string>
+    <string name="hint_landscape_lock_tilt">சாதனத்தை நிமிர்ந்த நிலையில் பூட்டவும்</string>
 
     <string name="hint_no_camera">கேமரா எதுவும் கண்டறியப்படவில்லை (கருப்புத் திரை பயன்முறை)</string>
 
@@ -100,5 +98,9 @@
     <string name="camera_facing_front">முன் கேமரா (%1$s)</string>
     <string name="camera_facing_other">கேமரா %1$s</string>
     <string name="dialog_select_camera">கேமராவைத் தேர்ந்தெடுக்கவும்</string>
+    <string name="btn_camera_preview_enabled">✓கேமரா</string>
+    <string name="btn_camera_preview_disabled">கேமரா</string>
+    <string name="hint_camera_preview_enabled">கேமரா காட்சி இயக்கப்பட்டது</string>
+    <string name="hint_camera_preview_disabled">கேமரா காட்சி முடக்கப்பட்டது</string>
 
 </resources>

@@ -6,11 +6,8 @@
     <string name="btn_load">Načíst</string>
     <string name="btn_map">Mapa</string>
     <string name="btn_point_cloud">✓Mrak bodů</string>
-    <string name="loading_slam_init">Inicializace systému SLAM…</string>
-    <string name="loading_slam_wait">Prosím čekejte, může to chvíli trvat</string>
     <string name="slam_init_complete">Systém SLAM inicializován</string>
     <string name="slam_connection_lost">Připojení ke službě SLAM bylo přerušeno. Znovu otevřete aplikaci pro opětovné připojení.</string>
-    <string name="slam_init_failed">Inicializace SLAM selhala: %1$s</string>
     <string name="hint_request_sent">Požadavek odeslán</string>
     <string name="hint_pointcloud_enabled">Mrak bodů aktivován</string>
     <string name="hint_pointcloud_disabled">Mrak bodů deaktivován</string>
@@ -63,6 +60,7 @@
     <string name="btn_3dof_off">Senzor: VYP</string>
     <string name="btn_3dof_on">Senzor: ZAP</string>
     <string name="hint_3dof_unavailable">Senzor není k dispozici</string>
+    <string name="hint_landscape_lock_tilt">Zamkněte zařízení na výšku</string>
 
     <string name="hint_no_camera">Nebyla detekována žádná kamera (režim černé obrazovky)</string>
 
@@ -104,5 +102,9 @@
     <string name="camera_facing_front">Přední kamera (%1$s)</string>
     <string name="camera_facing_other">Kamera %1$s</string>
     <string name="dialog_select_camera">Vyberte kameru</string>
+    <string name="btn_camera_preview_enabled">✓Kamera</string>
+    <string name="btn_camera_preview_disabled">Kamera</string>
+    <string name="hint_camera_preview_enabled">Zobrazení kamery zapnuto</string>
+    <string name="hint_camera_preview_disabled">Zobrazení kamery vypnuto</string>
 
 </resources>

@@ -6,11 +6,8 @@
     <string name="btn_load">లోడ్ చేయండి</string>
     <string name="btn_map">మ్యాప్</string>
     <string name="btn_point_cloud">✓పాయింట్ క్లౌడ్</string>
-    <string name="loading_slam_init">SLAM సిస్టమ్ ప్రారంభించబడుతోంది…</string>
-    <string name="loading_slam_wait">దయచేసి వేచి ఉండండి, దీనికి కొద్ది సమయం పట్టవచ్చు</string>
     <string name="slam_init_complete">SLAM సిస్టమ్ ప్రారంభించబడింది</string>
     <string name="slam_connection_lost">SLAM సేవకు కనెక్షన్ తెగిపోయింది. మళ్లీ కనెక్ట్ కావడానికి యాప్ను మళ్లీ తెరవండి.</string>
-    <string name="slam_init_failed">SLAM ప్రారంభించడం విఫలమైంది: %1$s</string>
     <string name="hint_request_sent">అభ్యర్థన పంపబడింది</string>
     <string name="hint_pointcloud_enabled">పాయింట్ క్లౌడ్ ప్రారంభించబడింది</string>
     <string name="hint_pointcloud_disabled">పాయింట్ క్లౌడ్ నిలిపివేయబడింది</string>
@@ -61,6 +58,7 @@
     <string name="btn_3dof_off">సెన్సార్: ఆఫ్</string>
     <string name="btn_3dof_on">సెన్సార్: ఆన్</string>
     <string name="hint_3dof_unavailable">సెన్సార్ అందుబాటులో లేదు</string>
+    <string name="hint_landscape_lock_tilt">దయచేసి పరికరాన్ని పోర్ట్రెయిట్‌లో లాక్ చేయండి</string>
 
     <string name="hint_no_camera">కెమెరా ఏదీ కనుగొనబడలేదు (బ్లాక్ స్క్రీన్ మోడ్)</string>
 
@@ -100,5 +98,9 @@
     <string name="camera_facing_front">ముందు కెమెరా (%1$s)</string>
     <string name="camera_facing_other">కెమెరా %1$s</string>
     <string name="dialog_select_camera">కెమెరాను ఎంచుకోండి</string>
+    <string name="btn_camera_preview_enabled">✓కెమెరా</string>
+    <string name="btn_camera_preview_disabled">కెమెరా</string>
+    <string name="hint_camera_preview_enabled">కెమెరా వీక్షణ ప్రారంభించబడింది</string>
+    <string name="hint_camera_preview_disabled">కెమెరా వీక్షణ నిలిపివేయబడింది</string>
 
 </resources>

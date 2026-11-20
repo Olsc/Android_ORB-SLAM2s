@@ -6,11 +6,8 @@
     <string name="btn_load">Բեռնել</string>
     <string name="btn_map">Քարտեզ</string>
     <string name="btn_point_cloud">✓Կետերի ամպ</string>
-    <string name="loading_slam_init">SLAM համակարգի սկզբնավորում…</string>
-    <string name="loading_slam_wait">Күте тұрыңыз</string>
     <string name="slam_init_complete">SLAM жүйесі дайын</string>
     <string name="slam_connection_lost">SLAM ծառայության կապը ընդհատվել է։ Կրկին միանալու համար նորից բացեք հավելվածը։</string>
-    <string name="slam_init_failed">Inicializácia SLAM zlyhala: %1$s</string>
     <string name="hint_request_sent">Požiadavka odoslaná</string>
     <string name="hint_pointcloud_enabled">Bodový oblak povolený</string>
     <string name="hint_pointcloud_disabled">Bodový oblak zakázaný</string>
@@ -61,6 +58,7 @@
     <string name="btn_3dof_off">Սենսոր՝ ԱՆՋԱՏՎԱԾ</string>
     <string name="btn_3dof_on">Սենսոր՝ ՄԻԱՑՎԱԾ</string>
     <string name="hint_3dof_unavailable">Սենսորը հասանելի չէ</string>
+    <string name="hint_landscape_lock_tilt">Խնդրում ենք սարքը կողպել ուղղահայաց դիրքով</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 
@@ -100,5 +98,9 @@
     <string name="camera_facing_front">Առջևի տեսախցիկ (%1$s)</string>
     <string name="camera_facing_other">Տեսախցիկ %1$s</string>
     <string name="dialog_select_camera">Ընտրել տեսախցիկ</string>
+    <string name="btn_camera_preview_enabled">✓Տեսախցիկ</string>
+    <string name="btn_camera_preview_disabled">Տեսախցիկ</string>
+    <string name="hint_camera_preview_enabled">Տեսախցիկի տեսքը միացված է</string>
+    <string name="hint_camera_preview_disabled">Տեսախցիկի տեսքը անջատված է</string>
 
 </resources>

@@ -6,11 +6,8 @@
     <string name="btn_load">පූරණය කරන්න</string>
     <string name="btn_map">සිතියම</string>
     <string name="btn_point_cloud">✓Point Cloud</string>
-    <string name="loading_slam_init">SLAM පද්ධතිය ආරම්භ වෙමින් පවතී…</string>
-    <string name="loading_slam_wait">Күте тұрыңыз</string>
     <string name="slam_init_complete">SLAM жүйесі дайын</string>
     <string name="slam_connection_lost">SLAM සේවාව සමඟ සම්බන්ධතාවය විසන්ධි විය. නැවත සම්බන්ධ වීමට යෙදුම නැවත විවෘත කරන්න.</string>
-    <string name="slam_init_failed">Inicializácia SLAM zlyhala: %1$s</string>
     <string name="hint_request_sent">Požiadavka odoslaná</string>
     <string name="hint_pointcloud_enabled">Bodový oblak povolený</string>
     <string name="hint_pointcloud_disabled">Bodový oblak zakázaný</string>
@@ -61,6 +58,7 @@
     <string name="btn_3dof_off">සංවේදකය: ක්‍රියාවිරහිත</string>
     <string name="btn_3dof_on">සංවේදකය: ක්‍රියාත්මක</string>
     <string name="hint_3dof_unavailable">සංවේදකය නොමැත</string>
+    <string name="hint_landscape_lock_tilt">කරුණාකර උපාංගය සිරස් ආකාරයට අගුළු දමන්න</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 
@@ -100,5 +98,9 @@
     <string name="camera_facing_front">ඉදිරිපස කැමරාව (%1$s)</string>
     <string name="camera_facing_other">කැමරාව %1$s</string>
     <string name="dialog_select_camera">කැමරාව තෝරන්න</string>
+    <string name="btn_camera_preview_enabled">✓කැමරාව</string>
+    <string name="btn_camera_preview_disabled">කැමරාව</string>
+    <string name="hint_camera_preview_enabled">කැමරා දර්ශනය සබල කර ඇත</string>
+    <string name="hint_camera_preview_disabled">කැමරා දර්ශනය අබල කර ඇත</string>
 
 </resources>

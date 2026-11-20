@@ -6,11 +6,8 @@
     <string name="btn_load">加载</string>
     <string name="btn_map">地图</string>
     <string name="btn_point_cloud">✓点云</string>
-    <string name="loading_slam_init">正在初始化SLAM系统…</string>
-    <string name="loading_slam_wait">请稍候，这可能需要一些时间</string>
     <string name="slam_init_complete">SLAM系统初始化完成</string>
     <string name="slam_connection_lost">SLAM 服务连接已断开，请重新打开应用以重新连接</string>
-    <string name="slam_init_failed">SLAM初始化失败: %1$s</string>
     <string name="hint_request_sent">请求已发送</string>
     <string name="hint_pointcloud_enabled">点云已显示</string>
     <string name="hint_pointcloud_disabled">点云已隐藏</string>
@@ -60,6 +57,7 @@
     <string name="btn_3dof_off">传感器: 关</string>
     <string name="btn_3dof_on">传感器: 开</string>
     <string name="hint_3dof_unavailable">设备缺少方向传感器</string>
+    <string name="hint_landscape_lock_tilt">请将设备锁定为竖屏</string>
 
     <string name="hint_no_camera">未检测到可用相机（黑屏模式）</string>
 
@@ -98,5 +96,9 @@
     <string name="camera_facing_front">前置相机 (%1$s)</string>
     <string name="camera_facing_other">相机 %1$s</string>
     <string name="dialog_select_camera">选择相机</string>
+    <string name="btn_camera_preview_enabled">✓相机画面</string>
+    <string name="btn_camera_preview_disabled">相机画面</string>
+    <string name="hint_camera_preview_enabled">相机画面已开启</string>
+    <string name="hint_camera_preview_disabled">相机画面已关闭</string>
 
 </resources>

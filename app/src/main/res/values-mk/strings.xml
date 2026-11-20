@@ -6,11 +6,8 @@
     <string name="btn_load">Вчитај</string>
     <string name="btn_map">Мапа</string>
     <string name="btn_point_cloud">✓Облак тачака</string>
-    <string name="loading_slam_init">Иницијализација SLAM система…</string>
-    <string name="loading_slam_wait">Сачекајте тренутак</string>
     <string name="slam_init_complete">SLAM систем иницијализован</string>
     <string name="slam_connection_lost">Врската со SLAM услугата е прекината. Отворете ја апликацијата повторно за да се поврзете.</string>
-    <string name="slam_init_failed">Inicializácia SLAM zlyhala: %1$s</string>
     <string name="hint_request_sent">Požiadavka odoslaná</string>
     <string name="hint_pointcloud_enabled">Bodový oblak povolený</string>
     <string name="hint_pointcloud_disabled">Bodový oblak zakázaný</string>
@@ -61,6 +58,7 @@
     <string name="btn_3dof_off">Сензор: ИСКЛ</string>
     <string name="btn_3dof_on">Сензор: ВКЛ</string>
     <string name="hint_3dof_unavailable">Сензорот не е достапен</string>
+    <string name="hint_landscape_lock_tilt">Заклучете го уредот во вертикален режим</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 
@@ -100,5 +98,9 @@
     <string name="camera_facing_front">Предна камера (%1$s)</string>
     <string name="camera_facing_other">Камера %1$s</string>
     <string name="dialog_select_camera">Избери камера</string>
+    <string name="btn_camera_preview_enabled">✓Камера</string>
+    <string name="btn_camera_preview_disabled">Камера</string>
+    <string name="hint_camera_preview_enabled">Приказот на камерата е овозможен</string>
+    <string name="hint_camera_preview_disabled">Приказот на камерата е оневозможен</string>
 
 </resources>

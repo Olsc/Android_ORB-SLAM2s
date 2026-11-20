@@ -6,11 +6,8 @@
     <string name="btn_load">Muatkan</string>
     <string name="btn_map">Peta</string>
     <string name="btn_point_cloud">✓Awan Titik</string>
-    <string name="loading_slam_init">Memulakan sistem SLAM…</string>
-    <string name="loading_slam_wait">Sila tunggu, ini mungkin mengambil masa sebentar</string>
     <string name="slam_init_complete">Sistem SLAM dimulakan</string>
     <string name="slam_connection_lost">Sambungan ke perkhidmatan SLAM terputus. Buka semula aplikasi untuk menyambung semula.</string>
-    <string name="slam_init_failed">Permulaan SLAM gagal: %1$s</string>
     <string name="hint_request_sent">Permintaan dihantar</string>
     <string name="hint_pointcloud_enabled">Awan titik diaktifkan</string>
     <string name="hint_pointcloud_disabled">Awan titik dinyahaktifkan</string>
@@ -60,6 +57,7 @@
     <string name="btn_3dof_off">Sensor: MATI</string>
     <string name="btn_3dof_on">Sensor: HIDUP</string>
     <string name="hint_3dof_unavailable">Sensor tidak tersedia</string>
+    <string name="hint_landscape_lock_tilt">Sila kunci peranti dalam mod potret</string>
 
     <string name="hint_no_camera">Tiada kamera dikesan (mod skrin hitam)</string>
 
@@ -98,5 +96,9 @@
     <string name="camera_facing_front">Kamera Depan (%1$s)</string>
     <string name="camera_facing_other">Kamera %1$s</string>
     <string name="dialog_select_camera">Pilih Kamera</string>
+    <string name="btn_camera_preview_enabled">✓Kamera</string>
+    <string name="btn_camera_preview_disabled">Kamera</string>
+    <string name="hint_camera_preview_enabled">Paparan kamera dihidupkan</string>
+    <string name="hint_camera_preview_disabled">Paparan kamera dimatikan</string>
 
 </resources>

@@ -6,11 +6,8 @@
     <string name="btn_load">Yükle</string>
     <string name="btn_map">Harita</string>
     <string name="btn_point_cloud">✓Nokta Bulutu</string>
-    <string name="loading_slam_init">SLAM sistemi başlatılıyor…</string>
-    <string name="loading_slam_wait">Lütfen bekleyin, bu biraz zaman alabilir</string>
     <string name="slam_init_complete">SLAM sistemi başlatıldı</string>
     <string name="slam_connection_lost">SLAM hizmeti bağlantısı kesildi. Yeniden bağlanmak için uygulamayı tekrar açın.</string>
-    <string name="slam_init_failed">SLAM başlatma başarısız: %1$s</string>
     <string name="hint_request_sent">İstek gönderildi</string>
     <string name="hint_pointcloud_enabled">Nokta bulutu etkinleştirildi</string>
     <string name="hint_pointcloud_disabled">Nokta bulutu devre dışı bırakıldı</string>
@@ -61,6 +58,7 @@
     <string name="btn_3dof_off">Sensör: KAPALI</string>
     <string name="btn_3dof_on">Sensör: AÇIK</string>
     <string name="hint_3dof_unavailable">Sensör kullanılamıyor</string>
+    <string name="hint_landscape_lock_tilt">Lütfen cihazı dikey modda kilitleyin</string>
 
     <string name="hint_no_camera">Kamera algılanmadı (Siyah ekran modu)</string>
 
@@ -100,5 +98,9 @@
     <string name="camera_facing_front">Ön Kamera (%1$s)</string>
     <string name="camera_facing_other">Kamera %1$s</string>
     <string name="dialog_select_camera">Kamera Seç</string>
+    <string name="btn_camera_preview_enabled">✓Kamera</string>
+    <string name="btn_camera_preview_disabled">Kamera</string>
+    <string name="hint_camera_preview_enabled">Kamera görünümü açık</string>
+    <string name="hint_camera_preview_disabled">Kamera görünümü kapalı</string>
 
 </resources>

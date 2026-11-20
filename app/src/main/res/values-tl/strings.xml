@@ -6,11 +6,8 @@
     <string name="btn_load">I-load</string>
     <string name="btn_map">Mapa</string>
     <string name="btn_point_cloud">✓Point Cloud</string>
-    <string name="loading_slam_init">Sinisimulan ang SLAM system…</string>
-    <string name="loading_slam_wait">Mangyaring maghintay, maaaring tumagal ito ng ilang sandali</string>
     <string name="slam_init_complete">Nasimulan na ang SLAM system</string>
     <string name="slam_connection_lost">Nawala ang koneksyon sa serbisyo ng SLAM. Buksan muli ang app para muling kumonekta.</string>
-    <string name="slam_init_failed">Nabigo ang pagsisimula ng SLAM: %1$s</string>
     <string name="hint_request_sent">Naipadala ang kahilingan</string>
     <string name="hint_pointcloud_enabled">Point cloud pinagana</string>
     <string name="hint_pointcloud_disabled">Point cloud hindi pinagana</string>
@@ -61,6 +58,7 @@
     <string name="btn_3dof_off">Sensor: NAKA-OFF</string>
     <string name="btn_3dof_on">Sensor: NAKA-ON</string>
     <string name="hint_3dof_unavailable">Hindi available ang sensor</string>
+    <string name="hint_landscape_lock_tilt">Pakilock ang device sa portrait</string>
 
     <string name="hint_no_camera">Walang nakitang camera (black screen mode)</string>
 
@@ -100,5 +98,9 @@
     <string name="camera_facing_front">Camera sa Harap (%1$s)</string>
     <string name="camera_facing_other">Camera %1$s</string>
     <string name="dialog_select_camera">Pumili ng Camera</string>
+    <string name="btn_camera_preview_enabled">✓Camera</string>
+    <string name="btn_camera_preview_disabled">Camera</string>
+    <string name="hint_camera_preview_enabled">Naka-enable ang camera view</string>
+    <string name="hint_camera_preview_disabled">Naka-disable ang camera view</string>
 
 </resources>

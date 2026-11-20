@@ -85,10 +85,10 @@ final class Session {
                     Log.e(TAG, "初始化 SLAM 失败: " + e.getMessage());
                 }
             }
-            // 初始化指令下发之后才发布 service：帧提交一定排在 initSLAM 之后
+            // service 在初始化指令下发后才发布：帧提交一定排在 initSLAM 后
             service = s;
             framesAllowed = false;
-            // 新服务进程没有旧的共享内存映射：标记待重连，下一帧提交时重新交出 fd（不在主线程做 Binder 调用）
+            // 新服务进程没有旧共享内存映射：标记待重连，下一帧提交时重新交出 fd（不在主线程做 Binder 调用）
             synchronized (frameLock) {
                 if (frameBuffer != null) {
                     attachPending = true;
@@ -393,7 +393,7 @@ final class Session {
             if (frameBuffer != null) {
                 frameBuffer.close();
             }
-            frameBuffer = new SharedMemoryBuffer("MenthaARFrameBuffer", requiredSize);
+            frameBuffer = new SharedMemoryBuffer(requiredSize);
             if (!frameBuffer.initHeader(width, height)) {
                 frameBuffer = null;
                 return 0;
@@ -411,7 +411,7 @@ final class Session {
         return seq;
     }
 
-    // 持 frameLock：写入帧序号并 oneway 投递，不阻塞调用线程。
+    // 持 frameLock：写入帧序号并以单向 Binder 投递，不阻塞调用线程。
     private void commitFrameLocked(int seq, int bufferIndex, int width, int height) {
         frameBuffer.writeUiWriteSeq(seq);
         lastSeq = seq;

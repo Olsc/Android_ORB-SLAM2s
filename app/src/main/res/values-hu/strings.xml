@@ -6,11 +6,8 @@
     <string name="btn_load">Betöltés</string>
     <string name="btn_map">Térkép</string>
     <string name="btn_point_cloud">✓Pontfelhő</string>
-    <string name="loading_slam_init">SLAM rendszer inicializálása…</string>
-    <string name="loading_slam_wait">Kérjük, várjon, ez egy pillanatot vehet igénybe</string>
     <string name="slam_init_complete">SLAM rendszer inicializálva</string>
     <string name="slam_connection_lost">A SLAM szolgáltatás kapcsolata megszakadt. Nyisd meg újra az alkalmazást az újracsatlakozáshoz.</string>
-    <string name="slam_init_failed">SLAM inicializálás sikertelen: %1$s</string>
     <string name="hint_request_sent">Kérelem elküldve</string>
     <string name="hint_pointcloud_enabled">Pontfelhő engedélyezve</string>
     <string name="hint_pointcloud_disabled">Pontfelhő letiltva</string>
@@ -61,6 +58,7 @@
     <string name="btn_3dof_off">Érzékelő: KI</string>
     <string name="btn_3dof_on">Érzékelő: BE</string>
     <string name="hint_3dof_unavailable">Az érzékelő nem érhető el</string>
+    <string name="hint_landscape_lock_tilt">Zárolja a készüléket álló tájolásra</string>
 
     <string name="hint_no_camera">Nem található kamera (fekete képernyő mód)</string>
 
@@ -100,5 +98,9 @@
     <string name="camera_facing_front">Előlapi kamera (%1$s)</string>
     <string name="camera_facing_other">Kamera %1$s</string>
     <string name="dialog_select_camera">Kamera kiválasztása</string>
+    <string name="btn_camera_preview_enabled">✓Kamera</string>
+    <string name="btn_camera_preview_disabled">Kamera</string>
+    <string name="hint_camera_preview_enabled">Kamerakép bekapcsolva</string>
+    <string name="hint_camera_preview_disabled">Kamerakép kikapcsolva</string>
 
 </resources>

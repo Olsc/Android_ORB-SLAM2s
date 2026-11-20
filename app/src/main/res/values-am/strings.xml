@@ -6,11 +6,8 @@
     <string name="btn_load">ጫን</string>
     <string name="btn_map">ካርታ</string>
     <string name="btn_point_cloud">✓Point Cloud</string>
-    <string name="loading_slam_init">SLAM እየጀመረ ነው…</string>
-    <string name="loading_slam_wait">Wag asseblief</string>
     <string name="slam_init_complete">SLAM-stelsel geïnisialiseer</string>
     <string name="slam_connection_lost">የSLAM አገልግሎት ግንኙነት ተቋርጧል። እንደገና ለማገናኘት መተግበሪያውን እንደገና ይክፈቱ።</string>
-    <string name="slam_init_failed">Inicializácia SLAM zlyhala: %1$s</string>
     <string name="hint_request_sent">Požiadavka odoslaná</string>
     <string name="hint_pointcloud_enabled">Bodový oblak povolený</string>
     <string name="hint_pointcloud_disabled">Bodový oblak zakázaný</string>
@@ -61,6 +58,7 @@
     <string name="btn_3dof_off">ሴንሰር፦ ጠፍቷል</string>
     <string name="btn_3dof_on">ሴንሰር፦ በርቷል</string>
     <string name="hint_3dof_unavailable">ሴንሰር አይገኝም</string>
+    <string name="hint_landscape_lock_tilt">እባክዎ መሣሪያውን በቁመት ያቆልፉ</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 
@@ -100,5 +98,9 @@
     <string name="camera_facing_front">የፊት ካሜራ (%1$s)</string>
     <string name="camera_facing_other">ካሜራ %1$s</string>
     <string name="dialog_select_camera">ካሜራ ይምረጡ</string>
+    <string name="btn_camera_preview_enabled">✓ካሜራ</string>
+    <string name="btn_camera_preview_disabled">ካሜራ</string>
+    <string name="hint_camera_preview_enabled">የካሜራ እይታ ተከፍቷል</string>
+    <string name="hint_camera_preview_disabled">የካሜራ እይታ ተዘግቷል</string>
 
 </resources>

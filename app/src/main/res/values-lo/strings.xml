@@ -6,11 +6,8 @@
     <string name="btn_load">ໂຫຼດ</string>
     <string name="btn_map">ແຜນທີ່</string>
     <string name="btn_point_cloud">✓ກຸ່ມເມກຈຸດ</string>
-    <string name="loading_slam_init">ກຳລັງເລີ່ມ SLAM…</string>
-    <string name="loading_slam_wait">Күте тұрыңыз</string>
     <string name="slam_init_complete">SLAM жүйесі дайын</string>
     <string name="slam_connection_lost">ການເຊື່ອມຕໍ່ກັບບໍລິການ SLAM ຂາດຂອດແລ້ວ. ເປີດແອັບອີກຄັ້ງເພື່ອເຊື່ອມຕໍ່ຄືນ.</string>
-    <string name="slam_init_failed">Inicializácia SLAM zlyhala: %1$s</string>
     <string name="hint_request_sent">Požiadavka odoslaná</string>
     <string name="hint_pointcloud_enabled">Bodový oblak povolený</string>
     <string name="hint_pointcloud_disabled">Bodový oblak zakázaný</string>
@@ -60,6 +57,7 @@
     <string name="btn_3dof_off">ເຊັນເຊີ: ປິດ</string>
     <string name="btn_3dof_on">ເຊັນເຊີ: ເປີດ</string>
     <string name="hint_3dof_unavailable">ເຊັນເຊີບໍ່ສາມາດໃຊ້ໄດ້</string>
+    <string name="hint_landscape_lock_tilt">ກະລຸນາລັອກອຸປະກອນເປັນແນວຕັ້ງ</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 
@@ -98,5 +96,9 @@
     <string name="camera_facing_front">ກ້ອງໜ້າ (%1$s)</string>
     <string name="camera_facing_other">ກ້ອງ %1$s</string>
     <string name="dialog_select_camera">ເລືອກກ້ອງ</string>
+    <string name="btn_camera_preview_enabled">✓ກ້ອງ</string>
+    <string name="btn_camera_preview_disabled">ກ້ອງ</string>
+    <string name="hint_camera_preview_enabled">ພາບກ້ອງເປີດແລ້ວ</string>
+    <string name="hint_camera_preview_disabled">ພາບກ້ອງປິດແລ້ວ</string>
 
 </resources>

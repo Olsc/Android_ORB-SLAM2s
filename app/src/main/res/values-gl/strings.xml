@@ -6,11 +6,8 @@
     <string name="btn_load">Carrega</string>
     <string name="btn_map">Mapa</string>
     <string name="btn_point_cloud">✓Núvol de punts</string>
-    <string name="loading_slam_init">Inicialitzant el sistema SLAM…</string>
-    <string name="loading_slam_wait">Čakajte prosím, môže to chvíľu trvať</string>
     <string name="slam_init_complete">Systém SLAM inicializovaný</string>
     <string name="slam_connection_lost">Perdeuse a conexión co servizo SLAM. Volve abrir a aplicación para reconectar.</string>
-    <string name="slam_init_failed">Inicializácia SLAM zlyhala: %1$s</string>
     <string name="hint_request_sent">Požiadavka odoslaná</string>
     <string name="hint_pointcloud_enabled">Bodový oblak povolený</string>
     <string name="hint_pointcloud_disabled">Bodový oblak zakázaný</string>
@@ -61,6 +58,7 @@
     <string name="btn_3dof_off">Sensor: DESACTIVADO</string>
     <string name="btn_3dof_on">Sensor: ACTIVADO</string>
     <string name="hint_3dof_unavailable">Sensor non dispoñible</string>
+    <string name="hint_landscape_lock_tilt">Bloquea o dispositivo en vertical</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 
@@ -100,5 +98,9 @@
     <string name="camera_facing_front">Cámara frontal (%1$s)</string>
     <string name="camera_facing_other">Cámara %1$s</string>
     <string name="dialog_select_camera">Seleccionar cámara</string>
+    <string name="btn_camera_preview_enabled">✓Cámara</string>
+    <string name="btn_camera_preview_disabled">Cámara</string>
+    <string name="hint_camera_preview_enabled">Vista da cámara activada</string>
+    <string name="hint_camera_preview_disabled">Vista da cámara desactivada</string>
 
 </resources>

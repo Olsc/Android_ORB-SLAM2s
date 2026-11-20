@@ -109,6 +109,11 @@ static std::atomic<int> gRawTrackingState{0};
 static std::atomic<int> gRawDrawFlag{0};
 static std::atomic<int> gRawActiveMapId{0};
 
+// 重力先验：OpenGL 相机系(RUB)下指向天空的单位向量，由 Java 侧传感器换算后在放置前下发
+static std::mutex gGravityHintLock;
+static float gGravityHintCam[3] = {0.0f, 0.0f, 0.0f};
+static bool gGravityHintValid = false;
+
 // 重置渲染层对齐滞回状态
 static void AR_ResetAlignHold() {
     gAlignHold.Reset();
@@ -401,7 +406,7 @@ void LoadPlaneAndArInfo(const std::string& filename, int mapId)
     AR_OnMapDataLoaded(mapId, std::move(loaded));
 }
 
-// 按实际相机帧尺寸重算 SLAM 内参(兼容横/竖屏输入)，定义见下方 initSLAM 之后
+// 按实际相机帧尺寸重算 SLAM 内参(兼容横/竖屏输入)，定义见后文 initSLAM
 void updateScaledIntrinsics(int cameraWidth, int cameraHeight);
 
 int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
@@ -708,6 +713,22 @@ Java_com_orb_slam2s_slamar_NativeHelper_loadMapWithId(JNIEnv *env, jobject insta
     env->ReleaseStringUTFChars(path_, path);
 }
 
+// 下发重力先验(相机系 RUB，指向天空)；valid=false 表示无传感器数据，平面检测回退纯视觉
+JNIEXPORT void JNICALL
+Java_com_orb_slam2s_slamar_NativeHelper_nativeSetGravityHint(JNIEnv *env, jobject instance,
+                                                            jfloat x, jfloat y, jfloat z, jboolean valid) {
+    std::lock_guard<std::mutex> lk(gGravityHintLock);
+    const float n = std::sqrt(x * x + y * y + z * z);
+    if (valid && n > 1e-6f) {
+        gGravityHintCam[0] = x / n;
+        gGravityHintCam[1] = y / n;
+        gGravityHintCam[2] = z / n;
+        gGravityHintValid = true;
+    } else {
+        gGravityHintValid = false;
+    }
+}
+
 JNIEXPORT void JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_detect(JNIEnv *env, jobject instance,
                                                jintArray statusBuf_) {
@@ -748,7 +769,56 @@ Java_com_orb_slam2s_slamar_NativeHelper_detect(JNIEnv *env, jobject instance,
             TcwForPlane = sys->GetMapAlignedPose(currentTcw);
         }
 
-        Plane* detected = detectPlane(TcwForPlane, localMPs, ORB_SLAM2::PLANE_DETECT_RANSAC_ITERS);
+        // 重力先验：设备系重力方向经相机系换算到 SLAM 世界系，水平面优先；
+        // 方向缺失或不满足约束时回退到纯视觉 RANSAC
+        Plane* detected = nullptr;
+        cv::Mat upWorldHint;
+        {
+            float upCam[3];
+            bool hasUp = false;
+            {
+                std::lock_guard<std::mutex> gl(gGravityHintLock);
+                if (gGravityHintValid) {
+                    memcpy(upCam, gGravityHintCam, sizeof(upCam));
+                    hasUp = true;
+                }
+            }
+            if (hasUp && currentTcw.rows >= 3 && currentTcw.cols >= 3) {
+                // GL 相机系(RUB)转 SLAM 相机系(RDF)：(x,-y,-z)；世界系向量 = Rcw^T * 相机系向量
+                const float cxv = upCam[0], cyv = -upCam[1], czv = -upCam[2];
+                cv::Mat Rcw = currentTcw.rowRange(0, 3).colRange(0, 3);
+                cv::Mat upW(3, 1, CV_32F);
+                for (int i = 0; i < 3; i++) {
+                    upW.at<float>(i) = Rcw.at<float>(0, i) * cxv + Rcw.at<float>(1, i) * cyv + Rcw.at<float>(2, i) * czv;
+                }
+                const float nrm = std::sqrt(upW.at<float>(0) * upW.at<float>(0) +
+                                            upW.at<float>(1) * upW.at<float>(1) +
+                                            upW.at<float>(2) * upW.at<float>(2));
+                if (nrm > 1e-6f) {
+                    upW /= nrm;
+                    // 地图点位于 SLAM 世界系，重力换算与相机中心都必须用原始 Tcw，对齐后的位姿属于另一个坐标系
+                    upWorldHint = upW.clone();
+                    detected = detectHorizontalPlane(currentTcw, localMPs, upW);
+                    LOGD("平面检测：重力约束水平面%s；upCam(RUB)=(%.2f,%.2f,%.2f) upWorld=(%.2f,%.2f,%.2f)%s",
+                         detected ? "成功" : "失败，回退纯视觉",
+                         upCam[0], upCam[1], upCam[2], upW.at<float>(0), upW.at<float>(1), upW.at<float>(2),
+                         detected ? "" : "");
+                    if (detected) {
+                        LOGD("平面检测：内点 PCA 法向与重力竖直轴夹角 %.1f 度(应接近 0)，物体朝向角 rang=%.1f 度",
+                             detected->pcaGravityAngleDeg, detected->rang * 57.29578f);
+                    }
+                }
+            }
+        }
+        if (!detected) {
+            detected = detectPlane(TcwForPlane, localMPs, ORB_SLAM2::PLANE_DETECT_RANSAC_ITERS);
+            // 纯视觉平面若接近水平(25°内)，吸附到重力方向，防止地面物体带视觉拟合的倾斜
+            if (detected && !upWorldHint.empty()) {
+                float tiltDeg = 0.0f;
+                const bool snapped = detected->SnapToGravity(upWorldHint, 25.0f, &tiltDeg);
+                LOGD("平面检测：视觉法向与竖直轴夹角 %.1f 度，%s", tiltDeg, snapped ? "已吸附到重力方向" : "不是水平面，保持视觉法向");
+            }
+        }
         if(detected && sys->MapChanged())
             detected->Recompute();
         statusBuf[1]=detected? ORB_SLAM2::PLANE_DETECTED : ORB_SLAM2::PLANE_NOT_DETECTED;
@@ -910,7 +980,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativePublishArPose(
     std::atomic_thread_fence(std::memory_order_release);
     *mvpSeq = s + 2;
 
-    // SLAM_DONE_SEQ 在窗口之后推进，读端拿到的 frameId 可能比矩阵快照领先一帧。
+    // SLAM_DONE_SEQ 在窗口后推进，读端拿到的 frameId 可能比矩阵快照领先一帧。
     std::atomic_thread_fence(std::memory_order_release);
     *reinterpret_cast<volatile int32_t*>(shIntPtr(SH_OFF_SLAM_DONE_SEQ)) = gPendingDoneSeq;
 }

@@ -62,11 +62,11 @@ System::System(const std::string &strSettingsFile, const eSensor sensor):mSensor
     }
 
     // 以下欢迎信息暂时注释，勿删
-        // std::cout << std::endl <<
-        // "ORB-SLAM2 Copyright (C) 2014-2016 Raul Mur-Artal, University of Zaragoza." << std::endl <<
-        // "This program comes with ABSOLUTELY NO WARRANTY;" << std::endl  <<
-        // "This is free software, and you are welcome to redistribute it" << std::endl <<
-        // "under certain conditions. See LICENSE.txt." << std::endl << std::endl;
+    // std::cout << std::endl <<
+    // "ORB-SLAM2 Copyright (C) 2014-2016 Raul Mur-Artal, University of Zaragoza." << std::endl <<
+    // "This program comes with ABSOLUTELY NO WARRANTY;" << std::endl  <<
+    // "This is free software, and you are welcome to redistribute it" << std::endl <<
+    // "under certain conditions. See LICENSE.txt." << std::endl << std::endl;
 
     // 初始化 ORB 查找表 (自动在内存中生成)
     ORBextractor::InitLUT();
@@ -336,7 +336,7 @@ void System::RetireSubmap(Map* pOldMap)
             if (bWasBad)
                 continue;
 
-            // 预收集该点在本图 KF 上的全部观测（GetObservations 返回值拷贝，之后不再遍历其内部状态，规避摘除过程中的对象状态变化）
+            // 预收集该点在本图 KF 上的全部观测（GetObservations 返回值拷贝，后续不再遍历其内部状态，规避摘除过程中的对象状态变化）
             vector<KeyFrame*> vObsToErase;
             const KeyFrameMap<size_t> obs = pForeign->GetObservations();
             for (KeyFrameMap<size_t>::const_iterator it = obs.begin(); it != obs.end(); ++it) {

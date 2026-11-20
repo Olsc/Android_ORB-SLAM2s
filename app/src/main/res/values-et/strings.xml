@@ -6,11 +6,8 @@
     <string name="btn_load">Laadi</string>
     <string name="btn_map">Kaart</string>
     <string name="btn_point_cloud">✓Punktipilv</string>
-    <string name="loading_slam_init">SLAM-süsteemi lähtestamine…</string>
-    <string name="loading_slam_wait">Čakajte prosím, môže to chvíľu trvať</string>
     <string name="slam_init_complete">Systém SLAM inicializovaný</string>
     <string name="slam_connection_lost">Ühendus SLAM-teenusega katkes. Ühenduse taastamiseks ava rakendus uuesti.</string>
-    <string name="slam_init_failed">Inicializácia SLAM zlyhala: %1$s</string>
     <string name="hint_request_sent">Požiadavka odoslaná</string>
     <string name="hint_pointcloud_enabled">Bodový oblak povolený</string>
     <string name="hint_pointcloud_disabled">Bodový oblak zakázaný</string>
@@ -61,6 +58,7 @@
     <string name="btn_3dof_off">Andur: VÄLJAS</string>
     <string name="btn_3dof_on">Andur: SEES</string>
     <string name="hint_3dof_unavailable">Andur pole saadaval</string>
+    <string name="hint_landscape_lock_tilt">Lukustage seade püstpaigutusse</string>
 
     <string name="hint_no_camera">Nezistila sa kamera</string>
 
@@ -100,5 +98,9 @@
     <string name="camera_facing_front">Esikaamera (%1$s)</string>
     <string name="camera_facing_other">Kaamera %1$s</string>
     <string name="dialog_select_camera">Vali kaamera</string>
+    <string name="btn_camera_preview_enabled">✓Kaamera</string>
+    <string name="btn_camera_preview_disabled">Kaamera</string>
+    <string name="hint_camera_preview_enabled">Kaameravaade on lubatud</string>
+    <string name="hint_camera_preview_disabled">Kaameravaade on keelatud</string>
 
 </resources>

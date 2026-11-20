@@ -6,11 +6,8 @@
     <string name="btn_load">載入</string>
     <string name="btn_map">地圖</string>
     <string name="btn_point_cloud">✓點雲</string>
-    <string name="loading_slam_init">正在初始化 SLAM 系統…</string>
-    <string name="loading_slam_wait">請稍候，這可能需要一些時間</string>
     <string name="slam_init_complete">SLAM 系統初始化完成</string>
     <string name="slam_connection_lost">SLAM 服務連線已中斷，請重新開啟應用程式以重新連線</string>
-    <string name="slam_init_failed">SLAM 初始化失敗：%1$s</string>
     <string name="hint_request_sent">請求已發送</string>
     <string name="hint_pointcloud_enabled">點雲已啟用</string>
     <string name="hint_pointcloud_disabled">點雲已停用</string>
@@ -60,6 +57,7 @@
     <string name="btn_3dof_off">感應器: 關</string>
     <string name="btn_3dof_on">感應器: 開</string>
     <string name="hint_3dof_unavailable">裝置缺少方向感應器</string>
+    <string name="hint_landscape_lock_tilt">請將裝置鎖定為直向</string>
 
     <string name="hint_no_camera">未偵測到可用相機（黑畫面模式）</string>
 
@@ -98,5 +96,9 @@
     <string name="camera_facing_front">前置相機 (%1$s)</string>
     <string name="camera_facing_other">相機 %1$s</string>
     <string name="dialog_select_camera">選擇相機</string>
+    <string name="btn_camera_preview_enabled">✓相機畫面</string>
+    <string name="btn_camera_preview_disabled">相機畫面</string>
+    <string name="hint_camera_preview_enabled">相機畫面已開啟</string>
+    <string name="hint_camera_preview_disabled">相機畫面已關閉</string>
 
 </resources>

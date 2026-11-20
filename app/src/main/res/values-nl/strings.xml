@@ -6,11 +6,8 @@
     <string name="btn_load">Laden</string>
     <string name="btn_map">Kaart</string>
     <string name="btn_point_cloud">✓Puntenwolk</string>
-    <string name="loading_slam_init">SLAM-systeem initialiseren…</string>
-    <string name="loading_slam_wait">Even geduld, dit kan even duren</string>
     <string name="slam_init_complete">SLAM-systeem geïnitialiseerd</string>
     <string name="slam_connection_lost">De verbinding met de SLAM-service is verbroken. Open de app opnieuw om opnieuw te verbinden.</string>
-    <string name="slam_init_failed">SLAM-initialisatie mislukt: %1$s</string>
     <string name="hint_request_sent">Verzoek verzonden</string>
     <string name="hint_pointcloud_enabled">Puntenwolk ingeschakeld</string>
     <string name="hint_pointcloud_disabled">Puntenwolk uitgeschakeld</string>
@@ -61,6 +58,7 @@
     <string name="btn_3dof_off">Sensor: UIT</string>
     <string name="btn_3dof_on">Sensor: AAN</string>
     <string name="hint_3dof_unavailable">Sensor niet beschikbaar</string>
+    <string name="hint_landscape_lock_tilt">Vergrendel het apparaat in staande stand</string>
 
     <string name="hint_no_camera">Geen camera gedetecteerd (zwart scherm-modus)</string>
 
@@ -100,5 +98,9 @@
     <string name="camera_facing_front">Frontcamera (%1$s)</string>
     <string name="camera_facing_other">Camera %1$s</string>
     <string name="dialog_select_camera">Camera selecteren</string>
+    <string name="btn_camera_preview_enabled">✓Camera</string>
+    <string name="btn_camera_preview_disabled">Camera</string>
+    <string name="hint_camera_preview_enabled">Camerabeeld aan</string>
+    <string name="hint_camera_preview_disabled">Camerabeeld uit</string>
 
 </resources>

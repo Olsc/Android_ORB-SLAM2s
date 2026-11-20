@@ -6,11 +6,8 @@
     <string name="btn_load">โหลด</string>
     <string name="btn_map">แผนที่</string>
     <string name="btn_point_cloud">✓กลุ่มจุด</string>
-    <string name="loading_slam_init">กำลังเริ่มต้นระบบ SLAM…</string>
-    <string name="loading_slam_wait">กรุณารอ อาจใช้เวลาสักครู่</string>
     <string name="slam_init_complete">ระบบ SLAM พร้อมใช้งาน</string>
     <string name="slam_connection_lost">การเชื่อมต่อกับบริการ SLAM ขาดหายแล้ว เปิดแอปอีกครั้งเพื่อเชื่อมต่อใหม่</string>
-    <string name="slam_init_failed">การเริ่มต้น SLAM ล้มเหลว: %1$s</string>
     <string name="hint_request_sent">ส่งคำขอแล้ว</string>
     <string name="hint_pointcloud_enabled">เปิดใช้งานกลุ่มจุดแล้ว</string>
     <string name="hint_pointcloud_disabled">ปิดใช้งานกลุ่มจุดแล้ว</string>
@@ -60,6 +57,7 @@
     <string name="btn_3dof_off">เซ็นเซอร์: ปิด</string>
     <string name="btn_3dof_on">เซ็นเซอร์: เปิด</string>
     <string name="hint_3dof_unavailable">ไม่พบเซ็นเซอร์</string>
+    <string name="hint_landscape_lock_tilt">โปรดล็อกอุปกรณ์เป็นแนวตั้ง</string>
 
     <string name="hint_no_camera">ไม่พบกล้อง (โหมดหน้าจอสีดำ)</string>
 
@@ -98,5 +96,9 @@
     <string name="camera_facing_front">กล้องหน้า (%1$s)</string>
     <string name="camera_facing_other">กล้อง %1$s</string>
     <string name="dialog_select_camera">เลือกกล้อง</string>
+    <string name="btn_camera_preview_enabled">✓กล้อง</string>
+    <string name="btn_camera_preview_disabled">กล้อง</string>
+    <string name="hint_camera_preview_enabled">เปิดมุมมองกล้องแล้ว</string>
+    <string name="hint_camera_preview_disabled">ปิดมุมมองกล้องแล้ว</string>
 
 </resources>

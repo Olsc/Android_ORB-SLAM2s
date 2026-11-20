@@ -321,7 +321,7 @@ void Sim3Solver::ComputeSim3(const double P1[3][SIM3_RANSAC_MIN_SET], const doub
 
 void Sim3Solver::CheckInliers()
 {
-    // 2 → 1：用 s*R12, t12 把 Xc2 变到相机 1 再投影；1 → 2 用 T21
+    // 2 到 1：用 s*R12, t12 把 Xc2 变到相机 1 再投影；1 到 2 用 T21
     Project(mvX3Dc2, mvP2im1, mR12d, ms12d, mt12d, mK1);
     Project(mvX3Dc1, mvP1im2, mR21d, 1.0, mt21d, mK2);
 
