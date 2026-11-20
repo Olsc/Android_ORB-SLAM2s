@@ -217,6 +217,19 @@
             android:gravity="end"
             android:visibility="gone">
             <Button
+                android:id="@+id/btn_toggle_camera_preview"
+                android:layout_width="wrap_content"
+                android:minWidth="76dp"
+                android:layout_height="wrap_content"
+                android:minHeight="32dp"
+                android:layout_marginBottom="4dp"
+                android:text="@string/btn_camera_preview_enabled"
+                android:textSize="11sp"
+                android:textAllCaps="false"
+                android:alpha="0.85"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"/>
+            <Button
                 android:id="@+id/btn_toggle_pointcloud"
                 android:layout_width="wrap_content"
                 android:minWidth="76dp"

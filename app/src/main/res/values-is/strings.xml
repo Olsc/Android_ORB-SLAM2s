@@ -100,5 +100,9 @@
     <string name="camera_facing_front">Fremri myndavél (%1$s)</string>
     <string name="camera_facing_other">Myndavél %1$s</string>
     <string name="dialog_select_camera">Veldu myndavél</string>
+    <string name="btn_camera_preview_enabled">✓Myndavél</string>
+    <string name="btn_camera_preview_disabled">Myndavél</string>
+    <string name="hint_camera_preview_enabled">Myndavélarsýn virkjuð</string>
+    <string name="hint_camera_preview_disabled">Myndavélarsýn óvirkjuð</string>
 
 </resources>

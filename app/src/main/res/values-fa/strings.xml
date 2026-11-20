@@ -100,5 +100,9 @@
     <string name="camera_facing_front">دوربین جلو (%1$s)</string>
     <string name="camera_facing_other">دوربین %1$s</string>
     <string name="dialog_select_camera">انتخاب دوربین</string>
+    <string name="btn_camera_preview_enabled">✓دوربین</string>
+    <string name="btn_camera_preview_disabled">دوربین</string>
+    <string name="hint_camera_preview_enabled">نمای دوربین فعال شد</string>
+    <string name="hint_camera_preview_disabled">نمای دوربین غیرفعال شد</string>
 
 </resources>

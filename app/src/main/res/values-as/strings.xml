@@ -100,5 +100,9 @@
     <string name="camera_facing_front">আগৰ কেমেৰা (%1$s)</string>
     <string name="camera_facing_other">কেমেৰা %1$s</string>
     <string name="dialog_select_camera">কেমেৰা বাছক</string>
+    <string name="btn_camera_preview_enabled">✓কেমেৰা</string>
+    <string name="btn_camera_preview_disabled">কেমেৰা</string>
+    <string name="hint_camera_preview_enabled">কেমেৰা দৃশ্য সক্ৰিয় কৰা হৈছে</string>
+    <string name="hint_camera_preview_disabled">কেমেৰা দৃশ্য নিষ্ক্ৰিয় কৰা হৈছে</string>
 
 </resources>

@@ -100,5 +100,9 @@
     <string name="camera_facing_front">Урд талын камер (%1$s)</string>
     <string name="camera_facing_other">Камер %1$s</string>
     <string name="dialog_select_camera">Камер сонгох</string>
+    <string name="btn_camera_preview_enabled">✓Камер</string>
+    <string name="btn_camera_preview_disabled">Камер</string>
+    <string name="hint_camera_preview_enabled">Камерын дүрс асаалттай</string>
+    <string name="hint_camera_preview_disabled">Камерын дүрс унтраалттай</string>
 
 </resources>

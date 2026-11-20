@@ -100,5 +100,9 @@
     <string name="camera_facing_front">Μπροστινή κάμερα (%1$s)</string>
     <string name="camera_facing_other">Κάμερα %1$s</string>
     <string name="dialog_select_camera">Επιλογή κάμερας</string>
+    <string name="btn_camera_preview_enabled">✓Κάμερα</string>
+    <string name="btn_camera_preview_disabled">Κάμερα</string>
+    <string name="hint_camera_preview_enabled">Η προβολή κάμερας ενεργοποιήθηκε</string>
+    <string name="hint_camera_preview_disabled">Η προβολή κάμερας απενεργοποιήθηκε</string>
 
 </resources>

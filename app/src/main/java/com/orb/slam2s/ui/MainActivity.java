@@ -95,6 +95,7 @@ public class MainActivity extends ComponentActivity
     private Button mBtnLoadMap;
     private Button mBtnMapList;
     private Button mBtnTogglePointCloud;
+    private Button mBtnToggleCameraPreview;
     private Button mBtnSwitchCamera;
     private Button mBtnMirrorVertical;
     private Button mBtnMirrorHorizontal;
@@ -321,6 +322,12 @@ public class MainActivity extends ComponentActivity
         if (mBtnTogglePointCloud != null) {
             mBtnTogglePointCloud.setOnClickListener(v -> togglePointCloudDisplay());
             updatePointCloudButton(isPointCloudVisibleEnabled());
+        }
+
+        mBtnToggleCameraPreview = findViewById(R.id.btn_toggle_camera_preview);
+        if (mBtnToggleCameraPreview != null) {
+            mBtnToggleCameraPreview.setOnClickListener(v -> toggleCameraPreview());
+            updateCameraPreviewButton(mCameraPreviewView == null || mCameraPreviewView.isCameraPreviewEnabled());
         }
 
         mBtnSwitchCamera = findViewById(R.id.btn_switch_camera);
@@ -800,6 +807,32 @@ public class MainActivity extends ComponentActivity
         if (mBtnTogglePointCloud != null) {
             mBtnTogglePointCloud.setText(getString(visible
                     ? R.string.btn_pointcloud_enabled : R.string.btn_pointcloud_disabled));
+        }
+    }
+
+    private void toggleCameraPreview() {
+        if (mCameraPreviewView == null) {
+            Log.e(TAG, "无法切换相机画面：预览视图未就绪");
+            return;
+        }
+        setCameraPreviewEnabled(!mCameraPreviewView.isCameraPreviewEnabled());
+    }
+
+    // 相机画面开关：只影响预览绘制，SLAM 采集继续运行；状态由预览视图持久化
+    private void setCameraPreviewEnabled(boolean enabled) {
+        if (mCameraPreviewView != null) {
+            mCameraPreviewView.setCameraPreviewEnabled(enabled);
+        }
+        updateCameraPreviewButton(enabled);
+        showToast(getString(enabled
+                ? R.string.hint_camera_preview_enabled : R.string.hint_camera_preview_disabled));
+        Log.d(TAG, enabled ? "相机画面已开启" : "相机画面已关闭");
+    }
+
+    private void updateCameraPreviewButton(boolean enabled) {
+        if (mBtnToggleCameraPreview != null) {
+            mBtnToggleCameraPreview.setText(getString(enabled
+                    ? R.string.btn_camera_preview_enabled : R.string.btn_camera_preview_disabled));
         }
     }
 

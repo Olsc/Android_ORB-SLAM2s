@@ -102,5 +102,9 @@
     <string name="camera_facing_front">Cameră frontală (%1$s)</string>
     <string name="camera_facing_other">Cameră %1$s</string>
     <string name="dialog_select_camera">Selectează camera</string>
+    <string name="btn_camera_preview_enabled">✓Cameră</string>
+    <string name="btn_camera_preview_disabled">Cameră</string>
+    <string name="hint_camera_preview_enabled">Vizualizare cameră activată</string>
+    <string name="hint_camera_preview_disabled">Vizualizare cameră dezactivată</string>
 
 </resources>

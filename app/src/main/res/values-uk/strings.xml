@@ -104,5 +104,9 @@
     <string name="camera_facing_front">Фронтальна камера (%1$s)</string>
     <string name="camera_facing_other">Камера %1$s</string>
     <string name="dialog_select_camera">Вибір камери</string>
+    <string name="btn_camera_preview_enabled">✓Камера</string>
+    <string name="btn_camera_preview_disabled">Камера</string>
+    <string name="hint_camera_preview_enabled">Зображення з камери ввімкнено</string>
+    <string name="hint_camera_preview_disabled">Зображення з камери вимкнено</string>
 
 </resources>

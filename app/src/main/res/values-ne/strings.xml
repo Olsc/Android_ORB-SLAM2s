@@ -100,5 +100,9 @@
     <string name="camera_facing_front">अगाडिको क्यामेरा (%1$s)</string>
     <string name="camera_facing_other">क्यामेरा %1$s</string>
     <string name="dialog_select_camera">क्यामेरा चयन गर्नुहोस्</string>
+    <string name="btn_camera_preview_enabled">✓क्यामेरा</string>
+    <string name="btn_camera_preview_disabled">क्यामेरा</string>
+    <string name="hint_camera_preview_enabled">क्यामेरा दृश्य सक्षम छ</string>
+    <string name="hint_camera_preview_disabled">क्यामेरा दृश्य अक्षम छ</string>
 
 </resources>

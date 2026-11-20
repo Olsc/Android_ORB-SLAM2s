@@ -98,5 +98,9 @@
     <string name="camera_facing_front">กล้องหน้า (%1$s)</string>
     <string name="camera_facing_other">กล้อง %1$s</string>
     <string name="dialog_select_camera">เลือกกล้อง</string>
+    <string name="btn_camera_preview_enabled">✓กล้อง</string>
+    <string name="btn_camera_preview_disabled">กล้อง</string>
+    <string name="hint_camera_preview_enabled">เปิดมุมมองกล้องแล้ว</string>
+    <string name="hint_camera_preview_disabled">ปิดมุมมองกล้องแล้ว</string>
 
 </resources>

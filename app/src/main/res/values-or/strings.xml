@@ -100,5 +100,9 @@
     <string name="camera_facing_front">ଆଗ କ୍ୟାମେରା (%1$s)</string>
     <string name="camera_facing_other">କ୍ୟାମେରା %1$s</string>
     <string name="dialog_select_camera">କ୍ୟାମେରା ଚୟନ କରନ୍ତୁ</string>
+    <string name="btn_camera_preview_enabled">✓କ୍ୟାମେରା</string>
+    <string name="btn_camera_preview_disabled">କ୍ୟାମେରା</string>
+    <string name="hint_camera_preview_enabled">କ୍ୟାମେରା ଦୃଶ୍ୟ ସକ୍ଷମ ଅଛି</string>
+    <string name="hint_camera_preview_disabled">କ୍ୟାମେରା ଦୃଶ୍ୟ ଅକ୍ଷମ ଅଛି</string>
 
 </resources>

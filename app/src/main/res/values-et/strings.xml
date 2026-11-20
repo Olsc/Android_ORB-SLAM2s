@@ -100,5 +100,9 @@
     <string name="camera_facing_front">Esikaamera (%1$s)</string>
     <string name="camera_facing_other">Kaamera %1$s</string>
     <string name="dialog_select_camera">Vali kaamera</string>
+    <string name="btn_camera_preview_enabled">✓Kaamera</string>
+    <string name="btn_camera_preview_disabled">Kaamera</string>
+    <string name="hint_camera_preview_enabled">Kaameravaade on lubatud</string>
+    <string name="hint_camera_preview_disabled">Kaameravaade on keelatud</string>
 
 </resources>

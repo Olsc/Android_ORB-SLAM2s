@@ -100,5 +100,9 @@
     <string name="camera_facing_front">წინა კამერა (%1$s)</string>
     <string name="camera_facing_other">კამერა %1$s</string>
     <string name="dialog_select_camera">კამერის არჩევა</string>
+    <string name="btn_camera_preview_enabled">✓კამერა</string>
+    <string name="btn_camera_preview_disabled">კამერა</string>
+    <string name="hint_camera_preview_enabled">კამერის ხედი ჩართულია</string>
+    <string name="hint_camera_preview_disabled">კამერის ხედი გამორთულია</string>
 
 </resources>

@@ -100,5 +100,9 @@
     <string name="camera_facing_front">Առջևի տեսախցիկ (%1$s)</string>
     <string name="camera_facing_other">Տեսախցիկ %1$s</string>
     <string name="dialog_select_camera">Ընտրել տեսախցիկ</string>
+    <string name="btn_camera_preview_enabled">✓Տեսախցիկ</string>
+    <string name="btn_camera_preview_disabled">Տեսախցիկ</string>
+    <string name="hint_camera_preview_enabled">Տեսախցիկի տեսքը միացված է</string>
+    <string name="hint_camera_preview_disabled">Տեսախցիկի տեսքը անջատված է</string>
 
 </resources>

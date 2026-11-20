@@ -104,5 +104,9 @@
     <string name="camera_facing_front">Aparat przedni (%1$s)</string>
     <string name="camera_facing_other">Aparat %1$s</string>
     <string name="dialog_select_camera">Wybierz aparat</string>
+    <string name="btn_camera_preview_enabled">✓Kamera</string>
+    <string name="btn_camera_preview_disabled">Kamera</string>
+    <string name="hint_camera_preview_enabled">Podgląd kamery włączony</string>
+    <string name="hint_camera_preview_disabled">Podgląd kamery wyłączony</string>
 
 </resources>

@@ -100,5 +100,9 @@
     <string name="camera_facing_front">Frontcamera (%1$s)</string>
     <string name="camera_facing_other">Camera %1$s</string>
     <string name="dialog_select_camera">Camera selecteren</string>
+    <string name="btn_camera_preview_enabled">✓Camera</string>
+    <string name="btn_camera_preview_disabled">Camera</string>
+    <string name="hint_camera_preview_enabled">Camerabeeld aan</string>
+    <string name="hint_camera_preview_disabled">Camerabeeld uit</string>
 
 </resources>

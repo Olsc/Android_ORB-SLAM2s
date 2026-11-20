@@ -100,5 +100,9 @@
     <string name="camera_facing_front">Ikhamera Yangaphambili (%1$s)</string>
     <string name="camera_facing_other">Ikhamera %1$s</string>
     <string name="dialog_select_camera">Khetha Ikhamera</string>
+    <string name="btn_camera_preview_enabled">✓Ikhamera</string>
+    <string name="btn_camera_preview_disabled">Ikhamera</string>
+    <string name="hint_camera_preview_enabled">Ukubuka kwekhamera kuvuliwe</string>
+    <string name="hint_camera_preview_disabled">Ukubuka kwekhamera kuvaliwe</string>
 
 </resources>

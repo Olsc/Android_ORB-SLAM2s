@@ -105,13 +105,16 @@ public class CameraPreviewView extends AspectGLSurfaceView {
     private int[] mCachePixels;       // 预览位图像素数组
     private boolean mPortraitFrameWarned;
 
-    // 画面镜像开关，仅作用于显示端并持久化，下次启动自动恢复；
-    // 送往 SLAM 的灰度帧始终是相机原始像素，因此镜像不改变地图坐标系与 MenthaAR 输出。
+    // 画面镜像/相机画面开关，仅作用于显示端并持久化，下次启动自动恢复；
+    // 送往 SLAM 的灰度帧始终是相机原始像素，因此这些开关不改变地图坐标系与 MenthaAR 输出。
     private volatile boolean mMirrorVertical;
     private volatile boolean mMirrorHorizontal;
+    private volatile boolean mCameraPreviewEnabled;
     private static final String PREFS_DISPLAY = "camera_display_settings";
     private static final String PREF_MIRROR_VERTICAL = "mirror_vertical";
     private static final String PREF_MIRROR_HORIZONTAL = "mirror_horizontal";
+    // 相机画面开关：关闭时仅停止预览绘制，CameraX 仍持续取帧供 SLAM 使用
+    private static final String PREF_CAMERA_PREVIEW = "camera_preview_enabled";
 
     // 当前生效的显示层矫正(方向 + 镜像)，由相机帧的 rotationDegrees 自动推导
     private volatile DisplayCorrection mDisplayCorrection;
@@ -170,14 +173,15 @@ public class CameraPreviewView extends AspectGLSurfaceView {
     public CameraPreviewView(Context context, AttributeSet attrs) {
         super(context, attrs);
         this.mContext = context;
-        restoreMirrorSettings();
+        restoreDisplaySettings();
     }
 
-    // 从本地配置恢复镜像开关(构造时执行，早于首帧渲染与相机启动)
-    private void restoreMirrorSettings() {
+    // 从本地配置恢复显示开关(构造时执行，早于首帧渲染与相机启动)
+    private void restoreDisplaySettings() {
         SharedPreferences prefs = mContext.getSharedPreferences(PREFS_DISPLAY, Context.MODE_PRIVATE);
         mMirrorVertical = prefs.getBoolean(PREF_MIRROR_VERTICAL, false);
         mMirrorHorizontal = prefs.getBoolean(PREF_MIRROR_HORIZONTAL, false);
+        mCameraPreviewEnabled = prefs.getBoolean(PREF_CAMERA_PREVIEW, true);
     }
 
     public void setMenthaAR(MenthaAR client) {
@@ -223,6 +227,19 @@ public class CameraPreviewView extends AspectGLSurfaceView {
 
     public boolean isMirrorHorizontal() {
         return mMirrorHorizontal;
+    }
+
+    // 相机画面开关：关闭后预览层不再绘制，屏幕保持纯黑；采集与 SLAM 帧推送不受影响。
+    // 状态持久化，下次启动自动恢复。
+    public void setCameraPreviewEnabled(boolean enabled) {
+        mCameraPreviewEnabled = enabled;
+        mContext.getSharedPreferences(PREFS_DISPLAY, Context.MODE_PRIVATE)
+                .edit().putBoolean(PREF_CAMERA_PREVIEW, enabled).apply();
+        requestRender();
+    }
+
+    public boolean isCameraPreviewEnabled() {
+        return mCameraPreviewEnabled;
     }
 
     // 按显示方向尺寸准备预览位图(90/270 矫正后长宽互换，需要重建)
@@ -845,7 +862,10 @@ public class CameraPreviewView extends AspectGLSurfaceView {
                 mPointCloudSeq = -1;
             }
 
-            mPassThroughRenderer.onDrawFrame(mImageTextureId);
+            // 相机画面关闭时不绘制预览层，仅保留上面的纯黑清屏（点云与 AR 物体仍可叠加显示）
+            if (mCameraPreviewEnabled) {
+                mPassThroughRenderer.onDrawFrame(mImageTextureId);
+            }
 
             if (mMenthaAR != null && mMenthaAR.isConnected() && mPointCloudRenderer != null) {
                 // 一次读取位姿 + 状态快照（复用对象，无分配）；只在 SDK 点云版本号变化时才重新读取并上传 VBO

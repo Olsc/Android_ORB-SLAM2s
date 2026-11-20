@@ -102,5 +102,9 @@
     <string name="camera_facing_front">Fotocamera anteriore (%1$s)</string>
     <string name="camera_facing_other">Fotocamera %1$s</string>
     <string name="dialog_select_camera">Seleziona fotocamera</string>
+    <string name="btn_camera_preview_enabled">✓Fotocamera</string>
+    <string name="btn_camera_preview_disabled">Fotocamera</string>
+    <string name="hint_camera_preview_enabled">Vista fotocamera attivata</string>
+    <string name="hint_camera_preview_disabled">Vista fotocamera disattivata</string>
 
 </resources>

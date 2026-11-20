@@ -102,5 +102,9 @@
     <string name="camera_facing_front">Предња камера (%1$s)</string>
     <string name="camera_facing_other">Камера %1$s</string>
     <string name="dialog_select_camera">Изаберите камеру</string>
+    <string name="btn_camera_preview_enabled">✓Камера</string>
+    <string name="btn_camera_preview_disabled">Камера</string>
+    <string name="hint_camera_preview_enabled">Приказ камере је омогућен</string>
+    <string name="hint_camera_preview_disabled">Приказ камере је онемогућен</string>
 
 </resources>

@@ -100,5 +100,9 @@
     <string name="camera_facing_front">Алдыңғы камера (%1$s)</string>
     <string name="camera_facing_other">Камера %1$s</string>
     <string name="dialog_select_camera">Камераны таңдау</string>
+    <string name="btn_camera_preview_enabled">✓Камера</string>
+    <string name="btn_camera_preview_disabled">Камера</string>
+    <string name="hint_camera_preview_enabled">Камера көрінісі қосылды</string>
+    <string name="hint_camera_preview_disabled">Камера көрінісі өшірілді</string>
 
 </resources>

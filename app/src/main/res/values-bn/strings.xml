@@ -100,5 +100,9 @@
     <string name="camera_facing_front">সামনের ক্যামেরা (%1$s)</string>
     <string name="camera_facing_other">ক্যামেরা %1$s</string>
     <string name="dialog_select_camera">ক্যামেরা নির্বাচন করুন</string>
+    <string name="btn_camera_preview_enabled">✓ক্যামেরা</string>
+    <string name="btn_camera_preview_disabled">ক্যামেরা</string>
+    <string name="hint_camera_preview_enabled">ক্যামেরা ভিউ চালু করা হয়েছে</string>
+    <string name="hint_camera_preview_disabled">ক্যামেরা ভিউ বন্ধ করা হয়েছে</string>
 
 </resources>

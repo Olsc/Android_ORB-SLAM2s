@@ -98,5 +98,9 @@
     <string name="camera_facing_front">前置相機 (%1$s)</string>
     <string name="camera_facing_other">相機 %1$s</string>
     <string name="dialog_select_camera">選擇相機</string>
+    <string name="btn_camera_preview_enabled">✓相機畫面</string>
+    <string name="btn_camera_preview_disabled">相機畫面</string>
+    <string name="hint_camera_preview_enabled">相機畫面已開啟</string>
+    <string name="hint_camera_preview_disabled">相機畫面已關閉</string>
 
 </resources>

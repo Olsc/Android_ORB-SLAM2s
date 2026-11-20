@@ -100,5 +100,9 @@
     <string name="camera_facing_front">Camera sa Harap (%1$s)</string>
     <string name="camera_facing_other">Camera %1$s</string>
     <string name="dialog_select_camera">Pumili ng Camera</string>
+    <string name="btn_camera_preview_enabled">✓Camera</string>
+    <string name="btn_camera_preview_disabled">Camera</string>
+    <string name="hint_camera_preview_enabled">Naka-enable ang camera view</string>
+    <string name="hint_camera_preview_disabled">Naka-disable ang camera view</string>
 
 </resources>
