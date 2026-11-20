@@ -301,7 +301,6 @@ void Plane::Recompute()
     }
 
     // 首次计算时让物体正面(局部 +Z)朝向相机：把相机方向投影到平面内，换算到 R1 局部系后取方位角。
-    // 不再随机，物体始终竖直立在平面上并面向使用者
     if (!mYawInitialized && !mTcw.empty())
     {
         const float* tc = mTcw.ptr<float>();
@@ -318,8 +317,8 @@ void Plane::Recompute()
         const float lz = r1[2] * dx + r1[5] * dy + r1[8] * dz; // R1^T * d 的 z 分量
         if (lx * lx + lz * lz > 1e-10f)
         {
-            // 渲染器对模型做了 Rx(180)，模型 +Z 在平面局部系中对应 -Z，所以朝向角要再加 π，正面才朝向相机
-            rang = std::atan2(lx, lz) + 3.14159265358979323846f;
+            constexpr float kModelFrontYawOffset = 3.14159265358979323846f / 2.0f;
+            rang = std::atan2(lx, lz) + 3.14159265358979323846f + kModelFrontYawOffset;
         }
         mYawInitialized = true;
     }
