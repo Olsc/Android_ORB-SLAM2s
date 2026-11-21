@@ -78,7 +78,16 @@ KeyFrame::KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB):
     {
         mGrid[i].resize(mnGridRows);
         for(int j=0; j<mnGridRows; j++)
-            mGrid[i][j] = F.mGrid[i][j];
+        {
+            // 从 Frame 的 CSR 网格还原每格索引（顺序不变）
+            mGrid[i][j].clear();
+            if(!F.mGridStart.empty())
+            {
+                const int c = i*FRAME_GRID_ROWS + j;
+                mGrid[i][j].assign(F.mGridIdx.begin()+F.mGridStart[c],
+                                   F.mGridIdx.begin()+F.mGridStart[c+1]);
+            }
+        }
     }
 
     SetPose(F.mTcw);

@@ -77,9 +77,8 @@ Frame::Frame(const Frame &frame)
     std::memset(mtcw_arr, 0, sizeof(mtcw_arr));
     std::memset(mOw_arr, 0, sizeof(mOw_arr));
 
-    for(int i=0;i<FRAME_GRID_COLS;i++)
-        for(int j=0; j<FRAME_GRID_ROWS; j++)
-            mGrid[i][j]=frame.mGrid[i][j];
+    mGridStart = frame.mGridStart;
+    mGridIdx = frame.mGridIdx;
 
     if(!frame.mTcw.empty())
         SetPose(frame.mTcw);
@@ -147,15 +146,17 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
 void Frame::AssignFeaturesToGrid()
 {
     // 确保N和mvKeysUn有效
+    mGridStart.clear();
+    mGridIdx.clear();
     if(N <= 0 || mvKeysUn.empty())
     {
         return;
     }
 
-    int nReserve = FRAME_GRID_RESERVE_FACTOR*N/(FRAME_GRID_COLS*FRAME_GRID_ROWS);
-    for(unsigned int i=0; i<FRAME_GRID_COLS;i++)
-        for (unsigned int j=0; j<FRAME_GRID_ROWS;j++)
-            mGrid[i][j].reserve(nReserve);
+    // 两遍计数法（CSR）：第一遍记录每个关键点所在格并统计数量，第二遍按索引升序填充
+    const int nCells = FRAME_GRID_COLS*FRAME_GRID_ROWS;
+    std::vector<int> cellOf(N, -1);
+    mGridStart.assign(nCells+1, 0);
 
     for(int i=0;i<N;i++)
     {
@@ -174,9 +175,23 @@ void Frame::AssignFeaturesToGrid()
             if(nGridPosX >= 0 && nGridPosX < FRAME_GRID_COLS &&
                nGridPosY >= 0 && nGridPosY < FRAME_GRID_ROWS)
             {
-                mGrid[nGridPosX][nGridPosY].push_back(i);
+                const int c = nGridPosX*FRAME_GRID_ROWS + nGridPosY;
+                cellOf[i] = c;
+                mGridStart[c+1]++;
             }
         }
+    }
+
+    for(int c=0;c<nCells;c++)
+        mGridStart[c+1] += mGridStart[c];
+
+    mGridIdx.resize(mGridStart[nCells]);
+    std::vector<int> head(mGridStart.begin(), mGridStart.begin()+nCells);
+    for(int i=0;i<N;i++)
+    {
+        const int c = cellOf[i];
+        if(c >= 0)
+            mGridIdx[head[c]++] = static_cast<std::size_t>(i);
     }
 }
 
@@ -321,18 +336,23 @@ void Frame::GetFeaturesInArea(const float &x, const float &y, const float &r,
 
     const bool bCheckLevels = (minLevel>0) || (maxLevel>=0);
 
+    // 无网格（N<=0）时没有任何候选
+    if(mGridStart.empty())
+        return;
+
     for(int ix = nMinCellX; ix<=nMaxCellX; ix++)
     {
         for(int iy = nMinCellY; iy<=nMaxCellY; iy++)
         {
-            // 使用 const 引用
-            const std::vector<size_t>& vCell = mGrid[ix][iy];
-            if(vCell.empty())
-                continue;
+            // 单元格的索引区间：连续内存，无额外指针跳转
+            const int cell = ix*FRAME_GRID_ROWS + iy;
+            const int jbeg = mGridStart[cell];
+            const int jend = mGridStart[cell+1];
 
-            for(size_t j=0, jend=vCell.size(); j<jend; j++)
+            for(int j=jbeg; j<jend; j++)
             {
-                const cv::KeyPoint &kpUn = mvKeysUn[vCell[j]];
+                const size_t kIdx = mGridIdx[j];
+                const cv::KeyPoint &kpUn = mvKeysUn[kIdx];
                 if(bCheckLevels)
                 {
                     if(kpUn.octave<minLevel)
@@ -346,7 +366,7 @@ void Frame::GetFeaturesInArea(const float &x, const float &y, const float &r,
                 const float disty = kpUn.pt.y-y;
 
                 if(fabs(distx)<r && fabs(disty)<r)
-                    vIndices.push_back(vCell[j]);
+                    vIndices.push_back(kIdx);
             }
         }
     }
