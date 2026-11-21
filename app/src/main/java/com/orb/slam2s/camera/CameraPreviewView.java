@@ -466,7 +466,9 @@ public class CameraPreviewView extends AspectGLSurfaceView {
                                     // 单次遍历：灰度直接写进共享内存槽位，ARGB 直接写进预览位图（像素与 Java 路径逐位相同）
                                     synchronized (mSyncLock) {
                                         ensureCacheBitmap(correction.displayWidth, correction.displayHeight);
-                                        final boolean previewVisible = mCacheBitmap != null && !mCacheBitmap.isRecycled();
+                                        // 预览关闭时不做 ARGB 转换与纹理上传（预览层本就不绘制，灰度输出不受影响）
+                                        final boolean previewVisible = mCameraPreviewEnabled
+                                                && mCacheBitmap != null && !mCacheBitmap.isRecycled();
                                         converted = FrameConverter.convert(buf, rowStride, w, h,
                                                 frame != null ? frame.gray : null,
                                                 previewVisible ? mCacheBitmap : null, correction);
@@ -755,7 +757,8 @@ public class CameraPreviewView extends AspectGLSurfaceView {
 
         synchronized (mSyncLock) {
             ensureCacheBitmap(correction.displayWidth, correction.displayHeight);
-            boolean previewVisible = mCacheBitmap != null && !mCacheBitmap.isRecycled();
+            boolean previewVisible = mCameraPreviewEnabled
+                    && mCacheBitmap != null && !mCacheBitmap.isRecycled();
             if (previewVisible && (mCachePixels == null || mCachePixels.length < displaySize)) {
                 mCachePixels = new int[displaySize];
             }
