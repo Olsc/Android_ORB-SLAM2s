@@ -193,9 +193,16 @@ For a closed-source version of ORB-SLAM2 for commercial purposes, please contact
 This project adopts a modular license architecture based on Android IPC process isolation:
 
 - **`app/` Module**: Licensed under the **[Apache License, Version 2.0](app/LICENSE)** (Apache-2.0). Contains UI, camera preview and GLB rendering only; it never references GPL-only code at compile time.
-- **`MenthaAR-SDK/` Interface Module**: **Dual-licensed under Apache-2.0 or GPLv3** (either one). Contains only the AIDL definitions and the shared-memory client, and is the single compile-time boundary between `app` and the GPL implementation.
+- **`MenthaAR-SDK/` Interface Module**: The SDK source code is **dual-licensed under Apache-2.0 or GPLv3** (either one, see [MenthaAR-SDK/LICENSE](MenthaAR-SDK/LICENSE)). It contains the AIDL definitions and the shared-memory client, and is the single compile-time boundary between `app` and the GPL implementation.
+  - **Note:** the integrated AAR produced by `assembleIntegratedAar` (`MenthaAR-SDK-integrated-*.aar`) bundles the GPLv3 engine's classes and native libraries. That artifact is therefore distributed under **GPLv3 only**; the Apache-2.0 option does not apply to it.
 - **`MenthaAR/` Engine Module**: Derived from ORB-SLAM2 and released under the **[GNU General Public License v3.0](MenthaAR/LICENSE)** (GPLv3). Contains the C++ SLAM algorithms, pose sensors and pose fusion.
 - **Process Isolation**: `app` and the `MenthaAR` engine run in separate processes and exchange data only through Binder IPC and SharedMemory (Ashmem/memfd). The GPL implementation is packaged as a `runtimeOnly` dependency and is not reachable from app source code.
+
+### Distributing the App
+
+The APK built from this repository includes the GPLv3 engine (`MenthaAR`) as a runtime dependency. If you distribute that APK, you must comply with GPLv3 for the engine: provide the corresponding source code of `MenthaAR` (or a written offer to provide it), include the GPLv3 license text, and mark any modifications you make. The Apache-2.0 files in `app/` keep their own copyright and NOTICE requirements. The Apache-2.0 license of `app/` must not add restrictions on the GPLv3 engine.
+
+This is a summary, not legal advice. Consult a lawyer before commercial distribution.
 
 See [LICENSE](LICENSE), [app/LICENSE](app/LICENSE), [MenthaAR-SDK/LICENSE](MenthaAR-SDK/LICENSE), and [MenthaAR/LICENSE](MenthaAR/LICENSE) for details.
 

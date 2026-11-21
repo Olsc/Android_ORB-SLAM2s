@@ -193,11 +193,18 @@ ORB-SLAM2 コアライブラリは [GPLv3 ライセンス](https://github.com/ra
 本プロジェクトは、Android IPC プロセス分離に基づくマルチモジュール・ライセンスアーキテクチャを採用しています：
 
 - **`app/` モジュール**: **[Apache License 2.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/app/LICENSE)** (Apache-2.0) の下でライセンスされています。UI、カメラプレビュー、ネイティブ cgltf/OpenGL ES 3D レンダリング、センサーコンポーネントが含まれます。
-- **`MenthaAR-SDK/` インターフェースモジュール**: **Apache-2.0 または GPLv3 のデュアルライセンス**（いずれかを選択）。AIDL 定義と共有メモリクライアントのみを含み、`app` と GPL 実装の間にある唯一のコンパイル時境界です。
+- **`MenthaAR-SDK/` インターフェースモジュール**: SDK のソースコードは **Apache-2.0 または GPLv3 のデュアルライセンス**（いずれかを選択、[MenthaAR-SDK/LICENSE](../MenthaAR-SDK/LICENSE) を参照）です。AIDL 定義と共有メモリクライアントのみを含み、`app` と GPL 実装の間にある唯一のコンパイル時境界です。
+  - **注意:** `assembleIntegratedAar` で生成される統合 AAR（`MenthaAR-SDK-integrated-*.aar`）には GPLv3 エンジンのクラスとネイティブライブラリが含まれます。この成果物は **GPLv3 のみ** で配布され、Apache-2.0 の選択肢は適用されません。
 - **`MenthaAR/` エンジンモジュール**: ORB-SLAM2 から派生し、**[GNU General Public License v3.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/MenthaAR/LICENSE)** (GPLv3) の下でライセンスされています。C++ SLAM コアアルゴリズム、姿勢センサー、姿勢融合が含まれます。
 - **プロセス分離**: `app` と `MenthaAR` エンジンは独立したプロセスで実行され、Binder IPC と共有メモリ（Ashmem/memfd）のみでデータを交換します。GPL 実装は `runtimeOnly` 依存として同梱され、App のソースからは参照できません。
 
 詳細については、[LICENSE](../LICENSE)、[app/LICENSE](../app/LICENSE)、[MenthaAR-SDK/LICENSE](../MenthaAR-SDK/LICENSE)、および [MenthaAR/LICENSE](../MenthaAR/LICENSE) を参照してください。
+
+### App の配布
+
+このリポジトリからビルドした APK には、ランタイム依存として GPLv3 エンジン（`MenthaAR`）が含まれます。この APK を配布する場合、エンジンについて GPLv3 の義務を果たす必要があります。すなわち、`MenthaAR` の対応するソースコード（またはソース提供の書面による申し出）を提供し、GPLv3 ライセンス全文を同梱し、行った変更を明示してください。`app/` の Apache-2.0 ファイルは、著作権表示と NOTICE の要件を引き続き満たします。`app/` の Apache-2.0 ライセンスは GPLv3 エンジンに追加の制限を課すことはできません。
+
+> 本節は要約であり、法的助言ではありません。商用配布の前に弁護士にご相談ください。
 
 プロジェクトコラボレーションまたはその他の分野の協力に関するお問い合わせは、**OlscStudio@outlook.com** までご連絡ください。
 
