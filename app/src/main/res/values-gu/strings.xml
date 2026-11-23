@@ -103,4 +103,5 @@
     <string name="hint_camera_preview_enabled">કૅમેરો દૃશ્ય સક્ષમ છે</string>
     <string name="hint_camera_preview_disabled">કૅમેરો દૃશ્ય નિષ્ક્રિય છે</string>
 
+    <string name="hint_service_missing">MenthaAR સેવા ઇન્સ્ટૉલ થયેલ નથી. કૃપા કરીને પહેલા MenthaAR સેવા પેકેજ ઇન્સ્ટૉલ કરો.</string>
 </resources>

@@ -101,4 +101,5 @@
     <string name="hint_camera_preview_enabled">Đã bật hình ảnh camera</string>
     <string name="hint_camera_preview_disabled">Đã tắt hình ảnh camera</string>
 
+    <string name="hint_service_missing">Dịch vụ MenthaAR chưa được cài đặt. Vui lòng cài đặt gói dịch vụ MenthaAR trước.</string>
 </resources>

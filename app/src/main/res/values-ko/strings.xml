@@ -101,4 +101,5 @@
     <string name="hint_camera_preview_enabled">카메라 화면 켜짐</string>
     <string name="hint_camera_preview_disabled">카메라 화면 꺼짐</string>
 
+    <string name="hint_service_missing">MenthaAR 서비스가 설치되어 있지 않습니다. 먼저 MenthaAR 서비스 패키지를 설치해 주세요.</string>
 </resources>

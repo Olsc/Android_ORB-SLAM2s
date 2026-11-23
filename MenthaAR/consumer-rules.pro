@@ -6,5 +6,5 @@
 
 # SLAM 服务由 Manifest 按类名启动，且通过 Binder 跨进程通信
 -keep class com.orb.slam2s.ipc.SlamService { *; }
--keep interface com.menthaar.sdk.internal.ISlamService { *; }
--keep class com.menthaar.sdk.internal.ISlamService$Stub { *; }
+-keep interface com.orb.slam2s.ipc.ISlamService { *; }
+-keep class com.orb.slam2s.ipc.ISlamService$Stub { *; }

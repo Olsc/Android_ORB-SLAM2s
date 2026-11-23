@@ -103,4 +103,5 @@
     <string name="hint_camera_preview_enabled">Камерын дүрс асаалттай</string>
     <string name="hint_camera_preview_disabled">Камерын дүрс унтраалттай</string>
 
+    <string name="hint_service_missing">MenthaAR үйлчилгээ суулгагдаагүй байна. Эхлээд MenthaAR үйлчилгээний багцыг суулгана уу.</string>
 </resources>

@@ -103,4 +103,5 @@
     <string name="hint_camera_preview_enabled">कैमरा दृश्य चालू है</string>
     <string name="hint_camera_preview_disabled">कैमरा दृश्य बंद है</string>
 
+    <string name="hint_service_missing">MenthaAR सेवा इंस्टॉल नहीं है। कृपया पहले MenthaAR सेवा पैकेज इंस्टॉल करें।</string>
 </resources>

@@ -103,4 +103,5 @@
     <string name="hint_camera_preview_enabled">ಕ್ಯಾಮರಾ ವೀಕ್ಷಣೆ ಸಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ</string>
     <string name="hint_camera_preview_disabled">ಕ್ಯಾಮರಾ ವೀಕ್ಷಣೆ ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ</string>
 
+    <string name="hint_service_missing">MenthaAR ಸೇವೆಯನ್ನು ಸ್ಥಾಪಿಸಲಾಗಿಲ್ಲ. ದಯವಿಟ್ಟು ಮೊದಲು MenthaAR ಸೇವಾ ಪ್ಯಾಕೇಜ್ ಅನ್ನು ಸ್ಥಾಪಿಸಿ.</string>
 </resources>

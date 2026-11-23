@@ -103,4 +103,5 @@
     <string name="hint_camera_preview_enabled">কেমেৰা দৃশ্য সক্ৰিয় কৰা হৈছে</string>
     <string name="hint_camera_preview_disabled">কেমেৰা দৃশ্য নিষ্ক্ৰিয় কৰা হৈছে</string>
 
+    <string name="hint_service_missing">MenthaAR সেৱা ইনষ্টল কৰা হোৱা নাই। অনুগ্ৰহ কৰি প্ৰথমে MenthaAR সেৱা পেকেজ ইনষ্টল কৰক।</string>
 </resources>

@@ -101,4 +101,5 @@
     <string name="hint_camera_preview_enabled">ພາບກ້ອງເປີດແລ້ວ</string>
     <string name="hint_camera_preview_disabled">ພາບກ້ອງປິດແລ້ວ</string>
 
+    <string name="hint_service_missing">ບໍລິການ MenthaAR ຍັງບໍ່ໄດ້ຕິດຕັ້ງ. ກະລຸນາຕິດຕັ້ງແພັກເກດບໍລິການ MenthaAR ກ່ອນ.</string>
 </resources>

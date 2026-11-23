@@ -107,4 +107,5 @@
     <string name="hint_camera_preview_enabled">Podgląd kamery włączony</string>
     <string name="hint_camera_preview_disabled">Podgląd kamery wyłączony</string>
 
+    <string name="hint_service_missing">Usługa MenthaAR nie jest zainstalowana. Najpierw zainstaluj pakiet usługi MenthaAR.</string>
 </resources>

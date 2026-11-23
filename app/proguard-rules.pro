@@ -10,8 +10,8 @@
 -keep class com.orb.slam2s.graphics.GlbModelRenderer { *; }
 
 -keep class com.orb.slam2s.ipc.SlamService { *; }
--keep interface com.menthaar.sdk.internal.ISlamService { *; }
--keep class com.menthaar.sdk.internal.ISlamService$Stub { *; }
+-keep interface com.orb.slam2s.ipc.ISlamService { *; }
+-keep class com.orb.slam2s.ipc.ISlamService$Stub { *; }
 
 -keep class com.orb.slam2s.app.SplashActivity { *; }
 -keep class com.orb.slam2s.ui.MainActivity { *; }

@@ -103,4 +103,5 @@
     <string name="hint_camera_preview_enabled">Kamera-aansig geaktiveer</string>
     <string name="hint_camera_preview_disabled">Kamera-aansig gedeaktiveer</string>
 
+    <string name="hint_service_missing">MenthaAR-diens is nie geïnstalleer nie. Installeer asseblief eers die MenthaAR-diensspan.</string>
 </resources>

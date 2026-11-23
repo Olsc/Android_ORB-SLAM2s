@@ -105,4 +105,5 @@
     <string name="hint_camera_preview_enabled">Kameras skats ieslēgts</string>
     <string name="hint_camera_preview_disabled">Kameras skats izslēgts</string>
 
+    <string name="hint_service_missing">MenthaAR pakalpojums nav instalēts. Lūdzu, vispirms instalējiet MenthaAR pakalpojuma pakotni.</string>
 </resources>

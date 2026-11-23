@@ -193,12 +193,21 @@ ORB-SLAM2 코어 라이브러리는 [GPLv3 라이선스](https://github.com/raul
 본 프로젝트는 Android IPC 프로세스 격리를 기반으로 한 다중 모듈 라이선스 아키텍처를 채택합니다:
 
 - **`app/` 모듈**: **[Apache License 2.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/app/LICENSE)** (Apache-2.0)에 따라 라이선스가 부여됩니다. UI, 카메라 프리뷰, 네이티브 cgltf/OpenGL ES 3D 렌더링 및 센서 구성 요소가 포함되어 있습니다.
-- **`MenthaAR-SDK/` 인터페이스 모듈**: SDK 소스 코드는 **Apache-2.0 또는 GPLv3 듀얼 라이선스**(택일, [MenthaAR-SDK/LICENSE](../MenthaAR-SDK/LICENSE) 참조)입니다. AIDL 정의와 공유 메모리 클라이언트만 포함하며, `app`과 GPL 구현 사이의 유일한 컴파일 타임 경계입니다.
-  - **참고:** `assembleIntegratedAar`로 생성되는 통합 AAR(`MenthaAR-SDK-integrated-*.aar`)에는 GPLv3 엔진의 클래스와 네이티브 라이브러리가 포함됩니다. 이 산출물은 **GPLv3로만** 배포되며, Apache-2.0 선택지는 적용되지 않습니다.
+- **IPC 인터페이스**(`app/src/main/java/com/orb/slam2s/ipc/` 및 `ISlamService.aidl`): **Apache-2.0 또는 GPLv3 듀얼 라이선스**(택일, [LICENSE-DUAL.txt](../app/src/main/java/com/orb/slam2s/ipc/LICENSE-DUAL.txt) 참조)입니다. AIDL 프로토콜과 공유 메모리 클라이언트만 포함합니다.
 - **`MenthaAR/` 엔진 모듈**: ORB-SLAM2에서 파생되었으며 **[GNU General Public License v3.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/MenthaAR/LICENSE)** (GPLv3)에 따라 라이선스가 부여됩니다. C++ SLAM 핵심 알고리즘, 자세 센서, 자세 융합이 포함되어 있습니다.
-- **프로세스 격리**: `app`과 `MenthaAR` 엔진은 별도 프로세스에서 실행되며 Binder IPC와 공유 메모리(Ashmem/memfd)로만 데이터를 교환합니다. GPL 구현은 `runtimeOnly` 의존성으로 패키징되어 App 소스에서 참조할 수 없습니다.
+- **프로세스 격리**: `app`과 `MenthaAR` 엔진은 별도 프로세스에서 실행되며 Binder IPC와 공유 메모리(Ashmem/memfd)로만 데이터를 교환합니다.
 
-자세한 내용은 [LICENSE](../LICENSE), [app/LICENSE](../app/LICENSE), [MenthaAR-SDK/LICENSE](../MenthaAR-SDK/LICENSE) 및 [MenthaAR/LICENSE](../MenthaAR/LICENSE) 파일을 참조하십시오.
+### 세 가지 패키지
+
+| 패키지 | 모듈 | applicationId | 설명 |
+|---|---|---|---|
+| **app**(전체 버전) | `:app` | `com.orb.slam2s` | 모든 내용을 포함하며 다른 APK 없이 사용 가능 |
+| **MenthaAR**(서비스 패키지) | `:MenthaAR-Service` | `com.mentha.ar` | 런처 아이콘이 없어 직접 실행할 수 없으며 서비스 형태로만 존재. 바인딩은 서명 수준 권한으로 보호 |
+| **app 서비스 버전**(app-lite) | `:app-lite` | `com.orb.slam2s` | app만 포함하고 엔진 코드는 없음. MenthaAR 서비스 패키지 설치 필요. app 부분을 완전히 분리하여 다른 라이선스에 대응 가능. 서비스 패키지와 동일한 서명 필요 |
+
+전체 버전과 서비스 버전은 applicationId가 같아 동시에 설치할 수 없습니다. 빌드 명령: `./gradlew :app:assembleRelease :MenthaAR-Service:assembleRelease :app-lite:assembleLiteRelease`.
+
+자세한 내용은 [LICENSE](../LICENSE), [app/LICENSE](../app/LICENSE) 및 [MenthaAR/LICENSE](../MenthaAR/LICENSE) 파일을 참조하십시오.
 
 ### App 배포
 

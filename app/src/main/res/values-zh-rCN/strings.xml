@@ -101,4 +101,5 @@
     <string name="hint_camera_preview_enabled">相机画面已开启</string>
     <string name="hint_camera_preview_disabled">相机画面已关闭</string>
 
+    <string name="hint_service_missing">未检测到 MenthaAR 服务，请先安装 MenthaAR 服务包。</string>
 </resources>

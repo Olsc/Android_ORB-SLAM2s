@@ -103,4 +103,5 @@
     <string name="hint_camera_preview_enabled">கேமரா காட்சி இயக்கப்பட்டது</string>
     <string name="hint_camera_preview_disabled">கேமரா காட்சி முடக்கப்பட்டது</string>
 
+    <string name="hint_service_missing">MenthaAR சேவை நிறுவப்படவில்லை. முதலில் MenthaAR சேவை தொகுப்பை நிறுவவும்.</string>
 </resources>

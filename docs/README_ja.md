@@ -193,12 +193,21 @@ ORB-SLAM2 コアライブラリは [GPLv3 ライセンス](https://github.com/ra
 本プロジェクトは、Android IPC プロセス分離に基づくマルチモジュール・ライセンスアーキテクチャを採用しています：
 
 - **`app/` モジュール**: **[Apache License 2.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/app/LICENSE)** (Apache-2.0) の下でライセンスされています。UI、カメラプレビュー、ネイティブ cgltf/OpenGL ES 3D レンダリング、センサーコンポーネントが含まれます。
-- **`MenthaAR-SDK/` インターフェースモジュール**: SDK のソースコードは **Apache-2.0 または GPLv3 のデュアルライセンス**（いずれかを選択、[MenthaAR-SDK/LICENSE](../MenthaAR-SDK/LICENSE) を参照）です。AIDL 定義と共有メモリクライアントのみを含み、`app` と GPL 実装の間にある唯一のコンパイル時境界です。
-  - **注意:** `assembleIntegratedAar` で生成される統合 AAR（`MenthaAR-SDK-integrated-*.aar`）には GPLv3 エンジンのクラスとネイティブライブラリが含まれます。この成果物は **GPLv3 のみ** で配布され、Apache-2.0 の選択肢は適用されません。
+- **IPC インターフェース**（`app/src/main/java/com/orb/slam2s/ipc/` と `ISlamService.aidl`）: **Apache-2.0 または GPLv3 のデュアルライセンス**（いずれかを選択、[LICENSE-DUAL.txt](../app/src/main/java/com/orb/slam2s/ipc/LICENSE-DUAL.txt) を参照）です。AIDL プロトコルと共有メモリクライアントのみを含みます。
 - **`MenthaAR/` エンジンモジュール**: ORB-SLAM2 から派生し、**[GNU General Public License v3.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/MenthaAR/LICENSE)** (GPLv3) の下でライセンスされています。C++ SLAM コアアルゴリズム、姿勢センサー、姿勢融合が含まれます。
-- **プロセス分離**: `app` と `MenthaAR` エンジンは独立したプロセスで実行され、Binder IPC と共有メモリ（Ashmem/memfd）のみでデータを交換します。GPL 実装は `runtimeOnly` 依存として同梱され、App のソースからは参照できません。
+- **プロセス分離**: `app` と `MenthaAR` エンジンは独立したプロセスで実行され、Binder IPC と共有メモリ（Ashmem/memfd）のみでデータを交換します。
 
-詳細については、[LICENSE](../LICENSE)、[app/LICENSE](../app/LICENSE)、[MenthaAR-SDK/LICENSE](../MenthaAR-SDK/LICENSE)、および [MenthaAR/LICENSE](../MenthaAR/LICENSE) を参照してください。
+### 3 種類のパッケージ
+
+| パッケージ | モジュール | applicationId | 説明 |
+|---|---|---|---|
+| **app**（フル版） | `:app` | `com.orb.slam2s` | すべてを含み、他の APK なしで利用可能 |
+| **MenthaAR**（サービスパッケージ） | `:MenthaAR-Service` | `com.mentha.ar` | ランチャーアイコンなし、直接起動不可。サービスとしてのみ存在し、バインドは署名レベル権限で保護 |
+| **app サービス版**（app-lite） | `:app-lite` | `com.orb.slam2s` | app のみでエンジンコードを含まず、MenthaAR サービスパッケージのインストールが必要。app 部分を完全に分離でき、異なるライセンスに対応可能。サービスパッケージと同じ署名が必要 |
+
+フル版とサービス版は applicationId が同じため、同時にインストールできません。ビルドコマンド: `./gradlew :app:assembleRelease :MenthaAR-Service:assembleRelease :app-lite:assembleLiteRelease`。
+
+詳細については、[LICENSE](../LICENSE)、[app/LICENSE](../app/LICENSE)、および [MenthaAR/LICENSE](../MenthaAR/LICENSE) を参照してください。
 
 ### App の配布
 

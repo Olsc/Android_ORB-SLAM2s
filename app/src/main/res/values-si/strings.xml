@@ -103,4 +103,5 @@
     <string name="hint_camera_preview_enabled">කැමරා දර්ශනය සබල කර ඇත</string>
     <string name="hint_camera_preview_disabled">කැමරා දර්ශනය අබල කර ඇත</string>
 
+    <string name="hint_service_missing">MenthaAR සේවාව ස්ථාපනය කර නොමැත. කරුණාකර මුලින්ම MenthaAR සේවා පැකේජය ස්ථාපනය කරන්න.</string>
 </resources>

@@ -67,7 +67,3 @@ android {
     }
     compileSdkMinor 2
 }
-
-dependencies {
-    implementation project(':MenthaAR-SDK')
-}

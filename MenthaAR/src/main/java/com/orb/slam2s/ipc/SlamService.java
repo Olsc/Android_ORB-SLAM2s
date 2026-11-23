@@ -24,10 +24,16 @@ import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
 
-import com.menthaar.sdk.internal.ISlamService;
 import com.orb.slam2s.sensors.OrientationSensor;
 import com.orb.slam2s.sensors.PoseFusion;
 import com.orb.slam2s.slamar.NativeHelper;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 // SLAM 独立后台服务：在独立高优先级线程中执行单目特征提取与位姿跟踪
 // 姿态辅助融合也在本进程完成，App 只通过共享内存读取最终 AR 位姿
@@ -60,9 +66,61 @@ public class SlamService extends Service {
     // 帧共享内存(仅持有 fd，native 层 mmap 后直接读写 header/帧/点云)
     private ParcelFileDescriptor framePfd;
 
+    // 引擎资源目录：位于服务所在 APK 的私有目录
+    private File getResourceDir() {
+        final File dir = new File(getFilesDir(), "MenthaAR");
+        if (!dir.exists() && !dir.mkdirs()) {
+            Log.w(TAG, "无法创建资源目录: " + dir.getAbsolutePath());
+        }
+        return dir;
+    }
+
+    // 地图中转目录：native 只认路径，PFD 内容先落到这里
+    private File getTransferDir() {
+        final File dir = new File(getCacheDir(), "map_xfer");
+        if (!dir.exists() && !dir.mkdirs()) {
+            Log.w(TAG, "无法创建地图中转目录: " + dir.getAbsolutePath());
+        }
+        return dir;
+    }
+
+    // src 不存在则什么也不写（对端文件保持为空）
+    private static void copyToPfd(File src, ParcelFileDescriptor dst) throws IOException {
+        if (dst == null || !src.exists()) return;
+        try (InputStream in = new FileInputStream(src);
+             OutputStream out = new ParcelFileDescriptor.AutoCloseOutputStream(dst.dup())) {
+            copyStream(in, out);
+        }
+    }
+
+    private static void copyFromPfd(ParcelFileDescriptor src, File dst) throws IOException {
+        try (InputStream in = new ParcelFileDescriptor.AutoCloseInputStream(src.dup());
+             OutputStream out = new FileOutputStream(dst)) {
+            copyStream(in, out);
+        }
+    }
+
+    private static void copyStream(InputStream in, OutputStream out) throws IOException {
+        final byte[] buf = new byte[64 * 1024];
+        int n;
+        while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+        out.flush();
+    }
+
+    private static void closeQuietly(ParcelFileDescriptor pfd) {
+        if (pfd == null) return;
+        try {
+            pfd.close();
+        } catch (IOException ignored) {
+            // 对端已关闭
+        }
+    }
+
     private final ISlamService.Stub binder = new ISlamService.Stub() {
         @Override
-        public void initSLAM(String resDir) {
+        public void initSLAM() {
+            // 资源目录由服务自管：服务可能在独立 APK 中，无法访问调用方的私有目录
+            final String resDir = getResourceDir().getAbsolutePath();
             // oneway 投递到处理线程执行，耗时加载不阻塞 binder 线程
             postTask(() -> {
                 try {
@@ -119,21 +177,54 @@ public class SlamService extends Service {
         }
 
         @Override
-        public void saveMap(final String mapPath) {
+        public void saveMap(final ParcelFileDescriptor mapOut, final ParcelFileDescriptor arInfoOut) {
             // 与帧处理串行执行，SaveMap 会遍历全部 KF/MP 并可能补齐描述子，不可与跟踪并发。
             postTask(() -> {
-                if (nativeHelper != null) {
-                    nativeHelper.saveMap(mapPath);
+                final File tmp = new File(getTransferDir(), "save.bin");
+                try {
+                    if (nativeHelper != null) {
+                        nativeHelper.saveMap(tmp.getAbsolutePath());
+                        copyToPfd(tmp, mapOut);
+                        copyToPfd(new File(tmp.getPath() + ".arinfo"), arInfoOut);
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "保存地图失败: " + e.getMessage(), e);
+                } finally {
+                    closeQuietly(mapOut);
+                    closeQuietly(arInfoOut);
+                    //noinspection ResultOfMethodCallIgnored
+                    tmp.delete();
+                    //noinspection ResultOfMethodCallIgnored
+                    new File(tmp.getPath() + ".arinfo").delete();
                 }
             });
         }
 
         @Override
-        public void loadMapWithId(final String mapPath, final int mapId, final boolean append) {
+        public void loadMapWithId(final ParcelFileDescriptor mapIn, final ParcelFileDescriptor arInfoIn,
+                                  final int mapId, final boolean append) {
             // 与帧处理串行执行，加载会重建当前地图；native 侧 gProcessingFrames 提供第二重互斥。
             postTask(() -> {
-                if (nativeHelper != null) {
-                    nativeHelper.loadMapWithId(mapPath, mapId, append);
+                final File tmp = new File(getTransferDir(), "load_" + mapId + ".bin");
+                final File tmpInfo = new File(tmp.getPath() + ".arinfo");
+                try {
+                    if (nativeHelper != null) {
+                        copyFromPfd(mapIn, tmp);
+                        // 不存在 .arinfo 时必须清掉上次残留，否则会误用旧平面信息
+                        //noinspection ResultOfMethodCallIgnored
+                        tmpInfo.delete();
+                        if (arInfoIn != null) copyFromPfd(arInfoIn, tmpInfo);
+                        nativeHelper.loadMapWithId(tmp.getAbsolutePath(), mapId, append);
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "加载地图失败: " + e.getMessage(), e);
+                } finally {
+                    closeQuietly(mapIn);
+                    closeQuietly(arInfoIn);
+                    //noinspection ResultOfMethodCallIgnored
+                    tmp.delete();
+                    //noinspection ResultOfMethodCallIgnored
+                    tmpInfo.delete();
                 }
             });
         }

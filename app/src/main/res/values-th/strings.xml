@@ -101,4 +101,5 @@
     <string name="hint_camera_preview_enabled">เปิดมุมมองกล้องแล้ว</string>
     <string name="hint_camera_preview_disabled">ปิดมุมมองกล้องแล้ว</string>
 
+    <string name="hint_service_missing">ยังไม่ได้ติดตั้งบริการ MenthaAR โปรดติดตั้งแพ็กเกจบริการ MenthaAR ก่อน</string>
 </resources>

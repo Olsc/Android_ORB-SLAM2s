@@ -107,4 +107,5 @@
     <string name="hint_camera_preview_enabled">Prikaz kamere je vklopljen</string>
     <string name="hint_camera_preview_disabled">Prikaz kamere je izklopljen</string>
 
+    <string name="hint_service_missing">Storitev MenthaAR ni nameščena. Najprej namestite paket storitve MenthaAR.</string>
 </resources>

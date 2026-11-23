@@ -103,4 +103,5 @@
     <string name="hint_camera_preview_enabled">Camera view enabled</string>
     <string name="hint_camera_preview_disabled">Camera view disabled</string>
 
+    <string name="hint_service_missing">MenthaAR service is not installed. Please install the MenthaAR service package first.</string>
 </resources>

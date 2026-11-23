@@ -103,4 +103,5 @@
     <string name="hint_camera_preview_enabled">Приказот на камерата е овозможен</string>
     <string name="hint_camera_preview_disabled">Приказот на камерата е оневозможен</string>
 
+    <string name="hint_service_missing">Услугата MenthaAR не е инсталирана. Прво инсталирајте го пакетот на услугата MenthaAR.</string>
 </resources>

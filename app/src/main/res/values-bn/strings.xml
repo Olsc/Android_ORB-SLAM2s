@@ -103,4 +103,5 @@
     <string name="hint_camera_preview_enabled">ক্যামেরা ভিউ চালু করা হয়েছে</string>
     <string name="hint_camera_preview_disabled">ক্যামেরা ভিউ বন্ধ করা হয়েছে</string>
 
+    <string name="hint_service_missing">MenthaAR পরিষেবা ইনস্টল করা নেই। অনুগ্রহ করে আগে MenthaAR পরিষেবা প্যাকেজ ইনস্টল করুন।</string>
 </resources>

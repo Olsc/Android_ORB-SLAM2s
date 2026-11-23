@@ -1,3 +1,4 @@
 include ':app'
 include ':MenthaAR'
-include ':MenthaAR-SDK'
+include ':app-lite'
+include ':MenthaAR-Service'

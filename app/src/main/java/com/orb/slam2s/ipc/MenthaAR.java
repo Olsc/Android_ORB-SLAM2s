@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2026 Olsc <OlscStudio@outlook.com>
  *
- * This file is part of the Android ORB-SLAM2s SDK.
+ * This file is part of the Android ORB-SLAM2s IPC client.
  *
  * Dual-licensed under the Apache License, Version 2.0 (the "Apache License")
  * or the GNU General Public License, version 3 (the "GPLv3").
@@ -22,7 +22,7 @@
  *   (at your option) any later version.
  *   See <https://www.gnu.org/licenses/> for details.
  */
-package com.menthaar.sdk;
+package com.orb.slam2s.ipc;
 
 import android.content.Context;
 import android.os.Handler;
@@ -163,9 +163,6 @@ public final class MenthaAR {
         }
     };
 
-    // 引擎资源目录；null 表示使用 SDK 自己的默认目录（<externalFilesDir>/MenthaAR）
-    private volatile File resourceDirectory;
-
     // 仅持有 application context
     public MenthaAR(Context context) {
         if (context == null) {
@@ -203,7 +200,7 @@ public final class MenthaAR {
             }
             running = true;
         }
-        session.bind(workingDirectory().getAbsolutePath());
+        session.bind();
     }
 
     // 停止定位：解绑服务并释放共享内存，随后可再次调用 start。
@@ -389,22 +386,8 @@ public final class MenthaAR {
         mainHandler.post(() -> Choreographer.getInstance().removeFrameCallback(frameCallback));
     }
 
-    // 引擎资源目录（如 <externalFilesDir>/SLAM）；未设置时用 SDK 默认目录，需在 start() 前调用。
-    public void setResourceDirectory(File directory) {
-        this.resourceDirectory = directory;
-    }
-
-    private File workingDirectory() {
-        File dir = resourceDirectory;
-        if (dir == null) {
-            dir = appContext.getExternalFilesDir("MenthaAR");
-            if (dir == null) {
-                dir = new File(appContext.getFilesDir(), "MenthaAR");
-            }
-        }
-        if (!dir.exists() && !dir.mkdirs()) {
-            Log.w(TAG, "无法创建 SDK 工作目录: " + dir.getAbsolutePath());
-        }
-        return dir;
+    // 服务包是否可用：完整版恒为 true；服务版需要手机里安装了 MenthaAR 服务包。
+    public boolean isServiceInstalled() {
+        return Session.isServiceInstalled(appContext);
     }
 }

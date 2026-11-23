@@ -103,4 +103,5 @@
     <string name="hint_camera_preview_enabled">Η προβολή κάμερας ενεργοποιήθηκε</string>
     <string name="hint_camera_preview_disabled">Η προβολή κάμερας απενεργοποιήθηκε</string>
 
+    <string name="hint_service_missing">Η υπηρεσία MenthaAR δεν είναι εγκατεστημένη. Εγκαταστήστε πρώτα το πακέτο υπηρεσίας MenthaAR.</string>
 </resources>

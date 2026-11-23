@@ -49,7 +49,7 @@ import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LifecycleOwner;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.menthaar.sdk.MenthaAR;
+import com.orb.slam2s.ipc.MenthaAR;
 import com.orb.slam2s.graphics.AspectGLSurfaceView;
 import com.orb.slam2s.graphics.DisplayCorrection;
 import com.orb.slam2s.graphics.GLPassThroughRenderer;

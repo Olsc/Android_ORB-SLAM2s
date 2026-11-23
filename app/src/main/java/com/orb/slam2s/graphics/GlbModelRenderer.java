@@ -27,7 +27,7 @@ import android.util.Log;
 
 import androidx.annotation.Keep;
 
-import com.menthaar.sdk.MenthaAR;
+import com.orb.slam2s.ipc.MenthaAR;
 import com.orb.slam2s.util.TouchGestureHelper;
 
 import java.io.ByteArrayOutputStream;

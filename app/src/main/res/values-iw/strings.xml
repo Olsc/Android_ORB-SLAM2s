@@ -105,4 +105,5 @@
     <string name="hint_camera_preview_enabled">תצוגת המצלמה הופעלה</string>
     <string name="hint_camera_preview_disabled">תצוגת המצלמה הושבתה</string>
 
+    <string name="hint_service_missing">שירות MenthaAR אינו מותקן. יש להתקין תחילה את חבילת השירות MenthaAR.</string>
 </resources>

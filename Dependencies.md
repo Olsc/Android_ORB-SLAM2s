@@ -32,8 +32,9 @@ Notes
 
 1. Apache-2.0 and MIT components are compatible with GPLv3 and are incorporated
    into the GPLv3 engine module on that basis.
-2. The `app/` module is Apache-2.0 and uses the `MenthaAR-SDK/` interface module
-   (dual-licensed Apache-2.0 or GPLv3) at compile time only; the GPLv3 engine is
-   packaged as a runtime-only artifact and reached through IPC.
+2. The `app-lite/` edition is Apache-2.0 and contains no engine code: it uses only
+   the dual-licensed IPC client/AIDL and reaches the GPLv3 engine, installed as the
+   separate `MenthaAR-Service` APK (com.mentha.ar), through Binder IPC. The full
+   `app/` edition bundles the engine and is distributed under GPLv3 for it.
 3. Upstream ORB-SLAM2 is GPLv3; see MenthaAR/LICENSE and the project LICENSE for
    the license structure of this repository.

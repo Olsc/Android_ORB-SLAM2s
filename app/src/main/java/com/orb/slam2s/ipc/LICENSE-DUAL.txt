@@ -1,0 +1,15 @@
+The files in this directory (the shared-memory IPC client) and the AIDL
+interface MenthaAR/src/main/aidl/com/orb/slam2s/ipc/ISlamService.aidl are
+dual-licensed. You may choose either:
+
+  1. Apache License, Version 2.0  (full text: app/LICENSE)
+  2. GNU General Public License, Version 3.0  (full text: MenthaAR/LICENSE)
+
+They contain only the IPC protocol and client code, and deliberately no
+GPL-only engine code, so the `app` can be distributed under Apache-2.0 while
+the engine runs in the separate `MenthaAR` service package (com.mentha.ar).
+Choosing Apache-2.0 here grants no rights to the GPLv3-only engine.
+
+本目录（共享内存 IPC 客户端）与 ISlamService.aidl 采用双许可：可在 Apache-2.0
+与 GPLv3 中任选其一。它们只含 IPC 协议与客户端，不含 GPL-only 引擎代码；
+选择 Apache-2.0 不会对仅 GPLv3 的引擎产生任何授权。

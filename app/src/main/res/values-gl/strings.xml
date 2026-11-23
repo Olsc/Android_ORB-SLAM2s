@@ -103,4 +103,5 @@
     <string name="hint_camera_preview_enabled">Vista da cámara activada</string>
     <string name="hint_camera_preview_disabled">Vista da cámara desactivada</string>
 
+    <string name="hint_service_missing">O servizo MenthaAR non está instalado. Instala primeiro o paquete do servizo MenthaAR.</string>
 </resources>
