@@ -108,4 +108,5 @@
     <string name="hint_camera_preview_disabled">Kameros vaizdas išjungtas</string>
 
     <string name="hint_service_missing">MenthaAR paslauga neįdiegta. Pirmiausia įdiekite MenthaAR paslaugos paketą.</string>
+    <string name="hint_service_blocked">Sistema užblokavo MenthaAR paslaugą. Nustatymuose leiskite MenthaAR paleisti automatiškai ir grįžkite į programą.</string>
 </resources>

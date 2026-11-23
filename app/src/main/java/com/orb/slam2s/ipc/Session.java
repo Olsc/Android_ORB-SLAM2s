@@ -53,6 +53,9 @@ final class Session {
 
         // 服务进程断开。
         void onDisconnected();
+
+        // 绑定请求被系统拒绝（服务包已安装但被自启动管理等机制拦截）。
+        void onBindFailed();
     }
 
     private final Context appContext;
@@ -179,7 +182,9 @@ final class Session {
             Intent intent = new Intent();
             intent.setComponent(new ComponentName(servicePackage(appContext), SERVICE_CLASS));
             try {
-                bindRequested = appContext.bindService(intent, connection, Context.BIND_AUTO_CREATE);
+                // BIND_IMPORTANT：服务进程的调度优先级跟随前台 App。服务在独立 APK 时，缺少该标志会被系统归入受限 CPU 组
+                bindRequested = appContext.bindService(intent, connection,
+                        Context.BIND_AUTO_CREATE | Context.BIND_IMPORTANT);
             } catch (SecurityException e) {
                 // 服务包与本 App 签名不一致，缺少绑定权限
                 Log.e(TAG, "无权绑定 SLAM 服务（签名需与服务包一致）: " + e.getMessage());
@@ -192,6 +197,8 @@ final class Session {
                 } catch (IllegalArgumentException ignored) {
                     // bindService 失败时仍需解绑，未注册则忽略
                 }
+                final Observer o = observer;
+                if (o != null) o.onBindFailed();
             }
         }
     }

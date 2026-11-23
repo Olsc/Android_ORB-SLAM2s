@@ -112,4 +112,5 @@
     <string name="hint_camera_preview_disabled">تم إيقاف عرض الكاميرا</string>
 
     <string name="hint_service_missing">خدمة MenthaAR غير مثبتة. يرجى تثبيت حزمة خدمة MenthaAR أولاً.</string>
+    <string name="hint_service_blocked">قام النظام بحظر خدمة MenthaAR. يرجى السماح لـ MenthaAR بالتشغيل التلقائي من الإعدادات ثم العودة إلى التطبيق.</string>
 </resources>

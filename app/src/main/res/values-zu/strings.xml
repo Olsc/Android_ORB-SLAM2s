@@ -104,4 +104,5 @@
     <string name="hint_camera_preview_disabled">Ukubuka kwekhamera kuvaliwe</string>
 
     <string name="hint_service_missing">Isevisi ye-MenthaAR ayifakiwe. Sicela uqale ufake iphakheji yesevisi ye-MenthaAR.</string>
+    <string name="hint_service_blocked">Isevisi ye-MenthaAR ivinjelwe uhlelo. Sicela uvumele i-MenthaAR iqale ngokuzenzakalelayo kuMasethingi, bese ubuyela uhlelo lokusebenza.</string>
 </resources>

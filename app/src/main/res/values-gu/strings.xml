@@ -104,4 +104,5 @@
     <string name="hint_camera_preview_disabled">કૅમેરો દૃશ્ય નિષ્ક્રિય છે</string>
 
     <string name="hint_service_missing">MenthaAR સેવા ઇન્સ્ટૉલ થયેલ નથી. કૃપા કરીને પહેલા MenthaAR સેવા પેકેજ ઇન્સ્ટૉલ કરો.</string>
+    <string name="hint_service_blocked">MenthaAR સેવાને સિસ્ટમે અવરોધિત કરી છે. કૃપા કરીને સેટિંગ્સમાં MenthaAR ને ઑટો-સ્ટાર્ટ કરવાની મંજૂરી આપો અને ઍપ પર પાછા આવો.</string>
 </resources>

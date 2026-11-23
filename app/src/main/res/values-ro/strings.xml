@@ -106,4 +106,5 @@
     <string name="hint_camera_preview_disabled">Vizualizare cameră dezactivată</string>
 
     <string name="hint_service_missing">Serviciul MenthaAR nu este instalat. Instalați mai întâi pachetul serviciului MenthaAR.</string>
+    <string name="hint_service_blocked">Serviciul MenthaAR a fost blocat de sistem. Permiteți pornirea automată a MenthaAR în Setări, apoi reveniți în aplicație.</string>
 </resources>

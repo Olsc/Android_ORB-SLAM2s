@@ -57,6 +57,7 @@ import com.orb.slam2s.graphics.AspectGLSurfaceView;
 import com.orb.slam2s.graphics.DisplayCorrection;
 import com.orb.slam2s.graphics.GlbModelRenderer;
 import com.orb.slam2s.util.FpsCalculator;
+import com.orb.slam2s.util.AutoStartHelper;
 import com.orb.slam2s.util.MapManager;
 import com.orb.slam2s.util.TouchGestureHelper;
 
@@ -237,6 +238,12 @@ public class MainActivity extends ComponentActivity
             }
 
             @Override
+            public void onBindFailed() {
+                if (isFinishing() || isDestroyed()) return;
+                showServiceBlockedDialog();
+            }
+
+            @Override
             public void onDisconnected() {
                 // 服务进程被杀或绑定被拒绝时提示用户，防止出现摄像头正常而 AR 不动的无声失败
                 Log.w(TAG, "SLAM 服务连接断开");
@@ -414,6 +421,25 @@ public class MainActivity extends ComponentActivity
         if (gm != null) gm.setVisibility(View.GONE);
         if (gd != null) gd.setVisibility(View.GONE);
         if (!visible && target != null) target.setVisibility(View.VISIBLE);
+    }
+
+    private AlertDialog mServiceBlockedDialog;
+
+    // 服务包已安装却绑定失败：多为厂商自启动管理拦截，无法用运行时权限弹窗申请，只能引导用户去设置放行
+    private void showServiceBlockedDialog() {
+        if (mServiceBlockedDialog != null && mServiceBlockedDialog.isShowing()) return;
+        mServiceBlockedDialog = new AlertDialog.Builder(this)
+                .setMessage(getString(R.string.hint_service_blocked))
+                .setPositiveButton(getString(R.string.action_open_settings), (d, w) -> openServiceSettings())
+                .setNegativeButton(getString(R.string.button_cancel), null)
+                .show();
+    }
+
+    // 按设备品牌跳转到自启动管理页，失败回退到服务包的应用详情页
+    private void openServiceSettings() {
+        final String pkg = mMenthaAR != null ? mMenthaAR.getServicePackage() : "com.mentha.ar";
+        final String opened = AutoStartHelper.open(this, pkg);
+        Log.i(TAG, "打开服务包设置页: " + opened);
     }
 
     private void showSaveMapDialog() {

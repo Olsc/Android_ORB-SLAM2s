@@ -108,4 +108,5 @@
     <string name="hint_camera_preview_disabled">Podgląd kamery wyłączony</string>
 
     <string name="hint_service_missing">Usługa MenthaAR nie jest zainstalowana. Najpierw zainstaluj pakiet usługi MenthaAR.</string>
+    <string name="hint_service_blocked">System zablokował usługę MenthaAR. Zezwól w Ustawieniach na autostart MenthaAR i wróć do aplikacji.</string>
 </resources>

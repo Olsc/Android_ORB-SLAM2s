@@ -104,4 +104,5 @@
     <string name="hint_camera_preview_disabled">کیمرہ منظر غیر فعال ہے</string>
 
     <string name="hint_service_missing">MenthaAR سروس انسٹال نہیں ہے۔ براہ کرم پہلے MenthaAR سروس پیکیج انسٹال کریں۔</string>
+    <string name="hint_service_blocked">سسٹم نے MenthaAR سروس کو بلاک کر دیا ہے۔ براہ کرم سیٹنگز میں MenthaAR کو خودکار آغاز کی اجازت دیں، پھر ایپ پر واپس آئیں۔</string>
 </resources>

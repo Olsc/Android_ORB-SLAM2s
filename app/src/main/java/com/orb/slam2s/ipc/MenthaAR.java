@@ -49,6 +49,9 @@ public final class MenthaAR {
         // 服务进程断开（SDK 会在下次 start 时重新连接）。
         default void onDisconnected() {}
 
+        // 服务包已安装但绑定被系统拒绝（如厂商的自启动管理）；需要引导用户放行服务包。
+        default void onBindFailed() {}
+
         // SLAM 产出新结果，可调用 readResult 读取；用于触发重绘。
         default void onTrackingResult() {}
     }
@@ -179,6 +182,12 @@ public final class MenthaAR {
                 startResultPolling();
                 final Listener l = listener;
                 if (l != null) l.onReady();
+            }
+
+            @Override
+            public void onBindFailed() {
+                final Listener l = listener;
+                if (l != null) mainHandler.post(l::onBindFailed);
             }
 
             @Override
@@ -384,6 +393,11 @@ public final class MenthaAR {
         pollGeneration.incrementAndGet();
         polling = false;
         mainHandler.post(() -> Choreographer.getInstance().removeFrameCallback(frameCallback));
+    }
+
+    // 服务包的包名：完整版即自身包名。
+    public String getServicePackage() {
+        return Session.servicePackage(appContext);
     }
 
     // 服务包是否可用：完整版恒为 true；服务版需要手机里安装了 MenthaAR 服务包。

@@ -106,4 +106,5 @@
     <string name="hint_camera_preview_disabled">Vista fotocamera disattivata</string>
 
     <string name="hint_service_missing">Il servizio MenthaAR non è installato. Installa prima il pacchetto del servizio MenthaAR.</string>
+    <string name="hint_service_blocked">Il servizio MenthaAR è stato bloccato dal sistema. Consenti l’avvio automatico di MenthaAR nelle Impostazioni, poi torna all’app.</string>
 </resources>

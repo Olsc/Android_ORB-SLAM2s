@@ -104,4 +104,5 @@
     <string name="hint_camera_preview_disabled">Vista da cámara desactivada</string>
 
     <string name="hint_service_missing">O servizo MenthaAR non está instalado. Instala primeiro o paquete do servizo MenthaAR.</string>
+    <string name="hint_service_blocked">O sistema bloqueou o servizo MenthaAR. Permite o inicio automático de MenthaAR en Axustes e volve á aplicación.</string>
 </resources>

@@ -104,4 +104,5 @@
     <string name="hint_camera_preview_disabled">Pamja e kamerës u çaktivizua</string>
 
     <string name="hint_service_missing">Shërbimi MenthaAR nuk është i instaluar. Instaloni fillimisht paketën e shërbimit MenthaAR.</string>
+    <string name="hint_service_blocked">Sistemi bllokoi shërbimin MenthaAR. Lejoni nisjen automatike të MenthaAR te Cilësimet dhe kthehuni në aplikacion.</string>
 </resources>

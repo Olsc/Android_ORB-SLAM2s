@@ -104,4 +104,5 @@
     <string name="hint_camera_preview_disabled">కెమెరా వీక్షణ నిలిపివేయబడింది</string>
 
     <string name="hint_service_missing">MenthaAR సేవ ఇన్‌స్టాల్ చేయలేదు. దయచేసి ముందు MenthaAR సేవా ప్యాకేజీని ఇన్‌స్టాల్ చేయండి.</string>
+    <string name="hint_service_blocked">MenthaAR సేవను సిస్టమ్ బ్లాక్ చేసింది. దయచేసి సెట్టింగ్‌లలో MenthaAR ఆటో-స్టార్ట్‌ను అనుమతించి, యాప్‌కు తిరిగి రండి.</string>
 </resources>

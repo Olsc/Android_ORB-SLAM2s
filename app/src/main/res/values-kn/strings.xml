@@ -104,4 +104,5 @@
     <string name="hint_camera_preview_disabled">ಕ್ಯಾಮರಾ ವೀಕ್ಷಣೆ ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ</string>
 
     <string name="hint_service_missing">MenthaAR ಸೇವೆಯನ್ನು ಸ್ಥಾಪಿಸಲಾಗಿಲ್ಲ. ದಯವಿಟ್ಟು ಮೊದಲು MenthaAR ಸೇವಾ ಪ್ಯಾಕೇಜ್ ಅನ್ನು ಸ್ಥಾಪಿಸಿ.</string>
+    <string name="hint_service_blocked">MenthaAR ಸೇವೆಯನ್ನು ಸಿಸ್ಟಮ್ ನಿರ್ಬಂಧಿಸಿದೆ. ದಯವಿಟ್ಟು ಸೆಟ್ಟಿಂಗ್‌ಗಳಲ್ಲಿ MenthaAR ಗೆ ಸ್ವಯಂ-ಪ್ರಾರಂಭಕ್ಕೆ ಅನುಮತಿಸಿ, ನಂತರ ಅಪ್ಲಿಕೇಶನ್‌ಗೆ ಹಿಂತಿರುಗಿ.</string>
 </resources>

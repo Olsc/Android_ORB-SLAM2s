@@ -108,4 +108,5 @@
     <string name="hint_camera_preview_disabled">Прагляд камеры выключаны</string>
 
     <string name="hint_service_missing">Служба MenthaAR не ўсталяваная. Спачатку ўсталюйце пакет службы MenthaAR.</string>
+    <string name="hint_service_blocked">Служба MenthaAR заблакаваная сістэмай. Дазвольце аўтазапуск MenthaAR у наладах і вярніцеся ў праграму.</string>
 </resources>

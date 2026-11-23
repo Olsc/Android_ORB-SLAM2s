@@ -104,4 +104,5 @@
     <string name="hint_camera_preview_disabled">የካሜራ እይታ ተዘግቷል</string>
 
     <string name="hint_service_missing">የMenthaAR አገልግሎት አልተጫነም። እባክዎ በመጀመሪያ የMenthaAR አገልግሎት ጥቅሉን ይጫኑ።</string>
+    <string name="hint_service_blocked">የMenthaAR አገልግሎት በሲስተሙ ታግዷል። እባክዎ በቅንብሮች ውስጥ MenthaAR በራስ-ሰር እንዲጀምር ይፍቀዱ እና ወደ መተግበሪያው ይመለሱ።</string>
 </resources>

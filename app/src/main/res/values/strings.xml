@@ -104,4 +104,5 @@
     <string name="hint_camera_preview_disabled">Camera view disabled</string>
 
     <string name="hint_service_missing">MenthaAR service is not installed. Please install the MenthaAR service package first.</string>
+    <string name="hint_service_blocked">MenthaAR service was blocked by the system. Please allow MenthaAR to auto-start in Settings, then return to the app.</string>
 </resources>

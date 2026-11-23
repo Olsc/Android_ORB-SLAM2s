@@ -104,4 +104,5 @@
     <string name="hint_camera_preview_disabled">Камерын дүрс унтраалттай</string>
 
     <string name="hint_service_missing">MenthaAR үйлчилгээ суулгагдаагүй байна. Эхлээд MenthaAR үйлчилгээний багцыг суулгана уу.</string>
+    <string name="hint_service_blocked">MenthaAR үйлчилгээг систем хаасан байна. Тохиргоонд MenthaAR-г автоматаар эхлүүлэхийг зөвшөөрч, аппдаа буцна уу.</string>
 </resources>

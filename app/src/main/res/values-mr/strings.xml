@@ -104,4 +104,5 @@
     <string name="hint_camera_preview_disabled">कॅमेरा दृश्य बंद आहे</string>
 
     <string name="hint_service_missing">MenthaAR सेवा इंस्टॉल केलेली नाही. कृपया आधी MenthaAR सेवा पॅकेज इंस्टॉल करा.</string>
+    <string name="hint_service_blocked">सिस्टमने MenthaAR सेवा ब्लॉक केली आहे. कृपया सेटिंग्जमध्ये MenthaAR ला ऑटो-स्टार्टची परवानगी द्या आणि ॲपवर परत या.</string>
 </resources>

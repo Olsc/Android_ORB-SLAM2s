@@ -102,4 +102,5 @@
     <string name="hint_camera_preview_disabled">ទិដ្ឋភាពកាមេរ៉ាត្រូវបានបិទ</string>
 
     <string name="hint_service_missing">សេវា MenthaAR មិនទាន់បានដំឡើងទេ។ សូមដំឡើងកញ្ចប់សេវា MenthaAR ជាមុនសិន។</string>
+    <string name="hint_service_blocked">ប្រព័ន្ធបានទប់ស្កាត់សេវា MenthaAR។ សូមអនុញ្ញាតឱ្យ MenthaAR ចាប់ផ្តើមដោយស្វ័យប្រវត្តិក្នុងការកំណត់ រួចត្រឡប់ទៅកម្មវិធីវិញ។</string>
 </resources>

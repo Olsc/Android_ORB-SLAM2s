@@ -104,4 +104,5 @@
     <string name="hint_camera_preview_disabled">ക്യാമറ കാഴ്ച ഓഫാക്കി</string>
 
     <string name="hint_service_missing">MenthaAR സേവനം ഇൻസ്റ്റാൾ ചെയ്തിട്ടില്ല. ആദ്യം MenthaAR സേവന പാക്കേജ് ഇൻസ്റ്റാൾ ചെയ്യുക.</string>
+    <string name="hint_service_blocked">MenthaAR സേവനം സിസ്റ്റം തടഞ്ഞു. ക്രമീകരണങ്ങളിൽ MenthaAR-ന് ഓട്ടോ-സ്റ്റാർട്ട് അനുവദിച്ച ശേഷം ആപ്പിലേക്ക് മടങ്ങുക.</string>
 </resources>

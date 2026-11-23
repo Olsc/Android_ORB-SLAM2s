@@ -108,4 +108,5 @@
     <string name="hint_camera_preview_disabled">Zobrazení kamery vypnuto</string>
 
     <string name="hint_service_missing">Služba MenthaAR není nainstalována. Nejprve nainstalujte balíček služby MenthaAR.</string>
+    <string name="hint_service_blocked">Systém zablokoval službu MenthaAR. Povolte v nastavení automatické spuštění MenthaAR a vraťte se do aplikace.</string>
 </resources>

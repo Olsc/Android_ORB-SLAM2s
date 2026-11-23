@@ -104,4 +104,5 @@
     <string name="hint_camera_preview_disabled">Kamera görüntüsü deaktivləşdirildi</string>
 
     <string name="hint_service_missing">MenthaAR xidməti quraşdırılmayıb. Zəhmət olmasa əvvəlcə MenthaAR xidmət paketini quraşdırın.</string>
+    <string name="hint_service_blocked">MenthaAR xidməti sistem tərəfindən bloklandı. Zəhmət olmasa Ayarlarda MenthaAR üçün avtomatik başlatmağa icazə verin və tətbiqə qayıdın.</string>
 </resources>

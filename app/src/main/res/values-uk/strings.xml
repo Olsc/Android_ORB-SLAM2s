@@ -108,4 +108,5 @@
     <string name="hint_camera_preview_disabled">Зображення з камери вимкнено</string>
 
     <string name="hint_service_missing">Службу MenthaAR не встановлено. Спершу встановіть пакет служби MenthaAR.</string>
+    <string name="hint_service_blocked">Службу MenthaAR заблоковано системою. Дозвольте автозапуск MenthaAR у налаштуваннях і поверніться до застосунку.</string>
 </resources>

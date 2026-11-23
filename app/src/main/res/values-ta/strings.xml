@@ -104,4 +104,5 @@
     <string name="hint_camera_preview_disabled">கேமரா காட்சி முடக்கப்பட்டது</string>
 
     <string name="hint_service_missing">MenthaAR சேவை நிறுவப்படவில்லை. முதலில் MenthaAR சேவை தொகுப்பை நிறுவவும்.</string>
+    <string name="hint_service_blocked">MenthaAR சேவையை சிஸ்டம் தடுத்துள்ளது. அமைப்புகளில் MenthaAR தானாகத் தொடங்க அனுமதித்து, பின்னர் பயன்பாட்டிற்குத் திரும்பவும்.</string>
 </resources>

@@ -104,4 +104,5 @@
     <string name="hint_camera_preview_disabled">Камера көрінісі өшірілді</string>
 
     <string name="hint_service_missing">MenthaAR қызметі орнатылмаған. Алдымен MenthaAR қызмет пакетін орнатыңыз.</string>
+    <string name="hint_service_blocked">MenthaAR қызметін жүйе бұғаттады. Параметрлерде MenthaAR автоматты іске қосылуына рұқсат беріп, қолданбаға оралыңыз.</string>
 </resources>

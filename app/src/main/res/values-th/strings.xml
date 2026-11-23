@@ -102,4 +102,5 @@
     <string name="hint_camera_preview_disabled">ปิดมุมมองกล้องแล้ว</string>
 
     <string name="hint_service_missing">ยังไม่ได้ติดตั้งบริการ MenthaAR โปรดติดตั้งแพ็กเกจบริการ MenthaAR ก่อน</string>
+    <string name="hint_service_blocked">ระบบบล็อกบริการ MenthaAR โปรดอนุญาตให้ MenthaAR เริ่มต้นอัตโนมัติในการตั้งค่า แล้วกลับมาที่แอป</string>
 </resources>
