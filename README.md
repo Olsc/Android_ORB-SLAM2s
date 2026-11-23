@@ -210,7 +210,7 @@ The full and service editions share the same `applicationId`, so they cannot be 
 ### Installing the Service Edition
 
 1. Install the `MenthaAR` service APK, then the app-lite APK (both must be signed with the same key).
-2. On phones with a vendor auto-start manager (verified on Xiaomi/Redmi HyperOS), the system may block a service that has never been launched. The app then shows a prompt and opens the matching settings page: allow auto-start for **MenthaAR** (the entry with the same icon as the app) and return to the app. Pages for Huawei/Honor, OPPO/realme/OnePlus, vivo/iQOO, Samsung and others are included but not yet verified on real devices; if none can be opened, the app falls back to the service's App info page.
+2. On phones with a vendor auto-start manager, the system may block a service that has never been launched. The app then shows a prompt and opens the matching settings page: allow auto-start for **MenthaAR** (the entry with the same icon as the app) and return to the app.
 
 ### Distributing the App
 
