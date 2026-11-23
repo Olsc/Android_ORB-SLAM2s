@@ -219,7 +219,7 @@ if(ARCH_SPECIFIC_OPTIMIZATION_FLAGS)
     endforeach()
 endif()
 
-# SLAM 核心源码：引擎共享库与离线基准程序共用同一份列表
+# SLAM 核心源码列表，供引擎共享库复用
 set(MENTHA_CORE_SOURCES
         src/main/cpp/src/System.cc
         src/main/cpp/src/Tracking.cc
