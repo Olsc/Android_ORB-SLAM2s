@@ -192,24 +192,29 @@ For a closed-source version of ORB-SLAM2 for commercial purposes, please contact
 
 This project adopts a modular license architecture based on Android IPC process isolation:
 
-- **`app/` Module**: Licensed under the **[Apache License, Version 2.0](app/LICENSE)** (Apache-2.0). Contains UI, camera preview and GLB rendering only; it never references GPL-only code at compile time.
+- **`app/` Module**: Licensed under the **[Apache License, Version 2.0](app/LICENSE)** (Apache-2.0). Contains UI, camera preview and GLB rendering only. Its source code contains no GPL-only code: the service edition (`app-lite`) has no dependency on the engine at all, and the full edition links the engine as a separate module.
 - **IPC interface** (`app/src/main/java/com/orb/slam2s/ipc/` and `ISlamService.aidl`): **dual-licensed under Apache-2.0 or GPLv3** (either one, see [LICENSE-DUAL.txt](app/src/main/java/com/orb/slam2s/ipc/LICENSE-DUAL.txt)). It contains only the AIDL protocol and the shared-memory client.
 - **`MenthaAR/` Engine Module**: Derived from ORB-SLAM2 and released under the **[GNU General Public License v3.0](MenthaAR/LICENSE)** (GPLv3). Contains the C++ SLAM algorithms, pose sensors and pose fusion.
-- **Process Isolation**: `app` and the `MenthaAR` engine run in separate processes and exchange data only through Binder IPC and SharedMemory (Ashmem/memfd).
+- **Process Isolation**: `app` and the `MenthaAR` engine run in separate processes (in the service edition, in separate APKs) and exchange data only through Binder IPC and SharedMemory (Ashmem/memfd).
 
 ### Three Packages
 
-| Package | Module | applicationId | Description |
-|---|---|---|---|
-| **app** (full) | `:app` | `com.orb.slam2s` | Everything in one APK, no other APK needed |
-| **MenthaAR** (service) | `:MenthaAR-Service` | `com.mentha.ar` | Service-only APK, no launcher icon; binding is protected by a signature-level permission |
-| **app-lite** (service edition) | `:app-lite` | `com.orb.slam2s` | App only, no engine code; requires the MenthaAR service APK, so the app part stays fully separated and can use a different license. Must be signed with the same key as the service APK |
+| Package | Module | applicationId | License | Description |
+|---|---|---|---|---|
+| **app** (full) | `:app` | `com.orb.slam2s` | GPLv3 terms (bundles the engine) | Everything in one APK, no other APK needed |
+| **MenthaAR** (service) | `:MenthaAR-Service` | `com.mentha.ar` | GPLv3 | Service-only APK with no launcher entry (its icon only appears in the system settings app list); binding is protected by a signature-level permission |
+| **app-lite** (service edition) | `:app-lite` | `com.orb.slam2s` | Apache-2.0 | App only, no engine code; requires the MenthaAR service APK, so the app part stays fully separated and can use a different license. Must be signed with the same key as the service APK |
 
 The full and service editions share the same `applicationId`, so they cannot be installed side by side. Build with `./gradlew :app:assembleRelease :MenthaAR-Service:assembleRelease :app-lite:assembleLiteRelease`.
 
+### Installing the Service Edition
+
+1. Install the `MenthaAR` service APK, then the app-lite APK (both must be signed with the same key).
+2. On phones with a vendor auto-start manager (verified on Xiaomi/Redmi HyperOS), the system may block a service that has never been launched. The app then shows a prompt and opens the matching settings page: allow auto-start for **MenthaAR** (the entry with the same icon as the app) and return to the app. Pages for Huawei/Honor, OPPO/realme/OnePlus, vivo/iQOO, Samsung and others are included but not yet verified on real devices; if none can be opened, the app falls back to the service's App info page.
+
 ### Distributing the App
 
-The full `app` APK built from this repository includes the GPLv3 engine (`MenthaAR`) as a runtime dependency. If you distribute that APK, you must comply with GPLv3 for the engine: provide the corresponding source code of `MenthaAR` (or a written offer to provide it), include the GPLv3 license text, and mark any modifications you make. The Apache-2.0 files in `app/` keep their own copyright and NOTICE requirements. The Apache-2.0 license of `app/` must not add restrictions on the GPLv3 engine.
+The full `app` APK built from this repository includes the GPLv3 engine (`MenthaAR`) as a runtime dependency. If you distribute that APK, you must comply with GPLv3 for the engine: provide the corresponding source code of `MenthaAR` (or a written offer to provide it), include the GPLv3 license text, and mark any modifications you make. The Apache-2.0 files in `app/` keep their own copyright and NOTICE requirements. The Apache-2.0 license of `app/` must not add restrictions on the GPLv3 engine. For the service edition, `app-lite` (Apache-2.0) contains no engine code; the `MenthaAR` service APK is GPLv3-only, and distributing it carries the same GPLv3 obligations (provide the `MenthaAR` source code, include the license text, mark modifications).
 
 This is a summary, not legal advice. Consult a lawyer before commercial distribution.
 

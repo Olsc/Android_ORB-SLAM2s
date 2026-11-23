@@ -58,7 +58,7 @@ on Advanced Computational Intelligence (ICACI), Wanzhou, China, 2021,
 pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 ```
 
-は、このプロジェクトと同様の性能最適化のコンセプトを持っていますが、その手法はまだ統合されていません。しかし、この論文は今後の最適化方向性に対する貴重な参考資料となるでしょう。研究者の皆様の貢献と共有に心より感謝いたします。
+同論文は、このプロジェクトと同様の性能最適化のコンセプトを持っていますが、その手法はまだ統合されていません。しかし、この論文は今後の最適化方向性に対する貴重な参考資料となるでしょう。研究者の皆様の貢献と共有に心より感謝いたします。
 
 ---
 
@@ -137,7 +137,7 @@ pp. 160-165, doi: 10.1109/ICACI52617.2021.9435915.)
 - [ ] より高いフレームレートのためのレンダリングパイプラインの最適化
 - [ ] センサーフュージョンの深化（VIO —— Visual Inertial Odometry）
 - [ ] SLAM 周波数のダウンサンプリングと適応ノイズ処理
-- [ ] 精密なセンサーチェッキングロジック
+- [ ] センサーゲーティングロジックの改良
 - [ ] **Unity3D** との統合
 
 ---
@@ -164,7 +164,7 @@ git clone --recursive https://github.com/Olsc/Android_ORB-SLAM2s.git
 
 **著者：** [Raul Mur-Artal](http://webdiis.unizar.es/~raulmur/)、[Juan D. Tardos](http://webdiis.unizar.es/~jdtardos/)、[J. M. M. Montiel](http://webdiis.unizar.es/~josemari/) および [Dorian Galvez-Lopez](http://doriangalvez.com/) ([DBoW2](https://github.com/dorian3d/DBoW2))
 
-ORB-SLAM2 は、**単眼**、**ステレオ**、および **RGB-D** カメラ用のリアルタイム SLAM ライブラリであり、カメラの軌跡とスパース 3D 再構成（ステレオおよび RGB-D では真のスケールで）を計算します。ループを検出し、リアルタイムでカメラを再ローカライズできます。
+ORB-SLAM2 は、**単眼**、**ステレオ**、および **RGB-D** カメラ用のリアルタイム SLAM ライブラリであり、カメラの軌跡とスパース 3D 再構成（ステレオおよび RGB-D では真のスケールで）を計算します。ループを検出し、リアルタイムでカメラを再ローカライズできます。[KITTI データセット](http://www.cvlibs.net/datasets/kitti/eval_odometry.php)ではステレオまたは単眼、[TUM データセット](http://vision.in.tum.de/data/datasets/rgbd-dataset)では RGB-D または単眼、[EuRoC データセット](http://projects.asl.ethz.ch/datasets/doku.php?id=kmavvisualinertialdatasets)ではステレオまたは単眼で SLAM システムを実行するサンプルを提供しています。
 
 <a href="https://www.youtube.com/embed/ufvPS5wJAx0" target="_blank"><img src="http://img.youtube.com/vi/ufvPS5wJAx0/0.jpg" alt="ORB-SLAM2" width="240" height="180" border="10" /></a>
 <a href="https://www.youtube.com/embed/T-9PYCKhDLM" target="_blank"><img src="http://img.youtube.com/vi/T-9PYCKhDLM/0.jpg" alt="ORB-SLAM2" width="240" height="180" border="10" /></a>
@@ -192,28 +192,33 @@ ORB-SLAM2 コアライブラリは [GPLv3 ライセンス](https://github.com/ra
 
 本プロジェクトは、Android IPC プロセス分離に基づくマルチモジュール・ライセンスアーキテクチャを採用しています：
 
-- **`app/` モジュール**: **[Apache License 2.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/app/LICENSE)** (Apache-2.0) の下でライセンスされています。UI、カメラプレビュー、ネイティブ cgltf/OpenGL ES 3D レンダリング、センサーコンポーネントが含まれます。
+- **`app/` モジュール**: **[Apache License 2.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/app/LICENSE)** (Apache-2.0) の下でライセンスされています。UI、カメラプレビュー、GLB モデルのレンダリングのみを含みます。ソースコードに GPL-only のコードは含まれません。サービス版（`app-lite`）はエンジンにまったく依存せず、フル版ではエンジンを独立したモジュールとしてリンクします。
 - **IPC インターフェース**（`app/src/main/java/com/orb/slam2s/ipc/` と `ISlamService.aidl`）: **Apache-2.0 または GPLv3 のデュアルライセンス**（いずれかを選択、[LICENSE-DUAL.txt](../app/src/main/java/com/orb/slam2s/ipc/LICENSE-DUAL.txt) を参照）です。AIDL プロトコルと共有メモリクライアントのみを含みます。
 - **`MenthaAR/` エンジンモジュール**: ORB-SLAM2 から派生し、**[GNU General Public License v3.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/MenthaAR/LICENSE)** (GPLv3) の下でライセンスされています。C++ SLAM コアアルゴリズム、姿勢センサー、姿勢融合が含まれます。
-- **プロセス分離**: `app` と `MenthaAR` エンジンは独立したプロセスで実行され、Binder IPC と共有メモリ（Ashmem/memfd）のみでデータを交換します。
+- **プロセス分離**: `app` と `MenthaAR` エンジンは独立したプロセス（サービス版では別々の APK）で実行され、Binder IPC と共有メモリ（Ashmem/memfd）のみでデータを交換します。
 
 ### 3 種類のパッケージ
 
-| パッケージ | モジュール | applicationId | 説明 |
-|---|---|---|---|
-| **app**（フル版） | `:app` | `com.orb.slam2s` | すべてを含み、他の APK なしで利用可能 |
-| **MenthaAR**（サービスパッケージ） | `:MenthaAR-Service` | `com.mentha.ar` | ランチャーアイコンなし、直接起動不可。サービスとしてのみ存在し、バインドは署名レベル権限で保護 |
-| **app サービス版**（app-lite） | `:app-lite` | `com.orb.slam2s` | app のみでエンジンコードを含まず、MenthaAR サービスパッケージのインストールが必要。app 部分を完全に分離でき、異なるライセンスに対応可能。サービスパッケージと同じ署名が必要 |
+| パッケージ | モジュール | applicationId | ライセンス | 説明 |
+|---|---|---|---|---|
+| **app**（フル版） | `:app` | `com.orb.slam2s` | GPLv3 の条件で配布（エンジンを含む） | すべてを含み、他の APK なしで利用可能 |
+| **MenthaAR**（サービスパッケージ） | `:MenthaAR-Service` | `com.mentha.ar` | GPLv3 | サービスのみ。ランチャーからの起動口はなく（アイコンはシステム設定のアプリ一覧にのみ表示）、バインドは署名レベル権限で保護 |
+| **app サービス版**（app-lite） | `:app-lite` | `com.orb.slam2s` | Apache-2.0 | app のみでエンジンコードを含まず、MenthaAR サービスパッケージのインストールが必要。app 部分を完全に分離でき、異なるライセンスに対応可能。サービスパッケージと同じ署名が必要 |
 
-フル版とサービス版は applicationId が同じため、同時にインストールできません。ビルドコマンド: `./gradlew :app:assembleRelease :MenthaAR-Service:assembleRelease :app-lite:assembleLiteRelease`。
+フル版とサービス版は `applicationId` が同じため、同時にインストールできません。ビルドコマンド: `./gradlew :app:assembleRelease :MenthaAR-Service:assembleRelease :app-lite:assembleLiteRelease`。
 
-詳細については、[LICENSE](../LICENSE)、[app/LICENSE](../app/LICENSE)、および [MenthaAR/LICENSE](../MenthaAR/LICENSE) を参照してください。
+### サービス版のインストール
+
+1. 先に `MenthaAR` サービスパッケージ、続いて app サービス版をインストールします（同じ署名が必要）。
+2. メーカー独自の自動起動管理を持つ端末（Xiaomi/Redmi の HyperOS で動作確認済み）では、一度も起動されていないサービスがブロックされることがあります。その場合、アプリがメッセージを表示して該当する設定画面を開きます。**MenthaAR**（アプリと同じアイコンの項目）の自動起動を許可してからアプリに戻ってください。Huawei/Honor、OPPO/realme/OnePlus、vivo/iQOO、Samsung などの画面にも対応していますが、実機での検証はまだです。いずれも開けない場合はサービスのアプリ情報画面にフォールバックします。
 
 ### App の配布
 
-このリポジトリからビルドした APK には、ランタイム依存として GPLv3 エンジン（`MenthaAR`）が含まれます。この APK を配布する場合、エンジンについて GPLv3 の義務を果たす必要があります。すなわち、`MenthaAR` の対応するソースコード（またはソース提供の書面による申し出）を提供し、GPLv3 ライセンス全文を同梱し、行った変更を明示してください。`app/` の Apache-2.0 ファイルは、著作権表示と NOTICE の要件を引き続き満たします。`app/` の Apache-2.0 ライセンスは GPLv3 エンジンに追加の制限を課すことはできません。
+このリポジトリからビルドしたフル版 `app` の APK には、ランタイム依存として GPLv3 エンジン（`MenthaAR`）が含まれます。この APK を配布する場合、エンジンについて GPLv3 の義務を果たす必要があります。すなわち、`MenthaAR` の対応するソースコード（またはソース提供の書面による申し出）を提供し、GPLv3 ライセンス全文を同梱し、行った変更を明示してください。`app/` の Apache-2.0 ファイルは、著作権表示と NOTICE の要件を引き続き満たします。`app/` の Apache-2.0 ライセンスは GPLv3 エンジンに追加の制限を課すことはできません。 サービス版については、`app-lite`（Apache-2.0）にはエンジンコードが含まれません。`MenthaAR` サービス APK は GPLv3 のみでライセンスされ、その配布にも同じ GPLv3 の義務（`MenthaAR` のソースコードの提供、ライセンス全文の添付、変更の明示）が伴います。
 
 > 本節は要約であり、法的助言ではありません。商用配布の前に弁護士にご相談ください。
+
+詳細については、[LICENSE](../LICENSE)、[app/LICENSE](../app/LICENSE)、および [MenthaAR/LICENSE](../MenthaAR/LICENSE) を参照してください。
 
 プロジェクトコラボレーションまたはその他の分野の協力に関するお問い合わせは、**OlscStudio@outlook.com** までご連絡ください。
 
@@ -283,7 +288,7 @@ g2o に必要です（下記参照）。ダウンロードおよびインスト�
 
 ## DBoW2 および g2o（Thirdparty フォルダに含まれています）
 
-[DBoW2](https://github.com/dorian3d/DBoW2) および [g2o](https://github.com/RainerKuemmerle/g2o) ライブラリをアルゴリズム参照として使用しています。両方のライブラリ（ライセンスを含む）は _Thirdparty_ フォルダに含まれています。
+場所認識には修正版の [DBoW2](https://github.com/dorian3d/DBoW2)、非線形最適化には修正版の [g2o](https://github.com/RainerKuemmerle/g2o) ライブラリを使用しています。修正版の両ライブラリ（BSD ライセンス）は _Thirdparty_ フォルダに含まれています。
 
 ---
 
@@ -305,7 +310,7 @@ Android 端末に加え、本プロジェクトでは `MenthaAR/src/main/cpp/Thi
 参考研究プロジェクト：https://github.com/Olsc/Android_3dof
 
 上記研究に基づき、本プロジェクトでは内蔵センサーによる 3DoF 姿勢推定およびセンサー補助トラッキングを統合しました：
-- **多段階センサーフォールバック戦略**：`TYPE_ROTATION_VECTOR` を優先し、地磁気センサー非搭載端末では `TYPE_GAME_ROTATION_VECTOR` へ自動フォールバック。複合センサーが不足している場合でも加速度計＋磁気計またはジャイロスコープの時間積分と相補フィルターにより姿勢演算を行い、ジャイロスコープ非搭載端末では重力ベクトルのみからピッチとロールを解算する最終段フォールバックで、あらゆる Android 端末での動作を担保します。
+- **多段階センサーフォールバック戦略**：`TYPE_ROTATION_VECTOR` を優先し、地磁気センサー非搭載端末では `TYPE_GAME_ROTATION_VECTOR` へ自動フォールバック。次段として加速度計＋磁気計、またはジャイロスコープの数値積分と相補フィルターによる姿勢推定を行い、ジャイロスコープ非搭載端末では重力ベクトルのみからピッチとロールを算出する最終段フォールバックにより、あらゆる Android 端末での互換性を確保します。で、あらゆる Android 端末での動作を担保します。
 - **SLAM 姿勢補償**：急激なカメラ回転や遮蔽によって単眼ビジュアルトラッキングが一時的にロストした際、センサーの方向変化を利用して姿勢をデッドレコニング（推測航法）で補完・平滑化し、AR 表示の安定性を高めます。
 - **今後の展望**：ハードウェアタイムスタンプ同期を伴う密結合ビジュアル慣性オドメトリ（VIO）は引き続き研究開発を進めています。
 

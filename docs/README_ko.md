@@ -164,7 +164,7 @@ git clone --recursive https://github.com/Olsc/Android_ORB-SLAM2s.git
 
 **저자：** [Raul Mur-Artal](http://webdiis.unizar.es/~raulmur/)、[Juan D. Tardos](http://webdiis.unizar.es/~jdtardos/)、[J. M. M. Montiel](http://webdiis.unizar.es/~josemari/) 및 [Dorian Galvez-Lopez](http://doriangalvez.com/) ([DBoW2](https://github.com/dorian3d/DBoW2))
 
-ORB-SLAM2는 **단안**, **스테레오** 및 **RGB-D** 카메라용 실시간 SLAM 라이브러리로, 카메라 궤적과 희소 3D 재구성을 계산합니다(스테레오 및 RGB-D의 경우 실제 스케일로). 루프를 감지하고 카메라를 실시간으로 재로컬라이즈할 수 있습니다.
+ORB-SLAM2는 **단안**, **스테레오** 및 **RGB-D** 카메라용 실시간 SLAM 라이브러리로, 카메라 궤적과 희소 3D 재구성을 계산합니다(스테레오 및 RGB-D의 경우 실제 스케일로). 루프를 감지하고 카메라를 실시간으로 재로컬라이즈할 수 있습니다. [KITTI 데이터셋](http://www.cvlibs.net/datasets/kitti/eval_odometry.php)에서는 스테레오 또는 단안, [TUM 데이터셋](http://vision.in.tum.de/data/datasets/rgbd-dataset)에서는 RGB-D 또는 단안, [EuRoC 데이터셋](http://projects.asl.ethz.ch/datasets/doku.php?id=kmavvisualinertialdatasets)에서는 스테레오 또는 단안으로 SLAM 시스템을 실행하는 예제를 제공합니다.
 
 <a href="https://www.youtube.com/embed/ufvPS5wJAx0" target="_blank"><img src="http://img.youtube.com/vi/ufvPS5wJAx0/0.jpg" alt="ORB-SLAM2" width="240" height="180" border="10" /></a>
 <a href="https://www.youtube.com/embed/T-9PYCKhDLM" target="_blank"><img src="http://img.youtube.com/vi/T-9PYCKhDLM/0.jpg" alt="ORB-SLAM2" width="240" height="180" border="10" /></a>
@@ -192,28 +192,33 @@ ORB-SLAM2 코어 라이브러리는 [GPLv3 라이선스](https://github.com/raul
 
 본 프로젝트는 Android IPC 프로세스 격리를 기반으로 한 다중 모듈 라이선스 아키텍처를 채택합니다:
 
-- **`app/` 모듈**: **[Apache License 2.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/app/LICENSE)** (Apache-2.0)에 따라 라이선스가 부여됩니다. UI, 카메라 프리뷰, 네이티브 cgltf/OpenGL ES 3D 렌더링 및 센서 구성 요소가 포함되어 있습니다.
+- **`app/` 모듈**: **[Apache License 2.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/app/LICENSE)** (Apache-2.0)에 따라 라이선스가 부여됩니다. UI, 카메라 프리뷰, GLB 모델 렌더링만 포함하며, 소스 코드에 GPL 전용 코드는 없습니다. 서비스 버전(`app-lite`)은 엔진에 전혀 의존하지 않고, 전체 버전은 엔진을 별도 모듈로 링크합니다.
 - **IPC 인터페이스**(`app/src/main/java/com/orb/slam2s/ipc/` 및 `ISlamService.aidl`): **Apache-2.0 또는 GPLv3 듀얼 라이선스**(택일, [LICENSE-DUAL.txt](../app/src/main/java/com/orb/slam2s/ipc/LICENSE-DUAL.txt) 참조)입니다. AIDL 프로토콜과 공유 메모리 클라이언트만 포함합니다.
 - **`MenthaAR/` 엔진 모듈**: ORB-SLAM2에서 파생되었으며 **[GNU General Public License v3.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/MenthaAR/LICENSE)** (GPLv3)에 따라 라이선스가 부여됩니다. C++ SLAM 핵심 알고리즘, 자세 센서, 자세 융합이 포함되어 있습니다.
-- **프로세스 격리**: `app`과 `MenthaAR` 엔진은 별도 프로세스에서 실행되며 Binder IPC와 공유 메모리(Ashmem/memfd)로만 데이터를 교환합니다.
+- **프로세스 격리**: `app`과 `MenthaAR` 엔진은 별도 프로세스(서비스 버전에서는 별도 APK)에서 실행되며 Binder IPC와 공유 메모리(Ashmem/memfd)로만 데이터를 교환합니다.
 
 ### 세 가지 패키지
 
-| 패키지 | 모듈 | applicationId | 설명 |
-|---|---|---|---|
-| **app**(전체 버전) | `:app` | `com.orb.slam2s` | 모든 내용을 포함하며 다른 APK 없이 사용 가능 |
-| **MenthaAR**(서비스 패키지) | `:MenthaAR-Service` | `com.mentha.ar` | 런처 아이콘이 없어 직접 실행할 수 없으며 서비스 형태로만 존재. 바인딩은 서명 수준 권한으로 보호 |
-| **app 서비스 버전**(app-lite) | `:app-lite` | `com.orb.slam2s` | app만 포함하고 엔진 코드는 없음. MenthaAR 서비스 패키지 설치 필요. app 부분을 완전히 분리하여 다른 라이선스에 대응 가능. 서비스 패키지와 동일한 서명 필요 |
+| 패키지 | 모듈 | applicationId | 라이선스 | 설명 |
+|---|---|---|---|---|
+| **app**(전체 버전) | `:app` | `com.orb.slam2s` | GPLv3 조건으로 배포(엔진 포함) | 모든 내용을 포함하며 다른 APK 없이 사용 가능 |
+| **MenthaAR**(서비스 패키지) | `:MenthaAR-Service` | `com.mentha.ar` | GPLv3 | 서비스 전용이며 런처 진입점이 없음(아이콘은 시스템 설정의 앱 목록에만 표시). 바인딩은 서명 수준 권한으로 보호 |
+| **app 서비스 버전**(app-lite) | `:app-lite` | `com.orb.slam2s` | Apache-2.0 | app만 포함하고 엔진 코드는 없음. MenthaAR 서비스 패키지 설치 필요. app 부분을 완전히 분리하여 다른 라이선스에 대응 가능. 서비스 패키지와 동일한 서명 필요 |
 
-전체 버전과 서비스 버전은 applicationId가 같아 동시에 설치할 수 없습니다. 빌드 명령: `./gradlew :app:assembleRelease :MenthaAR-Service:assembleRelease :app-lite:assembleLiteRelease`.
+전체 버전과 서비스 버전은 `applicationId`가 같아 동시에 설치할 수 없습니다. 빌드 명령: `./gradlew :app:assembleRelease :MenthaAR-Service:assembleRelease :app-lite:assembleLiteRelease`.
 
-자세한 내용은 [LICENSE](../LICENSE), [app/LICENSE](../app/LICENSE) 및 [MenthaAR/LICENSE](../MenthaAR/LICENSE) 파일을 참조하십시오.
+### 서비스 버전 설치
+
+1. 먼저 `MenthaAR` 서비스 패키지를 설치한 뒤 app 서비스 버전을 설치합니다(동일한 서명 필요).
+2. 제조사 자동 시작 관리 기능이 있는 기기(Xiaomi/Redmi HyperOS에서 확인)에서는 한 번도 실행된 적 없는 서비스가 차단될 수 있습니다. 이 경우 앱이 안내 메시지를 표시하고 해당 설정 화면을 엽니다. **MenthaAR**(앱과 같은 아이콘의 항목)의 자동 시작을 허용한 뒤 앱으로 돌아오세요. Huawei/Honor, OPPO/realme/OnePlus, vivo/iQOO, Samsung 등의 화면도 포함되어 있으나 실기기 검증은 아직 되지 않았습니다. 열 수 없으면 서비스의 앱 정보 화면으로 대체됩니다.
 
 ### App 배포
 
-이 저장소에서 빌드된 APK에는 런타임 의존성으로 GPLv3 엔진(`MenthaAR`)이 포함됩니다. 이 APK를 배포하는 경우 엔진에 대해 GPLv3 의무를 준수해야 합니다. 즉, `MenthaAR`의 해당 소스 코드(또는 소스 제공에 대한 서면 제안)를 제공하고, GPLv3 라이선스 전문을 포함하며, 수정한 내용을 표시해야 합니다. `app/`의 Apache-2.0 파일은 저작권 및 NOTICE 요구 사항을 유지합니다. `app/`의 Apache-2.0 라이선스는 GPLv3 엔진에 추가 제한을 부과할 수 없습니다.
+이 저장소에서 빌드된 전체 버전 `app` APK에는 런타임 의존성으로 GPLv3 엔진(`MenthaAR`)이 포함됩니다. 이 APK를 배포하는 경우 엔진에 대해 GPLv3 의무를 준수해야 합니다. 즉, `MenthaAR`의 해당 소스 코드(또는 소스 제공에 대한 서면 제안)를 제공하고, GPLv3 라이선스 전문을 포함하며, 수정한 내용을 표시해야 합니다. `app/`의 Apache-2.0 파일은 저작권 및 NOTICE 요구 사항을 유지합니다. `app/`의 Apache-2.0 라이선스는 GPLv3 엔진에 추가 제한을 부과할 수 없습니다. 서비스 버전의 경우 `app-lite`(Apache-2.0)에는 엔진 코드가 없습니다. `MenthaAR` 서비스 APK는 GPLv3만으로 라이선스되며, 이를 배포할 때도 동일한 GPLv3 의무(`MenthaAR` 소스 코드 제공, 라이선스 전문 첨부, 수정 사항 표시)가 따릅니다.
 
 > 이 섹션은 요약이며 법률 자문이 아닙니다. 상업적 배포 전에 변호사와 상담하십시오.
+
+자세한 내용은 [LICENSE](../LICENSE), [app/LICENSE](../app/LICENSE) 및 [MenthaAR/LICENSE](../MenthaAR/LICENSE) 파일을 참조하십시오.
 
 프로젝트 협업 또는 기타 분야 협력 문의는 **OlscStudio@outlook.com**으로 연락 주십시오.
 
@@ -275,7 +280,7 @@ ORB-SLAM2 코어 라이브러리는 [GPLv3 라이선스](https://github.com/raul
 
 ## HBST（Hierarchical Bag of Scalable Trees）
 
-빠르고 확장 가능한 이미지 매칭을 위해 [srrg_hbst](https://gitlab.com/srrg-software/srrg_hbst)를 통합했습니다. 기존 DBoW2에 비해 루프 클로징 및 재배치 성능이 크게 향상되었습니다.
+빠르고 확장 가능한 이미지 매칭을 위해 [srrg_hbst](https://gitlab.com/srrg-software/srrg_hbst)를 통합했습니다. 기존 DBoW2에 비해 루프 클로징 및 재로컬라이제이션 성능이 크게 향상되었습니다.
 
 ## Eigen3
 
@@ -283,7 +288,7 @@ g2o에 필요합니다(아래 참조). 다운로드 및 설치 지침은 다음�
 
 ## DBoW2 및 g2o（Thirdparty 폴더에 포함됨）
 
-[DBoW2](https://github.com/dorian3d/DBoW2) 및 [g2o](https://github.com/RainerKuemmerle/g2o) 라이브러리를 알고리즘 참조용으로 사용합니다. 두 라이브러리(라이선스 포함)는 _Thirdparty_ 폴더에 포함되어 있습니다.
+장소 인식에는 수정된 [DBoW2](https://github.com/dorian3d/DBoW2), 비선형 최적화에는 수정된 [g2o](https://github.com/RainerKuemmerle/g2o) 라이브러리를 사용합니다. 수정된 두 라이브러리(BSD 라이선스)는 _Thirdparty_ 폴더에 포함되어 있습니다.
 
 ---
 

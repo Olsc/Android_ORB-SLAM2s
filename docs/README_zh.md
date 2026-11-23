@@ -164,7 +164,7 @@ git clone --recursive https://github.com/Olsc/Android_ORB-SLAM2s.git
 
 **作者：** [Raul Mur-Artal](http://webdiis.unizar.es/~raulmur/)、[Juan D. Tardos](http://webdiis.unizar.es/~jdtardos/)、[J. M. M. Montiel](http://webdiis.unizar.es/~josemari/) 和 [Dorian Galvez-Lopez](http://doriangalvez.com/) ([DBoW2](https://github.com/dorian3d/DBoW2))
 
-ORB-SLAM2 是一个实时 SLAM 库，用于**单目**、**立体**和 **RGB-D** 相机，计算相机轨迹和稀疏 3D 重建（在立体和 RGB-D 情况下具有真实比例）。它能够实时检测循环并重新定位相机。我们提供了在 [KITTI 数据集](http://www.cvlibs.net/datasets/kitti/eval_odometry.php)上以立体或单目方式运行 SLAM 系统的示例，在 [TUM 数据集](http://vision.in.tum.de/data/datasets/rgbd-dataset)上以 RGB-D 或单目方式运行，以及在 [EuRoC 数据集](http://projects.asl.ethz.ch/datasets/doku.php?id=kmavvisualinertialdatasets)上以立体或单目方式运行。
+ORB-SLAM2 是一个实时 SLAM 库，用于**单目**、**立体**和 **RGB-D** 相机，计算相机轨迹和稀疏 3D 重建（在立体和 RGB-D 情况下具有真实比例）。它能够实时检测回环并重新定位相机。我们提供了在 [KITTI 数据集](http://www.cvlibs.net/datasets/kitti/eval_odometry.php)上以立体或单目方式运行 SLAM 系统的示例，在 [TUM 数据集](http://vision.in.tum.de/data/datasets/rgbd-dataset)上以 RGB-D 或单目方式运行，以及在 [EuRoC 数据集](http://projects.asl.ethz.ch/datasets/doku.php?id=kmavvisualinertialdatasets)上以立体或单目方式运行。
 
 <a href="https://www.youtube.com/embed/ufvPS5wJAx0" target="_blank"><img src="http://img.youtube.com/vi/ufvPS5wJAx0/0.jpg" alt="ORB-SLAM2" width="240" height="180" border="10" /></a>
 <a href="https://www.youtube.com/embed/T-9PYCKhDLM" target="_blank"><img src="http://img.youtube.com/vi/T-9PYCKhDLM/0.jpg" alt="ORB-SLAM2" width="240" height="180" border="10" /></a>
@@ -192,28 +192,33 @@ ORB-SLAM2 核心库以 [GPLv3 许可证](https://github.com/raulmur/ORB_SLAM2/bl
 
 本项目基于 Android IPC 进程隔离采用分层/多模块开源许可架构：
 
-- **`app/` 模块**：采用 **[Apache License 2.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/app/LICENSE)** (Apache-2.0) 授权。仅包含 UI 交互、相机预览与 GLB 模型渲染，编译期不引用任何 GPL-only 实现。
+- **`app/` 模块**：采用 **[Apache License 2.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/app/LICENSE)** (Apache-2.0) 授权。仅包含 UI 交互、相机预览与 GLB 模型渲染；其源码不含任何 GPL-only 代码：服务版（`app-lite`）完全不依赖引擎，完整版则将引擎作为独立模块链入。
 - **IPC 接口**（`app/src/main/java/com/orb/slam2s/ipc/` 与 `ISlamService.aidl`）：采用 **Apache-2.0 或 GPLv3 双许可**（任选其一，见 [LICENSE-DUAL.txt](../app/src/main/java/com/orb/slam2s/ipc/LICENSE-DUAL.txt)）。仅包含 AIDL 协议与共享内存客户端。
 - **`MenthaAR/` 引擎模块**：基于 ORB-SLAM2 衍生，采用 **[GNU General Public License v3.0](https://github.com/Olsc/Android_ORB-SLAM2s/blob/main/MenthaAR/LICENSE)** (GPLv3) 授权。包含 C++ SLAM 核心算法、姿态传感器与位姿融合。
-- **进程隔离**：`app` 与 `MenthaAR` 引擎运行在独立进程中，仅通过 Binder IPC 与共享内存（Ashmem/memfd）传递数据。
+- **进程隔离**：`app` 与 `MenthaAR` 引擎运行在独立进程中（服务版则位于不同 APK），仅通过 Binder IPC 与共享内存（Ashmem/memfd）传递数据。
 
 ### 三种安装包
 
-| 包 | 模块 | applicationId | 说明 |
-|---|---|---|---|
-| **app**（完整版） | `:app` | `com.orb.slam2s` | 包含全部内容，无需安装其他 APK 即可使用 |
-| **MenthaAR**（服务包） | `:MenthaAR-Service` | `com.mentha.ar` | 无启动图标，无法直接打开，仅以服务形态存在；绑定受签名级权限保护 |
-| **app 服务版**（app-lite） | `:app-lite` | `com.orb.slam2s` | 仅含 app、不含引擎代码，需手机内已安装 MenthaAR 服务包；app 部分彻底隔离，可适配不同开源协议。须与服务包使用同一签名 |
+| 包 | 模块 | applicationId | 许可证 | 说明 |
+|---|---|---|---|---|
+| **app**（完整版） | `:app` | `com.orb.slam2s` | 含引擎，按 GPLv3 条款分发 | 包含全部内容，无需安装其他 APK 即可使用 |
+| **MenthaAR**（服务包） | `:MenthaAR-Service` | `com.mentha.ar` | GPLv3 | 仅服务、无桌面启动入口（图标只出现在系统设置的应用列表中）；绑定受签名级权限保护 |
+| **app 服务版**（app-lite） | `:app-lite` | `com.orb.slam2s` | Apache-2.0 | 仅含 app、不含引擎代码，需手机内已安装 MenthaAR 服务包；app 部分彻底隔离，可适配不同开源协议。须与服务包使用同一签名 |
 
-完整版与服务版 applicationId 相同，不能同时安装。构建命令：`./gradlew :app:assembleRelease :MenthaAR-Service:assembleRelease :app-lite:assembleLiteRelease`。
+完整版与服务版 `applicationId` 相同，不能同时安装。构建命令：`./gradlew :app:assembleRelease :MenthaAR-Service:assembleRelease :app-lite:assembleLiteRelease`。
 
-详情请参见 [LICENSE](../LICENSE)、[app/LICENSE](../app/LICENSE) 与 [MenthaAR/LICENSE](../MenthaAR/LICENSE) 文件。
+### 安装服务版
+
+1. 先安装 `MenthaAR` 服务包，再安装 app 服务版（两者须使用同一签名）。
+2. 部分带有厂商自启动管理的手机（已在小米/红米 HyperOS 上验证）可能拦截从未运行过的服务包。此时 app 会弹出提示并跳转到对应的设置页，请为 **MenthaAR**（与 app 图标相同的那一项）开启自启动，然后返回 app。华为/荣耀、OPPO/realme/一加、vivo/iQOO、三星等品牌的页面已内置，但尚未在实机上验证；若都无法打开，则回退到服务包的应用详情页。
 
 ### 分发 App
 
-本仓库构建的 APK 包含作为运行时依赖的 GPLv3 引擎（`MenthaAR`）。分发该 APK 时，需对引擎履行 GPLv3 义务：提供 `MenthaAR` 的对应源代码（或提供源码的书面要约），附上 GPLv3 许可证全文，并标注你所做的修改。`app/` 中的 Apache-2.0 文件须保留其版权与 NOTICE 要求。`app/` 的 Apache-2.0 许可不得对 GPLv3 引擎附加任何额外限制。
+本仓库构建的完整版 `app` APK 包含作为运行时依赖的 GPLv3 引擎（`MenthaAR`）。分发该 APK 时，需对引擎履行 GPLv3 义务：提供 `MenthaAR` 的对应源代码（或提供源码的书面要约），附上 GPLv3 许可证全文，并标注你所做的修改。`app/` 中的 Apache-2.0 文件须保留其版权与 NOTICE 要求。`app/` 的 Apache-2.0 许可不得对 GPLv3 引擎附加任何额外限制。 服务版方面：`app-lite`（Apache-2.0）不含引擎代码；`MenthaAR` 服务包仅按 GPLv3 授权，分发它同样需要履行 GPLv3 义务（提供 `MenthaAR` 源码、附上许可证全文、标注修改）。
 
 > 本节为摘要，不构成法律意见。商业分发前请咨询律师。
+
+详情请参见 [LICENSE](../LICENSE)、[app/LICENSE](../app/LICENSE) 与 [MenthaAR/LICENSE](../MenthaAR/LICENSE) 文件。
 
 项目合作或其他领域合作咨询，请联系：**OlscStudio@outlook.com**
 
@@ -222,7 +227,7 @@ ORB-SLAM2 核心库以 [GPLv3 许可证](https://github.com/raulmur/ORB_SLAM2/bl
 本项目的发展离不开众多优秀的开源项目。我们在本项目中集成并使用了以下第三方库，并严格遵守其开源协议：
 
 - **[OpenCV](https://github.com/opencv/opencv)** —— **Apache 2.0 许可证**
-- **[srrg_hbst](https://gitlab.com/srrg-software/srrg_hbst)** —— **BSD 3-Clause 许可证**。用于快速、增量式的可扩展图像匹配与重定位。
+- **[srrg_hbst](https://gitlab.com/srrg-software/srrg_hbst)** —— **BSD 3-Clause 许可证**。用于快速、可扩展的图像匹配。
 - **[DBoW2](https://github.com/dorian3d/DBoW2)** —— **BSD 许可证**。用于特征向量化及基础的局部特征匹配。
 - **[g2o](https://github.com/RainerKuemmerle/g2o)** —— **BSD 许可证**（其核心部分）。用于图优化及非线性误差最小化。
 - **[Eigen3](http://eigen.tuxfamily.org/)** —— **MPL2 (Mozilla Public License v2.0) 许可证**。用于矩阵及线性代数运算。
@@ -283,7 +288,7 @@ g2o 所需（见下文）。下载和安装说明可在以下网址找到：http
 
 ## DBoW2 和 g2o（包含在 Thirdparty 文件夹中）
 
-我们使用 [DBoW2](https://github.com/dorian3d/DBoW2) 和 [g2o](https://github.com/RainerKuemmerle/g2o) 库进行算法上的引用。这两个库（包含许可证）都包含在 _Thirdparty_ 文件夹中。
+我们使用修改版的 [DBoW2](https://github.com/dorian3d/DBoW2) 库进行地点识别，使用修改版的 [g2o](https://github.com/RainerKuemmerle/g2o) 库进行非线性优化。这两个修改版库（均为 BSD 许可）都包含在 _Thirdparty_ 文件夹中。
 
 ---
 
