@@ -43,4 +43,17 @@
 #include <unistd.h>
 #endif
 
+#if defined(__ANDROID__) || defined(__linux__)
+#include <sys/resource.h>
+#include <sys/syscall.h>
+// 设置当前线程的 nice 值：Linux 新线程继承创建者的 nice，工作线程需显式设定，不沿用帧处理线程的高优先级
+inline void SetCurrentThreadNice(int nice) { setpriority(PRIO_PROCESS, (id_t)syscall(SYS_gettid), nice); }
+#else
+inline void SetCurrentThreadNice(int) {}
+#endif
+
+// 工作线程统一为普通优先级：低于帧处理线程，彼此之间不分高低
+// 后台重定位降到 10 时，负载下对齐加载地图会推迟数百帧
+const int SLAM_NICE_WORKER = 0;
+
 #endif // ORB_SLAM2_AR_COMMON_H

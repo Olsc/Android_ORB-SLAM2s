@@ -71,13 +71,15 @@ void Map::AddKeyFrame(KeyFrame *pKF)
 void Map::AddMapPoint(MapPoint *pMP)
 {
     unique_lock<mutex> lock(mMutexMap);
-    mspMapPoints.insert(pMP);
+    if(mspMapPoints.insert(pMP).second && pMP->mbFromLoadedMap)
+        mnLoadedMPs++;
 }
 
 void Map::EraseMapPoint(MapPoint *pMP, bool bDelete)
 {
     unique_lock<mutex> lock(mMutexMap);
-    mspMapPoints.erase(pMP);
+    if(mspMapPoints.erase(pMP) && pMP->mbFromLoadedMap)
+        mnLoadedMPs--;
 
     if (bDelete) {
         // 将废弃的 MapPoint 放入回收站，等待 Map::clear() 统一释放
@@ -167,6 +169,7 @@ void Map::clear()
         mspKeyFramesTrash.swap(spKFTrash);
 
         mnMaxKFid = 0;
+        mnLoadedMPs = 0;
         mvpReferenceMapPoints.clear();
         mvpKeyFrameOrigins.clear();
 
@@ -212,14 +215,13 @@ void Map::clear()
 
 long unsigned int ORB_SLAM2::Map::GetLoadedMapMPCount()
 {
+    // 坏点在 SetBadFlag 中随即从集合移除，所以集合内的加载点计数即有效加载点数
     unique_lock<mutex> lock(mMutexMap);
-    long unsigned int count = 0;
-    for(MapPointSet::iterator sit=mspMapPoints.begin(), send=mspMapPoints.end(); sit!=send; sit++)
-    {
-        MapPoint* pMP = *sit;
-        // pMP 可能为空或者 bad
-        if(pMP && !pMP->isBad() && pMP->mbFromLoadedMap)
-            count++;
-    }
-    return count;
+    return mnLoadedMPs;
+}
+
+long unsigned int ORB_SLAM2::Map::SelfBuiltMapPointsInMap()
+{
+    unique_lock<mutex> lock(mMutexMap);
+    return mspMapPoints.size() - mnLoadedMPs;
 }

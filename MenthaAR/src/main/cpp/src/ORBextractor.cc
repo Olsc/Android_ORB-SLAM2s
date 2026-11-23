@@ -73,16 +73,8 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <vector>
 #include <algorithm>
-#include <thread>
-#include <atomic>
-#include <mutex>
-#include <condition_variable>
-#include <queue>
-#include <functional>
 #include <memory>
-#if defined(_OPENMP)
-#include <omp.h>
-#endif
+#include <climits>
 
 #include "ORBextractor.h"
 #include "Config.h"
@@ -989,7 +981,9 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
             continue;
         }
 
-        vector<cv::KeyPoint> vToDistributeKeys;
+        // 候选点缓冲按线程复用，容量只增不减，避免每层每帧的大块分配与释放
+        static thread_local vector<cv::KeyPoint> vToDistributeKeys;
+        vToDistributeKeys.clear();
         vToDistributeKeys.reserve(nfeatures*ORB_CANDIDATE_RESERVE_FACTOR);
 
         const int nCols = std::max(1, (int)(width/W));
@@ -997,14 +991,24 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
         const int wCell = ceil(width/nCols);
         const int hCell = ceil(height/nRows);
 
-        // 1. 全图用 minThFAST 检测候选角点
-        vector<cv::KeyPoint> vAllKeys;
-        FAST(mvImagePyramid[level], vAllKeys, minThFAST, true);
+        // 分箱函数：x_rel/y_rel（相对 minBorder）到格列/格行
+        const uint32_t inv_wCell_q16 = (uint32_t)std::round(65536.0f * (1.0f / (float)wCell));
+        const uint32_t inv_hCell_q16 = (uint32_t)std::round(65536.0f * (1.0f / (float)hCell));
+        auto colOf = [&](int x_rel) {
+            int c = (int)(((uint32_t)x_rel * inv_wCell_q16) >> 16);
+            return c >= nCols ? nCols - 1 : c;
+        };
+        auto rowOf = [&](int y_rel) {
+            int r = (int)(((uint32_t)y_rel * inv_hCell_q16) >> 16);
+            return r >= nRows ? nRows - 1 : r;
+        };
 
-        const float inv_wCell = 1.0f / (float)wCell;
-        const float inv_hCell = 1.0f / (float)hCell;
-        const uint32_t inv_wCell_q16 = (uint32_t)std::round(65536.0f * inv_wCell);
-        const uint32_t inv_hCell_q16 = (uint32_t)std::round(65536.0f * inv_hCell);
+        // 1. 全层用 iniThFAST 检测强角点。FAST 得分与阈值无关，得分 >= iniThFAST 的点只会被同样 >= iniThFAST 的邻点抑制，
+        //    所以结果等于"阈值 minThFAST 全层检测后取响应 >= iniThFAST 的点"
+        const cv::Mat& levelImg = mvImagePyramid[level];
+        static thread_local vector<cv::KeyPoint> vAllKeys;
+        vAllKeys.clear();
+        FAST(levelImg, vAllKeys, iniThFAST, true);
 
         // 2. 线程局部平坦 CSR 分箱
         const int nCells = nRows * nCols;
@@ -1030,15 +1034,7 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
                 keyCellIndices[i] = -1;
                 continue;
             }
-
-            const int x_rel = x_glob - minBorderX;
-            const int y_rel = y_glob - minBorderY;
-            int c = (x_rel * inv_wCell_q16) >> 16;
-            int r = (y_rel * inv_hCell_q16) >> 16;
-            if(c < 0) c = 0; else if(c >= nCols) c = nCols - 1;
-            if(r < 0) r = 0; else if(r >= nRows) r = nRows - 1;
-
-            int cellIdx = r * nCols + c;
+            const int cellIdx = rowOf(y_glob - minBorderY) * nCols + colOf(x_glob - minBorderX);
             keyCellIndices[i] = cellIdx;
             cellCounts[cellIdx]++;
         }
@@ -1061,31 +1057,22 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
             }
         }
 
-        // 3. 逐个网格遍历过滤，无强角点时回退弱角点
+        // 各格在 x_rel/y_rel 上覆盖的像素范围（由分箱函数逐像素求得，弱角点回退时按此取 ROI）
+        static thread_local std::vector<int> colMin, colMax, rowMin, rowMax;
+        colMin.assign(nCols, INT_MAX); colMax.assign(nCols, -1);
+        rowMin.assign(nRows, INT_MAX); rowMax.assign(nRows, -1);
+        const int widthI = maxBorderX - minBorderX, heightI = maxBorderY - minBorderY;
+        for (int x = 0; x < widthI; ++x) { const int c = colOf(x); colMin[c] = std::min(colMin[c], x); colMax[c] = std::max(colMax[c], x); }
+        for (int y = 0; y < heightI; ++y) { const int r = rowOf(y); rowMin[r] = std::min(rowMin[r], y); rowMax[r] = std::max(rowMax[r], y); }
+
+        // 3. 逐格取强角点；没有强角点的格在其 ROI 上以 minThFAST 重检，取回该格的全部弱角点。
+        //    ROI 在格四周各扩 4 像素（FAST 圆周半径 3 + 非极大值抑制邻域 1），格内点的得分与抑制结果与全层检测一致
+        static thread_local vector<cv::KeyPoint> vWeakKeys;
         for(int cellIdx = 0; cellIdx < nCells; ++cellIdx)
         {
-            int start = cellOffsets[cellIdx];
-            int end = cellOffsets[cellIdx + 1];
-            if(start >= end)
-                continue;
-
-            int strongCount = 0;
-            size_t beforeLen = vToDistributeKeys.size();
-
-            for(int k = start; k < end; ++k)
-            {
-                if(sortedKeys[k].response >= iniThFAST)
-                {
-                    strongCount++;
-                    cv::KeyPoint kp = sortedKeys[k];
-                    kp.pt.x -= minBorderX;
-                    kp.pt.y -= minBorderY;
-                    vToDistributeKeys.push_back(kp);
-                }
-            }
-
-            // 若无强角点，回退收集弱角点
-            if(strongCount == 0)
+            const int start = cellOffsets[cellIdx];
+            const int end = cellOffsets[cellIdx + 1];
+            if(start < end)
             {
                 for(int k = start; k < end; ++k)
                 {
@@ -1094,6 +1081,32 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
                     kp.pt.y -= minBorderY;
                     vToDistributeKeys.push_back(kp);
                 }
+                continue;
+            }
+
+            const int cc = cellIdx % nCols, rr = cellIdx / nCols;
+            if (colMax[cc] < 0 || rowMax[rr] < 0)
+                continue;
+            const int x0 = std::max(0, minBorderX + colMin[cc] - 4);
+            const int x1 = std::min(levelImg.cols - 1, minBorderX + colMax[cc] + 4);
+            const int y0 = std::max(0, minBorderY + rowMin[rr] - 4);
+            const int y1 = std::min(levelImg.rows - 1, minBorderY + rowMax[rr] + 4);
+            vWeakKeys.clear();
+            FAST(levelImg(cv::Rect(x0, y0, x1 - x0 + 1, y1 - y0 + 1)), vWeakKeys, minThFAST, true);
+            for (size_t k = 0; k < vWeakKeys.size(); ++k)
+            {
+                cv::KeyPoint kp = vWeakKeys[k];
+                kp.pt.x += (float)x0;
+                kp.pt.y += (float)y0;
+                const int x_glob = (int)kp.pt.x;
+                const int y_glob = (int)kp.pt.y;
+                if(x_glob < minBorderX || x_glob >= maxBorderX || y_glob < minBorderY || y_glob >= maxBorderY)
+                    continue;
+                if (colOf(x_glob - minBorderX) != cc || rowOf(y_glob - minBorderY) != rr)
+                    continue;
+                kp.pt.x -= minBorderX;
+                kp.pt.y -= minBorderY;
+                vToDistributeKeys.push_back(kp);
             }
         }
 
@@ -1119,158 +1132,6 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
     }
 }
 
-// 按金字塔层并行执行 fn(level)。各层检测/描述子计算相互独立
-namespace {
-
-#if defined(_OPENMP)
-
-template <typename Fn>
-void parallelForLevels(int nlevels, Fn&& fn) {
-    if (nlevels <= 1) {
-        for (int i = 0; i < nlevels; ++i) fn(i);
-        return;
-    }
-    // 限制并行线程数为 2，兼顾异构核心能效与金字塔提取时延
-    const int hwThreads = (int)std::thread::hardware_concurrency();
-    const int nThreads = (hwThreads <= 2) ? 1 : 2;
-
-    if (nThreads <= 1) {
-        for (int i = 0; i < nlevels; ++i) fn(i);
-        return;
-    }
-
-    #pragma omp parallel for num_threads(nThreads) schedule(guided)
-    for (int level = 0; level < nlevels; ++level) {
-        fn(level);
-    }
-}
-
-#else
-
-class LevelThreadPool {
-public:
-    static LevelThreadPool& instance() {
-        static LevelThreadPool pool;
-        return pool;
-    }
-
-    template <typename Fn>
-    void run(int nlevels, Fn&& fn) {
-        if (nlevels <= 1) {
-            for (int i = 0; i < nlevels; ++i) fn(i);
-            return;
-        }
-
-        struct TaskContext {
-            std::atomic<int> nextIdx{0};
-            std::atomic<int> completed{0};
-            std::mutex doneMutex;
-            std::condition_variable cvDone;
-            int totalLevels;
-            std::function<void(int)> func;
-        };
-
-        auto ctx = std::make_shared<TaskContext>();
-        ctx->totalLevels = nlevels;
-        ctx->func = fn;
-
-        const int helperCount = numWorkers_;
-        {
-            std::lock_guard<std::mutex> lk(queueMutex_);
-            for (int i = 0; i < helperCount; ++i) {
-                tasks_.emplace([ctx]() {
-                    for (;;) {
-                        int idx = ctx->nextIdx.fetch_add(1, std::memory_order_relaxed);
-                        if (idx >= ctx->totalLevels) break;
-                        ctx->func(idx);
-                        if (ctx->completed.fetch_add(1, std::memory_order_acq_rel) + 1 == ctx->totalLevels) {
-                            std::lock_guard<std::mutex> lk(ctx->doneMutex);
-                            ctx->cvDone.notify_one();
-                        }
-                    }
-                });
-            }
-        }
-        cvTasks_.notify_all();
-
-        // 主线程直接参与任务处理
-        for (;;) {
-            int idx = ctx->nextIdx.fetch_add(1, std::memory_order_relaxed);
-            if (idx >= ctx->totalLevels) break;
-            ctx->func(idx);
-            if (ctx->completed.fetch_add(1, std::memory_order_acq_rel) + 1 == ctx->totalLevels) {
-                std::lock_guard<std::mutex> lk(ctx->doneMutex);
-                ctx->cvDone.notify_one();
-            }
-        }
-
-        // 等待所有层级计算完成
-        {
-            std::unique_lock<std::mutex> lk(ctx->doneMutex);
-            ctx->cvDone.wait(lk, [&]() {
-                return ctx->completed.load(std::memory_order_acquire) == nlevels;
-            });
-        }
-    }
-
-    ~LevelThreadPool() {
-        shutdown();
-    }
-
-private:
-    LevelThreadPool() {
-        const unsigned int hw = std::thread::hardware_concurrency();
-        numWorkers_ = std::max(1, std::min(3, (int)(hw > 2 ? hw / 2 : 1)));
-        for (int i = 0; i < numWorkers_; ++i) {
-            workers_.emplace_back(&LevelThreadPool::workerLoop, this);
-        }
-    }
-
-    void shutdown() {
-        {
-            std::lock_guard<std::mutex> lk(queueMutex_);
-            stop_ = true;
-        }
-        cvTasks_.notify_all();
-        for (auto& w : workers_) {
-            if (w.joinable()) w.join();
-        }
-        workers_.clear();
-    }
-
-    void workerLoop() {
-        for (;;) {
-            std::function<void()> task;
-            {
-                std::unique_lock<std::mutex> lk(queueMutex_);
-                cvTasks_.wait(lk, [this]() {
-                    return stop_ || !tasks_.empty();
-                });
-                if (stop_ && tasks_.empty()) break;
-                task = std::move(tasks_.front());
-                tasks_.pop();
-            }
-            task();
-        }
-    }
-
-    int numWorkers_ = 2;
-    std::vector<std::thread> workers_;
-    std::queue<std::function<void()>> tasks_;
-    std::mutex queueMutex_;
-    std::condition_variable cvTasks_;
-    bool stop_ = false;
-};
-
-template <typename Fn>
-void parallelForLevels(int nlevels, Fn&& fn) {
-    LevelThreadPool::instance().run(nlevels, std::forward<Fn>(fn));
-}
-
-#endif
-
-} // namespace
-
 void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPoint>& _keypoints,
                       OutputArray _descriptors)
 {
@@ -1287,11 +1148,10 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
     vector < vector<KeyPoint> > allKeypoints;
     allKeypoints.resize(nlevels);
 
+    // 各层在当前线程顺序处理：层间数据独立，输出与层顺序无关
     {
         VT_PROFILE_SCOPE("ORB_Detect+Orient");
-        parallelForLevels(nlevels, [this, &allKeypoints](int level) {
-            detectAndOrientLevels(cv::Range(level, level + 1), allKeypoints);
-        });
+        detectAndOrientLevels(cv::Range(0, nlevels), allKeypoints);
     }
 
     int nkeypoints = 0;
@@ -1332,10 +1192,7 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
 
     {
         VT_PROFILE_SCOPE("ORB_Blur+Desc");
-        parallelForLevels(nlevels, [this, &levelDescOffset, &_keypoints, &descriptors](int level) {
-            blurAndComputeDescriptors(cv::Range(level, level + 1), levelDescOffset,
-                                      _keypoints, descriptors);
-        });
+        blurAndComputeDescriptors(cv::Range(0, nlevels), levelDescOffset, _keypoints, descriptors);
     }
 }
 

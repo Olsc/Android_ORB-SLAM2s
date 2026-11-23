@@ -318,19 +318,21 @@ void Frame::GetFeaturesInArea(const float &x, const float &y, const float &r,
     vIndices.clear();
     vIndices.reserve(FRAME_SEARCH_RESERVE);
 
-    const int nMinCellX = max(0,(int)floor((x-mnMinX-r)*mfGridElementWidthInv));
+    // 关键点按 round 归格（PosInGrid），满足 |dx|<r 的点只可能落在 round(lo)..round(hi) 的格子里；
+    // 两端各外扩 FRAME_GRID_BOUND_EPS 格覆盖浮点舍入，结果集合与顺序同逐格全扫描一致
+    const int nMinCellX = max(0,(int)std::round((x-mnMinX-r)*mfGridElementWidthInv - FRAME_GRID_BOUND_EPS));
     if(nMinCellX>=FRAME_GRID_COLS)
         return;
 
-    const int nMaxCellX = min((int)FRAME_GRID_COLS-1,(int)ceil((x-mnMinX+r)*mfGridElementWidthInv));
+    const int nMaxCellX = min((int)FRAME_GRID_COLS-1,(int)std::round((x-mnMinX+r)*mfGridElementWidthInv + FRAME_GRID_BOUND_EPS));
     if(nMaxCellX<0)
         return;
 
-    const int nMinCellY = max(0,(int)floor((y-mnMinY-r)*mfGridElementHeightInv));
+    const int nMinCellY = max(0,(int)std::round((y-mnMinY-r)*mfGridElementHeightInv - FRAME_GRID_BOUND_EPS));
     if(nMinCellY>=FRAME_GRID_ROWS)
         return;
 
-    const int nMaxCellY = min((int)FRAME_GRID_ROWS-1,(int)ceil((y-mnMinY+r)*mfGridElementHeightInv));
+    const int nMaxCellY = min((int)FRAME_GRID_ROWS-1,(int)std::round((y-mnMinY+r)*mfGridElementHeightInv + FRAME_GRID_BOUND_EPS));
     if(nMaxCellY<0)
         return;
 

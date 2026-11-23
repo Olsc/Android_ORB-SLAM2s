@@ -656,7 +656,7 @@ void System::SaveMap(const std::string &filename, int maxMapPoints)
     for(MapPoint* pMP : vpValidMPs)
     {
         // 确保描述符存在以进行持久化
-        if(pMP->GetDescriptor().empty()) pMP->ComputeDistinctiveDescriptors();
+        if(!pMP->HasDescriptor()) pMP->ComputeDistinctiveDescriptors();
         uint32_t id = static_cast<uint32_t>(pMP->mnId);
         ofs.write(reinterpret_cast<const char*>(&id), sizeof(id));
         cv::Point3f Pw;
@@ -749,6 +749,7 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
         if(mpTracker) {
             mpTracker->ClearRelocCache();
         }
+        mvpLoadedMapPoints.clear();
     }
 
     // 不完全清空 KeyFrameDatabase，保留当前扫描建立的关键帧
@@ -787,7 +788,7 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
         pMP->SetNormalAndDepth(nrm, mind, maxd);
 
         // 可见性与发现次数按 1:1 初始化，使已加载点不被 MapPointCulling 剔除
-        if(!pMP->GetDescriptor().empty()) {
+        if(pMP->HasDescriptor()) {
             pMP->IncreaseVisible(LOADED_MP_INIT_VISIBLE); // 有描述子的点
             pMP->IncreaseFound(LOADED_MP_INIT_VISIBLE); // 保持比例=1.0
         } else {
@@ -795,6 +796,7 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
             pMP->IncreaseFound(LOADED_MP_INIT_VISIBLE_NO_DESC); // 保持比例=1.0
         }
         mpMap->AddMapPoint(pMP);
+        mvpLoadedMapPoints.push_back(pMP);
         createdMPs++;
     }
     ifs.close();
@@ -807,7 +809,7 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
             if(!p || p->isBad()) continue;
             if(p->mbFromLoadedMap){
                 cntLoaded++;
-                if(!p->GetDescriptor().empty()) cntLoadedWithDesc++;
+                if(p->HasDescriptor()) cntLoadedWithDesc++;
                 if(!p->GetNormal().empty()) cntLoadedWithNormal++;
             }
         }
@@ -834,6 +836,11 @@ void System::LoadMap(const std::string &filename, int mapId, bool bAppend)
 
 int System::GetCurrentMapId() {
     return mpTracker ? mpTracker->GetCurrentMapId() : 0;
+}
+
+bool System::IsLocalMappingIdle()
+{
+    return mpLocalMapper && mpLocalMapper->IsIdle();
 }
 
 } // namespace ORB_SLAM2

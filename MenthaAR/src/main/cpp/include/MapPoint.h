@@ -121,6 +121,11 @@ public:
         memset(out, 0, 32);
         return false;
     }
+    // 只判断是否已有描述子，不拷贝
+    inline bool HasDescriptor() const {
+        std::shared_ptr<const cv::Mat> d = std::atomic_load(&mDescriptor);
+        return d && !d->empty();
+    }
     inline void SetDescriptor(const cv::Mat &desc){
         if(desc.empty()) return;
         std::lock_guard<std::mutex> lock(mMutexFeatures);
@@ -208,7 +213,7 @@ protected:
 
     // 坏点标志
     std::atomic<bool> mbBad;
-    MapPoint* mpReplaced;
+    std::atomic<MapPoint*> mpReplaced;
 
     // 尺度不变性距离（原始值）与其预计算不变性边界
     float mfMinDistance;

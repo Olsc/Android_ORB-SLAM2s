@@ -285,6 +285,8 @@ const float PNP_ADAPTIVE_SAFETY_FACTOR = 1.5f; // 提前终止所用的安全裕
 const int FRAME_GRID_ROWS = 48;
 const int FRAME_GRID_COLS = 64;
 const float FRAME_GRID_RESERVE_FACTOR = 0.5f;
+// 半径检索格界外扩量（格），覆盖浮点舍入，远小于一格
+const float FRAME_GRID_BOUND_EPS = 1e-3f;
 
 // 关键帧连接所需的共视地图点最小数量
 const int KEYFRAME_CONNECTION_TH = 15;

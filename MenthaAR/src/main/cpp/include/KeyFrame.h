@@ -165,6 +165,9 @@ public:
     // 跟踪使用的变量
     long unsigned int mnTrackReferenceForFrame;
     long unsigned int mnFuseTargetForKF;
+    // 跟踪线程共视投票：本帧序号与票数（只由跟踪线程读写）
+    long unsigned int mnTrackVoteFrame;
+    int mnTrackVotes;
 
     // 局部建图使用的变量
     long unsigned int mnBALocalForKF;

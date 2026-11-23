@@ -455,7 +455,7 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
         ~FrameRefGuard() {
             if (armed) {
                 gProcessingFrames.fetch_sub(1, std::memory_order_release);
-                gCvProcessingFrames.notify_one();
+                gCvProcessingFrames.notify_all();
             }
         }
     } frameRefGuard(bHoldsFrameRef);
@@ -468,7 +468,7 @@ int processImage(cv::Mat& image, cv::Mat& outputImage, int statusBuf[])
 
         {
             std::lock_guard<std::mutex> _tcwLock(gTcwLock);
-            gCachedTcw = localTcw.clone();
+            gCachedTcw = localTcw; // TrackMonocular 已返回独立副本，此后只读
         }
         {
             std::lock_guard<std::mutex> _mpLock(gMapPointsMutex);
@@ -1154,10 +1154,11 @@ static void writePointCloudToSharedMemory() {
     // 2. 补充渲染已加载的参考地图点云(仅在对齐成功时)
     const int status = slamSys->GetTrackingState();
     if (status == 2 && hasAlign && n * 7 + 7 <= maxFloats) {
-        std::vector<ORB_SLAM2::MapPoint*> allMPs = slamSys->GetAllMapPoints();
+        // 加载点列表与地图集合中的加载点顺序一致（id 升序），无需每帧复制整张地图
+        const std::vector<ORB_SLAM2::MapPoint*>& loadedMPs = slamSys->GetLoadedMapPoints();
         int count = 0;
         const int maxDrawPoints = ORB_SLAM2::POINTCLOUD_MAX_DRAW_LOADED;
-        for (auto pMP : allMPs) {
+        for (auto pMP : loadedMPs) {
             if (!pMP || pMP->isBad() || !pMP->mbFromLoadedMap) continue;
             if (pMP->mnRenderedForSeq == renderSeq) continue;
 
@@ -1229,7 +1230,7 @@ Java_com_orb_slam2s_slamar_NativeHelper_nativeProcessFrameSharedMem(
         ~ShmFrameRefGuard() {
             if (armed) {
                 gProcessingFrames.fetch_sub(1, std::memory_order_release);
-                gCvProcessingFrames.notify_one();
+                gCvProcessingFrames.notify_all();
             }
         }
     } shmFrameRefGuard(shmHoldsFrameRef);

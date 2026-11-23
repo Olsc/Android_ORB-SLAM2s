@@ -80,6 +80,9 @@ public:
     // 获取已加载地图点的数量（供GlobalRelocLoop节流使用）
     long unsigned int GetLoadedMapMPCount();
 
+    // 非加载（本次会话自建）的地图点数量，供数量上限检查使用
+    long unsigned int SelfBuiltMapPointsInMap();
+
     std::vector<KeyFrame*> mvpKeyFrameOrigins;
 
     std::mutex mMutexMapUpdate;
@@ -98,6 +101,9 @@ protected:
     std::vector<MapPoint*> mvpReferenceMapPoints;
 
     long unsigned int mnMaxKFid;
+
+    // mspMapPoints 中加载点的数量，随插入与移除增量维护
+    long unsigned int mnLoadedMPs = 0;
 
     // 地图结构变化相关的索引（闭环、全局 BA）
     int mnBigChangeIdx;

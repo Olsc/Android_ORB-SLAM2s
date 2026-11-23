@@ -104,17 +104,13 @@ bool Initializer::Initialize(const Frame &CurrentFrame, const vector<int> &vMatc
     Normalize(mvKeys1, mvPn1, mT1);
     Normalize(mvKeys2, mvPn2, mT2);
 
-    // 启动线程并行计算基础矩阵和单应性矩阵
+    // 依次计算单应性矩阵和基础矩阵（两者只读共享的采样集，互不依赖）
     vector<bool> vbMatchesInliersH, vbMatchesInliersF;
     float SH, SF;
     cv::Mat H, F;
 
-    thread threadH(&Initializer::FindHomography,this,ref(vbMatchesInliersH), ref(SH), ref(H));
-    thread threadF(&Initializer::FindFundamental,this,ref(vbMatchesInliersF), ref(SF), ref(F));
-
-    // 等待两个线程完成
-    threadH.join();
-    threadF.join();
+    FindHomography(vbMatchesInliersH, SH, H);
+    FindFundamental(vbMatchesInliersF, SF, F);
 
     // 计算得分比率
     float RH = SH/(SH+SF);

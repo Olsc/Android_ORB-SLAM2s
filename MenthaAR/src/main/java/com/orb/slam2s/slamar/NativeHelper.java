@@ -27,16 +27,6 @@ public class NativeHelper {
 
     // 加载必要的本地库
     static {
-        // 必须在 dlopen 前关闭 libomp 的亲和性绑定：部分 ROM（MIUI 等）限制了应用进程的
-        // CPU 亲和性，libomp 初始化时 sched_setaffinity 失败会直接 abort（引擎进程一启动即崩溃）
-        try {
-            android.system.Os.setenv("KMP_AFFINITY", "disabled", true);
-            // libomp 并行区结束后默认自旋再休眠，过短会导致工作线程迁核/降频，过长会在低帧率时空转
-            // 取 60 ms：覆盖相机帧间隔，同时把空转限制在有限时间内
-            android.system.Os.setenv("KMP_BLOCKTIME", "60", true);
-        } catch (Throwable t) {
-            Log.w(TAG, "设置 KMP 环境变量失败", t);
-        }
         try {
             System.loadLibrary("Mentha_Profiler");
         } catch (UnsatisfiedLinkError e) {
