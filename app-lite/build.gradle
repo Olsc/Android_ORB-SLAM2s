@@ -1,0 +1,163 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    compileSdk 37
+    ndkVersion '27.3.13750724'
+
+    defaultConfig {
+        applicationId "com.orb.slam2s"
+        minSdk 24
+        targetSdk 37
+        versionCode 1
+        versionName "0.0.14"
+
+        multiDexEnabled true
+
+        // 服务版：引擎由独立 APK com.mentha.ar 提供
+        buildConfigField 'String', 'MENTHAAR_SERVICE_PACKAGE', '"com.mentha.ar"'
+
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++17 -O3 -frtti -fexceptions"
+                arguments "-DANDROID_ARM_NEON=TRUE",
+                        "-DANDROID_TOOLCHAIN=clang",
+                        "-DANDROID_STL=c++_static"
+                abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+            }
+        }
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+        }
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging false
+            pickFirsts += ['lib/**/libc++_shared.so']
+        }
+        resources {
+            excludes += [
+                '**/DebugProbesKt.bin',
+                '**/kotlin/**',
+                '**/*.kotlin_metadata',
+                '**/*.kotlin_builtins',
+                'META-INF/*.kotlin_module'
+            ]
+        }
+    }
+
+    aaptOptions {
+        noCompress "tflite", "mindir", "glb", "mtl"
+    }
+
+    def keystorePropsFile = rootProject.file('keystore.properties')
+    def keystoreProps = new Properties()
+    if (keystorePropsFile.exists()) {
+        keystoreProps.load(new FileInputStream(keystorePropsFile))
+    }
+
+    signingConfigs {
+        release {
+            if (keystorePropsFile.exists()) {
+                storeFile rootProject.file(keystoreProps['keystore.path'])
+                storePassword keystoreProps['keystore.password']
+                keyAlias keystoreProps['key.alias']
+                keyPassword keystoreProps['key.password']
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), '../app/proguard-rules.pro'
+            if (keystorePropsFile.exists()) {
+                signingConfig signingConfigs.release
+            } else {
+                signingConfig signingConfigs.debug
+            }
+        }
+        debug {
+            debuggable true
+            jniDebuggable true
+        }
+    }
+
+    buildFeatures {
+        buildConfig = true
+        aidl = true
+    }
+
+    splits {
+        abi {
+            enable true
+            reset()
+            include 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+            universalApk true
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    namespace 'com.orb.slam2s'
+
+    // 与 app（完整版）共用同一份源码、资源与原生代码，仅依赖方式与清单不同
+    sourceSets {
+        main {
+            manifest.srcFile '../app/src/main/AndroidManifest.xml'
+            java.srcDirs = ['../app/src/main/java']
+            res.srcDirs = ['../app/src/main/res']
+            assets.srcDirs = ['../app/src/main/assets']
+            // 与服务端共用同一份 AIDL（仅协议，双许可），不复制
+            aidl.srcDirs = ['../MenthaAR/src/main/aidl']
+        }
+    }
+
+    flavorDimensions 'edition'
+    productFlavors {
+        // 清单叠加层在 src/lite：声明服务包可见性与绑定权限
+        lite {
+            dimension 'edition'
+        }
+    }
+    buildToolsVersion '37.0.0'
+
+    lint {
+        lintConfig file('../app/lint.xml')
+        abortOnError false
+        checkReleaseBuilds false
+        disable 'InferredThreadDetector', 'MissingTranslation'
+    }
+
+    externalNativeBuild {
+        cmake {
+            path "../app/CMakeLists.txt"
+            version '3.22.1'
+        }
+    }
+    compileSdkMinor 2
+
+    //dynamicFeatures = [":slam"]
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation 'androidx.activity:activity:1.13.0'
+
+    implementation 'androidx.camera:camera-core:1.7.0'
+    implementation 'androidx.camera:camera-camera2:1.7.0'
+    implementation 'androidx.camera:camera-lifecycle:1.7.0'
+    implementation 'androidx.recyclerview:recyclerview:1.4.0'
+}
+
+configurations.configureEach {
+    resolutionStrategy {
+        force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.4.21"
+        force "org.jetbrains.kotlin:kotlin-stdlib:2.4.21"
+    }
+}

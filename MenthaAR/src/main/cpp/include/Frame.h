@@ -163,7 +163,9 @@ public:
     // 关键点被分配到网格中的单元格以减少投影地图点时的匹配复杂度。
     static float mfGridElementWidthInv;
     static float mfGridElementHeightInv;
-    std::vector<std::size_t> mGrid[FRAME_GRID_COLS][FRAME_GRID_ROWS];
+    // CSR 网格：单元格 c = ix*FRAME_GRID_ROWS+iy 的索引区间为 [mGridStart[c], mGridStart[c+1])
+    std::vector<int> mGridStart;
+    std::vector<std::size_t> mGridIdx;
 
     // 相机位姿。
     cv::Mat mTcw;

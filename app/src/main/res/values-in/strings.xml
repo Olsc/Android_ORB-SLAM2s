@@ -101,4 +101,6 @@
     <string name="hint_camera_preview_enabled">Tampilan kamera diaktifkan</string>
     <string name="hint_camera_preview_disabled">Tampilan kamera dinonaktifkan</string>
 
+    <string name="hint_service_missing">Layanan MenthaAR belum terinstal. Silakan instal paket layanan MenthaAR terlebih dahulu.</string>
+    <string name="hint_service_blocked">Layanan MenthaAR diblokir oleh sistem. Izinkan MenthaAR untuk mulai otomatis di Setelan, lalu kembali ke aplikasi.</string>
 </resources>

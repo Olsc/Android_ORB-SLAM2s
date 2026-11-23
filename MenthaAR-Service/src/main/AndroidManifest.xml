@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- 绑定权限：signature 级，仅与本服务包同签名的 App 可绑定 -->
+    <permission
+        android:name="com.mentha.ar.permission.BIND_SLAM"
+        android:protectionLevel="signature" />
+
+    <!-- 无 Activity、无启动入口：只提供 SLAM 服务；图标仅用于系统设置里的应用列表，与 app 一致 -->
+    <application
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="MenthaAR"
+        android:supportsRtl="true">
+
+        <!-- 覆盖引擎库中的 exported=false，开放给同签名的外部 App 绑定 -->
+        <service
+            android:name="com.orb.slam2s.ipc.SlamService"
+            android:exported="true"
+            android:permission="com.mentha.ar.permission.BIND_SLAM"
+            android:process=":slam_process"
+            tools:replace="android:exported" />
+    </application>
+
+</manifest>

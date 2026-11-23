@@ -1,0 +1,81 @@
+plugins {
+    id 'com.android.application'
+}
+
+// 服务包：无启动图标，仅以 Service 形态存在于系统中，输出 MenthaAR-*.apk
+android {
+    namespace 'com.mentha.ar'
+    compileSdk 37
+    ndkVersion '27.3.13750724'
+    buildToolsVersion '37.0.0'
+    compileSdkMinor 2
+
+    defaultConfig {
+        applicationId "com.mentha.ar"
+        minSdk 24
+        targetSdk 37
+        versionCode 1
+        versionName "0.0.1"
+
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64', 'riscv64'
+        }
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging false
+            pickFirsts += ['lib/**/libc++_shared.so']
+        }
+    }
+
+    def keystorePropsFile = rootProject.file('keystore.properties')
+    def keystoreProps = new Properties()
+    if (keystorePropsFile.exists()) {
+        keystoreProps.load(new FileInputStream(keystorePropsFile))
+    }
+
+    signingConfigs {
+        release {
+            if (keystorePropsFile.exists()) {
+                storeFile rootProject.file(keystoreProps['keystore.path'])
+                storePassword keystoreProps['keystore.password']
+                keyAlias keystoreProps['key.alias']
+                keyPassword keystoreProps['key.password']
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            // 与 app-lite 必须使用同一签名，signature 级绑定权限才能授予
+            signingConfig keystorePropsFile.exists() ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    splits {
+        abi {
+            enable true
+            reset()
+            include 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64', 'riscv64'
+            universalApk true
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+
+    base.archivesName = 'MenthaAR'
+}
+
+dependencies {
+    implementation project(':MenthaAR')
+}

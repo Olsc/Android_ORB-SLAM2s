@@ -105,4 +105,6 @@
     <string name="hint_camera_preview_enabled">Prikaz kamere je omogućen</string>
     <string name="hint_camera_preview_disabled">Prikaz kamere je onemogućen</string>
 
+    <string name="hint_service_missing">MenthaAR usluga nije instalirana. Prvo instalirajte paket usluge MenthaAR.</string>
+    <string name="hint_service_blocked">Sistem je blokirao uslugu MenthaAR. Dozvolite MenthaAR automatsko pokretanje u postavkama, a zatim se vratite u aplikaciju.</string>
 </resources>

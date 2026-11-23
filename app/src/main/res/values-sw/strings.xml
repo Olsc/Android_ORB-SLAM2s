@@ -103,4 +103,6 @@
     <string name="hint_camera_preview_enabled">Mwonekano wa kamera umewashwa</string>
     <string name="hint_camera_preview_disabled">Mwonekano wa kamera umezimwa</string>
 
+    <string name="hint_service_missing">Huduma ya MenthaAR haijasakinishwa. Tafadhali sakinisha kifurushi cha huduma cha MenthaAR kwanza.</string>
+    <string name="hint_service_blocked">Mfumo umezuia huduma ya MenthaAR. Tafadhali ruhusu MenthaAR ianze kiotomatiki kwenye Mipangilio, kisha rudi kwenye programu.</string>
 </resources>

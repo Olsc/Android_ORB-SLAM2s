@@ -103,4 +103,6 @@
     <string name="hint_camera_preview_enabled">क्यामेरा दृश्य सक्षम छ</string>
     <string name="hint_camera_preview_disabled">क्यामेरा दृश्य अक्षम छ</string>
 
+    <string name="hint_service_missing">MenthaAR सेवा स्थापना गरिएको छैन। कृपया पहिले MenthaAR सेवा प्याकेज स्थापना गर्नुहोस्।</string>
+    <string name="hint_service_blocked">प्रणालीले MenthaAR सेवा रोकेको छ। कृपया सेटिङमा MenthaAR लाई स्वतः सुरु हुन अनुमति दिनुहोस् र एपमा फर्कनुहोस्।</string>
 </resources>

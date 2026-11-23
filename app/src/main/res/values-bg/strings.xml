@@ -103,4 +103,6 @@
     <string name="hint_camera_preview_enabled">Изгледът от камерата е включен</string>
     <string name="hint_camera_preview_disabled">Изгледът от камерата е изключен</string>
 
+    <string name="hint_service_missing">Услугата MenthaAR не е инсталирана. Моля, първо инсталирайте пакета на услугата MenthaAR.</string>
+    <string name="hint_service_blocked">Услугата MenthaAR е блокирана от системата. Разрешете автоматичното стартиране на MenthaAR в настройките и се върнете в приложението.</string>
 </resources>

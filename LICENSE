@@ -6,14 +6,19 @@ This project uses a modular license structure based on Android IPC process isola
 2. `MenthaAR/` Engine Module:
    Derived from ORB-SLAM2 and released under the GNU General Public License v3.0 (GPLv3). See MenthaAR/LICENSE for details.
 
-3. `MenthaAR-SDK/` Interface Module:
-   Dual-licensed under the Apache License, Version 2.0 (Apache-2.0) or the GNU General Public License v3.0 (GPLv3).
-   The recipient may choose either license. See MenthaAR-SDK/LICENSE, MenthaAR-SDK/LICENSE-APACHE-2.0 and
-   MenthaAR-SDK/LICENSE-GPL-3.0 for details. When this module is used under Apache-2.0, only the Apache-2.0
-   terms apply to it and no GPLv3 obligation is triggered by that module itself.
+3. IPC Interface (dual-licensed):
+   The shared-memory IPC client (app/src/main/java/com/orb/slam2s/ipc/) and the AIDL definition
+   (MenthaAR/src/main/aidl/com/orb/slam2s/ipc/ISlamService.aidl) are dual-licensed under the Apache License,
+   Version 2.0 or the GNU General Public License v3.0; the recipient may choose either. See
+   app/src/main/java/com/orb/slam2s/ipc/LICENSE-DUAL.txt. Under Apache-2.0 no GPLv3 obligation is triggered
+   by these files themselves.
 
-4. Inter-Process Communication (IPC):
-   The `app` module and `MenthaAR` engine run in separate OS processes and communicate strictly via Binder IPC and SharedMemory (Ashmem/memfd), preserving license boundaries. The `app` module depends on `MenthaAR-SDK` at compile time only and packages the GPLv3 engine as a runtime-only artifact.
+4. Distribution packages and IPC:
+   Three packages are produced:
+   - `app` (full): the Apache-2.0 app plus the GPLv3 engine in one APK; the combined APK is distributed under GPLv3 terms for the engine.
+   - `MenthaAR-Service` (package com.mentha.ar, no launcher icon): the GPLv3 engine as a standalone service APK.
+   - `app-lite` (service edition): the Apache-2.0 app only, with no engine code; it requires the MenthaAR service APK to be installed.
+   The app and the engine run in separate OS processes (and, for app-lite, separate APKs) and communicate strictly via Binder IPC and SharedMemory (Ashmem/memfd), preserving license boundaries.
 
 Please see Dependencies.md for a list of all included code and library dependencies that are not the property of the authors of ORB-SLAM2.
 
@@ -31,7 +36,7 @@ it does not add any restriction to, or remove any right granted by, the GNU
 General Public License v3.0 or the Apache License 2.0, and it creates no
 obligation for any recipient. Rights and obligations for each module are
 governed exclusively by the applicable license texts listed above: app/LICENSE,
-MenthaAR-SDK/LICENSE and MenthaAR/LICENSE.
+MenthaAR/LICENSE.
 
 If you use ORB-SLAM in academic work, please cite the most relevant publication associated with the project by visiting:
 https://github.com/raulmur/ORB_SLAM2

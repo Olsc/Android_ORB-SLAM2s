@@ -101,4 +101,6 @@
     <string name="hint_camera_preview_enabled">相機畫面已開啟</string>
     <string name="hint_camera_preview_disabled">相機畫面已關閉</string>
 
+    <string name="hint_service_missing">未安裝 MenthaAR 服務，請先安裝 MenthaAR 服務套件。</string>
+    <string name="hint_service_blocked">系統攔截了 MenthaAR 服務。請在設定中允許 MenthaAR 自動啟動，然後返回應用程式。</string>
 </resources>

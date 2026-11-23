@@ -69,6 +69,8 @@ reasonix.toml
 .claude/
 .vscode/
 
+app-lite/.cxx/
+
 docs/flowchart_generator_tools/aesthetic_visual_causal_flow_en
 docs/flowchart_generator_tools/aesthetic_visual_causal_flow_en.dot
 docs/flowchart_generator_tools/aesthetic_visual_causal_flow_en.svg

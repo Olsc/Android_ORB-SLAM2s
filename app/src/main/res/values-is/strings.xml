@@ -103,4 +103,6 @@
     <string name="hint_camera_preview_enabled">Myndavélarsýn virkjuð</string>
     <string name="hint_camera_preview_disabled">Myndavélarsýn óvirkjuð</string>
 
+    <string name="hint_service_missing">MenthaAR-þjónustan er ekki uppsett. Settu fyrst upp MenthaAR-þjónustupakkann.</string>
+    <string name="hint_service_blocked">Kerfið lokaði á MenthaAR-þjónustuna. Leyfðu sjálfvirka ræsingu MenthaAR í stillingum og farðu aftur í forritið.</string>
 </resources>

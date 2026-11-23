@@ -49,7 +49,7 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 
-import com.menthaar.sdk.MenthaAR;
+import com.orb.slam2s.ipc.MenthaAR;
 import com.orb.slam2s.R;
 import com.orb.slam2s.camera.CameraPreviewView;
 import com.orb.slam2s.camera.CameraResolution;
@@ -57,6 +57,7 @@ import com.orb.slam2s.graphics.AspectGLSurfaceView;
 import com.orb.slam2s.graphics.DisplayCorrection;
 import com.orb.slam2s.graphics.GlbModelRenderer;
 import com.orb.slam2s.util.FpsCalculator;
+import com.orb.slam2s.util.AutoStartHelper;
 import com.orb.slam2s.util.MapManager;
 import com.orb.slam2s.util.TouchGestureHelper;
 
@@ -215,8 +216,6 @@ public class MainActivity extends ComponentActivity
         setupWindowInsets();
 
         mMenthaAR = new MenthaAR(this);
-        // 引擎资源目录沿用 App 自己的 SLAM 目录（与地图/备份规则一致）
-        mMenthaAR.setResourceDirectory(getSlamDir());
         // 先把持久化的点云开关写入 SDK 缓存，连接时随其它配置一次性下发
         mMenthaAR.setPointCloudVisible(isPointCloudVisibleEnabled());
         mMapManager = new MapManager(this);
@@ -236,6 +235,12 @@ public class MainActivity extends ComponentActivity
                         showToast(getString(R.string.slam_init_complete));
                     }
                 });
+            }
+
+            @Override
+            public void onBindFailed() {
+                if (isFinishing() || isDestroyed()) return;
+                showServiceBlockedDialog();
             }
 
             @Override
@@ -416,6 +421,25 @@ public class MainActivity extends ComponentActivity
         if (gm != null) gm.setVisibility(View.GONE);
         if (gd != null) gd.setVisibility(View.GONE);
         if (!visible && target != null) target.setVisibility(View.VISIBLE);
+    }
+
+    private AlertDialog mServiceBlockedDialog;
+
+    // 服务包已安装却绑定失败：多为厂商自启动管理拦截，无法用运行时权限弹窗申请，只能引导用户去设置放行
+    private void showServiceBlockedDialog() {
+        if (mServiceBlockedDialog != null && mServiceBlockedDialog.isShowing()) return;
+        mServiceBlockedDialog = new AlertDialog.Builder(this)
+                .setMessage(getString(R.string.hint_service_blocked))
+                .setPositiveButton(getString(R.string.action_open_settings), (d, w) -> openServiceSettings())
+                .setNegativeButton(getString(R.string.button_cancel), null)
+                .show();
+    }
+
+    // 按设备品牌跳转到自启动管理页，失败回退到服务包的应用详情页
+    private void openServiceSettings() {
+        final String pkg = mMenthaAR != null ? mMenthaAR.getServicePackage() : "com.mentha.ar";
+        final String opened = AutoStartHelper.open(this, pkg);
+        Log.i(TAG, "打开服务包设置页: " + opened);
     }
 
     private void showSaveMapDialog() {
@@ -625,7 +649,11 @@ public class MainActivity extends ComponentActivity
         }
 
         if (mMenthaAR != null) {
-            mMenthaAR.start();
+            if (mMenthaAR.isServiceInstalled()) {
+                mMenthaAR.start();
+            } else {
+                showToast(getString(R.string.hint_service_missing));
+            }
         }
         mCameraPreviewView.enableView();
 

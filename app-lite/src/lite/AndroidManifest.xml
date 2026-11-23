@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 服务版叠加层：绑定独立 APK 中的 MenthaAR 服务 -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 与服务包同名同级的签名级权限，两侧都声明以保证无论安装顺序都能解析 -->
+    <permission
+        android:name="com.mentha.ar.permission.BIND_SLAM"
+        android:protectionLevel="signature" />
+    <uses-permission android:name="com.mentha.ar.permission.BIND_SLAM" />
+
+    <!-- Android 11+ 包可见性：不声明则绑定不到服务包 -->
+    <queries>
+        <package android:name="com.mentha.ar" />
+    </queries>
+
+</manifest>

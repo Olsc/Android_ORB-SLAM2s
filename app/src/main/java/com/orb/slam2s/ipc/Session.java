@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2026 Olsc <OlscStudio@outlook.com>
  *
- * This file is part of the Android ORB-SLAM2s SDK.
+ * This file is part of the Android ORB-SLAM2s IPC client.
  *
  * Dual-licensed under the Apache License, Version 2.0 (the "Apache License")
  * or the GNU General Public License, version 3 (the "GPLv3").
@@ -22,7 +22,7 @@
  *   (at your option) any later version.
  *   See <https://www.gnu.org/licenses/> for details.
  */
-package com.menthaar.sdk;
+package com.orb.slam2s.ipc;
 
 import android.content.ComponentName;
 import android.content.Context;
@@ -33,15 +33,18 @@ import android.os.ParcelFileDescriptor;
 import android.os.RemoteException;
 import android.util.Log;
 
-import com.menthaar.sdk.internal.ISlamService;
+import com.orb.slam2s.BuildConfig;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.nio.ByteBuffer;
 
 // SDK 内部实现：服务绑定、控制指令下发、共享内存收发帧与结果。
 final class Session {
     private static final String TAG = "MenthaAR";
 
-    // SLAM 服务组件，由整合后的 AAR 提供，运行在独立进程 :slam_process。
+    // SLAM 服务组件类名，运行在独立进程 :slam_process。
+    // 完整版：服务与 App 同包；服务版：服务在独立 APK（BuildConfig.MENTHAAR_SERVICE_PACKAGE）中。
     private static final String SERVICE_CLASS = "com.orb.slam2s.ipc.SlamService";
 
     interface Observer {
@@ -50,13 +53,15 @@ final class Session {
 
         // 服务进程断开。
         void onDisconnected();
+
+        // 绑定请求被系统拒绝（服务包已安装但被自启动管理等机制拦截）。
+        void onBindFailed();
     }
 
     private final Context appContext;
 
     private volatile ISlamService service;
     private volatile boolean bindRequested;
-    private volatile String workingDir;
 
     private volatile Observer observer;
 
@@ -77,13 +82,10 @@ final class Session {
             Log.i(TAG, "SLAM 服务已连接");
             // 每次（重）连接都重新初始化引擎：服务进程可能是被系统重建的全新实例。
             // 服务端 initSLAM 幂等，重复下发是安全的。
-            final String dir = workingDir;
-            if (dir != null) {
-                try {
-                    s.initSLAM(dir);
-                } catch (RemoteException e) {
-                    Log.e(TAG, "初始化 SLAM 失败: " + e.getMessage());
-                }
+            try {
+                s.initSLAM();
+            } catch (RemoteException e) {
+                Log.e(TAG, "初始化 SLAM 失败: " + e.getMessage());
             }
             // service 在初始化指令下发后才发布：帧提交一定排在 initSLAM 后
             service = s;
@@ -155,16 +157,48 @@ final class Session {
         return bindRequested;
     }
 
-    // 绑定服务并记住工作目录，重连时自动用于初始化引擎。
-    void bind(String workingDir) {
+    // 服务所在包名；空配置表示与 App 同包（完整版）。
+    static String servicePackage(Context context) {
+        final String pkg = BuildConfig.MENTHAAR_SERVICE_PACKAGE;
+        return pkg.isEmpty() ? context.getPackageName() : pkg;
+    }
+
+    // 服务包是否已安装（完整版恒为 true）。
+    static boolean isServiceInstalled(Context context) {
+        final String pkg = servicePackage(context);
+        if (pkg.equals(context.getPackageName())) return true;
+        try {
+            context.getPackageManager().getPackageInfo(pkg, 0);
+            return true;
+        } catch (android.content.pm.PackageManager.NameNotFoundException e) {
+            return false;
+        }
+    }
+
+    // 绑定服务，每次（重）连接都会自动初始化引擎。
+    void bind() {
         synchronized (this) {
-            this.workingDir = workingDir;
             if (bindRequested) return;
             Intent intent = new Intent();
-            intent.setComponent(new ComponentName(appContext.getPackageName(), SERVICE_CLASS));
-            bindRequested = appContext.bindService(intent, connection, Context.BIND_AUTO_CREATE);
+            intent.setComponent(new ComponentName(servicePackage(appContext), SERVICE_CLASS));
+            try {
+                // BIND_IMPORTANT：服务进程的调度优先级跟随前台 App。服务在独立 APK 时，缺少该标志会被系统归入受限 CPU 组
+                bindRequested = appContext.bindService(intent, connection,
+                        Context.BIND_AUTO_CREATE | Context.BIND_IMPORTANT);
+            } catch (SecurityException e) {
+                // 服务包与本 App 签名不一致，缺少绑定权限
+                Log.e(TAG, "无权绑定 SLAM 服务（签名需与服务包一致）: " + e.getMessage());
+                bindRequested = false;
+            }
             if (!bindRequested) {
-                Log.e(TAG, "绑定 SLAM 服务失败：服务未声明或被系统限制");
+                Log.e(TAG, "绑定 SLAM 服务失败：服务包未安装、未声明或被系统限制");
+                try {
+                    appContext.unbindService(connection);
+                } catch (IllegalArgumentException ignored) {
+                    // bindService 失败时仍需解绑，未注册则忽略
+                }
+                final Observer o = observer;
+                if (o != null) o.onBindFailed();
             }
         }
     }
@@ -264,23 +298,56 @@ final class Session {
         }
     }
 
+    // 地图文件由本进程打开，服务端经 PFD 读写；服务可能在另一个 APK，访问不到本 App 的私有路径。
     void saveMap(String path) {
         ISlamService s = service;
         if (s == null || path == null) return;
+        final File arInfo = new File(path + ".arinfo");
+        ParcelFileDescriptor mapOut = null;
+        ParcelFileDescriptor arInfoOut = null;
         try {
-            s.saveMap(path);
-        } catch (RemoteException e) {
+            mapOut = ParcelFileDescriptor.open(new File(path),
+                    ParcelFileDescriptor.MODE_WRITE_ONLY | ParcelFileDescriptor.MODE_CREATE
+                            | ParcelFileDescriptor.MODE_TRUNCATE);
+            arInfoOut = ParcelFileDescriptor.open(arInfo,
+                    ParcelFileDescriptor.MODE_WRITE_ONLY | ParcelFileDescriptor.MODE_CREATE
+                            | ParcelFileDescriptor.MODE_TRUNCATE);
+            s.saveMap(mapOut, arInfoOut);
+        } catch (FileNotFoundException | RemoteException e) {
             Log.e(TAG, "保存地图失败: " + e.getMessage());
+        } finally {
+            // Binder 已复制描述符，本地副本发送后即可关闭
+            closeQuietly(mapOut);
+            closeQuietly(arInfoOut);
         }
     }
 
     void loadMap(String path, int mapId, boolean append) {
         ISlamService s = service;
         if (s == null || path == null) return;
+        final File arInfo = new File(path + ".arinfo");
+        ParcelFileDescriptor mapIn = null;
+        ParcelFileDescriptor arInfoIn = null;
         try {
-            s.loadMapWithId(path, mapId, append);
-        } catch (RemoteException e) {
+            mapIn = ParcelFileDescriptor.open(new File(path), ParcelFileDescriptor.MODE_READ_ONLY);
+            if (arInfo.exists()) {
+                arInfoIn = ParcelFileDescriptor.open(arInfo, ParcelFileDescriptor.MODE_READ_ONLY);
+            }
+            s.loadMapWithId(mapIn, arInfoIn, mapId, append);
+        } catch (FileNotFoundException | RemoteException e) {
             Log.e(TAG, "加载地图失败: " + e.getMessage());
+        } finally {
+            closeQuietly(mapIn);
+            closeQuietly(arInfoIn);
+        }
+    }
+
+    private static void closeQuietly(ParcelFileDescriptor pfd) {
+        if (pfd == null) return;
+        try {
+            pfd.close();
+        } catch (java.io.IOException ignored) {
+            // 已关闭
         }
     }
 

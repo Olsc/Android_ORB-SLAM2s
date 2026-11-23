@@ -103,4 +103,6 @@
     <string name="hint_camera_preview_enabled">Kamera görünümü açık</string>
     <string name="hint_camera_preview_disabled">Kamera görünümü kapalı</string>
 
+    <string name="hint_service_missing">MenthaAR hizmeti yüklü değil. Lütfen önce MenthaAR hizmet paketini yükleyin.</string>
+    <string name="hint_service_blocked">MenthaAR hizmeti sistem tarafından engellendi. Lütfen Ayarlar’da MenthaAR için otomatik başlatmaya izin verin ve uygulamaya dönün.</string>
 </resources>

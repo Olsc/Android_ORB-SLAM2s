@@ -1778,11 +1778,15 @@ bool Tracking::TrackWithMotionModel()
 
 bool Tracking::TrackLocalMap()
 {
-    UpdateLocalMap();
+    {
+        VT_PROFILE_SCOPE("TLM_UpdateLocalMap");
+        UpdateLocalMap();
+    }
 
     // 等待SLAM建立一定规模的新地图（稳定）后，再尝试混合已加载的地图点。
     if((int)mvpLocalMapPoints.size()<LOCAL_MAP_SUPPLEMENT_TRIGGER)
     {
+        VT_PROFILE_SCOPE("TLM_Supplement");
         // 此时跳过全局搜索，符合"先建图稳了再匹配"的逻辑
         bool bSkipGlobalWithLoadedMap = (mpMap->MapPointsInMap() > TRACKING_SKIP_GLOBAL_MAX_MPS && mpMap->KeyFramesInMap() < TRACKING_SKIP_GLOBAL_MAX_KFS && !mbHaveMapAlign);
 
@@ -1805,10 +1809,16 @@ bool Tracking::TrackLocalMap()
         }
     }
 
-    SearchLocalPoints();
+    {
+        VT_PROFILE_SCOPE("TLM_SearchLocalPoints");
+        SearchLocalPoints();
+    }
 
     // 优化位姿
-    Optimizer::PoseOptimization(&mCurrentFrame);
+    {
+        VT_PROFILE_SCOPE("TLM_PoseOpt");
+        Optimizer::PoseOptimization(&mCurrentFrame);
+    }
 
     // 若地图中没有任何关键帧或当前没有参考关键帧，则在匹配充分时自举一个关键帧，恢复/继续建图
     {

@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2026 Olsc <OlscStudio@outlook.com>
  *
- * This file is part of the Android ORB-SLAM2s SDK.
+ * This file is part of the Android ORB-SLAM2s IPC client.
  *
  * Dual-licensed under the Apache License, Version 2.0 (the "Apache License")
  * or the GNU General Public License, version 3 (the "GPLv3").
@@ -22,7 +22,7 @@
  *   (at your option) any later version.
  *   See <https://www.gnu.org/licenses/> for details.
  */
-package com.menthaar.sdk;
+package com.orb.slam2s.ipc;
 
 import android.annotation.SuppressLint;
 import android.os.Build;

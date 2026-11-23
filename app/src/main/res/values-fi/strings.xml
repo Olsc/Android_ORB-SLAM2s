@@ -103,4 +103,6 @@
     <string name="hint_camera_preview_enabled">Kameranäkymä käytössä</string>
     <string name="hint_camera_preview_disabled">Kameranäkymä poissa käytöstä</string>
 
+    <string name="hint_service_missing">MenthaAR-palvelua ei ole asennettu. Asenna ensin MenthaAR-palvelupaketti.</string>
+    <string name="hint_service_blocked">Järjestelmä esti MenthaAR-palvelun. Salli MenthaAR:n automaattinen käynnistys asetuksissa ja palaa sovellukseen.</string>
 </resources>

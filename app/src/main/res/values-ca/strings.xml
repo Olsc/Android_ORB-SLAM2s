@@ -105,4 +105,6 @@
     <string name="hint_camera_preview_enabled">Vista de la càmera activada</string>
     <string name="hint_camera_preview_disabled">Vista de la càmera desactivada</string>
 
+    <string name="hint_service_missing">El servei MenthaAR no està instal·lat. Instal·leu primer el paquet del servei MenthaAR.</string>
+    <string name="hint_service_blocked">El sistema ha bloquejat el servei MenthaAR. Permeteu que MenthaAR s’iniciï automàticament a Configuració i torneu a l’aplicació.</string>
 </resources>

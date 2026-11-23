@@ -103,4 +103,6 @@
     <string name="hint_camera_preview_enabled">Camerabeeld aan</string>
     <string name="hint_camera_preview_disabled">Camerabeeld uit</string>
 
+    <string name="hint_service_missing">De MenthaAR-service is niet geïnstalleerd. Installeer eerst het MenthaAR-servicepakket.</string>
+    <string name="hint_service_blocked">De MenthaAR-service is door het systeem geblokkeerd. Sta automatisch starten van MenthaAR toe in Instellingen en ga terug naar de app.</string>
 </resources>

@@ -103,4 +103,6 @@
     <string name="hint_camera_preview_enabled">Naka-enable ang camera view</string>
     <string name="hint_camera_preview_disabled">Naka-disable ang camera view</string>
 
+    <string name="hint_service_missing">Hindi naka-install ang serbisyo ng MenthaAR. Pakiinstall muna ang package ng serbisyo ng MenthaAR.</string>
+    <string name="hint_service_blocked">Na-block ng system ang serbisyo ng MenthaAR. Pakipayagan ang MenthaAR na awtomatikong magsimula sa Mga Setting, pagkatapos ay bumalik sa app.</string>
 </resources>

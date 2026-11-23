@@ -103,4 +103,6 @@
     <string name="hint_camera_preview_enabled">Kamerakép bekapcsolva</string>
     <string name="hint_camera_preview_disabled">Kamerakép kikapcsolva</string>
 
+    <string name="hint_service_missing">A MenthaAR szolgáltatás nincs telepítve. Kérjük, előbb telepítse a MenthaAR szolgáltatáscsomagot.</string>
+    <string name="hint_service_blocked">A rendszer letiltotta a MenthaAR szolgáltatást. Engedélyezze a MenthaAR automatikus indítását a Beállításokban, majd térjen vissza az alkalmazáshoz.</string>
 </resources>

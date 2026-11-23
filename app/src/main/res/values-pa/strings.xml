@@ -103,4 +103,6 @@
     <string name="hint_camera_preview_enabled">ਕੈਮਰਾ ਦ੍ਰਿਸ਼ ਚਾਲੂ ਹੈ</string>
     <string name="hint_camera_preview_disabled">ਕੈਮਰਾ ਦ੍ਰਿਸ਼ ਬੰਦ ਹੈ</string>
 
+    <string name="hint_service_missing">MenthaAR ਸੇਵਾ ਇੰਸਟਾਲ ਨਹੀਂ ਹੈ। ਕਿਰਪਾ ਕਰਕੇ ਪਹਿਲਾਂ MenthaAR ਸੇਵਾ ਪੈਕੇਜ ਇੰਸਟਾਲ ਕਰੋ।</string>
+    <string name="hint_service_blocked">ਸਿਸਟਮ ਨੇ MenthaAR ਸੇਵਾ ਨੂੰ ਰੋਕ ਦਿੱਤਾ ਹੈ। ਕਿਰਪਾ ਕਰਕੇ ਸੈਟਿੰਗਾਂ ਵਿੱਚ MenthaAR ਨੂੰ ਆਟੋ-ਸਟਾਰਟ ਦੀ ਇਜਾਜ਼ਤ ਦਿਓ ਅਤੇ ਐਪ ਵਿੱਚ ਵਾਪਸ ਆਓ।</string>
 </resources>

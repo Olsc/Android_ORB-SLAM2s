@@ -103,4 +103,6 @@
     <string name="hint_camera_preview_enabled">Камера көрүнүшү күйгүзүлдү</string>
     <string name="hint_camera_preview_disabled">Камера көрүнүшү өчүрүлдү</string>
 
+    <string name="hint_service_missing">MenthaAR кызматы орнотулган эмес. Адегенде MenthaAR кызмат пакетин орнотуңуз.</string>
+    <string name="hint_service_blocked">MenthaAR кызматын система бөгөттөдү. Жөндөөлөрдөн MenthaAR автоматтык ишке киргизүүгө уруксат берип, колдонмого кайтыңыз.</string>
 </resources>

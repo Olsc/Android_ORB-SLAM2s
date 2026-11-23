@@ -103,4 +103,6 @@
     <string name="hint_camera_preview_enabled">Kamerabild aktiviert</string>
     <string name="hint_camera_preview_disabled">Kamerabild deaktiviert</string>
 
+    <string name="hint_service_missing">Der MenthaAR-Dienst ist nicht installiert. Bitte installieren Sie zuerst das MenthaAR-Dienstpaket.</string>
+    <string name="hint_service_blocked">Der MenthaAR-Dienst wurde vom System blockiert. Erlauben Sie MenthaAR in den Einstellungen den Autostart und kehren Sie dann zur App zurück.</string>
 </resources>

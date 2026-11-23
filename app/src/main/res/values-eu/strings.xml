@@ -103,4 +103,6 @@
     <string name="hint_camera_preview_enabled">Kameraren bista gaituta</string>
     <string name="hint_camera_preview_disabled">Kameraren bista desgaituta</string>
 
+    <string name="hint_service_missing">MenthaAR zerbitzua ez dago instalatuta. Instalatu lehenik MenthaAR zerbitzu-paketea.</string>
+    <string name="hint_service_blocked">Sistemak MenthaAR zerbitzua blokeatu du. Baimendu MenthaAR automatikoki abiaraztea Ezarpenetan eta itzuli aplikaziora.</string>
 </resources>

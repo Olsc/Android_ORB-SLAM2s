@@ -103,4 +103,6 @@
     <string name="hint_camera_preview_enabled">Kameravisning slået til</string>
     <string name="hint_camera_preview_disabled">Kameravisning slået fra</string>
 
+    <string name="hint_service_missing">MenthaAR-tjenesten er ikke installeret. Installer først MenthaAR-tjenestepakken.</string>
+    <string name="hint_service_blocked">MenthaAR-tjenesten blev blokeret af systemet. Tillad automatisk start af MenthaAR i Indstillinger, og vend derefter tilbage til appen.</string>
 </resources>

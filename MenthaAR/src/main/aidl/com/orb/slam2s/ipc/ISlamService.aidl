@@ -22,14 +22,15 @@
  *   (at your option) any later version.
  *   See <https://www.gnu.org/licenses/> for details.
  */
-package com.menthaar.sdk.internal;
+package com.orb.slam2s.ipc;
 
 import android.os.ParcelFileDescriptor;
 
-// SDK 内部协议：App 与 SLAM 服务进程之间的控制通道，帧数据与结果走共享内存。
+// App 与 SLAM 服务进程之间的控制通道，帧数据与结果走共享内存。
+// 服务可能位于另一个 APK（com.mentha.ar），不能共享文件路径：资源目录由服务自管，地图经 PFD 传输。
 interface ISlamService {
-    // 低频耗时操作，oneway 调用不占用调用方 binder 线程
-    oneway void initSLAM(String resDir);
+    // 低频耗时操作，oneway 调用不占用调用方 binder 线程；资源目录由服务端自管
+    oneway void initSLAM();
 
     // 共享内存 attach：低频（仅创建缓冲/分辨率变化时），保持同步以便确认映射成功
     boolean attachFrameBuffer(in ParcelFileDescriptor pfd, int size);
@@ -40,8 +41,10 @@ interface ISlamService {
     oneway void detectPlane();
     void setPointCloudDisplay(boolean enable);
     boolean isPointCloudDisplayEnabled();
-    void saveMap(String mapPath);
-    void loadMapWithId(String mapPath, int mapId, boolean append);
+    // 地图经文件描述符交换：mapOut 接收地图主文件，arInfoOut 接收配套 .arinfo；服务端写完后关闭
+    oneway void saveMap(in ParcelFileDescriptor mapOut, in ParcelFileDescriptor arInfoOut);
+    // arInfoIn 可为 null（旧地图没有 .arinfo）；服务端读完后关闭
+    oneway void loadMapWithId(in ParcelFileDescriptor mapIn, in ParcelFileDescriptor arInfoIn, int mapId, boolean append);
     int[] getMapStats();
     void updateArObjectScale(float scaleFactor);
 
