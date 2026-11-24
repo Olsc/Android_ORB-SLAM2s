@@ -317,8 +317,7 @@ void Plane::Recompute()
         const float lz = r1[2] * dx + r1[5] * dy + r1[8] * dz; // R1^T * d 的 z 分量
         if (lx * lx + lz * lz > 1e-10f)
         {
-            constexpr float kModelFrontYawOffset = 3.14159265358979323846f / 2.0f;
-            rang = std::atan2(lx, lz) + 3.14159265358979323846f + kModelFrontYawOffset;
+            rang = std::atan2(lx, lz) + 3.14159265358979323846f;
         }
         mYawInitialized = true;
     }
