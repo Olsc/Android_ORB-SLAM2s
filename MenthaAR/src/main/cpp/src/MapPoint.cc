@@ -270,9 +270,8 @@ void MapPoint::SetBadFlag()
 
 MapPoint* MapPoint::GetReplaced()
 {
-    unique_lock<mutex> lock1(mMutexFeatures);
-    unique_lock<mutex> lock2(mMutexPos);
-    return mpReplaced;
+    // Replace 在置坏标志的同一临界区内以 release 写入，这里 acquire 读取即可
+    return mpReplaced.load(std::memory_order_acquire);
 }
 
 void MapPoint::Replace(MapPoint* pMP)
@@ -293,7 +292,7 @@ void MapPoint::Replace(MapPoint* pMP)
         mbBad=true;
         nvisible = mnVisible.load(std::memory_order_relaxed);
         nfound = mnFound.load(std::memory_order_relaxed);
-        mpReplaced = pMP;
+        mpReplaced.store(pMP, std::memory_order_release);
     }
 
     for(KeyFrameMap<size_t>::iterator mit=obs.begin(), mend=obs.end(); mit!=mend; mit++)

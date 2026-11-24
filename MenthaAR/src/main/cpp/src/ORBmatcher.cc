@@ -118,9 +118,10 @@ int ORBmatcher::SearchByProjection(Frame &F, const vector<MapPoint*> &vpMapPoint
         if(vIndices.empty())
             continue;
 
-        // 读取该点描述子
+        // 读取该点描述子；没有描述子的点不能用全零描述子参与匹配
         uint8_t MPdescriptor[ORB_DESC_COLS];
-        pMP->GetDescriptor(MPdescriptor);
+        if(!pMP->GetDescriptor(MPdescriptor))
+            continue;
 
         int bestDist=256;
         int bestLevel= -1;
@@ -1956,8 +1957,10 @@ static inline int PopCount64(uint64_t x)
 // ORB 描述子汉明距离 (32 字节)
 int ORBmatcher::DescriptorDistance(const uint8_t* pa, const uint8_t* pb)
 {
-    const uint64_t* a64 = reinterpret_cast<const uint64_t*>(pa);
-    const uint64_t* b64 = reinterpret_cast<const uint64_t*>(pb);
+    // memcpy 读入：调用方缓冲不保证 8 字节对齐，编译器生成与直接读取相同的加载指令
+    uint64_t a64[4], b64[4];
+    memcpy(a64, pa, sizeof(a64));
+    memcpy(b64, pb, sizeof(b64));
     return PopCount64(a64[0] ^ b64[0]) +
            PopCount64(a64[1] ^ b64[1]) +
            PopCount64(a64[2] ^ b64[2]) +

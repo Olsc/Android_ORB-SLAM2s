@@ -7,13 +7,6 @@ project(MenthaAR C CXX)
 # 16 KB 内存页对齐链接选项
 add_link_options("-Wl,-z,max-page-size=16384")
 
-find_package(OpenMP)
-if(OpenMP_CXX_FOUND)
-    message(STATUS "OpenMP CXX found!")
-else()
-    message(WARNING "OpenMP CXX NOT found! OpenCV will compile without OpenMP acceleration.")
-endif()
-
 # OpenCV 源码路径
 set(OPENCV_SRC_DIR "${CMAKE_SOURCE_DIR}/src/main/cpp/Thirdparty/opencv")
 
@@ -208,18 +201,12 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(g2o PRIVATE
             $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:-O3 -g -fno-omit-frame-pointer -fno-strict-aliasing -flto=thin>
             $<$<CONFIG:Debug>:-O2 -g -fno-omit-frame-pointer -fno-strict-aliasing>)
-    if(OpenMP_CXX_FOUND)
-        target_link_libraries(g2o PUBLIC OpenMP::OpenMP_CXX)
-    endif()
     target_link_options(g2o PRIVATE
             $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:-flto=thin -O3>)
 else()
     target_compile_options(g2o PRIVATE
             $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:-O3 -g -fno-omit-frame-pointer -fno-strict-aliasing -flto>
             $<$<CONFIG:Debug>:-O2 -g -fno-omit-frame-pointer -fno-strict-aliasing>)
-    if(OpenMP_CXX_FOUND)
-        target_link_libraries(g2o PUBLIC OpenMP::OpenMP_CXX)
-    endif()
     target_link_options(g2o PRIVATE
             $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:-flto -O3>)
 endif()
@@ -231,6 +218,27 @@ if(ARCH_SPECIFIC_OPTIMIZATION_FLAGS)
             $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:${opt_flag}>)
     endforeach()
 endif()
+
+# SLAM 核心源码列表，供引擎共享库复用
+set(MENTHA_CORE_SOURCES
+        src/main/cpp/src/System.cc
+        src/main/cpp/src/Tracking.cc
+        src/main/cpp/src/LocalMapping.cc
+        src/main/cpp/src/LoopClosing.cc
+        src/main/cpp/src/ORBextractor.cc
+        src/main/cpp/src/ORBmatcher.cc
+        src/main/cpp/src/FrameDrawer.cc
+        src/main/cpp/src/Converter.cc
+        src/main/cpp/src/MapPoint.cc
+        src/main/cpp/src/KeyFrame.cc
+        src/main/cpp/src/Map.cc
+        src/main/cpp/src/Optimizer.cc
+        src/main/cpp/src/PnPsolver.cc
+        src/main/cpp/src/Frame.cc
+        src/main/cpp/src/KeyFrameDatabase.cc
+        src/main/cpp/src/Sim3Solver.cc
+        src/main/cpp/src/Initializer.cc
+        )
 
 # 单一共享库目标：libMenthaAR_Engine.so
 add_library(MenthaAR_Engine SHARED
@@ -253,23 +261,7 @@ add_library(MenthaAR_Engine SHARED
         src/main/cpp/include/Sim3Solver.h
         src/main/cpp/include/Initializer.h
         src/main/cpp/include/Common.h
-        src/main/cpp/src/System.cc
-        src/main/cpp/src/Tracking.cc
-        src/main/cpp/src/LocalMapping.cc
-        src/main/cpp/src/LoopClosing.cc
-        src/main/cpp/src/ORBextractor.cc
-        src/main/cpp/src/ORBmatcher.cc
-        src/main/cpp/src/FrameDrawer.cc
-        src/main/cpp/src/Converter.cc
-        src/main/cpp/src/MapPoint.cc
-        src/main/cpp/src/KeyFrame.cc
-        src/main/cpp/src/Map.cc
-        src/main/cpp/src/Optimizer.cc
-        src/main/cpp/src/PnPsolver.cc
-        src/main/cpp/src/Frame.cc
-        src/main/cpp/src/KeyFrameDatabase.cc
-        src/main/cpp/src/Sim3Solver.cc
-        src/main/cpp/src/Initializer.cc
+        ${MENTHA_CORE_SOURCES}
 
         # JNI 接口与 IPC 通信层
         src/main/cpp/native-lib.cpp
@@ -322,13 +314,8 @@ target_link_libraries(MenthaAR_Engine
         GLESv1_CM
         )
 
-if(OpenMP_CXX_FOUND)
-    target_link_libraries(MenthaAR_Engine OpenMP::OpenMP_CXX -static-openmp)
-    target_compile_options(MenthaAR_Engine PRIVATE ${OpenMP_CXX_FLAGS})
-endif()
-
 # Mentha 性能分析器配置
-set(MENTHA_DEVELOP_MODE OFF) # ON 启用分析器，OFF 关闭
+set(MENTHA_DEVELOP_MODE ON) # ON 启用分析器，OFF 关闭
 
 message(STATUS "Mentha 分析器状态: ${MENTHA_DEVELOP_MODE}")
 
@@ -353,11 +340,7 @@ if(MENTHA_DEVELOP_MODE)
         endforeach()
     endif()
 
-    target_link_libraries(Mentha_Profiler ${log-lib} -static-openmp)
-
-    if(OpenMP_CXX_FOUND)
-        target_link_libraries(Mentha_Profiler OpenMP::OpenMP_CXX -static-openmp)
-    endif()
+    target_link_libraries(Mentha_Profiler ${log-lib})
 
     # 将分析器库链接到主引擎
     target_link_libraries(MenthaAR_Engine Mentha_Profiler)

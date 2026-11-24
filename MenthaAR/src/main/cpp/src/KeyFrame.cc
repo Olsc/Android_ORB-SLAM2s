@@ -34,6 +34,7 @@
 
 #include "KeyFrame.h"
 #include <unordered_map>
+#include <climits>
 #include "Converter.h"
 #include "ORBmatcher.h"
 #include "Config.h"
@@ -58,7 +59,8 @@ static inline bool WeightDescIdAsc(const std::pair<int,KeyFrame*>& a, const std:
 KeyFrame::KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB):
     mnFrameId(F.mnId),  mTimeStamp(F.mTimeStamp), mnGridCols(FRAME_GRID_COLS), mnGridRows(FRAME_GRID_ROWS),
     mfGridElementWidthInv(F.mfGridElementWidthInv), mfGridElementHeightInv(F.mfGridElementHeightInv),
-    mnTrackReferenceForFrame(0), mnFuseTargetForKF(0), mnBALocalForKF(0), mnBAFixedForKF(0),
+    mnTrackReferenceForFrame(0), mnFuseTargetForKF(0), mnTrackVoteFrame(ULONG_MAX), mnTrackVotes(0),
+    mnBALocalForKF(0), mnBAFixedForKF(0),
     mnLoopQuery(0), mnLoopWords(0), mnRelocQuery(0), mnRelocWords(0), mnBAGlobalForKF(0),
     fx(F.fx), fy(F.fy), cx(F.cx), cy(F.cy), invfx(F.invfx), invfy(F.invfy),
     mbf(F.mbf), mb(F.mb), N(F.N), mvKeys(F.mvKeys),    mvKeysUn(F.mvKeysUn), mDescriptors(F.mDescriptors.clone()),
@@ -708,19 +710,20 @@ void KeyFrame::GetFeaturesInArea(const float &x, const float &y, const float &r,
     vIndices.clear();
     vIndices.reserve(16);
 
-    const int nMinCellX = max(0,(int)floor((x-mnMinX-r)*mfGridElementWidthInv));
+    // 网格沿用 Frame 的 round 归格，按 round 收紧格界（见 Frame::GetFeaturesInArea），结果集合与顺序不变
+    const int nMinCellX = max(0,(int)std::round((x-mnMinX-r)*mfGridElementWidthInv - FRAME_GRID_BOUND_EPS));
     if(nMinCellX>=mnGridCols)
         return;
 
-    const int nMaxCellX = min((int)mnGridCols-1,(int)ceil((x-mnMinX+r)*mfGridElementWidthInv));
+    const int nMaxCellX = min((int)mnGridCols-1,(int)std::round((x-mnMinX+r)*mfGridElementWidthInv + FRAME_GRID_BOUND_EPS));
     if(nMaxCellX<0)
         return;
 
-    const int nMinCellY = max(0,(int)floor((y-mnMinY-r)*mfGridElementHeightInv));
+    const int nMinCellY = max(0,(int)std::round((y-mnMinY-r)*mfGridElementHeightInv - FRAME_GRID_BOUND_EPS));
     if(nMinCellY>=mnGridRows)
         return;
 
-    const int nMaxCellY = min((int)mnGridRows-1,(int)ceil((y-mnMinY+r)*mfGridElementHeightInv));
+    const int nMaxCellY = min((int)mnGridRows-1,(int)std::round((y-mnMinY+r)*mfGridElementHeightInv + FRAME_GRID_BOUND_EPS));
     if(nMaxCellY<0)
         return;
 
@@ -790,6 +793,10 @@ float KeyFrame::ComputeSceneMedianDepth(const int q)
             vDepths.push_back(z);
         }
     }
+
+    // 没有地图点时返回 -1，由调用方按无效深度处理
+    if(vDepths.empty())
+        return -1.0f;
 
     // 只需 1/q 分位一个值
     const size_t idx = (vDepths.size()-1)/q;

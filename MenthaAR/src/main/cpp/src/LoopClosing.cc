@@ -122,6 +122,7 @@ void LoopClosing::NotifyEvent()
 
 void LoopClosing::Run()
 {
+    SetCurrentThreadNice(SLAM_NICE_WORKER);
     mbFinished =false;
 
     while(1)
@@ -732,6 +733,7 @@ void LoopClosing::RequestStopGBA()
 
 void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
 {
+    SetCurrentThreadNice(SLAM_NICE_WORKER);
     try
     {
 

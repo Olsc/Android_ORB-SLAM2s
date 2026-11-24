@@ -455,6 +455,7 @@ void ORB_SLAM2::Tracking::BuildLoadedRefCache()
         mpRefIdxToMP = pNewIdxToMP;
         mpRefSnapshots = pNewSnaps;
         mpRefTree = pNewRefTree;
+        mRefHasLoaded = hasLoaded;
         mRefCachedMPCount = (int)mpRefIdxToMP->size();
         mRefLastBuildTs = mLastTimestamp;
         mRefLastBuildMPCount = (long long)allMPs.size();
@@ -667,6 +668,7 @@ Tracking::Tracking(System *pSys, FrameDrawer *pFrameDrawer,  Map *pMap, KeyFrame
 
 void Tracking::GlobalRelocLoop(int sessionId)
 {
+    SetCurrentThreadNice(SLAM_NICE_WORKER);
     // 定期尝试使用2D-3D匹配+PnP将SLAM与加载的地图对齐
     mLastBgRunTime = std::chrono::steady_clock::now();
 
@@ -723,8 +725,8 @@ void Tracking::GlobalRelocLoop(int sessionId)
             if(mbRelocThreadStop || mRelocThreadSessionId.load() != sessionId)
                 break;
 
-            // 提取不可变快照的 shared_ptr
-            if(!mRefDesc.empty() && mpRefSnapshots && !mpRefSnapshots->empty() && mpRefTree) {
+            // 提取不可变快照的 shared_ptr；缓存不含加载点时对齐结果不可能被发布（投票地图 id 全为 -1），跳过匹配与 PnP
+            if(mRefHasLoaded && !mRefDesc.empty() && mpRefSnapshots && !mpRefSnapshots->empty() && mpRefTree) {
                 refDesc = mRefDesc;
                 refSnaps = mpRefSnapshots;
                 pTree = mpRefTree;
@@ -1992,9 +1994,6 @@ bool Tracking::TrackLocalMap()
     }
     // 利用快照进行快速绑定
     BindLoadedMapPointsUsingSnapshots();
-    {
-        int bindCnt=0; for(auto *p : mCurrentFrame.mvpMapPoints){ if(p && !p->isBad()) bindCnt++; }
-    }
     // 对齐存在时，连续失败的宽限策略：如果上帧成功，这一帧边缘内点稍低允许通过一次
     if(mbHaveMapAlign){
         if(mnMatchesInliers>=CONSECUTIVE_FAIL_INLIERS_BASELINE) mConsecutiveFail=0; else mConsecutiveFail++;
@@ -2302,7 +2301,7 @@ void Tracking::SearchLocalPoints()
             MapPoint* pMP = mvpLocalMapPoints[idx];
             if(!pMP || pMP->isBad()) continue;
             if(!pMP->mbFromLoadedMap) continue;
-            if(!pMP->GetDescriptor().empty()) continue; // 已有描述子交给常规匹配
+            if(pMP->HasDescriptor()) continue; // 已有描述子交给常规匹配
             if(!pMP->mbTrackInView) continue; // 需要在视野内
 
             const float u = pMP->mTrackProjX;
@@ -2393,12 +2392,20 @@ void Tracking::UpdateLocalPoints()
         int numLoaded = std::distance(mvpLocalMapPoints.begin(), pivot);
         if(numLoaded < TRACKING_MAX_LOCAL_MAP_POINTS)
         {
-            // 已加载点未占满上限时，压缩普通点数量
-            std::nth_element(pivot, mvpLocalMapPoints.begin() + TRACKING_MAX_LOCAL_MAP_POINTS, mvpLocalMapPoints.end(),
-                             [](const MapPoint* a, const MapPoint* b) {
-                                 // 按观测数降序（Observations() 为原子读）
-                                 return a->Observations() > b->Observations();
+            // 已加载点未占满上限时，压缩普通点数量（按观测数降序）
+            // 观测数由建图线程并发修改，先快照再排序，保证比较器满足严格弱序
+            static thread_local std::vector<std::pair<int, MapPoint*> > s_vObsSnap;
+            s_vObsSnap.clear();
+            s_vObsSnap.reserve(mvpLocalMapPoints.end() - pivot);
+            for(auto it = pivot; it != mvpLocalMapPoints.end(); ++it)
+                s_vObsSnap.push_back(std::make_pair((*it)->Observations(), *it));
+            const size_t nth = TRACKING_MAX_LOCAL_MAP_POINTS - numLoaded;
+            std::nth_element(s_vObsSnap.begin(), s_vObsSnap.begin() + nth, s_vObsSnap.end(),
+                             [](const std::pair<int, MapPoint*>& a, const std::pair<int, MapPoint*>& b) {
+                                 return a.first > b.first;
                              });
+            for(size_t k = 0; k < s_vObsSnap.size(); ++k)
+                *(pivot + k) = s_vObsSnap[k].second;
         }
         mvpLocalMapPoints.resize(TRACKING_MAX_LOCAL_MAP_POINTS);
     }
@@ -2407,8 +2414,10 @@ void Tracking::UpdateLocalPoints()
 
 void Tracking::UpdateLocalKeyFrames()
 {
-    // 每个地图点都会投票给观察到它的关键帧
-    KeyFrameMap<int> keyframeCounter;
+    // 每个地图点都会投票给观察到它的关键帧：票数记在关键帧的本帧计数上，首次被投时登记
+    const long unsigned int voteStamp = mCurrentFrame.mnId;
+    static thread_local std::vector<KeyFrame*> s_vVotedKFs;
+    s_vVotedKFs.clear();
     for(int i=0; i<mCurrentFrame.N; i++)
     {
         if(mCurrentFrame.mvpMapPoints[i])
@@ -2416,7 +2425,17 @@ void Tracking::UpdateLocalKeyFrames()
             MapPoint* pMP = mCurrentFrame.mvpMapPoints[i];
             if(!pMP->isBad())
             {
-                pMP->ShareObservations(keyframeCounter);
+                pMP->ForEachObservation([&](KeyFrame* pKF, size_t) {
+                    if(pKF->isBad())
+                        return;
+                    if(pKF->mnTrackVoteFrame != voteStamp)
+                    {
+                        pKF->mnTrackVoteFrame = voteStamp;
+                        pKF->mnTrackVotes = 0;
+                        s_vVotedKFs.push_back(pKF);
+                    }
+                    pKF->mnTrackVotes++;
+                });
             }
             else
             {
@@ -2425,30 +2444,33 @@ void Tracking::UpdateLocalKeyFrames()
         }
     }
 
-    if(keyframeCounter.empty())
+    if(s_vVotedKFs.empty())
         return;
+
+    // 按关键帧 id 升序遍历，与按 IdLess 排序的计数表顺序一致（决定平票时的参考关键帧与局部关键帧顺序）
+    std::sort(s_vVotedKFs.begin(), s_vVotedKFs.end(), KeyFrame::lId);
 
     int max=0;
     KeyFrame* pKFmax= nullptr;
 
     mvpLocalKeyFrames.clear();
-    mvpLocalKeyFrames.reserve(3*keyframeCounter.size());
+    mvpLocalKeyFrames.reserve(3*s_vVotedKFs.size());
 
     // 所有观察到地图点的关键帧都包含在局部地图中。同时检查哪个关键帧共享最多的点
-    for(auto it=keyframeCounter.begin(), itEnd=keyframeCounter.end(); it!=itEnd; it++)
+    for(size_t k=0, kend=s_vVotedKFs.size(); k<kend; k++)
     {
-        KeyFrame* pKF = it->first;
+        KeyFrame* pKF = s_vVotedKFs[k];
 
         if(pKF->isBad())
             continue;
 
-        if(it->second>max)
+        if(pKF->mnTrackVotes>max)
         {
-            max=it->second;
+            max=pKF->mnTrackVotes;
             pKFmax=pKF;
         }
 
-        mvpLocalKeyFrames.push_back(it->first);
+        mvpLocalKeyFrames.push_back(pKF);
         pKF->mnTrackReferenceForFrame = mCurrentFrame.mnId;
     }
 
@@ -2889,6 +2911,7 @@ void Tracking::Reset()
         mpRefIdxToMP.reset();
         mpRefSnapshots.reset();
         mpRefTree.reset();
+        mRefHasLoaded = false;
         mRefCachedMPCount = 0;
         mRefLastBuildTs = 0.0;
         mRefLastBuildMPCount = 0;
@@ -3062,6 +3085,7 @@ void Tracking::ClearTrackingState()
         mpRefIdxToMP.reset();
         mpRefSnapshots.reset();
         mpRefTree.reset();
+        mRefHasLoaded = false;
         mRefCachedMPCount = 0;
         mRefLastBuildTs = 0.0;
         mRefLastBuildMPCount = 0;
@@ -3147,6 +3171,7 @@ void Tracking::ClearRelocCacheForMapSwitch()
         mpRefIdxToMP.reset();
         mpRefSnapshots.reset();
         mpRefTree.reset();
+        mRefHasLoaded = false;
         mRefGrid.Clear();
         mRefCachedMPCount = 0;
         mRefLastBuildTs = 0.0;
@@ -3215,6 +3240,7 @@ void Tracking::ClearRelocCache()
         mpRefIdxToMP.reset();
         mpRefSnapshots.reset();
         mpRefTree.reset();
+        mRefHasLoaded = false;
         mRefGrid.Clear();
         mRefCachedMPCount = 0;
         mRefLastBuildTs = 0.0;

@@ -311,6 +311,8 @@ protected:
         int mapId = 0;
     };
     std::shared_ptr<const std::vector<RefMPSnapshot>> mpRefSnapshots;
+    // 参考缓存是否由已加载地图点构成（受 mMutexReloc 保护）；为 false 时缓存只供丢失后的降级重定位使用
+    bool mRefHasLoaded = false;
 
     // 简单的3D网格索引
     struct LoadedMapGrid {

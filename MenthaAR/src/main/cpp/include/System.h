@@ -114,6 +114,12 @@ public:
     // 获取所有地图点
     std::vector<MapPoint*> GetAllMapPoints();
 
+    // 已加载地图点（按创建顺序，即 id 升序，可能含已坏点）；只在 SLAM 处理线程读取，与 LoadMap/Reset 同线程
+    const std::vector<MapPoint*>& GetLoadedMapPoints() const { return mvpLoadedMapPoints; }
+
+    // 局部建图队列为空且未在处理关键帧（离线回放的同步模式用）
+    bool IsLocalMappingIdle();
+
     // 获取当前跟踪状态，可在TrackMonocular()后立即调用
     int GetTrackingState();
 
@@ -154,6 +160,9 @@ public:
 private:
     // 多地图容器
     std::vector<Map*> mvpMaps;
+
+    // 当前全部已加载地图点（LoadMap 维护；加载点只迁移不删除，坏点由读取方跳过）
+    std::vector<MapPoint*> mvpLoadedMapPoints;
     // 子地图 ID 单调计数器，逐出旧地图后仍不复用 ID（初始地图为 0）
     unsigned long mnNextMapId = 1;
 

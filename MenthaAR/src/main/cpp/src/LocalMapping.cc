@@ -43,6 +43,7 @@
 #include<chrono>
 #include<algorithm>
 #include "MenthaProfiler.h"
+#include "Common.h"
 
 namespace ORB_SLAM2
 {
@@ -101,6 +102,7 @@ void LocalMapping::NotifyEvent()
 
 void LocalMapping::Run()
 {
+    SetCurrentThreadNice(SLAM_NICE_WORKER);
     VT_PROFILE_FUNCTION();
     mbFinished = false;
 
@@ -1109,8 +1111,8 @@ void LocalMapping::CheckLimits()
         }
     }
 
-    // 2. 地图点限制检查（统一管理）
-    long unsigned int nMPs = mpMap->MapPointsInMap();
+    // 2. 地图点限制检查（统一管理）。加载点永不剔除，所以上限只针对自建点
+    long unsigned int nMPs = mpMap->SelfBuiltMapPointsInMap();
     if(nMPs > MAX_MAPPOINTS)
     {
         vector<MapPoint*> vpMPs = mpMap->GetAllMapPoints();
