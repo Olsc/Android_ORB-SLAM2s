@@ -10,6 +10,8 @@
     <!-- 无 Activity、无启动入口：只提供 SLAM 服务；图标仅用于系统设置里的应用列表，与 app 一致 -->
     <application
         android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:label="MenthaAR"
