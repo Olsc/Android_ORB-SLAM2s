@@ -315,7 +315,7 @@ target_link_libraries(MenthaAR_Engine
         )
 
 # Mentha 性能分析器配置
-set(MENTHA_DEVELOP_MODE ON) # ON 启用分析器，OFF 关闭
+set(MENTHA_DEVELOP_MODE OFF) # ON 启用分析器，OFF 关闭
 
 message(STATUS "Mentha 分析器状态: ${MENTHA_DEVELOP_MODE}")
 
