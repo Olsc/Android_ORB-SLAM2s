@@ -19,4 +19,5 @@
     <color name="candy_accent_text">#FF80DEEA</color>
     <color name="hud_fps">#FF7FE9FF</color>
     <color name="hud_stats">#FF9BF2C0</color>
+    <color name="text_shadow">#E6000000</color>
 </resources>

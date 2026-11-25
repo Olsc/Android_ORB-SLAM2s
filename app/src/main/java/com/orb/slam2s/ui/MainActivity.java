@@ -389,8 +389,9 @@ public class MainActivity extends ComponentActivity
             View joystickView = findViewById(R.id.joystick_view);
             if (joystickView != null && joystickView.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
                 ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) joystickView.getLayoutParams();
-                int baseStart = (int) (16 * getResources().getDisplayMetrics().density);
-                int baseBottom = (int) (16 * getResources().getDisplayMetrics().density);
+                int baseStart = (int) (14 * getResources().getDisplayMetrics().density);
+                // 底部让出 Dock 的高度，摇杆整体位于 Dock 上方
+                int baseBottom = (int) (72 * getResources().getDisplayMetrics().density);
                 lp.setMarginStart(baseStart + insets.left);
                 lp.bottomMargin = baseBottom + insets.bottom;
                 joystickView.setLayoutParams(lp);

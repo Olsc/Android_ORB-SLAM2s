@@ -44,10 +44,10 @@
             android:textColor="@color/hud_fps"
             android:textSize="13sp"
             android:textStyle="bold"
-            android:shadowColor="#000000"
-            android:shadowRadius="2"
-            android:shadowDx="1"
-            android:shadowDy="1"
+            android:shadowColor="@color/text_shadow"
+            android:shadowRadius="6"
+            android:shadowDx="0"
+            android:shadowDy="2"
             tools:text="30.0 FPS" />
         <TextView
             android:id="@+id/text_map_stats"
@@ -56,21 +56,21 @@
             android:textColor="@color/hud_stats"
             android:textSize="11sp"
             android:layout_marginTop="2dp"
-            android:shadowColor="#000000"
-            android:shadowRadius="2"
-            android:shadowDx="1"
-            android:shadowDy="1"
+            android:shadowColor="@color/text_shadow"
+            android:shadowRadius="6"
+            android:shadowDx="0"
+            android:shadowDy="2"
             tools:text="KFs: 0 | MPs: 0 | Plane: No" />
     </LinearLayout>
 
     <com.orb.slam2s.ui.VirtualJoystickView
         android:id="@+id/joystick_view"
-        android:layout_width="120dp"
-        android:layout_height="120dp"
+        android:layout_width="104dp"
+        android:layout_height="104dp"
         android:layout_alignParentStart="true"
         android:layout_alignParentBottom="true"
-        android:layout_marginStart="16dp"
-        android:layout_marginBottom="16dp"
+        android:layout_marginStart="14dp"
+        android:layout_marginBottom="72dp"
         android:visibility="gone" />
 
     <LinearLayout

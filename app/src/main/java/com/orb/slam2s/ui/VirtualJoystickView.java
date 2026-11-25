@@ -15,14 +15,17 @@
  */
 package com.orb.slam2s.ui;
 
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.LinearGradient;
 import android.graphics.Paint;
-import android.graphics.RadialGradient;
 import android.graphics.Shader;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.OvershootInterpolator;
 
 import androidx.annotation.NonNull;
 
@@ -31,11 +34,15 @@ import androidx.annotation.NonNull;
 @SuppressWarnings("unused")
 public class VirtualJoystickView extends View {
 
-    private final Paint mBgPaint;
-    private final Paint mHandlePaint;
-    private final Paint mRingPaint;
-    private final Paint mCrossPaint;
-    private final Paint mHandleRingPaint;
+    private static final float HANDLE_RATIO = 0.28f;
+    private static final float DEAD_ZONE_RATIO = 0.08f;
+    private static final long RESET_MS = 320L;
+    private static final long DRAG_IN_MS = 140L;
+    private static final long DRAG_OUT_MS = 260L;
+
+    private float mDensity = 1f;
+    private Disc mBase;
+    private Disc mHandle;
 
     private float mCenterX;
     private float mCenterY;
@@ -48,13 +55,12 @@ public class VirtualJoystickView extends View {
 
     private float mRotationAngle = 0.0f;
     private float mIntensity = 0.0f;
+    // 拖动程度 0-1，驱动底座与手柄的外发光强度
+    private float mDrag = 0.0f;
+    private ValueAnimator mResetAnim;
+    private ValueAnimator mDragAnim;
 
     private OnJoystickListener mListener;
-
-    private static final float HANDLE_RATIO = 0.28f;
-    private static final float DEAD_ZONE_RATIO = 0.08f;
-    private static final int HANDLE_COLOR = 0xCCFFFFFF;
-    private static final int RING_COLOR = 0x60FFFFFF;
 
     public interface OnJoystickListener {
         void onJoystickUpdate(float angleDeg, float intensity);
@@ -66,28 +72,7 @@ public class VirtualJoystickView extends View {
 
     public VirtualJoystickView(Context context, AttributeSet attrs) {
         super(context, attrs);
-
-        mBgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        mBgPaint.setStyle(Paint.Style.FILL);
-
-        mHandlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        mHandlePaint.setStyle(Paint.Style.FILL);
-
-        mRingPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        mRingPaint.setStyle(Paint.Style.STROKE);
-        mRingPaint.setStrokeWidth(2.5f);
-        mRingPaint.setColor(RING_COLOR);
-
-        mCrossPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        mCrossPaint.setStyle(Paint.Style.STROKE);
-        mCrossPaint.setStrokeWidth(1.5f);
-        mCrossPaint.setColor(0x40FFFFFF);
-
-        mHandleRingPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        mHandleRingPaint.setStyle(Paint.Style.STROKE);
-        mHandleRingPaint.setStrokeWidth(2.0f);
-        mHandleRingPaint.setColor(0x80FFFFFF);
-
+        mDensity = context.getResources().getDisplayMetrics().density;
         setVisibility(GONE);
     }
 
@@ -106,39 +91,18 @@ public class VirtualJoystickView extends View {
         mHandleX = mCenterX;
         mHandleY = mCenterY;
 
-        mBgPaint.setShader(new RadialGradient(
-                mCenterX, mCenterY, mRadius,
-                new int[]{0x30FFFFFF, 0x10FFFFFF, 0x00FFFFFF},
-                new float[]{0.0f, 0.6f, 1.0f},
-                Shader.TileMode.CLAMP
-        ));
-
-        mHandlePaint.setShader(new RadialGradient(
-                mCenterX, mCenterY, mHandleRadius,
-                new int[]{HANDLE_COLOR, 0x60FFFFFF},
-                new float[]{0.0f, 1.0f},
-                Shader.TileMode.CLAMP
-        ));
+        mBase = new Disc(mRadius, mDensity);
+        mHandle = new Disc(mHandleRadius, mDensity);
     }
 
     @Override
     protected void onDraw(@NonNull Canvas canvas) {
         super.onDraw(canvas);
-        if (mRadius <= 0) return;
+        if (mRadius <= 0 || mBase == null) return;
 
-        // 绘制底座背景与圆环
-        canvas.drawCircle(mCenterX, mCenterY, mRadius, mBgPaint);
-        canvas.drawCircle(mCenterX, mCenterY, mRadius, mRingPaint);
-        canvas.drawCircle(mCenterX, mCenterY, mRadius * 0.65f, mRingPaint);
-
-        // 绘制十字参考线
-        float crossLen = mRadius * 0.55f;
-        canvas.drawLine(mCenterX - crossLen, mCenterY, mCenterX + crossLen, mCenterY, mCrossPaint);
-        canvas.drawLine(mCenterX, mCenterY - crossLen, mCenterX, mCenterY + crossLen, mCrossPaint);
-
-        // 绘制手柄
-        canvas.drawCircle(mHandleX, mHandleY, mHandleRadius, mHandlePaint);
-        canvas.drawCircle(mHandleX, mHandleY, mHandleRadius + 2, mHandleRingPaint);
+        // 底座：近乎透明，拖动时外发光亮起；手柄：更亮的玻璃珠，始终带一圈柔光
+        mBase.draw(canvas, mCenterX, mCenterY, 0.22f, 1.0f, 0.8f, 0.6f * mDrag, 1.0f);
+        mHandle.draw(canvas, mHandleX, mHandleY, 0.10f, 1.7f, 1.2f, 0.35f + 0.65f * mDrag, 1.0f);
     }
 
     @Override
@@ -150,6 +114,7 @@ public class VirtualJoystickView extends View {
             case MotionEvent.ACTION_DOWN:
                 if (isInsideBase(touchX, touchY)) {
                     mIsDragging = true;
+                    animateDrag(1f, DRAG_IN_MS);
                     updateHandlePosition(touchX, touchY);
                     return true;
                 }
@@ -166,6 +131,7 @@ public class VirtualJoystickView extends View {
             case MotionEvent.ACTION_CANCEL:
                 if (mIsDragging) {
                     mIsDragging = false;
+                    animateDrag(0f, DRAG_OUT_MS);
                     resetHandle();
                     performClick();
                     return true;
@@ -189,6 +155,8 @@ public class VirtualJoystickView extends View {
     }
 
     private void updateHandlePosition(float touchX, float touchY) {
+        if (mResetAnim != null) mResetAnim.cancel();
+
         float dx = touchX - mCenterX;
         float dy = touchY - mCenterY;
         float distance = (float) Math.sqrt(dx * dx + dy * dy);
@@ -222,9 +190,8 @@ public class VirtualJoystickView extends View {
         invalidate();
     }
 
+    // 角度与力度立即归零并通知；手柄位置仅在视觉上带回弹地回到中心
     private void resetHandle() {
-        mHandleX = mCenterX;
-        mHandleY = mCenterY;
         mRotationAngle = 0.0f;
         mIntensity = 0.0f;
 
@@ -232,6 +199,118 @@ public class VirtualJoystickView extends View {
             mListener.onJoystickUpdate(0.0f, 0.0f);
         }
 
-        invalidate();
+        if (mResetAnim != null) mResetAnim.cancel();
+        final float fromX = mHandleX;
+        final float fromY = mHandleY;
+        mResetAnim = ValueAnimator.ofFloat(0f, 1f);
+        mResetAnim.setDuration(RESET_MS);
+        mResetAnim.setInterpolator(new OvershootInterpolator(2.2f));
+        mResetAnim.addUpdateListener(a -> {
+            float t = (Float) a.getAnimatedValue();
+            mHandleX = fromX + (mCenterX - fromX) * t;
+            mHandleY = fromY + (mCenterY - fromY) * t;
+            invalidate();
+        });
+        mResetAnim.start();
+    }
+
+    private void animateDrag(final float to, long ms) {
+        if (mDragAnim != null) mDragAnim.cancel();
+        final float from = mDrag;
+        mDragAnim = ValueAnimator.ofFloat(0f, 1f);
+        mDragAnim.setDuration(ms);
+        mDragAnim.setInterpolator(new DecelerateInterpolator());
+        mDragAnim.addUpdateListener(a -> {
+            mDrag = from + (to - from) * (Float) a.getAnimatedValue();
+            invalidate();
+        });
+        mDragAnim.start();
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        if (mResetAnim != null) mResetAnim.cancel();
+        if (mDragAnim != null) mDragAnim.cancel();
+        super.onDetachedFromWindow();
+    }
+
+    // 薄荷糖圆盘：近乎透明的体、顶部柔和高光、渐变细边、向内与向外的渐隐发光
+    private static final class Disc {
+        private final float mR;
+        private final float mW;
+        private final Paint mScrim = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint mFill = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint mSpec = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint mSoft = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint mHair = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint mInner = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint mHalo = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+        Disc(float radius, float density) {
+            mR = radius;
+            mW = density;
+            mScrim.setColor(0xFF000000);
+            // 渐变均在以圆心为原点的局部坐标内，绘制时平移画布即可，手柄移动无需重建
+            mFill.setShader(new LinearGradient(0f, -radius, 0f, radius,
+                    0x1CFFFFFF, 0x06FFFFFF, Shader.TileMode.CLAMP));
+            mSpec.setShader(new LinearGradient(0f, -radius, 0f, -radius + radius * 1.1f,
+                    0x2CFFFFFF, 0x00FFFFFF, Shader.TileMode.CLAMP));
+            LinearGradient rim = new LinearGradient(0f, -radius, 0f, radius,
+                    new int[]{0xFFFFFFFF, 0x1AFFFFFF, 0x1AFFFFFF, 0x80FFFFFF},
+                    new float[]{0f, 0.42f, 0.66f, 1f}, Shader.TileMode.CLAMP);
+            mSoft.setStyle(Paint.Style.STROKE);
+            mSoft.setStrokeWidth(2f * density);
+            mSoft.setShader(rim);
+            mHair.setStyle(Paint.Style.STROKE);
+            mHair.setStrokeWidth(density);
+            mHair.setShader(rim);
+            mInner.setStyle(Paint.Style.STROKE);
+            mInner.setStrokeWidth(density);
+            mInner.setColor(0xFFFFFFFF);
+            mHalo.setStyle(Paint.Style.STROKE);
+            mHalo.setStrokeWidth(density);
+            mHalo.setColor(0xFFFFFFFF);
+        }
+
+        void draw(Canvas canvas, float cx, float cy, float scrim, float fill,
+                  float inner, float halo, float rim) {
+            canvas.save();
+            canvas.translate(cx, cy);
+
+            if (halo > 0f) {
+                final int layers = 28;
+                for (int i = 0; i < layers; i++) {
+                    float fall = 1f - (i + 1f) / (layers + 1f);
+                    mHalo.setAlpha(a(255f * 0.075f * halo * fall * fall));
+                    canvas.drawCircle(0f, 0f, mR + (i + 0.5f) * mW * 0.5f, mHalo);
+                }
+            }
+
+            mScrim.setAlpha(a(255f * scrim));
+            canvas.drawCircle(0f, 0f, mR, mScrim);
+            mFill.setAlpha(a(255f * fill));
+            canvas.drawCircle(0f, 0f, mR, mFill);
+            mSpec.setAlpha(a(255f * 0.9f));
+            canvas.drawCircle(0f, 0f, mR, mSpec);
+
+            mSoft.setAlpha(a(255f * 0.09f * rim));
+            canvas.drawCircle(0f, 0f, mR - mSoft.getStrokeWidth() / 2f, mSoft);
+            mHair.setAlpha(a(255f * 0.72f * rim));
+            canvas.drawCircle(0f, 0f, mR - mHair.getStrokeWidth() / 2f, mHair);
+
+            final int layers = 26;
+            for (int i = 0; i < layers; i++) {
+                float inset = (i + 0.5f) * mW * 0.5f;
+                if (inset >= mR) break;
+                float fall = 1f - (i + 1f) / (layers + 1f);
+                mInner.setAlpha(a(255f * 0.085f * inner * fall * fall));
+                canvas.drawCircle(0f, 0f, mR - inset, mInner);
+            }
+            canvas.restore();
+        }
+
+        private static int a(float v) {
+            return v < 0f ? 0 : (v > 255f ? 255 : Math.round(v));
+        }
     }
 }
