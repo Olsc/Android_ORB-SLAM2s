@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 薄荷糖背景 CandyDrawable 的可调参数 -->
+    <declare-styleable name="CandyDrawable">
+        <attr name="candyRadius" format="dimension" />
+        <attr name="candyInset" format="dimension" />
+        <attr name="candyScrim" format="float" />
+        <attr name="candyFill" format="float" />
+        <attr name="candyRim" format="float" />
+        <attr name="candyTint" format="color" />
+        <attr name="candyTintLevel" format="float" />
+        <attr name="candyGlow" format="float" />
+        <attr name="candyInnerGlow" format="float" />
+        <attr name="candySpec" format="float" />
+        <attr name="candyBase" format="color" />
+    </declare-styleable>
+</resources>

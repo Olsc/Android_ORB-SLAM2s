@@ -1,6 +1,8 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/ar_ui_root"
+    android:clipChildren="false"
+        android:clipToPadding="false"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -30,16 +32,16 @@
         android:layout_marginStart="12dp"
         android:layout_marginTop="12dp"
         android:orientation="vertical"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"
-        android:background="#50000000">
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:paddingTop="9dp"
+        android:paddingBottom="9dp"
+        android:background="@drawable/bg_candy_hud_panel">
         <TextView
             android:id="@+id/text_fps"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="#00D9FF"
+            android:textColor="@color/hud_fps"
             android:textSize="13sp"
             android:textStyle="bold"
             android:shadowColor="#000000"
@@ -51,7 +53,7 @@
             android:id="@+id/text_map_stats"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="#00FF88"
+            android:textColor="@color/hud_stats"
             android:textSize="11sp"
             android:layout_marginTop="2dp"
             android:shadowColor="#000000"
@@ -73,228 +75,164 @@
 
     <LinearLayout
         android:id="@+id/action_panel"
+        android:clipChildren="false"
+        android:clipToPadding="false"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
+        android:layout_centerHorizontal="true"
         android:layout_alignParentBottom="true"
-        android:layout_marginEnd="8dp"
-        android:layout_marginBottom="8dp"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginBottom="12dp"
         android:orientation="vertical"
-        android:gravity="end">
+        android:gravity="center_horizontal">
 
-        <Button
-            android:id="@+id/btn_group_ar"
+        <FrameLayout
+            android:id="@+id/menu_card"
             android:layout_width="wrap_content"
-            android:minWidth="76dp"
             android:layout_height="wrap_content"
-            android:minHeight="32dp"
-            android:layout_marginBottom="4dp"
-            android:text="@string/category_ar"
-            android:textSize="11sp"
-            android:textAllCaps="false"
-            android:backgroundTint="#607D8B"
-            android:alpha="0.90"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"/>
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/bg_candy_menu"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"
+            android:visibility="gone">
         <LinearLayout
             android:id="@+id/group_ar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:clipChildren="false"
+            android:clipToPadding="false"
             android:orientation="vertical"
-            android:gravity="end"
             android:visibility="gone">
             <Button
                 android:id="@+id/btn_create_ar_object"
-                android:layout_width="wrap_content"
-                android:minWidth="76dp"
+                style="@style/Candy.Row"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minHeight="32dp"
-                android:layout_marginBottom="4dp"
-                android:text="@string/btn_ar_object"
-                android:textSize="11sp"
-                android:textAllCaps="false"
-                android:alpha="0.85"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"/>
+                android:tag="row"
+                android:text="@string/btn_ar_object" />
             <Button
                 android:id="@+id/btn_3dof_cube"
-                android:layout_width="wrap_content"
-                android:minWidth="76dp"
+                style="@style/Candy.Row"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minHeight="32dp"
-                android:layout_marginBottom="4dp"
-                android:text="@string/btn_3dof_on"
-                android:textSize="11sp"
-                android:textAllCaps="false"
-                android:backgroundTint="#FF5722"
-                android:textColor="#FFFFFF"
-                android:alpha="0.85"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"/>
+                android:tag="row"
+                android:text="@string/btn_3dof_on" />
         </LinearLayout>
-
-        <Button
-            android:id="@+id/btn_group_map"
-            android:layout_width="wrap_content"
-            android:minWidth="76dp"
-            android:layout_height="wrap_content"
-            android:minHeight="32dp"
-            android:layout_marginBottom="4dp"
-            android:text="@string/category_map"
-            android:textSize="11sp"
-            android:textAllCaps="false"
-            android:backgroundTint="#607D8B"
-            android:alpha="0.90"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"/>
         <LinearLayout
             android:id="@+id/group_map"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:clipChildren="false"
+            android:clipToPadding="false"
             android:orientation="vertical"
-            android:gravity="end"
             android:visibility="gone">
             <Button
                 android:id="@+id/btn_save_map"
-                android:layout_width="wrap_content"
-                android:minWidth="76dp"
+                style="@style/Candy.Row"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minHeight="32dp"
-                android:layout_marginBottom="4dp"
-                android:text="@string/btn_save"
-                android:textSize="11sp"
-                android:textAllCaps="false"
-                android:alpha="0.85"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"/>
+                android:tag="row"
+                android:text="@string/btn_save" />
             <Button
                 android:id="@+id/btn_load_map"
-                android:layout_width="wrap_content"
-                android:minWidth="76dp"
+                style="@style/Candy.Row"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minHeight="32dp"
-                android:layout_marginBottom="4dp"
-                android:text="@string/btn_load"
-                android:textSize="11sp"
-                android:textAllCaps="false"
-                android:alpha="0.85"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"/>
+                android:tag="row"
+                android:text="@string/btn_load" />
             <Button
                 android:id="@+id/btn_map_list"
-                android:layout_width="wrap_content"
-                android:minWidth="76dp"
+                style="@style/Candy.Row"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minHeight="32dp"
-                android:layout_marginBottom="4dp"
-                android:text="@string/btn_map"
-                android:textSize="11sp"
-                android:textAllCaps="false"
-                android:alpha="0.85"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"/>
+                android:tag="row"
+                android:text="@string/btn_map" />
         </LinearLayout>
-
-        <Button
-            android:id="@+id/btn_group_display"
-            android:layout_width="wrap_content"
-            android:minWidth="76dp"
-            android:layout_height="wrap_content"
-            android:minHeight="32dp"
-            android:layout_marginBottom="4dp"
-            android:text="@string/category_display"
-            android:textSize="11sp"
-            android:textAllCaps="false"
-            android:backgroundTint="#607D8B"
-            android:alpha="0.90"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"/>
         <LinearLayout
             android:id="@+id/group_display"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:clipChildren="false"
+            android:clipToPadding="false"
             android:orientation="vertical"
-            android:gravity="end"
             android:visibility="gone">
             <Button
                 android:id="@+id/btn_toggle_camera_preview"
-                android:layout_width="wrap_content"
-                android:minWidth="76dp"
+                style="@style/Candy.Row"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minHeight="32dp"
-                android:layout_marginBottom="4dp"
-                android:text="@string/btn_camera_preview_enabled"
-                android:textSize="11sp"
-                android:textAllCaps="false"
-                android:alpha="0.85"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"/>
+                android:tag="row"
+                android:text="@string/btn_camera_preview_enabled" />
             <Button
                 android:id="@+id/btn_toggle_pointcloud"
-                android:layout_width="wrap_content"
-                android:minWidth="76dp"
+                style="@style/Candy.Row"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minHeight="32dp"
-                android:layout_marginBottom="4dp"
-                android:text="@string/btn_point_cloud"
-                android:textSize="11sp"
-                android:textAllCaps="false"
-                android:alpha="0.85"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"/>
+                android:tag="row"
+                android:text="@string/btn_point_cloud" />
             <Button
                 android:id="@+id/btn_switch_camera"
-                android:layout_width="wrap_content"
-                android:minWidth="76dp"
+                style="@style/Candy.Row"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minHeight="32dp"
-                android:layout_marginBottom="4dp"
-                android:text="@string/btn_switch_camera"
-                android:textSize="11sp"
-                android:textAllCaps="false"
-                android:alpha="0.85"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"/>
+                android:tag="row"
+                android:text="@string/btn_switch_camera" />
             <Button
                 android:id="@+id/btn_mirror_vertical"
-                android:layout_width="wrap_content"
-                android:minWidth="76dp"
+                style="@style/Candy.Row"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minHeight="32dp"
-                android:layout_marginBottom="4dp"
-                android:text="@string/btn_mirror_vertical"
-                android:textSize="11sp"
-                android:textAllCaps="false"
-                android:alpha="0.85"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"/>
+                android:tag="row"
+                android:text="@string/btn_mirror_vertical" />
             <Button
                 android:id="@+id/btn_mirror_horizontal"
-                android:layout_width="wrap_content"
-                android:minWidth="76dp"
+                style="@style/Candy.Row"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minHeight="32dp"
-                android:layout_marginBottom="4dp"
-                android:text="@string/btn_mirror_horizontal"
-                android:textSize="11sp"
-                android:textAllCaps="false"
-                android:alpha="0.85"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"/>
+                android:tag="row"
+                android:text="@string/btn_mirror_horizontal" />
             <Button
                 android:id="@+id/btn_reverse_sensor"
-                android:layout_width="wrap_content"
-                android:minWidth="76dp"
+                style="@style/Candy.Row"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minHeight="32dp"
-                android:layout_marginBottom="4dp"
-                android:text="@string/btn_reverse_sensor"
-                android:textSize="11sp"
-                android:textAllCaps="false"
-                android:alpha="0.85"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"/>
+                android:tag="row"
+                android:text="@string/btn_reverse_sensor" />
         </LinearLayout>
+        </FrameLayout>
+
+        <com.orb.slam2s.ui.CandyDockLayout
+            android:id="@+id/dock"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_candy_dock"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="4dp">
+        <Button
+            android:id="@+id/btn_group_ar"
+            style="@style/Candy.Dock"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/category_ar" />
+        <Button
+            android:id="@+id/btn_group_map"
+            style="@style/Candy.Dock"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/category_map" />
+        <Button
+            android:id="@+id/btn_group_display"
+            style="@style/Candy.Dock"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/category_display" />
+        </com.orb.slam2s.ui.CandyDockLayout>
 
     </LinearLayout>
 

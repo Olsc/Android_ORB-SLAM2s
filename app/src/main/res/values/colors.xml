@@ -19,6 +19,10 @@
     <color name="text_accent_green">#FF81C784</color>
     <!-- 导航栏 / chip / 次级按钮 / 危险操作文字色 -->
     <color name="text_on_chip">#FFB0BEC5</color>
-    <color name="text_button_secondary">#FFE0E0E0</color>
-    <color name="text_danger">#FFFF5252</color>
+    <color name="text_button_secondary">#FFEAF0F8</color>
+    <color name="text_danger">#FFFF8A80</color>
+    <!-- 薄荷糖风格：对话框按钮与 HUD 文字 -->
+    <color name="candy_accent_text">#FF80DEEA</color>
+    <color name="hud_fps">#FF7FE9FF</color>
+    <color name="hud_stats">#FF9BF2C0</color>
 </resources>

@@ -102,6 +102,8 @@ public class MainActivity extends ComponentActivity
     private Button mBtnMirrorHorizontal;
     private Button mBtnReverseSensor;
     private Button mBtn3DofCube;
+    private CandyDockLayout mDock;
+    private CandyMenu mMenu;
 
     private final Handler mUiHandler = new Handler(Looper.getMainLooper());
     private boolean mInitToastShown = false;
@@ -360,6 +362,15 @@ public class MainActivity extends ComponentActivity
         }
 
         initJoystick();
+        CandyTouch.attachAll(findViewById(R.id.action_panel));
+        mDock = findViewById(R.id.dock);
+        ViewGroup menuCard = findViewById(R.id.menu_card);
+        ViewGroup groupAr = findViewById(R.id.group_ar);
+        ViewGroup groupMap = findViewById(R.id.group_map);
+        ViewGroup groupDisplay = findViewById(R.id.group_display);
+        if (menuCard != null && groupAr != null && groupMap != null && groupDisplay != null) {
+            mMenu = new CandyMenu(menuCard, new ViewGroup[]{groupAr, groupMap, groupDisplay});
+        }
     }
 
     private void setupWindowInsets() {
@@ -385,12 +396,13 @@ public class MainActivity extends ComponentActivity
                 joystickView.setLayoutParams(lp);
             }
 
-            // 动态避让右下角操作面板 (end + bottom)
+            // 动态避让底部居中的操作 Dock (start + end + bottom)
             View actionPanel = findViewById(R.id.action_panel);
             if (actionPanel != null && actionPanel.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
                 ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) actionPanel.getLayoutParams();
-                int baseEnd = (int) (8 * getResources().getDisplayMetrics().density);
-                int baseBottom = (int) (8 * getResources().getDisplayMetrics().density);
+                int baseEnd = (int) (12 * getResources().getDisplayMetrics().density);
+                int baseBottom = (int) (12 * getResources().getDisplayMetrics().density);
+                lp.setMarginStart(baseEnd + insets.left);
                 lp.setMarginEnd(baseEnd + insets.right);
                 lp.bottomMargin = baseBottom + insets.bottom;
                 actionPanel.setLayoutParams(lp);
@@ -412,15 +424,27 @@ public class MainActivity extends ComponentActivity
     }
 
     private void toggleExclusiveMenu(int groupId) {
-        View ga = findViewById(R.id.group_ar);
-        View gm = findViewById(R.id.group_map);
-        View gd = findViewById(R.id.group_display);
-        View target = findViewById(groupId);
-        boolean visible = target != null && target.getVisibility() == View.VISIBLE;
-        if (ga != null) ga.setVisibility(View.GONE);
-        if (gm != null) gm.setVisibility(View.GONE);
-        if (gd != null) gd.setVisibility(View.GONE);
-        if (!visible && target != null) target.setVisibility(View.VISIBLE);
+        ViewGroup target = findViewById(groupId);
+        boolean visible = mMenu != null && mMenu.isShowing(target);
+        // 共用同一张菜单卡片：展开、变形切换、收起都在 CandyMenu 内完成
+        if (mMenu != null && target != null) {
+            mMenu.toggle(target);
+        }
+        // 分类按钮高亮当前展开的菜单组
+        setHeaderActivated(R.id.btn_group_ar, !visible && groupId == R.id.group_ar);
+        setHeaderActivated(R.id.btn_group_map, !visible && groupId == R.id.group_map);
+        setHeaderActivated(R.id.btn_group_display, !visible && groupId == R.id.group_display);
+        // 指示块流动到当前展开的分类，菜单收起时淡出
+        if (mDock != null) {
+            int tabId = groupId == R.id.group_ar ? R.id.btn_group_ar
+                    : (groupId == R.id.group_map ? R.id.btn_group_map : R.id.btn_group_display);
+            mDock.select(visible ? null : findViewById(tabId));
+        }
+    }
+
+    private void setHeaderActivated(int id, boolean activated) {
+        View header = findViewById(id);
+        if (header != null) header.setActivated(activated);
     }
 
     private AlertDialog mServiceBlockedDialog;
@@ -448,10 +472,23 @@ public class MainActivity extends ComponentActivity
 
         String defaultName = "map_" + new SimpleDateFormat("MMdd_HHmm", Locale.getDefault()).format(new Date());
         input.setText(defaultName);
+        input.setSingleLine(true);
+        input.setSelectAllOnFocus(true);
+        input.setTextColor(getColor(R.color.text_primary));
+        input.setHintTextColor(getColor(R.color.text_tertiary));
+        final float density = getResources().getDisplayMetrics().density;
+        // 输入框只保留主题默认的底部下划线，不额外加外框，避免与对话框边框重叠
+        input.setPadding(0, (int) (10 * density), 0, (int) (10 * density));
+        // 外包一层容器，与对话框内容保持统一边距，避免贴到圆角边缘
+        final android.widget.FrameLayout inputBox = new android.widget.FrameLayout(this);
+        final int boxH = (int) (24 * density);
+        inputBox.setPadding(boxH, (int) (8 * density), boxH, (int) (4 * density));
+        inputBox.addView(input, new android.widget.FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         new AlertDialog.Builder(this)
                 .setTitle(getString(R.string.dialog_save_map))
-                .setView(input)
+                .setView(inputBox)
                 .setPositiveButton(getString(R.string.btn_save), (dialog, which) -> {
                     String mapName = input.getText().toString().trim();
                     if (mapName.isEmpty()) mapName = defaultName;
@@ -839,6 +876,7 @@ public class MainActivity extends ComponentActivity
         if (button == null) return;
         String label = getString(labelRes);
         button.setText(enabled ? "✓" + label : label);
+        button.setActivated(enabled);
     }
 
     private void togglePointCloudDisplay() {
@@ -870,6 +908,7 @@ public class MainActivity extends ComponentActivity
         if (mBtnTogglePointCloud != null) {
             mBtnTogglePointCloud.setText(getString(visible
                     ? R.string.btn_pointcloud_enabled : R.string.btn_pointcloud_disabled));
+            mBtnTogglePointCloud.setActivated(visible);
         }
     }
 
@@ -896,6 +935,7 @@ public class MainActivity extends ComponentActivity
         if (mBtnToggleCameraPreview != null) {
             mBtnToggleCameraPreview.setText(getString(enabled
                     ? R.string.btn_camera_preview_enabled : R.string.btn_camera_preview_disabled));
+            mBtnToggleCameraPreview.setActivated(enabled);
         }
     }
 
@@ -1011,6 +1051,7 @@ public class MainActivity extends ComponentActivity
             mBtn3DofCube.setVisibility(View.VISIBLE);
             mBtn3DofCube.setText(getString(mIs3DofMode
                     ? R.string.btn_3dof_on : R.string.btn_3dof_off));
+            mBtn3DofCube.setActivated(mIs3DofMode);
         }
         if (mBtnReverseSensor != null) {
             mBtnReverseSensor.setVisibility(View.VISIBLE);
@@ -1043,6 +1084,7 @@ public class MainActivity extends ComponentActivity
         if (mBtn3DofCube != null) {
             mBtn3DofCube.setText(getString(enabled
                     ? R.string.btn_3dof_on : R.string.btn_3dof_off));
+            mBtn3DofCube.setActivated(enabled);
         }
         Log.d(TAG, enabled ? "姿态辅助已开启" : "姿态辅助已关闭，恢复纯视觉 SLAM");
     }

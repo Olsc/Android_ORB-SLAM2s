@@ -121,6 +121,7 @@ public class MapManageActivity extends ComponentActivity {
             Toast.makeText(this, R.string.map_action_refresh, Toast.LENGTH_SHORT).show();
         });
 
+        CandyTouch.attachAll(findViewById(R.id.top_bar));
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         mAdapter = new MapAdapter();
         mRecyclerView.setAdapter(mAdapter);
@@ -238,6 +239,8 @@ public class MapManageActivity extends ComponentActivity {
 
     private class MapAdapter extends ListAdapter<MapManager.MapInfo, MapViewHolder> {
 
+        private int mLastAnimated = -1;
+
         MapAdapter() {
             super(MAP_DIFF_CALLBACK);
         }
@@ -252,6 +255,13 @@ public class MapManageActivity extends ComponentActivity {
         @Override
         public void onBindViewHolder(@NonNull MapViewHolder holder, int position) {
             holder.bind(getItem(position));
+            // 仅首屏前几项做入场动画，其余直接显示
+            if (position > mLastAnimated && position < 8) {
+                mLastAnimated = position;
+                CandyTouch.enter(holder.itemView, position);
+            } else {
+                CandyTouch.reset(holder.itemView);
+            }
         }
     }
 
@@ -275,6 +285,7 @@ public class MapManageActivity extends ComponentActivity {
             tvTime = itemView.findViewById(R.id.tv_map_time);
             btnDetails = itemView.findViewById(R.id.btn_details);
             btnDelete = itemView.findViewById(R.id.btn_delete);
+            CandyTouch.attachAll(itemView);
         }
 
         public void bind(MapManager.MapInfo info) {

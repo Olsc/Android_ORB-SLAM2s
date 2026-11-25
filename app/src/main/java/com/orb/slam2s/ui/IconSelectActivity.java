@@ -86,6 +86,7 @@ public class IconSelectActivity extends ComponentActivity {
     private void initViews() {
         ImageButton btnBack = findViewById(R.id.btn_back);
         btnBack.setOnClickListener(v -> finish());
+        CandyTouch.attachAll(btnBack);
 
         LinearLayout container = findViewById(R.id.icon_options_container);
         LayoutInflater inflater = LayoutInflater.from(this);
@@ -100,6 +101,7 @@ public class IconSelectActivity extends ComponentActivity {
             preview.setImageResource(option.previewRes);
             name.setText(option.nameRes);
             card.setOnClickListener(v -> applyIcon(option.type));
+            CandyTouch.attachCard(card);
 
             container.addView(card);
             mOptionViews.add(new OptionViewHolder(option, radio, badge));

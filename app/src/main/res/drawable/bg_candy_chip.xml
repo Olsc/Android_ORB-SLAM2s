@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<drawable xmlns:app="http://schemas.android.com/apk/res-auto"
+    class="com.orb.slam2s.ui.CandyDrawable"
+    app:candyRadius="999dp"
+    app:candyFill="0.8"
+    app:candyRim="0.7" />
