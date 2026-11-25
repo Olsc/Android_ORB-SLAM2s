@@ -47,8 +47,10 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -239,7 +241,8 @@ public class MapManageActivity extends ComponentActivity {
 
     private class MapAdapter extends ListAdapter<MapManager.MapInfo, MapViewHolder> {
 
-        private int mLastAnimated = -1;
+        // 记录已播放入场动画的地图名，避免滚动或刷新后重复播放（不缓存 position）
+        private final Set<String> mAnimatedMaps = new HashSet<>();
 
         MapAdapter() {
             super(MAP_DIFF_CALLBACK);
@@ -254,10 +257,14 @@ public class MapManageActivity extends ComponentActivity {
 
         @Override
         public void onBindViewHolder(@NonNull MapViewHolder holder, int position) {
-            holder.bind(getItem(position));
-            // 仅首屏前几项做入场动画，其余直接显示
-            if (position > mLastAnimated && position < 8) {
-                mLastAnimated = position;
+            MapManager.MapInfo info = getItem(position);
+            if (info == null) {
+                CandyTouch.reset(holder.itemView);
+                return;
+            }
+            holder.bind(info);
+            // 仅首屏前几项做入场动画，其余直接显示；position 只在这里即时使用
+            if (position < 8 && info.name != null && mAnimatedMaps.add(info.name)) {
                 CandyTouch.enter(holder.itemView, position);
             } else {
                 CandyTouch.reset(holder.itemView);

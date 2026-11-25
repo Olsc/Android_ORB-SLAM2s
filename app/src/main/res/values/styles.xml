@@ -21,7 +21,9 @@
         <item name="android:alertDialogTheme">@style/CandyDialog</item>
     </style>
 
-    <style name="DarkNoActionBarTheme" parent="@style/ListTheme" />
+    <style name="DarkNoActionBarTheme" parent="@style/ListTheme">
+        <item name="android:windowBackground">@color/window_background_dark</item>
+    </style>
 
     <!-- 薄荷糖对话框：窗口背景、弹性进出场与按钮样式全版本一致 -->
     <style name="CandyDialog" parent="@android:style/Theme.Material.Dialog.Alert">
