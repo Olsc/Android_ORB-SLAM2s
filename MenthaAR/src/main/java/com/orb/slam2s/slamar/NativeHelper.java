@@ -149,6 +149,6 @@ public class NativeHelper {
         nativePublishArPose(false, true);
     }
 
-    // AR对象缩放
+    // AR 对象缩放
     public native void updateArObjectScale(float scaleFactor);
 }

@@ -95,7 +95,7 @@ public final class CandyMenu {
         target.setTranslationY(rise);
         target.setVisibility(View.VISIBLE);
 
-        // 变形期间卡片尺寸固定为当前值并裁剪内容，避免新分组在旧外框外露出
+        // 变形期间卡片尺寸固定为当前值并裁剪内容，新分组不会露出旧外框
         final ViewGroup.LayoutParams lp = mCard.getLayoutParams();
         lp.width = oldW;
         lp.height = oldH;

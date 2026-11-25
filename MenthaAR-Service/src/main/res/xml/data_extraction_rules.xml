@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 服务不持有用户数据：云备份与换机迁移均不包含任何目录。 -->
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="root" path="." />

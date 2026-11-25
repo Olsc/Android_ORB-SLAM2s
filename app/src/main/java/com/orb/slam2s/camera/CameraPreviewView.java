@@ -239,8 +239,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
         return mMirrorHorizontal;
     }
 
-    // 相机画面开关：关闭后预览层不再绘制，屏幕保持纯黑；采集与 SLAM 帧推送不受影响。
-    // 状态持久化，下次启动自动恢复。
+    // 相机画面开关：关闭后仅停止预览绘制并保持黑屏，状态持久化，采集与 SLAM 帧推送不受影响
     public void setCameraPreviewEnabled(boolean enabled) {
         mCameraPreviewEnabled = enabled;
         mContext.getSharedPreferences(PREFS_DISPLAY, Context.MODE_PRIVATE)
@@ -252,8 +251,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
         return mCameraPreviewEnabled;
     }
 
-    // 按显示方向尺寸准备预览位图(90/270 矫正后长宽互换，需要重建)
-    // 调用时必须已持有 mSyncLock，保证 GL 线程不会正在上传旧位图
+    // 按显示方向尺寸准备预览位图(90/270 矫正后长宽互换需重建)，调用前须持有 mSyncLock 防止 GL 线程上传旧位图
     private void ensureCacheBitmap(int width, int height) {
         if (mCacheBitmap != null && !mCacheBitmap.isRecycled()
                 && mCacheBitmap.getWidth() == width && mCacheBitmap.getHeight() == height) {
@@ -268,8 +266,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
         Log.i(TAG, "预览位图按显示方向重建: " + width + "x" + height);
     }
 
-    // 显示几何发生变化(方向/镜像/真实帧尺寸)时的低频通知：
-    // 更新本 View 的宽高比，并通知 AR 渲染层同步变换
+    // 显示几何(方向/镜像/真实帧尺寸)变化时更新本 View 宽高比并通知 AR 渲染层同步变换
     private void postDisplayCorrection(final DisplayCorrection correction) {
         post(() -> {
             setAspectRatio(correction.displayWidth, correction.displayHeight);
@@ -801,8 +798,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
         });
     }
 
-    // GL 线程：把预览位图上传到纹理。位图尺寸随显示方向变化（90/270 时长宽互换），
-    // 纹理尺寸与当前帧不一致时重建，否则 texSubImage2D 会失败
+    // GL 线程上传预览位图，尺寸变化(90/270 时长宽互换)时重建纹理，否则 texSubImage2D 会失败
     private void uploadPreviewTexture(Bitmap bitmap) {
         if (mImageTextureId != 0 && (bitmap.getWidth() != mImageTextureW || bitmap.getHeight() != mImageTextureH)) {
             GLES20.glDeleteTextures(1, new int[]{mImageTextureId}, 0);

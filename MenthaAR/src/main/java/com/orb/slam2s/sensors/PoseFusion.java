@@ -43,7 +43,7 @@ public final class PoseFusion {
     private static final long MAX_ALIGN_STALE_NANOS = 1_500_000_000L;
 
     private boolean mEnabled = false;
-    private boolean mSensorReverse = true; // 默认反向，与宿主默认开关保持一致
+    private boolean mSensorReverse = true; // 默认反向，与 App 默认开关保持一致
     private int mCameraImageDegrees = -1;
 
     private final float[] mMountRot = new float[16];

@@ -29,9 +29,8 @@ import androidx.annotation.NonNull;
 
 import com.orb.slam2s.R;
 
-// 底栏：选中指示块由自身在 onDraw 中绘制，位置存为字段而非布局属性，
-// 因此菜单卡片每帧重排也不会打断流动动画；切换时前缘先行、后缘稍晚，指示块被拉长再收拢
-// 由布局 XML 反射实例化，构造函数不会在源码中直接调用
+// 底栏：选中指示块由自身在 onDraw 中绘制，位置存为字段而非布局属性，菜单卡片重排不会打断流动动画
+// 切换时前缘先行、后缘稍晚，指示块拉长后收拢；由布局 XML 反射实例化
 @SuppressWarnings("unused")
 public class CandyDockLayout extends LinearLayout {
     private static final long FLOW_MS = 380L;

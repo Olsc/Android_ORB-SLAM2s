@@ -132,8 +132,7 @@ public class IconManager {
         return IconType.DEFAULT;
     }
 
-    // 确保至少一个桌面图标 alias 处于启用状态
-    // alias 重命名或系统状态残留导致图标缺失时自动补齐
+    // 确保至少一个桌面图标 alias 启用，alias 重命名或状态残留导致缺失时自动补齐
     public static void ensureLauncherIcon(Context context) {
         try {
             PackageManager pm = context.getPackageManager();

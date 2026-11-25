@@ -67,7 +67,7 @@ public class MapManageActivity extends ComponentActivity {
     private final List<MapManager.MapInfo> mMapList = new ArrayList<>();
     private final SimpleDateFormat mDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
 
-    // 地图目录扫描要 stat 每个 .bin 并读元数据与文件头，放到后台线程执行
+    // 地图目录扫描需读取每个 .bin 的文件状态、元数据与文件头，放到后台线程执行
     private final ExecutorService mLoadExecutor = Executors.newSingleThreadExecutor();
     private final Handler mUiHandler = new Handler(Looper.getMainLooper());
     private View mProgressView;
@@ -241,7 +241,7 @@ public class MapManageActivity extends ComponentActivity {
 
     private class MapAdapter extends ListAdapter<MapManager.MapInfo, MapViewHolder> {
 
-        // 记录已播放入场动画的地图名，避免滚动或刷新后重复播放（不缓存 position）
+        // 记录已播放入场动画的地图名，滚动或刷新后不重复播放（不缓存 position）
         private final Set<String> mAnimatedMaps = new HashSet<>();
 
         MapAdapter() {

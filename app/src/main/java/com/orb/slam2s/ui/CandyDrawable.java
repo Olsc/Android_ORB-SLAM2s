@@ -153,7 +153,7 @@ public class CandyDrawable extends Drawable {
         if (mRect.isEmpty()) return;
         float r = Math.min(mRadius, Math.min(mRect.width(), mRect.height()) / 2f);
         float g = mGlow;
-        // 着色只由显式配置的层级决定，激活态本身不再自动染色，选中效果由发光层承担
+        // 着色只由显式配置的层级决定，激活态不自动染色，选中效果由发光层承担
         float tint = mTintBase;
 
         drawHalo(canvas, r);
@@ -195,7 +195,7 @@ public class CandyDrawable extends Drawable {
         drawInnerGlow(canvas, r);
     }
 
-    // 内发光：从边缘向内逐层衰减的白光，中心保持通透，边缘像是在透光而不是一圈描边
+    // 内发光：从边缘向内逐层衰减的白光，中心保持通透，边缘呈透光效果
     private void drawInnerGlow(Canvas canvas, float r) {
         if (mInner <= 0f) return;
         final int layers = 26;
@@ -277,7 +277,7 @@ public class CandyDrawable extends Drawable {
 
     @Override
     public boolean getPadding(@NonNull Rect padding) {
-        // 对话框类大圆角背景需要额外的上下内边距，避免内容贴近圆角
+        // 对话框类大圆角背景需要额外的上下内边距，使内容与圆角保持间距
         int v = mInset > 0f ? Math.round(10f * mDensity) : 0;
         padding.set(0, v, 0, v);
         return v > 0;

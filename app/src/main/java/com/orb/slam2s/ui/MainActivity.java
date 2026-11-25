@@ -72,7 +72,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-// SLAM AR 主控制 Activity(调度相机、3D 模型渲染、3DOF 追踪、地图管理与交互控制)
+// SLAM AR 主控制 Activity（调度相机、3D 模型渲染、3DOF 追踪、地图管理与交互控制）
 // 由 AndroidManifest.xml 注册并在运行时通过 Intent 启动
 @SuppressWarnings("unused")
 public class MainActivity extends ComponentActivity
@@ -112,7 +112,7 @@ public class MainActivity extends ComponentActivity
     private final Runnable mMapStatsUpdater = new Runnable() {
         @Override
         public void run() {
-            // 未连接时保留上次文案，不把界面刷成 0
+            // 未连接时保留上次文案，不将界面数值清零
             if (mMenthaAR != null && mMenthaAR.isConnected() && mTextMapStats != null) {
                 MenthaAR.MapStats stats = mMenthaAR.getMapStats();
                 final String statsText = getString(R.string.map_stats_format,
@@ -151,7 +151,7 @@ public class MainActivity extends ComponentActivity
         setContentView(R.layout.ar_ui_content);
         initViewsAndServices();
 
-        // 恢复进程被回收前的用户状态(如 3DOF 模式)
+        // 恢复进程被回收前的用户状态（如 3DOF 模式）
         if (savedInstanceState != null && savedInstanceState.containsKey(KEY_3DOF_MODE)) {
             boolean savedMode = savedInstanceState.getBoolean(KEY_3DOF_MODE, true);
             if (savedMode != mIs3DofMode) {
@@ -385,7 +385,7 @@ public class MainActivity extends ComponentActivity
                     WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
             );
 
-            // 动态避让虚拟摇杆 (start + bottom)
+            // 动态避让虚拟摇杆（start + bottom）
             View joystickView = findViewById(R.id.joystick_view);
             if (joystickView != null && joystickView.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
                 ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) joystickView.getLayoutParams();
@@ -396,7 +396,7 @@ public class MainActivity extends ComponentActivity
                 joystickView.setLayoutParams(lp);
             }
 
-            // 动态避让底部居中的操作 Dock (start + end + bottom)
+            // 动态避让底部居中的操作 Dock（start + end + bottom）
             View actionPanel = findViewById(R.id.action_panel);
             if (actionPanel != null && actionPanel.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
                 ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) actionPanel.getLayoutParams();
@@ -408,7 +408,7 @@ public class MainActivity extends ComponentActivity
                 actionPanel.setLayoutParams(lp);
             }
 
-            // 动态避让左上角 FPS/地图信息面板 (left/start + top)
+            // 动态避让左上角 FPS/地图信息面板（left/start + top）
             View infoPanel = findViewById(R.id.info_panel);
             if (infoPanel != null && infoPanel.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
                 ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) infoPanel.getLayoutParams();
@@ -449,7 +449,7 @@ public class MainActivity extends ComponentActivity
 
     private AlertDialog mServiceBlockedDialog;
 
-    // 服务包已安装却绑定失败：多为厂商自启动管理拦截，无法用运行时权限弹窗申请，只能引导用户去设置放行
+    // 服务包已安装却绑定失败：多由厂商自启动管理拦截，无法通过运行时权限申请，需引导用户到设置中放行
     private void showServiceBlockedDialog() {
         if (mServiceBlockedDialog != null && mServiceBlockedDialog.isShowing()) return;
         mServiceBlockedDialog = new AlertDialog.Builder(this)
@@ -477,9 +477,9 @@ public class MainActivity extends ComponentActivity
         input.setTextColor(getColor(R.color.text_primary));
         input.setHintTextColor(getColor(R.color.text_tertiary));
         final float density = getResources().getDisplayMetrics().density;
-        // 输入框只保留主题默认的底部下划线，不额外加外框，避免与对话框边框重叠
+        // 输入框只保留主题默认的底部下划线，不额外加外框，与对话框边框不重叠
         input.setPadding(0, (int) (10 * density), 0, (int) (10 * density));
-        // 外包一层容器，与对话框内容保持统一边距，避免贴到圆角边缘
+        // 外包一层容器，与对话框内容保持统一边距，不贴到圆角边缘
         final android.widget.FrameLayout inputBox = new android.widget.FrameLayout(this);
         final int boxH = (int) (24 * density);
         inputBox.setPadding(boxH, (int) (8 * density), boxH, (int) (4 * density));
@@ -507,7 +507,7 @@ public class MainActivity extends ComponentActivity
                 .show();
     }
 
-    // 按 loadMaps 分配地图 ID 的顺序(0,1,2...)还原每张地图保存的 AR 物体缩放与方向
+    // 按 loadMaps 分配地图 ID 的顺序（0,1,2...）还原每张地图保存的 AR 物体缩放与方向
     private void restoreArObjectStates(List<String> paths) {
         if (mModelRenderer == null) return;
         mModelRenderer.clearObjectStates();

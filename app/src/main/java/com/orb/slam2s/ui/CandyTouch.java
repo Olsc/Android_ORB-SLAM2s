@@ -46,7 +46,7 @@ public final class CandyTouch {
     private static final TimeInterpolator SETTLE = t ->
             (float) (1.0 - Math.exp(-7.0 * t) * Math.cos(2.0 * Math.PI * 1.1 * t));
 
-    // 弹出专用：过冲约一成，约 0.3 秒内收敛，肉眼能看到“弹一下”
+    // 弹出专用：过冲约一成，约 0.3 秒内收敛
     private static final TimeInterpolator POP = t ->
             (float) (1.0 - Math.exp(-5.5 * t) * Math.cos(2.0 * Math.PI * 1.3 * t));
 
@@ -94,7 +94,7 @@ public final class CandyTouch {
         });
     }
 
-    // 菜单卡片从 Dock 正上方放大弹出，rows 内的行随后依次上浮；不启用硬件层，避免溢出的光晕被层边界裁掉
+    // 菜单卡片从 Dock 正上方放大弹出，rows 内的行随后依次上浮；不启用硬件层，溢出的光晕不会被层边界裁掉
     public static void popIn(final View menu, final ViewGroup rows) {
         final float density = menu.getResources().getDisplayMetrics().density;
         menu.setTag(null);

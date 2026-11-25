@@ -160,7 +160,7 @@ static Plane* detectHorizontalPlaneOnce(const cv::Mat &Tcw, const std::vector<OR
     const int kMinPoints = 20;
     const int kMinInliers = 12;
     const float kTolDepthRatio = tolDepthRatio; // 高度容差占中值深度的比例(单目尺度未知，用场景自身尺度归一)
-    const float kLowestClusterRatio = 0.5f; // 取点数不低于最大簇 60% 的簇中最低的一个，用于排除桌面
+    const float kLowestClusterRatio = 0.5f; // 取点数不低于最大簇 50% 的簇中最低的一个，用于排除桌面
 
     if (upWorld.empty() || Tcw.empty() || Tcw.rows < 3 || Tcw.cols < 4)
         return nullptr;

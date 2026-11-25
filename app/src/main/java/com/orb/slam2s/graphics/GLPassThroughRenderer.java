@@ -149,8 +149,7 @@ public class GLPassThroughRenderer {
         mProgram.create();
     }
 
-    // 着色器程序是否存在：surfaceDestroyed 会在 GL 线程上销毁程序，而 EGL 上下文被保留时 onSurfaceCreated 不会再次调用，
-    // 绘制前需按此判断重新创建（否则 glUseProgram 报 GL_INVALID_OPERATION）
+    // 着色器程序是否已创建：EGL 上下文保留而程序被销毁时需重新创建，否则 glUseProgram 报 GL_INVALID_OPERATION
     public boolean isReady() {
         return mProgram.isCreated();
     }

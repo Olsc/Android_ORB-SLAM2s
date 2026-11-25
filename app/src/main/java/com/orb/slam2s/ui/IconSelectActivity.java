@@ -38,7 +38,7 @@ import com.orb.slam2s.util.IconManager;
 import java.util.ArrayList;
 import java.util.List;
 
-// 桌面图标选择 Activity：按 IconManager.OPTIONS 动态生成图标切换卡片
+// 桌面图标选择 Activity：按 IconManager.getOptions() 动态生成图标切换卡片
 // 新增图标只需追加配置；由 AndroidManifest 注册并由 Intent 启动
 @SuppressWarnings("unused")
 public class IconSelectActivity extends ComponentActivity {

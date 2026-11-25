@@ -46,8 +46,7 @@ public final class FrameConverter {
         return sAvailable;
     }
 
-    // rgba：CameraX RGBA 平面的 direct ByteBuffer（从其当前 position 起读）；gray：可为 null；bitmap：可为 null。
-    // 返回 false 表示本帧未转换（调用方应走 Java 回退路径）
+    // rgba 从当前 position 起读，gray/bitmap 可为 null，返回 false 表示本帧未转换(调用方走 Java 回退路径)
     public static boolean convert(ByteBuffer rgba, int rowStride, int width, int height,
                                   ByteBuffer gray, Bitmap bitmap, DisplayCorrection c) {
         if (!sAvailable || rgba == null || !rgba.isDirect()) return false;
