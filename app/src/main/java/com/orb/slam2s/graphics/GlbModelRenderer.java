@@ -126,13 +126,10 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
         return this;
     }
 
-    // 设置显示层矫正，由 CameraPreviewView 在方向、镜像或画面尺寸变化时调用；
-    // 相机图像旋转角同时下发给 SDK，供姿态辅助换算安装夹角
+    // 设置显示层矫正，由 CameraPreviewView 在屏幕朝向、镜像或画面尺寸变化时调用；
+    // 相机安装角(与屏幕朝向无关)由 CameraPreviewView 单独下发，这里只负责绘制矫正
     public GlbModelRenderer setDisplayCorrection(DisplayCorrection correction) {
         this.displayCorrection = correction;
-        if (correction != null && menthaAR != null) {
-            menthaAR.setCameraRotation(correction.rotationDegrees);
-        }
         requestRender();
         return this;
     }
