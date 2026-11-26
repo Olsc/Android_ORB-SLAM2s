@@ -981,7 +981,7 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
             continue;
         }
 
-        // 候选点缓冲按线程复用，容量只增不减，避免每层每帧的大块分配与释放
+        // 候选点缓冲按线程复用，容量只增不减，跨层跨帧复用同一块内存
         static thread_local vector<cv::KeyPoint> vToDistributeKeys;
         vToDistributeKeys.clear();
         vToDistributeKeys.reserve(nfeatures*ORB_CANDIDATE_RESERVE_FACTOR);

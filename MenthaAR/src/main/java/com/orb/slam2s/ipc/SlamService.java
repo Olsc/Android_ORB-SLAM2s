@@ -43,7 +43,7 @@ public class SlamService extends Service {
 
     private NativeHelper nativeHelper;
 
-    // 姿态辅助：传感器读取与位姿融合均在 SDK 进程内完成
+    // 姿态辅助：传感器读取与位姿融合均在服务进程内完成
     private final PoseFusion poseFusion = new PoseFusion();
     private OrientationSensor orientationSensor;
     private volatile boolean assistEnabled;
@@ -210,7 +210,7 @@ public class SlamService extends Service {
                 try {
                     if (nativeHelper != null) {
                         copyFromPfd(mapIn, tmp);
-                        // 不存在 .arinfo 时必须清掉上次残留，否则会误用旧平面信息
+                        // 不存在 .arinfo 时必须清除残留文件，否则会误用旧平面信息
                         //noinspection ResultOfMethodCallIgnored
                         tmpInfo.delete();
                         if (arInfoIn != null) copyFromPfd(arInfoIn, tmpInfo);
@@ -385,8 +385,7 @@ public class SlamService extends Service {
             queueLock.notifyAll();
         }
         if (slamThread != null) {
-            // 必须等处理线程真正退出：随后的 shutdownSLAM/detachFrameBuffer 会释放它正在使用的引擎与映射。
-            // 单帧处理是有界的（最多一帧跟踪 + 结果写回），不会无限等待
+            // 必须等处理线程退出后再释放引擎与映射，单帧处理有界不会无限等待
             boolean interrupted = false;
             while (true) {
                 try {

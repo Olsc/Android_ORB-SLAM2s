@@ -129,7 +129,7 @@ bool matrixInvert4x4(float* inv, const float* m) {
 void matrixNormal3x3(float* n3x3, const float* m4x4) {
     float inv4[16];
     if (matrixInvert4x4(inv4, m4x4)) {
-        // 法线矩阵为模型视图矩阵左上角3x3逆矩阵的转置
+        // 法线矩阵为模型矩阵左上角 3x3 逆矩阵的转置
         n3x3[0] = inv4[0]; n3x3[1] = inv4[4]; n3x3[2] = inv4[8];
         n3x3[3] = inv4[1]; n3x3[4] = inv4[5]; n3x3[5] = inv4[9];
         n3x3[6] = inv4[2]; n3x3[7] = inv4[6]; n3x3[8] = inv4[10];
@@ -325,7 +325,7 @@ void GlbRenderer::render(const float* slamModelMatrix,
     glUseProgram(mProgram);
 
     // 赛璐璐（动漫）着色参数：单主光 + 冷调暗部 + 轮廓光，无物理光照
-    glUniform3f(mLocLightDir, 0.5f, 1.0f, 0.5f);        // 由物体指向光源（与原双光源的主光同向）
+    glUniform3f(mLocLightDir, 0.5f, 1.0f, 0.5f);        // 由物体指向光源
     glUniform3f(mLocShadowTint, 0.66f, 0.70f, 0.86f);   // 暗部乘算色：压暗并偏蓝紫
     glUniform3f(mLocRimColor, 0.30f, 0.45f, 0.70f);     // 轮廓光强度/色调
 

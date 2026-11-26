@@ -47,8 +47,10 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -65,7 +67,7 @@ public class MapManageActivity extends ComponentActivity {
     private final List<MapManager.MapInfo> mMapList = new ArrayList<>();
     private final SimpleDateFormat mDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
 
-    // 地图目录扫描要 stat 每个 .bin 并读元数据与文件头，放到后台线程执行
+    // 地图目录扫描需读取每个 .bin 的文件状态、元数据与文件头，放到后台线程执行
     private final ExecutorService mLoadExecutor = Executors.newSingleThreadExecutor();
     private final Handler mUiHandler = new Handler(Looper.getMainLooper());
     private View mProgressView;
@@ -121,6 +123,7 @@ public class MapManageActivity extends ComponentActivity {
             Toast.makeText(this, R.string.map_action_refresh, Toast.LENGTH_SHORT).show();
         });
 
+        CandyTouch.attachAll(findViewById(R.id.top_bar));
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         mAdapter = new MapAdapter();
         mRecyclerView.setAdapter(mAdapter);
@@ -238,6 +241,9 @@ public class MapManageActivity extends ComponentActivity {
 
     private class MapAdapter extends ListAdapter<MapManager.MapInfo, MapViewHolder> {
 
+        // 记录已播放入场动画的地图名，滚动或刷新后不重复播放（不缓存 position）
+        private final Set<String> mAnimatedMaps = new HashSet<>();
+
         MapAdapter() {
             super(MAP_DIFF_CALLBACK);
         }
@@ -251,7 +257,18 @@ public class MapManageActivity extends ComponentActivity {
 
         @Override
         public void onBindViewHolder(@NonNull MapViewHolder holder, int position) {
-            holder.bind(getItem(position));
+            MapManager.MapInfo info = getItem(position);
+            if (info == null) {
+                CandyTouch.reset(holder.itemView);
+                return;
+            }
+            holder.bind(info);
+            // 仅首屏前几项做入场动画，其余直接显示；position 只在这里即时使用
+            if (position < 8 && info.name != null && mAnimatedMaps.add(info.name)) {
+                CandyTouch.enter(holder.itemView, position);
+            } else {
+                CandyTouch.reset(holder.itemView);
+            }
         }
     }
 
@@ -275,6 +292,7 @@ public class MapManageActivity extends ComponentActivity {
             tvTime = itemView.findViewById(R.id.tv_map_time);
             btnDetails = itemView.findViewById(R.id.btn_details);
             btnDelete = itemView.findViewById(R.id.btn_delete);
+            CandyTouch.attachAll(itemView);
         }
 
         public void bind(MapManager.MapInfo info) {

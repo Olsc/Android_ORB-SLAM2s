@@ -167,7 +167,7 @@ bool GlbModel::loadFromMemory(const uint8_t* buffer, size_t size) {
                 }
             }
 
-            // 若原本无提供法线，则动态计算面法线
+            // 若原本未提供法线，则由三角面法线累加得到顶点法线
             if (normals.empty()) {
                 computeNormalsIfMissing(glbPrim);
             }

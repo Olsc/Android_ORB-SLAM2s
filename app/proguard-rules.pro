@@ -30,3 +30,5 @@
 
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile
+
+-keep class com.orb.slam2s.ui.CandyDrawable { public <init>(); }

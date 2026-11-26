@@ -24,7 +24,7 @@
 // Android日志标签
 #define  LOG_TAG    "JNI_PART"
 
-// 日志宏定义（按重要性从低到高）
+// 日志宏定义
 #define LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG, __VA_ARGS__)   // 信息日志
 #define LOGD(...)  __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG, __VA_ARGS__)  // 调试日志
 #define LOGW(...)  __android_log_print(ANDROID_LOG_WARN,LOG_TAG, __VA_ARGS__)   // 警告日志

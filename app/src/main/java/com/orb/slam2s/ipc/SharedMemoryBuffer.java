@@ -189,8 +189,7 @@ final class SharedMemoryBuffer {
         }
     }
 
-    // 一次 seqlock 读窗口内读取 48 个矩阵 float，窗口内只做数据拷贝，失败返回 false。
-    // 状态字段在序号校验通过后再读取，不参与一致性判定。
+    // 一次 seqlock 读窗口内读取 48 个矩阵 float，校验序号后读取状态字段，失败返回 false
     boolean readResult(float[] outMvp, int[] outStatus) {
         if (outMvp == null || outMvp.length < 48 || outStatus == null || outStatus.length < STATUS_LENGTH) {
             return false;
@@ -228,8 +227,7 @@ final class SharedMemoryBuffer {
         }
     }
 
-    // 读取点云（每点 7 floats: x, y, z, r, g, b, size），返回 float 个数。
-    // 点云区无服务端 seqlock，用前后序号做乐观校验，序号变化则重试一次，两侧不一致返回 0。
+    // 读取点云(每点 7 floats)，用前后序号做乐观校验，两次不一致返回 0
     int readPointCloud(float[] out, int maxFloats) {
         if (out == null || out.length == 0) return 0;
         synchronized (readLock) {
@@ -266,8 +264,7 @@ final class SharedMemoryBuffer {
         }
     }
 
-    // 读状态字段（调用方已持有 readLock，且位姿快照已校验通过）。
-    // frameId 取 SLAM_DONE_SEQ：它由服务端在发布完 MVP 后才推进，因此可能比快照领先一帧。
+    // 读状态字段(调用方已持 readLock)，frameId 取 SLAM_DONE_SEQ，可能比快照领先一帧
     private void readStatus(int[] outStatus) {
         outStatus[STATUS_TRACKING] = readInt(OFF_TRACKING_STATE);
         outStatus[STATUS_DRAWABLE] = readInt(OFF_DRAW_FLAG);

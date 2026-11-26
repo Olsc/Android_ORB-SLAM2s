@@ -72,7 +72,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-// SLAM AR 主控制 Activity(调度相机、3D 模型渲染、3DOF 追踪、地图管理与交互控制)
+// SLAM AR 主控制 Activity（调度相机、3D 模型渲染、3DOF 追踪、地图管理与交互控制）
 // 由 AndroidManifest.xml 注册并在运行时通过 Intent 启动
 @SuppressWarnings("unused")
 public class MainActivity extends ComponentActivity
@@ -102,6 +102,8 @@ public class MainActivity extends ComponentActivity
     private Button mBtnMirrorHorizontal;
     private Button mBtnReverseSensor;
     private Button mBtn3DofCube;
+    private CandyDockLayout mDock;
+    private CandyMenu mMenu;
 
     private final Handler mUiHandler = new Handler(Looper.getMainLooper());
     private boolean mInitToastShown = false;
@@ -110,7 +112,7 @@ public class MainActivity extends ComponentActivity
     private final Runnable mMapStatsUpdater = new Runnable() {
         @Override
         public void run() {
-            // 未连接时保留上次文案，不把界面刷成 0
+            // 未连接时保留上次文案，不将界面数值清零
             if (mMenthaAR != null && mMenthaAR.isConnected() && mTextMapStats != null) {
                 MenthaAR.MapStats stats = mMenthaAR.getMapStats();
                 final String statsText = getString(R.string.map_stats_format,
@@ -149,7 +151,7 @@ public class MainActivity extends ComponentActivity
         setContentView(R.layout.ar_ui_content);
         initViewsAndServices();
 
-        // 恢复进程被回收前的用户状态(如 3DOF 模式)
+        // 恢复进程被回收前的用户状态（如 3DOF 模式）
         if (savedInstanceState != null && savedInstanceState.containsKey(KEY_3DOF_MODE)) {
             boolean savedMode = savedInstanceState.getBoolean(KEY_3DOF_MODE, true);
             if (savedMode != mIs3DofMode) {
@@ -360,6 +362,15 @@ public class MainActivity extends ComponentActivity
         }
 
         initJoystick();
+        CandyTouch.attachAll(findViewById(R.id.action_panel));
+        mDock = findViewById(R.id.dock);
+        ViewGroup menuCard = findViewById(R.id.menu_card);
+        ViewGroup groupAr = findViewById(R.id.group_ar);
+        ViewGroup groupMap = findViewById(R.id.group_map);
+        ViewGroup groupDisplay = findViewById(R.id.group_display);
+        if (menuCard != null && groupAr != null && groupMap != null && groupDisplay != null) {
+            mMenu = new CandyMenu(menuCard, new ViewGroup[]{groupAr, groupMap, groupDisplay});
+        }
     }
 
     private void setupWindowInsets() {
@@ -374,29 +385,31 @@ public class MainActivity extends ComponentActivity
                     WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
             );
 
-            // 动态避让虚拟摇杆 (start + bottom)
+            // 动态避让虚拟摇杆（start + bottom）
             View joystickView = findViewById(R.id.joystick_view);
             if (joystickView != null && joystickView.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
                 ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) joystickView.getLayoutParams();
-                int baseStart = (int) (16 * getResources().getDisplayMetrics().density);
-                int baseBottom = (int) (16 * getResources().getDisplayMetrics().density);
+                int baseStart = (int) (14 * getResources().getDisplayMetrics().density);
+                // 底部让出 Dock 的高度，摇杆整体位于 Dock 上方
+                int baseBottom = (int) (72 * getResources().getDisplayMetrics().density);
                 lp.setMarginStart(baseStart + insets.left);
                 lp.bottomMargin = baseBottom + insets.bottom;
                 joystickView.setLayoutParams(lp);
             }
 
-            // 动态避让右下角操作面板 (end + bottom)
+            // 动态避让底部居中的操作 Dock（start + end + bottom）
             View actionPanel = findViewById(R.id.action_panel);
             if (actionPanel != null && actionPanel.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
                 ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) actionPanel.getLayoutParams();
-                int baseEnd = (int) (8 * getResources().getDisplayMetrics().density);
-                int baseBottom = (int) (8 * getResources().getDisplayMetrics().density);
+                int baseEnd = (int) (12 * getResources().getDisplayMetrics().density);
+                int baseBottom = (int) (12 * getResources().getDisplayMetrics().density);
+                lp.setMarginStart(baseEnd + insets.left);
                 lp.setMarginEnd(baseEnd + insets.right);
                 lp.bottomMargin = baseBottom + insets.bottom;
                 actionPanel.setLayoutParams(lp);
             }
 
-            // 动态避让左上角 FPS/地图信息面板 (left/start + top)
+            // 动态避让左上角 FPS/地图信息面板（left/start + top）
             View infoPanel = findViewById(R.id.info_panel);
             if (infoPanel != null && infoPanel.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
                 ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) infoPanel.getLayoutParams();
@@ -412,20 +425,32 @@ public class MainActivity extends ComponentActivity
     }
 
     private void toggleExclusiveMenu(int groupId) {
-        View ga = findViewById(R.id.group_ar);
-        View gm = findViewById(R.id.group_map);
-        View gd = findViewById(R.id.group_display);
-        View target = findViewById(groupId);
-        boolean visible = target != null && target.getVisibility() == View.VISIBLE;
-        if (ga != null) ga.setVisibility(View.GONE);
-        if (gm != null) gm.setVisibility(View.GONE);
-        if (gd != null) gd.setVisibility(View.GONE);
-        if (!visible && target != null) target.setVisibility(View.VISIBLE);
+        ViewGroup target = findViewById(groupId);
+        boolean visible = mMenu != null && mMenu.isShowing(target);
+        // 共用同一张菜单卡片：展开、变形切换、收起都在 CandyMenu 内完成
+        if (mMenu != null && target != null) {
+            mMenu.toggle(target);
+        }
+        // 分类按钮高亮当前展开的菜单组
+        setHeaderActivated(R.id.btn_group_ar, !visible && groupId == R.id.group_ar);
+        setHeaderActivated(R.id.btn_group_map, !visible && groupId == R.id.group_map);
+        setHeaderActivated(R.id.btn_group_display, !visible && groupId == R.id.group_display);
+        // 指示块流动到当前展开的分类，菜单收起时淡出
+        if (mDock != null) {
+            int tabId = groupId == R.id.group_ar ? R.id.btn_group_ar
+                    : (groupId == R.id.group_map ? R.id.btn_group_map : R.id.btn_group_display);
+            mDock.select(visible ? null : findViewById(tabId));
+        }
+    }
+
+    private void setHeaderActivated(int id, boolean activated) {
+        View header = findViewById(id);
+        if (header != null) header.setActivated(activated);
     }
 
     private AlertDialog mServiceBlockedDialog;
 
-    // 服务包已安装却绑定失败：多为厂商自启动管理拦截，无法用运行时权限弹窗申请，只能引导用户去设置放行
+    // 服务包已安装却绑定失败：多由厂商自启动管理拦截，无法通过运行时权限申请，需引导用户到设置中放行
     private void showServiceBlockedDialog() {
         if (mServiceBlockedDialog != null && mServiceBlockedDialog.isShowing()) return;
         mServiceBlockedDialog = new AlertDialog.Builder(this)
@@ -448,10 +473,23 @@ public class MainActivity extends ComponentActivity
 
         String defaultName = "map_" + new SimpleDateFormat("MMdd_HHmm", Locale.getDefault()).format(new Date());
         input.setText(defaultName);
+        input.setSingleLine(true);
+        input.setSelectAllOnFocus(true);
+        input.setTextColor(getColor(R.color.text_primary));
+        input.setHintTextColor(getColor(R.color.text_tertiary));
+        final float density = getResources().getDisplayMetrics().density;
+        // 输入框只保留主题默认的底部下划线，不额外加外框，与对话框边框不重叠
+        input.setPadding(0, (int) (10 * density), 0, (int) (10 * density));
+        // 外包一层容器，与对话框内容保持统一边距，不贴到圆角边缘
+        final android.widget.FrameLayout inputBox = new android.widget.FrameLayout(this);
+        final int boxH = (int) (24 * density);
+        inputBox.setPadding(boxH, (int) (8 * density), boxH, (int) (4 * density));
+        inputBox.addView(input, new android.widget.FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         new AlertDialog.Builder(this)
                 .setTitle(getString(R.string.dialog_save_map))
-                .setView(input)
+                .setView(inputBox)
                 .setPositiveButton(getString(R.string.btn_save), (dialog, which) -> {
                     String mapName = input.getText().toString().trim();
                     if (mapName.isEmpty()) mapName = defaultName;
@@ -470,7 +508,7 @@ public class MainActivity extends ComponentActivity
                 .show();
     }
 
-    // 按 loadMaps 分配地图 ID 的顺序(0,1,2...)还原每张地图保存的 AR 物体缩放与方向
+    // 按 loadMaps 分配地图 ID 的顺序（0,1,2...）还原每张地图保存的 AR 物体缩放与方向
     private void restoreArObjectStates(List<String> paths) {
         if (mModelRenderer == null) return;
         mModelRenderer.clearObjectStates();
@@ -839,6 +877,7 @@ public class MainActivity extends ComponentActivity
         if (button == null) return;
         String label = getString(labelRes);
         button.setText(enabled ? "✓" + label : label);
+        button.setActivated(enabled);
     }
 
     private void togglePointCloudDisplay() {
@@ -870,6 +909,7 @@ public class MainActivity extends ComponentActivity
         if (mBtnTogglePointCloud != null) {
             mBtnTogglePointCloud.setText(getString(visible
                     ? R.string.btn_pointcloud_enabled : R.string.btn_pointcloud_disabled));
+            mBtnTogglePointCloud.setActivated(visible);
         }
     }
 
@@ -896,6 +936,7 @@ public class MainActivity extends ComponentActivity
         if (mBtnToggleCameraPreview != null) {
             mBtnToggleCameraPreview.setText(getString(enabled
                     ? R.string.btn_camera_preview_enabled : R.string.btn_camera_preview_disabled));
+            mBtnToggleCameraPreview.setActivated(enabled);
         }
     }
 
@@ -1011,6 +1052,7 @@ public class MainActivity extends ComponentActivity
             mBtn3DofCube.setVisibility(View.VISIBLE);
             mBtn3DofCube.setText(getString(mIs3DofMode
                     ? R.string.btn_3dof_on : R.string.btn_3dof_off));
+            mBtn3DofCube.setActivated(mIs3DofMode);
         }
         if (mBtnReverseSensor != null) {
             mBtnReverseSensor.setVisibility(View.VISIBLE);
@@ -1043,6 +1085,7 @@ public class MainActivity extends ComponentActivity
         if (mBtn3DofCube != null) {
             mBtn3DofCube.setText(getString(enabled
                     ? R.string.btn_3dof_on : R.string.btn_3dof_off));
+            mBtn3DofCube.setActivated(enabled);
         }
         Log.d(TAG, enabled ? "姿态辅助已开启" : "姿态辅助已关闭，恢复纯视觉 SLAM");
     }

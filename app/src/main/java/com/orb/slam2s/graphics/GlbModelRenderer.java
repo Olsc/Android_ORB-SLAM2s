@@ -126,13 +126,9 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
         return this;
     }
 
-    // 设置显示层矫正，由 CameraPreviewView 在方向、镜像或画面尺寸变化时调用；
-    // 相机图像旋转角同时下发给 SDK，供姿态辅助换算安装夹角
+    // 设置显示层矫正，由 CameraPreviewView 在屏幕朝向、镜像或画面尺寸变化时调用，仅负责绘制矫正
     public GlbModelRenderer setDisplayCorrection(DisplayCorrection correction) {
         this.displayCorrection = correction;
-        if (correction != null && menthaAR != null) {
-            menthaAR.setCameraRotation(correction.rotationDegrees);
-        }
         requestRender();
         return this;
     }
@@ -145,8 +141,7 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
         }
     }
 
-    // 工作线程请求重绘：GLSurfaceView.requestRender 的线程约束是主线程，
-    // 模型解析线程不能直接调用，post 回 View 队列后再请求
+    // 工作线程请求重绘：post 回 View 队列后再调用 requestRender
     private void requestRenderFromWorkerThread() {
         final AspectGLSurfaceView view = arObjectView;
         if (view != null && rendererAttached) {
@@ -165,8 +160,7 @@ public class GlbModelRenderer implements GLSurfaceView.Renderer {
         arObjectView.getHolder().setFormat(PixelFormat.TRANSLUCENT);
         arObjectView.setZOrderOnTop(true);
         arObjectView.setRenderer(this);
-        // 按需渲染：画面只随 SDK 的 onTrackingResult 回调（MainActivity 请求重绘）、
-        // 手势缩放/旋转、模型加载完成、显示矫正变化而变化；模型本身无动画
+        // 按需渲染：仅在 SDK 回调、手势缩放/旋转、模型加载完成与显示矫正变化时重绘
         arObjectView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
         rendererAttached = true;
 

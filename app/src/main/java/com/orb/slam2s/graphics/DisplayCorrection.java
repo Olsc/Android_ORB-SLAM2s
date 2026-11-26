@@ -145,8 +145,7 @@ public final class DisplayCorrection {
         return 270;
     }
 
-    // NDC 内的 2x2 变换：先旋转到显示方向，再在显示方向镜像。
-    // NDC 的 y 轴朝上，顺时针旋转对应 R(-deg)：90 为 (x,y)->(y,-x)，180 取反，270 为 (-y,x)
+    // NDC 内先旋转到显示方向再镜像，y 轴朝上，顺时针旋转对应 R(-deg)：90 为 (x,y)->(y,-x)，180 取反，270 为 (-y,x)
     private void buildNdcTransform() {
         float r00, r01, r10, r11;
         switch (rotationDegrees) {

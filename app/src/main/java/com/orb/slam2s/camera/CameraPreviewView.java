@@ -20,6 +20,7 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.PixelFormat;
 import android.hardware.camera2.CameraManager;
+import android.hardware.display.DisplayManager;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
@@ -28,6 +29,8 @@ import android.os.Looper;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.Size;
+import android.view.Display;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.View;
 
@@ -119,6 +122,13 @@ public class CameraPreviewView extends AspectGLSurfaceView {
     // 当前生效的显示层矫正(方向 + 镜像)，由相机帧的 rotationDegrees 自动推导
     private volatile DisplayCorrection mDisplayCorrection;
     private volatile DisplayCorrectionListener mDisplayCorrectionListener;
+
+    // 屏幕当前朝向(Surface.ROTATION_*)，由显示监听实时刷新；分析线程每帧读取。
+    // 相机原始帧与设备坐标系固定不变，屏幕转动只改变"原始帧到屏幕"的显示矫正，不触碰 SLAM 输入。
+    private volatile int mDisplayRotation = Surface.ROTATION_0;
+    // 已下发给 SDK 的相机安装角(相机图像相对设备自然方向的旋转，与屏幕朝向无关)，-1 表示尚未下发
+    private volatile int mSentMountDegrees = -1;
+    private DisplayManager.DisplayListener mDisplayListener;
 
     private GLPassThroughRenderer mPassThroughRenderer;
     private GLPointCloudRenderer mPointCloudRenderer;
@@ -229,8 +239,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
         return mMirrorHorizontal;
     }
 
-    // 相机画面开关：关闭后预览层不再绘制，屏幕保持纯黑；采集与 SLAM 帧推送不受影响。
-    // 状态持久化，下次启动自动恢复。
+    // 相机画面开关：关闭后仅停止预览绘制并保持黑屏，状态持久化，采集与 SLAM 帧推送不受影响
     public void setCameraPreviewEnabled(boolean enabled) {
         mCameraPreviewEnabled = enabled;
         mContext.getSharedPreferences(PREFS_DISPLAY, Context.MODE_PRIVATE)
@@ -242,8 +251,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
         return mCameraPreviewEnabled;
     }
 
-    // 按显示方向尺寸准备预览位图(90/270 矫正后长宽互换，需要重建)
-    // 调用时必须已持有 mSyncLock，保证 GL 线程不会正在上传旧位图
+    // 按显示方向尺寸准备预览位图(90/270 矫正后长宽互换需重建)，调用前须持有 mSyncLock 防止 GL 线程上传旧位图
     private void ensureCacheBitmap(int width, int height) {
         if (mCacheBitmap != null && !mCacheBitmap.isRecycled()
                 && mCacheBitmap.getWidth() == width && mCacheBitmap.getHeight() == height) {
@@ -258,8 +266,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
         Log.i(TAG, "预览位图按显示方向重建: " + width + "x" + height);
     }
 
-    // 显示几何发生变化(方向/镜像/真实帧尺寸)时的低频通知：
-    // 更新本 View 的宽高比，并通知 AR 渲染层同步变换
+    // 显示几何(方向/镜像/真实帧尺寸)变化时更新本 View 宽高比并通知 AR 渲染层同步变换
     private void postDisplayCorrection(final DisplayCorrection correction) {
         post(() -> {
             setAspectRatio(correction.displayWidth, correction.displayHeight);
@@ -381,8 +388,12 @@ public class CameraPreviewView extends AspectGLSurfaceView {
                         return;
                     }
 
-                    mFrameWidth = CameraResolution.width;
-                    mFrameHeight = CameraResolution.height;
+                    // 先确定默认相机：采集分辨率与目标旋转按该相机的传感器安装方向换算，使送入 SLAM 的原始帧始终是横向底图，与启动时的屏幕朝向无关
+                    final List<CameraInfo> startInfos = mCameraProvider.getAvailableCameraInfos();
+                    final Size analysisSize = analysisTargetSize(startInfos.get(pickDefaultCameraIndex(startInfos)));
+
+                    mFrameWidth = analysisSize.getWidth();
+                    mFrameHeight = analysisSize.getHeight();
                     mCacheBitmap = Bitmap.createBitmap(mFrameWidth, mFrameHeight, Bitmap.Config.ARGB_8888);
                     mCacheBitmap.eraseColor(0xFF000000);
 
@@ -392,7 +403,8 @@ public class CameraPreviewView extends AspectGLSurfaceView {
                     ImageAnalysis.Builder builder = new ImageAnalysis.Builder()
                             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                             .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
-                            .setTargetResolution(new Size(mFrameWidth, mFrameHeight));
+                            .setTargetRotation(Surface.ROTATION_0)
+                            .setTargetResolution(analysisSize);
 
                     mImageAnalysis = builder.build();
                     mImageAnalysis.setAnalyzer(mAnalyzerExecutor, new ImageAnalysis.Analyzer() {
@@ -431,9 +443,10 @@ public class CameraPreviewView extends AspectGLSurfaceView {
                                     }
                                 }
 
-                                // 方向取自相机帧的 rotationDegrees，镜像取自用户开关；
-                                // 仅用于下方写预览位图与渲染，送 SLAM 的灰度帧保持原始像素。
-                                final int rotationDegrees = image.getImageInfo().getRotationDegrees();
+                                // 方向取自相机帧的 rotationDegrees，镜像取自用户开关
+                                final int imageRotation = image.getImageInfo().getRotationDegrees();
+                                final int rotationDegrees = sensorRotationDegrees(mDisplayRotation, imageRotation);
+                                reportMountRotation(sensorRotationDegrees(Surface.ROTATION_0, imageRotation));
                                 DisplayCorrection correction = mDisplayCorrection;
                                 if (correction == null
                                         || correction.rawWidth != w || correction.rawHeight != h
@@ -539,28 +552,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
                         return;
                     }
 
-                    // 默认优先选择手机后摄 (CameraSelector.LENS_FACING_BACK)
-                    int targetIndex = -1;
-                    for (int i = 0; i < mAvailableCameraInfos.size(); i++) {
-                        CameraInfo info = mAvailableCameraInfos.get(i);
-                        if (info.getLensFacing() == CameraSelector.LENS_FACING_BACK) {
-                            targetIndex = i;
-                            break;
-                        }
-                    }
-                    if (targetIndex < 0) {
-                        // 若无后置相机，优先找前置相机，其次使用第 0 个
-                        for (int i = 0; i < mAvailableCameraInfos.size(); i++) {
-                            CameraInfo info = mAvailableCameraInfos.get(i);
-                            if (info.getLensFacing() == CameraSelector.LENS_FACING_FRONT) {
-                                targetIndex = i;
-                                break;
-                            }
-                        }
-                    }
-                    if (targetIndex < 0) {
-                        targetIndex = 0;
-                    }
+                    final int targetIndex = pickDefaultCameraIndex(mAvailableCameraInfos);
 
                     mCurrentCameraIndex = targetIndex;
                     CameraSelector selector = mAvailableCameraInfos.get(mCurrentCameraIndex).getCameraSelector();
@@ -604,6 +596,109 @@ public class CameraPreviewView extends AspectGLSurfaceView {
             mIpcSendExecutor.shutdown();
             mIpcSendExecutor = null;
         }
+    }
+
+    // 默认优先后摄，其次前摄，最后第 0 个
+    private static int pickDefaultCameraIndex(List<CameraInfo> infos) {
+        for (int i = 0; i < infos.size(); i++) {
+            if (infos.get(i).getLensFacing() == CameraSelector.LENS_FACING_BACK) return i;
+        }
+        for (int i = 0; i < infos.size(); i++) {
+            if (infos.get(i).getLensFacing() == CameraSelector.LENS_FACING_FRONT) return i;
+        }
+        return 0;
+    }
+
+    // 采集目标尺寸：CameraX 按目标旋转解释尺寸方向，选择使传感器缓冲为横向(长边为宽)的写法
+    private static Size analysisTargetSize(CameraInfo info) {
+        final int w = Math.min(CameraResolution.width, CameraResolution.height);
+        final int h = Math.max(CameraResolution.width, CameraResolution.height);
+        final int rel;
+        try {
+            rel = info.getSensorRotationDegrees(Surface.ROTATION_0);
+        } catch (Throwable t) {
+            return new Size(w, h);
+        }
+        return (rel == 90 || rel == 270) ? new Size(w, h) : new Size(h, w);
+    }
+
+    // 当前相机在给定屏幕朝向下的图像顺时针旋转角；相机未就绪时用帧自带角度兜底
+    private int sensorRotationDegrees(int surfaceRotation, int fallback) {
+        final Camera camera = mCameraX;
+        if (camera == null) return fallback;
+        try {
+            return camera.getCameraInfo().getSensorRotationDegrees(surfaceRotation);
+        } catch (Throwable t) {
+            return fallback;
+        }
+    }
+
+    // 相机安装角变化(首帧、切换相机)时下发一次
+    private void reportMountRotation(int mountDegrees) {
+        final MenthaAR client = mMenthaAR;
+        if (client == null || mountDegrees == mSentMountDegrees) return;
+        mSentMountDegrees = mountDegrees;
+        client.setCameraRotation(mountDegrees);
+    }
+
+    private int readDisplayRotation() {
+        Display display = getDisplay();
+        if (display == null) {
+            final DisplayManager dm = (DisplayManager) mContext.getSystemService(Context.DISPLAY_SERVICE);
+            if (dm != null) display = dm.getDisplay(Display.DEFAULT_DISPLAY);
+        }
+        return display != null ? display.getRotation() : Surface.ROTATION_0;
+    }
+
+    // 屏幕转动时立刻按最近一帧的尺寸重建显示矫正并通知 AR 层，不必等下一帧相机数据
+    private void onDisplayRotationChanged() {
+        final int rotation = readDisplayRotation();
+        if (rotation == mDisplayRotation) return;
+        mDisplayRotation = rotation;
+        final DisplayCorrection old = mDisplayCorrection;
+        if (old == null) return;
+        final int degrees = sensorRotationDegrees(rotation, old.rotationDegrees);
+        if (DisplayCorrection.normalizeRotation(degrees) == old.rotationDegrees) return;
+        final DisplayCorrection fresh = DisplayCorrection.create(old.rawWidth, old.rawHeight, degrees,
+                mMirrorHorizontal, mMirrorVertical);
+        mDisplayCorrection = fresh;
+        Log.i(TAG, "屏幕朝向变化 -> " + rotation + "，立即应用显示矫正");
+        postDisplayCorrection(fresh);
+        requestRender();
+    }
+
+    // 布局尺寸在屏幕转动后一定会变化：再读一次朝向，作为显示监听读到旧值时的兜底
+    @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+        post(this::onDisplayRotationChanged);
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        mDisplayRotation = readDisplayRotation();
+        final DisplayManager dm = (DisplayManager) mContext.getSystemService(Context.DISPLAY_SERVICE);
+        if (dm != null && mDisplayListener == null) {
+            mDisplayListener = new DisplayManager.DisplayListener() {
+                @Override public void onDisplayAdded(int displayId) {}
+                @Override public void onDisplayRemoved(int displayId) {}
+                @Override public void onDisplayChanged(int displayId) {
+                    onDisplayRotationChanged();
+                }
+            };
+            dm.registerDisplayListener(mDisplayListener, new Handler(Looper.getMainLooper()));
+        }
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        final DisplayManager dm = (DisplayManager) mContext.getSystemService(Context.DISPLAY_SERVICE);
+        if (dm != null && mDisplayListener != null) {
+            dm.unregisterDisplayListener(mDisplayListener);
+            mDisplayListener = null;
+        }
+        super.onDetachedFromWindow();
     }
 
     public void autoFocusCenter() {
@@ -703,8 +798,7 @@ public class CameraPreviewView extends AspectGLSurfaceView {
         });
     }
 
-    // GL 线程：把预览位图上传到纹理。位图尺寸随显示方向变化（90/270 时长宽互换），
-    // 纹理尺寸与当前帧不一致时重建，否则 texSubImage2D 会失败
+    // GL 线程上传预览位图，尺寸变化(90/270 时长宽互换)时重建纹理，否则 texSubImage2D 会失败
     private void uploadPreviewTexture(Bitmap bitmap) {
         if (mImageTextureId != 0 && (bitmap.getWidth() != mImageTextureW || bitmap.getHeight() != mImageTextureH)) {
             GLES20.glDeleteTextures(1, new int[]{mImageTextureId}, 0);
