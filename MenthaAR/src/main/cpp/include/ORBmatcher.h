@@ -109,9 +109,6 @@ public:
 
 protected:
 
-    bool CheckDistEpipolarLine(const float a, const float b, const float c,
-                               const cv::KeyPoint &kp2, const KeyFrame *pKF);
-
     float RadiusByViewingCos(const float &viewCos);
 
     void ComputeThreeMaxima(std::vector<int>* histo, const int L, int &ind1, int &ind2, int &ind3);

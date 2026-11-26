@@ -142,7 +142,6 @@ void LoopClosing::Run()
                    CorrectLoop();
                }
             }
-            mbProcessing.store(false, std::memory_order_release);
         }
 
         ResetIfRequested();
@@ -150,8 +149,9 @@ void LoopClosing::Run()
         if(CheckFinish())
             break;
 
-        // 消费关键帧数据库的待重建标记
+        // 消费关键帧数据库的待重建标记；重建属于本轮处理，结束后才视为空闲
         mpKeyFrameDB->RebuildIfPending();
+        mbProcessing.store(false, std::memory_order_release);
 
         // 事件谓词等待
         {

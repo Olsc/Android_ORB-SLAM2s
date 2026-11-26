@@ -94,6 +94,7 @@ void KeyFrameDatabase::clear()
     mpTree->clear();
     mhmKeyFrames.clear();
     mnErasedCount = 0;
+    ++mnClearGeneration;
     mbRebuildPending.store(false, std::memory_order_release); // 清空后无需重建
 }
 
@@ -293,8 +294,10 @@ void KeyFrameDatabase::rebuild()
 {
     // 1. 在锁内获取当前活动关键帧快照
     std::vector<KeyFrame*> vpKFs;
+    unsigned long generation = 0;
     {
         unique_lock<mutex> lock(mMutex);
+        generation = mnClearGeneration;
         vpKFs.reserve(mhmKeyFrames.size());
         for (auto& pair : mhmKeyFrames) {
             if (pair.second && !pair.second->isBad())
@@ -315,12 +318,19 @@ void KeyFrameDatabase::rebuild()
         pNewTree->add(matchables);
     }
 
-    // 3. 仅在替换树指针的瞬间持锁，旧树在锁外释放
+    // 3. 仅在替换树指针的瞬间持锁，旧树在锁外释放；期间库已被清空时新树作废
     HBSTTree* pOldTree = nullptr;
     {
         unique_lock<mutex> lock(mMutex);
-        pOldTree = mpTree;
-        mpTree = pNewTree;
+        if (generation != mnClearGeneration)
+        {
+            pOldTree = pNewTree;
+        }
+        else
+        {
+            pOldTree = mpTree;
+            mpTree = pNewTree;
+        }
     }
 
     delete pOldTree;

@@ -683,6 +683,12 @@ void Tracking::GlobalRelocLoop(int sessionId)
         std::shared_ptr<const std::vector<RefMPSnapshot>> refSnaps;
         std::shared_ptr<HBSTTree> pTree;
 
+        // 本轮处理期间置忙，任一出口（continue/break/末尾）都在析构时清除
+        struct RelocBusyGuard {
+            std::atomic<bool>& busy;
+            ~RelocBusyGuard() { busy.store(false, std::memory_order_release); }
+        } relocBusyGuard{mbRelocBusy};
+
         // 1. 确定性事件等待：有新帧快照、缓存失效请求或停止信号时被唤醒
         {
             std::unique_lock<std::mutex> lk(mMutexReloc);
@@ -696,8 +702,9 @@ void Tracking::GlobalRelocLoop(int sessionId)
             if(mbRelocThreadStop || mRelocThreadSessionId.load() != sessionId)
                 break;
 
-            // 标记已消费最新快照
+            // 标记已消费最新快照；与消费在同一临界区内置忙，空闲查询不会落在两者之间
             mSnapSeqConsumed.store(mSnapSeqProduced.load());
+            mbRelocBusy.store(true, std::memory_order_release);
 
             // 状态检查：系统未初始化或地图无点时跳过，等待下一次快照事件
             if(mState == NO_IMAGES_YET || mState == NOT_INITIALIZED || mpMap->MapPointsInMap() == 0) {
@@ -987,6 +994,13 @@ cv::Mat Tracking::GetMapAlignedPose(const cv::Mat &TcwSlam)
     std::unique_lock<std::mutex> lk(mMutexReloc);
     if(!mbHaveMapAlign || mT_map_from_slam.empty()) return TcwSlam.clone();
     return mT_map_from_slam * TcwSlam;
+}
+
+bool Tracking::IsRelocIdle() const
+{
+    std::unique_lock<std::mutex> lk(mMutexReloc);
+    return !mbRelocBusy.load(std::memory_order_acquire) &&
+           mSnapSeqProduced.load() == mSnapSeqConsumed.load() && !mRefCacheDirty.load();
 }
 
 bool Tracking::HasLoadedMapData() const

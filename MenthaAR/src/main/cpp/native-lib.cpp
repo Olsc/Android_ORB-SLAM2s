@@ -638,26 +638,6 @@ void updateScaledIntrinsics(int cameraWidth, int cameraHeight) {
 }
 
 JNIEXPORT void JNICALL
-Java_com_orb_slam2s_slamar_NativeHelper_nativeUpdateResolution(JNIEnv* env, jobject instance,
-                                                               jint cameraWidth, jint cameraHeight) {
-    updateScaledIntrinsics(cameraWidth, cameraHeight);
-
-    int slamWidth = static_cast<int>(std::lround((float)cameraWidth / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR));
-    int slamHeight = static_cast<int>(std::lround((float)cameraHeight / ORB_SLAM2::IMAGE_DOWNSCALE_FACTOR));
-    if (slamWidth < 1) slamWidth = 1;
-    if (slamHeight < 1) slamHeight = 1;
-
-    // 动态同步更新SLAM核心模块内的焦距与投影内参，防止尺度不匹配引发跟踪丢失
-    {
-        // 快路径调用持 gSlamPtrLock，与 nativeShutdown 的 delete 互斥
-        std::lock_guard<std::mutex> ptrLock(gSlamPtrLock);
-        if (slamSys) {
-            slamSys->UpdateCalibration(gScaledFx, gScaledFy, gScaledCx, gScaledCy);
-        }
-    }
-}
-
-JNIEXPORT void JNICALL
 Java_com_orb_slam2s_slamar_NativeHelper_saveMap(JNIEnv* env, jobject instance, jstring path_)
 {
     const char* path = env->GetStringUTFChars(path_, nullptr);

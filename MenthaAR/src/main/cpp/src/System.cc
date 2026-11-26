@@ -57,7 +57,8 @@ namespace ORB_SLAM2
 System::System(const std::string &strSettingsFile, const eSensor sensor):mSensor(sensor),  mbReset(false),mbResetKeepMap(false)
 {
     {
-        cv::setNumThreads(2);
+        // OpenCV 内部并行关闭：金字塔缩放等小图运算在调用线程内串行完成，不产生跨核任务交接与唤醒等待
+        cv::setNumThreads(1);
         LOGD("System: OpenCV 并行线程数=%d", cv::getNumThreads());
     }
 
@@ -157,11 +158,11 @@ bool System::WaitForBackendIdle(int timeoutMs)
     const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeoutMs);
     for(;;)
     {
-        // 两线程均空闲后再确认一次，LM 向 LC 投递关键帧期间不算空闲
-        if(mpLocalMapper->IsIdle() && mpLoopCloser->IsIdle())
+        // 建图、闭环、后台重定位均空闲后再确认一次，LM 向 LC 投递关键帧期间不算空闲
+        if(mpLocalMapper->IsIdle() && mpLoopCloser->IsIdle() && mpTracker->IsRelocIdle())
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            if(mpLocalMapper->IsIdle() && mpLoopCloser->IsIdle())
+            if(mpLocalMapper->IsIdle() && mpLoopCloser->IsIdle() && mpTracker->IsRelocIdle())
                 return true;
         }
         if(std::chrono::steady_clock::now() > deadline)

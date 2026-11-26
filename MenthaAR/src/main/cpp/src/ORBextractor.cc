@@ -95,6 +95,8 @@ struct DescriptorOffset {
 // [360个角度][512个采样点] = 184320 个预计算偏移量
 static DescriptorOffset descriptorOffsetLUT[360][ORB_BRIEF_NUM_POINTS];
 static bool bDescriptorLUTInit = false;
+// 全部旋转采样偏移的最大绝对值（行、列取大者），决定描述子读取的模糊图范围
+static int s_DescMaxAbsOffset = 0;
 
 // 描述子偏移按当前层 step 直接计算 dy*step+dx
 static uint32_t reciprocal_table_q24[1025];
@@ -585,6 +587,8 @@ void ORBextractor::InitLUT() {
             // 原始公式: x' = x*a - y*b, y' = x*b + y*a
             descriptorOffsetLUT[angle][i].dy = cvRound(x * b + y * a);
             descriptorOffsetLUT[angle][i].dx = cvRound(x * a - y * b);
+            s_DescMaxAbsOffset = std::max(s_DescMaxAbsOffset, std::max(std::abs(descriptorOffsetLUT[angle][i].dy),
+                                                                       std::abs(descriptorOffsetLUT[angle][i].dx)));
         }
     }
 
@@ -669,293 +673,290 @@ static void computeOrientation(const Mat& image, vector<KeyPoint>& keypoints, co
     }
 }
 
-void ExtractorNode::DivideNode(ExtractorNode &n1, ExtractorNode &n2, ExtractorNode &n3, ExtractorNode &n4)
+namespace
 {
-    const int halfX = (UR.x - UL.x + 1) >> 1;
-    const int halfY = (BR.y - UL.y + 1) >> 1;
 
-    // 定义子节点的边界
-    n1.UL = UL;
-    n1.UR = cv::Point2i(UL.x+halfX,UL.y);
-    n1.BL = cv::Point2i(UL.x,UL.y+halfY);
-    n1.BR = cv::Point2i(UL.x+halfX,UL.y+halfY);
-    const int nReserve = (vKeys.size() + 3) >> 2;
-    n1.vKeys.reserve(nReserve);
+// 四叉树节点：关键点以下标区间存放在共享池中，链表以节点下标串联，遍历顺序与 std::list 前插/删除语义一致
+struct OctNode
+{
+    int ulx, uly, urx, ury, blx, bly, brx, bry;
+    int begin, count;
+    int prev, next;
+    bool noMore;
+};
 
-    n2.UL = n1.UR;
-    n2.UR = UR;
-    n2.BL = n1.BR;
-    n2.BR = cv::Point2i(UR.x,UL.y+halfY);
-    n2.vKeys.reserve(nReserve);
+struct OctNodeList
+{
+    std::vector<OctNode> nodes;
+    int head = -1;
+    int tail = -1;
+    int size = 0;
 
-    n3.UL = n1.BL;
-    n3.UR = n1.BR;
-    n3.BL = BL;
-    n3.BR = cv::Point2i(n1.BR.x,BL.y);
-    n3.vKeys.reserve(nReserve);
-
-    n4.UL = n3.UR;
-    n4.UR = n2.BR;
-    n4.BL = n3.BR;
-    n4.BR = BR;
-    n4.vKeys.reserve(nReserve);
-
-    // 将点关联到子节点
-    for(size_t i=0;i<vKeys.size();i++)
+    void Clear()
     {
-        const cv::KeyPoint &kp = vKeys[i];
-        if(kp.pt.x<n1.UR.x)
-        {
-            if(kp.pt.y<n1.BR.y)
-                n1.vKeys.push_back(kp);
-            else
-                n3.vKeys.push_back(kp);
-        }
-        else if(kp.pt.y<n1.BR.y)
-            n2.vKeys.push_back(kp);
-        else
-            n4.vKeys.push_back(kp);
+        nodes.clear();
+        head = tail = -1;
+        size = 0;
     }
 
-    if(n1.vKeys.size()==1)
-        n1.bNoMore = true;
-    if(n2.vKeys.size()==1)
-        n2.bNoMore = true;
-    if(n3.vKeys.size()==1)
-        n3.bNoMore = true;
-    if(n4.vKeys.size()==1)
-        n4.bNoMore = true;
+    int PushFront(const OctNode& n)
+    {
+        nodes.push_back(n);
+        const int id = (int)nodes.size() - 1;
+        nodes[id].prev = -1;
+        nodes[id].next = head;
+        if (head >= 0) nodes[head].prev = id;
+        else tail = id;
+        head = id;
+        ++size;
+        return id;
+    }
 
+    int PushBack(const OctNode& n)
+    {
+        nodes.push_back(n);
+        const int id = (int)nodes.size() - 1;
+        nodes[id].prev = tail;
+        nodes[id].next = -1;
+        if (tail >= 0) nodes[tail].next = id;
+        else head = id;
+        tail = id;
+        ++size;
+        return id;
+    }
+
+    // 摘除节点并返回其后继
+    int Erase(int id)
+    {
+        const int p = nodes[id].prev, n = nodes[id].next;
+        if (p >= 0) nodes[p].next = n; else head = n;
+        if (n >= 0) nodes[n].prev = p; else tail = p;
+        --size;
+        return n;
+    }
+};
+
+// 把节点四等分：子节点按 n1..n4 顺序前插（空子节点不插入），childIds 返回各子节点下标或 -1
+void DivideOctNode(int pid, const vector<cv::KeyPoint>& keys, OctNodeList& L, std::vector<int>& pool,
+                   std::vector<uint8_t>& tag, int childIds[4])
+{
+    const OctNode p = L.nodes[pid];
+    const int halfX = (p.urx - p.ulx + 1) >> 1;
+    const int halfY = (p.bry - p.uly + 1) >> 1;
+
+    OctNode c[4];
+    c[0].ulx = p.ulx;         c[0].uly = p.uly;
+    c[0].urx = p.ulx + halfX; c[0].ury = p.uly;
+    c[0].blx = p.ulx;         c[0].bly = p.uly + halfY;
+    c[0].brx = p.ulx + halfX; c[0].bry = p.uly + halfY;
+
+    c[1].ulx = c[0].urx; c[1].uly = c[0].ury;
+    c[1].urx = p.urx;    c[1].ury = p.ury;
+    c[1].blx = c[0].brx; c[1].bly = c[0].bry;
+    c[1].brx = p.urx;    c[1].bry = p.uly + halfY;
+
+    c[2].ulx = c[0].blx; c[2].uly = c[0].bly;
+    c[2].urx = c[0].brx; c[2].ury = c[0].bry;
+    c[2].blx = p.blx;    c[2].bly = p.bly;
+    c[2].brx = c[0].brx; c[2].bry = p.bly;
+
+    c[3].ulx = c[2].urx; c[3].uly = c[2].ury;
+    c[3].urx = c[1].brx; c[3].ury = c[1].bry;
+    c[3].blx = c[2].brx; c[3].bly = c[2].bry;
+    c[3].brx = p.brx;    c[3].bry = p.bry;
+
+    // 与按 n1.UR.x / n1.BR.y 划分的比较相同：整型边界转为浮点后与关键点坐标比较
+    const float splitX = (float)c[0].urx;
+    const float splitY = (float)c[0].bry;
+    if (tag.size() < (size_t)p.count) tag.resize(p.count);
+    int cnt[4] = {0, 0, 0, 0};
+    for (int k = 0; k < p.count; ++k)
+    {
+        const cv::KeyPoint& kp = keys[pool[p.begin + k]];
+        const int q = (kp.pt.x < splitX) ? (kp.pt.y < splitY ? 0 : 2) : (kp.pt.y < splitY ? 1 : 3);
+        tag[k] = (uint8_t)q;
+        ++cnt[q];
+    }
+
+    // 子节点在池尾各占一段连续区间，段内保持父节点中的先后顺序
+    const int base = (int)pool.size();
+    pool.resize(base + p.count);
+    int pos[4];
+    pos[0] = base;
+    pos[1] = pos[0] + cnt[0];
+    pos[2] = pos[1] + cnt[1];
+    pos[3] = pos[2] + cnt[2];
+    for (int q = 0; q < 4; ++q)
+    {
+        c[q].begin = pos[q];
+        c[q].count = cnt[q];
+        c[q].noMore = (cnt[q] == 1);
+    }
+    for (int k = 0; k < p.count; ++k)
+        pool[pos[tag[k]]++] = pool[p.begin + k];
+
+    for (int q = 0; q < 4; ++q)
+        childIds[q] = (cnt[q] > 0) ? L.PushFront(c[q]) : -1;
 }
+
+} // namespace
 
 vector<cv::KeyPoint> ORBextractor::DistributeOctTree(const vector<cv::KeyPoint>& vToDistributeKeys, const int &minX,
                                        const int &maxX, const int &minY, const int &maxY, const int &N, const int &level)
 {
+    // 节点、下标池与划分标签按线程复用
+    static thread_local OctNodeList L;
+    static thread_local std::vector<int> pool, iniOf, iniCount, iniPos;
+    static thread_local std::vector<uint8_t> tag;
+    static thread_local std::vector<std::pair<int,int> > vSizeAndNode, vPrevSizeAndNode;
+    L.Clear();
+
     // 计算初始节点数量
     const int nIni = std::max(1, (int)std::lround(static_cast<float>(maxX-minX)/(maxY-minY)));
 
     const float hX = static_cast<float>(maxX-minX)/nIni;
 
-    list<ExtractorNode> lNodes;
-
-    vector<ExtractorNode*> vpIniNodes;
-    vpIniNodes.resize(nIni);
-
-    for(int i=0; i<nIni; i++)
-    {
-        ExtractorNode ni;
-        ni.UL = cv::Point2i(hX*static_cast<float>(i),0);
-        ni.UR = cv::Point2i(hX*static_cast<float>(i+1),0);
-        ni.BL = cv::Point2i(ni.UL.x,maxY-minY);
-        ni.BR = cv::Point2i(ni.UR.x,maxY-minY);
-        ni.vKeys.reserve(vToDistributeKeys.size());
-
-        lNodes.push_back(ni);
-        vpIniNodes[i] = &lNodes.back();
-    }
-
-    // 将点关联到子节点
+    // 初始节点从左到右排列，关键点按出现顺序分到所在节点
     const float inv_hX = 1.0f / hX;
-    for(size_t i=0;i<vToDistributeKeys.size();i++)
+    const int nKeys = (int)vToDistributeKeys.size();
+    iniOf.resize(nKeys);
+    iniCount.assign(nIni, 0);
+    for (int i = 0; i < nKeys; ++i)
     {
-        const cv::KeyPoint &kp = vToDistributeKeys[i];
-        int idx = (int)(kp.pt.x * inv_hX);
-        if(idx >= nIni) idx = nIni - 1;
-        if(idx < 0) idx = 0;
-        vpIniNodes[idx]->vKeys.push_back(kp);
+        int idx = (int)(vToDistributeKeys[i].pt.x * inv_hX);
+        if (idx >= nIni) idx = nIni - 1;
+        if (idx < 0) idx = 0;
+        iniOf[i] = idx;
+        ++iniCount[idx];
     }
-
-    list<ExtractorNode>::iterator lit = lNodes.begin();
-
-    while(lit!=lNodes.end())
+    iniPos.resize(nIni);
+    for (int i = 0, acc = 0; i < nIni; ++i)
     {
-        if(lit->vKeys.size()==1)
+        iniPos[i] = acc;
+        acc += iniCount[i];
+    }
+    pool.resize(nKeys);
+    for (int i = 0; i < nIni; ++i)
+    {
+        OctNode ni;
+        ni.ulx = (int)(hX * static_cast<float>(i));
+        ni.uly = 0;
+        ni.urx = (int)(hX * static_cast<float>(i + 1));
+        ni.ury = 0;
+        ni.blx = ni.ulx;
+        ni.bly = maxY - minY;
+        ni.brx = ni.urx;
+        ni.bry = maxY - minY;
+        ni.begin = iniPos[i];
+        ni.count = iniCount[i];
+        ni.noMore = false;
+        L.PushBack(ni);
+    }
+    for (int i = 0; i < nKeys; ++i)
+        pool[iniPos[iniOf[i]]++] = i;
+
+    // 只有一个点的节点不再分裂，空节点删除
+    for (int cur = L.head; cur >= 0; )
+    {
+        if (L.nodes[cur].count == 1)
         {
-            lit->bNoMore=true;
-            lit++;
+            L.nodes[cur].noMore = true;
+            cur = L.nodes[cur].next;
         }
-        else if(lit->vKeys.empty())
-            lit = lNodes.erase(lit);
+        else if (L.nodes[cur].count == 0)
+            cur = L.Erase(cur);
         else
-            lit++;
+            cur = L.nodes[cur].next;
     }
 
     bool bFinish = false;
-
-    int iteration = 0;
-
-    vector<pair<int,ExtractorNode*> > vSizeAndPointerToNode;
-    vSizeAndPointerToNode.reserve(lNodes.size()*4);
+    int childIds[4];
 
     while(!bFinish)
     {
-        iteration++;
-
-        int prevSize = lNodes.size();
-
-        lit = lNodes.begin();
-
+        int prevSize = L.size;
         int nToExpand = 0;
+        vSizeAndNode.clear();
 
-        vSizeAndPointerToNode.clear();
-
-        while(lit!=lNodes.end())
+        for (int cur = L.head; cur >= 0; )
         {
-            if(lit->bNoMore)
+            if (L.nodes[cur].noMore)
             {
                 // 如果节点只包含一个点，则不分割并继续
-                lit++;
+                cur = L.nodes[cur].next;
                 continue;
             }
-            else
+            // 如果有多于一个点，则分割；子节点前插，本轮不再访问
+            DivideOctNode(cur, vToDistributeKeys, L, pool, tag, childIds);
+            for (int q = 0; q < 4; ++q)
             {
-                // 如果有多于一个点，则分割
-                ExtractorNode n1,n2,n3,n4;
-                lit->DivideNode(n1,n2,n3,n4);
-
-                // 如果子节点包含点则添加
-                if(n1.vKeys.size()>0)
+                if (childIds[q] >= 0 && L.nodes[childIds[q]].count > 1)
                 {
-                    lNodes.push_front(std::move(n1));
-                    if(lNodes.front().vKeys.size()>1)
-                    {
-                        nToExpand++;
-                        vSizeAndPointerToNode.push_back(make_pair(lNodes.front().vKeys.size(),&lNodes.front()));
-                        lNodes.front().lit = lNodes.begin();
-                    }
+                    nToExpand++;
+                    vSizeAndNode.push_back(std::make_pair(L.nodes[childIds[q]].count, childIds[q]));
                 }
-                if(n2.vKeys.size()>0)
-                {
-                    lNodes.push_front(std::move(n2));
-                    if(lNodes.front().vKeys.size()>1)
-                    {
-                        nToExpand++;
-                        vSizeAndPointerToNode.push_back(make_pair(lNodes.front().vKeys.size(),&lNodes.front()));
-                        lNodes.front().lit = lNodes.begin();
-                    }
-                }
-                if(n3.vKeys.size()>0)
-                {
-                    lNodes.push_front(std::move(n3));
-                    if(lNodes.front().vKeys.size()>1)
-                    {
-                        nToExpand++;
-                        vSizeAndPointerToNode.push_back(make_pair(lNodes.front().vKeys.size(),&lNodes.front()));
-                        lNodes.front().lit = lNodes.begin();
-                    }
-                }
-                if(n4.vKeys.size()>0)
-                {
-                    lNodes.push_front(std::move(n4));
-                    if(lNodes.front().vKeys.size()>1)
-                    {
-                        nToExpand++;
-                        vSizeAndPointerToNode.push_back(make_pair(lNodes.front().vKeys.size(),&lNodes.front()));
-                        lNodes.front().lit = lNodes.begin();
-                    }
-                }
-
-                lit=lNodes.erase(lit);
-                continue;
             }
+            cur = L.Erase(cur);
         }
 
         // 如果节点数超过所需特征数或所有节点都只包含一个点则完成
-        if((int)lNodes.size()>=N || (int)lNodes.size()==prevSize)
+        if(L.size>=N || L.size==prevSize)
         {
             bFinish = true;
         }
-        else if(((int)lNodes.size()+nToExpand*3)>N)
+        else if((L.size+nToExpand*3)>N)
         {
-
             while(!bFinish)
             {
+                prevSize = L.size;
 
-                prevSize = lNodes.size();
-
-                vector<pair<int,ExtractorNode*> > vPrevSizeAndPointerToNode = vSizeAndPointerToNode;
-                vSizeAndPointerToNode.clear();
+                vPrevSizeAndNode = vSizeAndNode;
+                vSizeAndNode.clear();
 
                 // 只按点数稳定排序：点数相同的节点按生成顺序分裂，结果与内存地址无关
                 // 先反转再稳定排序，下方循环从尾部向前遍历
-                std::reverse(vPrevSizeAndPointerToNode.begin(),vPrevSizeAndPointerToNode.end());
-                stable_sort(vPrevSizeAndPointerToNode.begin(),vPrevSizeAndPointerToNode.end(),
-                            [](const pair<int,ExtractorNode*>& a, const pair<int,ExtractorNode*>& b){ return a.first < b.first; });
-                for(int j=vPrevSizeAndPointerToNode.size()-1;j>=0;j--)
+                std::reverse(vPrevSizeAndNode.begin(), vPrevSizeAndNode.end());
+                std::stable_sort(vPrevSizeAndNode.begin(), vPrevSizeAndNode.end(),
+                                 [](const std::pair<int,int>& a, const std::pair<int,int>& b){ return a.first < b.first; });
+                for(int j=(int)vPrevSizeAndNode.size()-1;j>=0;j--)
                 {
-                    ExtractorNode n1,n2,n3,n4;
-                    vPrevSizeAndPointerToNode[j].second->DivideNode(n1,n2,n3,n4);
+                    const int pid = vPrevSizeAndNode[j].second;
+                    DivideOctNode(pid, vToDistributeKeys, L, pool, tag, childIds);
+                    for (int q = 0; q < 4; ++q)
+                    {
+                        if (childIds[q] >= 0 && L.nodes[childIds[q]].count > 1)
+                            vSizeAndNode.push_back(std::make_pair(L.nodes[childIds[q]].count, childIds[q]));
+                    }
+                    L.Erase(pid);
 
-                    // 如果子节点包含点则添加
-                    if(n1.vKeys.size()>0)
-                    {
-                        lNodes.push_front(std::move(n1));
-                        if(lNodes.front().vKeys.size()>1)
-                        {
-                            vSizeAndPointerToNode.push_back(make_pair(lNodes.front().vKeys.size(),&lNodes.front()));
-                            lNodes.front().lit = lNodes.begin();
-                        }
-                    }
-                    if(n2.vKeys.size()>0)
-                    {
-                        lNodes.push_front(std::move(n2));
-                        if(lNodes.front().vKeys.size()>1)
-                        {
-                            vSizeAndPointerToNode.push_back(make_pair(lNodes.front().vKeys.size(),&lNodes.front()));
-                            lNodes.front().lit = lNodes.begin();
-                        }
-                    }
-                    if(n3.vKeys.size()>0)
-                    {
-                        lNodes.push_front(std::move(n3));
-                        if(lNodes.front().vKeys.size()>1)
-                        {
-                            vSizeAndPointerToNode.push_back(make_pair(lNodes.front().vKeys.size(),&lNodes.front()));
-                            lNodes.front().lit = lNodes.begin();
-                        }
-                    }
-                    if(n4.vKeys.size()>0)
-                    {
-                        lNodes.push_front(std::move(n4));
-                        if(lNodes.front().vKeys.size()>1)
-                        {
-                            vSizeAndPointerToNode.push_back(make_pair(lNodes.front().vKeys.size(),&lNodes.front()));
-                            lNodes.front().lit = lNodes.begin();
-                        }
-                    }
-
-                    lNodes.erase(vPrevSizeAndPointerToNode[j].second->lit);
-
-                    if((int)lNodes.size()>=N)
+                    if(L.size>=N)
                         break;
                 }
 
-                if((int)lNodes.size()>=N || (int)lNodes.size()==prevSize)
+                if(L.size>=N || L.size==prevSize)
                     bFinish = true;
-
             }
         }
     }
 
-    // 保留每个节点中的最佳点
+    // 保留每个节点中响应最大的点（同响应取先出现者）
     vector<cv::KeyPoint> vResultKeys;
     vResultKeys.reserve(nfeatures);
-    for(list<ExtractorNode>::iterator lit=lNodes.begin(); lit!=lNodes.end(); lit++)
+    for (int cur = L.head; cur >= 0; cur = L.nodes[cur].next)
     {
-        vector<cv::KeyPoint> &vNodeKeys = lit->vKeys;
-        cv::KeyPoint* pKP = &vNodeKeys[0];
-        float maxResponse = pKP->response;
-
-        for(size_t k=1;k<vNodeKeys.size();k++)
+        const OctNode& node = L.nodes[cur];
+        int best = pool[node.begin];
+        float maxResponse = vToDistributeKeys[best].response;
+        for (int k = 1; k < node.count; ++k)
         {
-            if(vNodeKeys[k].response>maxResponse)
+            const int idx = pool[node.begin + k];
+            if (vToDistributeKeys[idx].response > maxResponse)
             {
-                pKP = &vNodeKeys[k];
-                maxResponse = vNodeKeys[k].response;
+                best = idx;
+                maxResponse = vToDistributeKeys[idx].response;
             }
         }
-
-        vResultKeys.push_back(*pKP);
+        vResultKeys.push_back(vToDistributeKeys[best]);
     }
 
     return vResultKeys;
@@ -1008,7 +1009,17 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
         const cv::Mat& levelImg = mvImagePyramid[level];
         static thread_local vector<cv::KeyPoint> vAllKeys;
         vAllKeys.clear();
-        FAST(levelImg, vAllKeys, iniThFAST, true);
+        // 只在有效区四周各扩 4 像素的 ROI 上检测：有效区内每点的得分与非极大值抑制只依赖这一范围，结果与整层检测逐位相同
+        {
+            const int sx0 = std::max(0, minBorderX - 4), sy0 = std::max(0, minBorderY - 4);
+            const int sx1 = std::min(levelImg.cols, maxBorderX + 4), sy1 = std::min(levelImg.rows, maxBorderY + 4);
+            FAST(levelImg(cv::Rect(sx0, sy0, sx1 - sx0, sy1 - sy0)), vAllKeys, iniThFAST, true);
+            for (size_t i = 0; i < vAllKeys.size(); ++i)
+            {
+                vAllKeys[i].pt.x += (float)sx0;
+                vAllKeys[i].pt.y += (float)sy0;
+            }
+        }
 
         // 2. 线程局部平坦 CSR 分箱
         const int nCells = nRows * nCols;
@@ -1065,10 +1076,11 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
         for (int x = 0; x < widthI; ++x) { const int c = colOf(x); colMin[c] = std::min(colMin[c], x); colMax[c] = std::max(colMax[c], x); }
         for (int y = 0; y < heightI; ++y) { const int r = rowOf(y); rowMin[r] = std::min(rowMin[r], y); rowMax[r] = std::max(rowMax[r], y); }
 
-        // 3. 逐格取强角点；没有强角点的格在其 ROI 上以 minThFAST 重检，取回该格的全部弱角点。
-        //    ROI 在格四周各扩 4 像素（FAST 圆周半径 3 + 非极大值抑制邻域 1），格内点的得分与抑制结果与全层检测一致
+        // 3. 逐格取强角点；没有强角点的格以 minThFAST 重检，取回该格的全部弱角点。
+        //    同一行相邻的空格合并为一个 ROI 只检测一次；ROI 在格四周各扩 4 像素（FAST 圆周半径 3 + 非极大值抑制邻域 1），格内点的得分与抑制结果与全层检测一致
         static thread_local vector<cv::KeyPoint> vWeakKeys;
-        for(int cellIdx = 0; cellIdx < nCells; ++cellIdx)
+        static thread_local std::vector<int> weakRunCell, weakRunOffsets, weakRunOrder;
+        for(int cellIdx = 0; cellIdx < nCells; )
         {
             const int start = cellOffsets[cellIdx];
             const int end = cellOffsets[cellIdx + 1];
@@ -1081,33 +1093,74 @@ void ORBextractor::detectAndOrientLevels(const cv::Range& range,
                     kp.pt.y -= minBorderY;
                     vToDistributeKeys.push_back(kp);
                 }
+                ++cellIdx;
                 continue;
             }
 
             const int cc = cellIdx % nCols, rr = cellIdx / nCols;
             if (colMax[cc] < 0 || rowMax[rr] < 0)
+            {
+                ++cellIdx;
                 continue;
+            }
+            // 向右并入同一行内无强角点且有像素的格，输出仍按格序逐格进行
+            int ccLast = cc;
+            while (ccLast + 1 < nCols && colMax[ccLast + 1] >= 0 &&
+                   cellOffsets[cellIdx + ccLast + 1 - cc] == cellOffsets[cellIdx + ccLast + 2 - cc])
+                ++ccLast;
+            const int nRun = ccLast - cc + 1;
             const int x0 = std::max(0, minBorderX + colMin[cc] - 4);
-            const int x1 = std::min(levelImg.cols - 1, minBorderX + colMax[cc] + 4);
+            const int x1 = std::min(levelImg.cols - 1, minBorderX + colMax[ccLast] + 4);
             const int y0 = std::max(0, minBorderY + rowMin[rr] - 4);
             const int y1 = std::min(levelImg.rows - 1, minBorderY + rowMax[rr] + 4);
             vWeakKeys.clear();
             FAST(levelImg(cv::Rect(x0, y0, x1 - x0 + 1, y1 - y0 + 1)), vWeakKeys, minThFAST, true);
-            for (size_t k = 0; k < vWeakKeys.size(); ++k)
+
+            // 弱角点按所属格稳定分桶，桶内保持检测输出的行优先顺序
+            const size_t nWeak = vWeakKeys.size();
+            if (weakRunCell.size() < nWeak) weakRunCell.resize(nWeak);
+            weakRunOffsets.assign(nRun + 1, 0);
+            for (size_t k = 0; k < nWeak; ++k)
             {
-                cv::KeyPoint kp = vWeakKeys[k];
+                cv::KeyPoint& kp = vWeakKeys[k];
                 kp.pt.x += (float)x0;
                 kp.pt.y += (float)y0;
                 const int x_glob = (int)kp.pt.x;
                 const int y_glob = (int)kp.pt.y;
-                if(x_glob < minBorderX || x_glob >= maxBorderX || y_glob < minBorderY || y_glob >= maxBorderY)
-                    continue;
-                if (colOf(x_glob - minBorderX) != cc || rowOf(y_glob - minBorderY) != rr)
-                    continue;
-                kp.pt.x -= minBorderX;
-                kp.pt.y -= minBorderY;
-                vToDistributeKeys.push_back(kp);
+                int runCell = -1;
+                if(x_glob >= minBorderX && x_glob < maxBorderX && y_glob >= minBorderY && y_glob < maxBorderY &&
+                   rowOf(y_glob - minBorderY) == rr)
+                {
+                    const int c = colOf(x_glob - minBorderX);
+                    if (c >= cc && c <= ccLast)
+                        runCell = c - cc;
+                }
+                weakRunCell[k] = runCell;
+                if (runCell >= 0)
+                    weakRunOffsets[runCell + 1]++;
             }
+            for (int r = 0; r < nRun; ++r)
+                weakRunOffsets[r + 1] += weakRunOffsets[r];
+            if (weakRunOrder.size() < (size_t)weakRunOffsets[nRun]) weakRunOrder.resize(weakRunOffsets[nRun]);
+            for (size_t k = 0; k < nWeak; ++k)
+            {
+                const int runCell = weakRunCell[k];
+                if (runCell >= 0)
+                    weakRunOrder[weakRunOffsets[runCell]++] = (int)k;
+            }
+            // 填充后 weakRunOffsets[r] 指向第 r 格末尾，第 r 格区间为 [weakRunOffsets[r-1], weakRunOffsets[r])
+            for (int r = 0; r < nRun; ++r)
+            {
+                const int b = (r == 0) ? 0 : weakRunOffsets[r - 1];
+                for (int p = b; p < weakRunOffsets[r]; ++p)
+                {
+                    cv::KeyPoint kp = vWeakKeys[weakRunOrder[p]];
+                    kp.pt.x -= minBorderX;
+                    kp.pt.y -= minBorderY;
+                    vToDistributeKeys.push_back(kp);
+                }
+            }
+            cellIdx += nRun;
         }
 
         vector<KeyPoint> & keypoints = allKeypoints[level];
@@ -1202,11 +1255,18 @@ inline static int mul67(int x) { return (x << 6) + (x << 1) + x; }
 inline static int mul98(int x) { return (x << 6) + (x << 5) + (x << 1); }
 inline static int mul110(int x) { return (x << 7) - (x << 4) - (x << 1); }
 
-// 1D 分离式定点高斯卷积：水平、垂直两趟，half-up 移位舍入 (val+256)>>9
-static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPadded)
+// 1D 分离式定点高斯卷积：水平、垂直两趟，half-up 移位舍入 (val+256)>>9；只计算 roi 内的输出像素
+// roi 距图像边缘不足 3 像素时退回整图计算，边缘像素按对称折叠处理
+static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPadded, cv::Rect roi)
 {
     const int rows = srcPadded.rows;
     const int cols = srcPadded.cols;
+    if (roi.x < 3 || roi.y < 3 || roi.x + roi.width > cols - 3 || roi.y + roi.height > rows - 3)
+        roi = cv::Rect(0, 0, cols, rows);
+    const int cx0 = roi.x, cx1 = roi.x + roi.width;
+    const int ry0 = roi.y, ry1 = roi.y + roi.height;
+    // 垂直趟需要 roi 上下各 3 行的水平趟结果
+    const int hy0 = std::max(0, ry0 - 3), hy1 = std::min(rows, ry1 + 3);
 
     // 线程局部平坦缓存区：水平趟输出恒在 [0,255]，用 uint8 存储
     static thread_local std::vector<uint8_t> tempBuf;
@@ -1215,17 +1275,18 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
     }
 
     // 1. 水平平滑方向 (Horizontal Pass)
-    for (int r = 0; r < rows; ++r) {
+    for (int r = hy0; r < hy1; ++r) {
         const uchar* srcRow = srcPadded.ptr<uchar>(r);
         uint8_t* tempRow = &tempBuf[r * cols];
         // 边界内像素 (3 到 cols-4)，对称折叠 x[c-h]+x[c+h] 后加权
-        for (int c = 3; c < cols - 3; ++c) {
+        const int cIn0 = std::max(cx0, 3), cIn1 = std::min(cx1, cols - 3);
+        for (int c = cIn0; c < cIn1; ++c) {
             int val = mul36(srcRow[c-3] + srcRow[c+3]) + mul67(srcRow[c-2] + srcRow[c+2]) +
                       mul98(srcRow[c-1] + srcRow[c+1]) + mul110(srcRow[c]);
             tempRow[c] = (val + 256) >> 9;
         }
         // 左边界处理 (c < 3)
-        for (int c = 0; c < 3; ++c) {
+        for (int c = cx0; c < 3; ++c) {
             int val = 0;
             for (int k = -3; k <= 3; ++k) {
                 int colIdx = std::abs(c + k);
@@ -1237,7 +1298,7 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
             tempRow[c] = (val + 256) >> 9;
         }
         // 右边界处理 (c >= cols - 3)
-        for (int c = cols - 3; c < cols; ++c) {
+        for (int c = std::max(cols - 3, cx0); c < cx1; ++c) {
             int val = 0;
             for (int k = -3; k <= 3; ++k) {
                 int colIdx = c + k;
@@ -1252,7 +1313,8 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
     }
 
     // 2. 垂直平滑方向 (Vertical Pass)
-    for (int r = 3; r < rows - 3; ++r) {
+    const int rIn0 = std::max(ry0, 3), rIn1 = std::min(ry1, rows - 3);
+    for (int r = rIn0; r < rIn1; ++r) {
         uchar* dstRow = dstPadded.ptr<uchar>(r);
         const uint8_t* tempRowM3 = &tempBuf[(r - 3) * cols];
         const uint8_t* tempRowM2 = &tempBuf[(r - 2) * cols];
@@ -1262,7 +1324,7 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
         const uint8_t* tempRowP2 = &tempBuf[(r + 2) * cols];
         const uint8_t* tempRowP3 = &tempBuf[(r + 3) * cols];
 
-        for (int c = 0; c < cols; ++c) {
+        for (int c = cx0; c < cx1; ++c) {
             // 垂直方向同样对称折叠
             int val = mul36(tempRowM3[c] + tempRowP3[c]) + mul67(tempRowM2[c] + tempRowP2[c]) +
                       mul98(tempRowM1[c] + tempRowP1[c]) + mul110(tempRow0[c]);
@@ -1271,9 +1333,9 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
         }
     }
     // 上下边界处理 (r < 3 || r >= rows - 3)
-    for (int r = 0; r < 3; ++r) {
+    for (int r = ry0; r < 3; ++r) {
         uchar* dstRow = dstPadded.ptr<uchar>(r);
-        for (int c = 0; c < cols; ++c) {
+        for (int c = cx0; c < cx1; ++c) {
             int val = 0;
             for (int k = -3; k <= 3; ++k) {
                 int rowIdx = std::abs(r + k);
@@ -1288,9 +1350,9 @@ static void FastIntegerGaussianBlur7x7(const cv::Mat& srcPadded, cv::Mat& dstPad
             dstRow[c] = (uchar)(pix > 255 ? 255 : (pix < 0 ? 0 : pix));
         }
     }
-    for (int r = rows - 3; r < rows; ++r) {
+    for (int r = std::max(rows - 3, ry0); r < ry1; ++r) {
         uchar* dstRow = dstPadded.ptr<uchar>(r);
-        for (int c = 0; c < cols; ++c) {
+        for (int c = cx0; c < cx1; ++c) {
             int val = 0;
             for (int k = -3; k <= 3; ++k) {
                 int rowIdx = r + k;
@@ -1325,8 +1387,20 @@ void ORBextractor::blurAndComputeDescriptors(
         Size wholeSize(sz.width + ORB_EDGE_THRESHOLD*2, sz.height + ORB_EDGE_THRESHOLD*2);
         mvBlurredPyramidPadded[level].create(wholeSize, mvImagePyramid[level].type());
 
+        // 描述子只读取本层关键点中心（与 computeOrbDescriptor 相同的取整）外扩最大采样偏移的范围，模糊只算这一范围
+        int kxMin = INT_MAX, kxMax = INT_MIN, kyMin = INT_MAX, kyMax = INT_MIN;
+        for (int i = kpStart; i < kpEnd; ++i)
+        {
+            const int kx = (int)(keypoints[i].pt.x + 0.5f);
+            const int ky = (int)(keypoints[i].pt.y + 0.5f);
+            kxMin = std::min(kxMin, kx); kxMax = std::max(kxMax, kx);
+            kyMin = std::min(kyMin, ky); kyMax = std::max(kyMax, ky);
+        }
+        const cv::Rect blurRoi(kxMin - s_DescMaxAbsOffset + ORB_EDGE_THRESHOLD, kyMin - s_DescMaxAbsOffset + ORB_EDGE_THRESHOLD,
+                               kxMax - kxMin + 2 * s_DescMaxAbsOffset + 1, kyMax - kyMin + 2 * s_DescMaxAbsOffset + 1);
+
         // 对带边框的图像做定点 1D 可分离高斯模糊
-        FastIntegerGaussianBlur7x7(mvImagePyramidPadded[level], mvBlurredPyramidPadded[level]);
+        FastIntegerGaussianBlur7x7(mvImagePyramidPadded[level], mvBlurredPyramidPadded[level], blurRoi);
 
         // 让 mvBlurredPyramid[level] 成为 mvBlurredPyramidPadded[level] 的子矩阵 ROI
         mvBlurredPyramid[level] = mvBlurredPyramidPadded[level](

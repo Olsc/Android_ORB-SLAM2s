@@ -89,6 +89,8 @@ public:
     // 后台全局重定位线程控制
     void StartGlobalRelocThread();
     void StopGlobalRelocThread();
+    // 后台重定位线程已消费最新帧快照且无待处理工作（离线回放的同步模式用）
+    bool IsRelocIdle() const;
 
     // 对齐工具
     bool HasMapAlignment() const { return mbHaveMapAlign.load(std::memory_order_relaxed); }
@@ -132,8 +134,8 @@ public:
     // 当前激活的地图ID
     std::atomic<int> mnCurrentMapId;
 
-    // 跟踪模式
-    eTrackingState mState;
+    // 跟踪模式：跟踪线程写，后台重定位线程读，须为原子量
+    std::atomic<eTrackingState> mState;
     eTrackingState mLastProcessedState;
 
     // 输入传感器
@@ -265,6 +267,8 @@ protected:
     std::thread* mptGlobalReloc = nullptr;
     std::atomic<bool> mbRelocThreadStop{false};
     std::atomic<int> mRelocThreadSessionId{0};
+    // 后台重定位线程正在处理一轮快照（含缓存构建与匹配）
+    std::atomic<bool> mbRelocBusy{false};
     mutable std::mutex mMutexReloc;
     std::condition_variable mCvReloc; // 重定位唤醒条件变量，由生命周期事件触发
     cv::Mat mLastDesc; // 描述符快照

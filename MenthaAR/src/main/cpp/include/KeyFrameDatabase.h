@@ -90,6 +90,9 @@ protected:
   // 待重建标记：erase 达到阈值时置位，由 RebuildIfPending() 消费
   std::atomic<bool> mbRebuildPending{false};
 
+  // 清库代次（mMutex 保护）：重建期间发生 clear() 时丢弃按旧快照建出的树
+  unsigned long mnClearGeneration = 0;
+
   // 互斥锁
   std::mutex mMutex;
 };

@@ -232,7 +232,9 @@ protected:
     // 数据库
     KeyFrameDatabase* mpKeyFrameDB;
 
-    std::vector< std::vector <std::vector<size_t> > > mGrid;
+    // CSR 网格（与 Frame 相同布局）：单元格 c = ix*FRAME_GRID_ROWS+iy 的索引区间为 [mGridStart[c], mGridStart[c+1])
+    std::vector<int> mGridStart;
+    std::vector<size_t> mGridIdx;
 
     KeyFrameMap<int> mConnectedKeyFrameWeights;
     std::vector<KeyFrame*> mvpOrderedConnectedKeyFrames;

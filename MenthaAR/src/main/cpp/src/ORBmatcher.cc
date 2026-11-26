@@ -178,22 +178,6 @@ float ORBmatcher::RadiusByViewingCos(const float &viewCos)
         return MATCH_RADIUS_FAR;
 }
 
-bool ORBmatcher::CheckDistEpipolarLine(const float a,const float b,const float c,
-                                       const cv::KeyPoint &kp2,const KeyFrame* pKF2)
-{
-    // 第二幅图像中的极线 l = x1'·F12 = [a b c]，系数已由调用方按 kp1 预计算
-
-    const float num = a*kp2.pt.x+b*kp2.pt.y+c;
-
-    const float den = a*a+b*b;
-
-    if(den==0)
-        return false;
-
-    const float epiTh = ORB_MATCHER_EPILINE_TH * pKF2->mvLevelSigma2[kp2.octave];
-    return num*num < den * epiTh;
-}
-
 int ORBmatcher::SearchByHBST(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPointMatches)
 {
     if(!pKF || pKF->isBad())
@@ -768,15 +752,6 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
     float R2w[9], t2w[3];
     pKF2->GetRotation(R2w);
     pKF2->GetTranslation(t2w);
-    std::shared_ptr<HBSTTree> tree1 = pKF1->GetHBSTTree();
-    if (!tree1)
-        return 0;
-    const auto& matchables1 = tree1->matchables();
-
-    std::shared_ptr<HBSTTree> tree2 = pKF2->GetHBSTTree();
-    if (!tree2)
-        return 0;
-    const auto& matchables2 = tree2->matchables();
 
     // 两帧的地图点关联各取一次快照
     const vector<MapPoint*> vpMapPoints1 = pKF1->GetMapPointMatches();
@@ -826,6 +801,24 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
     const float f10=F12.at<float>(1,0), f11=F12.at<float>(1,1), f12v=F12.at<float>(1,2);
     const float f20=F12.at<float>(2,0), f21=F12.at<float>(2,1), f22=F12.at<float>(2,2);
 
+    // 逐层阈值表：与逐点计算的表达式相同（极线距离阈值 3.84*sigma2，极点排除半径平方 100*scale）
+    const int nLevels2 = pKF2->mnScaleLevels;
+    static thread_local std::vector<float> epiThTab, epiDistTab;
+    epiThTab.resize(nLevels2);
+    epiDistTab.resize(nLevels2);
+    float epiThMax = 0.0f;
+    for(int o = 0; o < nLevels2; ++o)
+    {
+        epiThTab[o] = ORB_MATCHER_EPILINE_TH * pKF2->mvLevelSigma2[o];
+        epiDistTab[o] = TRIANGULATION_EPIPOLE_DIST_SQ * pKF2->mvScaleFactors[o];
+        epiThMax = std::max(epiThMax, epiThTab[o]);
+    }
+
+    // 网格列/行的像素范围：关键点按 round 归格，第 i 格覆盖 [(i-0.5)/inv, (i+0.5)/inv)
+    const double cellW = 1.0 / (double)pKF2->mfGridElementWidthInv;
+    const double cellH = 1.0 / (double)pKF2->mfGridElementHeightInv;
+    const bool bHasGrid2 = !pKF2->mGridStart.empty();
+
     // 遍历关键帧 pKF1 中未关联地图点的特征点
     for (int idx1 = 0; idx1 < pKF1->N; idx1++) {
         MapPoint* pMP1 = vpMapPoints1[idx1];
@@ -835,6 +828,8 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
         const bool bStereo1 = false;
         if (bOnlyStereo && !bStereo1)
             continue;
+        if (!bHasGrid2)
+            continue;
 
         const cv::KeyPoint &kp1 = pKF1->mvKeysUn[idx1];
 
@@ -843,7 +838,12 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
         const float b = kp1.pt.x*f01+kp1.pt.y*f11+f21;
         const float c = kp1.pt.x*f02+kp1.pt.y*f12v+f22;
 
-        const HBSTMatchable::Descriptor &desc1 = matchables1[idx1]->descriptor;
+        // 极线距离判定的分母只依赖 kp1；为零时任何候选都不通过
+        const float den = a*a+b*b;
+        if (den == 0)
+            continue;
+
+        const uint8_t* d1 = pKF1->mDescriptors.ptr<uint8_t>(idx1);
 
         // 计算特征射线在相机 2 坐标系下的方向
         const float xn1 = (kp1.pt.x - pKF1->cx) * pKF1->invfx;
@@ -882,15 +882,37 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
         if (minCellX > maxCellX || minCellY > maxCellY)
             continue;
 
+        // 极线带：能通过极线距离判定的点满足 |a*x+b*y+c| < sqrt(den*最大阈值)，逐列只访问与该带相交的行区间
+        // 带宽外扩 1 像素、行区间再各扩 1 格，覆盖浮点误差；被跳过的格中不可能有通过判定的点，访问顺序不变
+        const double bandHalf = std::sqrt((double)den * (double)epiThMax) * 1.001 + 1e-6;
+        const double absB = std::fabs((double)b);
+        const bool bUseBand = absB > 1e-12 * std::sqrt((double)den);
+
         int bestDist = TH_LOW;
         int bestDist2 = INT_MAX;
         int bestIdx2 = -1;
 
         for (int ix = minCellX; ix <= maxCellX; ++ix) {
-            for (int iy = minCellY; iy <= maxCellY; ++iy) {
-                const vector<size_t>& vCell = pKF2->mGrid[ix][iy];
-                for (size_t iCell = 0, iEndCell = vCell.size(); iCell < iEndCell; ++iCell) {
-                    const size_t idx2 = vCell[iCell];
+            int iyLo = minCellY, iyHi = maxCellY;
+            if (bUseBand) {
+                const double xl = pKF2->mnMinX + (ix - 0.5) * cellW - 1.0;
+                const double xh = pKF2->mnMinX + (ix + 0.5) * cellW + 1.0;
+                const double yl = (-(double)c - (double)a * xl) / (double)b;
+                const double yh = (-(double)c - (double)a * xh) / (double)b;
+                const double half = bandHalf / absB + 1.0;
+                const double yLow = std::min(yl, yh) - half;
+                const double yHigh = std::max(yl, yh) + half;
+                const double rLow = (yLow - pKF2->mnMinY) / cellH - 0.5;
+                const double rHigh = (yHigh - pKF2->mnMinY) / cellH + 0.5;
+                if (rLow > (double)maxCellY + 1.0 || rHigh < (double)minCellY - 1.0)
+                    continue;
+                if (rLow > (double)minCellY) iyLo = std::max(minCellY, (int)std::floor(rLow) - 1);
+                if (rHigh < (double)maxCellY) iyHi = std::min(maxCellY, (int)std::ceil(rHigh) + 1);
+            }
+            for (int iy = iyLo; iy <= iyHi; ++iy) {
+                const int cell = ix*FRAME_GRID_ROWS + iy;
+                for (int j = pKF2->mGridStart[cell], jend = pKF2->mGridStart[cell + 1]; j < jend; ++j) {
+                    const size_t idx2 = pKF2->mGridIdx[j];
 
                     if (vpMapPoints2[idx2] || vbMatched2[idx2])
                         continue;
@@ -904,15 +926,16 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
                     if (!bStereo1 && !bStereo2) {
                         const float distex = ex - kp2.pt.x;
                         const float distey = ey - kp2.pt.y;
-                        if (distex * distex + distey * distey < TRIANGULATION_EPIPOLE_DIST_SQ * pKF2->mvScaleFactors[kp2.octave])
+                        if (distex * distex + distey * distey < epiDistTab[kp2.octave])
                             continue;
                     }
 
-                    if (!CheckDistEpipolarLine(a, b, c, kp2, pKF2))
+                    // 第二幅图像中的极线 l = x1'·F12 = [a b c]
+                    const float num = a*kp2.pt.x+b*kp2.pt.y+c;
+                    if (!(num*num < den*epiThTab[kp2.octave]))
                         continue;
 
-                    // 直接在 bitset 上通过异或和计数来计算汉明距离
-                    const int dist = (desc1 ^ matchables2[idx2]->descriptor).count();
+                    const int dist = DescriptorDistance(d1, pKF2->mDescriptors.ptr<uint8_t>(idx2));
 
                     if (dist < bestDist) {
                         bestDist2 = bestDist;
