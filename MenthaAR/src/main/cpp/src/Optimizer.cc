@@ -44,6 +44,7 @@
 #include "Thirdparty/g2o/g2o/core/robust_kernel_impl.h"
 #include "Thirdparty/g2o/g2o/solvers/linear_solver_dense.h"
 #include "Thirdparty/g2o/g2o/types/types_seven_dof_expmap.h"
+#include "Thirdparty/g2o/g2o/core/jacobian_workspace.h"
 
 #include "../Thirdparty/Eigen/StdVector"
 
@@ -51,6 +52,9 @@
 #include "Config.h"
 
 #include<mutex>
+#include<limits>
+#include<cmath>
+#include<cstring>
 
 namespace ORB_SLAM2
 {
@@ -303,41 +307,234 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
 
 }
 
+namespace
+{
+
+// 位姿优化的边：鲁棒核由复用池持有，摘除时不释放
+struct PoseOptEdge : public g2o::EdgeSE3ProjectXYZOnlyPose
+{
+    void AttachRobustKernel(g2o::RobustKernel* k) { _robustKernel = k; }
+    void DetachRobustKernel() { _robustKernel = nullptr; }
+};
+
+// 单顶点位姿优化的线程局部复用状态：顶点、边、鲁棒核、雅可比工作区与稠密求解器只分配一次
+// 数值计算全部调用 g2o 自身的顶点/边实现，与通用稀疏框架求解同一问题时逐位一致
+struct PoseOptCache
+{
+    g2o::VertexSE3Expmap* v = nullptr;
+    double* hessian = nullptr;
+    std::vector<PoseOptEdge*> edges;
+    std::vector<g2o::RobustKernelHuber*> kernels;
+    std::vector<size_t> vnIndexEdge;
+    std::vector<PoseOptEdge*> active;
+    g2o::JacobianWorkspace ws;
+    bool wsReady = false;
+    Eigen::MatrixXd H;
+    Eigen::LDLT<Eigen::MatrixXd> ldlt;
+    double b[6];
+    // 与 g2o 块求解器的解向量相同：首次清零，之后跨调用保留（LDLT 非正定时更新沿用上一次的解）
+    double x[6];
+    // Levenberg 状态
+    double lambda = 0.0;
+    int ni = 2;
+    int nBad = 0;
+
+    PoseOptCache()
+    {
+        v = new g2o::VertexSE3Expmap();
+        v->setId(0);
+        v->setFixed(false);
+        hessian = static_cast<double*>(Eigen::internal::aligned_malloc(36 * sizeof(double)));
+        v->mapHessianMemory(hessian);
+        std::memset(b, 0, sizeof(b));
+        std::memset(x, 0, sizeof(x));
+    }
+
+    ~PoseOptCache()
+    {
+        for (size_t i = 0; i < edges.size(); ++i)
+        {
+            edges[i]->DetachRobustKernel();
+            delete edges[i];
+        }
+        for (size_t i = 0; i < kernels.size(); ++i)
+            delete kernels[i];
+        delete v;
+        Eigen::internal::aligned_free(hessian);
+    }
+
+    PoseOptEdge* EdgeAt(size_t k)
+    {
+        while (edges.size() <= k)
+        {
+            edges.push_back(new PoseOptEdge());
+            kernels.push_back(new g2o::RobustKernelHuber());
+        }
+        return edges[k];
+    }
+
+    // 对应 SparseOptimizer::computeActiveErrors
+    void ComputeActiveErrors()
+    {
+        for (size_t k = 0; k < active.size(); ++k)
+            active[k]->computeError();
+    }
+
+    // 对应 SparseOptimizer::activeRobustChi2
+    double ActiveRobustChi2() const
+    {
+        Eigen::Vector3d rho;
+        double chi = 0.0;
+        for (size_t k = 0; k < active.size(); ++k)
+        {
+            const PoseOptEdge* e = active[k];
+            if (e->robustKernel())
+            {
+                e->robustKernel()->robustify(e->chi2(), rho);
+                chi += rho[0];
+            }
+            else
+                chi += e->chi2();
+        }
+        return chi;
+    }
+
+    // 对应 BlockSolver::buildSystem：清零海森块与 b，逐条活动边线性化并累加二次型
+    void BuildSystem()
+    {
+        v->clearQuadraticForm();
+        Eigen::Map<Eigen::Matrix<double, 6, 6> >(hessian).setZero();
+        for (size_t k = 0; k < active.size(); ++k)
+        {
+            static_cast<g2o::OptimizableGraph::Edge*>(active[k])->linearizeOplus(ws);
+            active[k]->constructQuadraticForm();
+        }
+        v->copyB(b);
+    }
+
+    // 对应 LinearSolverDense::solve
+    bool Solve()
+    {
+        if (H.cols() != 6)
+            H.resize(6, 6);
+        H.block(0, 0, 6, 6) = v->A();
+        Eigen::VectorXd::MapType xvec(x, 6);
+        Eigen::VectorXd::ConstMapType bvec(b, 6);
+        ldlt.compute(H);
+        if (ldlt.isPositive())
+        {
+            xvec = ldlt.solve(bvec);
+            return true;
+        }
+        return false;
+    }
+
+    // 对应 OptimizationAlgorithmLevenberg::computeScale
+    double ComputeScale() const
+    {
+        double scale = 0.;
+        for (int j = 0; j < 6; j++)
+            scale += x[j] * (lambda * x[j] + b[j]);
+        return scale;
+    }
+
+    // 对应本工程改版的 OptimizationAlgorithmLevenberg::solve；返回 false 表示终止
+    bool LevenbergIteration(int iteration)
+    {
+        ComputeActiveErrors();
+        double currentChi = ActiveRobustChi2();
+        double tempChi = currentChi;
+        double prevChi = currentChi;
+        const double iniChi = currentChi;
+
+        BuildSystem();
+
+        if (iteration == 0)
+        {
+            double maxDiagonal = 0.;
+            for (int j = 0; j < 6; ++j)
+                maxDiagonal = std::max(std::fabs(v->hessian(j, j)), maxDiagonal);
+            lambda = 1e-5 * maxDiagonal;
+            ni = 2;
+            nBad = 0;
+        }
+
+        double rho = 0;
+        int qmax = 0;
+        const int maxTrials = 10;
+        do
+        {
+            v->push();
+            Eigen::Matrix<double, 6, 1> diagBackup = v->A().diagonal();
+            v->A().diagonal().array() += lambda;
+            const bool ok2 = Solve();
+            v->oplus(x);
+            v->A().diagonal() = diagBackup;
+
+            ComputeActiveErrors();
+            tempChi = ActiveRobustChi2();
+            if (!ok2)
+                tempChi = std::numeric_limits<double>::max();
+
+            rho = (currentChi - tempChi);
+            double scale = ComputeScale();
+            scale += 1e-3;
+            rho /= scale;
+
+            if (rho > 0 && std::isfinite(tempChi))
+            {
+                if (rho > 0.75)
+                    lambda *= 1./3.;
+                else if (rho > 0.25)
+                    lambda *= 2./3.;
+                ni = 2;
+                currentChi = tempChi;
+                v->discardTop();
+                if (qmax > 0 && std::abs(currentChi - prevChi) < 1e-8 * std::max(currentChi, 1e-15))
+                    break;
+                prevChi = currentChi;
+            }
+            else
+            {
+                if (rho > -0.25)
+                    lambda *= 1.5;
+                else
+                {
+                    lambda *= ni;
+                    ni *= 2;
+                }
+                v->pop();
+            }
+            qmax++;
+        } while (rho < 0 && qmax < maxTrials);
+
+        if (qmax == maxTrials || rho == 0)
+            return false;
+
+        if ((iniChi - currentChi) * 1e3 < iniChi)
+            nBad++;
+        else
+            nBad = 0;
+
+        if (nBad >= 3)
+            return false;
+
+        return true;
+    }
+};
+
+} // namespace
+
 int Optimizer::PoseOptimization(Frame *pFrame)
 {
-    // 线程局部缓存
-    thread_local struct {
-        g2o::SparseOptimizer optimizer;
-        g2o::BlockSolver_6_3::LinearSolverType* linearSolver = nullptr;
-        g2o::BlockSolver_6_3* solver_ptr = nullptr;
-        g2o::OptimizationAlgorithmLevenberg* solver = nullptr;
-    } cache;
-
-    if (!cache.linearSolver) {
-        cache.linearSolver = new g2o::LinearSolverDense<g2o::BlockSolver_6_3::PoseMatrixType>();
-        cache.solver_ptr = new g2o::BlockSolver_6_3(cache.linearSolver);
-        cache.solver = new g2o::OptimizationAlgorithmLevenberg(cache.solver_ptr);
-        cache.optimizer.setAlgorithm(cache.solver);
-    }
-    g2o::SparseOptimizer& optimizer = cache.optimizer;
-    optimizer.clear();
+    thread_local PoseOptCache cache;
 
     int nInitialCorrespondences=0;
 
-    // 设置帧顶点
-    g2o::VertexSE3Expmap * vSE3 = new g2o::VertexSE3Expmap();
-    vSE3->setEstimate(Converter::toSE3Quat(pFrame->mTcw));
-    vSE3->setId(0);
-    vSE3->setFixed(false);
-    optimizer.addVertex(vSE3);
-
-    // 设置地图点顶点
+    // 设置地图点观测边（顺序即 g2o 中边的插入顺序）
     const int N = pFrame->N;
-
-    vector<g2o::EdgeSE3ProjectXYZOnlyPose*> vpEdgesMono;
-    vector<size_t> vnIndexEdgeMono;
-    vpEdgesMono.reserve(N);
-    vnIndexEdgeMono.reserve(N);
+    cache.vnIndexEdge.clear();
+    size_t nEdges = 0;
 
     const float deltaMono = OPTIMIZER_HUBER_TH_2D; // Huber 核阈值
     for(int i=0; i<N; i++)
@@ -356,42 +553,41 @@ int Optimizer::PoseOptimization(Frame *pFrame)
             const cv::KeyPoint &kpUn = pFrame->mvKeysUn[i];
             obs << kpUn.pt.x, kpUn.pt.y;
 
-            g2o::EdgeSE3ProjectXYZOnlyPose* e = new g2o::EdgeSE3ProjectXYZOnlyPose();
+            PoseOptEdge* e = cache.EdgeAt(nEdges);
+            e->setVertex(0, cache.v);
+            e->setMeasurement(obs);
+            const float invSigma2 = pFrame->mvInvLevelSigma2[kpUn.octave];
+            e->setInformation(Eigen::Matrix2d::Identity()*invSigma2);
+            e->setLevel(0);
 
-            try {
-                e->setVertex(0, vSE3);
-                e->setMeasurement(obs);
-                const float invSigma2 = pFrame->mvInvLevelSigma2[kpUn.octave];
-                e->setInformation(Eigen::Matrix2d::Identity()*invSigma2);
-                e->setLevel(0);
+            g2o::RobustKernelHuber* rk = cache.kernels[nEdges];
+            rk->setDelta(deltaMono);
+            e->AttachRobustKernel(rk);
 
-                g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
-                e->setRobustKernel(rk);
-                rk->setDelta(deltaMono);
+            e->fx = pFrame->fx;
+            e->fy = pFrame->fy;
+            e->cx = pFrame->cx;
+            e->cy = pFrame->cy;
+            cv::Point3f p3f;
+            pMP->GetWorldPos(p3f);
+            e->Xw[0] = p3f.x;
+            e->Xw[1] = p3f.y;
+            e->Xw[2] = p3f.z;
 
-                e->fx = pFrame->fx;
-                e->fy = pFrame->fy;
-                e->cx = pFrame->cx;
-                e->cy = pFrame->cy;
-                cv::Point3f p3f;
-                pMP->GetWorldPos(p3f);
-                e->Xw[0] = p3f.x;
-                e->Xw[1] = p3f.y;
-                e->Xw[2] = p3f.z;
-
-                optimizer.addEdge(e);
-            } catch (...) {
-                delete e;
-                continue;
-            }
-
-            vpEdgesMono.push_back(e);
-            vnIndexEdgeMono.push_back(i);
+            cache.vnIndexEdge.push_back(i);
+            ++nEdges;
         }
     }
 
     if(nInitialCorrespondences<POSE_OPT_MIN_CORRESPONDENCES) {
         return 0;
+    }
+
+    if(!cache.wsReady)
+    {
+        cache.ws.updateSize(cache.edges[0]);
+        cache.ws.allocate();
+        cache.wsReady = true;
     }
 
     // 分 4 轮优化，每轮后将观测重新划分为内点与外点
@@ -402,18 +598,26 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     int nBad=0;
     for(size_t it=0; it<POSE_OPT_PASSES; it++)
     {
-        vSE3->setEstimate(Converter::toSE3Quat(pFrame->mTcw));
-        optimizer.initializeOptimization(0);
-        if(optimizer.activeVertices().empty())
+        cache.v->setEstimate(Converter::toSE3Quat(pFrame->mTcw));
+        // 活动边：等级为 0 的边，保持插入顺序；无活动边时与 g2o 一样没有活动顶点
+        cache.active.clear();
+        for(size_t k=0; k<nEdges; k++)
+            if(cache.edges[k]->level() == 0)
+                cache.active.push_back(cache.edges[k]);
+        if(cache.active.empty())
             return 0;
-        optimizer.optimize(its[it]);
+        for(int iter=0; iter<its[it]; iter++)
+        {
+            if(!cache.LevenbergIteration(iter))
+                break;
+        }
 
         nBad=0;
-        for(size_t i=0, iend=vpEdgesMono.size(); i<iend; i++)
+        for(size_t i=0; i<nEdges; i++)
         {
-            g2o::EdgeSE3ProjectXYZOnlyPose* e = vpEdgesMono[i];
+            PoseOptEdge* e = cache.edges[i];
 
-            const size_t idx = vnIndexEdgeMono[i];
+            const size_t idx = cache.vnIndexEdge[i];
 
             if(pFrame->mvbOutlier[idx])
             {
@@ -435,15 +639,14 @@ int Optimizer::PoseOptimization(Frame *pFrame)
             }
 
             if(it==2)
-                e->setRobustKernel(0);
+                e->DetachRobustKernel();
         }
-        if(optimizer.edges().size()<POSE_OPT_MIN_EDGES)
+        if(nEdges<(size_t)POSE_OPT_MIN_EDGES)
             break;
     }
 
     // 恢复优化后的位姿并返回内点数量
-    g2o::VertexSE3Expmap* vSE3_recov = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(0));
-    g2o::SE3Quat SE3quat_recov = vSE3_recov->estimate();
+    g2o::SE3Quat SE3quat_recov = cache.v->estimate();
     cv::Mat pose = Converter::toCvMat(SE3quat_recov);
     pFrame->SetPose(pose);
 

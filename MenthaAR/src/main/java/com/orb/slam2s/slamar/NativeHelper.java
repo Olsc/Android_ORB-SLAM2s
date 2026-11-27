@@ -105,9 +105,6 @@ public class NativeHelper {
         }
     }
 
-    // 更新相机分辨率并重新计算内参
-    public native void nativeUpdateResolution(int cameraWidth, int cameraHeight);
-
     // 保存与加载地图
     public native void saveMap(String path);
     public native void loadMapWithId(String path, int mapId, boolean append);

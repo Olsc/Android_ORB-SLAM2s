@@ -68,29 +68,13 @@ KeyFrame::KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB):
     mfLogScaleFactor(F.mfLogScaleFactor), mvScaleFactors(F.mvScaleFactors), mvLevelSigma2(F.mvLevelSigma2),
     mvInvLevelSigma2(F.mvInvLevelSigma2), mnMinX(F.mnMinX), mnMinY(F.mnMinY), mnMaxX(F.mnMaxX),
     mnMaxY(F.mnMaxY), mK(F.mK.clone()), mvpMapPoints(F.mvpMapPoints), mpKeyFrameDB(pKFDB),
+    mGridStart(F.mGridStart), mGridIdx(F.mGridIdx),
     mbFirstConnection(true), mpParent(nullptr), mbNotErase(false),
     mbToBeErased(false), mbBad(false), mbIsOrigin(false), mHalfBaseline(F.mb/2), mpMap(pMap), mpTree(F.mpTree)
 {
     mnId=nNextId++;
     if(mnId == 0)
         mbIsOrigin = true;
-
-    mGrid.resize(mnGridCols);
-    for(int i=0; i<mnGridCols;i++)
-    {
-        mGrid[i].resize(mnGridRows);
-        for(int j=0; j<mnGridRows; j++)
-        {
-            // 从 Frame 的 CSR 网格还原每格索引（顺序不变）
-            mGrid[i][j].clear();
-            if(!F.mGridStart.empty())
-            {
-                const int c = i*FRAME_GRID_ROWS + j;
-                mGrid[i][j].assign(F.mGridIdx.begin()+F.mGridStart[c],
-                                   F.mGridIdx.begin()+F.mGridStart[c+1]);
-            }
-        }
-    }
 
     SetPose(F.mTcw);
 }
@@ -729,20 +713,25 @@ void KeyFrame::GetFeaturesInArea(const float &x, const float &y, const float &r,
 
     const float rSq = r*r;
 
+    // 无网格（N<=0）时没有任何候选
+    if(mGridStart.empty())
+        return;
+
     for(int ix = nMinCellX; ix<=nMaxCellX; ix++)
     {
         for(int iy = nMinCellY; iy<=nMaxCellY; iy++)
         {
-            const std::vector<size_t>& vCell = mGrid[ix][iy];
-            for(size_t j=0, jend=vCell.size(); j<jend; j++)
+            const int cell = ix*FRAME_GRID_ROWS + iy;
+            for(int j=mGridStart[cell], jend=mGridStart[cell+1]; j<jend; j++)
             {
-                const cv::KeyPoint &kpUn = mvKeysUn[vCell[j]];
+                const size_t kIdx = mGridIdx[j];
+                const cv::KeyPoint &kpUn = mvKeysUn[kIdx];
                 const float distx = kpUn.pt.x-x;
                 const float disty = kpUn.pt.y-y;
                 const float distSq = distx*distx + disty*disty;
 
                 if(distSq < rSq)
-                    vIndices.push_back(vCell[j]);
+                    vIndices.push_back(kIdx);
             }
         }
     }
